@@ -1,27 +1,12 @@
 import { BackendDataService } from '../services/backend-data.js';
+import { db } from '../Configs/dbConfig.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// ─── Hardcoded fallback data (shown if JSON files are empty/missing) ───────────
-const FALLBACKS = {
-    dancers: {
-        officials: [
-            { id: '1', name: 'Chair', role: 'Chairperson', email: '', phoneNumber: '', photoUrl: '' }
-        ],
-        activities: [
-            { id: '1', title: 'Kerugoya Parish Visit', description: 'Visiting Kerugoya Parish on 15th', date: '2025-02-10', location: 'Kutus', status: 'Upcoming' }
-        ]
-    },
-    charismatic: {
-        officials: [],
-        activities: []
-    },
-    'st-francis': {
-        officials: [
-            { id: '1', name: 'Chairperson', role: 'Chair', email: '', phoneNumber: '', photoUrl: '' }
-        ],
-        activities: []
-    }
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+// ─── Hardcoded fallback data (shown if DB/JSON files are empty/missing) ───────────
 const modulesMeta = [
     {
         id: 'choir',
@@ -38,18 +23,7 @@ const modulesMeta = [
         description: 'Expressing faith through rhythmic movement and grace.',
         path: '/hub-view/dancers',
         color: '#e67e22',
-        icon: 'fas fa-person-praying',
-        scheduleLabel: 'Training Schedule',
-        training: 'Every Saturday, 4:00 PM - 6:30 PM',
-        location: 'School Compound',
-        fees: {
-            registration: 'Free',
-            subscription: 'Ksh 20 weekly',
-            uniform: 'Orange T-shirt (Ksh 600) - Mandatory'
-        },
-        socials: {
-            tiktok: 'https://www.tiktok.com/@kutesaliturgicaldancers?_r=1&_t=ZS-93nRfCuCChM'
-        }
+        icon: 'fas fa-person-praying'
     },
     {
         id: 'charismatic',
@@ -57,23 +31,7 @@ const modulesMeta = [
         description: 'A community of faith, healing, and spiritual growth.',
         path: '/hub-view/charismatic-prayer-group',
         color: '#2ecc71',
-        icon: 'fas fa-fire-alt',
-        scheduleLabel: 'Meeting Schedule',
-        training: 'Every Saturday, 5:00 PM - 6:30 PM',
-        location: 'Parish Hall',
-        fees: {
-            registration: 'Free',
-            subscription: 'None'
-        },
-        story: `
-        <h4>St. Vincent de Paul</h4>
-        <p>St. Vincent de Paul (1581–1660) remains one of the most beloved figures in Christian history. Born to a peasant family in France, he famously dedicated his life to the service of the poor and marginalized. Renowned for his extraordinary compassion and humility, he established the Congregation of the Mission and the Daughters of Charity, creating a legacy of selfless service that continues to inspire worldwide.</p>
-        <p>His tireless advocacy for the destitute, the sick, and the imprisoned earned him the title "Apostle of Charity." Today, his life challenges us to see the face of Christ in the suffering and to respond with profound generosity and love.</p>`,
-        agenda: [
-            'Praying in devotion through Mother Mary',
-            'Seeking to understand the Scriptures well',
-            'Spreading the Good News to the community around'
-        ]
+        icon: 'fas fa-fire-alt'
     },
     {
         id: 'st-francis',
@@ -81,88 +39,112 @@ const modulesMeta = [
         description: 'Building bonds of love and support in our parish family.',
         path: '/hub-view/st-francis',
         color: '#2980b9',
-        icon: 'fas fa-dove',
-        scheduleLabel: 'Prayer Schedule',
-        training: 'Every Sunday, 5:00 PM - 6:30 PM',
-        location: 'LH 21',
-        fees: {
-            registration: 'Ksh 20',
-            subscription: 'Ksh 20 (Per Semester)'
-        },
-        fullImage: '/images/st-francis-icon.jpg',
-        logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Saint_Francis_of_Assisi_Icon.jpg/220px-Saint_Francis_of_Assisi_Icon.jpg',
-        story: `
-        <p>St. Francis of Assisi (1181–1226) remains one of the most beloved figures in Christian history. Born to a wealthy silk merchant, his life changed forever when he heard Christ call from the crucifix at San Damiano to <em>"rebuild my church."</em> Renouncing his inheritance, he embraced radical poverty and service, founding the Franciscan orders for men (Friars Minor), women (Poor Clares), and laypeople (Third Order).</p>
-        <p>Known as the patron saint of ecology, he viewed all creation as a sacred brotherhood, famously composing the <em>Canticle of the Creatures</em> and creating the first live Nativity scene at Greccio. In 1224, he became the first recorded person to receive the stigmata, bearing the wounds of Christ. His legacy of humility and peace-making led to his canonization in 1228, inspiring generations to lead lives of profound love for all God's creatures.</p>`
+        icon: 'fas fa-dove'
     }
 ];
 
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 export const getIndex = (_req, res) => {
-    // Serve the static TS/CSS version's index.html
     res.sendFile(path.join(__dirname, '../../../frontEnd/src/pages/sacramental/pages/index.html'));
 };
 
-export const getHubData = (_req, res) => {
-    res.json(modulesMeta);
+export const getHubData = async (_req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM hub_modules');
+        if (result.rows.length > 0) {
+            // Map DB columns back to frontend camelCase keys if necessary, 
+            // but for simplicity we return as is or map them.
+            const modules = result.rows.map(m => ({
+                ...m,
+                path: m.path || `/hub-view/${m.id}`,
+                color: m.theme_color,
+                iconColor: m.icon_class === 'fas fa-music' ? 'var(--theme-primary)' : undefined,
+                icon: m.icon_class
+            }));
+            return res.json(modules);
+        }
+        res.json(modulesMeta);
+    } catch (err) {
+        console.error('[HubController] DB Fetch Error:', err.message);
+        res.json(modulesMeta);
+    }
 };
 
-export const getModule = (req, res) => {
-    // Resolve module by ID from path or params
+export const getModule = async (req, res) => {
     const id = req.params.moduleId || req.path.replace(/^\//, '');
-    console.log(`[HubController] Module resolution attempt: ID="${id}", Path="${req.path}"`);
-
-    const meta = modulesMeta.find(m => m.id === id) || 
-                 modulesMeta.find(m => m.path === `/hub-view${req.path}`) ||
-                 modulesMeta.find(m => m.path === `/hub-view/${id}`);
-
-    if (!meta) {
-        console.error(`[HubController] CRITICAL: Module meta NOT found for "${id}"`);
-        return res.status(404).json({ error: `Module "${id}" not found.` });
-    }
+    console.log(`[HubController] Module resolution attempt: ID="${id}"`);
 
     // Determine if it's a request for the page or just data
     if (req.headers.accept && req.headers.accept.includes('text/html')) {
-        console.log(`[HubController] Serving HTML template for module: ${meta.id}`);
-        if (meta.id === 'choir') {
+        if (id === 'choir') {
             return res.sendFile(path.join(__dirname, '../../../frontEnd/src/pages/sacramental/pages/choir.html'));
         }
         return res.sendFile(path.join(__dirname, '../../../frontEnd/src/pages/sacramental/pages/module.html'));
     }
 
-    const fallback = FALLBACKS[meta.id] || {};
-
-    const moduleInfo = {
-        ...meta,
-        officials:     BackendDataService.load(`${meta.id}_officials.json`,     fallback.officials     || []),
-        activities:    BackendDataService.load(`${meta.id}_activities.json`,    fallback.activities    || []),
-        announcements: BackendDataService.load(`${meta.id}_announcements.json`, fallback.announcements || []),
-        gallery:       BackendDataService.load(`${meta.id}_gallery.json`,       fallback.gallery       || [])
-    };
-
-    // Special case for choir data
-    if (meta.id === 'choir') {
-        const choirOfficials  = BackendDataService.load('officials.json',  []);
-        const choirActivities = BackendDataService.load('activities.json', []);
-        const choirAnnouncements = BackendDataService.load('announcements.json', []);
-        const choirGallery = BackendDataService.load('choir_gallery.json', []);
+    try {
+        // Fetch main module meta from DB
+        const moduleResult = await db.query('SELECT * FROM hub_modules WHERE id = $1', [id]);
         
-        const choirInfo = { 
-            ...meta, 
-            officials: choirOfficials, 
-            activities: choirActivities,
-            announcements: choirAnnouncements,
-            gallery: choirGallery
-        };
-        return res.json(choirInfo);
-    }
+        if (moduleResult.rows.length === 0) {
+            return res.status(404).json({ error: `Module "${id}" not found.` });
+        }
 
-    res.json(moduleInfo);
+        const meta = moduleResult.rows[0];
+
+        // Fetch related data in parallel
+        const [officials, activities, announcements, gallery] = await Promise.all([
+            db.query('SELECT * FROM hub_officials WHERE module_id = $1', [id]),
+            db.query('SELECT * FROM hub_activities WHERE module_id = $1 ORDER BY activity_date DESC', [id]),
+            db.query('SELECT * FROM hub_announcements WHERE module_id = $1 ORDER BY announcement_date DESC', [id]),
+            db.query('SELECT * FROM hub_gallery WHERE module_id = $1', [id])
+        ]);
+
+        const moduleInfo = {
+            id: meta.id,
+            title: meta.title,
+            description: meta.description,
+            color: meta.theme_color,
+            icon: meta.icon_class,
+            scheduleLabel: meta.schedule_label,
+            training: meta.training_time,
+            location: meta.location,
+            fees: {
+                registration: meta.registration_fee,
+                subscription: meta.subscription_fee,
+                uniform: meta.uniform_info
+            },
+            story: meta.story,
+            officials: officials.rows,
+            activities: activities.rows.map(a => ({
+                ...a,
+                date: a.activity_date ? a.activity_date.toISOString().split('T')[0] : null
+            })),
+            announcements: announcements.rows,
+            gallery: gallery.rows.map(g => ({
+                ...g,
+                imageUrl: g.image_url,
+                eventName: g.event_name
+            }))
+        };
+
+        res.json(moduleInfo);
+    } catch (err) {
+        console.error(`[HubController] DB Error for module ${id}:`, err.message);
+        
+        // Final fallback to JSON if DB fails
+        const meta = modulesMeta.find(m => m.id === id);
+        if (!meta) return res.status(404).json({ error: "Module not found" });
+
+        const moduleInfo = {
+            ...meta,
+            officials:     BackendDataService.load(`${id}_officials.json`, []),
+            activities:    BackendDataService.load(`${id}_activities.json`, []),
+            announcements: BackendDataService.load(`${id}_announcements.json`, []),
+            gallery:       BackendDataService.load(`${id}_gallery.json`, [])
+        };
+        res.json(moduleInfo);
+    }
 };
+
 
 
