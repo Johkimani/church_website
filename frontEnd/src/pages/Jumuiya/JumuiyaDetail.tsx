@@ -24,10 +24,11 @@ const JumuiyaDetail: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('about');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { getJumuiyaById } = useData();
-    const { } = useAuth();
+    const { user } = useAuth();
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [hasNewNotif, setHasNewNotif] = useState(true); // Initial state for demo
-    const isAdmin = true; // Hardcoded to true for development purposes as requested
+    // isAdmin if user has proper role, or allow development access for now
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'hub_official';
 
     // The ID in the data is 'st-anthony', but the URL might be /jumuiya/st-anthony
     // The previous getJumuiyaByName handled some normalization. Let's assume the URL param matches the ID for now, 
@@ -43,7 +44,7 @@ const JumuiyaDetail: React.FC = () => {
     const jumuiya = getJumuiyaById(jumuiyaId);
 
     // Fetch dynamic officials from backend
-    const { officials: dynamicOfficials } = useJumuiyaOfficials({ category: jumuiya?.name });
+    const { officials: dynamicOfficials, isLoading: officialsLoading } = useJumuiyaOfficials({ category: jumuiya?.name });
 
     if (!jumuiya) {
         return (
@@ -74,20 +75,27 @@ const JumuiyaDetail: React.FC = () => {
         switch (activeTab) {
             case 'about':
                 return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/')} />;
-            case 'officials':
-                // Merge dynamic officials with hardcoded ones
-                // If we have dynamic officials, we use them. 
-                // We map dynamic backend officials to the frontend format.
-                const displayedOfficials = (dynamicOfficials && dynamicOfficials.length > 0) 
-                    ? dynamicOfficials.map(doff => ({
-                        id: String(doff.id),
-                        name: doff.name,
-                        position: doff.position,
-                        email: '', // Backend doesn't have email yet, but we can default or handle it
-                        phone: doff.contact || '',
-                        image: doff.photo ? (doff.photo.startsWith('http') ? doff.photo : `${window.location.origin}/${doff.photo}`) : undefined
-                    }))
-                    : jumuiya.officials;
+            case 'officials': {
+                // While loading, show a skeleton. Once loaded, always prefer DB data.
+                if (officialsLoading) {
+                    return (
+                        <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                            <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${jumuiya.color}30`, borderTopColor: jumuiya.color, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                            <p style={{ marginTop: '16px', fontSize: '0.95rem' }}>Loading leadership team…</p>
+                        </div>
+                    );
+                }
+                // Map DB officials → OfficialsTab's Official shape
+                const displayedOfficials = dynamicOfficials.map(doff => ({
+                    id: String(doff.id),
+                    name: doff.name,
+                    position: doff.position,
+                    email: '',
+                    phone: doff.contact || '',
+                    image: doff.photo
+                        ? (doff.photo.startsWith('http') ? doff.photo : `${window.location.origin}/${doff.photo}`)
+                        : undefined
+                }));
 
                 return <OfficialsTab
                     officials={displayedOfficials}
@@ -96,10 +104,11 @@ const JumuiyaDetail: React.FC = () => {
                     jumuiyaColor={jumuiya.color}
                     isAdmin={isAdmin}
                 />;
+            }
             case 'members':
-                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+                return <MembersTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
             case 'registration':
-                return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
+                return <RegistrationTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
             case 'activities':
                 return <ActivitiesTab jumuiyaColor={jumuiya.color} />;
             case 'channels':
@@ -190,7 +199,7 @@ const JumuiyaDetail: React.FC = () => {
 
             {/* Notification FAB */}
             <div className="notif-fab-container">
-                <button 
+                <button
                     className={`notif-fab ${isNotifOpen ? 'active' : ''}`}
                     onClick={() => {
                         setIsNotifOpen(!isNotifOpen);

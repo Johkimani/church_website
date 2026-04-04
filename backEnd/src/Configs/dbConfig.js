@@ -37,13 +37,18 @@ export const testDb = { query: (text, params) => client.query(text, params) };
 export let dbInstance = undefined;
 
 export const connectToMongoDb = async () => {
+  if (!process.env.MONGODB_URI || process.env.MONGODB_URI === "undefined") {
+    logger.warn("⚡ MONGODB_URI not found in .env. MongoDB features (like AI questions) will be disabled.");
+    return;
+  }
   try {
     const connectionInstance = await mongoose.connect(`${process.env.MONGODB_URI}`);
     dbInstance = connectionInstance;
     logger.info(`☘️  MongoDB Connected! Db host: ${connectionInstance.connection.host}`);
   } catch (error) {
     logger.error("MongoDB connection error: ", error);
-    process.exit(1)
+    // Log error but don't exit process so the main App (Postgres based) remains functional
+    logger.warn("Continuing without MongoDB...");
   }
 };
 

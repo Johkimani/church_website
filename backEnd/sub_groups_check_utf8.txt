@@ -1,0 +1,69 @@
+﻿node : (node:30356) 
+Warning: SECURITY 
+WARNING: The SSL modes 
+'prefer', 'require', and 
+'verify-ca' are treated 
+as aliases for 
+'verify-full'.
+At line:1 char:1
++ node -e "const { Client 
+} = require('pg'); const 
+client = new Client( ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: ((  
+  node:30356) Wa... 've   
+ rify-full'.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+In the next major version 
+(pg-connection-string 
+v3.0.0 and pg v9.0.0), 
+these modes will adopt 
+standard libpq semantics, 
+which have weaker 
+security guarantees.
+
+To prepare for this 
+change:
+- If you want the current 
+behavior, explicitly use 
+'sslmode=verify-full'
+- If you want libpq 
+compatibility now, use 'us
+elibpqcompat=true&sslmode=
+require'
+
+See https://www.postgresql
+.org/docs/current/libpq-ss
+l.html for libpq SSL mode 
+definitions.
+(Use `node 
+--trace-warnings ...` to 
+show where the warning 
+was created)
+Error: self-signed 
+certificate in 
+certificate chain
+    at 
+TLSSocket.onConnectSecure 
+(node:internal/tls/wrap:16
+49:34)
+    at TLSSocket.emit 
+(node:events:508:28)
+    at 
+TLSSocket._finishInit (nod
+e:internal/tls/wrap:1095:8
+)
+    at 
+ssl.onhandshakedone (node:
+internal/tls/wrap:881:12) 
+{
+  code: 'SELF_SIGNED_CERT_
+IN_CHAIN'
+}

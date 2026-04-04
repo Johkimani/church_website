@@ -3,6 +3,8 @@ import axios, { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
 
+import { useAuth } from "../../context/AuthContext";
+
 interface ErrorResponse {
   message: string;
 }
@@ -10,14 +12,14 @@ interface ErrorResponse {
 const Login: React.FC = () => {
   const [userReg, setUserReg] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  // const { login } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const submit = async () => {
     console.log("Submitting login with:", { userReg, password });
     try {
       const response = await axios.post(
-        "http://localhost:3001/authentication/v1/login",
+        "http://localhost:3000/authentication/v1/login",
         {
           userReg,
           password,
@@ -26,23 +28,22 @@ const Login: React.FC = () => {
       console.log("Login response:", response.data);
 
       if (response.data.status === "success") {
-        localStorage.setItem("token", response.data.token);
+        // useAuth's login handles localStorage and state
+        login(response.data.user, response.data.token);
         navigate("/", { state: { Response: true } });
       }
       else if (response.data.error == "User email not found") {
         alert("Login User email not found. Please enter your email and change your password.");
+        // We still need to capture the token for the reset process
         localStorage.setItem("token", response.data.token);
         navigate("reset", { state: { purpose: 'email' } });
-
       }
-
       else {
         alert(response.data.message || "Login failed");
       }
     } catch (error: unknown) {
       const axiosError = error as AxiosError;
       console.error("Login error:", error);
-
       alert((axiosError.response?.data as ErrorResponse)?.message || "Login failed. Please check your credentials.");
     }
   };

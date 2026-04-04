@@ -35,7 +35,7 @@ const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
             case 'officials':
                 return <AdminOfficials selectedId={jumuiya.id} />;
             case 'members':
-                return <AdminMembers />;
+                return <AdminMembers selectedId={jumuiya.id} />;
             case 'activities':
                 return <AdminActivities selectedId={jumuiya.id} />;
             case 'gallery':

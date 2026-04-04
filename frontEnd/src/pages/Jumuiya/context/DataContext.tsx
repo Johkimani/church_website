@@ -1,9 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
 import type { JumuiyaData, GalleryImage, Official, MeetingSchedule, TshirtOrder } from '../data/jumuiyaData';
-import { jumuiyaList as initialJumuiyaList } from '../data/jumuiyaData';
-
-// Increment this whenever the data structure changes to force a localStorage reset
-const DATA_VERSION = '3';
+// Note: DATA_VERSION and initialJumuiyaList static imports are removed.
 
 interface DataContextType {
     jumuiyaList: JumuiyaData[];
@@ -24,37 +21,33 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const loadData = () => {
-            const storedVersion = localStorage.getItem('jumuiya_data_version');
-            const storedData = localStorage.getItem('jumuiya_data');
-
-            if (storedVersion !== DATA_VERSION || !storedData) {
-                // Version mismatch or missing data — reset to fresh data
-                console.log('Data version mismatch or missing, resetting to initial data.');
-                setJumuiyaList(initialJumuiyaList);
-                localStorage.setItem('jumuiya_data', JSON.stringify(initialJumuiyaList));
-                localStorage.setItem('jumuiya_data_version', DATA_VERSION);
-            } else {
-                try {
-                    setJumuiyaList(JSON.parse(storedData));
-                } catch (e) {
-                    console.error('Failed to parse stored data', e);
-                    setJumuiyaList(initialJumuiyaList);
-                    localStorage.setItem('jumuiya_data', JSON.stringify(initialJumuiyaList));
-                    localStorage.setItem('jumuiya_data_version', DATA_VERSION);
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
+                const res = await fetch(`${baseUrl}/api/jumuiya-data/all`);
+                
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch: ${res.statusText}`);
                 }
+                
+                const json = await res.json();
+                if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+                    setJumuiyaList(json.data);
+                } else {
+                    console.error("No jumuiya data returned from backend:", json);
+                    setJumuiyaList([]);
+                }
+            } catch (e) {
+                console.error('Failed to load Jumuiya data from backend API', e);
+                setJumuiyaList([]);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
 
         loadData();
     }, []);
-
-    useEffect(() => {
-        if (!isLoading && jumuiyaList.length > 0) {
-            localStorage.setItem('jumuiya_data', JSON.stringify(jumuiyaList));
-        }
-    }, [jumuiyaList, isLoading]);
 
     const getJumuiyaById = (id: string) => {
         return jumuiyaList.find(j => j.id === id);
@@ -89,9 +82,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const resetData = () => {
-        setJumuiyaList(initialJumuiyaList);
-        localStorage.setItem('jumuiya_data', JSON.stringify(initialJumuiyaList));
-        localStorage.setItem('jumuiya_data_version', DATA_VERSION);
+        // Obsolete in production; re-fetches for now
+        setJumuiyaList([]);
+        setIsLoading(true);
+        const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
+        fetch(`${baseUrl}/api/jumuiya-data/all`)
+            .then(res => res.json())
+            .then(json => setJumuiyaList(json.data || []))
+            .finally(() => setIsLoading(false));
     };
 
     if (isLoading) {

@@ -2,10 +2,18 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 // Define the shape of the context data
+interface User {
+  member_id: string;
+  email: string;
+  role: string;
+  jumuiya_id: string | null;
+}
+
+// Define the shape of the context data
 interface AuthContextType {
-  user: { user_id: number; username: string; role: string } | null;
+  user: User | null;
   token: string | null;
-  login: (userData: { user_id: number; username: string; role: string }, token: string) => void;
+  login: (userData: User, token: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
   getAuthToken: () => string | null;
@@ -16,7 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Create the provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ user_id: number; username: string; role: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   // Check for stored user/token on initial load
@@ -25,20 +33,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedToken = localStorage.getItem('token');
 
     if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse stored user", e);
+      }
     }
     if (storedToken && storedToken !== "undefined" && storedToken !== "null") {
       setToken(storedToken);
     }
   }, []);
 
-  const login = (userData: { user_id: number; username: string; role: string }, authToken: string) => {
+  const login = (userData: User, authToken: string) => {
     console.log("AuthContext login called with:", userData, authToken);
     setUser(userData);
     setToken(authToken);
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', authToken);
-    console.log("AuthContext user state after login:", userData);
   };
 
   const logout = () => {
