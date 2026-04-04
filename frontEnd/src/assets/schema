@@ -25,7 +25,7 @@ CREATE TABLE members (
 
 -- Handles temporary one-time passwords for password recovery.
 CREATE TABLE password_resets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid() UNIQUE,
     member_id VARCHAR(30) REFERENCES members(member_id) ON DELETE CASCADE,
     email VARCHAR(100),
     otp TEXT NOT NULL,                           -- Encrypted or plain OTP code
@@ -33,8 +33,15 @@ CREATE TABLE password_resets (
     temp_password TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
-
 -- Defines administrative and functional roles (e.g., 'Admin', 'Choir_Leader').
+CREATE TABLE refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    member_id VARCHAR(30) REFERENCES members(member_id) ON DELETE CASCADE,
+    token TEXT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    revoked BOOLEAN DEFAULT FALSE
+);
 CREATE TABLE roles (
     role_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     role_name VARCHAR(50) NOT NULL

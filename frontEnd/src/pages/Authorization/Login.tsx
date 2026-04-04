@@ -29,8 +29,8 @@ const Login: React.FC = () => {
 
       if (response.data.status === "success") {
         // useAuth's login handles localStorage and state
-        login(response.data.user, response.data.token);
-        navigate("/", { state: { Response: true } });
+        login(response.data.user, response.data.accessToken);
+        navigate("/", { state: { response: true } });
       }
       else if (response.data.error == "User email not found") {
         alert("Login User email not found. Please enter your email and change your password.");

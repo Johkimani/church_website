@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import sendMail from "../Configs/emailConfig.js";
 import bcrypt from "bcrypt";
-import { db, testDb } from "../Configs/dbConfig.js";
+// import { db, testDb } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
 export const Reset = async (req, res) => {

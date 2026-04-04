@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import { LocalStorage } from "../utils";
+import { error } from "console";
 
 // Create an Axios instance for API requests
 const apiClient = axios.create({
@@ -24,6 +25,43 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only retry once to avoid infinite loop
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) throw new Error("No refresh token found");
+
+        // Call refresh endpoint
+        const { data } = await axios.post("http://localhost:3001/authentication/v1/refresh", { refreshToken });
+
+        // Save new access token
+        localStorage.setItem("accessToken", data.accessToken);
+
+        // Retry original request with new token
+        originalRequest.headers["Authorization"] = `Bearer ${data.accessToken}`;
+        return apiClient(originalRequest);
+      } catch (err) {
+        // Refresh failed → logout user
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
+        return Promise.reject(err);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+
 
 // API functions for different actions
  export const generateAndSaveQuestions = (data: { topic: string }) => {

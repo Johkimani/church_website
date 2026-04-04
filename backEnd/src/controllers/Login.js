@@ -6,26 +6,24 @@ import jwt from "jsonwebtoken";
 import { token } from "morgan";
 dotenv.config();
 
-const Login = async (req, res) => {
-  const { userReg, password } = req.body ?? [];
+export const Login = async (req, res) => {
+  const { userReg, password } = req.body ?? {};
 
   if (!userReg || !password) {
-    logger.warn("Login attempt with missing credentials");
     return res.status(400).json({ error: "Username and password required" });
   }
 
   try {
     const result = await testDb.query(
-      `SELECT m.member_id, m.password, m.email, m.jumuiya_id, r.role_name 
+      `SELECT m.member_id, m.password, m.first_name, m.email, m.jumuiya_id, r.role_name 
        FROM members m 
        JOIN member_roles mr ON m.member_id = mr.member_id 
        JOIN roles r ON mr.role_id = r.role_id 
-       WHERE m.member_id =$1`,
+       WHERE m.member_id = $1`,
       [userReg],
     );
 
     if (result.rows.length === 0) {
-      logger.warn(`Login attempt with invalid username: ${userReg}`);
       return res.status(401).json({ error: "Invalid username or password" });
     }
 
@@ -33,38 +31,117 @@ const Login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
-      logger.warn(`Login attempt with invalid password for user: ${userReg}`);
       return res.status(401).json({ error: "Invalid username or password" });
     }
 
-    if (!user.email) {
-      logger.warn(`Login attempt with missing email for user: ${userReg}`);
-      return res.status(401).json({ error: "User email not found" });
-    }
+    const accessToken = generateAccesstoken(user.member_id, user.role_name);
+    const refreshToken = generateRefreshtoken(user.member_id, user.role_name);
 
-    const jwtSecret = process.env.JWT_SECRET || process.env.SECRET_KEY;
-    const token = jwt.sign(
-      { id: user.member_id, role: user.role_name, jumuiya_id: user.jumuiya_id },
-      jwtSecret,
-      { expiresIn: "24h" },
+    // calculate expiry
+    const decoded = jwt.decode(refreshToken);
+    const expiresAt = new Date(decoded.exp * 1000); 
+
+    // store in DB
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+
+    await testDb.query(
+      `INSERT INTO refresh_tokens (member_id, token, expires_at)
+       VALUES ($1, $2, $3)`,
+      [user.member_id, hashedToken, expiresAt],
     );
 
     res.json({
       status: "success",
       message: "Login successful",
-      token: token,
+      accessToken,
+      refreshToken,
       user: {
         member_id: user.member_id,
         email: user.email,
+        first_name: user.first_name,
         role: user.role_name,
         jumuiya_id: user.jumuiya_id
       }
     });
   } catch (err) {
-    logger.error("Error during login process", err);
-    console.error("Login error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-export default Login;
+export const generateAccesstoken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "15min" });
+};
+
+export const generateRefreshtoken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+    expiresIn: "20h",
+  });
+};
+
+export const refreshAccessToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: "No refresh token provided" });
+  }
+
+  try {
+    // Verify token
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+
+    //  Check if token exists in DB
+    const result = await testDb.query(
+      `SELECT * FROM refresh_tokens WHERE token = $1 
+AND revoked = FALSE 
+AND expires_at > NOW()`,
+      [refreshToken],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ error: "Invalid refresh token" });
+    }
+
+    let validToken = null;
+
+    for (const row of result.rows) {
+      const isMatch = await bcrypt.compare(refreshToken, row.token);
+
+      if (isMatch) {
+        validToken = row;
+        break;
+      }
+    }
+    if (!validToken) {
+      return res.status(403).json({ error: "Invalid refresh token" });
+    }
+    //  Generate new access token
+    const accessToken = generateAccesstoken(decoded.id, decoded.role);
+
+    res.status(200).json({ accessToken });
+  } catch (error) {
+    return res.status(403).json({ error: error.message });
+  }
+};
+
+export const logOut = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ error: "Refresh token required for logout" });
+  }
+
+  try {
+    // Revoke the token in the DB
+    // Since we hash them, we'd need to find by member_id or find the match
+    // For simplicity in logout, we can revoke all for this user or just specific one if we had its ID
+    // Improved logic: find the specific token by matching hash if possible, or just require member_id
+    await testDb.query(
+      `UPDATE refresh_tokens SET revoked = TRUE WHERE member_id = $1`,
+      [req.user.id] // Assumes verifyToken middleware adds user info
+    );
+
+    res.json({ status: "success", message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Logout failed" });
+  }
+};
