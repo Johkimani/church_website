@@ -10,6 +10,8 @@ import { api } from "./routers/api.js";
 import { hubRouter } from "./routers/hubRouter.js";
 import officialsRouter from "./routers/officialsRouter.js";
 import jumuiyaOfficialsRouter from "./routers/jumuiyaOfficialsRouter.js";
+import jumuiyaMembersRouter from "./routers/jumuiyaMembersRouter.js";
+import jumuiyaDataRouter from "./routers/jumuiyaDataRouter.js";
 import { BackendDataService } from "./services/backend-data.js";
 import morganMiddleware from "./logger/morgan.js";
 import { rateLimit } from "express-rate-limit";
@@ -47,6 +49,8 @@ app.get('/', (_req, res) => res.redirect('/hub-view'));
 app.use("/authentication", apiRoutes);
 app.use("/api/officials", officialsRouter);
 app.use("/api/jumuiya-officials", jumuiyaOfficialsRouter);
+app.use("/api/jumuiya-members", jumuiyaMembersRouter);
+app.use("/api/jumuiya-data", jumuiyaDataRouter);
 app.use("/api", api);
 
 app.use("/questions", apiRoutes);

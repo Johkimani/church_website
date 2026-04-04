@@ -1,0 +1,319 @@
+﻿[dotenv@17.3.1] injecting env (10) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+node : (node:24536) 
+Warning: Setting the NODE_
+TLS_REJECT_UNAUTHORIZED 
+environment variable to 
+'0' makes TLS connections 
+and HTTPS requests 
+insecure by disabling 
+certificate verification.
+At line:1 char:1
++ node 
+scripts/list_tables.js > 
+schema_summary.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo        
+      : NotSpecified: ((  
+  node:24536) Wa...e ve   
+ rification.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+(Use `node 
+--trace-warnings ...` to 
+show where the warning 
+was created)
+Tables: [
+  'activities',
+  'contributions',
+  'election_terms',
+  'event_subgroup_attendance',
+  'events',
+  'gallery',
+  'hub_activities',
+  'hub_announcements',
+  'hub_gallery',
+  'hub_modules',
+  'hub_officials',
+  'jumuiya_activities',
+  'jumuiya_former_officials',
+  'jumuiya_gallery_albums',
+  'jumuiya_gallery_images',
+  'jumuiya_meeting_schedule',
+  'jumuiya_members',
+  'jumuiya_notifications',
+  'jumuiya_officials',
+  'jumuiya_social_media',
+  'jumuiya_term_of_office',
+  'jumuiya_tshirt_orders',
+  'member_roles',
+  'members',
+  'notifications',
+  'officials',
+  'password_resets',
+  'projects',
+  'refresh_tokens',
+  'roles',
+  'sub_groups',
+  'uploads',
+  'users'
+]
+-- activities Columns: [
+  'id (integer)',
+  'activity_date (date)',
+  'created_at (timestamp without time zone)',
+  'updated_at (timestamp without time zone)',
+  'location (character varying)',
+  'time (character varying)',
+  'title (character varying)',
+  'description (text)',
+  'category (character varying)'
+]
+-- contributions Columns: [
+  'contribution_id (uuid)',
+  'event_id (uuid)',
+  'amount (numeric)',
+  'contribution_date (date)',
+  'member_id (character varying)',
+  'contribution_type (character varying)'
+]
+-- election_terms Columns: [
+  'created_at (timestamp without time zone)',
+  'end_date (date)',
+  'is_current (boolean)',
+  'id (integer)',
+  'start_date (date)',
+  'name (character varying)',
+  'year (character varying)',
+  'description (text)'
+]
+-- event_subgroup_attendance Columns: [ 'event_id (uuid)', 'group_id (uuid)', 'attendance_count (integer)' ]
+-- events Columns: [
+  'event_id (uuid)',
+  'event_date (date)',
+  'event_name (character varying)',
+  'location (character varying)',
+  'description (text)'
+]
+-- gallery Columns: [
+  'id (integer)',
+  'event_date (date)',
+  'created_at (timestamp without time zone)',
+  'category (character varying)',
+  'image_url (text)',
+  'title (character varying)',
+  'description (text)'
+]
+-- hub_activities Columns: [
+  'created_at (timestamp with time zone)',
+  'activity_date (date)',
+  'id (integer)',
+  'description (text)',
+  'status (character varying)',
+  'location (character varying)',
+  'module_id (character varying)',
+  'title (character varying)'
+]
+-- hub_announcements Columns: [
+  'id (integer)',
+  'announcement_date (timestamp with time zone)',
+  'module_id (character varying)',
+  'title (character varying)',
+  'content (text)'
+]
+-- hub_gallery Columns: [
+  'id (integer)',
+  'upload_date (timestamp with time zone)',
+  'module_id (character varying)',
+  'image_url (text)',
+  'description (text)',
+  'event_name (character varying)'
+]
+-- hub_modules Columns: [
+  'created_at (timestamp with time zone)',
+  'title (character varying)',
+  'description (text)',
+  'theme_color (character varying)',
+  'icon_class (character varying)',
+  'schedule_label (character varying)',
+  'id (character varying)',
+  'location (character varying)',
+  'registration_fee (text)',
+  'subscription_fee (text)',
+  'uniform_info (text)',
+  'story (text)',
+  'training_time (text)'
+]
+-- hub_officials Columns: [
+  'id (integer)',
+  'created_at (timestamp with time zone)',
+  'name (character varying)',
+  'role (character varying)',
+  'email (character varying)',
+  'phone_number (character varying)',
+  'photo_url (text)',
+  'module_id (character varying)'
+]
+-- jumuiya_activities Columns: [
+  'created_at (timestamp without time zone)',
+  'activity_date (date)',
+  'id (integer)',
+  'description (text)',
+  'type (character varying)',
+  'time (character varying)',
+  'location (character varying)',
+  'jumuiya_id (character varying)',
+  'title (character varying)'
+]
+-- jumuiya_former_officials Columns: [
+  'id (integer)',
+  'jumuiya_id (character varying)',
+  'name (character varying)',
+  'position (character varying)',
+  'photo (character varying)',
+  'years_served (character varying)'
+]
+-- jumuiya_gallery_albums Columns: [
+  'id (integer)',
+  'created_at (timestamp without time zone)',
+  'jumuiya_id (character varying)',
+  'cover_url (character varying)',
+  'caption (character varying)'
+]
+-- jumuiya_gallery_images Columns: [
+  'id (integer)',
+  'album_id (integer)',
+  'sort_order (integer)',
+  'url (character varying)',
+  'caption (character varying)'
+]
+-- jumuiya_meeting_schedule Columns: [
+  'id (integer)',
+  'jumuiya_id (character varying)',
+  'day (character varying)',
+  'time (character varying)',
+  'venue (character varying)'
+]
+-- jumuiya_members Columns: [
+  'id (integer)',
+  'is_registered (boolean)',
+  'joined_at (timestamp without time zone)',
+  'year (character varying)',
+  'phone (character varying)',
+  'email (character varying)',
+  'jumuiya_id (character varying)',
+  'name (character varying)'
+]
+-- jumuiya_notifications Columns: [
+  'id (integer)',
+  'posted_at (timestamp without time zone)',
+  'title (character varying)',
+  'type (character varying)',
+  'posted_by (character varying)',
+  'message (text)',
+  'jumuiya_id (character varying)'
+]
+-- jumuiya_officials Columns: [
+  'id (integer)',
+  'election_term_id (integer)',
+  'created_at (timestamp without time zone)',
+  'updated_at (timestamp without time zone)',
+  'contact (character varying)',
+  'photo (text)',
+  'term_of_service (character varying)',
+  'status (character varying)',
+  'name (character varying)',
+  'category (character varying)',
+  'position (character varying)'
+]
+-- jumuiya_social_media Columns: [
+  'id (integer)',
+  'jumuiya_id (character varying)',
+  'platform (character varying)',
+  'url (character varying)'
+]
+-- jumuiya_term_of_office Columns: [
+  'id (integer)',
+  'jumuiya_id (character varying)',
+  'start_year (character varying)',
+  'end_year (character varying)'
+]
+-- jumuiya_tshirt_orders Columns: [
+  'id (integer)',
+  'quantity (integer)',
+  'submitted_at (timestamp without time zone)',
+  'payer_name (character varying)',
+  'phone (character varying)',
+  'size (character varying)',
+  'jumuiya_id (character varying)',
+  'holder_name (character varying)'
+]
+-- member_roles Columns: [ 'role_id (uuid)', 'member_id (character varying)' ]
+-- members Columns: [
+  'join_date (date)',
+  'first_name (character varying)',
+  'last_name (character varying)',
+  'gender (character varying)',
+  'email (character varying)',
+  'phone (character varying)',
+  'year_of_study (character varying)',
+  'course (character varying)',
+  'member_id (character varying)',
+  'password (character varying)'
+]
+-- notifications Columns: [
+  'posted_at (timestamp without time zone)',
+  'is_read (boolean)',
+  'id (uuid)',
+  'posted_by (character varying)',
+  'posted_to (character varying)',
+  'status (character varying)',
+  'title (character varying)',
+  'message (character varying)'
+]
+-- officials Columns: [
+  'id (integer)',
+  'created_at (timestamp without time zone)',
+  'updated_at (timestamp without time zone)',
+  'election_term_id (integer)',
+  'photo (text)',
+  'term_of_service (character varying)',
+  'status (character varying)',
+  'contact (character varying)',
+  'name (character varying)',
+  'category (character varying)',
+  'position (character varying)'
+]
+-- password_resets Columns: [
+  'otp_expires (timestamp without time zone)',
+  'id (uuid)',
+  'created_at (timestamp without time zone)',
+  'email (character varying)',
+  'temp_password (text)',
+  'member_id (character varying)',
+  'otp (text)'
+]
+-- projects Columns: [
+  'updated_at (timestamp without time zone)',
+  'end_date (date)',
+  'budget (numeric)',
+  'created_at (timestamp without time zone)',
+  'id (integer)',
+  'start_date (date)',
+  'title (character varying)',
+  'description (text)',
+  'status (character varying)',
+  'image (text)'
+]
+-- refresh_tokens Columns: [
+  'id (uuid)',
+  'expires_at (timestamp without time zone)',
+  'created_at (timestamp without time zone)',
+  'revoked (boolean)',
+  'member_id (character varying)',
+  'token (text)'
+]

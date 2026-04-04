@@ -305,3 +305,7 @@
         right: var(--space-lg);
     }
 }
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

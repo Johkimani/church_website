@@ -14,12 +14,12 @@
 
 - [ ] Update backEnd/.env with DB creds (Postgres/Mongo)
 - [ ] cd backEnd && rm -rf node_modules package-lock.json && npm install
-- [ ] npm run dev (PORT=5000)
+- [ ] npm run dev (PORT=500)
 
 ### Step 3: Verify
 
-- [ ] Backend logs: DB connected, Server running :5000
-- [ ] curl http://localhost:5000/
+- [ ] Backend logs: DB connected, Server running :500
+- [ ] curl http://localhost:500/
 - [ ] Frontend localhost:5173 no 500
 
 ### Schema Location
