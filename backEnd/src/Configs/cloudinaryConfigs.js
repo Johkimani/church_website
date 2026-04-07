@@ -17,7 +17,7 @@
 // handle errors using logger function , 
 // create sepaarate function for updating an image , deleting an image , creating an image
 import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import CloudinaryStorage from "multer-storage-cloudinary";
 
 // Configure Cloudinary
 cloudinary.config({

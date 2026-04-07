@@ -1,0 +1,28 @@
+[dotenv@17.3.1] injecting env (10) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+(node:40208) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Connected to database. Looking for email: bildadgitonga53@gmail.com
+Email not found. Creating a new admin account...
+Created new member with ID: ADMIN-2868
+Error injecting credentials: error: column "role_id" is of type uuid but expression is of type integer
+    at C:\Users\LENOVO\Desktop\church_website\backEnd\node_modules\pg\lib\client.js:545:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async injectCredentials (file:///C:/Users/LENOVO/Desktop/church_website/backEnd/scripts/inject_credentials.js:46:7) {
+  length: 192,
+  severity: 'ERROR',
+  code: '42804',
+  detail: undefined,
+  hint: 'You will need to rewrite or cast the expression.',
+  position: '48',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '585',
+  routine: 'transformAssignedExpr'
+}

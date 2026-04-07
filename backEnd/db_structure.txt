@@ -1,0 +1,37 @@
+Tables in database: activities, contributions, election_terms, event_subgroup_attendance, events, gallery, hub_activities, hub_announcements, hub_gallery, hub_modules, hub_officials, jumuiya_activities, jumuiya_former_officials, jumuiya_gallery_albums, jumuiya_gallery_images, jumuiya_meeting_schedule, jumuiya_notifications, jumuiya_officials, jumuiya_social_media, jumuiya_term_of_office, jumuiya_tshirt_orders, member_roles, members, notifications, officials, password_resets, permissions, projects, refresh_tokens, registered, role_permissions, roles, sub_groups, uploads, users
+
+Columns in 'activities' table: id, activity_date, created_at, updated_at, location, time, title, description, category
+Columns in 'contributions' table: contribution_id, event_id, amount, contribution_date, member_id, contribution_type
+Columns in 'election_terms' table: created_at, end_date, is_current, id, start_date, name, year, description
+Columns in 'event_subgroup_attendance' table: event_id, group_id, attendance_count
+Columns in 'events' table: event_id, event_date, event_name, location, description
+Columns in 'gallery' table: id, event_date, created_at, category, image_url, title, description
+Columns in 'hub_activities' table: created_at, activity_date, id, description, status, location, module_id, title
+Columns in 'hub_announcements' table: id, announcement_date, module_id, title, content
+Columns in 'hub_gallery' table: id, upload_date, module_id, image_url, description, event_name
+Columns in 'hub_modules' table: created_at, title, description, theme_color, icon_class, schedule_label, id, location, registration_fee, subscription_fee, uniform_info, story, training_time
+Columns in 'hub_officials' table: id, created_at, name, role, email, phone_number, photo_url, module_id
+Columns in 'jumuiya_activities' table: created_at, activity_date, id, description, type, time, location, jumuiya_id, title
+Columns in 'jumuiya_former_officials' table: id, jumuiya_id, name, position, photo, years_served
+Columns in 'jumuiya_gallery_albums' table: id, created_at, jumuiya_id, cover_url, caption
+Columns in 'jumuiya_gallery_images' table: id, album_id, sort_order, url, caption
+Columns in 'jumuiya_meeting_schedule' table: id, jumuiya_id, day, time, venue
+Columns in 'jumuiya_notifications' table: id, posted_at, title, type, posted_by, message, jumuiya_id
+Columns in 'jumuiya_officials' table: id, election_term_id, created_at, updated_at, contact, photo, term_of_service, status, name, category, position
+Columns in 'jumuiya_social_media' table: id, jumuiya_id, platform, url
+Columns in 'jumuiya_term_of_office' table: id, jumuiya_id, start_year, end_year
+Columns in 'jumuiya_tshirt_orders' table: id, quantity, submitted_at, payer_name, phone, size, jumuiya_id, holder_name
+Columns in 'member_roles' table: role_id, member_id
+Columns in 'members' table: join_date, sem_1_reg, sem_2_reg, sem_3_reg, sem_4_reg, sem_5_reg, sem_6_reg, sem_7_reg, sem_8_reg, jumuiya_id, password, first_name, last_name, gender, email, phone, year_of_study, course, member_id
+Columns in 'notifications' table: posted_at, is_read, id, posted_by, posted_to, status, title, message
+Columns in 'officials' table: id, created_at, updated_at, election_term_id, photo, term_of_service, status, contact, name, category, position
+Columns in 'password_resets' table: otp_expires, id, created_at, email, temp_password, member_id, otp
+Columns in 'permissions' table: resource, created_at, action, permission_id, description, created_by, status
+Columns in 'projects' table: updated_at, end_date, budget, created_at, id, start_date, title, description, status, image
+Columns in 'refresh_tokens' table: id, expires_at, created_at, revoked, member_id, token
+Columns in 'registered' table: id, registration_date, member_id, jumuiya_id, status
+Columns in 'role_permissions' table: role_id, permission_id
+Columns in 'roles' table: role_id, created_at, role_name, description, created_by, status
+Columns in 'sub_groups' table: created_at, updated_at, group_id, full_name, description, about, color, saint_image, history_pdf, category, name, slug
+Columns in 'uploads' table: id, created_at, public_id, url, format, resource_type
+Columns in 'users' table: user_id, username, password, role

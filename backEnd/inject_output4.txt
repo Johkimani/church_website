@@ -1,0 +1,14 @@
+[dotenv@17.3.1] injecting env (10) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+(node:32420) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Connected to database. Looking for email: bildadgitonga53@gmail.com
+Found existing member: Bildad (ID: ADMIN-2868)
+Password successfully updated.
+Assigning admin role (uuid: e665d69e-2fc6-4a3d-8456-aa72edac553a)...
+
+================================
+SUCCESS! Use these credentials:
+Registration ID (Username): ADMIN-2868
+Password: Password123!
+================================
+
