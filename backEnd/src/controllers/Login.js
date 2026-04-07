@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { testDb } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import jwt from "jsonwebtoken";
-import { token } from "morgan";
+
 dotenv.config();
 
 export const Login = async (req, res) => {
@@ -132,9 +132,6 @@ export const logOut = async (req, res) => {
 
   try {
     // Revoke the token in the DB
-    // Since we hash them, we'd need to find by member_id or find the match
-    // For simplicity in logout, we can revoke all for this user or just specific one if we had its ID
-    // Improved logic: find the specific token by matching hash if possible, or just require member_id
     await testDb.query(
       `UPDATE refresh_tokens SET revoked = TRUE WHERE member_id = $1`,
       [req.user.id] // Assumes verifyToken middleware adds user info
