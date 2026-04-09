@@ -27,7 +27,7 @@ export const connectDb = async () => {
 };
 
 // this function should use the client not the pool , singleton desing pattern one instance alone
-export const testDb = { query: (text, params) => client.query(text, params) };
+export const testDb = { query: (text, params) => pool.query(text, params) };
 
 // momgodb connection this will be used for storing questions
 // this is the reason for this

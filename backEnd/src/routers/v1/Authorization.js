@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { Login, refreshAccessToken, logOut } from "../../controllers/Login.js";
 import { OTPverification, Reset } from "../../controllers/Reset.js";
-import verifyToken from "../../middleWares/Tokens.js";
+import verifyToken, { logOut } from "../../middleWares/Tokens.js";
 import sendEmail from "../../Configs/emailConfig.js";
+import { stkCalls } from "../../controllers/stkPush/stkCall.js";
 
 // authRoutes
 // description on login the complete uri will be /authentication/v1/login
@@ -12,7 +13,8 @@ route.post("/login", Login);
 route.post("/reset", Reset);
 route.post("/reset-email", verifyToken, Reset);
 route.post("/otp/:regNo", OTPverification);
-route.post("/log-out", verifyToken, logOut);
+route.post("/log-out", verifyToken);
 route.post("/refresh", refreshAccessToken);
+route.post("/stk-push", verifyToken, stkCalls);
 
 export default route;

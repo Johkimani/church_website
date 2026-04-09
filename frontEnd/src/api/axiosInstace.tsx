@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { LocalStorage } from "../utils";
-import { error } from "console";
+// import { error } from "console";
 
 // Create an Axios instance for API requests
 const apiClient = axios.create({
@@ -20,7 +20,7 @@ apiClient.interceptors.request.use(
     config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
-  
+
   function (error) {
     return Promise.reject(error);
   }
@@ -34,7 +34,6 @@ apiClient.interceptors.response.use(
     // Only retry once to avoid infinite loop
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) throw new Error("No refresh token found");
@@ -64,6 +63,6 @@ apiClient.interceptors.response.use(
 
 
 // API functions for different actions
- export const generateAndSaveQuestions = (data: { topic: string }) => {
+export const generateAndSaveQuestions = (data: { topic: string }) => {
   return apiClient.post("/questions/v1", data);
 };

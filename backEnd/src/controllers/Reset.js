@@ -64,10 +64,11 @@ export const Reset = async (req, res) => {
       ],
     );
 
-    if (existingUser.rowCount === 0) {
-      logger.warn(`Reset attempt for non-existent user: ${userName}`);
-      return res.status(404).json({ error: "User not found" });
-    }
+    await sendMail(
+      email,
+      "Reset OTP",
+      `Your OTP is ${OTP}. It expires in 10 minutes.`,
+    );
 
     logger.info(`Password reset OTP sent to ${email} for user: ${userName}`);
     return res
