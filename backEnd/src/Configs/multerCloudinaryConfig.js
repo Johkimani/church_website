@@ -1,7 +1,23 @@
 import multer from "multer";
-import { storage } from "./cloudinaryConfigs.js";
 import logger from "../logger/winston.js";
 import { UploadError } from "../errorHandler/errorClass.js";
+
+
+
+//create a storage function 
+// should use local file for other things such as compressin hence we should use denstination to localUploadFolders
+//should make sure the folder exist first
+// shuold also ensure we create a file extention that is unique 
+
+ const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "localUploadFolders");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
 
 // File type validation (reusing logic from multerStorageConfig.js)
 function fileFilter(req, file, cb) {
