@@ -1,0 +1,67 @@
+
+> church_application@0.0.0 build
+> npm run build:hub && tsc -b && vite build
+
+
+> church_application@0.0.0 build:hub
+> tsc -p src/pages/sacramental/tsconfig.json
+
+src/api/axiosInstace.ts(5,1): error TS6133: 'error' is declared but its value is never read.
+src/pages/Authorization/OTPInput.tsx(1,28): error TS1484: 'ChangeEvent' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/Authorization/OTPInput.tsx(1,41): error TS1484: 'KeyboardEvent' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/Authorization/ResetPasswordPage.tsx(26,30): error TS2353: Object literal may only specify known properties, and 'Response' does not exist in type 'NavigateOptions'.
+src/pages/Jumuiya/admin/AdminLayout.tsx(41,32): error TS2339: Property 'username' does not exist on type 'User'.
+src/pages/Jumuiya/admin/AdminLayout.tsx(44,57): error TS2339: Property 'username' does not exist on type 'User'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(20,42): error TS2741: Property 'is_current_jumuiya' is missing in type '{ jumuiya_id: string; name: string; year: string; phone: string; email: string; is_registered: false; }' but required in type 'MemberFormData'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(38,84): error TS6133: 'refetch' is declared but its value is never read.
+src/pages/Jumuiya/admin/AdminMembers.tsx(80,105): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(94,63): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(100,60): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(109,42): error TS2345: Argument of type 'number[]' is not assignable to parameter of type 'string[]'.
+  Type 'number' is not assignable to type 'string'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(112,68): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(129,17): error TS2345: Argument of type '{ jumuiya_id: string; name: string; year: string; phone: string; email: string; is_registered: boolean; }' is not assignable to parameter of type 'SetStateAction<MemberFormData>'.
+  Property 'is_current_jumuiya' is missing in type '{ jumuiya_id: string; name: string; year: string; phone: string; email: string; is_registered: boolean; }' but required in type 'MemberFormData'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(158,34): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(289,85): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(386,72): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/pages/Jumuiya/admin/AdminMembers.tsx(390,77): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/pages/Jumuiya/components/AboutTab.tsx(3,1): error TS6133: 'useAuth' is declared but its value is never read.
+src/pages/Jumuiya/components/AboutTab.tsx(5,50): error TS6133: 'FaSignInAlt' is declared but its value is never read.
+src/pages/Jumuiya/components/AboutTab.tsx(5,63): error TS6133: 'FaUserShield' is declared but its value is never read.
+src/pages/Jumuiya/components/AboutTab.tsx(17,11): error TS6133: 'handleLoginClick' is declared but its value is never read.
+src/pages/Jumuiya/components/AboutTab.tsx(21,11): error TS6133: 'handleAdminLogin' is declared but its value is never read.
+src/pages/Landing/components/Navigation/Navigation.tsx(71,27): error TS2339: Property 'username' does not exist on type 'User'.
+src/pages/Landing/components/Navigation/Navigation.tsx(137,87): error TS2339: Property 'username' does not exist on type 'User'.
+src/pages/officials/AdminPanel.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/officials/AdminPanel.tsx(3,1): error TS6133: 'toast' is declared but its value is never read.
+src/pages/officials/components/ArchiveModal.tsx(25,3): error TS6133: 'electionTerms' is declared but its value is never read.
+src/pages/officials/components/ArchiveModal.tsx(35,23): error TS6133: 'setTermEndDate' is declared but its value is never read.
+src/pages/officials/components/ArchiveModal.tsx(36,27): error TS6133: 'setTermDescription' is declared but its value is never read.
+src/pages/officials/components/DashboardStats.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/officials/components/HistoryModal.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/officials/components/ShareModal.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/sacramental/components/announcements.ts(8,10): error TS1484: 'Announcement' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/choir-officials.ts(7,10): error TS1484: 'ChoirOfficial' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/hero-section.ts(7,10): error TS1484: 'ChoirConfig' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/music-classes.ts(8,10): error TS1484: 'MusicClass' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/next-practice-countdown.ts(9,10): error TS1484: 'PracticeSchedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/practice-schedule.ts(8,10): error TS1484: 'PracticeSchedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/registration-form.ts(9,10): error TS1484: 'ChoirRegistration' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/registration-form.ts(9,29): error TS1484: 'VoiceType' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/registration-form.ts(9,40): error TS1484: 'SkillLevel' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/registration-form.ts(9,52): error TS1484: 'RegistrationFormState' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/registration-form.ts(25,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/pages/sacramental/components/semester-activities.ts(8,10): error TS1484: 'SemesterActivity' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/semester-activities.ts(8,28): error TS1484: 'ActivityStatus' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/components/social-media.ts(7,10): error TS1484: 'SocialMediaLink' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(8,5): error TS1484: 'ChoirRegistration' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(9,5): error TS1484: 'ChoirOfficial' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(10,5): error TS1484: 'PracticeSchedule' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(11,5): error TS1484: 'SemesterActivity' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(12,5): error TS1484: 'MusicClass' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(13,5): error TS1484: 'Announcement' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(14,5): error TS1484: 'ApiResponse' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/pages/sacramental/services/choir-api.ts(15,5): error TS1484: 'ChoirConfig' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/Regulator/ProtectedRoute.tsx(1,1): error TS6192: All imports in import declaration are unused.
+src/Regulator/ProtectedRoute.tsx(2,1): error TS6133: 'useAuth' is declared but its value is never read.

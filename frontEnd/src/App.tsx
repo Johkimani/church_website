@@ -37,6 +37,11 @@ import JumuiyaLanding from "./pages/Jumuiya/JumuiyaLanding";
 import JumuiyaDetail from "./pages/Jumuiya/JumuiyaDetail";
 import CommunityHub from "./pages/sacramental/CommunityHub";
 import { DataProvider } from "./pages/Jumuiya/context/DataContext";
+import AdminLayout from "./pages/Jumuiya/admin/AdminLayout";
+import AdminMembers from "./pages/Jumuiya/admin/AdminMembers";
+import DatabaseRegistration from "./pages/Jumuiya/admin/DatabaseRegistration";
+import MemberProgressCard from "./pages/Jumuiya/components/MemberProgressCard";
+import { useJumuiyaMembers } from "./hooks/useJumuiyaMembers";
 
 
 
@@ -47,11 +52,17 @@ import { PublicRoute, ProtectedRoute } from "./Regulator";
 // Lazy-loaded component
 const Login = lazy(() => import("./pages/Authorization/Login"));
 
+import PageLoader from "./assets/Layouts/PageLoader";
+
 // Fallback component
-const FallBack: React.FC = () => <div>🍷 Please wait ...</div>;
+const FallBack: React.FC = () => <PageLoader fullScreen message="Loading Space..." />;
 
 const Home: React.FC = () => {
   const { user } = useAuth();
+  const { members, isLoading } = useJumuiyaMembers();
+
+  // Find current member profile details
+  const memberProfile = members.find(m => m.id === user?.member_id);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -68,13 +79,14 @@ const Home: React.FC = () => {
 
         {/* Show all sections when logged in */}
         {user && (
-          <>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+            {memberProfile && <MemberProgressCard member={memberProfile} />}
             <JumuiyaSection />
             <OfficialsSection />
             <ProjectsSection />
             <ActivitiesSection />
             <GallerySection />
-          </>
+          </div>
         )}
 
         {/* Show Support section when NOT logged in */}
@@ -102,6 +114,19 @@ const App: React.FC = () => {
         </Route>
         <Route path="/admin/quiz" element={<Appadmin />} />
         <Route path="/admin/officials" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <DataProvider>
+                <AdminLayout />
+              </DataProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route path="members" element={<AdminMembers />} />
+        </Route>
+        <Route path="/register-member" element={<DataProvider><DatabaseRegistration /></DataProvider>} />
         <Route path="/officials" element={<PublicView />} />
 
         <Route path="/" element={<Pageoulet />}>

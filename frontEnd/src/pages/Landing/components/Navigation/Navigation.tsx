@@ -67,9 +67,9 @@ function Navigation() {
         <div className="flex items-center space-x-4">
           {user ? (
             <div className="hidden md:flex items-center space-x-4">
-              <span className="text-sm font-semibold text-gray-700">
-                Hi, {user.username}
-              </span>
+              <div className="text-sm font-semibold text-gray-700">
+                Hi, {user.first_name || user.username || "User"}
+              </div>
               {user.role === "admin" && (
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors text-xs"
@@ -134,7 +134,7 @@ function Navigation() {
             <li className="pt-4 border-t border-gray-50">
               {user ? (
                 <div className="space-y-3">
-                  <div className="text-sm font-semibold text-gray-700">Welcome, {user.username}</div>
+                  <div className="text-sm font-semibold text-gray-700">Welcome, {user.first_name || user.username || "User"}</div>
                   {user.role === "admin" && (
                     <button
                       className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold"

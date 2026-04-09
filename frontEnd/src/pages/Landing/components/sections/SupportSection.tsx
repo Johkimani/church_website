@@ -1,9 +1,11 @@
 function SupportSection() {
   return (
-    <section id="support" className='py-8 md:py-16 bg-blue-700 text-white'>
-      <div className='max-w-4xl mx-auto px-3 md:px-4 text-center'>
-        <h3 className='text-2xl md:text-3xl font-bold mb-3 md:mb-4'>Support the Growth of Our Community</h3>
-        <p className='text-blue-100 mb-6 md:mb-8 text-sm md:text-lg'>Your generous contributions help us continue our mission of serving the people of Kirinyaga through faith, education, and community outreach. Every donation makes a difference.</p>
+    <section id="support" className='py-12 md:py-24 bg-blue-700 text-white'>
+      <div className='max-w-4xl mx-auto px-4 md:px-6 text-center'>
+        <h3 className='text-3xl md:text-5xl font-extrabold mb-6 md:mb-8 tracking-tight'>Support Our Growth</h3>
+        <p className='text-blue-100 mb-8 md:mb-12 text-base md:text-xl leading-relaxed max-w-2xl mx-auto'>
+          Your generous contributions empower our mission to serve the Kirinyaga University community through faith, education, and shared charity.
+        </p>
 
         {/* Donate button */}
         <div>

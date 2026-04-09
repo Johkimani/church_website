@@ -317,6 +317,16 @@
     line-height: 1.6;
 }
 
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 1.85rem;
+    }
+    .page-description {
+        font-size: 1rem;
+        margin-bottom: var(--space-xl);
+    }
+}
+
 /* 11. Toggle Buttons & Filters (Integrated) */
 .toggle-wrapper {
     display: flex;
@@ -360,6 +370,8 @@
     .tab-header-wrap {
         flex-direction: column;
         align-items: stretch;
+        gap: var(--space-md);
+        margin-bottom: var(--space-xl);
     }
 
     .tab-grid {
@@ -368,5 +380,27 @@
 
     .tab-form-container {
         padding: var(--space-lg);
+    }
+
+    .toggle-wrapper {
+        flex-direction: column;
+        padding: var(--space-sm);
+        gap: 2px;
+    }
+
+    .toggle-item {
+        padding: 0.75rem var(--space-md);
+        font-size: 0.85rem;
+    }
+
+    .premium-table th, .premium-table td {
+        padding: var(--space-sm) var(--space-md);
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 1.5rem;
     }
 }

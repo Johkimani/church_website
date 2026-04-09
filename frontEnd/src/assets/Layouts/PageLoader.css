@@ -1,0 +1,116 @@
+.premium-loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    width: 100%;
+}
+
+.premium-loader-container.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    padding: 0;
+}
+
+.loader-core {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.spinner-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+
+.ring-1 {
+    border-top-color: var(--primary-color, #2563eb);
+    animation: spin-forward 1.2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+.ring-2 {
+    width: 80%;
+    height: 80%;
+    border-right-color: color-mix(in srgb, var(--primary-color, #2563eb), white 30%);
+    animation: spin-reverse 1.5s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+.ring-3 {
+    width: 60%;
+    height: 60%;
+    border-bottom-color: color-mix(in srgb, var(--primary-color, #2563eb), white 60%);
+    animation: spin-forward 2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+.loader-icon {
+    position: absolute;
+    font-size: 24px;
+    color: var(--primary-color, #1e40af);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.loader-text-wrap {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+}
+
+.loader-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #475569;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.loading-dots {
+    display: inline-flex;
+    margin-left: 4px;
+}
+
+.loading-dots span {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #475569;
+    animation: dot-blink 1.4s infinite both;
+}
+
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes spin-forward {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spin-reverse {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.7; }
+    50% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes dot-blink {
+    0% { opacity: 0.2; }
+    20% { opacity: 1; }
+    100% { opacity: 0.2; }
+}

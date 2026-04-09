@@ -47,6 +47,8 @@ export const connectToMongoDb = async () => {
     logger.info(`☘️  MongoDB Connected! Db host: ${connectionInstance.connection.host}`);
   } catch (error) {
     logger.error("MongoDB connection error: ", error);
+
+    // process.exit(1)
     // Log error but don't exit process so the main App (Postgres based) remains functional
     logger.warn("Continuing without MongoDB...");
   }

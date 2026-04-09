@@ -7,12 +7,18 @@ const redisClient = createClient({
   }
 });
 
-redisClient.on("error", (err) => console.error("Redis Client Error", err));
+redisClient.on("error", (err) => {
+  // console.error("Redis Client Error", err.message);
+});
 
-try {
-  await redisClient.connect();
-} catch (err) {
-  console.error("Failed to connect to Redis (blacklisting will be disabled):", err.message);
-}
+// Non-blocking connection attempt
+(async () => {
+  try {
+    await redisClient.connect();
+    console.log("Redis connected successfully");
+  } catch (error) {
+    console.error("Failed to connect to Redis. Running without Redis features.", error.message);
+  }
+})();
 
 export default redisClient;

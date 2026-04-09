@@ -70,11 +70,11 @@ const OfficialsSection: React.FC = () => {
   }
 
   return (
-    <div id="officials" className="py-8 md:py-16 bg-gray-50">
-      <div className="container mx-auto px-3 md:px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4">Church Officials</h2>
-        <p className="text-center text-gray-600 mb-6 md:mb-8 text-sm md:text-base">
-          Meet our church leadership team
+    <div id="officials" className="py-12 md:py-20 bg-gray-50">
+      <div className="container mx-auto px-4 md:px-6">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-center text-blue-900 mb-4 md:mb-6 tracking-tight">Church Leadership</h2>
+        <p className="text-center text-gray-600 mb-10 md:mb-16 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+          The dedicated servants guiding our community in faith, virtue, and service to Kirinyaga University.
         </p>
         
         {officials.length === 0 ? (

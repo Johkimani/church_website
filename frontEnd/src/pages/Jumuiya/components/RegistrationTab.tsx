@@ -27,7 +27,8 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [bulkResults, setBulkResults] = useState<{ count: number; message: string } | null>(null);
     const { user, login } = useAuth();
-    const { resetData } = useData();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const { refetchData } = useData();
 
     // Bulk Registration State
     const [unregisteredMembers, setUnregisteredMembers] = useState<UnregisteredMember[]>([]);
@@ -76,7 +77,9 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                 const token = localStorage.getItem('token') || '';
                 login(updatedUser, token);
                 setIsSubmitted(true);
-                resetData(); // Refresh global data
+                setIsRefreshing(true);
+                await refetchData(); // Refresh global data in background
+                setIsRefreshing(false);
             } else {
                 alert(response.data.message || "Registration failed");
             }
@@ -106,7 +109,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                 });
                 setIsSubmitted(true);
                 setSelectedMemberIds([]);
-                resetData(); // Refresh global data
+                await refetchData(); // Refresh global data in background
             }
         } catch (error) {
             console.error("Bulk registration error:", error);
@@ -134,13 +137,25 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                             : `Welcome to ${jumuiyaName}! A payment prompt has been sent to your M-Pesa number {selfPhone} to complete the fee payment.`
                         }
                     </p>
-                    <button className="btn-premium primary" onClick={() => {
-                        setIsSubmitted(false);
-                        setBulkResults(null);
-                        if (regType === 'bulk') fetchUnregistered();
-                    }}>
-                        {bulkResults ? "Register More" : "View Community Details"}
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                        <button className="btn-premium primary" onClick={() => {
+                            setIsSubmitted(false);
+                            setBulkResults(null);
+                            if (regType === 'bulk') fetchUnregistered();
+                        }}>
+                            {bulkResults ? "Register More" : "Register Another"}
+                        </button>
+                        {!bulkResults && (
+                            <button className="btn-premium" style={{ border: '1px solid #e2e8f0', background: 'white' }} onClick={() => {
+                                // Logic to navigate to the 'card' tab would go here if handled by JumuiyaDetail
+                                // For now, we'll just indicate they can view it.
+                                alert("Your registration card is now ready in the 'Card' tab!");
+                            }}>
+                                View My Card
+                            </button>
+                        )}
+                    </div>
+                    {isRefreshing && <p style={{ marginTop: '16px', fontSize: '0.8rem', color: jumuiyaColor }}>Updating your record in background...</p>}
                 </div>
             </div>
         );
