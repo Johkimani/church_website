@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
 import type { JumuiyaData, GalleryImage, Official, MeetingSchedule, TshirtOrder } from '../data/jumuiyaData';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 // Note: DATA_VERSION and initialJumuiyaList static imports are removed.
 
 interface DataContextType {
@@ -12,6 +13,7 @@ interface DataContextType {
     updateGallery: (id: string, gallery: GalleryImage[]) => void;
     addTshirtOrder: (jumuiyaId: string, order: TshirtOrder) => void;
     resetData: () => void;
+    refetchData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -81,6 +83,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ));
     };
 
+    const refetchData = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
+            const res = await fetch(`${baseUrl}/api/jumuiya-data/all`);
+            const json = await res.json();
+            if (json.success && Array.isArray(json.data)) {
+                setJumuiyaList(json.data);
+            }
+        } catch (e) {
+            console.error('Failed to refetch Jumuiya data', e);
+        }
+    };
+
     const resetData = () => {
         // Obsolete in production; re-fetches for now
         setJumuiyaList([]);
@@ -93,7 +108,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     if (isLoading) {
-        return <div>Loading data...</div>;
+        return <PageLoader fullScreen message="Loading Communities..." />;
     }
 
     return (
@@ -106,7 +121,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             updateMeetingSchedule,
             updateGallery,
             addTshirtOrder,
-            resetData
+            resetData,
+            refetchData
         }}>
             {children}
         </DataContext.Provider>

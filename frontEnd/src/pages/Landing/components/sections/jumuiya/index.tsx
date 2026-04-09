@@ -61,11 +61,11 @@ const JumuiyaSection: React.FC = () => {
   }
 
   return (
-    <div id="jumuiya" className="py-8 md:py-16 bg-white">
-      <div className="container mx-auto px-3 md:px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4">Jumuiya Groups</h2>
-        <p className="text-center text-gray-600 mb-6 md:mb-8 text-sm md:text-base">
-          Our community groups - connected in faith and fellowship
+    <div id="jumuiya" className="py-12 md:py-20 bg-gray-50/50">
+      <div className="container mx-auto px-4 md:px-6">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-center text-blue-900 mb-4 md:mb-6 tracking-tight">Our Jumuiyas</h2>
+        <p className="text-center text-gray-600 mb-10 md:mb-16 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+          Deepen your spiritual journey by joining one of our vibrant small Christian communities across campus.
         </p>
         
         {jumuiyas.length === 0 ? (

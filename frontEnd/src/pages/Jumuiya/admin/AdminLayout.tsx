@@ -21,6 +21,7 @@ const AdminLayout: React.FC = () => {
         { path: '/admin/about', label: 'About', icon: <FaInfoCircle /> },
         { path: '/admin/officials', label: 'Officials', icon: <FaUserTie /> },
         { path: '/admin/members', label: 'Members', icon: <FaUsers /> },
+        { path: '/admin/database-registration', label: 'Database', icon: <span style={{fontSize: '1em'}}>💾</span> },
         { path: '/admin/activities', label: 'Activities', icon: <FaCalendarAlt /> },
         { path: '/admin/gallery', label: 'Gallery', icon: <FaImages /> },
     ];
@@ -38,10 +39,10 @@ const AdminLayout: React.FC = () => {
 
                 <div className="user-info">
                     <div className="user-avatar">
-                        {user?.username.charAt(0).toUpperCase()}
+                        {(user?.first_name || user?.username || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                        <p className="user-name">{user?.username}</p>
+                        <p className="user-name">{user?.first_name || user?.username || 'User'}</p>
                         <p className="user-role">Administrator</p>
                     </div>
                 </div>

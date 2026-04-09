@@ -6,17 +6,18 @@ import OfficialsTab from './components/OfficialsTab';
 import MembersTab from './components/MembersTab';
 import ActivitiesTab from './components/ActivitiesTab';
 import RegistrationTab from './components/RegistrationTab';
+import RegistrationCardTab from './components/RegistrationCardTab';
 import ChannelsTab from './components/ChannelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog } from "react-icons/fa";
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog, FaIdCard } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import './JumuiyaDetail.css';
 import AdminPanelEmbed from './admin/AdminPanelEmbed';
 import { FaTimes } from 'react-icons/fa';
 
-type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'admin';
+type TabType = 'about' | 'officials' | 'registration' | 'card' | 'channels' | 'members' | 'activities' | 'tshirts' | 'admin';
 
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -65,6 +66,7 @@ const JumuiyaDetail: React.FC = () => {
         { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
         { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
         { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
+        { id: 'card' as TabType, label: 'Card', icon: <FaIdCard /> },
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
@@ -102,6 +104,7 @@ const JumuiyaDetail: React.FC = () => {
                     termOfOffice={jumuiya.termOfOffice}
                     formerOfficials={jumuiya.formerOfficials}
                     jumuiyaColor={jumuiya.color}
+                    jumuiyaName={jumuiya.name}
                     isAdmin={isAdmin}
                 />;
             }
@@ -109,12 +112,14 @@ const JumuiyaDetail: React.FC = () => {
                 return <MembersTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
             case 'registration':
                 return <RegistrationTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
+            case 'card':
+                return <RegistrationCardTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
             case 'activities':
                 return <ActivitiesTab jumuiyaColor={jumuiya.color} />;
             case 'channels':
                 return <ChannelsTab socialMedia={jumuiya.socialMedia} gallery={jumuiya.gallery} />;
             case 'tshirts':
-                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={jumuiya.color} orders={jumuiya.tshirtOrders || []} />;
+                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} orders={jumuiya.tshirtOrders || []} />;
             case 'admin':
                 return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:

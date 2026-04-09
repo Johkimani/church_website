@@ -5,12 +5,23 @@ const API_BASE = '/api/jumuiya-members';
 export interface JumuiyaMember {
   id: string;
   jumuiya_id: string;
+  first_name?: string;
+  last_name?: string;
   name: string;
+  year_of_study?: string;
   year?: string;
   phone?: string;
   email?: string;
   is_registered: boolean;
   is_current_jumuiya: boolean;
+  sem_1_reg: boolean;
+  sem_2_reg: boolean;
+  sem_3_reg: boolean;
+  sem_4_reg: boolean;
+  sem_5_reg: boolean;
+  sem_6_reg: boolean;
+  sem_7_reg: boolean;
+  sem_8_reg: boolean;
   joined_at?: string;
 }
 
@@ -26,9 +37,10 @@ export type MemberFormData = Omit<JumuiyaMember, 'id' | 'joined_at'>;
 
 interface UseJumuiyaMembersOptions {
   jumuiya_id?: string;
+  type?: 'all' | 'registered';
 }
 
-export const useJumuiyaMembers = ({ jumuiya_id }: UseJumuiyaMembersOptions = {}) => {
+export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMembersOptions = {}) => {
   const [members, setMembers] = useState<JumuiyaMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -42,9 +54,15 @@ export const useJumuiyaMembers = ({ jumuiya_id }: UseJumuiyaMembersOptions = {})
     setIsLoading(true);
     setError(null);
     try {
-      const url = jumuiya_id
-        ? `${API_BASE}?jumuiya_id=${encodeURIComponent(jumuiya_id)}`
-        : API_BASE;
+      let url = API_BASE;
+      if (type === 'registered') {
+        url += '/registered';
+      }
+      
+      if (jumuiya_id) {
+        url += `?jumuiya_id=${encodeURIComponent(jumuiya_id)}`;
+      }
+      
       const res = await fetch(url);
       const json = await res.json();
       if (json.success) setMembers(json.data);
@@ -54,7 +72,7 @@ export const useJumuiyaMembers = ({ jumuiya_id }: UseJumuiyaMembersOptions = {})
     } finally {
       setIsLoading(false);
     }
-  }, [jumuiya_id]);
+  }, [jumuiya_id, type]);
 
   useEffect(() => {
     fetchMembers();
@@ -90,7 +108,7 @@ export const useJumuiyaMembers = ({ jumuiya_id }: UseJumuiyaMembersOptions = {})
   const updateMember = async (id: string, data: Partial<MemberFormData>) => {
     setIsUpdating(true);
     try {
-      const res = await fetch(`${API_BASE}/${id}`, {
+      const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -108,7 +126,7 @@ export const useJumuiyaMembers = ({ jumuiya_id }: UseJumuiyaMembersOptions = {})
   const deleteMember = async (id: string) => {
     setIsDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, { method: 'DELETE' });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Failed to delete member');
       setMembers(prev => prev.filter(m => m.id !== id));
@@ -116,6 +134,22 @@ export const useJumuiyaMembers = ({ jumuiya_id }: UseJumuiyaMembersOptions = {})
       setIsDeleting(false);
     }
   };
+
+  // --- Unregister a member (removes from community but keeps in DB) ---
+  const unregisterMember = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/unregister/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Failed to unregister member');
+      // Update local state: if we're in 'all' view, we might want to just update the jumuiya_id
+      // For now, we'll refetch to be safe since it affects multiple tables
+      await fetchMembers();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   // --- Bulk-join: assign multiple members to this jumuiya ---
   const bulkJoin = async (member_ids: string[], target_jumuiya_id: string): Promise<number> => {
@@ -147,8 +181,10 @@ export const useJumuiyaMembers = ({ jumuiya_id }: UseJumuiyaMembersOptions = {})
     addMember,
     updateMember,
     deleteMember,
+    unregisterMember,
     bulkJoin,
     fetchUnregistered,
     refetch: fetchMembers,
   };
 };
+

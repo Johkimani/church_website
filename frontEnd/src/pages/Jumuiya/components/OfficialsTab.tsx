@@ -9,6 +9,7 @@ interface OfficialsTabProps {
     termOfOffice?: TermOfOffice;
     formerOfficials?: FormerOfficial[];
     jumuiyaColor: string;
+    jumuiyaName: string;
     isAdmin?: boolean;
 }
 
@@ -37,7 +38,7 @@ const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md'
     );
 };
 
-const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, formerOfficials, jumuiyaColor, isAdmin }) => {
+const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, formerOfficials, jumuiyaColor, jumuiyaName, isAdmin }) => {
     const navigate = useNavigate();
 
     return (
@@ -45,7 +46,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, fo
             <div className="tab-header-wrap">
                 <div className="header-text">
                     <h1 className="page-title">Leadership Team</h1>
-                    <p className="page-description">Meet the dedicated leaders who guide and serve our Jumuiya community.</p>
+                    <p className="page-description">Meet the dedicated leaders who guide and serve the {jumuiyaName} community.</p>
                 </div>
                 <div className="flex gap-4 items-center flex-wrap">
                     {termOfOffice && (

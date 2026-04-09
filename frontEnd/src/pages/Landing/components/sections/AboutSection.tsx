@@ -4,11 +4,11 @@ function AboutSection() {
       id="about"
       className="max-w-7xl mx-auto px-3 py-8 md:px-6 md:py-16 lg:px-8"
     >
-      <div className="text-center max-w-4xl mx-auto mb-8 md:mb-16">
-        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-blue-700 mb-4 md:mb-6">
+      <div className="text-center max-w-4xl mx-auto mb-10 md:mb-16">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-blue-700 mb-6 md:mb-8 tracking-tight">
           Welcome to CSA Kirinyaga University
         </h1>
-        <p className="text-gray-600 text-sm md:text-lg leading-relaxed">
+        <p className="text-gray-600 text-base md:text-xl leading-relaxed px-2">
           St. Thomas Aquinas welcomes you to our Catholic movement which is
           aimed at spreading the Gospel and enriching Catholic faith to members
           through prayers and upholding Catholic principles

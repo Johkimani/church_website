@@ -1,0 +1,151 @@
+.semester-progress-card {
+  --primary-gradient: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  --success-color: #059669;
+  --pending-color: #94a3b8;
+  --bg-soft: #f8fafc;
+  --border-color: #e2e8f0;
+  
+  background: white;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  margin: 20px 0;
+  transition: all 0.3s ease;
+}
+
+.card-header-premium {
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--bg-soft);
+  border-bottom: 2px dashed var(--border-color);
+}
+
+.header-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--primary-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.4);
+}
+
+.header-text-wrap h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.header-text-wrap p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.progress-badge-premium {
+  margin-left: auto;
+  padding: 8px 16px;
+  border-radius: 30px;
+  background: white;
+  border: 1px solid var(--border-color);
+  font-weight: 700;
+  color: var(--success-color);
+  font-size: 0.85rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.progress-bar-container-premium {
+  height: 6px;
+  background: #f1f5f9;
+}
+
+.progress-bar-fill-premium {
+  height: 100%;
+  background: var(--primary-gradient);
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.semester-grid-premium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 32px;
+}
+
+.semester-item-premium {
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.semester-item-premium.completed {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.semester-item-premium.pending {
+  background: var(--bg-soft);
+  opacity: 0.7;
+}
+
+.status-indicator-premium {
+  font-size: 1.25rem;
+  display: flex;
+}
+
+.icon-success {
+  color: var(--success-color);
+}
+
+.icon-pending {
+  color: var(--pending-color);
+}
+
+.semester-info-premium {
+  display: flex;
+  flex-direction: column;
+}
+
+.label-premium {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.status-text-premium {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.card-footer-premium {
+  padding: 16px 32px;
+  background: #f8fafc;
+  font-size: 0.85rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+}
+
+.animate-fade {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

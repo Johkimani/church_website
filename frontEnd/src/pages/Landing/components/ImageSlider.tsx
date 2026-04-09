@@ -125,25 +125,21 @@ function ImageSlider() {
           </svg>
         </button> */}
 
-        <button
-        >
+        <button>
 
           <FaArrowRight className="text-2xl absolute right-2 md:right-4 hover:cursor-pointer top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-1.5 md:p-2 rounded-full transition-all duration-300 hover:scale-110 "
             onClick={nextSlide}
             aria-label="Next slide"
           />
 
-        </button
-        >
-        <button
-        >
+        </button>
+        <button>
 
           <FaArrowLeft className="text-2xl absolute left-2 md:left-4 hover:cursor-pointer top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-1.5 md:p-2 rounded-full transition-all duration-300 hover:scale-110"
             onClick={prevSlide}
             aria-label="Previous slide"
           />
-        </button
-        >
+        </button>
 
         {/* Indicators */}
         <div className="absolute flex space-x-2 transform -translate-x-1/2 bottom-2 md:bottom-4 left-1/2">
@@ -164,7 +160,7 @@ function ImageSlider() {
         <h1 className="mb-3 text-2xl font-extrabold tracking-tight md:text-4xl lg:text-5xl xl:text-6xl md:mb-6 drop-shadow-xl">
           St Thomas Aquinas - CSA
         </h1>
-        <p className="max-w-xs text-sm italic font-light leading-relaxed md:text-xl lg:text-2xl md:max-w-2xl lg:max-w-3xl">
+        <p className="max-w-xs text-sm italic font-light leading-relaxed md:text-xl text-white lg:text-2xl md:max-w-2xl lg:max-w-3xl">
           "To one who has faith, no explanation is necessary. To one without faith, no explanation is possible."
         </p>
       </div>

@@ -1,8 +1,10 @@
 function CommunitySection() {
   return (
-    <section className="bg-white py-8 md:py-16 border-t border-gray-100">
-      <div className="max-w-7xl mx-auto px-3 md:px-6 lg:px-8" id='explore'>
-        <h2 className="text-2xl md:text-3xl font-bold text-center text-blue-700 mb-8 md:mb-12">Explore Our Community</h2>
+    <section className="bg-white py-12 md:py-20 border-t border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8" id='explore'>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-center text-blue-700 mb-10 md:mb-16 tracking-tight">
+          Explore Our Community
+        </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
           {/* Jumuiya */}
