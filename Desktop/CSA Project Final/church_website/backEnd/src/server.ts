@@ -49,4 +49,3 @@ signals.forEach((sig: NodeJS.Signals) => {
   process.on(sig, () => shutDown(sig));
 });
 
-initServer();
