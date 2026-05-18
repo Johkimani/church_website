@@ -334,3 +334,22 @@ export const DEFAULT_POSITION_INFO: PositionInfo = {
   ],
   qualities: ['Commitment', 'Service', 'Teamwork'],
 };
+
+export const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
+  'Executive': 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=400&q=80',
+  'Jumuiya Coordinators': 'https://images.unsplash.com/photo-1529156069898-49953eb1b5b6?auto=format&fit=crop&w=400&q=80',
+  'Bible Coordinators': 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?auto=format&fit=crop&w=400&q=80',
+  'Rosary': 'https://images.unsplash.com/photo-1608681283625-f7619f71c4d9?auto=format&fit=crop&w=400&q=80',
+  'Pamphlet Managers': 'https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?auto=format&fit=crop&w=400&q=80',
+  'Project Managers': 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=400&q=80',
+  'Liturgist': 'https://images.unsplash.com/photo-1548625361-ecacbd7ce01a?auto=format&fit=crop&w=400&q=80',
+  'Choir Officials': 'https://images.unsplash.com/photo-1552554700-111100f72671?auto=format&fit=crop&w=400&q=80',
+  'Instrument Managers': 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=400&q=80',
+  'Liturgical Dancers': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=400&q=80',
+  'Catechist': 'https://images.unsplash.com/photo-1544411047-c45ba52fb8f3?auto=format&fit=crop&w=400&q=80',
+  'Other': 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=400&q=80'
+};
+
+export const getAvatarForCategory = (category: string) => {
+  return CATEGORY_DEFAULT_IMAGES[category] || CATEGORY_DEFAULT_IMAGES['Other'];
+};
