@@ -127,9 +127,9 @@ export default function AdminPanel() {
           <div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
               <LayoutDashboard className="w-10 h-10 text-blue-600" />
-              Admin Dashboard
+              Officials Dashboard
             </h1>
-            <p className="text-gray-500 font-medium mt-1">Church Symbols Association Official Management System</p>
+            <p className="text-gray-500 font-medium mt-1">Centralized hub for managing and coordinating all church and jumuiya officials.</p>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
@@ -196,14 +196,14 @@ export default function AdminPanel() {
           {/* Table Controls (Search & Export) */}
           <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-6 transition-colors">
             <div className="relative flex-1 max-w-full xl:max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input 
                 type="text"
                 placeholder="Search officials..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-gray-900 transition-all outline-none font-medium"
+                className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-gray-900 transition-all outline-none font-medium"
               />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
             
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 xl:gap-8 bg-gray-50/50 p-3 rounded-xl border border-gray-100/50">
@@ -231,8 +231,7 @@ export default function AdminPanel() {
                   className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-5 py-2.5 bg-green-50 text-green-700 font-bold rounded-xl border border-green-100 hover:bg-green-100 transition-all text-xs sm:text-sm active:scale-95"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Export</span>
-                  <span className="hidden xs:inline sm:hidden md:inline">XLSX</span>
+                  <span>Download</span>
                 </button>
                 <button 
                   onClick={() => setIsShareOpen(true)}
