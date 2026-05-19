@@ -10,7 +10,7 @@ import {
   Smile,
   Send,
   Calendar,
-  Search
+  Search,
 } from 'lucide-react';
 import { apiClient } from '../../../../../api/axiosInstance';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +25,11 @@ interface GalleryItem {
   is_anniversary?: boolean;
 }
 
+interface GalleryResponse {
+  items: GalleryItem[];
+  theme: string;
+  userContext: { jumuiyaId: string } | null;
+}
 
 const GallerySection: React.FC = () => {
   const [items, setItems] = useState<GalleryItem[]>([]);
@@ -49,7 +54,7 @@ const GallerySection: React.FC = () => {
   useEffect(() => {
     const loadGallery = async () => {
       try {
-        const { data } = await apiClient.get('/gallery');
+        const { data } = await apiClient.get<GalleryResponse>('/gallery');
         setItems(data.items || []);
         setTheme(data.theme || 'default');
       } catch (error) {
@@ -72,6 +77,12 @@ const GallerySection: React.FC = () => {
   const nextImage = () => {
     if (selectedIdx !== null) {
       setSelectedIdx((selectedIdx + 1) % filteredItems.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (selectedIdx !== null) {
+      setSelectedIdx((selectedIdx - 1 + filteredItems.length) % filteredItems.length);
     }
   };
 
@@ -251,13 +262,20 @@ const GallerySection: React.FC = () => {
                   {/* Top Navigation Strip */}
                   <div className="absolute top-10 left-10 right-10 flex items-center justify-between z-[140]">
                     <button 
-                      onClick={() => setSelectedIdx(null)}
+                      onClick={prevImage}
                       className="flex items-center gap-4 text-slate-500 hover:text-slate-900 transition-all group pointer-events-auto"
                     >
                       <div className="w-12 h-12 rounded-full border border-slate-200 bg-white/50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all shadow-lg border-white">
                         <ChevronLeft size={20} />
                       </div>
-                      <span className="hidden md:inline text-[10px] font-black uppercase tracking-[0.5em]">Gallery Hub</span>
+                      <span className="hidden md:inline text-[10px] font-black uppercase tracking-[0.5em]">Prev Archive</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setSelectedIdx(null)}
+                      className="w-12 h-12 rounded-full border border-slate-200 bg-white/50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-lg pointer-events-auto text-slate-500"
+                    >
+                      <X size={18} />
                     </button>
 
                     <button 
@@ -270,6 +288,7 @@ const GallerySection: React.FC = () => {
                       </div>
                     </button>
                   </div>
+
 
                   {/* Centered Centered Witness Testimony - Top Horizontal Center */}
                   <div className="absolute top-28 left-0 right-0 flex justify-center z-[130] pointer-events-none px-6">
