@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_HISTORY, API_RESTORE, API_JUMUIYA_HISTORY, API_JUMUIYA_RESTORE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import type { Official } from './useOfficials';
 
 import { useAuth } from '../context/AuthContext';
@@ -62,10 +62,10 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
     onSuccess: (json) => {
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_officials'] : ['officials'] });
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
-      toast.success(json.message || 'Officials restored successfully!');
+      showSuccessToast('Officials Restored Successfully', json.message || 'The selected official records have been restored.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Restore Officials', error.message);
     },
   });
 
@@ -85,10 +85,10 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
-      toast.success('Archived official deleted successfully!');
+      showSuccessToast('Archived Official Deleted', 'The archived record has been permanently removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Delete Archived Official', error.message);
     },
   });
 
@@ -110,10 +110,10 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
-      toast.success('Archived officials deleted successfully!');
+      showSuccessToast('Archived Officials Deleted', 'The selected records have been permanently removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Perform Bulk Delete', error.message);
     },
   });
 

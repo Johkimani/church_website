@@ -3,7 +3,7 @@ import {
  X, Filter, Trash2, RotateCcw, ChevronLeft, ChevronRight, 
  Download, Image as ImageIcon, Phone, Calendar, Award as AwardIcon, Check
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { showErrorToast } from '../../../utils/customToast';
 import { useHistory } from '../../../hooks/useHistory';
 import { useTerms } from '../../../hooks/useTerms';
 import { CATEGORY_COLORS, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS } from '../constants/adminConstants';
@@ -59,17 +59,17 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  const allSameTerm = officialsToRestore.every(o => (o.term_name || o.term_of_service) === firstRestoreTerm);
 
  if (!allSameTerm) {
- toast.error("Please only restore officials from a single term at a time.");
+ showErrorToast("Restore Error", "Please only restore officials from a single term at a time.");
  return;
  }
 
  if (mode === 'csa' && activeOfficials.length > 0) {
  if (activeTerm && firstRestoreTerm && activeTerm !== firstRestoreTerm) {
- toast.error(`Please archive current officials from [${activeTerm}] before restoring officials from [${firstRestoreTerm}]`);
+ showErrorToast("Restore Error", `Please archive current officials from [${activeTerm}] before restoring officials from [${firstRestoreTerm}]`);
  return;
  }
  if (!activeTerm) {
- toast.error("Please archive current officials before restoring historical records to maintain data consistency.");
+ showErrorToast("Restore Error", "Please archive current officials before restoring historical records to maintain data consistency.");
  return;
  }
  }
@@ -82,7 +82,7 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
 
  const handleDownloadArchive = () => {
  if (!termFilter || termFilter === 'all') {
- toast.error('Please select a specific term to download.');
+ showErrorToast('Download Error', 'Please select a specific term to download.');
  return;
  }
  const currentTermObj = terms.find(t => t.id.toString() === termFilter);

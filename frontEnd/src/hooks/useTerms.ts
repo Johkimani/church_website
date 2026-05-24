@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_TERMS, API_ARCHIVE, API_JUMUIYA_ARCHIVE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../pages/Landing/services/api';
 
@@ -60,10 +60,10 @@ export function useTerms() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      toast.success('Election term created successfully!');
+      showSuccessToast('Election Term Created', 'New election term has been initialized.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Create Term', error.message);
     },
   });
 
@@ -90,10 +90,10 @@ export function useTerms() {
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_history'] : ['history'] });
-      toast.success(`${json.data?.archived_count || 'Officials'} archived successfully!`);
+      showSuccessToast('Officials Archived Successfully', `${json.data?.archived_count || 'Officials'} records have been successfully archived.`);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Archive Officials', error.message);
     },
   });
 

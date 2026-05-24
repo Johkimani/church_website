@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 
 import { useAuth } from '../context/AuthContext';
 import apiService from '../pages/Landing/services/api';
@@ -51,10 +51,10 @@ export function useOfficials() {
       apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      toast.success('Official added successfully!');
+      showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Add Official', error.message);
     },
   });
 
@@ -78,10 +78,10 @@ export function useOfficials() {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Official updated successfully!');
+      showSuccessToast('Official Updated Successfully', 'The official details have been updated.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Update Official', error.message);
     },
   });
 
@@ -104,10 +104,10 @@ export function useOfficials() {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Official deleted successfully!');
+      showSuccessToast('Official Deleted Successfully', 'The official record has been removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Delete Official', error.message);
     },
   });
 
@@ -132,10 +132,10 @@ export function useOfficials() {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      toast.success('Officials archived successfully!');
+      showSuccessToast('Officials Archived Successfully', 'The current term officials have been archived.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Archive Officials', error.message);
     },
   });
 
