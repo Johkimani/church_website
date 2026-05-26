@@ -1,4 +1,4 @@
-import { X, RotateCcw, Trash2, AlertTriangle, Info, ShieldAlert } from 'lucide-react';
+import { X, RotateCcw, Trash2, AlertTriangle, Info } from 'lucide-react';
 
 export interface AffectedOfficial {
   id: number;
@@ -153,7 +153,7 @@ export function ConfirmDialog({
                   <div className="flex-1 min-w-0">
                     <h4 className="text-xs font-extrabold text-slate-800 truncate leading-snug">{item.name}</h4>
                     <p className="text-[10px] text-slate-400 font-bold truncate mt-0.5">
-                      {item.position}
+                      {item.role}
                     </p>
                     <span className="inline-block mt-1 text-[9px] font-extrabold text-indigo-600 bg-indigo-50/70 px-2 py-0.5 rounded-full uppercase tracking-wider">
                       {item.category}

@@ -9,7 +9,7 @@ import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
 import { API_BASE, API_JUMUIYA_BASE, UPLOAD_BASE } from '../../utils/officialsApi';
 import { DEFAULT_AVATAR } from './constants/adminConstants';
-import { ConfirmDialog, AffectedOfficial } from './components/ConfirmDialog';
+import { ConfirmDialog, type AffectedOfficial } from './components/ConfirmDialog';
 
 import { DashboardStats } from './components/DashboardStats';
 import { OfficialsTable } from './components/OfficialsTable';

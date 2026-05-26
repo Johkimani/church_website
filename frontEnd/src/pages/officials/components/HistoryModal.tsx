@@ -8,7 +8,7 @@ import { useHistory } from '../../../hooks/useHistory';
 import { useTerms } from '../../../hooks/useTerms';
 import { CATEGORY_COLORS, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS } from '../constants/adminConstants';
 import { UPLOAD_BASE, API_HISTORY, API_JUMUIYA_HISTORY } from '../../../utils/officialsApi';
-import { ConfirmDialog, AffectedOfficial } from './ConfirmDialog';
+import { ConfirmDialog, type AffectedOfficial } from './ConfirmDialog';
 
 interface HistoryModalProps {
  isOpen: boolean;
@@ -33,7 +33,7 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  const { terms } = useTerms();
  const { 
  history, meta, isLoading, restoreOfficials, deleteArchived, 
- bulkDelete, isRestoring, isBulkDeleting 
+ bulkDelete, isRestoring, isBulkDeleting, isDeleting 
  } = useHistory({ 
  termId: termFilter === 'all' ? undefined : termFilter,
  onlyArchived: true,

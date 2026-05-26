@@ -106,7 +106,7 @@ export function useTerms() {
       queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_history'] : ['history'] });
       showSuccessToast('Officials Archived Successfully', `${json.data?.archived_count || 'Officials'} records have been successfully archived.`);
     },
-    onError: (error: Error, variables, context) => {
+    onError: (error: Error, _variables, context) => {
       // Rollback to original state if mutation fails
       if (context?.previousOfficials && context?.targetQueryKey) {
         queryClient.setQueryData(context.targetQueryKey, context.previousOfficials);
