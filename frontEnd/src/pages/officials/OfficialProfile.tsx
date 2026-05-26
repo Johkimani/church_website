@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar, FaQuoteLeft } from 'react-icons/fa';
-import { POSITION_INFO, DEFAULT_POSITION_INFO } from './constants/positionInfo';
+import { POSITION_INFO, DEFAULT_POSITION_INFO, getAvatarForCategory } from './constants/positionInfo';
 
 import apiService from '../Landing/services/api'
 // Extract only the domain from the versioned API URI for image assets
@@ -35,25 +35,93 @@ const CATEGORY_HEX: Record<string, string> = {
     'Catechist': '#ca8a04',
 };
 
+
+
 const OfficialProfile: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [official, setOfficial] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [relatedOfficials, setRelatedOfficials] = useState<any[]>([]);
 
     useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on profile change
+
         const fetchOfficialDetails = async () => {
             if (!id) return;
+
+            const loadRelated = async (cat: string) => {
+                try {
+                    let officialsList: any = [];
+                    const cachedList = localStorage.getItem('csa_cache_officials');
+                    if (cachedList) {
+                        try { officialsList = JSON.parse(cachedList); } catch(e) {}
+                    }
+                    
+                    if (!officialsList || !Array.isArray(officialsList) || officialsList.length === 0) {
+                        const fetched = await apiService.getOfficials();
+                        officialsList = Array.isArray(fetched) ? fetched : (fetched?.data || []);
+                    }
+                    
+                    if (Array.isArray(officialsList)) {
+                        const related = officialsList.filter((o: any) => (o.category || 'Other') === cat && String(o.id) !== String(id));
+                        setRelatedOfficials(related);
+                    }
+                } catch (e) {}
+            };
+            
+            let foundInCache = false;
+            let currentCategory = '';
+            // 1. Check if official exists in the bulk cache (common when navigating from list)
+            try {
+                const cachedList = localStorage.getItem('csa_cache_officials');
+                if (cachedList) {
+                    const officials = JSON.parse(cachedList);
+                    if (Array.isArray(officials)) {
+                        const match = officials.find((o: any) => String(o.id) === String(id));
+                        if (match) {
+                            setOfficial(match);
+                            currentCategory = match.category || 'Other';
+                            loadRelated(currentCategory);
+                            setLoading(false);
+                            foundInCache = true;
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            // 2. Check individual cache as fallback
+            if (!foundInCache) {
+                try {
+                    const singleCache = localStorage.getItem(`csa_cache_official_${id}`);
+                    if (singleCache) {
+                        const parsed = JSON.parse(singleCache);
+                        setOfficial(parsed);
+                        currentCategory = parsed.category || 'Other';
+                        loadRelated(currentCategory);
+                        setLoading(false);
+                        foundInCache = true;
+                    }
+                } catch (e) {}
+            }
+
+            if (!foundInCache) setLoading(true);
+
             try {
                 const data = await apiService.getOfficialById(id);
                 if (data) {
                     setOfficial(data);
+                    localStorage.setItem(`csa_cache_official_${id}`, JSON.stringify(data));
+                    const newCategory = data.category || 'Other';
+                    if (newCategory !== currentCategory) {
+                        loadRelated(newCategory);
+                    }
                 } else {
-                    setError('Official not found');
+                    if (!foundInCache) setError('Official not found');
                 }
             } catch (err) {
-                setError('Failed to load official details');
+                if (!foundInCache) setError('Failed to load official details');
             } finally {
                 setLoading(false);
             }
@@ -102,8 +170,9 @@ const OfficialProfile: React.FC = () => {
                         <div className="relative group shrink-0">
                             <div className="absolute -inset-1 bg-white/30 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
                             <img 
-                                src={official.photo ? (official.photo.startsWith('http') ? official.photo : `${UPLOAD_BASE}${official.photo}`) : 'https://via.placeholder.com/180'} 
+                                src={official.photo ? (official.photo.startsWith('http') ? official.photo : `${UPLOAD_BASE}${official.photo}`) : getAvatarForCategory(official.category)} 
                                 alt={official.name}
+                                loading="lazy"
                                 className="relative w-36 h-36 sm:w-52 sm:h-52 rounded-full object-cover border-4 border-white shadow-2xl"
                             />
                         </div>
@@ -229,6 +298,50 @@ const OfficialProfile: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Related Officials Section */}
+                {relatedOfficials.length > 0 && (
+                    <div className="mt-20 border-t border-gray-100 pt-16">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                                <span className="w-2 h-8 rounded-full" style={{ backgroundColor: color }}></span>
+                                Other {category} Officials Profiles
+                            </h3>
+                        </div>
+                        <div className="flex overflow-x-auto pb-8 -mx-6 px-6 gap-4 snap-x hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                            {relatedOfficials.map((rel: any) => (
+                                <Link 
+                                    to={`/officials/${rel.id}`} 
+                                    key={rel.id}
+                                    className="snap-start shrink-0 bg-white border border-gray-300 rounded-xl p-3 flex items-center gap-3 shadow-md hover:shadow-lg hover:border-purple-300 transition-all min-w-[200px] max-w-[260px] no-underline group"
+                                >
+                                    <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200 relative shadow-inner">
+                                        <img 
+                                            src={rel.photo ? (rel.photo.startsWith('http') ? rel.photo : `${UPLOAD_BASE}${rel.photo}`) : getAvatarForCategory(rel.category)}
+                                            alt={rel.name}
+                                            loading="lazy"
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-bold text-gray-900 group-hover:text-purple-600 transition-colors truncate">{rel.name}</h4>
+                                        <p className="text-xs font-semibold mt-0.5 truncate" style={{ color: color }}>{rel.position}</p>
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-purple-600 pr-1">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                        <style>{`
+                            .hide-scrollbar::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}</style>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Share2, Copy, Send, Mail, CheckCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { showSuccessToast } from '../../../utils/customToast';
 import type { Official } from '../../../hooks/useOfficials';
 import { JUMUIYA_OPTIONS } from '../constants/adminConstants';
 
@@ -51,7 +51,7 @@ export function ShareModal({ isOpen, onClose, officials, mode }: ShareModalProps
 
  const copyToClipboard = () => {
  navigator.clipboard.writeText(shareText);
- toast.success('Copied to clipboard!');
+ showSuccessToast('Copied to Clipboard', 'The text list has been successfully copied.');
  };
 
  const shareWhatsApp = () => {

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_JUMUIYA_BASE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../pages/Landing/services/api';
 
@@ -58,10 +58,10 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Jumuiya official added successfully!');
+      showSuccessToast('Jumuiya Official Added Successfully', 'The Jumuiya official has been registered.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Add Jumuiya Official', error.message);
     },
   });
 
@@ -85,10 +85,10 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Jumuiya official updated successfully!');
+      showSuccessToast('Jumuiya Official Updated Successfully', 'The Jumuiya official details have been updated.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Update Jumuiya Official', error.message);
     },
   });
 
@@ -111,10 +111,10 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Jumuiya official deleted successfully!');
+      showSuccessToast('Jumuiya Official Deleted Successfully', 'The Jumuiya official record has been removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Delete Jumuiya Official', error.message);
     },
   });
 

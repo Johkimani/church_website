@@ -500,26 +500,44 @@ export const createOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid phone number' });
     }
 
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+
+    // Build checking promises to run in parallel
+    const promises = [
+      pool.query("SELECT id, year, name FROM election_terms WHERE is_current = TRUE"),
+      pool.query("SELECT COUNT(*) FROM officials WHERE category = $1 AND (status = 'active' OR status IS NULL)", [category])
+    ];
+
+    let contactQueryIndex = -1;
     if (normalizedContact) {
-      const dup = await pool.query(
-        "SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)",
-        [normalizedContact]
+      promises.push(
+        pool.query("SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)", [normalizedContact])
       );
+      contactQueryIndex = promises.length - 1;
+    }
+
+    let positionQueryIndex = -1;
+    if (position && position.trim() !== '') {
+      promises.push(
+        pool.query("SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND (status = 'active' OR status IS NULL)", [position.trim()])
+      );
+      positionQueryIndex = promises.length - 1;
+    }
+
+    const results = await Promise.all(promises);
+    const currentTermResult = results[0];
+    const countResult = results[1];
+
+    if (contactQueryIndex !== -1) {
+      const dup = results[contactQueryIndex];
       if (dup.rows.length > 0) {
         return res.status(409).json({ success: false, message: 'Contact already in use by another official' });
       }
     }
 
-    if (!VALID_CATEGORIES.includes(category)) {
-      return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
-    }
-
-    const countResult = await pool.query(
-      "SELECT COUNT(*) FROM officials WHERE category = $1 AND (status = 'active' OR status IS NULL)",
-      [category]
-    );
     const currentCount = parseInt(countResult.rows[0].count);
-
     if (currentCount >= CATEGORY_LIMITS[category]) {
       return res.status(400).json({
         success: false,
@@ -527,12 +545,8 @@ export const createOfficial = async (req, res) => {
       });
     }
 
-    // New Requirement: Check for position uniqueness
-    if (position && position.trim() !== '') {
-      const posDup = await pool.query(
-        "SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND (status = 'active' OR status IS NULL)",
-        [position.trim()]
-      );
+    if (positionQueryIndex !== -1) {
+      const posDup = results[positionQueryIndex];
       if (posDup.rows.length > 0) {
         return res.status(409).json({
           success: false,
@@ -542,9 +556,7 @@ export const createOfficial = async (req, res) => {
     }
 
     let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
-
-    const currentTerm = await pool.query("SELECT id FROM election_terms WHERE is_current = TRUE");
-    const termId = currentTerm.rows.length > 0 ? currentTerm.rows[0].id : null;
+    const termId = currentTermResult.rows.length > 0 ? currentTermResult.rows[0].id : null;
 
     const result = await pool.query(
       `INSERT INTO officials (name, category, position, contact, photo, election_term_id, status, term_of_service) 

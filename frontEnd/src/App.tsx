@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
 import { Home } from "./pages/Landing/components/page/Home";
@@ -69,6 +70,7 @@ const FallBack: React.FC = () => (
 const App: React.FC = () => {
   return (
     <Suspense fallback={<FallBack />}>
+      <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         {/* Authentication Routes */}
         <Route
