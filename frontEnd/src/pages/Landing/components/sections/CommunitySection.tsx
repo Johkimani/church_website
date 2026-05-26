@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Grid, Activity, Layers, Users, ArrowRight, Zap } from 'lucide-react';
 
 const CommunitySection: React.FC = () => {
+  const navigate = useNavigate();
+
   const categories = [
     {
       title: "Jumuiya",
@@ -10,7 +13,7 @@ const CommunitySection: React.FC = () => {
       icon: <Grid size={22} />,
       gradient: "from-blue-400/80 via-blue-500/70 to-blue-600/60",
       labelColor: "text-blue-600/70 bg-blue-50/50",
-      link: "#jumuiya"
+      link: "/jumuiya"
     },
     {
       title: "Activities",
@@ -19,7 +22,7 @@ const CommunitySection: React.FC = () => {
       icon: <Activity size={22} />,
       gradient: "from-emerald-400/80 via-emerald-500/70 to-emerald-600/60",
       labelColor: "text-emerald-600/70 bg-emerald-50/50",
-      link: "#activities"
+      link: "/activities"
     },
     {
       title: "Projects",
@@ -28,7 +31,7 @@ const CommunitySection: React.FC = () => {
       icon: <Layers size={22} />,
       gradient: "from-amber-400/80 via-amber-500/70 to-amber-600/60",
       labelColor: "text-amber-600/70 bg-amber-50/50",
-      link: "#projects"
+      link: "/projects"
     },
     {
       title: "Officials",
@@ -37,12 +40,12 @@ const CommunitySection: React.FC = () => {
       icon: <Users size={22} />,
       gradient: "from-indigo-400/80 via-indigo-500/70 to-indigo-600/60",
       labelColor: "text-indigo-600/70 bg-indigo-50/50",
-      link: "#officials"
+      link: "/officials"
     }
   ];
 
   return (
-    <section className="pt-20 md:pt-32 pb-6 md:pb-10 bg-white relative" id="explore">
+    <section className="pt-20 md:pt-32 pb-6 md:pb-10 bg-white relative overflow-hidden" id="explore">
       {/* Precision Background - Pure White Focus */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-slate-50/20 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
       
@@ -66,6 +69,7 @@ const CommunitySection: React.FC = () => {
           {categories.map((item, index) => (
             <div 
               key={index}
+              onClick={() => navigate(item.link)}
               className="group relative bg-white rounded-[2.5rem] p-8 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] border border-slate-50 hover:border-slate-100 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)] cursor-pointer overflow-hidden will-change-transform flex flex-col items-center text-center md:items-start md:text-left"
             >
               {/* Subtle Glowing Background Accent - Blends with White */}

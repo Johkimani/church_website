@@ -44,7 +44,7 @@ const SuggestionBox: React.FC = () => {
   };
 
   return (
-    <section className="pt-4 md:pt-6 pb-20 bg-slate-50 relative" id="suggestions">
+    <section className="pt-4 md:pt-6 pb-20 bg-slate-50 relative overflow-hidden" id="suggestions">
       {/* Dynamic Background Elements - Subtler blurs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48 opacity-60"></div>
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-50/20 rounded-full blur-3xl -ml-48 -mb-48 opacity-60"></div>

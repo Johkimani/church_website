@@ -11,6 +11,7 @@ import {
   formatPhoneForExcel 
 } from '../utils/helpers.js';
 import logger from "../logger/winston.js";
+import { emitSocketEvent } from "../socket/index.js";
 
 export const VALID_JUMUIYAS = [
   'St. Anthony',
@@ -229,6 +230,8 @@ export const createJumuiyaOfficial = async (req, res) => {
 
     await syncCurrentTerm(term_of_service);
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_jumuiya", data: result.rows[0] });
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     logger.error('Error creating jumuiya official: ' + error.message);
@@ -313,6 +316,8 @@ export const updateJumuiyaOfficial = async (req, res) => {
       await syncCurrentTerm(term_of_service);
     }
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_jumuiya", id, data: result.rows[0] });
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     logger.error('Error updating jumuiya official: ' + error.message);
@@ -342,6 +347,7 @@ export const deleteJumuiyaOfficial = async (req, res) => {
 
 
     await pool.query('DELETE FROM jumuiya_officials WHERE id = $1', [id]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_jumuiya", id });
     res.json({ success: true, message: 'Official deleted successfully' });
   } catch (error) {
     logger.error('Error deleting jumuiya official: ' + error.message);
@@ -550,6 +556,8 @@ export const archiveCurrentJumuiyaOfficials = async (req, res) => {
 
     await client.query('COMMIT');
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "archive_jumuiya" });
+
     res.json({
       success: true,
       message: `Successfully archived ${currentOfficials.rows.length} officials to "${termInfo.rows[0].name}"`,
@@ -686,6 +694,8 @@ export const restoreArchivedJumuiyaOfficials = async (req, res) => {
       [officialIds]
     );
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "restore_jumuiya", ids: officialIds });
+
     res.json({
       success: true,
       message: `Successfully restored ${result.rows.length} officials`,
@@ -719,6 +729,8 @@ export const deleteArchivedJumuiyaOfficial = async (req, res) => {
         }
     }
 
+
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_archived_jumuiya", id });
 
     res.json({ success: true, message: 'Archived official deleted successfully' });
   } catch (error) {
@@ -758,6 +770,8 @@ export const bulkDeleteArchivedJumuiyaOfficials = async (req, res) => {
       }
     }
 
+
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "bulk_delete_archived_jumuiya", ids: officialIds });
 
     res.json({ 
       success: true, 

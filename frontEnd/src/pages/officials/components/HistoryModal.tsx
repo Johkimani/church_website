@@ -8,6 +8,7 @@ import { useHistory } from '../../../hooks/useHistory';
 import { useTerms } from '../../../hooks/useTerms';
 import { CATEGORY_COLORS, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS } from '../constants/adminConstants';
 import { UPLOAD_BASE, API_HISTORY, API_JUMUIYA_HISTORY } from '../../../utils/officialsApi';
+import { ConfirmDialog, AffectedOfficial } from './ConfirmDialog';
 
 interface HistoryModalProps {
  isOpen: boolean;
@@ -41,7 +42,16 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  mode
  });
 
- const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant: 'danger' | 'info' | 'success' | 'warning';
+    affectedItems: AffectedOfficial[];
+    onConfirm: () => Promise<void>;
+  } | null>(null);
 
  if (!isOpen) return null;
 
@@ -51,34 +61,49 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  );
  };
 
- const handleRestore = async (ids: number[]) => {
- const officialsToRestore = history.filter(o => ids.includes(o.id));
- if (officialsToRestore.length === 0) return;
+  const handleRestore = (ids: number[]) => {
+  const officialsToRestore = history.filter(o => ids.includes(o.id));
+  if (officialsToRestore.length === 0) return;
 
- const firstRestoreTerm = officialsToRestore[0].term_name || officialsToRestore[0].term_of_service;
- const allSameTerm = officialsToRestore.every(o => (o.term_name || o.term_of_service) === firstRestoreTerm);
+  const firstRestoreTerm = officialsToRestore[0].term_name || officialsToRestore[0].term_of_service;
+  const allSameTerm = officialsToRestore.every(o => (o.term_name || o.term_of_service) === firstRestoreTerm);
 
- if (!allSameTerm) {
- showErrorToast("Restore Error", "Please only restore officials from a single term at a time.");
- return;
- }
+  if (!allSameTerm) {
+  showErrorToast("Restore Error", "Please only restore officials from a single term at a time.");
+  return;
+  }
 
- if (mode === 'csa' && activeOfficials.length > 0) {
- if (activeTerm && firstRestoreTerm && activeTerm !== firstRestoreTerm) {
- showErrorToast("Restore Error", `Please archive current officials from [${activeTerm}] before restoring officials from [${firstRestoreTerm}]`);
- return;
- }
- if (!activeTerm) {
- showErrorToast("Restore Error", "Please archive current officials before restoring historical records to maintain data consistency.");
- return;
- }
- }
+  if (mode === 'csa' && activeOfficials.length > 0) {
+  if (activeTerm && firstRestoreTerm && activeTerm !== firstRestoreTerm) {
+  showErrorToast("Restore Error", `Please archive current officials from [${activeTerm}] before restoring officials from [${firstRestoreTerm}]`);
+  return;
+  }
+  if (!activeTerm) {
+  showErrorToast("Restore Error", "Please archive current officials before restoring historical records to maintain data consistency.");
+  return;
+  }
+  }
 
- if (window.confirm(`Are you sure you want to restore ${ids.length} official(s)?`)) {
- await restoreOfficials(ids);
- setSelectedIds([]);
- }
- };
+  const affectedItems: AffectedOfficial[] = officialsToRestore.map(o => ({
+    id: o.id,
+    name: o.name,
+    photoUrl: getPhotoUrl(o.photo),
+    role: o.position,
+    category: o.category
+  }));
+
+  setConfirmConfig({
+    title: 'Restore Officials',
+    message: `Are you sure you want to restore ${ids.length} official(s)? This will return them to active service on the main page.`,
+    confirmText: 'Restore',
+    variant: 'success',
+    affectedItems,
+    onConfirm: async () => {
+      await restoreOfficials(ids);
+      setSelectedIds([]);
+    }
+  });
+  };
 
  const handleDownloadArchive = () => {
  if (!termFilter || termFilter === 'all') {
@@ -93,25 +118,79 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  window.open(url, '_blank');
  };
 
- const handleDelete = async (id: number) => {
- if (window.confirm('Are you sure you want to permanently delete this record?')) {
- await deleteArchived(id);
- }
- };
+  const handleDelete = (id: number) => {
+  const officialToDelete = history.find(o => o.id === id);
+  if (!officialToDelete) return;
 
- const handleBulkDeleteAction = async () => {
- if (window.confirm(`Permanently delete ${selectedIds.length} records? This cannot be undone.`)) {
- await bulkDelete(selectedIds);
- setSelectedIds([]);
- }
- };
+  const affectedItems: AffectedOfficial[] = [{
+    id: officialToDelete.id,
+    name: officialToDelete.name,
+    photoUrl: getPhotoUrl(officialToDelete.photo),
+    role: officialToDelete.position,
+    category: officialToDelete.category
+  }];
 
- const handleBulkDelete = async (ids: number[]) => {
- if (window.confirm(`Permanently delete ${ids.length} records? This cannot be undone.`)) {
- await bulkDelete(ids);
- if (ids.length === selectedIds.length) setSelectedIds([]);
- }
- };
+  setConfirmConfig({
+    title: 'Delete Official Record',
+    message: 'Are you sure you want to permanently delete this archived official record? This action is permanent and cannot be undone.',
+    confirmText: 'Delete Permanently',
+    variant: 'danger',
+    affectedItems,
+    onConfirm: async () => {
+      await deleteArchived(id);
+    }
+  });
+  };
+
+  const handleBulkDeleteAction = () => {
+  const officialsToDelete = history.filter(o => selectedIds.includes(o.id));
+  if (officialsToDelete.length === 0) return;
+
+  const affectedItems: AffectedOfficial[] = officialsToDelete.map(o => ({
+    id: o.id,
+    name: o.name,
+    photoUrl: getPhotoUrl(o.photo),
+    role: o.position,
+    category: o.category
+  }));
+
+  setConfirmConfig({
+    title: 'Delete Selected Records',
+    message: `Are you sure you want to permanently delete the ${selectedIds.length} selected archived official record(s)? This action is permanent and cannot be undone.`,
+    confirmText: 'Delete Selected',
+    variant: 'danger',
+    affectedItems,
+    onConfirm: async () => {
+      await bulkDelete(selectedIds);
+      setSelectedIds([]);
+    }
+  });
+  };
+
+  const handleBulkDelete = (ids: number[]) => {
+  const officialsToDelete = history.filter(o => ids.includes(o.id));
+  if (officialsToDelete.length === 0) return;
+
+  const affectedItems: AffectedOfficial[] = officialsToDelete.map(o => ({
+    id: o.id,
+    name: o.name,
+    photoUrl: getPhotoUrl(o.photo),
+    role: o.position,
+    category: o.category
+  }));
+
+  setConfirmConfig({
+    title: 'Delete All Term Records',
+    message: `Are you sure you want to permanently delete all ${ids.length} archived official record(s) for this term? This action is permanent and cannot be undone.`,
+    confirmText: 'Delete All',
+    variant: 'danger',
+    affectedItems,
+    onConfirm: async () => {
+      await bulkDelete(ids);
+      if (ids.length === selectedIds.length) setSelectedIds([]);
+    }
+  });
+  };
 
  return (
  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
@@ -298,7 +377,7 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  </button>
  <button 
  onClick={() => handleDelete(o.id)}
- className="p-2 text-red-600 hover:bg-red-50 :bg-red-900/50 rounded-lg transition-all"
+ className="p-2 text-red-600 hover:bg-red-50 :bg-red-900/30 rounded-lg transition-all"
  title="Delete Permanently"
  >
  <Trash2 className="w-4 h-4" />
@@ -345,7 +424,24 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  </div>
  </div>
  )}
- </div>
- </div>
+  <ConfirmDialog
+    isOpen={confirmConfig !== null}
+    title={confirmConfig?.title || ''}
+    message={confirmConfig?.message || ''}
+    confirmText={confirmConfig?.confirmText}
+    cancelText={confirmConfig?.cancelText}
+    variant={confirmConfig?.variant}
+    isLoading={isRestoring || isDeleting || isBulkDeleting}
+    affectedItems={confirmConfig?.affectedItems || []}
+    onConfirm={async () => {
+      if (confirmConfig) {
+        await confirmConfig.onConfirm();
+        setConfirmConfig(null);
+      }
+    }}
+    onClose={() => setConfirmConfig(null)}
+  />
+  </div>
+  </div>
  );
 }

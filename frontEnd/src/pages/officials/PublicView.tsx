@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { FaPhoneAlt, FaWhatsapp } from 'react-icons/fa'
+import { useSocket } from '../../context/SocketContext'
 
 import apiService from '../../pages/Landing/services/api'
 import { UPLOAD_BASE } from '../../api/config'
@@ -32,11 +33,31 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function PublicView() {
   const { user } = useAuth()
   const navigate  = useNavigate()
+  const { socket } = useSocket()
   const [data, setData]             = React.useState<any[]>([])
   const [loading, setLoading]       = React.useState(true)
   const [fetchError, setFetchError] = React.useState('')
 
   React.useEffect(() => { fetchOfficials() }, [])
+
+  React.useEffect(() => {
+    if (!socket) {
+      // Fallback: poll every 15s for unauthorized/guest viewers
+      const interval = setInterval(() => {
+        fetchOfficials()
+      }, 15000)
+      return () => clearInterval(interval)
+    }
+
+    const handleUpdate = () => {
+      fetchOfficials()
+    }
+
+    socket.on('officialsUpdated', handleUpdate)
+    return () => {
+      socket.off('officialsUpdated', handleUpdate)
+    }
+  }, [socket])
 
   async function fetchOfficials() {
     const cached = localStorage.getItem('csa_cache_officials');
@@ -79,7 +100,9 @@ export default function PublicView() {
 
   const grouped = React.useMemo(() => {
     const map: Record<string, any[]> = {}
-    data.forEach(d => { const c = d.category || 'Other'; (map[c] ||= []).push(d) })
+    data
+      .filter(d => d.status !== 'archived')
+      .forEach(d => { const c = d.category || 'Other'; (map[c] ||= []).push(d) })
     
     Object.keys(map).forEach(c => {
       map[c].sort((a, b) => getPositionRank(a.position) - getPositionRank(b.position));
