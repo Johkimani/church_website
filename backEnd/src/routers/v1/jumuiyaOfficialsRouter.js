@@ -20,6 +20,7 @@ const router = express.Router();
 // Archive & Restore routes
 router.post('/archive', archiveCurrentJumuiyaOfficials);
 router.post('/restore', restoreArchivedJumuiyaOfficials);
+router.get('/term', getJumuiyaOfficialsByTerm);
 router.get('/term/:termId', getJumuiyaOfficialsByTerm);
 router.get('/term/:termId/export', exportArchivedJumuiyaOfficials);
 router.delete('/term', bulkDeleteArchivedJumuiyaOfficials);

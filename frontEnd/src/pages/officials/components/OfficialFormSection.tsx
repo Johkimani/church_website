@@ -26,6 +26,24 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  const [preview, setPreview] = useState<string | null>(null);
  const [showProgressModal, setShowProgressModal] = useState(false);
 
+  const categoryStats = React.useMemo(() => {
+    const stats: Record<string, { count: number; limit: number; isFull: boolean }> = {};
+    if (mode === 'csa') {
+      Object.keys(POSITION_BY_CATEGORY).forEach(cat => {
+        const limit = POSITION_BY_CATEGORY[cat]?.length || 0;
+        const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived').length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    } else {
+      JUMUIYA_OPTIONS.forEach(cat => {
+        const limit = JUMUIYA_ROLES.length; // 8
+        const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived').length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    }
+    return stats;
+  }, [allOfficials, mode]);
+
  useEffect(() => {
  if (displayTerm) {
  setTermOfService(displayTerm);
@@ -128,19 +146,42 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  </button>
  )}
  </div>
- <select 
- value={category} 
- onChange={e => { setCategory(e.target.value); setPosition(''); }} 
- className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none appearance-none" 
- required
- >
- <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
- {mode === 'csa' 
- ? Object.keys(POSITION_BY_CATEGORY).map(k => <option key={k} value={k}>{k}</option>)
- : JUMUIYA_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)
- }
- </select>
- </div>
+  <select 
+  value={category} 
+  onChange={e => { setCategory(e.target.value); setPosition(''); }} 
+  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none appearance-none font-medium" 
+  required
+  >
+  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
+  {mode === 'csa' 
+  ? Object.keys(POSITION_BY_CATEGORY).map(k => {
+      const stats = categoryStats[k];
+      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
+      return <option key={k} value={k}>{label}</option>;
+    })
+  : JUMUIYA_OPTIONS.map(k => {
+      const stats = categoryStats[k];
+      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/8)`;
+      return <option key={k} value={k}>{label}</option>;
+    })
+  }
+  </select>
+  {category && categoryStats[category] && (
+    <div className="mt-1.5 flex items-center justify-between px-1">
+      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status:</span>
+      <span className={`text-[11px] font-bold flex items-center gap-1.5 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
+        {categoryStats[category].isFull ? (
+          <>
+            <span className="inline-flex items-center justify-center w-4 h-4 bg-green-100 text-green-700 rounded-full text-[10px] font-black">✔</span>
+            Fully Registered ({categoryStats[category].count}/{categoryStats[category].limit})
+          </>
+        ) : (
+          `Available (${categoryStats[category].count}/${categoryStats[category].limit} filled)`
+        )}
+      </span>
+    </div>
+  )}
+  </div>
 
  <div className="space-y-2">
  <label className="block text-sm font-semibold text-gray-700 ">Position *</label>

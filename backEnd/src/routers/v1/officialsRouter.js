@@ -33,6 +33,7 @@ router.delete('/terms/:id', deleteElectionTerm);
 // Archive & Restore routes
 router.post('/archive', archiveCurrentOfficials);
 router.post('/restore', restoreArchivedOfficials);
+router.get('/term', getOfficialsByTerm);
 router.get('/term/:termId', getOfficialsByTerm);
 router.get('/term/:termId/export', exportArchivedOfficials);
 router.delete('/term', bulkDeleteArchivedOfficials);
