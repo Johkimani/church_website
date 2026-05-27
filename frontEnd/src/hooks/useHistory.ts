@@ -4,6 +4,7 @@ import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import type { Official } from './useOfficials';
 
 import { useAuth } from '../context/AuthContext';
+import apiService from '../pages/Landing/services/api';
 
 export interface HistoryResponse {
   data: Official[];
@@ -25,7 +26,7 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
 
   const historyQuery = useQuery({
     queryKey: ['history', filters],
-    enabled: !!termId,
+    enabled: true,
     queryFn: async () => {
       let url = getBaseUrl();
       if (termId) {
@@ -60,6 +61,9 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
       return res.json();
     },
     onSuccess: (json) => {
+      // Clear persistence-level caches so public views pull fresh restored records
+      apiService.clearOfficialsCache();
+
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_officials'] : ['officials'] });
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
       showSuccessToast('Officials Restored Successfully', json.message || 'The selected official records have been restored.');

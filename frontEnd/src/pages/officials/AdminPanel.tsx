@@ -1,11 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Download, Share2, History, LayoutDashboard, Search, Archive, Check } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSocket } from '../../context/SocketContext';
 
 import { useOfficials } from '../../hooks/useOfficials';
 import type { Official } from '../../hooks/useOfficials';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
-import { API_BASE, API_JUMUIYA_BASE } from '../../utils/officialsApi';
+import { API_BASE, API_JUMUIYA_BASE, UPLOAD_BASE } from '../../utils/officialsApi';
+import { DEFAULT_AVATAR } from './constants/adminConstants';
+import { ConfirmDialog, type AffectedOfficial } from './components/ConfirmDialog';
 
 import { DashboardStats } from './components/DashboardStats';
 import { OfficialsTable } from './components/OfficialsTable';
@@ -16,6 +20,28 @@ import { HistoryModal } from './components/HistoryModal';
 import { ShareModal } from './components/ShareModal';
 
 export default function AdminPanel() {
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
+
+  // Listen to WebSocket updates in real-time
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['officials'] });
+      queryClient.invalidateQueries({ queryKey: ['jumuiya_officials'] });
+      queryClient.invalidateQueries({ queryKey: ['terms'] });
+      queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
+      queryClient.invalidateQueries({ queryKey: ['history'] });
+      queryClient.invalidateQueries({ queryKey: ['jumuiya_history'] });
+    };
+
+    socket.on('officialsUpdated', handleUpdate);
+    return () => {
+      socket.off('officialsUpdated', handleUpdate);
+    };
+  }, [socket, queryClient]);
+
   // Queries & Mutations
   const { 
     officials, isLoading: isLoadingOfficials, 
@@ -46,6 +72,22 @@ export default function AdminPanel() {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant: 'danger' | 'info' | 'success' | 'warning';
+    affectedItems: AffectedOfficial[];
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+
+  const getPhotoUrl = (photo: string | null | undefined) => {
+    if (!photo) return DEFAULT_AVATAR;
+    if (photo.startsWith('http') || photo.startsWith('data:')) return photo;
+    return `${UPLOAD_BASE}${photo.startsWith('/') ? '' : '/'}${photo}`;
+  };
   
   const [downloadFields, setDownloadFields] = useState({
     name: true,
@@ -92,14 +134,29 @@ export default function AdminPanel() {
     window.open(url, '_blank');
   };
 
-  const handleDelete = async (official: Official) => {
-    if (window.confirm(`Are you sure you want to delete ${official.name}?`)) {
-      if (adminMode === 'csa') {
-        await deleteOfficial(official.id);
-      } else {
-        await jumuiyaApi.deleteOfficial(official.id);
+  const handleDelete = (official: Official) => {
+    const affectedItems: AffectedOfficial[] = [{
+      id: official.id,
+      name: official.name,
+      photoUrl: getPhotoUrl(official.photo),
+      role: official.position,
+      category: official.category
+    }];
+
+    setConfirmConfig({
+      title: 'Delete Active Official',
+      message: `Are you sure you want to permanently delete active official "${official.name}"? This action is permanent and cannot be undone.`,
+      confirmText: 'Delete',
+      variant: 'danger',
+      affectedItems,
+      onConfirm: async () => {
+        if (adminMode === 'csa') {
+          await deleteOfficial(official.id);
+        } else {
+          await jumuiyaApi.deleteOfficial(official.id);
+        }
       }
-    }
+    });
   };
 
   const handleAdd = async (fd: FormData) => {
@@ -303,6 +360,24 @@ export default function AdminPanel() {
         onClose={() => setIsShareOpen(false)}
         officials={activeOfficialsList}
         mode={adminMode}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmConfig !== null}
+        title={confirmConfig?.title || ''}
+        message={confirmConfig?.message || ''}
+        confirmText={confirmConfig?.confirmText}
+        cancelText={confirmConfig?.cancelText}
+        variant={confirmConfig?.variant}
+        isLoading={isListDeleting}
+        affectedItems={confirmConfig?.affectedItems || []}
+        onConfirm={async () => {
+          if (confirmConfig) {
+            await confirmConfig.onConfirm();
+            setConfirmConfig(null);
+          }
+        }}
+        onClose={() => setConfirmConfig(null)}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar,
 import { POSITION_INFO, DEFAULT_POSITION_INFO, getAvatarForCategory } from './constants/positionInfo';
 
 import apiService from '../Landing/services/api'
+import { useSocket } from '../../context/SocketContext'
 // Extract only the domain from the versioned API URI for image assets
 const UPLOAD_BASE = (import.meta.env.VITE_SERVER_URI || '').split('/api')[0]
 
@@ -40,94 +41,114 @@ const CATEGORY_HEX: Record<string, string> = {
 const OfficialProfile: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { socket } = useSocket();
     const [official, setOfficial] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [relatedOfficials, setRelatedOfficials] = useState<any[]>([]);
 
-    useEffect(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on profile change
+    const fetchOfficialDetails = async () => {
+        if (!id) return;
 
-        const fetchOfficialDetails = async () => {
-            if (!id) return;
-
-            const loadRelated = async (cat: string) => {
-                try {
-                    let officialsList: any = [];
-                    const cachedList = localStorage.getItem('csa_cache_officials');
-                    if (cachedList) {
-                        try { officialsList = JSON.parse(cachedList); } catch(e) {}
-                    }
-                    
-                    if (!officialsList || !Array.isArray(officialsList) || officialsList.length === 0) {
-                        const fetched: any = await apiService.getOfficials();
-                        officialsList = Array.isArray(fetched) ? fetched : (fetched?.data || []);
-                    }
-                    
-                    if (Array.isArray(officialsList)) {
-                        const related = officialsList.filter((o: any) => (o.category || 'Other') === cat && String(o.id) !== String(id));
-                        setRelatedOfficials(related);
-                    }
-                } catch (e) {}
-            };
-            
-            let foundInCache = false;
-            let currentCategory = '';
-            // 1. Check if official exists in the bulk cache (common when navigating from list)
+        const loadRelated = async (cat: string) => {
             try {
+                let officialsList: any = [];
                 const cachedList = localStorage.getItem('csa_cache_officials');
                 if (cachedList) {
-                    const officials = JSON.parse(cachedList);
-                    if (Array.isArray(officials)) {
-                        const match = officials.find((o: any) => String(o.id) === String(id));
-                        if (match) {
-                            setOfficial(match);
-                            currentCategory = match.category || 'Other';
-                            loadRelated(currentCategory);
-                            setLoading(false);
-                            foundInCache = true;
-                        }
-                    }
+                    try { officialsList = JSON.parse(cachedList); } catch(e) {}
+                }
+                
+                if (!officialsList || !Array.isArray(officialsList) || officialsList.length === 0) {
+                    const fetched: any = await apiService.getOfficials();
+                    officialsList = Array.isArray(fetched) ? fetched : (fetched?.data || []);
+                }
+                
+                if (Array.isArray(officialsList)) {
+                    const related = officialsList.filter((o: any) => (o.category || 'Other') === cat && String(o.id) !== String(id));
+                    setRelatedOfficials(related);
                 }
             } catch (e) {}
-
-            // 2. Check individual cache as fallback
-            if (!foundInCache) {
-                try {
-                    const singleCache = localStorage.getItem(`csa_cache_official_${id}`);
-                    if (singleCache) {
-                        const parsed = JSON.parse(singleCache);
-                        setOfficial(parsed);
-                        currentCategory = parsed.category || 'Other';
+        };
+        
+        let foundInCache = false;
+        let currentCategory = '';
+        // 1. Check if official exists in the bulk cache (common when navigating from list)
+        try {
+            const cachedList = localStorage.getItem('csa_cache_officials');
+            if (cachedList) {
+                const officials = JSON.parse(cachedList);
+                if (Array.isArray(officials)) {
+                    const match = officials.find((o: any) => String(o.id) === String(id));
+                    if (match) {
+                        setOfficial(match);
+                        currentCategory = match.category || 'Other';
                         loadRelated(currentCategory);
                         setLoading(false);
                         foundInCache = true;
                     }
-                } catch (e) {}
-            }
-
-            if (!foundInCache) setLoading(true);
-
-            try {
-                const data = await apiService.getOfficialById(id);
-                if (data) {
-                    setOfficial(data);
-                    localStorage.setItem(`csa_cache_official_${id}`, JSON.stringify(data));
-                    const newCategory = data.category || 'Other';
-                    if (newCategory !== currentCategory) {
-                        loadRelated(newCategory);
-                    }
-                } else {
-                    if (!foundInCache) setError('Official not found');
                 }
-            } catch (err) {
-                if (!foundInCache) setError('Failed to load official details');
-            } finally {
-                setLoading(false);
             }
-        };
+        } catch (e) {}
+
+        // 2. Check individual cache as fallback
+        if (!foundInCache) {
+            try {
+                const singleCache = localStorage.getItem(`csa_cache_official_${id}`);
+                if (singleCache) {
+                    const parsed = JSON.parse(singleCache);
+                    setOfficial(parsed);
+                    currentCategory = parsed.category || 'Other';
+                    loadRelated(currentCategory);
+                    setLoading(false);
+                    foundInCache = true;
+                }
+            } catch (e) {}
+        }
+
+        if (!foundInCache) setLoading(true);
+
+        try {
+            const data = await apiService.getOfficialById(id);
+            if (data) {
+                setOfficial(data);
+                localStorage.setItem(`csa_cache_official_${id}`, JSON.stringify(data));
+                const newCategory = data.category || 'Other';
+                if (newCategory !== currentCategory) {
+                    loadRelated(newCategory);
+                }
+            } else {
+                if (!foundInCache) setError('Official not found');
+            }
+        } catch (err) {
+            if (!foundInCache) setError('Failed to load official details');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on profile change
         fetchOfficialDetails();
     }, [id]);
+
+    useEffect(() => {
+        if (!socket) {
+            // Fallback: poll every 15s for unauthorized/guest viewers
+            const interval = setInterval(() => {
+                fetchOfficialDetails();
+            }, 15000);
+            return () => clearInterval(interval);
+        }
+
+        const handleUpdate = () => {
+            fetchOfficialDetails();
+        };
+
+        socket.on('officialsUpdated', handleUpdate);
+        return () => {
+            socket.off('officialsUpdated', handleUpdate);
+        };
+    }, [socket, id]);
 
     if (loading) return (
         <div className="h-full flex items-center justify-center bg-gray-50">

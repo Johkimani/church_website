@@ -275,6 +275,23 @@ class ApiService {
       }
     });
   }
+
+  /**
+   * Clears only officials-related caches.
+   */
+  clearOfficialsCache(): void {
+    localStorage.removeItem('csa_cache_officials');
+    localStorage.removeItem('csa_cache_jumuiya_officials');
+    localStorage.removeItem('csa_cache_jumuiya-officials');
+    Object.keys(localStorage).forEach(key => {
+      if (
+        key.startsWith('csa_cache_official_') ||
+        key.startsWith('csa_cache_jumuiya_official_')
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+  }
 }
 
 export default new ApiService();

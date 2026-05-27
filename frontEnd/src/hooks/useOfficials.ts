@@ -48,7 +48,7 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
-      apiService.clearAllCache();
+      apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
@@ -74,7 +74,7 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
-      apiService.clearAllCache();
+      apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
@@ -100,7 +100,7 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
-      apiService.clearAllCache();
+      apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
@@ -128,7 +128,7 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
-      apiService.clearAllCache();
+      apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });

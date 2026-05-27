@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { FaPhoneAlt, FaWhatsapp } from 'react-icons/fa'
+import { useSocket } from '../../context/SocketContext'
 
 import apiService from '../../pages/Landing/services/api'
 import { UPLOAD_BASE } from '../../api/config'
@@ -32,11 +33,31 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function PublicView() {
   const { user } = useAuth()
   const navigate  = useNavigate()
+  const { socket } = useSocket()
   const [data, setData]             = React.useState<any[]>([])
   const [loading, setLoading]       = React.useState(true)
   const [fetchError, setFetchError] = React.useState('')
 
   React.useEffect(() => { fetchOfficials() }, [])
+
+  React.useEffect(() => {
+    if (!socket) {
+      // Fallback: poll every 15s for unauthorized/guest viewers
+      const interval = setInterval(() => {
+        fetchOfficials()
+      }, 15000)
+      return () => clearInterval(interval)
+    }
+
+    const handleUpdate = () => {
+      fetchOfficials()
+    }
+
+    socket.on('officialsUpdated', handleUpdate)
+    return () => {
+      socket.off('officialsUpdated', handleUpdate)
+    }
+  }, [socket])
 
   async function fetchOfficials() {
     const cached = localStorage.getItem('csa_cache_officials');
@@ -79,7 +100,9 @@ export default function PublicView() {
 
   const grouped = React.useMemo(() => {
     const map: Record<string, any[]> = {}
-    data.forEach(d => { const c = d.category || 'Other'; (map[c] ||= []).push(d) })
+    data
+      .filter(d => d.status !== 'archived')
+      .forEach(d => { const c = d.category || 'Other'; (map[c] ||= []).push(d) })
     
     Object.keys(map).forEach(c => {
       map[c].sort((a, b) => getPositionRank(a.position) - getPositionRank(b.position));
@@ -87,6 +110,121 @@ export default function PublicView() {
 
     return map
   }, [data])
+
+  const EXECUTIVE_TOP_ROW_TITLES = ['chairperson', 'vice chairperson', 'organizing secretary', 'organising secretary', 'treasurer'];
+
+  const getExecutiveTopRow = (officials: any[]) => {
+    const selectedIds = new Set<any>();
+    const topRow: any[] = [];
+
+    EXECUTIVE_TOP_ROW_TITLES.forEach((title) => {
+      const match = officials.find(
+        (off: any) =>
+          !selectedIds.has(off.id) &&
+          (off.position || '').toLowerCase().includes(title)
+      );
+
+      if (match) {
+        selectedIds.add(match.id);
+        topRow.push(match);
+      }
+    });
+
+    return topRow;
+  };
+
+  const renderOfficialCard = (off: any, cat: string) => (
+    <article
+      key={off.id}
+      onClick={() => navigate(`/officials/${off.id}`)}
+      className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+      style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
+      title={`View ${off.name}'s profile`}
+    >
+      <div className="relative h-36 sm:h-44 md:h-52 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
+        <img
+          src={off.photo ? `${UPLOAD_BASE}${off.photo}` : getAvatarForCategory(cat)}
+          alt={off.name}
+          loading="lazy"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className={`absolute inset-0 bg-gradient-to-t ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-25 transition-opacity duration-300`}></div>
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <span style={{
+            background: 'rgba(15,23,42,0.75)', color: 'white',
+            padding: '6px 14px', borderRadius: '20px',
+            fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.05em',
+            backdropFilter: 'blur(4px)',
+          }}>
+            VIEW PROFILE
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-5 text-center">
+        <h3 className="font-bold text-base sm:text-lg text-gray-900 group-hover:text-purple-600 transition-colors truncate">
+          {off.name}
+        </h3>
+        <p className={`text-xs sm:text-sm font-semibold bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} bg-clip-text text-transparent mt-2`}>
+          {off.position || off.category}
+        </p>
+
+        {off.contact && (
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100 flex justify-center gap-3">
+            <a
+              href={`tel:${off.contact.replace(/[^+0-9]/g,'')}`}
+              onClick={e => e.stopPropagation()}
+              className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group flex items-center justify-center transition-all shadow-sm"
+              title="Call Official"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-100 transition-opacity z-0`}></div>
+              <FaPhoneAlt size={14} className="z-10 relative" />
+            </a>
+            <a
+              href={`https://wa.me/${off.contact.replace(/[^+0-9]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm z-10"
+              title="WhatsApp"
+            >
+              <FaWhatsapp size={18} />
+            </a>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+
+  const renderOfficialsSection = (cat: string, list: any[]) => {
+    if (list.length === 0) {
+      return (
+        <div className="w-full flex justify-center py-8">
+          <p className="text-gray-400 text-lg">No members in this category yet.</p>
+        </div>
+      );
+    }
+
+    const renderRow = (items: any[]) => (
+      <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+        {items.map((off) => renderOfficialCard(off, cat))}
+      </div>
+    );
+
+    if (cat === 'Executive') {
+      const topRow = getExecutiveTopRow(list);
+      const remaining = list.filter((off) => !topRow.some((top) => top.id === off.id));
+
+      return (
+        <>
+          {renderRow(topRow)}
+          {remaining.length > 0 && <div className="mt-4">{renderRow(remaining)}</div>}
+        </>
+      );
+    }
+
+    return renderRow(list);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-16">
@@ -181,78 +319,7 @@ export default function PublicView() {
               </div>
 
               {/* Cards */}
-              <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-                {(grouped[cat] || []).length === 0 ? (
-                  <div className="w-full flex justify-center py-8">
-                    <p className="text-gray-400 text-lg">No members in this category yet.</p>
-                  </div>
-                ) : (grouped[cat] || []).map(off => (
-                  <article
-                    key={off.id}
-                    onClick={() => navigate(`/officials/${off.id}`)}
-                    className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
-                    style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
-                    title={`View ${off.name}'s profile`}
-                  >
-                    {/* Photo */}
-                    <div className="relative h-36 sm:h-44 md:h-52 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
-                      <img
-                        src={off.photo ? `${UPLOAD_BASE}${off.photo}` : getAvatarForCategory(cat)}
-                        alt={off.name}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className={`absolute inset-0 bg-gradient-to-t ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-25 transition-opacity duration-300`}></div>
-                      {/* "View Profile" hint on hover */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <span style={{
-                          background: 'rgba(15,23,42,0.75)', color: 'white',
-                          padding: '6px 14px', borderRadius: '20px',
-                          fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.05em',
-                          backdropFilter: 'blur(4px)',
-                        }}>
-                          VIEW PROFILE
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-4 sm:p-5 text-center">
-                      <h3 className="font-bold text-base sm:text-lg text-gray-900 group-hover:text-purple-600 transition-colors truncate">
-                        {off.name}
-                      </h3>
-                      <p className={`text-xs sm:text-sm font-semibold bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} bg-clip-text text-transparent mt-2`}>
-                        {off.position || off.category}
-                      </p>
-
-                      {/* Contact Actions */}
-                      {off.contact && (
-                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100 flex justify-center gap-3">
-                          <a
-                            href={`tel:${off.contact.replace(/[^+0-9]/g,'')}`}
-                            onClick={e => e.stopPropagation()}
-                            className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group flex items-center justify-center transition-all shadow-sm"
-                            title="Call Official"
-                          >
-                            <div className={`absolute inset-0 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-100 transition-opacity z-0`}></div>
-                            <FaPhoneAlt size={14} className="z-10 relative" />
-                          </a>
-                          <a
-                            href={`https://wa.me/${off.contact.replace(/[^+0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm z-10"
-                            title="WhatsApp"
-                          >
-                            <FaWhatsapp size={18} />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
+              {renderOfficialsSection(cat, grouped[cat] || [])}
             </section>
           ))
         )}
