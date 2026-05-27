@@ -14,7 +14,7 @@ interface GalleryItem {
 
 // ─── Constants (outside component — never re-created on re-render) ────────────
 const SLIDE_DURATION_MS = 12000   // How long each slide stays visible
-const ANIM_LOCK_MS = 1500    // Matches the CSS transition duration
+const ANIM_LOCK_MS = 300    // Execution lock time for transition
 const MIN_SWIPE_PX = 50      // Minimum px to register as a swipe
 
 const DEFAULT_SLIDES: GalleryItem[] = [
@@ -22,7 +22,7 @@ const DEFAULT_SLIDES: GalleryItem[] = [
     id: 1,
     title: "St Thomas Aquinas\n CSA Kirinyaga",
     description: "To one who has faith, no explanation is necessary. To one without faith, no explanation is possible.",
-    image_url: "https://images.unsplash.com/photo-1548625361-ec853715d0dd?q=80&w=1200&auto=format&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1548625361-ec853715d0dd?auto=format&fit=crop&w=1000&q=60",
     category: "welcome",
     event_date: new Date().toISOString(),
   },
@@ -30,7 +30,7 @@ const DEFAULT_SLIDES: GalleryItem[] = [
     id: 2,
     title: "Vibrant Community\nFaith & Action",
     description: "Experience the thriving energy of our youth movements. Deepening spiritual connections through active service and genuine fellowship.",
-    image_url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=1200&auto=format&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1000&q=60",
     category: "community",
     event_date: new Date().toISOString(),
   },
@@ -38,7 +38,7 @@ const DEFAULT_SLIDES: GalleryItem[] = [
     id: 3,
     title: "Sunday Mass\nDivine Worship",
     description: "Gather with us every Sunday for the breaking of the bread. A solemn, beautiful encounter with grace and community reflection.",
-    image_url: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?q=80&w=1200&auto=format&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1000&q=60",
     category: "worship",
     event_date: new Date().toISOString(),
   },
@@ -46,7 +46,7 @@ const DEFAULT_SLIDES: GalleryItem[] = [
     id: 5,
     title: "Choir & Music\nVoices of Angels",
     description: "Join our incredibly talented choir members. Uplifting the congregation through powerful Gospel harmonies and traditional hymnals.",
-    image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1200&auto=format&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=60",
     category: "choir",
     event_date: new Date().toISOString(),
   },
@@ -54,7 +54,7 @@ const DEFAULT_SLIDES: GalleryItem[] = [
     id: 6,
     title: "Retreats & Prayers\nSpiritual Renewal",
     description: "Step away from the noise of the world. Our silent retreats offer the perfect environment for reflection, prayer, and deep spiritual growth.",
-    image_url: "https://images.unsplash.com/photo-1437603568260-1950d3ca6eab?q=80&w=1200&auto=format&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1437603568260-1950d3ca6eab?auto=format&fit=crop&w=1000&q=60",
     category: "prayer",
     event_date: new Date().toISOString(),
   },
@@ -85,14 +85,18 @@ function preloadImage(url: string) {
 function ImageSlider() {
 
   const [dbSlides, setDbSlides] = useState<GalleryItem[]>([])
-  const [loading, setLoading] = useState(true)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({})
 
   const displaySlides = buildDisplaySlides(dbSlides)
   const total = displaySlides.length
+
+  const handleImageLoad = (id: number) => {
+    setLoadedImages(prev => ({ ...prev, [id]: true }))
+  }
 
   useEffect(() => {
     apiService.getGallery()
@@ -103,7 +107,6 @@ function ImageSlider() {
         setDbSlides(sorted)
       })
       .catch(() => setDbSlides([]))
-      .finally(() => setLoading(false))
   }, [])
 
   // ── Image pre-loading: fetch next & previous images into browser cache ─────
@@ -114,6 +117,14 @@ function ImageSlider() {
     preloadImage(displaySlides[nextIdx].image_url)
     preloadImage(displaySlides[prevIdx].image_url)
   }, [currentSlide, total]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Warm up the browser cache by preloading all slides once resolved ────────
+  useEffect(() => {
+    if (total === 0) return
+    displaySlides.forEach((slide) => {
+      preloadImage(slide.image_url)
+    })
+  }, [total]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-play: resets timer every time currentSlide changes ───────────────
   useEffect(() => {
@@ -146,21 +157,6 @@ function ImageSlider() {
     if (d < -MIN_SWIPE_PX) prevSlide()
   }
 
-  // ── Loading skeleton ───────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <section className="relative h-[60vh] md:h-[85vh] min-h-[450px] bg-gray-950 overflow-hidden flex items-center justify-center">
-        {/* Animated shimmer background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-800 to-gray-950 animate-pulse" />
-        {/* Cross at center */}
-        <div className="relative flex flex-col items-center gap-4 z-10">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-400 text-sm tracking-widest uppercase">Loading Gallery…</p>
-        </div>
-      </section>
-    )
-  }
-
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <section
@@ -170,22 +166,32 @@ function ImageSlider() {
       onTouchEnd={onTouchEnd}
     >
       {/* ── 1. Images ─────────────────────────────────────────────────────── */}
-      {displaySlides.map((slide, i) => (
-        <div
-          key={slide.id}
-          className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${i === currentSlide ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
-        >
-          <img
-            src={slide.image_url}
-            alt={slide.title.replace('\n', ' ') || `CSA Gathering ${i + 1}`}
-            loading="eager"
-            decoding="async"
-            className={`object-cover w-full h-full transition-transform duration-[12000ms] ease-out ${i === currentSlide ? 'scale-110' : 'scale-100'}`}
-          />
-          {/* Centered vignette overlay — darkens edges, keeps center clear */}
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-      ))}
+      {displaySlides.map((slide, i) => {
+        const isLoaded = loadedImages[slide.id]
+        return (
+          <div
+            key={slide.id}
+            className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${i === currentSlide ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
+          >
+            {/* Shimmer / blur background placeholder while loading */}
+            {!isLoaded && (
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 animate-pulse" />
+            )}
+            <img
+              src={slide.image_url}
+              alt={slide.title.replace('\n', ' ') || `CSA Gathering ${i + 1}`}
+              loading="eager"
+              decoding="async"
+              onLoad={() => handleImageLoad(slide.id)}
+              className={`object-cover w-full h-full transition-all duration-[2000ms] ease-out ${
+                isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-md'
+              } ${i === currentSlide ? 'scale-110' : 'scale-100'}`}
+            />
+            {/* Centered vignette overlay — darkens edges, keeps center clear */}
+            <div className="absolute inset-0 bg-black/40" />
+          </div>
+        )
+      })}
 
       {/* ── 2. Text overlays ──────────────────────────────────────────────── */}
       {displaySlides.map((slide, i) => {
@@ -230,7 +236,7 @@ function ImageSlider() {
           bg-white/10 hover:bg-white/20 text-white
           backdrop-blur-md border-r-0 border border-white/15
           rounded-r-none rounded-l-none rounded-tr-3xl rounded-br-3xl
-          transition-all duration-500 ease-out
+          transition-all duration-300 ease-out
           opacity-0 group-hover:opacity-100 -translate-x-full group-hover:translate-x-0
           z-40 active:scale-95 cursor-pointer shadow-[4px_0_20px_rgba(0,0,0,0.2)]"
       >
@@ -247,7 +253,7 @@ function ImageSlider() {
           bg-white/10 hover:bg-white/20 text-white
           backdrop-blur-md border-l-0 border border-white/15
           rounded-l-none rounded-r-none rounded-tl-3xl rounded-bl-3xl
-          transition-all duration-500 ease-out
+          transition-all duration-300 ease-out
           opacity-0 group-hover:opacity-100 translate-x-full group-hover:translate-x-0
           z-40 active:scale-95 cursor-pointer shadow-[-4px_0_20px_rgba(0,0,0,0.2)]"
       >

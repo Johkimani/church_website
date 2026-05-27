@@ -82,17 +82,35 @@ export function useTerms() {
       if (!res.ok) throw new Error(json.message || 'Failed to archive officials');
       return json;
     },
-    onSuccess: (json, variables) => {
-      // Clear persistence-level caches to ensure landing page and public views refresh
-      apiService.clearAllCache();
+    onMutate: async (variables) => {
+      const targetQueryKey = variables.isJumuiya ? ['jumuiya_officials'] : ['officials'];
       
+      // Cancel outgoing refetches to prevent them overwriting our optimistic state
+      await queryClient.cancelQueries({ queryKey: targetQueryKey });
+      
+      // Snapshot the current officials list
+      const previousOfficials = queryClient.getQueryData(targetQueryKey);
+      
+      // Optimistically set active list to empty array immediately
+      queryClient.setQueryData(targetQueryKey, []);
+      
+      // Instantly clear client-side localStorage persist caches
+      apiService.clearOfficialsCache();
+      
+      return { previousOfficials, targetQueryKey };
+    },
+    onSuccess: (json, variables) => {
       queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_officials'] : ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_history'] : ['history'] });
       showSuccessToast('Officials Archived Successfully', `${json.data?.archived_count || 'Officials'} records have been successfully archived.`);
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context) => {
+      // Rollback to original state if mutation fails
+      if (context?.previousOfficials && context?.targetQueryKey) {
+        queryClient.setQueryData(context.targetQueryKey, context.previousOfficials);
+      }
       showErrorToast('Failed to Archive Officials', error.message);
     },
   });

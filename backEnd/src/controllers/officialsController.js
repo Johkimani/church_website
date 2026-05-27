@@ -11,6 +11,7 @@ import {
   formatPhoneForExcel 
 } from '../utils/helpers.js';
 import logger from "../logger/winston.js";
+import { emitSocketEvent } from "../socket/index.js";
 
 export const CATEGORY_LIMITS = {
   'Executive': 6,
@@ -27,6 +28,38 @@ export const CATEGORY_LIMITS = {
 };
 
 export const VALID_CATEGORIES = Object.keys(CATEGORY_LIMITS);
+
+export const CSA_SORT_SQL = `
+  CASE o.category
+    WHEN 'Executive' THEN 1
+    WHEN 'Jumuiya Coordinators' THEN 2
+    WHEN 'Bible Coordinators' THEN 3
+    WHEN 'Rosary' THEN 4
+    WHEN 'Pamphlet Managers' THEN 5
+    WHEN 'Project Managers' THEN 6
+    WHEN 'Liturgist' THEN 7
+    WHEN 'Instrument Managers' THEN 8
+    WHEN 'Choir Officials' THEN 9
+    WHEN 'Liturgical Dancers' THEN 10
+    WHEN 'Catechist' THEN 11
+    ELSE 100
+  END ASC,
+  CASE
+    WHEN LOWER(o.position) LIKE '%chairperson%' OR LOWER(o.position) LIKE '%chairman%' THEN
+      CASE WHEN LOWER(o.position) LIKE '%vice%' THEN 2 ELSE 1 END
+    WHEN LOWER(o.position) LIKE '%secretary%' THEN
+      CASE 
+        WHEN LOWER(o.position) LIKE '%organizing%' OR LOWER(o.position) LIKE '%organising%' THEN 3
+        WHEN LOWER(o.position) LIKE '%assistant%' OR LOWER(o.position) LIKE '%vice%' THEN 5
+        ELSE 4
+      END
+    WHEN LOWER(o.position) LIKE '%treasurer%' THEN 6
+    WHEN LOWER(o.position) LIKE '%coordinator%' OR LOWER(o.position) LIKE '%manager%' OR LOWER(o.position) LIKE '%liturgist%' OR LOWER(o.position) LIKE '%catechist%' THEN
+      CASE WHEN LOWER(o.position) LIKE '%assistant%' OR LOWER(o.position) LIKE '%vice%' THEN 12 ELSE 11 END
+    ELSE 100
+  END ASC,
+  o.name ASC
+`;
 
 // =============================================================================
 // ELECTION TERM MANAGEMENT
@@ -243,6 +276,8 @@ export const archiveCurrentOfficials = async (req, res) => {
 
     await client.query('COMMIT');
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "archive" });
+
     res.json({
       success: true,
       message: `Successfully archived ${currentOfficials.rows.length} officials to "${termInfo.rows[0].name}"`,
@@ -304,7 +339,7 @@ export const getOfficialsByTerm = async (req, res) => {
     const dataQuery = `
       SELECT o.*, et.name as term_name, et.year as term_year 
       ${queryBase} 
-      ORDER BY ${termId || req.query.only_archived === 'true' ? 'et.year DESC, ' : ''}o.category, o.position 
+      ORDER BY ${termId || req.query.only_archived === 'true' ? 'et.year DESC, ' : ''}${CSA_SORT_SQL} 
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
@@ -397,6 +432,8 @@ export const restoreArchivedOfficials = async (req, res) => {
       [officialIds]
     );
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "restore", ids: officialIds });
+
     res.json({
       success: true,
       message: `Successfully restored ${result.rows.length} officials`,
@@ -434,7 +471,7 @@ export const getAllOfficials = async (req, res) => {
         query += ` AND o.term_of_service = $2`;
         params.push(termOfService);
       }
-      query += ` ORDER BY o.category, o.position`;
+      query += ` ORDER BY ${CSA_SORT_SQL}`;
     } else if (includeArchived) {
       query = `
         SELECT o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
@@ -445,7 +482,7 @@ export const getAllOfficials = async (req, res) => {
         query += ` WHERE o.term_of_service = $1`;
         params.push(termOfService);
       }
-      query += ` ORDER BY o.status, et.year DESC, o.category, o.position`;
+      query += ` ORDER BY o.status, et.year DESC, ${CSA_SORT_SQL}`;
     } else {
       query = `
         SELECT o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
@@ -457,7 +494,7 @@ export const getAllOfficials = async (req, res) => {
         query += ` AND o.term_of_service = $1`;
         params.push(termOfService);
       }
-      query += ` ORDER BY o.category, o.position`;
+      query += ` ORDER BY ${CSA_SORT_SQL}`;
     }
 
     const result = await pool.query(query, params);
@@ -566,6 +603,8 @@ export const createOfficial = async (req, res) => {
 
     await syncCurrentTerm(term_of_service);
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create", data: result.rows[0] });
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     logger.error('Error creating official: ' + error.message);
@@ -642,6 +681,8 @@ export const updateOfficial = async (req, res) => {
       await syncCurrentTerm(term_of_service);
     }
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update", id, data: result.rows[0] });
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     logger.error('Error updating official: ' + error.message);
@@ -671,6 +712,7 @@ export const deleteOfficial = async (req, res) => {
 
 
     await pool.query('DELETE FROM officials WHERE id = $1', [id]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete", id });
     res.json({ success: true, message: 'Official deleted successfully' });
   } catch (error) {
     logger.error('Error deleting official: ' + error.message);
@@ -829,6 +871,7 @@ export const deleteArchivedOfficial = async (req, res) => {
 
 
     await pool.query('DELETE FROM officials WHERE id = $1', [officialId]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_archived", id: officialId });
     res.json({ success: true, message: 'Archived official deleted successfully' });
   } catch (error) {
     logger.error('Error deleting archived official: ' + error.message);
@@ -844,6 +887,7 @@ export const bulkDeleteArchivedOfficials = async (req, res) => {
     }
 
     await pool.query('DELETE FROM officials WHERE id = ANY($1)', [officialIds]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "bulk_delete_archived", ids: officialIds });
     res.json({ success: true, message: `Successfully deleted ${officialIds.length} archived officials` });
   } catch (error) {
     logger.error('Error bulk deleting archived officials: ' + error.message);
