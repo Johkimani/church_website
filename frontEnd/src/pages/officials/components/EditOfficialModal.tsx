@@ -30,6 +30,24 @@ export function EditOfficialModal({
  const [termOfService, setTermOfService] = useState('');
  const [photo, setPhoto] = useState<File | null>(null);
 
+  const categoryStats = React.useMemo(() => {
+    const stats: Record<string, { count: number; limit: number; isFull: boolean }> = {};
+    if (mode === 'csa') {
+      Object.keys(POSITION_BY_CATEGORY).forEach(cat => {
+        const limit = POSITION_BY_CATEGORY[cat]?.length || 0;
+        const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived' && o.id !== official?.id).length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    } else {
+      JUMUIYA_OPTIONS.forEach(cat => {
+        const limit = JUMUIYA_ROLES.length; // 8
+        const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived' && o.id !== official?.id).length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    }
+    return stats;
+  }, [allOfficials, mode, official]);
+
  useEffect(() => {
  if (official) {
  setName(official.name || '');
@@ -115,19 +133,41 @@ export function EditOfficialModal({
 
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-1">
- <label className="text-xs font-bold text-gray-500 uppercase px-1">Category *</label>
- <select 
- value={category} 
- onChange={e => { setCategory(e.target.value); setPosition(''); }} 
- className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white" 
- required
- >
- <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
- {mode === 'csa' 
- ? Object.keys(POSITION_BY_CATEGORY).map(k => <option key={k} value={k}>{k}</option>)
- : JUMUIYA_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)
- }
- </select>
+  <label className="text-xs font-bold text-gray-500 uppercase px-1">Category *</label>
+  <select 
+  value={category} 
+  onChange={e => { setCategory(e.target.value); setPosition(''); }} 
+  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium" 
+  required
+  >
+  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
+  {mode === 'csa' 
+  ? Object.keys(POSITION_BY_CATEGORY).map(k => {
+      const stats = categoryStats[k];
+      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
+      return <option key={k} value={k}>{label}</option>;
+    })
+  : JUMUIYA_OPTIONS.map(k => {
+      const stats = categoryStats[k];
+      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/8)`;
+      return <option key={k} value={k}>{label}</option>;
+    })
+  }
+  </select>
+  {category && categoryStats[category] && (
+    <div className="mt-1 flex items-center justify-between px-1">
+      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status:</span>
+      <span className={`text-[10px] font-bold flex items-center gap-1 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
+        {categoryStats[category].isFull ? (
+          <>
+            <span>✔</span> Fully Filled ({categoryStats[category].count}/{categoryStats[category].limit})
+          </>
+        ) : (
+          `Available (${categoryStats[category].count}/${categoryStats[category].limit})`
+        )}
+      </span>
+    </div>
+  )}
  </div>
  <div className="space-y-1">
  <label className="text-xs font-bold text-gray-500 uppercase px-1">Position *</label>
