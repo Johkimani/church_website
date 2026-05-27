@@ -52,21 +52,23 @@ const JumuiyaDetail: React.FC = () => {
         // Preference 1: Explicitly set term in the first official's record from backend
         const recordWithTerm = dynamicOfficials?.find(o => !!o.term_of_service);
         if (recordWithTerm?.term_of_service) {
-             const parts = recordWithTerm.term_of_service.split('-');
-             return { 
-                 startYear: parts[0] || recordWithTerm.term_of_service, 
-                 endYear: parts[1] || '' 
-             };
+            const parts = recordWithTerm.term_of_service.split('-').map(p => p.trim());
+            const startYear = Number(parts[0]);
+            const endYear = Number(parts[1]);
+            if (!Number.isNaN(startYear) && !Number.isNaN(endYear)) {
+                return { startYear, endYear };
+            }
         }
         // Preference 2: Use the global current term from backend
         if (currentTerm?.year) {
-             const parts = currentTerm.year.split('-');
-             return { 
-                 startYear: parts[0] || currentTerm.year, 
-                 endYear: parts[1] || '' 
-             };
+            const parts = currentTerm.year.split('-').map(p => p.trim());
+            const startYear = Number(parts[0]);
+            const endYear = Number(parts[1]);
+            if (!Number.isNaN(startYear) && !Number.isNaN(endYear)) {
+                return { startYear, endYear };
+            }
         }
-        // Fallback: use hardcoded if nothing else available
+        // Fallback: use the stored term if available
         return jumuiya?.termOfOffice;
     })();
 
@@ -142,24 +144,23 @@ const JumuiyaDetail: React.FC = () => {
             case 'about':
                 return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/')} />;
             case 'officials':
-
                 return <OfficialsTab
                     officials={displayedOfficials}
                     termOfOffice={dynamicTerm}
                     formerOfficials={jumuiya.formerOfficials}
-                    jumuiyaColor={jumuiya.color}
+                    jumuiyaColor={detailColor}
                     isAdmin={isAdmin}
                 />;
             case 'members':
-                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />
             case 'registration':
-                return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
+                return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} />;
             case 'activities':
-                return <ActivitiesTab jumuiyaColor={jumuiya.color} />;
+                return <ActivitiesTab jumuiyaColor={detailColor} />;
             case 'channels':
-                return <ChannelsTab socialMedia={jumuiya.socialMedia} gallery={jumuiya.gallery} />;
+                return <ChannelsTab socialMedia={jumuiya.socialMedia || []} gallery={jumuiya.gallery} />;
             case 'tshirts':
-                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={jumuiya.color} orders={jumuiya.tshirtOrders || []} />;
+                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} />;
             case 'admin':
                 return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:
@@ -167,14 +168,16 @@ const JumuiyaDetail: React.FC = () => {
         }
     };
 
+    const detailColor = jumuiya.color || '#2c3e50';
+
     return (
         <div
             className="detail-page"
             style={{
-                '--jumuiya-color': jumuiya.color,
-                '--jumuiya-color-light': `${jumuiya.color}20`,
-                '--jumuiya-color-medium': `${jumuiya.color}50`,
-                '--jumuiya-color-dark': `${jumuiya.color}dd`,
+                '--jumuiya-color': detailColor,
+                '--jumuiya-color-light': `${detailColor}20`,
+                '--jumuiya-color-medium': `${detailColor}50`,
+                '--jumuiya-color-dark': `${detailColor}dd`,
             } as React.CSSProperties}
         >
             {/* Mobile Menu Toggle */}
@@ -266,7 +269,7 @@ const JumuiyaDetail: React.FC = () => {
                             </button>
                         </div>
                         <div className="notif-panel-content">
-                            <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={jumuiya.color} />
+                            <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={detailColor} />
                         </div>
                     </div>
                 )}

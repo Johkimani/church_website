@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaBell } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaBell, FaChild } from 'react-icons/fa';
 import type { JumuiyaData } from '../data/jumuiyaData';
 import AdminNotifications from './AdminNotifications';
 import AdminAbout from './AdminAbout';
@@ -7,12 +7,15 @@ import AdminOfficials from './AdminOfficials';
 import AdminMembers from './AdminMembers';
 import AdminActivities from './AdminActivities';
 import AdminGallery from './AdminGallery';
+import ChoirAdminPanel from '../choir/ChoirAdminPanel';
+import DancersAdminPanel from '../choir/DancersAdminPanel';
+import CharismaticAdminPanel from '../charismatic/CharismaticAdminPanel';
 
 interface AdminPanelEmbedProps {
     jumuiya: JumuiyaData;
 }
 
-type AdminTab = 'notifications' | 'about' | 'officials' | 'members' | 'activities' | 'gallery';
+type AdminTab = 'notifications' | 'about' | 'officials' | 'members' | 'activities' | 'gallery' | 'choir' | 'dancers' | 'charismatic';
 
 const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
     const [activeTab, setActiveTab] = useState<AdminTab>('notifications');
@@ -25,6 +28,16 @@ const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
         { id: 'activities' as AdminTab, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'gallery' as AdminTab, label: 'Gallery', icon: <FaImages /> },
     ];
+
+    if (jumuiya.id === 'choir') {
+        (tabs as any).push({ id: 'choir' as AdminTab, label: 'Choir Admin', icon: <FaUserTie /> });
+    }
+    if (jumuiya.id === 'dancers') {
+        (tabs as any).push({ id: 'dancers' as AdminTab, label: 'Dancer Admin', icon: <FaChild /> });
+    }
+    if (jumuiya.id === 'charismatic') {
+        (tabs as any).push({ id: 'charismatic' as AdminTab, label: 'Charismatic Admin', icon: <FaUserTie /> });
+    }
 
     const renderContent = () => {
         switch (activeTab) {
@@ -40,6 +53,12 @@ const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
                 return <AdminActivities selectedId={jumuiya.id} />;
             case 'gallery':
                 return <AdminGallery selectedId={jumuiya.id} />;
+            case 'choir':
+                return <ChoirAdminPanel />;
+            case 'dancers':
+                return <DancersAdminPanel />;
+            case 'charismatic':
+                return <CharismaticAdminPanel />;
             default:
                 return <AdminAbout selectedId={jumuiya.id} />;
         }

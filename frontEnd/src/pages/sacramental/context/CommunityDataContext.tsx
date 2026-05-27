@@ -194,7 +194,7 @@ export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children 
         const fetchModules = async () => {
             try {
                 // Fetch dynamic list of Communities from backend
-                const response = await apiClient.get('/community-view/data');
+                const response = await apiClient.get('/api/community-view/data');
                 if (response.data && response.data.length > 0) {
                     setModules(response.data);
                 }

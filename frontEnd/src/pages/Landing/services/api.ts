@@ -19,7 +19,7 @@ class ApiService {
     const fallbackData = cached ? JSON.parse(cached) : [];
 
     try {
-      const response = await apiClient.get(`/${tableName}`);
+      const response = await apiClient.get(`/api/${tableName}`);
       // Extract the actual array from { success: true, data: [...] } or use raw if already array
       const rawData = response.data;
       const dataArray = Array.isArray(rawData) ? rawData : (rawData?.data && Array.isArray(rawData.data) ? rawData.data : null);
@@ -54,7 +54,7 @@ class ApiService {
    */
   async createRecord(tableName: string, data: Record<string, any>): Promise<any> {
     try {
-      const response = await apiClient.post(`/${tableName}`, data);
+      const response = await apiClient.post(`/api/${tableName}`, data);
       return response.data;
     } catch (error) {
       console.error(`Error creating record in ${tableName}:`, error);
@@ -70,7 +70,7 @@ class ApiService {
    */
   async deleteRecord(tableName: string, id: string | number): Promise<any> {
     try {
-      const response = await apiClient.delete(`/${tableName}/${id}`);
+      const response = await apiClient.delete(`/api/${tableName}/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting record from ${tableName}:`, error);
@@ -163,7 +163,7 @@ class ApiService {
    */
   async getOfficialById(id: string | number): Promise<any> {
     try {
-      const response = await apiClient.get(`/officials/${id}`);
+      const response = await apiClient.get(`/api/officials/${id}`);
       return response.data.data || response.data;
     } catch (error) {
       console.error(`Error fetching official ${id}:`, error);
@@ -176,7 +176,7 @@ class ApiService {
    */
   async getOfficialHistory(): Promise<any[]> {
     try {
-      const response = await apiClient.get('/officials/history');
+      const response = await apiClient.get('/api/officials/history');
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error fetching officials history:', error);
@@ -204,7 +204,7 @@ class ApiService {
    */
   async poolAllData(): Promise<Record<string, any[]>> {
     try {
-      const response = await apiClient.get('/all');
+      const response = await apiClient.get('/api/all');
       return response.data;
     } catch (error) {
       console.error('Error pooling all data:', error);

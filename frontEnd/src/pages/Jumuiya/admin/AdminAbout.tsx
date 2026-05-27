@@ -17,8 +17,8 @@ const AdminAbout: React.FC<AdminAboutProps> = ({ selectedId }) => {
         if (selectedJumuiyaId) {
             const jumuiya = jumuiyaList.find((j: any) => j.id === selectedJumuiyaId);
             if (jumuiya) {
-                setDescription(jumuiya.description);
-                setAbout(jumuiya.about);
+                setDescription(jumuiya.description || '');
+                setAbout(jumuiya.about || '');
             }
         }
     }, [selectedJumuiyaId, jumuiyaList]);

@@ -14,14 +14,25 @@ const TABLE_SORT_COLUMNS = {
 };
 
 // Get all records from a table
-export const getTableData = async (tableName) => {
+export const getTableData = async (tableName, queryParams = {}) => {
   const sortCol = TABLE_SORT_COLUMNS[tableName] || 'id';
+  const filterKeys = Object.keys(queryParams).filter((key) => queryParams[key] !== undefined && queryParams[key] !== '');
 
   try {
-    // Attempt query with ordering (using quotes to handle potential reserved words)
-    const result = await pool.query(
-      `SELECT * FROM "${tableName}" ORDER BY "${sortCol}" DESC`
-    );
+    let query = `SELECT * FROM "${tableName}"`;
+    const values = [];
+
+    if (filterKeys.length > 0) {
+      const filters = filterKeys.map((key, index) => {
+        values.push(queryParams[key]);
+        return `"${key}" = $${index + 1}`;
+      });
+      query += ` WHERE ${filters.join(' AND ')}`;
+    }
+
+    query += ` ORDER BY "${sortCol}" DESC`;
+
+    const result = await pool.query(query, values);
     return result.rows;
   } catch (firstError) {
     // Fallback to unordered if ordering column is missing

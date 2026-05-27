@@ -58,7 +58,7 @@ api.get("/all/data", async (req, res) => {
 api.get("/:table", validateTable, async (req, res) => {
   try {
     const { table } = req.params;
-    const data = await getTableData(table);
+    const data = await getTableData(table, req.query);
     logger.debug(`Success fetching from route '/:table'`);
     return res.json(data);
   } catch (error) {

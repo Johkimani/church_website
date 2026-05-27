@@ -20,9 +20,12 @@ const GalleryTeaser: React.FC = () => {
     const loadTeaser = async () => {
       try {
         const { data } = await fetchGalleryTeaser();
-        setItems(data);
+        // Handle various response formats
+        const galleryItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
+        setItems(galleryItems);
       } catch (error) {
         console.error("Failed to load gallery teaser:", error);
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -155,7 +158,7 @@ const GalleryTeaser: React.FC = () => {
             ))}
           </motion.div>
 
-          {items.map((item, index) => (
+          {items && Array.isArray(items) && items.map((item, index) => (
             <div 
               key={item.id}
               onClick={() => navigate('/gallery')}
