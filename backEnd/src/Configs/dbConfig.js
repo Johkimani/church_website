@@ -11,7 +11,7 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl:
-    process.env.DB_HOST === "localhost" ? false : { rejectUnauthorized: false },
+    (process.env.DB_HOST === "localhost" || process.env.DB_HOST === "127.0.0.1") ? false : { rejectUnauthorized: false },
 });
 
 export const db = pool;
@@ -25,7 +25,7 @@ export const connectDb = async () => {
     logger.error("Failed to connect postgree database:", error.message, {
       stack: error.stack,
     });
-    // process.exit(1)
+    process.exit(1)
   }
 };
 
@@ -51,7 +51,7 @@ export const connectToMongoDb = async () => {
       `☘️  MongoDB Connected! Db host: ${connectionInstance.connection.host}`,
     );
   } catch (error) {
-    logger.error("MongoDB connection error: ", error);
-    process.exit(1)
+    logger.error("MongoDB connection failed (non-fatal): ", error.message);
+    logger.info("Server will continue running without MongoDB features.");
   }
 };

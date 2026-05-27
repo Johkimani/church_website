@@ -1,5 +1,5 @@
 // Base URL for the API endpoints - using proxy
-const API_BASE_URL = '/api';
+import { apiClient } from "../../../api/axiosInstance";
 
 /**
  * ApiService class provides methods to interact with the backend API.
@@ -19,18 +19,18 @@ class ApiService {
     const fallbackData = cached ? JSON.parse(cached) : [];
 
     try {
-      const response = await fetch(`${API_BASE_URL}/${tableName}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await apiClient.get(`/${tableName}`);
+      // Extract the actual array from { success: true, data: [...] } or use raw if already array
+      const rawData = response.data;
+      const dataArray = Array.isArray(rawData) ? rawData : (rawData?.data && Array.isArray(rawData.data) ? rawData.data : null);
+
+      // Update cache on success if we found an array
+      if (dataArray) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(dataArray));
+        return dataArray;
       }
-      const data = await response.json();
       
-      // Save to cache for offline use
-      if (Array.isArray(data)) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-      }
-      
-      return data;
+      return rawData;
     } catch (error) {
       console.warn(`Error fetching ${tableName}, using fallback content:`, error);
       
@@ -54,17 +54,8 @@ class ApiService {
    */
   async createRecord(tableName: string, data: Record<string, any>): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/${tableName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
+      const response = await apiClient.post(`/${tableName}`, data);
+      return response.data;
     } catch (error) {
       console.error(`Error creating record in ${tableName}:`, error);
       throw error;
@@ -79,13 +70,8 @@ class ApiService {
    */
   async deleteRecord(tableName: string, id: string | number): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/${tableName}/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
+      const response = await apiClient.delete(`/${tableName}/${id}`);
+      return response.data;
     } catch (error) {
       console.error(`Error deleting record from ${tableName}:`, error);
       throw error;
@@ -172,6 +158,33 @@ class ApiService {
   }
 
   /**
+   * Fetches a single official by their ID.
+   * @param id - The ID of the official.
+   */
+  async getOfficialById(id: string | number): Promise<any> {
+    try {
+      const response = await apiClient.get(`/officials/${id}`);
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error(`Error fetching official ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches the election history of officials.
+   */
+  async getOfficialHistory(): Promise<any[]> {
+    try {
+      const response = await apiClient.get('/officials/history');
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Error fetching officials history:', error);
+      return [];
+    }
+  }
+
+  /**
    * Creates a new gallery item.
    * @param galleryData - The data for the new gallery item.
    */
@@ -191,11 +204,8 @@ class ApiService {
    */
   async poolAllData(): Promise<Record<string, any[]>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/all`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
+      const response = await apiClient.get('/all');
+      return response.data;
     } catch (error) {
       console.error('Error pooling all data:', error);
       throw error;
@@ -246,6 +256,24 @@ class ApiService {
    */
   async deleteContribution(contributionId: string | number): Promise<any> {
     return this.deleteRecord('contributions', contributionId);
+  }
+  /**
+   * Clears the local cache for a specific table.
+   */
+  clearCache(tableName: string): void {
+    const CACHE_KEY = `csa_cache_${tableName}`;
+    localStorage.removeItem(CACHE_KEY);
+  }
+
+  /**
+   * Clears all CSA related caches.
+   */
+  clearAllCache(): void {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('csa_cache_')) {
+        localStorage.removeItem(key);
+      }
+    });
   }
 }
 

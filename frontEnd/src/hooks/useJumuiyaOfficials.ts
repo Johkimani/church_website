@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_JUMUIYA_BASE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { useAuth } from '../context/AuthContext';
+import apiService from '../pages/Landing/services/api';
 
 export interface JumuiyaOfficial {
   id: number;
@@ -16,7 +17,7 @@ export interface JumuiyaOfficial {
 
 export function useJumuiyaOfficials(filters: { termId?: number | string; category?: string } = {}) {
   const queryClient = useQueryClient();
-  const { token } = useAuth();
+  const { user } = useAuth();
   const { termId, category } = filters;
 
   const officialsQuery = useQuery({
@@ -43,7 +44,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
         method: 'POST', 
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         }
       });
       if (!res.ok) {
@@ -53,13 +54,14 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       return res.json();
     },
     onSuccess: () => {
+      apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Jumuiya official added successfully!');
+      showSuccessToast('Jumuiya Official Added Successfully', 'The Jumuiya official has been registered.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Add Jumuiya Official', error.message);
     },
   });
 
@@ -69,7 +71,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
         method: 'PUT', 
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         }
       });
       if (!res.ok) {
@@ -79,13 +81,14 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       return res.json();
     },
     onSuccess: () => {
+      apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Jumuiya official updated successfully!');
+      showSuccessToast('Jumuiya Official Updated Successfully', 'The Jumuiya official details have been updated.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Update Jumuiya Official', error.message);
     },
   });
 
@@ -94,7 +97,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       const res = await fetch(`${API_JUMUIYA_BASE}/${id}`, { 
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         }
       });
       if (!res.ok) {
@@ -104,13 +107,14 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       return res.json();
     },
     onSuccess: () => {
+      apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Jumuiya official deleted successfully!');
+      showSuccessToast('Jumuiya Official Deleted Successfully', 'The Jumuiya official record has been removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Delete Jumuiya Official', error.message);
     },
   });
 

@@ -1,11 +1,16 @@
-import { testDb } from "../Configs/dbConfig.js";
+import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
-
-// Explicit sort column overrides for tables without a standard 'id' column
 const TABLE_SORT_COLUMNS = {
-  members: 'member_id',
-  mpesa_request: 'created_at',
+  events: "event_date",
+  contributions: "date",
+  gallery: "event_date",
+  activities: "activity_date",
+  members: "join_date",
+  officials: "id",
+  projects: "id",
+  jumuiya: "id",
+  mpesa_request: "created_at",
 };
 
 // Get all records from a table
@@ -14,7 +19,7 @@ export const getTableData = async (tableName) => {
 
   try {
     // Attempt query with ordering (using quotes to handle potential reserved words)
-    const result = await testDb.query(
+    const result = await pool.query(
       `SELECT * FROM "${tableName}" ORDER BY "${sortCol}" DESC`
     );
     return result.rows;
@@ -23,7 +28,7 @@ export const getTableData = async (tableName) => {
     if (firstError.code === '42703') {
       logger.warn(`Falling back to unordered SELECT for "${tableName}" - column "${sortCol}" not found`);
       try {
-        const fallback = await testDb.query(`SELECT * FROM "${tableName}"`);
+        const fallback = await pool.query(`SELECT * FROM "${tableName}"`);
         return fallback.rows;
       } catch (fallbackError) {
         console.error(`Fallback SELECT also failed for "${tableName}":`, fallbackError.message);
@@ -64,7 +69,7 @@ export const createRecord = async (tableName, data) => {
       RETURNING *
     `;
     
-    const result = await testDb.query(query, values);
+    const result = await pool.query(query, values);
     return result.rows[0];
   } catch (error) {
     logger.error(`Error creating record in ${tableName}: ${error.message}`);
@@ -77,7 +82,7 @@ export const createRecord = async (tableName, data) => {
 export const deleteRecord = async (tableName, id) => {
   try {
     const query = `DELETE FROM ${tableName} WHERE id = $1 RETURNING *`;
-    const result = await testDb.query(query, [id]);
+    const result = await pool.query(query, [id]);
     return result.rows[0];
   } catch (error) {
     console.error(`Error deleting record from ${tableName}:`, error.message);
@@ -101,4 +106,24 @@ export const getAllData = async () => {
   
   return data;
 };
-
+// Update a record in a table
+export const updateRecord = async (tableName, id, data) => {
+  try {
+    const columns = Object.keys(data);
+    const values = Object.values(data);
+    const setClause = columns.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
+    
+    const query = `
+      UPDATE "${tableName}"
+      SET ${setClause}
+      WHERE id = $${columns.length + 1}
+      RETURNING *
+    `;
+    
+    const result = await pool.query(query, [...values, id]);
+    return result.rows[0];
+  } catch (error) {
+    console.error(`Error updating record in ${tableName}:`, error.message);
+    throw error;
+  }
+};

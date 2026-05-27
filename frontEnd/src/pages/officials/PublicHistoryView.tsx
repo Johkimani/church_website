@@ -7,7 +7,7 @@ import {
 import { useHistory } from '../../hooks/useHistory';
 import { useTerms } from '../../hooks/useTerms';
 
-const UPLOAD_BASE = '';
+import { UPLOAD_BASE } from '../../api/config';
 const DEFAULT_AVATAR = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3Ccircle cx="50" cy="35" r="15" fill="%239ca3af"/%3E%3Cpath d="M20 100 Q20 70 50 70 Q80 70 80 100" fill="%239ca3af"/%3E%3C/svg%3E';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -48,27 +48,30 @@ export default function PublicHistoryView() {
   const selectedTermYear = terms.find(t => t.id.toString() === termFilter)?.year || 'All Years';
 
   return (
-    <div className="h-full bg-transparent p-4 sm:p-8">
+    <div className="h-full bg-transparent p-4 sm:pt-6 sm:px-8 pb-8">
       <div className="max-w-7xl mx-auto">
         {/* Navigation & Header */}
-        <div className="mb-12">
-          <button 
-            onClick={() => navigate('/officials')}
-            className="group flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-bold transition-all mb-8 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 w-fit"
-          >
-            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            Back to Active Officials
-          </button>
+        <div className="mb-10">
+          <div className="flex justify-start mb-6">
+            <button 
+              onClick={() => navigate('/officials')}
+              className="group flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-bold transition-all bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 text-sm"
+            >
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Back
+            </button>
+          </div>
 
           <header className="text-center relative">
-            <div className="inline-flex items-center justify-center p-3 bg-indigo-50 rounded-2xl text-indigo-600 mb-6 shadow-sm border border-indigo-100">
-               <GraduationCap className="w-8 h-8" />
+            <div className="inline-flex items-center justify-center p-2.5 bg-indigo-50 rounded-2xl text-indigo-600 mb-3 shadow-sm border border-indigo-100">
+               <GraduationCap className="w-6 h-6" />
             </div>
-            <h1 className="text-4xl sm:text-5xl font-black text-gray-900 tracking-tight mb-4">
-               Past CSA Officials
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-indigo-800 bg-clip-text text-transparent tracking-tight mb-2">
+               CSA Leadership History
             </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">
-               Honoring the dedicated service of our previous church leadership teams across the years.
+            <div className="w-16 h-1 bg-indigo-500 mx-auto rounded-full mb-5"></div>
+            <p className="text-sm sm:text-base text-gray-500 max-w-2xl mx-auto font-medium leading-relaxed">
+               Honoring the dedicated service of our previous church leadership teams.
             </p>
           </header>
         </div>

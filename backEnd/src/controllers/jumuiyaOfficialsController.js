@@ -1,7 +1,6 @@
-import { testDb as pool } from "../Configs/dbConfig.js";
+import { db as pool } from "../Configs/dbConfig.js";
 import ExcelJS from 'exceljs';
 import path from 'path';
-import fs from 'fs';
 import { 
   normalizePhone, 
   isValidPhone, 
@@ -175,17 +174,6 @@ export const createJumuiyaOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid phone number' });
     }
 
-    if (normalizedContact) {
-      const dup = await pool.query(
-        "SELECT id FROM jumuiya_officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)",
-        [normalizedContact]
-      );
-      if (dup.rows.length > 0) {
-        logger.warn(`Contact already in use: ${normalizedContact}`);
-        return res.status(409).json({ success: false, message: 'Contact already in use by another official' });
-      }
-    }
-
     if (!VALID_JUMUIYAS.includes(category)) {
       logger.warn(`Invalid Jumuiya category: ${category}`);
       return res.status(400).json({ success: false, message: `Invalid Jumuiya. Must be one of: ${VALID_JUMUIYAS.join(', ')}` });
@@ -196,11 +184,31 @@ export const createJumuiyaOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid Role. Must be one of: ${VALID_ROLES.join(', ')}` });
     }
 
-    // Check for exact Jumuiya + Role combination limits
-    const posDup = await pool.query(
-      "SELECT name FROM jumuiya_officials WHERE category = $1 AND position = $2 AND (status = 'active' OR status IS NULL)",
-      [category, position]
-    );
+    // Build checking promises to run in parallel
+    const promises = [
+      pool.query("SELECT id FROM election_terms WHERE is_current = TRUE"),
+      pool.query("SELECT name FROM jumuiya_officials WHERE category = $1 AND position = $2 AND (status = 'active' OR status IS NULL)", [category, position])
+    ];
+
+    let contactQueryIndex = -1;
+    if (normalizedContact) {
+      promises.push(
+        pool.query("SELECT id FROM jumuiya_officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)", [normalizedContact])
+      );
+      contactQueryIndex = promises.length - 1;
+    }
+
+    const results = await Promise.all(promises);
+    const currentTermResult = results[0];
+    const posDup = results[1];
+
+    if (contactQueryIndex !== -1) {
+      const dup = results[contactQueryIndex];
+      if (dup.rows.length > 0) {
+        logger.warn(`Contact already in use: ${normalizedContact}`);
+        return res.status(409).json({ success: false, message: 'Contact already in use by another official' });
+      }
+    }
 
     if (posDup.rows.length > 0) {
       logger.warn(`Position already occupied: ${position} in ${category}`);
@@ -211,10 +219,7 @@ export const createJumuiyaOfficial = async (req, res) => {
     }
 
     let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
-
-
-    const currentTerm = await pool.query("SELECT id FROM election_terms WHERE is_current = TRUE");
-    const termId = currentTerm.rows.length > 0 ? currentTerm.rows[0].id : null;
+    const termId = currentTermResult.rows.length > 0 ? currentTermResult.rows[0].id : null;
 
     const result = await pool.query(
       `INSERT INTO jumuiya_officials (name, category, position, contact, photo, election_term_id, status, term_of_service) 
@@ -531,14 +536,15 @@ export const archiveCurrentJumuiyaOfficials = async (req, res) => {
       });
     }
 
-    const archivePromises = currentOfficials.rows.map(official =>
-      client.query(
-        `UPDATE jumuiya_officials SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
-        [termId, official.id]
-      )
+    // 3. Archive all current officials in one bulk operation
+    await client.query(
+      `UPDATE jumuiya_officials 
+       SET status = 'archived', 
+           election_term_id = $1, 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE (status = 'active' OR status IS NULL)`,
+      [termId]
     );
-
-    await Promise.all(archivePromises);
 
     const termInfo = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
 

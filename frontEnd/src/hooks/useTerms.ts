@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_TERMS, API_ARCHIVE, API_JUMUIYA_ARCHIVE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { useAuth } from '../context/AuthContext';
+import apiService from '../pages/Landing/services/api';
 
 export interface ElectionTerm {
   id: number;
@@ -18,7 +19,7 @@ export interface ElectionTerm {
 
 export function useTerms() {
   const queryClient = useQueryClient();
-  const { token } = useAuth();
+  const { user } = useAuth();
 
   const termsQuery = useQuery({
     queryKey: ['terms'],
@@ -46,7 +47,7 @@ export function useTerms() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         },
         body: JSON.stringify(termData),
       });
@@ -59,10 +60,10 @@ export function useTerms() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      toast.success('Election term created successfully!');
+      showSuccessToast('Election Term Created', 'New election term has been initialized.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Create Term', error.message);
     },
   });
 
@@ -73,7 +74,7 @@ export function useTerms() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         },
         body: JSON.stringify(payload),
       });
@@ -82,14 +83,17 @@ export function useTerms() {
       return json;
     },
     onSuccess: (json, variables) => {
+      // Clear persistence-level caches to ensure landing page and public views refresh
+      apiService.clearAllCache();
+      
       queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_officials'] : ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_history'] : ['history'] });
-      toast.success(`${json.data?.archived_count || 'Officials'} archived successfully!`);
+      showSuccessToast('Officials Archived Successfully', `${json.data?.archived_count || 'Officials'} records have been successfully archived.`);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Archive Officials', error.message);
     },
   });
 

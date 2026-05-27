@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 
 import { useAuth } from '../context/AuthContext';
+import apiService from '../pages/Landing/services/api';
 
 export interface Official {
   id: number;
@@ -19,7 +20,7 @@ export interface Official {
 
 export function useOfficials() {
   const queryClient = useQueryClient();
-  const { token } = useAuth();
+  const { user } = useAuth();
 
   const officialsQuery = useQuery({
     queryKey: ['officials'],
@@ -37,7 +38,7 @@ export function useOfficials() {
         method: 'POST', 
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         }
       });
       if (!res.ok) {
@@ -47,12 +48,13 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
+      apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      toast.success('Official added successfully!');
+      showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Add Official', error.message);
     },
   });
 
@@ -62,7 +64,7 @@ export function useOfficials() {
         method: 'PUT', 
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         }
       });
       if (!res.ok) {
@@ -72,13 +74,14 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
+      apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Official updated successfully!');
+      showSuccessToast('Official Updated Successfully', 'The official details have been updated.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Update Official', error.message);
     },
   });
 
@@ -87,7 +90,7 @@ export function useOfficials() {
       const res = await fetch(`${API_BASE}/${id}`, { 
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         }
       });
       if (!res.ok) {
@@ -97,13 +100,14 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
+      apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      toast.success('Official deleted successfully!');
+      showSuccessToast('Official Deleted Successfully', 'The official record has been removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Delete Official', error.message);
     },
   });
 
@@ -113,7 +117,7 @@ export function useOfficials() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         },
         body: JSON.stringify(data),
       });
@@ -124,13 +128,14 @@ export function useOfficials() {
       return res.json();
     },
     onSuccess: () => {
+      apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      toast.success('Officials archived successfully!');
+      showSuccessToast('Officials Archived Successfully', 'The current term officials have been archived.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Archive Officials', error.message);
     },
   });
 
