@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import apiService from '../../Landing/services/api';
-import { 
-  Users, 
-  Settings2, 
+import { apiClient } from '../../../api/axiosInstance';
+import {
+  Users,
+  Settings2,
   Plus,
   Search,
   ExternalLink,
@@ -13,6 +13,7 @@ import {
   LayoutGrid
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ClickableCard from '../../../components/ClickableCard';
 
 export default function CommunityManager() {
   const [modules, setModules] = useState<any[]>([]);
@@ -28,7 +29,8 @@ export default function CommunityManager() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiService.fetchTableData('hub_modules');
+      const response = await apiClient.get('/api/hub_modules');
+      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       setModules(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error('[CommunityManager] load error:', err);
@@ -129,7 +131,12 @@ export default function CommunityManager() {
       {/* Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredModules.length > 0 ? filteredModules.map((module) => (
-          <div key={module.id} className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 overflow-hidden flex flex-col">
+          <ClickableCard
+            key={module.id}
+            to={`/admin/community-management/${module.id}`}
+            ariaLabel={`Manage ${module.title}`}
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-all duration-300 overflow-hidden flex flex-col"
+          >
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div 
@@ -139,10 +146,10 @@ export default function CommunityManager() {
                   <i className={`${module.icon_class} text-xl`}></i>
                 </div>
                 <div className="flex items-center gap-1">
-                    <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <button onClick={(e) => e.stopPropagation()} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                       <Edit2 size={18} />
                     </button>
-                    <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                    <button onClick={(e) => e.stopPropagation()} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
                       <Trash2 size={18} />
                     </button>
                 </div>
@@ -163,18 +170,20 @@ export default function CommunityManager() {
                <Link 
                 to={`/community/${module.id}`} 
                 target="_blank"
+                onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors"
                >
                  <ExternalLink size={14} /> View Public Page
                </Link>
                <Link 
                 to={`/admin/community-management/${module.id}`}
+                onClick={(e) => e.stopPropagation()}
                 className="text-xs font-bold text-blue-600 hover:underline"
                >
                  Edit Content
                </Link>
             </div>
-          </div>
+          </ClickableCard>
         )) : (
           <div className="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
             <LayoutGrid size={48} className="mx-auto text-slate-200 mb-4" />

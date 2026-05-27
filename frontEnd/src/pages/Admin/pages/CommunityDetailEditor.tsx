@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import apiService from '../../Landing/services/api';
+import { apiClient, createTableRecord, updateTableRecord, deleteTableRecord, uploadFile } from '../../../api/axiosInstance';
 import { 
   ArrowLeft,
   Calendar,
@@ -27,6 +27,11 @@ export default function CommunityDetailEditor() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [_error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [uploading, setUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadCategoryData();
@@ -36,9 +41,10 @@ export default function CommunityDetailEditor() {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch Module Meta if not already loaded
-      if (!moduleMeta) {
-        const modules = await apiService.fetchTableData('hub_modules');
+      // 1. Fetch Module Meta if not already loaded or category changed
+      if (!moduleMeta || moduleMeta.id !== categoryId) {
+        const modulesResponse = await apiClient.get('/api/hub_modules');
+        const modules = Array.isArray(modulesResponse.data) ? modulesResponse.data : (modulesResponse.data?.data || []);
         const meta = modules.find((m: any) => m.id === categoryId);
         setModuleMeta(meta);
       }
@@ -52,9 +58,10 @@ export default function CommunityDetailEditor() {
         case 'members': tableName = 'enrollments'; break;
       }
 
-      const result = await apiService.fetchTableData(tableName);
+      const response = await apiClient.get(`/api/${tableName}`);
+      const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       // Filter by module_id (or class_id for members)
-      const filtered = result.filter((item: any) => 
+      const filtered = items.filter((item: any) => 
         (item.module_id === categoryId) || (item.class_id === categoryId)
       );
       setData(filtered);
@@ -64,6 +71,101 @@ export default function CommunityDetailEditor() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openAddModal = () => {
+    setEditingItem(null);
+    setFormValues({});
+    setShowModal(true);
+  };
+
+  const openEditModal = (item: any) => {
+    setEditingItem(item);
+    setFormValues({ ...item });
+    setShowModal(true);
+  };
+
+  const closeModal = () => { setShowModal(false); setEditingItem(null); setFormValues({}); };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length) {
+      setFormValues(v => ({ ...v, _files: Array.from(files) }));
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      // Basic validation
+      if (activeTab === 'activities') {
+        if (!formValues.title) return alert('Title required');
+      }
+      if (activeTab === 'announcements') {
+        if (!formValues.title) return alert('Title required');
+      }
+
+      // Handle file upload first
+      if (formValues._files && formValues._files.length) {
+        setUploading(true);
+        const res = await uploadFile(formValues._files as File[]);
+        const uploaded = res.data || [];
+        // attach first file url
+        if (uploaded[0]) {
+          formValues.image_url = uploaded[0].url || uploaded[0].secure_url || uploaded[0].path;
+          formValues.public_id = uploaded[0].public_id || uploaded[0].id;
+        }
+        setUploading(false);
+      }
+
+      const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : activeTab === 'officials' ? 'hub_officials' : 'enrollments';
+
+      const payload = { ...formValues, module_id: categoryId };
+
+      if (editingItem?.id) {
+        await updateTableRecord(tableName, editingItem.id, payload);
+        showToast('Updated successfully');
+      } else {
+        await createTableRecord(tableName, payload);
+        showToast('Created successfully');
+      }
+
+      // invalidate simple API cache used by ApiService
+      try {
+        localStorage.removeItem('csa_cache_hub_activities');
+        localStorage.removeItem('csa_cache_hub_announcements');
+        localStorage.removeItem('csa_cache_hub_officials');
+        localStorage.removeItem('csa_cache_enrollments');
+      } catch {}
+
+      closeModal();
+      await loadCategoryData();
+    } catch (err: any) {
+      console.error('Save failed', err);
+      alert(err?.message || 'Save failed');
+    }
+  };
+
+  const handleDelete = async (id: number | string) => {
+    if (!confirm('Are you sure? This action cannot be undone.')) return;
+    try {
+      const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : activeTab === 'officials' ? 'hub_officials' : 'enrollments';
+      await deleteTableRecord(tableName, id as any);
+      showToast('Deleted');
+      try {
+        localStorage.removeItem('csa_cache_hub_activities');
+        localStorage.removeItem('csa_cache_hub_announcements');
+        localStorage.removeItem('csa_cache_hub_officials');
+        localStorage.removeItem('csa_cache_enrollments');
+      } catch {}
+      await loadCategoryData();
+    } catch (err: any) {
+      console.error('Delete failed', err);
+      alert('Delete failed');
+    }
+  };
+
+  const showToast = (msg: string) => {
+    try { (window as any).toast && (window as any).toast(msg); } catch {}
   };
 
   const tabs: { id: TabType; label: string; icon: any }[] = [
@@ -132,17 +234,20 @@ export default function CommunityDetailEditor() {
       {/* Tab Content */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
         {/* Tab Header Controls */}
-        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/30">
+          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/30">
           <div>
             <h3 className="font-black text-slate-800 uppercase tracking-tight">
               Manage {tabs.find(t => t.id === activeTab)?.label}
             </h3>
             <p className="text-xs text-slate-500 font-medium">Results for {categoryId} category</p>
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-            <Plus size={18} />
-            Add {activeTab === 'members' ? 'Member' : 'New ' + (activeTab.slice(0, -1))}
-          </button>
+          <div className="flex items-center gap-2">
+            <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-2 border rounded-md text-sm mr-2" />
+            <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+              <Plus size={18} />
+              Add {activeTab === 'members' ? 'Member' : 'New ' + (activeTab.slice(0, -1))}
+            </button>
+          </div>
         </div>
 
         <div className="p-6">
@@ -177,7 +282,7 @@ export default function CommunityDetailEditor() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.map((member) => (
+                    {data.filter(m => (m.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())).map((member) => (
                       <tr key={member.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
@@ -198,12 +303,12 @@ export default function CommunityDetailEditor() {
                         </td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                             <button className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
+                              <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch(err){ alert('Approve failed'); } }} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
                                 <CheckCircle size={18} />
-                             </button>
-                             <button className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Delete">
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDelete(member.id); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Delete">
                                 <Trash2 size={18} />
-                             </button>
+                              </button>
                           </div>
                         </td>
                       </tr>
@@ -223,10 +328,10 @@ export default function CommunityDetailEditor() {
                                 <ImageIcon size={48} />
                              </div>
                            )}
-                           <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-blue-600 hover:bg-white"><Edit2 size={14} /></button>
-                              <button className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-rose-600 hover:bg-white"><Trash2 size={14} /></button>
-                           </div>
+                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); openEditModal(official); }} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-blue-600 hover:bg-white"><Edit2 size={14} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(official.id); }} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-rose-600 hover:bg-white"><Trash2 size={14} /></button>
+                          </div>
                         </div>
                         <div className="p-4 text-center">
                            <h4 className="font-black text-slate-800 uppercase tracking-tight">{official.name}</h4>
@@ -239,7 +344,7 @@ export default function CommunityDetailEditor() {
                 /* List View for Activities/Announcements */
                 <div className="space-y-4">
                   {data.map((item) => (
-                    <div key={item.id} className="p-5 border border-slate-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50/10 transition-all flex items-start justify-between gap-4 group">
+                    <div key={item.id} onClick={() => openEditModal(item)} className="p-5 border border-slate-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50/10 transition-all flex items-start justify-between gap-4 group" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') openEditModal(item); }}>
                        <div className="flex gap-4">
                           <div className={`p-3 rounded-xl shrink-0 ${activeTab === 'activities' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
                              {activeTab === 'activities' ? <Calendar size={20} /> : <Megaphone size={20} />}
@@ -258,8 +363,8 @@ export default function CommunityDetailEditor() {
                           </div>
                        </div>
                        <div className="flex items-center gap-1 opacity-10 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors"><Edit2 size={18} /></button>
-                          <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-colors"><Trash2 size={18} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); openEditModal(item); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors"><Edit2 size={18} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-colors"><Trash2 size={18} /></button>
                        </div>
                     </div>
                   ))}
@@ -269,6 +374,75 @@ export default function CommunityDetailEditor() {
           )}
         </div>
       </div>
+      {/* Modal for Create / Edit */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
+            <h3 className="text-xl font-bold mb-4">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : activeTab === 'officials' ? 'Official' : 'Member'}</h3>
+            <div className="space-y-3">
+              {(activeTab === 'activities' || activeTab === 'announcements') && (
+                <>
+                  <div>
+                    <label className="text-sm font-bold">Title</label>
+                    <input value={formValues.title || ''} onChange={(e) => setFormValues(v => ({ ...v, title: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold">Description / Content</label>
+                    <textarea value={formValues.description || formValues.content || ''} onChange={(e) => setFormValues(v => ({ ...v, description: e.target.value, content: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" rows={4} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-bold">Venue / Location</label>
+                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold">Date</label>
+                      <input type="date" value={formValues.activity_date?.slice?.(0,10) || formValues.announcement_date?.slice?.(0,10) || ''} onChange={(e) => setFormValues(v => ({ ...v, activity_date: e.target.value, announcement_date: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'officials' && (
+                <>
+                  <div>
+                    <label className="text-sm font-bold">Full name</label>
+                    <input value={formValues.name || ''} onChange={(e) => setFormValues(v => ({ ...v, name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold">Position / Role</label>
+                    <input value={formValues.role || ''} onChange={(e) => setFormValues(v => ({ ...v, role: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold">WhatsApp / Contact</label>
+                    <input value={formValues.whatsapp || formValues.contact || ''} onChange={(e) => setFormValues(v => ({ ...v, whatsapp: e.target.value, contact: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'members' && (
+                <>
+                  <div>
+                    <label className="text-sm font-bold">Full name</label>
+                    <input value={formValues.full_name || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="text-sm font-bold">Attachment / Image (optional)</label>
+                <input type="file" onChange={handleFileChange} className="w-full mt-1" />
+                {formValues.image_url && <img src={formValues.image_url} alt="preview" className="w-32 h-20 object-cover mt-2 rounded" />}
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4">
+                <button onClick={closeModal} className="px-4 py-2 rounded bg-slate-100">Cancel</button>
+                <button disabled={uploading} onClick={handleSave} className="px-4 py-2 rounded bg-blue-600 text-white">{uploading ? 'Uploading...' : (editingItem ? 'Save Changes' : 'Create')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

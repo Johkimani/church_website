@@ -2,9 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { membersList, currentUser } from '../data/members';
 import { FaUserPlus, FaUsers, FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle } from 'react-icons/fa';
 import './TabsSystem.css';
+import ChoirJoinForm from '../choir/ChoirJoinForm';
+import DancersJoinForm from '../choir/DancersJoinForm';
+import CharismaticJoinForm from '../charismatic/CharismaticJoinForm';
 
 interface RegistrationTabProps {
     jumuiyaName: string;
+    jumuiyaId?: string;
     jumuiyaColor?: string;
 }
 
@@ -12,7 +16,7 @@ type RegistrationType = 'self' | 'bulk';
 
 const REGISTRATION_FEE = 50;
 
-const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaColor = 'var(--primary)' }) => {
+const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaId, jumuiyaColor = 'var(--primary)' }) => {
     const [registrationType, setRegistrationType] = useState<RegistrationType>('self');
     const [selfPhone, setSelfPhone] = useState('');
     const [bulkPhone, setBulkPhone] = useState('');
@@ -92,7 +96,14 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaC
                                 <p style={{ color: 'var(--text-secondary)' }}>You are already a registered member of {jumuiyaName}.</p>
                             </div>
                         ) : (
-                            <form onSubmit={handleSelfSubmit}>
+                            (jumuiyaId === 'st-thomas-aquinas-choir' || jumuiyaId === 'choir') ? (
+                                <ChoirJoinForm moduleId={jumuiyaId || 'choir'} />
+                            ) : jumuiyaId === 'dancers' ? (
+                                <DancersJoinForm moduleId="dancers" />
+                            ) : jumuiyaId === 'charismatic' ? (
+                                <CharismaticJoinForm moduleId="charismatic" />
+                            ) : (
+                                <form onSubmit={handleSelfSubmit}>
                                 <div style={{ marginBottom: '32px' }}>
                                     <h2 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Individual Registration</h2>
                                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Confirm your details and provide an M-Pesa number for payment.</p>
@@ -132,7 +143,8 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaC
                                 <button type="submit" className="btn-premium primary" style={{ width: '100%', justifyContent: 'center' }}>
                                     Pay & Complete Registration
                                 </button>
-                            </form>
+                                </form>
+                            )
                         )}
                     </div>
                 ) : (

@@ -204,7 +204,7 @@ const CommunityDetail: React.FC = () => {
     const { data: serverModuleData, isLoading, isError } = useQuery({
         queryKey: ['community', moduleId],
         queryFn: async () => {
-            const res = await apiClient.get(`/community-view/${moduleId}`);
+            const res = await apiClient.get(`/api/community-view/${moduleId}`);
             if (res.data?.isMissing || res.data?.isServerError) throw new Error('Not available');
             return res.data;
         },

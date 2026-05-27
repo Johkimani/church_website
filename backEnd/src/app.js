@@ -8,7 +8,7 @@ import morganMiddleware from "./logger/morgan.js";
 import { BackendDataService } from "./services/backend-data.js";
 import { rateLimit } from "express-rate-limit";
 import requestIp from "request-ip";
-import corsOptions from "./Configs/corsConfigs.js";
+import corsOptions, { allowedOrigins } from "./Configs/corsConfigs.js";
 import { Server } from "socket.io";
 import cookieParser from "cookie-parser"
 import { errorHandler } from "./middlewares/error.middlewares.js";
@@ -41,10 +41,16 @@ app.use(cookieParser());
 // create app using httserver so we can add a socket on top of the serve , unlike the http server
 const httpServer = createServer(app);
 
+const localOriginRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 const io = new Server(httpServer, {
   pingTimeout: 60000,
   cors: {
-    origin:process.env.CORS_ORIGIN,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin) || localOriginRegex.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   },
 });

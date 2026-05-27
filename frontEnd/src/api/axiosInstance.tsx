@@ -6,13 +6,32 @@ import { normalizeFiles } from "../pages/Devotions/utitlty";
 
 import { BASE_URL } from "./config";
 
-// Create an Axios instance for API requests
+const API_BASE_URL = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
+
+const getApiErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    if (error.response) {
+      return (
+        error.response.data?.error ||
+        error.response.data?.message ||
+        `Server responded with status ${error.response.status}`
+      );
+    }
+    if (error.request) {
+      return "Unable to reach the backend. Please ensure the server is running and the URL is correct.";
+    }
+    return error.message;
+  }
+  return typeof error === "string" ? error : "An unexpected error occurred.";
+};
+
 export const apiClient = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 120000,
 });
 
+export const getApiErrorMessageFromError = getApiErrorMessage;
 
 // Add an interceptor to set authorization header
 apiClient.interceptors.request.use(
@@ -110,7 +129,7 @@ apiClient.interceptors.response.use(
 
 // Create a separate instance for refresh to avoid interceptor recursion
 const refreshClient = axios.create({
-  baseURL: import.meta.env.VITE_SERVER_URI,
+  baseURL: API_BASE_URL,
 });
 
 // API functions for refresh both access and refresh token
@@ -187,6 +206,24 @@ export const deleteOneOrMoreFiles = (publicIds: string | string[]) => {
   return apiClient.delete("/files", {
     data: { publicIds: ids }, 
   });
+};
+
+// Generic table helpers for backend's generic table API (hub_* and enrollments)
+export const fetchTable = (table: string, params: Record<string, any> = {}) => {
+  const qs = new URLSearchParams(params as Record<string, string>).toString();
+  return apiClient.get(`/api/${table}${qs ? `?${qs}` : ''}`);
+};
+
+export const createTableRecord = (table: string, payload: Record<string, any>) => {
+  return apiClient.post(`/api/${table}`, payload);
+};
+
+export const updateTableRecord = (table: string, id: string | number, payload: Record<string, any>) => {
+  return apiClient.patch(`/api/${table}/${id}`, payload);
+};
+
+export const deleteTableRecord = (table: string, id: string | number) => {
+  return apiClient.delete(`/api/${table}/${id}`);
 };
 
 
