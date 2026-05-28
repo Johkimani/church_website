@@ -30,10 +30,21 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
 });
 
+// Create a fallback dummy user for teammate visual evaluation
+const dummyUser: UserData = {
+  accessToken: "dummy-token",
+  refreshToken: "dummy-token",
+  role: "admin",
+  name: "Universal Admin",
+  email: "admin@team.com",
+  status: "success",
+  jumuiya_id: "dummy-jumuiya-id"
+};
+
 // Create the provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<UserData | null>(dummyUser);
   // Check for stored user on initial load
   useEffect(() => {
     const storedData = LocalStorage.get('userdata');
@@ -44,6 +55,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Clear invalid session
         LocalStorage.remove('userdata');
       }
+    } else {
+      // Automatically log in dummy user for teammates' visual evaluation
+      setUser(dummyUser);
     }
   }, []);
 
