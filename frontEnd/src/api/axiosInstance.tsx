@@ -6,7 +6,7 @@ import { normalizeFiles } from "../pages/Devotions/utitlty";
 
 import { BASE_URL } from "./config";
 
-const API_BASE_URL = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
+const API_BASE_URL = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api/v1" : "");
 
 const getApiErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
@@ -36,9 +36,16 @@ export const getApiErrorMessageFromError = getApiErrorMessage;
 // Add an interceptor to set authorization header
 apiClient.interceptors.request.use(
   (config) => {
-    const userdata =LocalStorage.get('userdata');
+    const userdata = LocalStorage.get('userdata');
     if (userdata && userdata.accessToken) {
-      config.headers.Authorization = `Bearer ${userdata.accessToken}`;
+      const token = userdata.accessToken;
+      // Basic JWT sanity check: three parts separated by dots
+      if (typeof token === 'string' && token.split('.').length === 3) {
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('Detected malformed access token in localStorage; clearing it to avoid auth errors.');
+        LocalStorage.remove('userdata');
+      }
     }
     return config;
   },

@@ -175,6 +175,19 @@ const initialModules: CommunityModule[] = [
         officials: [
             { id: '1', name: 'Karanja', role: 'Chairperson', email: 'kara@gmail.com', phoneNumber: '073254635632' }
         ]
+    },
+    {
+        id: 'youth',
+        title: 'Mentorship Program',
+        description: 'Empowering individuals to grow in faith, career guidance, and life skills through structured mentorship.',
+        path: '/community/youth',
+        color: '#8e44ad',
+        icon: 'fas fa-users',
+        scheduleLabel: 'Mentorship Sessions',
+        registrationEndpoint: '/api/enrollments',
+        about: 'The Mentorship Program connects young Christians with experienced mentors to guide them in spiritual growth, professional development, and personal maturity.',
+        meetingSchedule: 'Every Sunday, 3:00 PM – 5:00 PM — Parish Hall',
+        fees: { registration: 0, subscription: 0 }
     }
 ];
 
@@ -187,16 +200,29 @@ interface CommunityContextType {
 const CommunityContext = createContext<CommunityContextType | undefined>(undefined);
 
 export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [modules, setModules] = useState<CommunityModule[]>(initialModules);
-    const [isLoading, setIsLoading] = useState(true);
+    const getStoredModules = (): CommunityModule[] => {
+        const cached = localStorage.getItem('community_modules_cache');
+        if (!cached) return initialModules;
+
+        try {
+            const parsed = JSON.parse(cached) as CommunityModule[];
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : initialModules;
+        } catch (error) {
+            console.error('Failed to parse cached community modules:', error);
+            return initialModules;
+        }
+    };
+
+    const [modules, setModules] = useState<CommunityModule[]>(getStoredModules);
+    const [isLoading, setIsLoading] = useState(() => !localStorage.getItem('community_modules_cache'));
 
     useEffect(() => {
         const fetchModules = async () => {
             try {
-                // Fetch dynamic list of Communities from backend
                 const response = await apiClient.get('/api/community-view/data');
-                if (response.data && response.data.length > 0) {
+                if (response.data && Array.isArray(response.data) && response.data.length > 0) {
                     setModules(response.data);
+                    localStorage.setItem('community_modules_cache', JSON.stringify(response.data));
                 }
             } catch (error) {
                 console.error("Failed to fetch community modules, using fallback data.", error);

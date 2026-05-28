@@ -6,6 +6,80 @@ import type { CommunityModule, PracticeSchedule } from './context/CommunityDataC
 import { apiClient } from '../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import CommunityModal from './components/CommunityModal';
+import { FaWhatsapp } from 'react-icons/fa';
+import { 
+  ChevronLeft, 
+  ArrowRight, 
+  Clock, 
+  Coins, 
+  MapPin, 
+  Calendar, 
+  Bell, 
+  Info, 
+  Users, 
+  Music, 
+  Compass, 
+  Flame, 
+  HeartHandshake,
+  GraduationCap,
+  Image as ImageIcon,
+  AlertTriangle,
+  FileText,
+  Mail,
+  Phone,
+  CheckCircle,
+  X
+} from 'lucide-react';
+
+interface MinistryTheme {
+  image: string;
+  tag: string;
+  icon: React.ReactNode;
+}
+
+const MINISTRY_THEMES: Record<string, MinistryTheme> = {
+  choir: {
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=1200",
+    tag: "Praise & Worship",
+    icon: <Music className="w-8 h-8 md:w-10 md:h-10 text-white" />
+  },
+  dancers: {
+    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=1200",
+    tag: "Liturgical Movement",
+    icon: <Compass className="w-8 h-8 md:w-10 md:h-10 text-white" />
+  },
+  charismatic: {
+    image: "https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=1200",
+    tag: "Prayer & Healing",
+    icon: <Flame className="w-8 h-8 md:w-10 md:h-10 text-white" />
+  },
+  "st-francis": {
+    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1200",
+    tag: "Simplicity & Charity",
+    icon: <HeartHandshake className="w-8 h-8 md:w-10 md:h-10 text-white" />
+  },
+  youth: {
+    image: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=1200",
+    tag: "Mentorship & Career",
+    icon: <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
+  }
+};
+
+const DEFAULT_THEME: MinistryTheme = {
+  image: "https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=1200",
+  tag: "Parish Ministry",
+  icon: <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
+};
+
+const tabIcons: Record<string, React.ReactNode> = {
+  about: <Info size={16} />,
+  announcements: <Bell size={16} />,
+  classes: <GraduationCap size={16} />,
+  schedules: <Clock size={16} />,
+  officials: <Users size={16} />,
+  activities: <Calendar size={16} />,
+  gallery: <ImageIcon size={16} />
+};
 
 // ─── Next Practice Countdown (Choir-specific) ────────────────────────────────
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -101,7 +175,7 @@ const CommunityDetail: React.FC = () => {
     const [formData, setFormData] = useState({ name: '', phone: '', email: '', experience: '', voiceType: '', musicLevel: 'Beginner' });
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [pendingPayment, setPendingPayment] = useState<{ amount: number; description: string; type: 'Join' | 'Subscription' | 'Uniform' | 'Class' }>({ amount: 0, description: '', type: 'Join' });
+    const [pendingPayment, setPendingPayment] = useState<{ amount: number; description: string; type: 'Join' | 'Uniform' | 'Class' }>({ amount: 0, description: '', type: 'Join' });
 
     // Robust Fee Parser
     const parseFee = (val: any): number => {
@@ -138,7 +212,7 @@ const CommunityDetail: React.FC = () => {
     const handleRegisterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Smart Fee Logic: Check Registration + Subscription (or Class fee)
+        // Smart Fee Logic: Check Registration (or class fee)
         let amount = 0;
         let pType: 'Join' | 'Class' = 'Join';
         let desc = `Joining ${moduleData?.title}`;
@@ -149,9 +223,7 @@ const CommunityDetail: React.FC = () => {
             pType = 'Class';
             desc = `Class Enrollment: ${cls?.title}`;
         } else {
-            const regNum = parseFee(moduleData?.fees?.registration);
-            const subNum = parseFee(moduleData?.fees?.subscription);
-            amount = regNum + subNum;
+            amount = parseFee(moduleData?.fees?.registration);
         }
 
         if (amount <= 0) {
@@ -162,7 +234,7 @@ const CommunityDetail: React.FC = () => {
         }
     };
 
-    const initiateSpecificPayment = (amt: number, desc: string, type: 'Subscription' | 'Uniform') => {
+    const initiateSpecificPayment = (amt: number, desc: string, type: 'Join' | 'Uniform') => {
         setPendingPayment({ amount: amt, description: desc, type });
         setShowPaymentModal(true);
     };
@@ -217,6 +289,23 @@ const CommunityDetail: React.FC = () => {
 
     const isChoir = moduleId === 'choir';
 
+    const getWhatsAppNumber = (phone?: string) => {
+        if (!phone) return '';
+        const digits = phone.replace(/\D/g, '');
+        if (digits.length === 10 && digits.startsWith('0')) {
+            return `254${digits.slice(1)}`;
+        }
+        if (digits.length === 12 && digits.startsWith('254')) {
+            return digits;
+        }
+        return digits;
+    };
+
+    const coordinator = moduleData?.officials?.find(official => official.phoneNumber || (official as any).phone);
+    const coordinatorWhatsApp = coordinator ? getWhatsAppNumber(coordinator.phoneNumber || (coordinator as any).phone) : '';
+    const contactHref = coordinatorWhatsApp ? `https://wa.me/${coordinatorWhatsApp}` : 'mailto:info@church.com';
+    const contactLabel = coordinatorWhatsApp ? 'Chat with Coordinator on WhatsApp' : 'Contact Coordinator';
+
     const availableTabs: { id: TabType; label: string; icon: string }[] = [
         { id: 'about', label: 'About', icon: 'fas fa-info-circle' },
         { id: 'announcements', label: 'Announcements', icon: 'fas fa-bullhorn' },
@@ -248,62 +337,114 @@ const CommunityDetail: React.FC = () => {
         );
     }
 
+    const theme = MINISTRY_THEMES[moduleId || ''] || DEFAULT_THEME;
+
     return (
-        <div className="w-full bg-slate-50 min-h-[80vh] pb-16 animate-fade-in">
-            {/* Hero */}
-            <div className="w-full pt-16 pb-24 px-4 md:px-8 relative overflow-hidden"
-                style={{ backgroundColor: moduleData.color && moduleData.color !== '#ffffff' ? moduleData.color : '#2c3e50' }}>
-                <div className="absolute inset-0 bg-black/30"></div>
-                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row items-center gap-6">
-                    <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-2xl border border-white/40 text-white flex-shrink-0">
-                        <i className={`${moduleData.icon || 'fas fa-users'} text-5xl drop-shadow-lg`}></i>
+        <div className="w-full bg-slate-50 min-h-screen pb-24 animate-fade-in font-sans text-slate-800">
+            {/* ══════════ Detail Hero Header (Premium Parallax Image Backdrop) ══════════ */}
+            <div className="w-full py-28 px-6 md:px-12 relative overflow-hidden bg-slate-950 shadow-2xl">
+                {/* Image Backdrop with overlay */}
+                <div className="absolute inset-0 z-0">
+                    <img 
+                        src={theme.image} 
+                        alt={moduleData.title} 
+                        className="w-full h-full object-cover object-center filter saturate-50 brightness-[0.35] opacity-50" 
+                    />
+                </div>
+                
+                {/* Ambient Glows */}
+                <div className="absolute top-[-30%] left-[-10%] w-[65%] h-[70%] rounded-full bg-blue-500/10 blur-[130px] z-0 pointer-events-none" />
+                <div className="absolute bottom-[-30%] right-[-10%] w-[65%] h-[70%] rounded-full bg-indigo-500/10 blur-[130px] z-0 pointer-events-none" />
+                
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent z-0" />
+
+                <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row items-center gap-8">
+                    {/* Glowing glass icon container */}
+                    <div className="w-24 h-24 md:w-28 md:h-28 bg-white/5 backdrop-blur-md rounded-[2rem] flex items-center justify-center shadow-2xl border border-white/15 text-white shrink-0">
+                        {theme.icon}
                     </div>
-                    <div className="text-center md:text-left text-white">
-                        <Link to="/community" className="text-white text-sm font-semibold mb-3 flex items-center gap-1 w-fit mx-auto md:mx-0 bg-black/20 hover:bg-black/40 px-3 py-1.5 rounded-full border border-white/20 transition">
-                            <i className="fas fa-chevron-left text-xs"></i> Back to Community
+
+                    <div className="text-center md:text-left text-white flex-grow">
+                        <Link 
+                            to="/community" 
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-wider transition-all backdrop-blur-md mb-6 hover:-translate-x-1 duration-300"
+                        >
+                            <ChevronLeft size={14} /> Back to Communities
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight drop-shadow-lg">{moduleData.title}</h1>
-                        <p className="text-lg text-white/90 max-w-2xl drop-shadow-md">{moduleData.description}</p>
+                        
+                        <div className="mb-3">
+                            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-400 bg-blue-500/10 px-3.5 py-1.5 rounded-full border border-blue-500/20 inline-block">
+                                {theme.tag}
+                            </span>
+                        </div>
+                        
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 tracking-tight leading-none drop-shadow-md">
+                            {moduleData.title}
+                        </h1>
+                        
+                        <p className="text-base md:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed drop-shadow-sm">
+                            {moduleData.description}
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-12 relative z-20">
-                {/* Tabs */}
-                <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-2 mb-8 flex flex-wrap gap-2 justify-center md:justify-start">
+            {/* ══════════ Page Container ══════════ */}
+            <div className="max-w-6xl mx-auto px-6 md:px-12 -mt-10 relative z-20">
+                {/* Premium Glassmorphic Tabs */}
+                <div className="bg-white/80 backdrop-blur-md rounded-[2rem] shadow-xl border border-slate-100/60 p-2 mb-8 flex flex-wrap gap-2 justify-center md:justify-start">
                     {availableTabs.map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all text-sm ${activeTab === tab.id
-                                ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100'
-                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
-                            <i className={tab.icon}></i> {tab.label}
+                        <button 
+                            key={tab.id} 
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`px-5 py-3 rounded-2xl font-black flex items-center gap-2.5 transition-all text-xs uppercase tracking-wider cursor-pointer ${
+                                activeTab === tab.id
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                            }`}
+                        >
+                            {tabIcons[tab.id] || <Info size={14} />}
+                            <span>{tab.label}</span>
                         </button>
                     ))}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
+                    {/* Main Content Area */}
+                    <div className="lg:col-span-2 space-y-8">
 
                         {/* ABOUT TAB */}
                         {activeTab === 'about' && (
-                            <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in relative">
-                                {isError && <div className="absolute top-4 right-4 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">Offline Mode</div>}
-                                <h2 className="text-3xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Welcome to {moduleData.title}</h2>
-                                <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-line mb-8">{moduleData.story || moduleData.about || moduleData.description}</p>
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 md:p-10 border border-slate-100 animate-fade-in relative">
+                                {isError && (
+                                    <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                                        <AlertTriangle size={14} /> Offline Mode
+                                    </div>
+                                )}
+                                
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
+                                    Welcome to {moduleData.title}
+                                </h2>
+                                
+                                <p className="text-slate-600 leading-relaxed text-base md:text-lg whitespace-pre-line mb-8 font-medium">
+                                    {moduleData.story || moduleData.about || moduleData.description}
+                                </p>
 
-                                {/* Agenda – Non-Choir groups */}
+                                {/* Agenda Section */}
                                 {moduleData.agenda && moduleData.agenda.length > 0 && (
                                     <div className="mb-10">
-                                        <h3 className="text-xl font-extrabold text-slate-700 mb-4 flex items-center gap-2">
-                                            <i className="fas fa-list-check text-blue-500"></i> Our Mission & Agenda
+                                        <h3 className="text-xl font-black text-slate-800 mb-5 flex items-center gap-2 border-b border-slate-50 pb-2">
+                                            <FileText className="text-blue-600 w-5 h-5" /> Our Mission & Objectives
                                         </h3>
-                                        <ul className="space-y-3">
+                                        <ul className="space-y-4">
                                             {moduleData.agenda.map((item, i) => (
-                                                <li key={i} className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                                    <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm flex-shrink-0">{i + 1}</span>
-                                                    <span className="text-slate-700 font-medium">{item}</span>
+                                                <li key={i} className="flex items-start gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    <span className="w-8 h-8 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+                                                        {i + 1}
+                                                    </span>
+                                                    <span className="text-slate-700 font-semibold text-sm leading-relaxed pt-0.5">{item}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -311,76 +452,165 @@ const CommunityDetail: React.FC = () => {
                                 )}
 
                                 {/* Registration CTA */}
-                                <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl shadow-sm">
-                                    <h3 className="text-2xl font-extrabold text-blue-900 mb-2">{selectedClassId ? 'Class Enrollment' : 'Ready to join?'}</h3>
-                                    <p className="text-blue-700/80 mb-6 font-medium">
-                                        {selectedClassId ? 'Enrolling into a specialized music class.' : "We're always looking for dedicated members."}
-                                    </p>
+                                <div className="p-8 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border border-blue-100 rounded-[2rem] shadow-inner relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <h3 className="text-2xl font-black text-slate-900 mb-2">
+                                            {selectedClassId ? 'Class Enrollment' : 'Ready to Join?'}
+                                        </h3>
+                                        
+                                        <p className="text-slate-500 mb-6 font-semibold text-sm leading-relaxed">
+                                            {selectedClassId 
+                                                ? 'Enrolling in a specialized training program designed to help you build key skills.' 
+                                                : "We are always welcoming new hearts to share in our service. Submit your enrollment to get started."
+                                            }
+                                        </p>
 
-                                    {!showRegistration ? (
-                                        <button onClick={() => setShowRegistration(true)} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 transition hover:-translate-y-0.5">
-                                            <i className="fas fa-file-signature mr-2"></i> Join this Ministry
-                                        </button>
-                                    ) : (
-                                        <form onSubmit={handleRegisterSubmit} className="space-y-4 bg-white p-6 rounded-2xl shadow-sm border border-blue-50 relative">
-                                            {enrollMutation.isPending && (
-                                                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
-                                                    <div className="animate-spin text-blue-600"><i className="fas fa-circle-notch text-3xl"></i></div>
+                                        {!showRegistration ? (
+                                            <button 
+                                                onClick={() => setShowRegistration(true)} 
+                                                className="inline-flex items-center gap-2.5 px-8 py-4 bg-blue-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] transition-all cursor-pointer"
+                                            >
+                                                <FileText size={16} /> Join this Ministry
+                                            </button>
+                                        ) : (
+                                            <form onSubmit={handleRegisterSubmit} className="space-y-5 bg-white p-6 rounded-2xl shadow-lg border border-blue-100 relative">
+                                                {enrollMutation.isPending && (
+                                                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
+                                                        <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <h4 className="font-black text-slate-800 text-base uppercase tracking-wider">Enrollment Form</h4>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => { setShowRegistration(false); setSelectedClassId(null); }} 
+                                                        className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                                                    >
+                                                        <X size={18} />
+                                                    </button>
                                                 </div>
-                                            )}
-                                            <div className="flex justify-between items-center mb-2">
-                                                <h4 className="font-bold text-slate-800 text-lg">Enrollment Form</h4>
-                                                <button type="button" onClick={() => { setShowRegistration(false); setSelectedClassId(null); }} className="text-slate-400 hover:text-slate-600"><i className="fas fa-times"></i></button>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div><label className="block text-sm font-semibold text-slate-600 mb-1">Full Name</label>
-                                                    <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400" placeholder="John Doe" /></div>
-                                                <div><label className="block text-sm font-semibold text-slate-600 mb-1">Phone Number</label>
-                                                    <input required type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400" placeholder="+254..." /></div>
-                                            </div>
-
-                                            {/* Choir-specific fields */}
-                                            {isChoir && (
+                                                
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div><label className="block text-sm font-semibold text-slate-600 mb-1">Voice Type</label>
-                                                        <select required value={formData.voiceType} onChange={e => setFormData({ ...formData, voiceType: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
-                                                            <option value="">Select Voice</option>
-                                                            <option>Soprano</option><option>Alto</option><option>Tenor</option><option>Bass</option>
-                                                        </select></div>
-                                                    <div><label className="block text-sm font-semibold text-slate-600 mb-1">Skill Level</label>
-                                                        <select value={formData.musicLevel} onChange={e => setFormData({ ...formData, musicLevel: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
-                                                            <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
-                                                        </select></div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Full Name</label>
+                                                        <input 
+                                                            required 
+                                                            type="text" 
+                                                            value={formData.name} 
+                                                            onChange={e => setFormData({ ...formData, name: e.target.value })} 
+                                                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none transition-all text-sm font-semibold" 
+                                                            placeholder="John Doe" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Phone Number</label>
+                                                        <input 
+                                                            required 
+                                                            type="tel" 
+                                                            value={formData.phone} 
+                                                            onChange={e => setFormData({ ...formData, phone: e.target.value })} 
+                                                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none transition-all text-sm font-semibold" 
+                                                            placeholder="e.g. 0712345678" 
+                                                        />
+                                                    </div>
                                                 </div>
-                                            )}
 
-                                            <div><label className="block text-sm font-semibold text-slate-600 mb-1">Email (Optional)</label>
-                                                <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none" /></div>
-                                            <div><label className="block text-sm font-semibold text-slate-600 mb-1">Notes / Experience</label>
-                                                <textarea value={formData.experience} onChange={e => setFormData({ ...formData, experience: e.target.value })} rows={2} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none resize-none" placeholder="Tell us briefly why you want to join..."></textarea></div>
-                                            <button type="submit" className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow hover:bg-blue-700 transition">Submit Application</button>
-                                        </form>
-                                    )}
+                                                {isChoir && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Voice Type</label>
+                                                            <select 
+                                                                required 
+                                                                value={formData.voiceType} 
+                                                                onChange={e => setFormData({ ...formData, voiceType: e.target.value })} 
+                                                                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none transition-all text-sm font-semibold"
+                                                            >
+                                                                <option value="">Select Voice</option>
+                                                                <option>Soprano</option>
+                                                                <option>Alto</option>
+                                                                <option>Tenor</option>
+                                                                <option>Bass</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Skill Level</label>
+                                                            <select 
+                                                                value={formData.musicLevel} 
+                                                                onChange={e => setFormData({ ...formData, musicLevel: e.target.value })} 
+                                                                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none transition-all text-sm font-semibold"
+                                                            >
+                                                                <option>Beginner</option>
+                                                                <option>Intermediate</option>
+                                                                <option>Advanced</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Email Address (Optional)</label>
+                                                    <input 
+                                                        type="email" 
+                                                        value={formData.email} 
+                                                        onChange={e => setFormData({ ...formData, email: e.target.value })} 
+                                                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none transition-all text-sm font-semibold" 
+                                                        placeholder="email@example.com"
+                                                    />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Notes / Why do you want to join?</label>
+                                                    <textarea 
+                                                        value={formData.experience} 
+                                                        onChange={e => setFormData({ ...formData, experience: e.target.value })} 
+                                                        rows={3} 
+                                                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none resize-none transition-all text-sm font-semibold" 
+                                                        placeholder="Brief details about your motivation or past experience..."
+                                                    />
+                                                </div>
+                                                
+                                                <button 
+                                                    type="submit" 
+                                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
+                                                >
+                                                    Submit Application
+                                                </button>
+                                            </form>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {/* CLASSES TAB (Choir-specific) */}
                         {activeTab === 'classes' && (
-                            <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in">
-                                <h2 className="text-3xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Music Classes</h2>
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in">
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">Music Classes</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {moduleData.musicClasses?.map(mc => (
-                                        <div key={mc.id} className="p-6 bg-slate-50 border border-slate-100 rounded-2xl hover:border-blue-200 hover:shadow-md transition">
+                                        <div key={mc.id} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl hover:border-blue-200 hover:shadow-md transition duration-300 flex flex-col h-full">
                                             <div className="flex justify-between items-start mb-3">
-                                                <h3 className="text-xl font-bold text-slate-800">{mc.title}</h3>
-                                                <span className="text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-600 px-2 py-1 rounded">{mc.skillLevel}</span>
+                                                <h3 className="text-lg font-bold text-slate-800 tracking-tight">{mc.title}</h3>
+                                                <span className="text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg shrink-0">{mc.skillLevel}</span>
                                             </div>
-                                            <p className="text-slate-600 text-sm mb-4">{mc.description}</p>
-                                            {mc.instructor && <div className="text-xs text-slate-400 mb-1"><i className="fas fa-user-tie mr-1"></i> {mc.instructor}</div>}
-                                            <div className="flex items-center gap-2 text-slate-500 text-sm mb-5"><i className="far fa-clock"></i> {mc.schedule}</div>
-                                            <button onClick={() => openClassEnrollment(mc.id)} className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
-                                                <i className="fas fa-plus mr-1"></i> Join Class
+                                            <p className="text-slate-500 text-sm mb-4 leading-relaxed flex-grow">{mc.description}</p>
+                                            
+                                            <div className="space-y-2 mb-5">
+                                                {mc.instructor && (
+                                                    <div className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                                                        <Users size={14} /> {mc.instructor}
+                                                    </div>
+                                                )}
+                                                <div className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                                                    <Clock size={14} /> {mc.schedule}
+                                                </div>
+                                            </div>
+                                            
+                                            <button 
+                                                onClick={() => openClassEnrollment(mc.id)} 
+                                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer"
+                                            >
+                                                Join Class
                                             </button>
                                         </div>
                                     ))}
@@ -390,16 +620,23 @@ const CommunityDetail: React.FC = () => {
 
                         {/* SCHEDULES TAB */}
                         {activeTab === 'schedules' && (
-                            <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in">
-                                <h2 className="text-3xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">{moduleData.scheduleLabel || 'Schedule'}</h2>
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in">
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
+                                    {moduleData.scheduleLabel || 'Schedules'}
+                                </h2>
                                 <div className="space-y-4">
                                     {moduleData.practiceSchedules?.map(ps => (
-                                        <div key={ps.id} className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-100 transition">
-                                            <div>
-                                                <h3 className="text-2xl font-extrabold text-slate-800">{ps.day}</h3>
-                                                <p className="text-slate-500 font-medium mt-1">📍 {ps.location}</p>
+                                        <div key={ps.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:border-blue-100 hover:shadow-md transition-all duration-300 gap-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                                                    <MapPin size={18} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xl font-extrabold text-slate-800 leading-tight">{ps.day}</h3>
+                                                    <p className="text-slate-500 font-semibold text-xs mt-1">📍 {ps.location}</p>
+                                                </div>
                                             </div>
-                                            <div className="text-lg font-black text-blue-600 bg-blue-50 px-5 py-3 rounded-xl border border-blue-100">
+                                            <div className="text-sm font-black text-blue-600 bg-blue-50 px-4 py-2.5 rounded-2xl border border-blue-100 shrink-0 text-center">
                                                 {fmt12(ps.startTime)} – {fmt12(ps.endTime)}
                                             </div>
                                         </div>
@@ -410,110 +647,158 @@ const CommunityDetail: React.FC = () => {
 
                         {/* ANNOUNCEMENTS TAB */}
                         {activeTab === 'announcements' && (
-                            <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in relative">
-                                {isError && <div className="absolute top-4 right-4 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">Offline Mode</div>}
-                                <h2 className="text-3xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Latest Announcements</h2>
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                                {isError && (
+                                    <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                                        <AlertTriangle size={14} /> Offline Mode
+                                    </div>
+                                )}
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">Latest Announcements</h2>
                                 {moduleData.announcements && moduleData.announcements.length > 0 ? (
                                     <div className="space-y-4">
                                         {moduleData.announcements.map((ann: any) => (
-                                            <div key={ann.id} className="p-6 border-l-4 border-l-amber-400 bg-amber-50/30 rounded-r-2xl shadow-sm hover:shadow-md transition">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h3 className="text-xl font-bold text-slate-800">{ann.announcement_title || ann.title}</h3>
-                                                    <span className="text-xs font-bold text-amber-600 bg-amber-100 px-3 py-1 rounded-full">
-                                                        {new Date(ann.announcement_date || ann.date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            <div key={ann.id} className="p-6 border-l-4 border-l-amber-500 bg-amber-50/20 rounded-r-3xl shadow-sm hover:shadow-md transition duration-300">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                                                    <h3 className="text-lg font-black text-slate-800">{ann.announcement_title || ann.title}</h3>
+                                                    <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-3 py-1 rounded-full w-fit">
+                                                        {new Date(ann.announcement_date || ann.date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                                     </span>
                                                 </div>
-                                                <p className="text-slate-700 leading-relaxed">{ann.announcement_content || ann.content}</p>
+                                                <p className="text-slate-600 text-sm leading-relaxed font-semibold">{ann.announcement_content || ann.content}</p>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-slate-500 text-center py-8">No new announcements at this time.</p>
+                                    <div className="text-center py-12 text-slate-400">
+                                        <Bell className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                                        <p className="font-semibold text-sm">No announcements at this time.</p>
+                                    </div>
                                 )}
                             </div>
                         )}
 
                         {/* OFFICIALS TAB */}
                         {activeTab === 'officials' && (
-                            <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in relative">
-                                {isError && <div className="absolute top-4 right-4 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">Offline Mode</div>}
-                                <h2 className="text-3xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Our Leadership</h2>
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                                {isError && (
+                                    <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                                        <AlertTriangle size={14} /> Offline Mode
+                                    </div>
+                                )}
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">Our Leadership</h2>
                                 {moduleData.officials && moduleData.officials.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {moduleData.officials.map((official: any) => (
-                                            <div key={official.id} className="flex items-center gap-4 p-5 border border-slate-100 rounded-2xl hover:shadow-lg transition bg-slate-50/50 hover:bg-white group">
+                                            <div key={official.id} className="flex items-center gap-4 p-5 border border-slate-100 rounded-3xl hover:shadow-lg transition bg-slate-50/50 hover:bg-white group duration-300">
                                                 {official.photo_url || official.photoUrl ? (
-                                                    <img src={official.photo_url || official.photoUrl} alt={official.name} className="w-16 h-16 rounded-full object-cover shadow" />
+                                                    <img 
+                                                        src={official.photo_url || official.photoUrl} 
+                                                        alt={official.name} 
+                                                        className="w-16 h-16 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition duration-300" 
+                                                    />
                                                 ) : (
-                                                    <div className="w-16 h-16 rounded-full bg-indigo-100 text-indigo-500 flex items-center justify-center font-bold text-xl">
+                                                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl shrink-0">
                                                         {official.name.charAt(0)}
                                                     </div>
                                                 )}
-                                                <div>
-                                                    <h3 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition">{official.name}</h3>
-                                                    <p className="text-sm font-semibold text-slate-500 mb-2">{official.role}</p>
-                                                    <div className="flex gap-3">
-                                                        {official.email && <a href={`mailto:${official.email}`} className="text-blue-500 hover:text-blue-700 text-sm"><i className="fas fa-envelope mr-1"></i>Email</a>}
-                                                        {(official.phoneNumber || official.phone) && <a href={`tel:${official.phoneNumber || official.phone}`} className="text-green-500 hover:text-green-700 text-sm"><i className="fas fa-phone mr-1"></i>Call</a>}
+                                                <div className="flex-grow min-w-0">
+                                                    <h3 className="font-black text-slate-800 text-base group-hover:text-blue-600 transition truncate">{official.name}</h3>
+                                                    <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider truncate">{official.role}</p>
+                                                    <div className="flex gap-3 text-xs font-black uppercase tracking-wider">
+                                                        {official.email && (
+                                                            <a href={`mailto:${official.email}`} className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                                                <Mail size={12} /> Email
+                                                            </a>
+                                                        )}
+                                                        {(official.phoneNumber || official.phone) && (
+                                                            <a href={`tel:${official.phoneNumber || official.phone}`} className="text-emerald-600 hover:text-emerald-800 flex items-center gap-1">
+                                                                <Phone size={12} /> Call
+                                                            </a>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-slate-500 text-center py-8">No officials have been listed yet.</p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* ACTIVITIES TAB */}
-                        {activeTab === 'activities' && (
-                            <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in relative">
-                                {isError && <div className="absolute top-4 right-4 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">Offline Mode</div>}
-                                <h2 className="text-3xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Upcoming Activities</h2>
-                                {moduleData.activities && moduleData.activities.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {moduleData.activities.map((activity: any) => (
-                                            <div key={activity.id} className="flex flex-col md:flex-row p-6 border border-slate-100 rounded-2xl bg-white shadow-sm hover:border-blue-100 transition">
-                                                <div className="md:w-44 mb-3 md:mb-0 md:border-r border-slate-100 md:pr-6">
-                                                    <span className={`text-xs font-bold uppercase block mb-1 ${activity.status === 'Upcoming' ? 'text-orange-500' : 'text-green-500'}`}>
-                                                        {activity.status || 'Event'}
-                                                    </span>
-                                                    <span className="font-bold text-slate-700">{activity.date}</span>
-                                                </div>
-                                                <div className="md:pl-6 flex-grow">
-                                                    <h3 className="text-lg font-bold text-slate-800 mb-1">{activity.title}</h3>
-                                                    <p className="text-slate-600 text-sm">{activity.description}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-slate-500 text-center py-8">No activities scheduled right now. Join us at our regular meetings!</p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* GALLERY TAB */}
-                        {activeTab === 'gallery' && (
-                            <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in relative">
-                                {isError && <div className="absolute top-4 right-4 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">Offline Mode</div>}
-                                <h2 className="text-3xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Photo Gallery</h2>
-                                {moduleData.gallery && moduleData.gallery.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {moduleData.gallery.map((img: any) => (
-                                            <div key={img.id} className="group relative rounded-2xl overflow-hidden aspect-video shadow-sm hover:shadow-xl transition cursor-zoom-in">
-                                                <img src={img.url || img.imageUrl || img.image_url} alt={img.caption || img.eventName} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
-                                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition">
-                                                    <p className="text-white font-medium text-sm">{img.caption || img.eventName}</p>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="text-center py-12 text-slate-400">
-                                        <i className="fas fa-camera text-5xl mb-4 block"></i>
-                                        <p>Photos will appear here soon.</p>
+                                        <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                                        <p className="font-semibold text-sm">No leadership listed yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ACTIVITIES TAB */}
+                        {activeTab === 'activities' && (
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                                {isError && (
+                                    <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                                        <AlertTriangle size={14} /> Offline Mode
+                                    </div>
+                                )}
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">Upcoming Activities</h2>
+                                {moduleData.activities && moduleData.activities.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {moduleData.activities.map((activity: any) => (
+                                            <div key={activity.id} className="flex flex-col md:flex-row p-6 border border-slate-100 rounded-3xl bg-white shadow-sm hover:border-blue-100 hover:shadow-md transition-all duration-300">
+                                                <div className="md:w-44 mb-4 md:mb-0 md:border-r border-slate-100 md:pr-6 flex flex-col justify-center">
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest block mb-1.5 w-fit px-2.5 py-1 rounded ${
+                                                        activity.status === 'Upcoming' 
+                                                            ? 'bg-amber-50 text-amber-700 border border-amber-100' 
+                                                            : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                                    }`}>
+                                                        {activity.status || 'Event'}
+                                                    </span>
+                                                    <span className="font-black text-slate-700 text-sm flex items-center gap-1.5 mt-1">
+                                                        <Calendar size={14} className="text-slate-400" />
+                                                        {new Date(activity.date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </span>
+                                                </div>
+                                                <div className="md:pl-6 flex-grow flex flex-col justify-center">
+                                                    <h3 className="text-lg font-black text-slate-800 mb-1 leading-snug">{activity.title}</h3>
+                                                    <p className="text-slate-500 text-sm leading-relaxed font-semibold">{activity.description}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-slate-400">
+                                        <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                                        <p className="font-semibold text-sm">No activities scheduled yet. Join us for regular gatherings!</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* GALLERY TAB */}
+                        {activeTab === 'gallery' && (
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                                {isError && (
+                                    <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                                        <AlertTriangle size={14} /> Offline Mode
+                                    </div>
+                                )}
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">Photo Gallery</h2>
+                                {moduleData.gallery && moduleData.gallery.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {moduleData.gallery.map((img: any) => (
+                                            <div key={img.id} className="group relative rounded-3xl overflow-hidden aspect-video shadow-sm hover:shadow-xl transition cursor-zoom-in border border-slate-100">
+                                                <img 
+                                                    src={img.url || img.imageUrl || img.image_url} 
+                                                    alt={img.caption || img.eventName} 
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" 
+                                                />
+                                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                    <p className="text-white font-bold text-sm">{img.caption || img.eventName}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-slate-400">
+                                        <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                                        <p className="font-semibold text-sm">Photos will appear here soon.</p>
                                     </div>
                                 )}
                             </div>
@@ -525,70 +810,62 @@ const CommunityDetail: React.FC = () => {
 
                         {/* Practice Countdown - Choir only */}
                         {isChoir && moduleData.practiceSchedules && moduleData.practiceSchedules.length > 0 && (
-                            <div className="bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-6 border border-slate-100">
                                 <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-3">
-                                    <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl"><i className="fas fa-hourglass-half text-xl"></i></div>
-                                    <h3 className="text-xl font-black text-indigo-900">Next Practice</h3>
+                                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl"><Clock className="w-5 h-5" /></div>
+                                    <h3 className="text-lg font-black text-indigo-950">Next Practice</h3>
                                 </div>
                                 <PracticeCountdown schedules={moduleData.practiceSchedules} />
                             </div>
                         )}
 
                         {/* Meeting / Training Schedule (sidebar) */}
-                        <div className="bg-white rounded-3xl shadow-xl p-6 border border-slate-100 relative overflow-hidden">
-                            <div className="absolute -right-6 -top-6 text-slate-50 opacity-50 scale-150"><i className="far fa-clock text-9xl"></i></div>
+                        <div className="bg-white rounded-[2.5rem] shadow-xl p-6 border border-slate-100 relative overflow-hidden">
+                            <div className="absolute -right-6 -top-6 text-slate-50 opacity-30 scale-150 pointer-events-none">
+                                <Clock className="w-32 h-32 text-slate-100" />
+                            </div>
                             <div className="relative z-10">
                                 <div className="flex items-center gap-3 mb-5 border-b border-slate-100 pb-3">
-                                    <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl"><i className="far fa-calendar-check text-xl"></i></div>
-                                    <h3 className="text-xl font-black text-indigo-900">{moduleData.scheduleLabel || 'Meeting Time'}</h3>
+                                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl"><Clock className="w-5 h-5" /></div>
+                                    <h3 className="text-xl font-black text-indigo-950">{moduleData.scheduleLabel || 'Meeting Time'}</h3>
                                 </div>
-                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-start gap-3">
-                                    <i className="fas fa-map-marker-alt text-indigo-400 mt-1"></i>
-                                    <p className="text-slate-700 font-semibold leading-relaxed">{(moduleData as any).training || moduleData.meetingSchedule || 'Contact parish office for schedule.'}</p>
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-start gap-3">
+                                    <MapPin className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
+                                    <p className="text-slate-700 font-semibold text-sm leading-relaxed">
+                                        {(moduleData as any).training || moduleData.meetingSchedule || 'Contact parish office for schedule.'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Financial Information */}
-                        {moduleData.fees && (moduleData.fees.registration || moduleData.fees.subscription || moduleData.fees.uniform) && (
-                            <div className="bg-white rounded-3xl shadow-xl p-6 border border-slate-100 relative overflow-hidden">
-                                <div className="absolute -right-4 -top-4 text-slate-50 opacity-40 scale-125"><i className="fas fa-coins text-9xl"></i></div>
+                        {moduleData.fees && (moduleData.fees.registration || moduleData.fees.uniform) && (
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-6 border border-slate-100 relative overflow-hidden">
+                                <div className="absolute -right-4 -top-4 text-slate-50 opacity-30 scale-125 pointer-events-none">
+                                    <Coins className="w-28 h-28 text-slate-100" />
+                                </div>
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-3 mb-5 border-b border-slate-100 pb-3">
-                                        <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl"><i className="fas fa-wallet text-xl"></i></div>
-                                        <h3 className="text-xl font-black text-emerald-900">Ministry Fees</h3>
+                                        <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl"><Coins className="w-5 h-5" /></div>
+                                        <h3 className="text-xl font-black text-emerald-950">Ministry Fees</h3>
                                     </div>
                                     <ul className="space-y-4 text-slate-700">
                                         {moduleData.fees.registration !== undefined && (
-                                            <li className="flex justify-between items-center border-b border-slate-50 pb-3 gap-4">
+                                            <li className="flex justify-between items-center border-b border-slate-100 pb-3 gap-4">
                                                 <div className="flex-grow">
-                                                    <span className="text-slate-500 font-medium block">Registration</span>
-                                                    <span className="font-bold text-slate-800">
-                                                        {moduleData.fees.registration === 0 || moduleData.fees.registration === 'Free' ? <span className="text-emerald-600">Free</span> : `Ksh ${moduleData.fees.registration}`}
+                                                    <span className="text-slate-500 font-semibold text-xs block">Registration</span>
+                                                    <span className="font-bold text-slate-800 text-sm">
+                                                        {moduleData.fees.registration === 0 || moduleData.fees.registration === 'Free' ? (
+                                                            <span className="text-emerald-600">Free</span>
+                                                        ) : (
+                                                            `Ksh ${moduleData.fees.registration}`
+                                                        )}
                                                     </span>
                                                 </div>
                                                 {moduleData.fees.registration !== 0 && moduleData.fees.registration !== 'Free' && (
                                                     <button
-                                                        onClick={() => initiateSpecificPayment(Number(moduleData.fees?.registration), `Registration for ${moduleData.title}`, 'Subscription')}
-                                                        className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-200 transition"
-                                                    >
-                                                        PAY NOW
-                                                    </button>
-                                                )}
-                                            </li>
-                                        )}
-                                        {moduleData.fees.subscription !== undefined && (
-                                            <li className="flex justify-between items-center border-b border-slate-50 pb-3 gap-4">
-                                                <div className="flex-grow">
-                                                    <span className="text-slate-500 font-medium block">Subscription</span>
-                                                    <span className="font-bold text-slate-800">
-                                                        {moduleData.fees.subscription === 0 || moduleData.fees.subscription === 'None' ? <span className="text-emerald-600">Free</span> : `Ksh ${moduleData.fees.subscription}`}
-                                                    </span>
-                                                </div>
-                                                {moduleData.fees.subscription !== 0 && moduleData.fees.subscription !== 'None' && (
-                                                    <button 
-                                                        onClick={() => initiateSpecificPayment(Number(moduleData.fees?.subscription), `Subscription for ${moduleData.title}`, 'Subscription')}
-                                                        className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-200 transition"
+                                                        onClick={() => initiateSpecificPayment(Number(moduleData.fees?.registration), `Registration for ${moduleData.title}`, 'Join')}
+                                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
                                                     >
                                                         PAY NOW
                                                     </button>
@@ -597,10 +874,10 @@ const CommunityDetail: React.FC = () => {
                                         )}
                                         {moduleData.fees.uniform && (
                                             <li className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                                <div className="flex justify-between items-start mb-2">
+                                                <div className="flex justify-between items-start mb-2 gap-4">
                                                     <div>
-                                                        <span className="text-xs font-bold text-emerald-600 block uppercase tracking-wider">Uniform</span>
-                                                        <span className="text-sm text-slate-700 font-medium">{moduleData.fees.uniform}</span>
+                                                        <span className="text-[10px] font-black text-emerald-600 block uppercase tracking-wider">Uniform Info</span>
+                                                        <span className="text-xs text-slate-700 font-bold leading-relaxed block mt-1">{moduleData.fees.uniform}</span>
                                                     </div>
                                                     {moduleData.fees.uniform.includes('Ksh') && (
                                                         <button 
@@ -608,7 +885,7 @@ const CommunityDetail: React.FC = () => {
                                                                 const amt = parseFee(moduleData.fees?.uniform);
                                                                 initiateSpecificPayment(amt, `Uniform for ${moduleData.title}`, 'Uniform');
                                                             }}
-                                                            className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-black hover:bg-indigo-200 transition"
+                                                            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer shrink-0"
                                                         >
                                                             ORDER
                                                         </button>
@@ -622,15 +899,27 @@ const CommunityDetail: React.FC = () => {
                         )}
 
                         {/* Contact CTA */}
-                        <div className="bg-gradient-to-br from-blue-600 to-cyan-500 rounded-3xl p-8 text-white text-center shadow-xl shadow-blue-500/20 sticky top-4">
-                            <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
-                                <i className="fas fa-paper-plane text-xl"></i>
+                        <div className="bg-gradient-to-br from-indigo-950 via-slate-950 to-indigo-900 rounded-[2.5rem] p-8 text-white text-center shadow-xl border border-slate-900 relative overflow-hidden">
+                            {/* Glow Effects */}
+                            <div className="absolute top-[-25%] left-[-25%] w-[65%] h-[65%] rounded-full bg-blue-500/5 blur-[55px] pointer-events-none" />
+                            <div className="absolute bottom-[-25%] right-[-25%] w-[65%] h-[65%] rounded-full bg-indigo-500/5 blur-[55px] pointer-events-none" />
+                            
+                            <div className="relative z-10">
+                                <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10 shadow-lg text-indigo-400">
+                                    <Bell className="w-6 h-6 animate-pulse" />
+                                </div>
+                                <h3 className="text-xl font-black mb-2 text-white">Need more info?</h3>
+                                <p className="text-slate-400 mb-6 text-sm font-semibold leading-relaxed">Contact the ministry coordinator for detailed inquiries.</p>
+                                <a 
+                                    href={contactHref} 
+                                    target={coordinatorWhatsApp ? '_blank' : undefined}
+                                    rel={coordinatorWhatsApp ? 'noopener noreferrer' : undefined}
+                                    className="inline-flex items-center justify-center gap-2 mx-auto px-6 py-4 bg-white hover:bg-blue-50 text-slate-950 hover:text-blue-700 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] duration-300"
+                                >
+                                    {coordinatorWhatsApp && <FaWhatsapp className="text-[#25D366]" size={16} />}
+                                    {contactLabel}
+                                </a>
                             </div>
-                            <h3 className="text-xl font-bold mb-2">Need more info?</h3>
-                            <p className="text-blue-100 mb-5 text-sm">Contact the ministry coordinator for detailed inquiries.</p>
-                            <a href="mailto:info@church.com" className="block px-6 py-3 bg-white text-blue-600 rounded-full font-black shadow-lg hover:scale-105 transition-all">
-                                Contact Coordinator
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -643,10 +932,14 @@ const CommunityDetail: React.FC = () => {
                 title="Welcome Aboard!"
                 type="success"
             >
-                <p className="mb-4">Your application to join <strong>{moduleData.title}</strong> has been received by our coordinators.</p>
-                <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex items-start gap-3">
-                    <i className="fas fa-info-circle text-emerald-500 mt-1"></i>
-                    <p className="text-sm text-emerald-700">Please attend our next meeting on <strong>{moduleData.meetingSchedule}</strong> for a brief orientation.</p>
+                <p className="mb-4 text-slate-650 font-semibold leading-relaxed">
+                    Your application to join <strong>{moduleData.title}</strong> has been received by our coordinators.
+                </p>
+                <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100 flex items-start gap-3">
+                    <CheckCircle className="text-emerald-500 mt-0.5 shrink-0" size={18} />
+                    <p className="text-sm text-emerald-700 font-semibold leading-relaxed">
+                        Please attend our next meeting on <strong>{moduleData.meetingSchedule}</strong> for a brief orientation.
+                    </p>
                 </div>
             </CommunityModal>
 
@@ -658,32 +951,32 @@ const CommunityDetail: React.FC = () => {
                 type="info"
             >
                 <div className="space-y-4 mb-6">
-                    <p className="text-slate-600">Please confirm your payment of <strong>Ksh {pendingPayment.amount}</strong>.</p>
+                    <p className="text-slate-600 font-medium">Please confirm your payment of <strong>Ksh {pendingPayment.amount}</strong>.</p>
                     
                     {pendingPayment.type === 'Join' && (
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm space-y-2">
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm space-y-2 font-bold text-slate-700">
                            <div className="flex justify-between"><span>Registration</span> <span>{moduleData.fees?.registration || 'Free'}</span></div>
-                           <div className="flex justify-between font-bold text-slate-900 pt-2 border-t"><span>Total Due</span> <span>Ksh {pendingPayment.amount}</span></div>
+                           <div className="flex justify-between font-black text-slate-900 pt-2 border-t"><span>Total Due</span> <span>Ksh {pendingPayment.amount}</span></div>
                         </div>
                     )}
                 </div>
 
-                <div className="bg-blue-50 p-5 rounded-3xl border border-blue-100 mb-6">
-                    <h4 className="font-bold text-blue-900 mb-1 flex items-center gap-2">
-                        <i className="fas fa-mobile-alt"></i> M-Pesa STK Push
+                <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100/60 mb-6">
+                    <h4 className="font-black text-blue-900 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
+                        <MapPin size={16} /> M-Pesa STK Push
                     </h4>
-                    <p className="text-sm text-blue-700">Enter phone number for M-Pesa prompt:</p>
+                    <p className="text-xs text-blue-700 font-semibold leading-relaxed">Enter phone number to receive the prompt:</p>
                     <input 
                         type="tel" 
                         value={formData.phone} 
                         onChange={e => setFormData({...formData, phone: e.target.value})}
-                        className="w-full mt-3 p-3 bg-white border border-blue-200 rounded-2xl outline-none text-blue-900 font-bold"
-                        placeholder="07..."
+                        className="w-full mt-3 p-3.5 bg-white border border-blue-200 focus:border-blue-600 rounded-2xl outline-none text-blue-950 font-black text-sm"
+                        placeholder="e.g. 0712345678"
                     />
                 </div>
                 <button 
                     onClick={handleConfirmPayment}
-                    className="w-full py-4 bg-emerald-600 text-white font-black rounded-[1.5rem] shadow-xl hover:bg-emerald-700 transition"
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/20 transition cursor-pointer"
                 >
                     Pay Ksh {pendingPayment.amount} Now
                 </button>

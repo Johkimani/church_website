@@ -137,7 +137,7 @@ export default function PublicView() {
     <article
       key={off.id}
       onClick={() => navigate(`/officials/${off.id}`)}
-      className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+      className="group bg-white rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
       style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
       title={`View ${off.name}'s profile`}
     >
@@ -149,20 +149,15 @@ export default function PublicView() {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className={`absolute inset-0 bg-gradient-to-t ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-25 transition-opacity duration-300`}></div>
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span style={{
-            background: 'rgba(15,23,42,0.75)', color: 'white',
-            padding: '6px 14px', borderRadius: '20px',
-            fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.05em',
-            backdropFilter: 'blur(4px)',
-          }}>
-            VIEW PROFILE
-          </span>
+        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="mx-auto max-w-fit rounded-full bg-slate-950/80 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.05em] text-white shadow-lg backdrop-blur-md">
+            View profile
+          </div>
         </div>
       </div>
 
       <div className="p-4 sm:p-5 text-center">
-        <h3 className="font-bold text-base sm:text-lg text-gray-900 group-hover:text-purple-600 transition-colors truncate">
+        <h3 className="font-bold text-gray-900 text-base sm:text-lg group-hover:text-blue-600 transition-colors truncate">
           {off.name}
         </h3>
         <p className={`text-xs sm:text-sm font-semibold bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} bg-clip-text text-transparent mt-2`}>
@@ -237,19 +232,6 @@ export default function PublicView() {
         </div>
         
         <div className="relative max-w-7xl mx-auto px-6 py-16 sm:py-20 text-center">
-          {user?.role.includes('admin') && (
-            <button
-              onClick={() => navigate('/admin/officials')}
-              className="absolute top-4 right-6 sm:top-6 sm:right-6 flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 active:scale-95 z-10"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="hidden sm:inline">Manage Officials</span>
-              <span className="sm:hidden">Manage</span>
-            </button>
-          )}
           
           <h1 
             className="font-bold mb-4 relative z-10"

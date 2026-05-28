@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
@@ -160,23 +160,11 @@ const App: React.FC = () => {
             }
           />
 
-          {/* Community Hub */}
-          <Route
-            path="community"
-            element={
-              <CommunityProvider>
-                <Community />
-              </CommunityProvider>
-            }
-          />
-          <Route
-            path="community/:moduleId"
-            element={
-              <CommunityProvider>
-                <CommunityDetail />
-              </CommunityProvider>
-            }
-          />
+          {/* Community Hub with persistent provider wrapper to optimize load speed */}
+          <Route element={<CommunityProvider><Outlet /></CommunityProvider>}>
+            <Route path="community" element={<Community />} />
+            <Route path="community/:moduleId" element={<CommunityDetail />} />
+          </Route>
 
           {/* 404 - Catch-all for unmatched routes */}
           <Route path="/*" element={<NotFound />} />
