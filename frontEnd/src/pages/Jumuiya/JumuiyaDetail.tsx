@@ -25,10 +25,10 @@ const JumuiyaDetail: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('about');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { getJumuiyaById } = useData();
-    const { } = useAuth();
+    const { user } = useAuth();
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [hasNewNotif, setHasNewNotif] = useState(true); // Initial state for demo
-    const isAdmin = true; // Hardcoded to true for development purposes as requested
+    const isAdmin = user?.role === 'admin';
 
     // The ID in the data is 'st-anthony', but the URL might be /jumuiya/st-anthony
     // The previous getJumuiyaByName handled some normalization. Let's assume the URL param matches the ID for now, 
@@ -120,7 +120,7 @@ const JumuiyaDetail: React.FC = () => {
                 <div className="container">
                     <h1>Jumuiya Not Found</h1>
                     <p>The requested Jumuiya could not be found.</p>
-                    <button className="btn-premium primary" onClick={() => navigate('/')} style={{ margin: '0 auto' }}>
+                    <button className="btn-premium primary" onClick={() => navigate('/jumuiya')} style={{ margin: '0 auto' }}>
                         <FaArrowLeft style={{ marginRight: '8px' }} /> Back to Jumuiyas
                     </button>
                 </div>
@@ -142,7 +142,7 @@ const JumuiyaDetail: React.FC = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'about':
-                return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/')} />;
+                return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/jumuiya')} />;
             case 'officials':
                 return <OfficialsTab
                     officials={displayedOfficials}
@@ -230,7 +230,7 @@ const JumuiyaDetail: React.FC = () => {
                 <div className="sidebar-footer">
                     <button
                         className="btn-premium"
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/jumuiya')}
                         style={{ width: '100%', justifyContent: 'center' }}
                     >
                         <FaArrowLeft style={{ marginRight: '8px' }} /> All Jumuiyas

@@ -14,7 +14,7 @@ const pool = new Pool({
 
 async function run() {
   try {
-    await pool.query("INSERT INTO hub_modules (id, title) VALUES ('general', 'General Parish'), ('youth', 'Youth Ministry') ON CONFLICT (id) DO NOTHING");
+    await pool.query("INSERT INTO hub_modules (id, title) VALUES ('general', 'General Parish'), ('youth', 'Mentorship Program') ON CONFLICT (id) DO NOTHING");
     console.log("✅ Modules ensured");
     process.exit(0);
   } catch (err) {

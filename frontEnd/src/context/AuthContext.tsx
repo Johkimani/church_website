@@ -44,19 +44,20 @@ const dummyUser: UserData = {
 // Create the provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
-  const [user, setUser] = useState<UserData | null>(dummyUser);
-  // Check for stored user on initial load
+  // Synchronously initialize state to prevent duplicate socket/API calls and loading lag
+  const [user, setUser] = useState<UserData | null>(() => {
+    const storedData = LocalStorage.get('userdata');
+    if (storedData && storedData.status === 'success') {
+      return storedData;
+    }
+    return dummyUser;
+  });
+
+  // Verify stored user session on mount and clean up if invalid
   useEffect(() => {
     const storedData = LocalStorage.get('userdata');
-    if (storedData) {
-      if (storedData.status === 'success') {
-        setUser(storedData);
-      } else {
-        // Clear invalid session
-        LocalStorage.remove('userdata');
-      }
-    } else {
-      // Automatically log in dummy user for teammates' visual evaluation
+    if (storedData && storedData.status !== 'success') {
+      LocalStorage.remove('userdata');
       setUser(dummyUser);
     }
   }, []);

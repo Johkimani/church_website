@@ -10,10 +10,20 @@ import { useAuth } from "./AuthContext.tsx";
 // Function to establish a socket connection with authorization token
 const getSocket = (token: string | undefined): ReturnType<typeof socketio> | null => { 
   if (!token) return null;
-  return socketio(import.meta.env.VITE_SOCKET_URI, {
-    withCredentials: true,
-    auth: { token },
-  });
+  // Basic JWT format check (3 parts separated by dots). Prevent connecting with malformed tokens.
+  if (typeof token === 'string' && token.split('.').length !== 3) {
+    console.warn('Socket connection aborted: malformed JWT token');
+    return null;
+  }
+  try {
+    return socketio(import.meta.env.VITE_SOCKET_URI, {
+      withCredentials: true,
+      auth: { token },
+    });
+  } catch (err) {
+    console.error('Failed to initialize socket client', err);
+    return null;
+  }
 };
 
 // Create a context to hold the socket instance

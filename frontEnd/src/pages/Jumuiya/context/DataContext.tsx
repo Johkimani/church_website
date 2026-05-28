@@ -3,7 +3,7 @@ import type { JumuiyaData, GalleryImage, Official, MeetingSchedule, TshirtOrder 
 import { jumuiyaList as initialJumuiyaList } from '../data/jumuiyaData';
 
 // Increment this whenever the data structure changes to force a localStorage reset
-const DATA_VERSION = '4';
+const DATA_VERSION = '5';
 
 interface DataContextType {
     jumuiyaList: JumuiyaData[];
