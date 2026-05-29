@@ -7,6 +7,7 @@ import ScrollToTop from './utils/ScrollToTop.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
 import { SocketProvider } from './context/SocketContext.tsx'
 import { NotificationProvider } from './context/NotificationContext.tsx'
+import { AppProvider } from './context/AppContext.tsx'
 
 const queryClient = new QueryClient()
 
@@ -15,10 +16,12 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <SocketProvider>
           <NotificationProvider>
-            <BrowserRouter>
-              <ScrollToTop />
-              <App />
-            </BrowserRouter>
+            <AppProvider>
+              <BrowserRouter>
+                <ScrollToTop />
+                <App />
+              </BrowserRouter>
+            </AppProvider>
           </NotificationProvider>
         </SocketProvider>
       </AuthProvider>
