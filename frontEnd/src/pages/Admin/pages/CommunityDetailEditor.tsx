@@ -170,9 +170,9 @@ export default function CommunityDetailEditor() {
           class_id: categoryId,
           module_id: categoryId,
           full_name: formValues.full_name || formValues.fullName,
-          voice_type: ['charismatic', 'dancers', 'youth'].includes(categoryId) ? '' : (formValues.voice_type || ''),
-          music_level: ['charismatic', 'dancers', 'youth'].includes(categoryId) ? '' : (formValues.music_level || 'Beginner'),
-          phone: ['charismatic', 'dancers', 'youth'].includes(categoryId) ? (formValues.phone || formValues.phoneNumber || '') : '',
+          voice_type: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? '' : (formValues.voice_type || ''),
+          music_level: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? '' : (formValues.music_level || 'Beginner'),
+          phone: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (formValues.phone || formValues.phoneNumber || '') : '',
           email: formValues.email || '',
           status: formValues.status || 'Pending'
         };
@@ -332,7 +332,7 @@ export default function CommunityDetailEditor() {
                   <thead>
                     <tr className="border-b border-slate-100">
                       <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name</th>
-                      {['charismatic', 'dancers', 'youth'].includes(categoryId) ? (
+                      {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
                         <>
                           <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone Number</th>
                           <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email Address</th>
@@ -362,7 +362,7 @@ export default function CommunityDetailEditor() {
                             <span className="font-bold text-slate-700">{member.fullName || member.full_name}</span>
                           </div>
                         </td>
-                        {['charismatic', 'dancers', 'youth'].includes(categoryId) ? (
+                        {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
                           <>
                             <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.phoneNumber || member.phone || 'N/A'}</td>
                             <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.email || 'N/A'}</td>
@@ -519,7 +519,7 @@ export default function CommunityDetailEditor() {
                     <label className="text-sm font-bold">Full name</label>
                     <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
                   </div>
-                  {['charismatic', 'dancers', 'youth'].includes(categoryId) ? (
+                  {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
                     <>
                       <div>
                         <label className="text-sm font-bold">Phone Number</label>
