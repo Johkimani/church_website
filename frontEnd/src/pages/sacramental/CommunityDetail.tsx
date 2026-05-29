@@ -176,6 +176,9 @@ const CommunityDetail: React.FC = () => {
     const [formData, setFormData] = useState({ name: '', phone: '', email: '', experience: '', voiceType: '', musicLevel: 'Beginner' });
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [activeCheckoutId, setActiveCheckoutId] = useState<string | null>(null);
+    const [verificationTimeout, setVerificationTimeout] = useState(false);
     const [pendingPayment, setPendingPayment] = useState<{ amount: number; description: string; type: 'Join' | 'Uniform' | 'Class' }>({ amount: 0, description: '', type: 'Join' });
 
     // Robust Fee Parser
@@ -190,7 +193,13 @@ const CommunityDetail: React.FC = () => {
     const enrollMutation = useMutation({
         mutationFn: async (data: typeof formData) => {
             const endpoint = moduleData?.registrationEndpoint || '/api/enrollments';
-            return await apiClient.post(endpoint, {
+            const payload = isCharismatic ? {
+                fullName: data.name,
+                phoneNumber: data.phone,
+                email: data.email || '',
+                community: 'charismatic',
+                status: 'Pending'
+            } : {
                 full_name: data.name,
                 class_id: selectedClassId || moduleId,
                 module_id: moduleId,
@@ -199,7 +208,13 @@ const CommunityDetail: React.FC = () => {
                 phone: data.phone || '',
                 email: data.email || '',
                 status: 'Pending',
-            });
+            };
+
+            if (isCharismatic) {
+                console.log("Submitting Charismatic Registration:", payload);
+            }
+
+            return await apiClient.post(endpoint, payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['enrollments', moduleId] });
@@ -217,12 +232,16 @@ const CommunityDetail: React.FC = () => {
     const handleRegisterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Smart Fee Logic: Check Registration (or class fee)
         let amount = 0;
         let pType: 'Join' | 'Class' = 'Join';
         let desc = `Joining ${moduleData?.title}`;
 
-        if (selectedClassId) {
+        if (isCharismatic) {
+            amount = 0;
+        } else if (isChoir || isStFrancis) {
+            amount = 20;
+            pType = 'Join';
+        } else if (selectedClassId) {
             const cls = moduleData?.musicClasses?.find(c => c.id === selectedClassId);
             amount = parseFee(cls?.fee);
             pType = 'Class';
@@ -244,31 +263,92 @@ const CommunityDetail: React.FC = () => {
         setShowPaymentModal(true);
     };
 
-    const handleConfirmPayment = () => {
+    const handleVerifyPayment = async () => {
+        if (!activeCheckoutId) return;
+        setIsProcessingPayment(true);
+        try {
+            const statusRes = await apiClient.get(`/api/authentication/stk-push-status/${activeCheckoutId}`);
+            if (statusRes.data.status === 'paid') {
+                setIsProcessingPayment(false);
+                toast.success('Payment received! Completing registration...');
+                if (pendingPayment.type === 'Join' || pendingPayment.type === 'Class') {
+                    enrollMutation.mutate(formData);
+                }
+                setShowPaymentModal(false);
+                setVerificationTimeout(false);
+                setActiveCheckoutId(null);
+            } else if (statusRes.data.status === 'failed') {
+                setIsProcessingPayment(false);
+                toast.error(`Payment failed: ${statusRes.data.result_desc || 'Cancelled by user'}`);
+                setVerificationTimeout(false);
+                setActiveCheckoutId(null);
+            } else {
+                setIsProcessingPayment(false);
+                toast.error('Payment still pending. If you paid, wait a moment and try again.');
+            }
+        } catch (error) {
+            setIsProcessingPayment(false);
+            toast.error('Could not verify payment status. Try again.');
+        }
+    };
+
+    const handleConfirmPayment = async () => {
         if (!formData.phone || formData.phone.length < 10) {
             toast.error('Please enter a valid phone number');
             return;
         }
 
-        // Trigger STK Push logic here
-        toast.promise(
-            apiClient.post('/api/payment/stkpush', {
+        setIsProcessingPayment(true);
+        setVerificationTimeout(false);
+        const loadingToast = toast.loading('Initiating M-Pesa Payment...');
+
+        try {
+            const res = await apiClient.post('/api/authentication/stk-push-guest', {
                 phoneNumber: formData.phone,
                 amount: pendingPayment.amount,
                 description: pendingPayment.description
-            }),
-            {
-                loading: 'Initiating M-Pesa Payment...',
-                success: (_res) => {
-                    if (pendingPayment.type === 'Join' || pendingPayment.type === 'Class') {
-                        enrollMutation.mutate(formData);
+            });
+            
+            const checkoutId = res.data.checkoutId;
+            setActiveCheckoutId(checkoutId);
+            toast.success('M-Pesa prompt sent. Please enter your PIN on your phone.', { id: loadingToast });
+            toast.loading('Processing payment... Do not close this window.', { id: 'pollingToast' });
+
+            const pollPayment = setInterval(async () => {
+                try {
+                    const statusRes = await apiClient.get(`/api/authentication/stk-push-status/${checkoutId}`);
+                    if (statusRes.data.status === 'paid') {
+                        clearInterval(pollPayment);
+                        setIsProcessingPayment(false);
+                        toast.success('Payment received! Completing registration...', { id: 'pollingToast' });
+                        if (pendingPayment.type === 'Join' || pendingPayment.type === 'Class') {
+                            enrollMutation.mutate(formData);
+                        }
+                        setShowPaymentModal(false);
+                        setActiveCheckoutId(null);
+                    } else if (statusRes.data.status === 'failed') {
+                        clearInterval(pollPayment);
+                        setIsProcessingPayment(false);
+                        toast.error(`Payment failed: ${statusRes.data.result_desc || 'Cancelled by user'}`, { id: 'pollingToast' });
+                        setActiveCheckoutId(null);
                     }
-                    setShowPaymentModal(false);
-                    return 'STK Push sent! Please check your phone.';
-                },
-                error: 'Failed to initiate payment. Check your internet.'
-            }
-        );
+                } catch (err) {
+                    // Ignore transient errors and continue polling
+                }
+            }, 3000);
+
+            // Timeout after 120 seconds
+            setTimeout(() => {
+                clearInterval(pollPayment);
+                setIsProcessingPayment(false);
+                setVerificationTimeout(true);
+                toast.error('Payment verification timed out.', { id: 'pollingToast' });
+            }, 120000);
+
+        } catch (error: any) {
+            setIsProcessingPayment(false);
+            toast.error(error.response?.data?.message || 'Failed to initiate payment. Check your internet.', { id: loadingToast });
+        }
     };
 
     const openClassEnrollment = (classId: string) => {
@@ -293,6 +373,9 @@ const CommunityDetail: React.FC = () => {
         queryKey: ['enrollments', moduleId],
         queryFn: async () => {
             const res = await apiClient.get('/api/enrollments');
+            if (moduleId === 'charismatic') {
+                console.log("Charismatic Members:", res.data);
+            }
             // Filter by class_id matching moduleId
             return Array.isArray(res.data) 
                 ? res.data.filter((e: any) => e.class_id === moduleId || e.module_id === moduleId)
@@ -307,6 +390,7 @@ const CommunityDetail: React.FC = () => {
 
     const isChoir = moduleId === 'choir';
     const isStFrancis = moduleId === 'st-francis';
+    const isCharismatic = moduleId === 'charismatic';
 
     const getWhatsAppNumber = (phone?: string) => {
         if (!phone) return '';
@@ -331,7 +415,7 @@ const CommunityDetail: React.FC = () => {
         ...(moduleData?.musicClasses?.length ? [{ id: 'classes' as TabType, label: 'Classes', icon: 'fas fa-graduation-cap' }] : []),
         ...(moduleData?.practiceSchedules?.length ? [{ id: 'schedules' as TabType, label: moduleData.scheduleLabel || 'Schedule', icon: 'fas fa-clock' }] : []),
         { id: 'officials', label: 'Leadership', icon: 'fas fa-users' },
-        ...(enrollmentsData?.length || isStFrancis ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
+        ...(enrollmentsData?.length || isStFrancis || isCharismatic ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
         { id: 'activities', label: 'Activities', icon: 'fas fa-calendar-alt' },
         { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' }
     ];
@@ -481,7 +565,9 @@ const CommunityDetail: React.FC = () => {
                                         <p className="text-slate-500 mb-6 font-semibold text-sm leading-relaxed">
                                             {selectedClassId 
                                                 ? 'Enrolling in a specialized training program designed to help you build key skills.' 
-                                                : "We are always welcoming new hearts to share in our service. Submit your enrollment to get started."
+                                                : isCharismatic
+                                                    ? 'Join our Charismatic Prayer Group community of faith, healing, worship, and spiritual growth.'
+                                                    : "We are always welcoming new hearts to share in our service. Submit your enrollment to get started."
                                             }
                                         </p>
 
@@ -565,8 +651,8 @@ const CommunityDetail: React.FC = () => {
                                                             </select>
                                                         </div>
                                                     </div>
-                                                ) : isStFrancis ? (
-                                                    /* St. Francis of Assisi — simple prayer group form, no music/experience fields */
+                                                ) : (isStFrancis || isCharismatic) ? (
+                                                    /* Simple prayer group form, no music/experience fields */
                                                     <></>
                                                 ) : (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -610,7 +696,7 @@ const CommunityDetail: React.FC = () => {
                                                     />
                                                 </div>
                                                 
-                                                {!isStFrancis && (
+                                                {!isStFrancis && !isCharismatic && (
                                                     <div>
                                                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Notes / Why do you want to join?</label>
                                                         <textarea 
@@ -795,37 +881,37 @@ const CommunityDetail: React.FC = () => {
                                             <div key={member.id} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-white hover:shadow-lg transition group duration-300">
                                                 <div className="flex items-start gap-4">
                                                     <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-lg shrink-0">
-                                                        {member.full_name?.charAt(0)?.toUpperCase() || '?'}
+                                                        {(member.fullName || member.full_name || '?').charAt(0)?.toUpperCase()}
                                                     </div>
                                                     <div className="flex-grow min-w-0">
-                                                        <h3 className="font-black text-slate-800 text-base group-hover:text-blue-600 transition truncate">{member.full_name}</h3>
+                                                        <h3 className="font-black text-slate-800 text-base group-hover:text-blue-600 transition truncate">{member.fullName || member.full_name}</h3>
                                                         <span className={`text-[10px] font-black uppercase tracking-wider inline-block mt-1 px-2.5 py-1 rounded-lg ${
-                                                            member.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                                            member.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : member.status === 'Rejected' ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
                                                         }`}>
                                                             {member.status || 'Pending'}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2 mt-4 pt-4 border-t border-slate-100/80 text-xs font-semibold">
-                                                    {member.voice_type && (
+                                                    {!isCharismatic && member.voice_type && (
                                                         <div className="flex justify-between items-center gap-2">
                                                             <span className="text-slate-400 font-bold uppercase tracking-wider">Voice</span>
                                                             <span className="text-slate-700 font-black">{member.voice_type}</span>
                                                         </div>
                                                     )}
-                                                    {member.music_level && (
+                                                    {!isCharismatic && member.music_level && (
                                                         <div className="flex justify-between items-center gap-2">
                                                             <span className="text-slate-400 font-bold uppercase tracking-wider">Level</span>
                                                             <span className="text-slate-700 font-black">{member.music_level}</span>
                                                         </div>
                                                     )}
-                                                    {member.phone && (
+                                                    {(member.phoneNumber || member.phone) && (
                                                         <div className="flex justify-between items-center gap-2">
                                                             <span className="text-slate-400 font-bold uppercase tracking-wider">Phone</span>
-                                                            <a href={`tel:${member.phone}`} className="text-blue-600 hover:text-blue-800 font-black transition">{member.phone}</a>
+                                                            <a href={`tel:${member.phoneNumber || member.phone}`} className="text-blue-600 hover:text-blue-800 font-black transition">{member.phoneNumber || member.phone}</a>
                                                         </div>
                                                     )}
-                                                    {member.email && (
+                                                    {(member.email) && (
                                                         <div className="flex justify-between items-center gap-2">
                                                             <span className="text-slate-400 font-bold uppercase tracking-wider">Email</span>
                                                             <a href={`mailto:${member.email}`} className="text-blue-600 hover:text-blue-800 font-black transition truncate max-w-[150px]">{member.email}</a>
@@ -1058,43 +1144,75 @@ const CommunityDetail: React.FC = () => {
                 </div>
             </CommunityModal>
 
-            {/* Payment Modal / STK Push Confirmation */}
+            {/* Payment Modal / M-Pesa Confirmation */}
             <CommunityModal
                 isOpen={showPaymentModal}
-                onClose={() => setShowPaymentModal(false)}
-                title={pendingPayment.type === 'Join' ? 'New Membership' : pendingPayment.description}
+                onClose={() => !isProcessingPayment && setShowPaymentModal(false)}
+                title={pendingPayment.type === 'Join' ? 'Registration Payment' : pendingPayment.description}
                 type="info"
             >
                 <div className="space-y-4 mb-6">
-                    <p className="text-slate-600 font-medium">Please confirm your payment of <strong>Ksh {pendingPayment.amount}</strong>.</p>
-                    
-                    {pendingPayment.type === 'Join' && (
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm space-y-2 font-bold text-slate-700">
-                           <div className="flex justify-between"><span>Registration</span> <span>{moduleData.fees?.registration || 'Free'}</span></div>
-                           <div className="flex justify-between font-black text-slate-900 pt-2 border-t"><span>Total Due</span> <span>Ksh {pendingPayment.amount}</span></div>
-                        </div>
-                    )}
+                    <p className="text-slate-600 font-medium">To complete your registration, please make a payment of <strong>Ksh {pendingPayment.amount}</strong>.</p>
                 </div>
 
-                <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100/60 mb-6">
-                    <h4 className="font-black text-blue-900 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
-                        <MapPin size={16} /> M-Pesa STK Push
+                <div className="bg-emerald-50/50 p-5 rounded-[2rem] border border-emerald-100 mb-6">
+                    <h4 className="font-black text-emerald-900 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
+                        <MapPin size={16} /> M-PESA Payment
                     </h4>
-                    <p className="text-xs text-blue-700 font-semibold leading-relaxed">Enter phone number to receive the prompt:</p>
+                    <p className="text-xs text-emerald-700 font-semibold leading-relaxed">Enter your M-PESA number to receive the payment prompt:</p>
                     <input 
                         type="tel" 
                         value={formData.phone} 
                         onChange={e => setFormData({...formData, phone: e.target.value})}
-                        className="w-full mt-3 p-3.5 bg-white border border-blue-200 focus:border-blue-600 rounded-2xl outline-none text-blue-950 font-black text-sm"
+                        disabled={isProcessingPayment}
+                        className="w-full mt-3 p-3.5 bg-white border border-emerald-200 focus:border-emerald-600 rounded-2xl outline-none text-emerald-950 font-black text-sm disabled:opacity-50"
                         placeholder="e.g. 0712345678"
                     />
                 </div>
-                <button 
-                    onClick={handleConfirmPayment}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/20 transition cursor-pointer"
-                >
-                    Pay Ksh {pendingPayment.amount} Now
-                </button>
+                
+                {verificationTimeout ? (
+                    <div className="space-y-3">
+                        <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-sm font-semibold">
+                            We could not confirm payment automatically. If you have already paid, click below to verify.
+                        </div>
+                        <button 
+                            onClick={handleVerifyPayment}
+                            disabled={isProcessingPayment}
+                            className="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center gap-2"
+                        >
+                            {isProcessingPayment ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Verifying...
+                                </>
+                            ) : (
+                                "Verify Payment Status"
+                            )}
+                        </button>
+                        <button 
+                            onClick={handleConfirmPayment}
+                            disabled={isProcessingPayment}
+                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/20 transition cursor-pointer flex items-center justify-center gap-2"
+                        >
+                            Retry Sending Prompt
+                        </button>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={handleConfirmPayment}
+                        disabled={isProcessingPayment}
+                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/20 transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                        {isProcessingPayment ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Processing... Check Phone
+                            </>
+                        ) : (
+                            `Pay Ksh ${pendingPayment.amount}`
+                        )}
+                    </button>
+                )}
             </CommunityModal>
         </div>
     );

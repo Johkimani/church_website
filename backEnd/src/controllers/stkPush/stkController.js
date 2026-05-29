@@ -96,19 +96,22 @@ export const callback = async (req, res) => {
       const CheckoutRequestID = stk.CheckoutRequestID;
       const ResultCode = stk.ResultCode;
 
+      const MerchantRequestID = stk.MerchantRequestID;
+      const ResultDesc = stk.ResultDesc;
+
       //  Respond FAST (important for Safaricom)
       res.status(200).json({ success: true });
 
       //  If payment failed
       if (ResultCode !== 0) {
         await client.query(
-          `UPDATE mpesa_request SET status='failed' WHERE checkout_id=$1`,
-          [CheckoutRequestID],
+          `UPDATE mpesa_request SET status='failed', result_code=$1, result_desc=$2, merchant_request_id=$3 WHERE checkout_id=$4`,
+          [ResultCode, ResultDesc, MerchantRequestID, CheckoutRequestID],
         );
 
         await client.query("COMMIT");
 
-        console.log("❌ Payment failed");
+        console.log(`❌ Payment failed: ${ResultDesc}`);
         return;
       }
 
@@ -144,8 +147,8 @@ export const callback = async (req, res) => {
       }
       //  Update payment
       await client.query(
-        `UPDATE mpesa_request SET status='paid' WHERE checkout_id=$1`,
-        [checkout_id],
+        `UPDATE mpesa_request SET status='paid', result_code=$1, result_desc=$2, mpesa_receipt=$3, merchant_request_id=$4 WHERE checkout_id=$5`,
+        [ResultCode, ResultDesc, paymentDetails.mpesaReceiptNumber, MerchantRequestID, checkout_id],
       );
 
       await client.query("COMMIT");

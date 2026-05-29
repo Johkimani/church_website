@@ -13,6 +13,7 @@ import {
   Loader2,
   Image as ImageIcon,
   CheckCircle,
+  XCircle,
   Clock,
   ExternalLink
 } from 'lucide-react';
@@ -168,9 +169,11 @@ export default function CommunityDetailEditor() {
         payload = {
           class_id: categoryId,
           module_id: categoryId,
-          full_name: formValues.full_name,
-          voice_type: formValues.voice_type || '',
-          music_level: formValues.music_level || 'Beginner',
+          full_name: formValues.full_name || formValues.fullName,
+          voice_type: categoryId === 'charismatic' ? '' : (formValues.voice_type || ''),
+          music_level: categoryId === 'charismatic' ? '' : (formValues.music_level || 'Beginner'),
+          phone: categoryId === 'charismatic' ? (formValues.phone || formValues.phoneNumber || '') : '',
+          email: formValues.email || '',
           status: formValues.status || 'Pending'
         };
       }
@@ -329,37 +332,69 @@ export default function CommunityDetailEditor() {
                   <thead>
                     <tr className="border-b border-slate-100">
                       <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name</th>
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Type</th>
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Level</th>
+                      {categoryId === 'charismatic' ? (
+                        <>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone Number</th>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email Address</th>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Registration Date</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Type</th>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Level</th>
+                        </>
+                      )}
                       <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
                       <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.filter(m => (m.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())).map((member) => (
+                    {data.filter(m => {
+                      const name = m.fullName || m.full_name || '';
+                      return name.toLowerCase().includes(searchTerm.toLowerCase());
+                    }).map((member) => (
                       <tr key={member.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs uppercase">
-                              {member.full_name?.substring(0, 2)}
+                              {(member.fullName || member.full_name || 'N/A')?.substring(0, 2)}
                             </div>
-                            <span className="font-bold text-slate-700">{member.full_name}</span>
+                            <span className="font-bold text-slate-700">{member.fullName || member.full_name}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.voice_type || 'N/A'}</td>
-                        <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.music_level || 'N/A'}</td>
+                        {categoryId === 'charismatic' ? (
+                          <>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.phoneNumber || member.phone || 'N/A'}</td>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.email || 'N/A'}</td>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+                              {member.registrationDate || member.enrolled_at ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString() : 'N/A'}
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.voice_type || 'N/A'}</td>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.music_level || 'N/A'}</td>
+                          </>
+                        )}
                         <td className="py-4 px-4">
                            <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                             member.status === 'Pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                             member.status === 'Pending' ? 'bg-amber-100 text-amber-700' : member.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
                            }`}>
                              {member.status}
                            </span>
                         </td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                              <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch(err){ alert('Approve failed'); } }} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
-                                <CheckCircle size={18} />
-                              </button>
+                              {member.status !== 'Approved' && (
+                                <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch(err){ alert('Approve failed'); } }} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
+                                  <CheckCircle size={18} />
+                                </button>
+                              )}
+                              {member.status !== 'Rejected' && (
+                                <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Rejected' }); showToast('Member rejected'); await loadCategoryData(); } catch(err){ alert('Reject failed'); } }} className="p-2 text-rose-400 hover:bg-rose-50 rounded-lg transition-colors" title="Reject">
+                                  <XCircle size={18} />
+                                </button>
+                              )}
                               <button onClick={(e) => { e.stopPropagation(); handleDelete(member.id); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Delete">
                                 <Trash2 size={18} />
                               </button>
@@ -482,28 +517,41 @@ export default function CommunityDetailEditor() {
                 <>
                   <div>
                     <label className="text-sm font-bold">Full name</label>
-                    <input value={formValues.full_name || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-sm font-bold">Voice Type (optional)</label>
-                      <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
-                        <option value="">Select...</option>
-                        <option value="Soprano">Soprano</option>
-                        <option value="Alto">Alto</option>
-                        <option value="Tenor">Tenor</option>
-                        <option value="Bass">Bass</option>
-                      </select>
+                  {categoryId === 'charismatic' ? (
+                    <>
+                      <div>
+                        <label className="text-sm font-bold">Phone Number</label>
+                        <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. 0712345678" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold">Email Address (optional)</label>
+                        <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. email@example.com" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-bold">Voice Type (optional)</label>
+                        <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                          <option value="">Select...</option>
+                          <option value="Soprano">Soprano</option>
+                          <option value="Alto">Alto</option>
+                          <option value="Tenor">Tenor</option>
+                          <option value="Bass">Bass</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold">Music Level</label>
+                        <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                          <option value="Beginner">Beginner</option>
+                          <option value="Intermediate">Intermediate</option>
+                          <option value="Advanced">Advanced</option>
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-bold">Music Level</label>
-                      <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Advanced">Advanced</option>
-                      </select>
-                    </div>
-                  </div>
+                  )}
                   <div>
                     <label className="text-sm font-bold">Status</label>
                     <select value={formValues.status || 'Pending'} onChange={(e) => setFormValues(v => ({ ...v, status: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
