@@ -62,7 +62,7 @@ api.get("/:table", validateTable, async (req, res) => {
     
     if (table === 'enrollments') {
       data = data.map(item => {
-        if (item.module_id === 'charismatic' || item.class_id === 'charismatic') {
+        if (['charismatic', 'dancers', 'youth'].includes(item.module_id) || ['charismatic', 'dancers', 'youth'].includes(item.class_id)) {
           return {
             id: item.id,
             fullName: item.full_name,
@@ -92,17 +92,18 @@ api.post("/:table", validateTable, async (req, res) => {
   try {
     const { table } = req.params;
     
-    if (table === 'enrollments' && (req.body.community === 'charismatic' || req.body.module_id === 'charismatic')) {
+    if (table === 'enrollments' && ['charismatic', 'dancers', 'youth'].includes(req.body.community || req.body.module_id)) {
+      const targetModule = req.body.community || req.body.module_id;
       const payload = {
         full_name: req.body.fullName || req.body.full_name || req.body.name,
         phone: req.body.phoneNumber || req.body.phone,
         email: req.body.email || '',
-        module_id: 'charismatic',
-        class_id: 'charismatic',
+        module_id: targetModule,
+        class_id: targetModule,
         status: req.body.status || 'Pending'
       };
       req.body = payload;
-      logger.info(`Mapping Charismatic registration payload: ${JSON.stringify(payload)}`);
+      logger.info(`Mapping ${targetModule} registration payload: ${JSON.stringify(payload)}`);
     }
 
     const newRecord = await createRecord(table, req.body);

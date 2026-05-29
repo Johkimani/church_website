@@ -193,11 +193,12 @@ const CommunityDetail: React.FC = () => {
     const enrollMutation = useMutation({
         mutationFn: async (data: typeof formData) => {
             const endpoint = moduleData?.registrationEndpoint || '/api/enrollments';
-            const payload = isCharismatic ? {
+            const isSimple = isCharismatic || isDancers || isYouth;
+            const payload = isSimple ? {
                 fullName: data.name,
                 phoneNumber: data.phone,
                 email: data.email || '',
-                community: 'charismatic',
+                community: isDancers ? 'dancers' : isYouth ? 'youth' : 'charismatic',
                 status: 'Pending'
             } : {
                 full_name: data.name,
@@ -210,8 +211,8 @@ const CommunityDetail: React.FC = () => {
                 status: 'Pending',
             };
 
-            if (isCharismatic) {
-                console.log("Submitting Charismatic Registration:", payload);
+            if (isSimple) {
+                console.log(`Submitting ${moduleId} Registration:`, payload);
             }
 
             return await apiClient.post(endpoint, payload);
@@ -236,7 +237,7 @@ const CommunityDetail: React.FC = () => {
         let pType: 'Join' | 'Class' = 'Join';
         let desc = `Joining ${moduleData?.title}`;
 
-        if (isCharismatic) {
+        if (isCharismatic || isDancers || isYouth) {
             amount = 0;
         } else if (isChoir || isStFrancis) {
             amount = 20;
@@ -391,6 +392,8 @@ const CommunityDetail: React.FC = () => {
     const isChoir = moduleId === 'choir';
     const isStFrancis = moduleId === 'st-francis';
     const isCharismatic = moduleId === 'charismatic';
+    const isDancers = moduleId === 'dancers';
+    const isYouth = moduleId === 'youth';
 
     const getWhatsAppNumber = (phone?: string) => {
         if (!phone) return '';
@@ -415,7 +418,7 @@ const CommunityDetail: React.FC = () => {
         ...(moduleData?.musicClasses?.length ? [{ id: 'classes' as TabType, label: 'Classes', icon: 'fas fa-graduation-cap' }] : []),
         ...(moduleData?.practiceSchedules?.length ? [{ id: 'schedules' as TabType, label: moduleData.scheduleLabel || 'Schedule', icon: 'fas fa-clock' }] : []),
         { id: 'officials', label: 'Leadership', icon: 'fas fa-users' },
-        ...(enrollmentsData?.length || isStFrancis || isCharismatic ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
+        ...(enrollmentsData?.length || isStFrancis || isCharismatic || isDancers || isYouth ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
         { id: 'activities', label: 'Activities', icon: 'fas fa-calendar-alt' },
         { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' }
     ];
@@ -651,7 +654,7 @@ const CommunityDetail: React.FC = () => {
                                                             </select>
                                                         </div>
                                                     </div>
-                                                ) : (isStFrancis || isCharismatic) ? (
+                                                ) : (isStFrancis || isCharismatic || isDancers || isYouth) ? (
                                                     /* Simple prayer group form, no music/experience fields */
                                                     <></>
                                                 ) : (
@@ -696,7 +699,7 @@ const CommunityDetail: React.FC = () => {
                                                     />
                                                 </div>
                                                 
-                                                {!isStFrancis && !isCharismatic && (
+                                                {!isStFrancis && !isCharismatic && !isDancers && !isYouth && (
                                                     <div>
                                                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Notes / Why do you want to join?</label>
                                                         <textarea 
@@ -893,13 +896,13 @@ const CommunityDetail: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2 mt-4 pt-4 border-t border-slate-100/80 text-xs font-semibold">
-                                                    {!isCharismatic && member.voice_type && (
+                                                    {!isCharismatic && !isDancers && !isYouth && member.voice_type && (
                                                         <div className="flex justify-between items-center gap-2">
                                                             <span className="text-slate-400 font-bold uppercase tracking-wider">Voice</span>
                                                             <span className="text-slate-700 font-black">{member.voice_type}</span>
                                                         </div>
                                                     )}
-                                                    {!isCharismatic && member.music_level && (
+                                                    {!isCharismatic && !isDancers && !isYouth && member.music_level && (
                                                         <div className="flex justify-between items-center gap-2">
                                                             <span className="text-slate-400 font-bold uppercase tracking-wider">Level</span>
                                                             <span className="text-slate-700 font-black">{member.music_level}</span>
