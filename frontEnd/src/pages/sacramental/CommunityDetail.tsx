@@ -306,6 +306,7 @@ const CommunityDetail: React.FC = () => {
     const moduleData: CommunityModule | undefined = serverModuleData || contextFallback;
 
     const isChoir = moduleId === 'choir';
+    const isStFrancis = moduleId === 'st-francis';
 
     const getWhatsAppNumber = (phone?: string) => {
         if (!phone) return '';
@@ -330,7 +331,7 @@ const CommunityDetail: React.FC = () => {
         ...(moduleData?.musicClasses?.length ? [{ id: 'classes' as TabType, label: 'Classes', icon: 'fas fa-graduation-cap' }] : []),
         ...(moduleData?.practiceSchedules?.length ? [{ id: 'schedules' as TabType, label: moduleData.scheduleLabel || 'Schedule', icon: 'fas fa-clock' }] : []),
         { id: 'officials', label: 'Leadership', icon: 'fas fa-users' },
-        ...(enrollmentsData?.length ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
+        ...(enrollmentsData?.length || isStFrancis ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
         { id: 'activities', label: 'Activities', icon: 'fas fa-calendar-alt' },
         { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' }
     ];
@@ -564,6 +565,9 @@ const CommunityDetail: React.FC = () => {
                                                             </select>
                                                         </div>
                                                     </div>
+                                                ) : isStFrancis ? (
+                                                    /* St. Francis of Assisi — simple prayer group form, no music/experience fields */
+                                                    <></>
                                                 ) : (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                         <div>
@@ -606,16 +610,18 @@ const CommunityDetail: React.FC = () => {
                                                     />
                                                 </div>
                                                 
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Notes / Why do you want to join?</label>
-                                                    <textarea 
-                                                        value={formData.experience} 
-                                                        onChange={e => setFormData({ ...formData, experience: e.target.value })} 
-                                                        rows={3} 
-                                                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none resize-none transition-all text-sm font-semibold" 
-                                                        placeholder="Brief details about your motivation or past experience..."
-                                                    />
-                                                </div>
+                                                {!isStFrancis && (
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Notes / Why do you want to join?</label>
+                                                        <textarea 
+                                                            value={formData.experience} 
+                                                            onChange={e => setFormData({ ...formData, experience: e.target.value })} 
+                                                            rows={3} 
+                                                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none resize-none transition-all text-sm font-semibold" 
+                                                            placeholder="Brief details about your motivation or past experience..."
+                                                        />
+                                                    </div>
+                                                )}
                                                 
                                                 <button 
                                                     type="submit" 
