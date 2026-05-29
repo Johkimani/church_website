@@ -11,6 +11,7 @@ import galleryRouter from "./galleryRouter.js";
 import communityViewRouter from "./communityViewRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
+import formsDistributionRouter from "./FormsDistributionRouter.js"
 
 const router = Router()
 
@@ -28,6 +29,7 @@ router.use("/questions", verifyToken, QuestionsRoutes);
 router.use("/files", verifyToken, uploadMedia);
 router.use("/notifications", verifyToken, notificationRoutes);
 router.use("/csa", verifyToken, JumuiComparisonRoutes);
+router.use("/distribution", verifyToken, formsDistributionRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

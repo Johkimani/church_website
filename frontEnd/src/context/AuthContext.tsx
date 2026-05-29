@@ -30,17 +30,6 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
 });
 
-// Create a fallback dummy user for teammate visual evaluation
-const dummyUser: UserData = {
-  accessToken: "dummy-token",
-  refreshToken: "dummy-token",
-  role: "admin",
-  name: "Universal Admin",
-  email: "admin@team.com",
-  status: "success",
-  jumuiya_id: "dummy-jumuiya-id"
-};
-
 // Create the provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
@@ -50,7 +39,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (storedData && storedData.status === 'success') {
       return storedData;
     }
-    return dummyUser;
+    return null;
   });
 
   // Verify stored user session on mount and clean up if invalid
@@ -58,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedData = LocalStorage.get('userdata');
     if (storedData && storedData.status !== 'success') {
       LocalStorage.remove('userdata');
-      setUser(dummyUser);
+      setUser(null);
     }
   }, []);
 
