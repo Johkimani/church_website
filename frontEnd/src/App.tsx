@@ -18,7 +18,11 @@ const PublicView = lazy(() => import("./pages/officials/PublicView"));
 const OfficialProfile = lazy(() => import("./pages/officials/OfficialProfile"));
 const Layout = lazy(() => import("./pages/Devotions/components/Layout"));
 const UniversalAdmin = lazy(() => import("./pages/Admin/UniversalAdmin"));
-const ProjectsPage = lazy(() => import("./pages/Landing/components/page/ProjectsPage"));
+const ProjectsHome = lazy(() => import("./pages/projects/pages/Home").then((module) => ({ default: module.Home })));
+const TshirtsPage = lazy(() => import("./pages/projects/pages/Tshirts").then((module) => ({ default: module.Tshirts })));
+const ChairsPage = lazy(() => import("./pages/projects/pages/Chairs").then((module) => ({ default: module.Chairs })));
+const InstrumentsPage = lazy(() => import("./pages/projects/pages/Instruments").then((module) => ({ default: module.Instruments })));
+const OtherProjectsPage = lazy(() => import("./pages/projects/pages/OtherProjects").then((module) => ({ default: module.OtherProjects })));
 const ActivitiesPage = lazy(() => import("./pages/Landing/components/page/ActivitiesPage"));
 
 // Utility pages
@@ -118,7 +122,11 @@ const App: React.FC = () => {
 
           {/* Standalone Landing Pages */}
           <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
-          <Route path="projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+          <Route path="projects" element={<ProtectedRoute><ProjectsHome /></ProtectedRoute>} />
+          <Route path="t-shirts" element={<ProtectedRoute><TshirtsPage /></ProtectedRoute>} />
+          <Route path="chairs" element={<ProtectedRoute><ChairsPage /></ProtectedRoute>} />
+          <Route path="instruments" element={<ProtectedRoute><InstrumentsPage /></ProtectedRoute>} />
+          <Route path="other-projects" element={<ProtectedRoute><OtherProjectsPage /></ProtectedRoute>} />
           <Route path="activities" element={<ProtectedRoute><ActivitiesPage /></ProtectedRoute>} />
           
           {/* show notification to all */}

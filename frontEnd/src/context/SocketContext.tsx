@@ -16,7 +16,8 @@ const getSocket = (token: string | undefined): ReturnType<typeof socketio> | nul
     return null;
   }
   try {
-    return socketio(import.meta.env.VITE_SOCKET_URI, {
+    const socketUri = import.meta.env.VITE_SOCKET_URI || 'http://localhost:3001';
+    return socketio(socketUri, {
       withCredentials: true,
       auth: { token },
     });
