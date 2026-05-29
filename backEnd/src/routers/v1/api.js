@@ -58,7 +58,26 @@ api.get("/all/data", async (req, res) => {
 api.get("/:table", validateTable, async (req, res) => {
   try {
     const { table } = req.params;
-    const data = await getTableData(table, req.query);
+    let data = await getTableData(table, req.query);
+    
+    if (table === 'enrollments') {
+      data = data.map(item => {
+        if (['charismatic', 'dancers', 'youth'].includes(item.module_id) || ['charismatic', 'dancers', 'youth'].includes(item.class_id)) {
+          return {
+            id: item.id,
+            fullName: item.full_name,
+            phoneNumber: item.phone,
+            email: item.email || 'N/A',
+            registrationDate: item.enrolled_at,
+            status: item.status,
+            module_id: item.module_id,
+            class_id: item.class_id
+          };
+        }
+        return item;
+      });
+    }
+
     logger.debug(`Success fetching from route '/:table'`);
     return res.json(data);
   } catch (error) {
@@ -72,6 +91,21 @@ api.get("/:table", validateTable, async (req, res) => {
 api.post("/:table", validateTable, async (req, res) => {
   try {
     const { table } = req.params;
+    
+    if (table === 'enrollments' && ['charismatic', 'dancers', 'youth'].includes(req.body.community || req.body.module_id)) {
+      const targetModule = req.body.community || req.body.module_id;
+      const payload = {
+        full_name: req.body.fullName || req.body.full_name || req.body.name,
+        phone: req.body.phoneNumber || req.body.phone,
+        email: req.body.email || '',
+        module_id: targetModule,
+        class_id: targetModule,
+        status: req.body.status || 'Pending'
+      };
+      req.body = payload;
+      logger.info(`Mapping ${targetModule} registration payload: ${JSON.stringify(payload)}`);
+    }
+
     const newRecord = await createRecord(table, req.body);
     logger.debug(`newRecord created from route '/:table'`);
 
