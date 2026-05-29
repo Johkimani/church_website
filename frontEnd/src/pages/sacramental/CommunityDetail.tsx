@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCommunityData } from './context/CommunityDataContext';
 import type { CommunityModule, PracticeSchedule } from './context/CommunityDataContext';
 import { apiClient } from '../../api/axiosInstance';
@@ -9,7 +9,6 @@ import CommunityModal from './components/CommunityModal';
 import { FaWhatsapp } from 'react-icons/fa';
 import { 
   ChevronLeft, 
-  ArrowRight, 
   Clock, 
   Coins, 
   MapPin, 
@@ -77,6 +76,7 @@ const tabIcons: Record<string, React.ReactNode> = {
   classes: <GraduationCap size={16} />,
   schedules: <Clock size={16} />,
   officials: <Users size={16} />,
+  members: <Users size={16} />,
   activities: <Calendar size={16} />,
   gallery: <ImageIcon size={16} />
 };
@@ -167,8 +167,9 @@ const CommunityDetail: React.FC = () => {
     const { moduleId } = useParams<{ moduleId: string }>();
     const navigate = useNavigate();
     const { getModuleById } = useCommunityData();
+    const queryClient = useQueryClient();
 
-    type TabType = 'about' | 'announcements' | 'officials' | 'activities' | 'gallery' | 'classes' | 'schedules';
+    type TabType = 'about' | 'announcements' | 'officials' | 'activities' | 'gallery' | 'classes' | 'schedules' | 'members';
     const [activeTab, setActiveTab] = useState<TabType>('about');
     const [showRegistration, setShowRegistration] = useState(false);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -192,12 +193,16 @@ const CommunityDetail: React.FC = () => {
             return await apiClient.post(endpoint, {
                 full_name: data.name,
                 class_id: selectedClassId || moduleId,
-                voice_type: moduleId === 'choir' ? data.voiceType : data.phone,
-                music_level: moduleId === 'choir' ? data.musicLevel : data.email,
+                module_id: moduleId,
+                voice_type: data.voiceType || '', // Use actual voice type for all groups
+                music_level: data.musicLevel || 'Beginner', // Use actual music level for all groups
+                phone: data.phone || '',
+                email: data.email || '',
                 status: 'Pending',
             });
         },
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['enrollments', moduleId] });
             toast.success('Registration submitted successfully!');
             setShowRegistration(false);
             setShowSuccessModal(true);
@@ -284,6 +289,19 @@ const CommunityDetail: React.FC = () => {
         staleTime: 300000
     });
 
+    const { data: enrollmentsData = [] } = useQuery({
+        queryKey: ['enrollments', moduleId],
+        queryFn: async () => {
+            const res = await apiClient.get('/api/enrollments');
+            // Filter by class_id matching moduleId
+            return Array.isArray(res.data) 
+                ? res.data.filter((e: any) => e.class_id === moduleId || e.module_id === moduleId)
+                : [];
+        },
+        retry: 1,
+        staleTime: 300000
+    });
+
     const contextFallback = moduleId ? getModuleById(moduleId) : undefined;
     const moduleData: CommunityModule | undefined = serverModuleData || contextFallback;
 
@@ -312,6 +330,7 @@ const CommunityDetail: React.FC = () => {
         ...(moduleData?.musicClasses?.length ? [{ id: 'classes' as TabType, label: 'Classes', icon: 'fas fa-graduation-cap' }] : []),
         ...(moduleData?.practiceSchedules?.length ? [{ id: 'schedules' as TabType, label: moduleData.scheduleLabel || 'Schedule', icon: 'fas fa-clock' }] : []),
         { id: 'officials', label: 'Leadership', icon: 'fas fa-users' },
+        ...(enrollmentsData?.length ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
         { id: 'activities', label: 'Activities', icon: 'fas fa-calendar-alt' },
         { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' }
     ];
@@ -515,7 +534,7 @@ const CommunityDetail: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                {isChoir && (
+                                                {isChoir ? (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div>
                                                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Voice Type</label>
@@ -538,6 +557,35 @@ const CommunityDetail: React.FC = () => {
                                                                 value={formData.musicLevel} 
                                                                 onChange={e => setFormData({ ...formData, musicLevel: e.target.value })} 
                                                                 className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none transition-all text-sm font-semibold"
+                                                            >
+                                                                <option>Beginner</option>
+                                                                <option>Intermediate</option>
+                                                                <option>Advanced</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Voice Type (Optional)</label>
+                                                            <select 
+                                                                value={formData.voiceType} 
+                                                                onChange={e => setFormData({ ...formData, voiceType: e.target.value })} 
+                                                                className="w-full px-4 py-3 bg-white border-2 border-slate-100 focus:border-blue-600 rounded-xl outline-none transition-all text-sm font-semibold"
+                                                            >
+                                                                <option value="">Not applicable</option>
+                                                                <option>Soprano</option>
+                                                                <option>Alto</option>
+                                                                <option>Tenor</option>
+                                                                <option>Bass</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Experience Level (Optional)</label>
+                                                            <select 
+                                                                value={formData.musicLevel} 
+                                                                onChange={e => setFormData({ ...formData, musicLevel: e.target.value })} 
+                                                                className="w-full px-4 py-3 bg-white border-2 border-slate-100 focus:border-blue-600 rounded-xl outline-none transition-all text-sm font-semibold"
                                                             >
                                                                 <option>Beginner</option>
                                                                 <option>Intermediate</option>
@@ -724,6 +772,67 @@ const CommunityDetail: React.FC = () => {
                                     <div className="text-center py-12 text-slate-400">
                                         <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
                                         <p className="font-semibold text-sm">No leadership listed yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* MEMBERS TAB */}
+                        {activeTab === 'members' && (
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
+                                    Registered Members ({enrollmentsData?.length || 0})
+                                </h2>
+                                {enrollmentsData && enrollmentsData.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {enrollmentsData.map((member: any) => (
+                                            <div key={member.id} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-white hover:shadow-lg transition group duration-300">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-lg shrink-0">
+                                                        {member.full_name?.charAt(0)?.toUpperCase() || '?'}
+                                                    </div>
+                                                    <div className="flex-grow min-w-0">
+                                                        <h3 className="font-black text-slate-800 text-base group-hover:text-blue-600 transition truncate">{member.full_name}</h3>
+                                                        <span className={`text-[10px] font-black uppercase tracking-wider inline-block mt-1 px-2.5 py-1 rounded-lg ${
+                                                            member.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                                        }`}>
+                                                            {member.status || 'Pending'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2 mt-4 pt-4 border-t border-slate-100/80 text-xs font-semibold">
+                                                    {member.voice_type && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Voice</span>
+                                                            <span className="text-slate-700 font-black">{member.voice_type}</span>
+                                                        </div>
+                                                    )}
+                                                    {member.music_level && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Level</span>
+                                                            <span className="text-slate-700 font-black">{member.music_level}</span>
+                                                        </div>
+                                                    )}
+                                                    {member.phone && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Phone</span>
+                                                            <a href={`tel:${member.phone}`} className="text-blue-600 hover:text-blue-800 font-black transition">{member.phone}</a>
+                                                        </div>
+                                                    )}
+                                                    {member.email && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Email</span>
+                                                            <a href={`mailto:${member.email}`} className="text-blue-600 hover:text-blue-800 font-black transition truncate max-w-[150px]">{member.email}</a>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-slate-400">
+                                        <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                                        <p className="font-semibold text-sm">No members registered yet. Be the first to join!</p>
                                     </div>
                                 )}
                             </div>
