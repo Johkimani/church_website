@@ -50,6 +50,7 @@ const CommunityManager = lazy(() => import("./pages/Admin/pages/CommunityManager
 const CommunityDetailEditor = lazy(() => import("./pages/Admin/pages/CommunityDetailEditor"));
 const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions"));
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
+const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribution"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -104,6 +105,7 @@ const App: React.FC = () => {
           <Route path="community-management/:categoryId" element={<CommunityDetailEditor />} />
           <Route path="suggestions" element={<AdminSuggestions />} />
           <Route path="gallery" element={<GalleryManager />} />
+          <Route path="forms-distribution" element={<FormsDistribution />} />
           <Route path="settings" element={<div className="p-8 bg-white rounded-2xl shadow-sm border border-slate-200">Settings Page Coming Soon</div>} />
         </Route>
 

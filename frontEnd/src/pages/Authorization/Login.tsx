@@ -24,6 +24,7 @@ const Login: React.FC = () => {
       const response = await loginApi({ userReg, password });
       if (response.data.status === "success") {
         login(response.data);
+        navigate("/admin");
         return;
       } else if (response.data.message === "User email not found") {
         alert("User email not found. Please reset your password.");
@@ -31,24 +32,13 @@ const Login: React.FC = () => {
         navigate("reset", { state: { purpose: "email" } });
         return;
       }
-    } catch (error: unknown) {
-      console.warn("Backend login failed, bypassing with dummy session for teammate testing.", error);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      const errorMsg = error.response?.data?.message || "Login failed. Please check your credentials.";
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
-
-    // Temporary fallback: Log in automatically with dummy user for teammates' evaluation
-    const dummyUserData = {
-      accessToken: "dummy-token",
-      refreshToken: "dummy-token",
-      role: "admin",
-      name: "Universal Admin",
-      email: "admin@team.com",
-      status: "success",
-      jumuiya_id: "dummy-jumuiya-id"
-    };
-    login(dummyUserData);
-    navigate("/admin");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
