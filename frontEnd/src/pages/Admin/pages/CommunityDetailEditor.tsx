@@ -13,6 +13,7 @@ import {
   Loader2,
   Image as ImageIcon,
   CheckCircle,
+  XCircle,
   Clock,
   ExternalLink
 } from 'lucide-react';
@@ -103,6 +104,12 @@ export default function CommunityDetailEditor() {
       if (activeTab === 'announcements') {
         if (!formValues.title) return alert('Title required');
       }
+      if (activeTab === 'officials') {
+        if (!formValues.name) return alert('Name required');
+      }
+      if (activeTab === 'members') {
+        if (!formValues.full_name) return alert('Full name required');
+      }
 
       // Handle file upload first
       if (formValues._files && formValues._files.length) {
@@ -111,15 +118,65 @@ export default function CommunityDetailEditor() {
         const uploaded = res.data || [];
         // attach first file url
         if (uploaded[0]) {
-          formValues.image_url = uploaded[0].url || uploaded[0].secure_url || uploaded[0].path;
-          formValues.public_id = uploaded[0].public_id || uploaded[0].id;
+          const uploadedUrl = uploaded[0].url || uploaded[0].secure_url || uploaded[0].path;
+          const uploadedId = uploaded[0].public_id || uploaded[0].id;
+          // Map to correct column based on tab
+          if (activeTab === 'officials') {
+            formValues.photo_url = uploadedUrl;
+          } else {
+            formValues.image_url = uploadedUrl;
+          }
+          formValues.public_id = uploadedId;
         }
         setUploading(false);
       }
 
       const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : activeTab === 'officials' ? 'hub_officials' : 'enrollments';
 
-      const payload = { ...formValues, module_id: categoryId };
+      // Build properly mapped payload based on table
+      let payload: any = { module_id: categoryId };
+
+      if (activeTab === 'activities') {
+        // hub_activities: id, module_id, title, description, activity_date, location, status
+        payload = {
+          module_id: categoryId,
+          title: formValues.title,
+          description: formValues.description,
+          activity_date: formValues.activity_date || null,
+          location: formValues.location || '',
+          status: formValues.status || 'Upcoming'
+        };
+      } else if (activeTab === 'announcements') {
+        // hub_announcements: id, module_id, title, content, announcement_date
+        payload = {
+          module_id: categoryId,
+          title: formValues.title,
+          content: formValues.description || formValues.content, // Map description -> content
+          announcement_date: formValues.announcement_date || new Date().toISOString()
+        };
+      } else if (activeTab === 'officials') {
+        // hub_officials: id, module_id, name, role, email, phone_number, photo_url
+        payload = {
+          module_id: categoryId,
+          name: formValues.name,
+          role: formValues.role || '',
+          email: formValues.email || '',
+          phone_number: formValues.whatsapp || formValues.contact || formValues.phone_number || '', // Map whatsapp/contact -> phone_number
+          photo_url: formValues.photo_url || ''
+        };
+      } else if (activeTab === 'members') {
+        // enrollments: id, module_id (as class_id), full_name, voice_type, music_level, status
+        payload = {
+          class_id: categoryId,
+          module_id: categoryId,
+          full_name: formValues.full_name || formValues.fullName,
+          voice_type: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? '' : (formValues.voice_type || ''),
+          music_level: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? '' : (formValues.music_level || 'Beginner'),
+          phone: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (formValues.phone || formValues.phoneNumber || '') : '',
+          email: formValues.email || '',
+          status: formValues.status || 'Pending'
+        };
+      }
 
       if (editingItem?.id) {
         await updateTableRecord(tableName, editingItem.id, payload);
@@ -275,37 +332,69 @@ export default function CommunityDetailEditor() {
                   <thead>
                     <tr className="border-b border-slate-100">
                       <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name</th>
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Type</th>
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Level</th>
+                      {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+                        <>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone Number</th>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email Address</th>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Registration Date</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Type</th>
+                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Level</th>
+                        </>
+                      )}
                       <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
                       <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.filter(m => (m.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())).map((member) => (
+                    {data.filter(m => {
+                      const name = m.fullName || m.full_name || '';
+                      return name.toLowerCase().includes(searchTerm.toLowerCase());
+                    }).map((member) => (
                       <tr key={member.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs uppercase">
-                              {member.full_name?.substring(0, 2)}
+                              {(member.fullName || member.full_name || 'N/A')?.substring(0, 2)}
                             </div>
-                            <span className="font-bold text-slate-700">{member.full_name}</span>
+                            <span className="font-bold text-slate-700">{member.fullName || member.full_name}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.voice_type || 'N/A'}</td>
-                        <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.music_level || 'N/A'}</td>
+                        {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+                          <>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.phoneNumber || member.phone || 'N/A'}</td>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.email || 'N/A'}</td>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+                              {member.registrationDate || member.enrolled_at ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString() : 'N/A'}
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.voice_type || 'N/A'}</td>
+                            <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.music_level || 'N/A'}</td>
+                          </>
+                        )}
                         <td className="py-4 px-4">
                            <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                             member.status === 'Pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                             member.status === 'Pending' ? 'bg-amber-100 text-amber-700' : member.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
                            }`}>
                              {member.status}
                            </span>
                         </td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                              <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch(err){ alert('Approve failed'); } }} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
-                                <CheckCircle size={18} />
-                              </button>
+                              {member.status !== 'Approved' && (
+                                <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch(err){ alert('Approve failed'); } }} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
+                                  <CheckCircle size={18} />
+                                </button>
+                              )}
+                              {member.status !== 'Rejected' && (
+                                <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Rejected' }); showToast('Member rejected'); await loadCategoryData(); } catch(err){ alert('Reject failed'); } }} className="p-2 text-rose-400 hover:bg-rose-50 rounded-lg transition-colors" title="Reject">
+                                  <XCircle size={18} />
+                                </button>
+                              )}
                               <button onClick={(e) => { e.stopPropagation(); handleDelete(member.id); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Delete">
                                 <Trash2 size={18} />
                               </button>
@@ -414,8 +503,12 @@ export default function CommunityDetailEditor() {
                     <input value={formValues.role || ''} onChange={(e) => setFormValues(v => ({ ...v, role: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm font-bold">WhatsApp / Contact</label>
-                    <input value={formValues.whatsapp || formValues.contact || ''} onChange={(e) => setFormValues(v => ({ ...v, whatsapp: e.target.value, contact: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    <label className="text-sm font-bold">Email (optional)</label>
+                    <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold">WhatsApp / Phone Number</label>
+                    <input value={formValues.whatsapp || formValues.contact || formValues.phone_number || ''} onChange={(e) => setFormValues(v => ({ ...v, whatsapp: e.target.value, contact: e.target.value, phone_number: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="+254..." />
                   </div>
                 </>
               )}
@@ -424,7 +517,48 @@ export default function CommunityDetailEditor() {
                 <>
                   <div>
                     <label className="text-sm font-bold">Full name</label>
-                    <input value={formValues.full_name || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                  {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+                    <>
+                      <div>
+                        <label className="text-sm font-bold">Phone Number</label>
+                        <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. 0712345678" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold">Email Address (optional)</label>
+                        <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. email@example.com" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-bold">Voice Type (optional)</label>
+                        <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                          <option value="">Select...</option>
+                          <option value="Soprano">Soprano</option>
+                          <option value="Alto">Alto</option>
+                          <option value="Tenor">Tenor</option>
+                          <option value="Bass">Bass</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold">Music Level</label>
+                        <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                          <option value="Beginner">Beginner</option>
+                          <option value="Intermediate">Intermediate</option>
+                          <option value="Advanced">Advanced</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm font-bold">Status</label>
+                    <select value={formValues.status || 'Pending'} onChange={(e) => setFormValues(v => ({ ...v, status: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
                   </div>
                 </>
               )}

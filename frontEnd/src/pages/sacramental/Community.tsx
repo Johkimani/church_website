@@ -41,7 +41,7 @@ const MINISTRY_THEMES: Record<string, MinistryTheme> = {
   },
   youth: {
     image: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600",
-    tag: "Youth Fellowship",
+    tag: "Mentorship & Guidance",
     icon: <Users className="w-5 h-5 text-white" />
   }
 };
@@ -81,8 +81,9 @@ const Community: React.FC = () => {
   const navigate = useNavigate();
   const { modules, isLoading } = useCommunityData();
 
-  // Filter out the 'general' module and keep the 5 main ministries
-  const activeModules = modules.filter(mod => mod.id !== 'general');
+  // Only keep the 5 main ministries
+  const allowedIds = ['choir', 'dancers', 'st-francis', 'charismatic', 'youth', 'mentorship'];
+  const activeModules = modules.filter(mod => allowedIds.includes(mod.id));
 
   if (isLoading) {
     return (

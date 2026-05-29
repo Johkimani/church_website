@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCommunityData } from './context/CommunityDataContext';
 import type { CommunityModule, PracticeSchedule } from './context/CommunityDataContext';
 import { apiClient } from '../../api/axiosInstance';
@@ -9,7 +9,6 @@ import CommunityModal from './components/CommunityModal';
 import { FaWhatsapp } from 'react-icons/fa';
 import { 
   ChevronLeft, 
-  ArrowRight, 
   Clock, 
   Coins, 
   MapPin, 
@@ -77,6 +76,7 @@ const tabIcons: Record<string, React.ReactNode> = {
   classes: <GraduationCap size={16} />,
   schedules: <Clock size={16} />,
   officials: <Users size={16} />,
+  members: <Users size={16} />,
   activities: <Calendar size={16} />,
   gallery: <ImageIcon size={16} />
 };
@@ -167,14 +167,18 @@ const CommunityDetail: React.FC = () => {
     const { moduleId } = useParams<{ moduleId: string }>();
     const navigate = useNavigate();
     const { getModuleById } = useCommunityData();
+    const queryClient = useQueryClient();
 
-    type TabType = 'about' | 'announcements' | 'officials' | 'activities' | 'gallery' | 'classes' | 'schedules';
+    type TabType = 'about' | 'announcements' | 'officials' | 'activities' | 'gallery' | 'classes' | 'schedules' | 'members';
     const [activeTab, setActiveTab] = useState<TabType>('about');
     const [showRegistration, setShowRegistration] = useState(false);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: '', phone: '', email: '', experience: '', voiceType: '', musicLevel: 'Beginner' });
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [activeCheckoutId, setActiveCheckoutId] = useState<string | null>(null);
+    const [verificationTimeout, setVerificationTimeout] = useState(false);
     const [pendingPayment, setPendingPayment] = useState<{ amount: number; description: string; type: 'Join' | 'Uniform' | 'Class' }>({ amount: 0, description: '', type: 'Join' });
 
     // Robust Fee Parser
@@ -189,15 +193,32 @@ const CommunityDetail: React.FC = () => {
     const enrollMutation = useMutation({
         mutationFn: async (data: typeof formData) => {
             const endpoint = moduleData?.registrationEndpoint || '/api/enrollments';
-            return await apiClient.post(endpoint, {
+            const isSimple = isCharismatic || isDancers || isYouth;
+            const payload = isSimple ? {
+                fullName: data.name,
+                phoneNumber: data.phone,
+                email: data.email || '',
+                community: isDancers ? 'dancers' : isYouth ? 'youth' : 'charismatic',
+                status: 'Pending'
+            } : {
                 full_name: data.name,
                 class_id: selectedClassId || moduleId,
-                voice_type: moduleId === 'choir' ? data.voiceType : data.phone,
-                music_level: moduleId === 'choir' ? data.musicLevel : data.email,
+                module_id: moduleId,
+                voice_type: data.voiceType || '', // Use actual voice type for all groups
+                music_level: data.musicLevel || 'Beginner', // Use actual music level for all groups
+                phone: data.phone || '',
+                email: data.email || '',
                 status: 'Pending',
-            });
+            };
+
+            if (isSimple) {
+                console.log(`Submitting ${moduleId} Registration:`, payload);
+            }
+
+            return await apiClient.post(endpoint, payload);
         },
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['enrollments', moduleId] });
             toast.success('Registration submitted successfully!');
             setShowRegistration(false);
             setShowSuccessModal(true);
@@ -212,12 +233,16 @@ const CommunityDetail: React.FC = () => {
     const handleRegisterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Smart Fee Logic: Check Registration (or class fee)
         let amount = 0;
         let pType: 'Join' | 'Class' = 'Join';
         let desc = `Joining ${moduleData?.title}`;
 
-        if (selectedClassId) {
+        if (isCharismatic || isDancers || isYouth) {
+            amount = 0;
+        } else if (isChoir || isStFrancis) {
+            amount = 20;
+            pType = 'Join';
+        } else if (selectedClassId) {
             const cls = moduleData?.musicClasses?.find(c => c.id === selectedClassId);
             amount = parseFee(cls?.fee);
             pType = 'Class';
@@ -239,31 +264,92 @@ const CommunityDetail: React.FC = () => {
         setShowPaymentModal(true);
     };
 
-    const handleConfirmPayment = () => {
+    const handleVerifyPayment = async () => {
+        if (!activeCheckoutId) return;
+        setIsProcessingPayment(true);
+        try {
+            const statusRes = await apiClient.get(`/api/authentication/stk-push-status/${activeCheckoutId}`);
+            if (statusRes.data.status === 'paid') {
+                setIsProcessingPayment(false);
+                toast.success('Payment received! Completing registration...');
+                if (pendingPayment.type === 'Join' || pendingPayment.type === 'Class') {
+                    enrollMutation.mutate(formData);
+                }
+                setShowPaymentModal(false);
+                setVerificationTimeout(false);
+                setActiveCheckoutId(null);
+            } else if (statusRes.data.status === 'failed') {
+                setIsProcessingPayment(false);
+                toast.error(`Payment failed: ${statusRes.data.result_desc || 'Cancelled by user'}`);
+                setVerificationTimeout(false);
+                setActiveCheckoutId(null);
+            } else {
+                setIsProcessingPayment(false);
+                toast.error('Payment still pending. If you paid, wait a moment and try again.');
+            }
+        } catch (error) {
+            setIsProcessingPayment(false);
+            toast.error('Could not verify payment status. Try again.');
+        }
+    };
+
+    const handleConfirmPayment = async () => {
         if (!formData.phone || formData.phone.length < 10) {
             toast.error('Please enter a valid phone number');
             return;
         }
 
-        // Trigger STK Push logic here
-        toast.promise(
-            apiClient.post('/api/payment/stkpush', {
+        setIsProcessingPayment(true);
+        setVerificationTimeout(false);
+        const loadingToast = toast.loading('Initiating M-Pesa Payment...');
+
+        try {
+            const res = await apiClient.post('/api/authentication/stk-push-guest', {
                 phoneNumber: formData.phone,
                 amount: pendingPayment.amount,
                 description: pendingPayment.description
-            }),
-            {
-                loading: 'Initiating M-Pesa Payment...',
-                success: (_res) => {
-                    if (pendingPayment.type === 'Join' || pendingPayment.type === 'Class') {
-                        enrollMutation.mutate(formData);
+            });
+            
+            const checkoutId = res.data.checkoutId;
+            setActiveCheckoutId(checkoutId);
+            toast.success('M-Pesa prompt sent. Please enter your PIN on your phone.', { id: loadingToast });
+            toast.loading('Processing payment... Do not close this window.', { id: 'pollingToast' });
+
+            const pollPayment = setInterval(async () => {
+                try {
+                    const statusRes = await apiClient.get(`/api/authentication/stk-push-status/${checkoutId}`);
+                    if (statusRes.data.status === 'paid') {
+                        clearInterval(pollPayment);
+                        setIsProcessingPayment(false);
+                        toast.success('Payment received! Completing registration...', { id: 'pollingToast' });
+                        if (pendingPayment.type === 'Join' || pendingPayment.type === 'Class') {
+                            enrollMutation.mutate(formData);
+                        }
+                        setShowPaymentModal(false);
+                        setActiveCheckoutId(null);
+                    } else if (statusRes.data.status === 'failed') {
+                        clearInterval(pollPayment);
+                        setIsProcessingPayment(false);
+                        toast.error(`Payment failed: ${statusRes.data.result_desc || 'Cancelled by user'}`, { id: 'pollingToast' });
+                        setActiveCheckoutId(null);
                     }
-                    setShowPaymentModal(false);
-                    return 'STK Push sent! Please check your phone.';
-                },
-                error: 'Failed to initiate payment. Check your internet.'
-            }
-        );
+                } catch (err) {
+                    // Ignore transient errors and continue polling
+                }
+            }, 3000);
+
+            // Timeout after 120 seconds
+            setTimeout(() => {
+                clearInterval(pollPayment);
+                setIsProcessingPayment(false);
+                setVerificationTimeout(true);
+                toast.error('Payment verification timed out.', { id: 'pollingToast' });
+            }, 120000);
+
+        } catch (error: any) {
+            setIsProcessingPayment(false);
+            toast.error(error.response?.data?.message || 'Failed to initiate payment. Check your internet.', { id: loadingToast });
+        }
     };
 
     const openClassEnrollment = (classId: string) => {
@@ -284,10 +370,30 @@ const CommunityDetail: React.FC = () => {
         staleTime: 300000
     });
 
+    const { data: enrollmentsData = [] } = useQuery({
+        queryKey: ['enrollments', moduleId],
+        queryFn: async () => {
+            const res = await apiClient.get('/api/enrollments');
+            if (moduleId === 'charismatic') {
+                console.log("Charismatic Members:", res.data);
+            }
+            // Filter by class_id matching moduleId
+            return Array.isArray(res.data) 
+                ? res.data.filter((e: any) => e.class_id === moduleId || e.module_id === moduleId)
+                : [];
+        },
+        retry: 1,
+        staleTime: 300000
+    });
+
     const contextFallback = moduleId ? getModuleById(moduleId) : undefined;
     const moduleData: CommunityModule | undefined = serverModuleData || contextFallback;
 
     const isChoir = moduleId === 'choir';
+    const isStFrancis = moduleId === 'st-francis';
+    const isCharismatic = moduleId === 'charismatic';
+    const isDancers = moduleId === 'dancers';
+    const isYouth = moduleId === 'youth';
 
     const getWhatsAppNumber = (phone?: string) => {
         if (!phone) return '';
@@ -312,6 +418,7 @@ const CommunityDetail: React.FC = () => {
         ...(moduleData?.musicClasses?.length ? [{ id: 'classes' as TabType, label: 'Classes', icon: 'fas fa-graduation-cap' }] : []),
         ...(moduleData?.practiceSchedules?.length ? [{ id: 'schedules' as TabType, label: moduleData.scheduleLabel || 'Schedule', icon: 'fas fa-clock' }] : []),
         { id: 'officials', label: 'Leadership', icon: 'fas fa-users' },
+        ...(enrollmentsData?.length || isStFrancis || isCharismatic || isDancers || isYouth ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
         { id: 'activities', label: 'Activities', icon: 'fas fa-calendar-alt' },
         { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' }
     ];
@@ -461,7 +568,9 @@ const CommunityDetail: React.FC = () => {
                                         <p className="text-slate-500 mb-6 font-semibold text-sm leading-relaxed">
                                             {selectedClassId 
                                                 ? 'Enrolling in a specialized training program designed to help you build key skills.' 
-                                                : "We are always welcoming new hearts to share in our service. Submit your enrollment to get started."
+                                                : isCharismatic
+                                                    ? 'Join our Charismatic Prayer Group community of faith, healing, worship, and spiritual growth.'
+                                                    : "We are always welcoming new hearts to share in our service. Submit your enrollment to get started."
                                             }
                                         </p>
 
@@ -515,7 +624,7 @@ const CommunityDetail: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                {isChoir && (
+                                                {isChoir ? (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div>
                                                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Voice Type</label>
@@ -545,6 +654,38 @@ const CommunityDetail: React.FC = () => {
                                                             </select>
                                                         </div>
                                                     </div>
+                                                ) : (isStFrancis || isCharismatic || isDancers || isYouth) ? (
+                                                    /* Simple prayer group form, no music/experience fields */
+                                                    <></>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Voice Type (Optional)</label>
+                                                            <select 
+                                                                value={formData.voiceType} 
+                                                                onChange={e => setFormData({ ...formData, voiceType: e.target.value })} 
+                                                                className="w-full px-4 py-3 bg-white border-2 border-slate-100 focus:border-blue-600 rounded-xl outline-none transition-all text-sm font-semibold"
+                                                            >
+                                                                <option value="">Not applicable</option>
+                                                                <option>Soprano</option>
+                                                                <option>Alto</option>
+                                                                <option>Tenor</option>
+                                                                <option>Bass</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Experience Level (Optional)</label>
+                                                            <select 
+                                                                value={formData.musicLevel} 
+                                                                onChange={e => setFormData({ ...formData, musicLevel: e.target.value })} 
+                                                                className="w-full px-4 py-3 bg-white border-2 border-slate-100 focus:border-blue-600 rounded-xl outline-none transition-all text-sm font-semibold"
+                                                            >
+                                                                <option>Beginner</option>
+                                                                <option>Intermediate</option>
+                                                                <option>Advanced</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 )}
 
                                                 <div>
@@ -558,16 +699,18 @@ const CommunityDetail: React.FC = () => {
                                                     />
                                                 </div>
                                                 
-                                                <div>
-                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Notes / Why do you want to join?</label>
-                                                    <textarea 
-                                                        value={formData.experience} 
-                                                        onChange={e => setFormData({ ...formData, experience: e.target.value })} 
-                                                        rows={3} 
-                                                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none resize-none transition-all text-sm font-semibold" 
-                                                        placeholder="Brief details about your motivation or past experience..."
-                                                    />
-                                                </div>
+                                                {!isStFrancis && !isCharismatic && !isDancers && !isYouth && (
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Notes / Why do you want to join?</label>
+                                                        <textarea 
+                                                            value={formData.experience} 
+                                                            onChange={e => setFormData({ ...formData, experience: e.target.value })} 
+                                                            rows={3} 
+                                                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 focus:border-blue-600 focus:bg-white rounded-xl outline-none resize-none transition-all text-sm font-semibold" 
+                                                            placeholder="Brief details about your motivation or past experience..."
+                                                        />
+                                                    </div>
+                                                )}
                                                 
                                                 <button 
                                                     type="submit" 
@@ -724,6 +867,67 @@ const CommunityDetail: React.FC = () => {
                                     <div className="text-center py-12 text-slate-400">
                                         <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
                                         <p className="font-semibold text-sm">No leadership listed yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* MEMBERS TAB */}
+                        {activeTab === 'members' && (
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
+                                    Registered Members ({enrollmentsData?.length || 0})
+                                </h2>
+                                {enrollmentsData && enrollmentsData.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {enrollmentsData.map((member: any) => (
+                                            <div key={member.id} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-white hover:shadow-lg transition group duration-300">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-lg shrink-0">
+                                                        {(member.fullName || member.full_name || '?').charAt(0)?.toUpperCase()}
+                                                    </div>
+                                                    <div className="flex-grow min-w-0">
+                                                        <h3 className="font-black text-slate-800 text-base group-hover:text-blue-600 transition truncate">{member.fullName || member.full_name}</h3>
+                                                        <span className={`text-[10px] font-black uppercase tracking-wider inline-block mt-1 px-2.5 py-1 rounded-lg ${
+                                                            member.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : member.status === 'Rejected' ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                                        }`}>
+                                                            {member.status || 'Pending'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2 mt-4 pt-4 border-t border-slate-100/80 text-xs font-semibold">
+                                                    {!isCharismatic && !isDancers && !isYouth && member.voice_type && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Voice</span>
+                                                            <span className="text-slate-700 font-black">{member.voice_type}</span>
+                                                        </div>
+                                                    )}
+                                                    {!isCharismatic && !isDancers && !isYouth && member.music_level && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Level</span>
+                                                            <span className="text-slate-700 font-black">{member.music_level}</span>
+                                                        </div>
+                                                    )}
+                                                    {(member.phoneNumber || member.phone) && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Phone</span>
+                                                            <a href={`tel:${member.phoneNumber || member.phone}`} className="text-blue-600 hover:text-blue-800 font-black transition">{member.phoneNumber || member.phone}</a>
+                                                        </div>
+                                                    )}
+                                                    {(member.email) && (
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 font-bold uppercase tracking-wider">Email</span>
+                                                            <a href={`mailto:${member.email}`} className="text-blue-600 hover:text-blue-800 font-black transition truncate max-w-[150px]">{member.email}</a>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-slate-400">
+                                        <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                                        <p className="font-semibold text-sm">No members registered yet. Be the first to join!</p>
                                     </div>
                                 )}
                             </div>
@@ -943,43 +1147,75 @@ const CommunityDetail: React.FC = () => {
                 </div>
             </CommunityModal>
 
-            {/* Payment Modal / STK Push Confirmation */}
+            {/* Payment Modal / M-Pesa Confirmation */}
             <CommunityModal
                 isOpen={showPaymentModal}
-                onClose={() => setShowPaymentModal(false)}
-                title={pendingPayment.type === 'Join' ? 'New Membership' : pendingPayment.description}
+                onClose={() => !isProcessingPayment && setShowPaymentModal(false)}
+                title={pendingPayment.type === 'Join' ? 'Registration Payment' : pendingPayment.description}
                 type="info"
             >
                 <div className="space-y-4 mb-6">
-                    <p className="text-slate-600 font-medium">Please confirm your payment of <strong>Ksh {pendingPayment.amount}</strong>.</p>
-                    
-                    {pendingPayment.type === 'Join' && (
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm space-y-2 font-bold text-slate-700">
-                           <div className="flex justify-between"><span>Registration</span> <span>{moduleData.fees?.registration || 'Free'}</span></div>
-                           <div className="flex justify-between font-black text-slate-900 pt-2 border-t"><span>Total Due</span> <span>Ksh {pendingPayment.amount}</span></div>
-                        </div>
-                    )}
+                    <p className="text-slate-600 font-medium">To complete your registration, please make a payment of <strong>Ksh {pendingPayment.amount}</strong>.</p>
                 </div>
 
-                <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100/60 mb-6">
-                    <h4 className="font-black text-blue-900 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
-                        <MapPin size={16} /> M-Pesa STK Push
+                <div className="bg-emerald-50/50 p-5 rounded-[2rem] border border-emerald-100 mb-6">
+                    <h4 className="font-black text-emerald-900 mb-1 flex items-center gap-2 text-sm uppercase tracking-wide">
+                        <MapPin size={16} /> M-PESA Payment
                     </h4>
-                    <p className="text-xs text-blue-700 font-semibold leading-relaxed">Enter phone number to receive the prompt:</p>
+                    <p className="text-xs text-emerald-700 font-semibold leading-relaxed">Enter your M-PESA number to receive the payment prompt:</p>
                     <input 
                         type="tel" 
                         value={formData.phone} 
                         onChange={e => setFormData({...formData, phone: e.target.value})}
-                        className="w-full mt-3 p-3.5 bg-white border border-blue-200 focus:border-blue-600 rounded-2xl outline-none text-blue-950 font-black text-sm"
+                        disabled={isProcessingPayment}
+                        className="w-full mt-3 p-3.5 bg-white border border-emerald-200 focus:border-emerald-600 rounded-2xl outline-none text-emerald-950 font-black text-sm disabled:opacity-50"
                         placeholder="e.g. 0712345678"
                     />
                 </div>
-                <button 
-                    onClick={handleConfirmPayment}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/20 transition cursor-pointer"
-                >
-                    Pay Ksh {pendingPayment.amount} Now
-                </button>
+                
+                {verificationTimeout ? (
+                    <div className="space-y-3">
+                        <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-sm font-semibold">
+                            We could not confirm payment automatically. If you have already paid, click below to verify.
+                        </div>
+                        <button 
+                            onClick={handleVerifyPayment}
+                            disabled={isProcessingPayment}
+                            className="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center gap-2"
+                        >
+                            {isProcessingPayment ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Verifying...
+                                </>
+                            ) : (
+                                "Verify Payment Status"
+                            )}
+                        </button>
+                        <button 
+                            onClick={handleConfirmPayment}
+                            disabled={isProcessingPayment}
+                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/20 transition cursor-pointer flex items-center justify-center gap-2"
+                        >
+                            Retry Sending Prompt
+                        </button>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={handleConfirmPayment}
+                        disabled={isProcessingPayment}
+                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-500/20 transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                        {isProcessingPayment ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Processing... Check Phone
+                            </>
+                        ) : (
+                            `Pay Ksh ${pendingPayment.amount}`
+                        )}
+                    </button>
+                )}
             </CommunityModal>
         </div>
     );
