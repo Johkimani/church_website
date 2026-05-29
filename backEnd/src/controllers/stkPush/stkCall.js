@@ -37,7 +37,7 @@ export const checkStatus = async (req, res) => {
 
   try {
     const result = await testDb.query(
-      `SELECT status FROM mpesa_request WHERE checkout_id = $1`,
+      `SELECT status, result_desc FROM mpesa_request WHERE checkout_id = $1`,
       [checkoutId]
     );
 
@@ -45,7 +45,7 @@ export const checkStatus = async (req, res) => {
       return res.status(404).json({ status: "error", message: "Transaction not found" });
     }
 
-    res.json({ status: result.rows[0].status });
+    res.json({ status: result.rows[0].status, result_desc: result.rows[0].result_desc });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
