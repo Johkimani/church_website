@@ -103,6 +103,12 @@ export default function CommunityDetailEditor() {
       if (activeTab === 'announcements') {
         if (!formValues.title) return alert('Title required');
       }
+      if (activeTab === 'officials') {
+        if (!formValues.name) return alert('Name required');
+      }
+      if (activeTab === 'members') {
+        if (!formValues.full_name) return alert('Full name required');
+      }
 
       // Handle file upload first
       if (formValues._files && formValues._files.length) {
@@ -111,15 +117,63 @@ export default function CommunityDetailEditor() {
         const uploaded = res.data || [];
         // attach first file url
         if (uploaded[0]) {
-          formValues.image_url = uploaded[0].url || uploaded[0].secure_url || uploaded[0].path;
-          formValues.public_id = uploaded[0].public_id || uploaded[0].id;
+          const uploadedUrl = uploaded[0].url || uploaded[0].secure_url || uploaded[0].path;
+          const uploadedId = uploaded[0].public_id || uploaded[0].id;
+          // Map to correct column based on tab
+          if (activeTab === 'officials') {
+            formValues.photo_url = uploadedUrl;
+          } else {
+            formValues.image_url = uploadedUrl;
+          }
+          formValues.public_id = uploadedId;
         }
         setUploading(false);
       }
 
       const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : activeTab === 'officials' ? 'hub_officials' : 'enrollments';
 
-      const payload = { ...formValues, module_id: categoryId };
+      // Build properly mapped payload based on table
+      let payload: any = { module_id: categoryId };
+
+      if (activeTab === 'activities') {
+        // hub_activities: id, module_id, title, description, activity_date, location, status
+        payload = {
+          module_id: categoryId,
+          title: formValues.title,
+          description: formValues.description,
+          activity_date: formValues.activity_date || null,
+          location: formValues.location || '',
+          status: formValues.status || 'Upcoming'
+        };
+      } else if (activeTab === 'announcements') {
+        // hub_announcements: id, module_id, title, content, announcement_date
+        payload = {
+          module_id: categoryId,
+          title: formValues.title,
+          content: formValues.description || formValues.content, // Map description -> content
+          announcement_date: formValues.announcement_date || new Date().toISOString()
+        };
+      } else if (activeTab === 'officials') {
+        // hub_officials: id, module_id, name, role, email, phone_number, photo_url
+        payload = {
+          module_id: categoryId,
+          name: formValues.name,
+          role: formValues.role || '',
+          email: formValues.email || '',
+          phone_number: formValues.whatsapp || formValues.contact || formValues.phone_number || '', // Map whatsapp/contact -> phone_number
+          photo_url: formValues.photo_url || ''
+        };
+      } else if (activeTab === 'members') {
+        // enrollments: id, module_id (as class_id), full_name, voice_type, music_level, status
+        payload = {
+          class_id: categoryId,
+          module_id: categoryId,
+          full_name: formValues.full_name,
+          voice_type: formValues.voice_type || '',
+          music_level: formValues.music_level || 'Beginner',
+          status: formValues.status || 'Pending'
+        };
+      }
 
       if (editingItem?.id) {
         await updateTableRecord(tableName, editingItem.id, payload);
@@ -414,8 +468,12 @@ export default function CommunityDetailEditor() {
                     <input value={formValues.role || ''} onChange={(e) => setFormValues(v => ({ ...v, role: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm font-bold">WhatsApp / Contact</label>
-                    <input value={formValues.whatsapp || formValues.contact || ''} onChange={(e) => setFormValues(v => ({ ...v, whatsapp: e.target.value, contact: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    <label className="text-sm font-bold">Email (optional)</label>
+                    <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold">WhatsApp / Phone Number</label>
+                    <input value={formValues.whatsapp || formValues.contact || formValues.phone_number || ''} onChange={(e) => setFormValues(v => ({ ...v, whatsapp: e.target.value, contact: e.target.value, phone_number: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="+254..." />
                   </div>
                 </>
               )}
@@ -425,6 +483,34 @@ export default function CommunityDetailEditor() {
                   <div>
                     <label className="text-sm font-bold">Full name</label>
                     <input value={formValues.full_name || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-bold">Voice Type (optional)</label>
+                      <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                        <option value="">Select...</option>
+                        <option value="Soprano">Soprano</option>
+                        <option value="Alto">Alto</option>
+                        <option value="Tenor">Tenor</option>
+                        <option value="Bass">Bass</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold">Music Level</label>
+                      <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold">Status</label>
+                    <select value={formValues.status || 'Pending'} onChange={(e) => setFormValues(v => ({ ...v, status: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
                   </div>
                 </>
               )}

@@ -31,7 +31,9 @@ export default function CommunityManager() {
     try {
       const response = await apiClient.get('/api/hub_modules');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setModules(Array.isArray(data) ? data : []);
+      
+      const allowedIds = ['choir', 'dancers', 'st-francis', 'charismatic', 'youth', 'mentorship'];
+      setModules(Array.isArray(data) ? data.filter((m: any) => allowedIds.includes(m.id)) : []);
     } catch (err: any) {
       console.error('[CommunityManager] load error:', err);
       setError(err?.message || 'Failed to load community modules');
