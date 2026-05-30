@@ -3,6 +3,14 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import AdminPanel from "../AdminPanel";
 import { useAuth } from "../../../../context/AuthContext";
 
+const isAdminRole = (role: string | string[] | undefined): boolean => {
+  if (!role) return false;
+  if (Array.isArray(role)) {
+    return role.some((item) => typeof item === "string" && item.toLowerCase().includes("admin"));
+  }
+  return role.toLowerCase().includes("admin");
+};
+
 function Navigation() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -75,7 +83,7 @@ function Navigation() {
               <span className="text-sm font-semibold text-gray-700">
                 Hi, {user?.name}
               </span>
-              {user.role === "admin" && (
+              {isAdminRole(user?.role) && (
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors text-xs"
                   onClick={() => navigate("/admin")}
@@ -84,7 +92,7 @@ function Navigation() {
                 </button>
               )}
               {/* Developer Bypass: Allows opening Admin Panel without login in DEV mode */}
-              {import.meta.env.DEV && user?.role !== "admin" && (
+              {import.meta.env.DEV && !isAdminRole(user?.role) && (
                 <button
                   className="bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs border border-amber-200"
                   onClick={() => navigate("/admin")}
@@ -162,7 +170,7 @@ function Navigation() {
               {user ? (
                 <div className="space-y-3">
                   <div className="text-sm font-semibold text-gray-700">Welcome, {user?.name}</div>
-                  {user.role === "admin" && (
+                  {isAdminRole(user.role) && (
                     <button
                       className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold"
                       onClick={() => { navigate("/admin"); setIsMobileMenuOpen(false); }}

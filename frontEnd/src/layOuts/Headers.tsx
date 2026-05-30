@@ -7,6 +7,14 @@ import { publicNavLinks, authNavLinks } from "./headerRoutes";
 // Assuming AdminPanel is needed, linking to its original location
 import AdminPanel from "../pages/Landing/components/AdminPanel";
 
+const isAdminRole = (role: string | string[] | undefined): boolean => {
+  if (!role) return false;
+  if (Array.isArray(role)) {
+    return role.some((item) => typeof item === "string" && item.toLowerCase().includes("admin"));
+  }
+  return role.toLowerCase().includes("admin");
+};
+
 const Headers = () => {
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
@@ -87,7 +95,7 @@ const Headers = () => {
               <span className="text-sm font-semibold text-gray-700">
                 Hi, {user?.name}
               </span>
-              {user.role.includes("admin") && (
+              {isAdminRole(user?.role) && (
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors text-xs"
                   onClick={() => navigate("/admin")}
@@ -96,7 +104,7 @@ const Headers = () => {
                 </button>
               )}
               {/* Developer Bypass: Allows opening Admin Panel without login in DEV mode */}
-              {import.meta.env.DEV && !user.role.includes("admin") && (
+              {import.meta.env.DEV && !isAdminRole(user?.role) && (
                 <button
                   className="bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs border border-amber-200"
                   onClick={() => navigate("/admin")}

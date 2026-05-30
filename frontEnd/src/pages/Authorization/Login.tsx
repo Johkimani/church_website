@@ -21,7 +21,8 @@ const Login: React.FC = () => {
     if (!userReg || !password) return;
     try {
       setLoading(true);
-      const response = await loginApi({ userReg, password });
+      const normalizedUserReg = userReg.trim().toUpperCase();
+      const response = await loginApi({ userReg: normalizedUserReg, password });
       if (response.data.status === "success") {
         login(response.data);
         navigate("/admin");
