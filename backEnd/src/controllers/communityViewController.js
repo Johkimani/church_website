@@ -14,6 +14,8 @@ const buildModule = (mod, officials, activities, gallery, announcements) => ({
     ? `${mod.training_time}${mod.location ? ' — ' + mod.location : ''}`
     : null,
   story: mod.story,
+  saint_image_url: mod.saint_image_url,
+  history_pdf_url: mod.history_pdf_url,
   fees: {
     registration: mod.registration_fee,
     subscription: mod.subscription_fee,
@@ -55,7 +57,8 @@ export const getCommunityModules = async (req, res) => {
   try {
     const modulesResult = await pool.query(
       `SELECT id, title, description, theme_color, icon_class, schedule_label,
-              training_time, location, registration_fee, subscription_fee, uniform_info, story
+              training_time, location, registration_fee, subscription_fee, uniform_info, story,
+              saint_image_url, history_pdf_url
        FROM hub_modules ORDER BY id`
     );
 
@@ -92,7 +95,8 @@ export const getCommunityModuleById = async (req, res) => {
 
     const modResult = await pool.query(
       `SELECT id, title, description, theme_color, icon_class, schedule_label,
-              training_time, location, registration_fee, subscription_fee, uniform_info, story
+              training_time, location, registration_fee, subscription_fee, uniform_info, story,
+              saint_image_url, history_pdf_url
        FROM hub_modules WHERE id = $1`,
       [moduleId]
     );
