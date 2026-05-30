@@ -8,7 +8,7 @@ dotenv.config();
 export const Login = async (req, res) => {
   let { userReg, password } = req.body ?? {};
 
-  userReg = userReg?.toUpperCase();
+  userReg = userReg?.trim().toUpperCase();
 
   if (!userReg || !password) {
     console.log("Username and password required");
@@ -17,18 +17,27 @@ export const Login = async (req, res) => {
   }
  try {
     const result = await pool.query(
-      `SELECT m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, 
-              ARRAY_AGG(r.role_name) as roles
-       FROM members m 
-       JOIN member_roles mr ON m.member_id = mr.member_id 
-       JOIN roles r ON mr.role_id = r.role_id 
-       WHERE m.member_id = $1
-       GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email`,
+      `SELECT 
+        m.member_id, 
+        m.password, 
+        m.jumuiya_id, 
+        m.first_name, 
+        m.last_name, 
+        m.email,
+        COALESCE(
+          ARRAY_AGG(r.role_name) FILTER (WHERE r.role_name IS NOT NULL),
+          ARRAY[]::text[]
+        ) as roles
+      FROM members m 
+      LEFT JOIN member_roles mr ON m.member_id = mr.member_id 
+      LEFT JOIN roles r ON mr.role_id = r.role_id 
+      WHERE m.member_id = $1
+      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email`,
       [userReg],
     );
 
     if (result.rows.length === 0) {
-      logger.error("Invalid username or password");
+      logger.error(`Invalid username or password for '${userReg || "<empty>"}'`);
       return res.status(401).json({ status: false, message: "Invalid username or password" });
     }
 
@@ -36,7 +45,7 @@ export const Login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
-      logger.error("Invalid username or password");
+      logger.error(`Invalid username or password for '${userReg || "<empty>"}'`);
       return res.status(401).json({ status: false, message: "Invalid username or password" });
     }
 
@@ -119,11 +128,14 @@ export const refreshAccessToken = async (req, res) => {
     }
     //  Generate new access token
     const userResult = await pool.query(
-      `SELECT m.member_id, m.jumuiya_id, m.first_name, m.last_name, m.email, 
-              ARRAY_AGG(r.role_name) as roles
-       FROM members m 
-       JOIN member_roles mr ON m.member_id = mr.member_id 
-       JOIN roles r ON mr.role_id = r.role_id 
+      `SELECT m.member_id, m.jumuiya_id, m.first_name, m.last_name, m.email,
+              COALESCE(
+                ARRAY_AGG(r.role_name) FILTER (WHERE r.role_name IS NOT NULL),
+                ARRAY[]::text[]
+              ) as roles
+       FROM members m
+       LEFT JOIN member_roles mr ON m.member_id = mr.member_id
+       LEFT JOIN roles r ON mr.role_id = r.role_id
        WHERE m.member_id = $1
        GROUP BY m.member_id, m.jumuiya_id, m.first_name, m.last_name, m.email`,
       [decoded.id]
@@ -142,10 +154,8 @@ export const refreshAccessToken = async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 20);
 
-    // Update existing token record or insert new one (simplest is to insert and we keep the rotation logic)
-    // Here we choose to delete old ones for this user to keep DB clean
-    // Update existing token record or insert new one (rotation)
-    await pool.query(`DELETE FROM refresh_tokens WHERE member_id = $1`, [user.member_id]);
+    // Rotate only the matched refresh token record, without invalidating other active sessions for the same user.
+    await pool.query(`DELETE FROM refresh_tokens WHERE id = $1`, [validToken.id]);
     await pool.query(
       `INSERT INTO refresh_tokens (member_id, token, expires_at) VALUES ($1, $2, $3)`,
       [user.member_id, hashedToken, expiresAt]
