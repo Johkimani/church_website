@@ -15,10 +15,13 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Info,
+  Save,
+  FileText as FilePdf
 } from 'lucide-react';
 
-type TabType = 'activities' | 'announcements' | 'officials' | 'members';
+type TabType = 'activities' | 'announcements' | 'officials' | 'members' | 'about';
 
 export default function CommunityDetailEditor() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -33,10 +36,23 @@ export default function CommunityDetailEditor() {
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [aboutSaving, setAboutSaving] = useState(false);
+  const [aboutForm, setAboutForm] = useState({ biography: '', saint_image_url: '', history_pdf_url: '' });
 
   useEffect(() => {
     loadCategoryData();
   }, [categoryId, activeTab]);
+
+  // Sync moduleMeta into aboutForm whenever meta loads/changes
+  useEffect(() => {
+    if (moduleMeta) {
+      setAboutForm({
+        biography: moduleMeta.description || moduleMeta.story || moduleMeta.about || '',
+        saint_image_url: moduleMeta.saint_image_url || moduleMeta.image_url || '',
+        history_pdf_url: moduleMeta.history_pdf_url || moduleMeta.pdf_url || '',
+      });
+    }
+  }, [moduleMeta]);
 
   const loadCategoryData = async () => {
     setLoading(true);
@@ -50,7 +66,11 @@ export default function CommunityDetailEditor() {
         setModuleMeta(meta);
       }
 
-      // 2. Fetch specific tab data
+      // 2. Fetch specific tab data (skip for about tab - uses moduleMeta directly)
+      if (activeTab === 'about') {
+        setLoading(false);
+        return;
+      }
       let tableName = '';
       switch (activeTab) {
         case 'activities': tableName = 'hub_activities'; break;
@@ -225,7 +245,40 @@ export default function CommunityDetailEditor() {
     try { (window as any).toast && (window as any).toast(msg); } catch {}
   };
 
+  const isAboutEnabled = categoryId === 'charismatic' || categoryId === 'st-francis';
+
+  const handleSaveAbout = async () => {
+    if (!categoryId) return;
+    setAboutSaving(true);
+    try {
+      await updateTableRecord('hub_modules', categoryId, {
+        description: aboutForm.biography,
+        saint_image_url: aboutForm.saint_image_url,
+        history_pdf_url: aboutForm.history_pdf_url,
+      });
+      showToast('About content saved successfully!');
+      // refresh meta
+      const modulesResponse = await apiClient.get('/api/hub_modules');
+      const modules = Array.isArray(modulesResponse.data) ? modulesResponse.data : (modulesResponse.data?.data || []);
+      const meta = modules.find((m: any) => m.id === categoryId);
+      setModuleMeta(meta);
+      if (meta) {
+        setAboutForm({
+          biography: meta.description || meta.story || meta.about || '',
+          saint_image_url: meta.saint_image_url || meta.image_url || '',
+          history_pdf_url: meta.history_pdf_url || meta.pdf_url || '',
+        });
+      }
+    } catch (err: any) {
+      console.error('Save about failed', err);
+      alert('Failed to save about content. Please try again.');
+    } finally {
+      setAboutSaving(false);
+    }
+  };
+
   const tabs: { id: TabType; label: string; icon: any }[] = [
+    ...(isAboutEnabled ? [{ id: 'about' as TabType, label: 'About Content', icon: Info }] : []),
     { id: 'activities', label: 'Semester Activities', icon: Calendar },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'officials', label: 'Officials Management', icon: UserCheck },
@@ -298,22 +351,81 @@ export default function CommunityDetailEditor() {
             </h3>
             <p className="text-xs text-slate-500 font-medium">Results for {categoryId} category</p>
           </div>
-          <div className="flex items-center gap-2">
-            <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-2 border rounded-md text-sm mr-2" />
-            <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-              <Plus size={18} />
-              Add {activeTab === 'members' ? 'Member' : 'New ' + (activeTab.slice(0, -1))}
-            </button>
-          </div>
+          {activeTab !== 'about' && (
+            <div className="flex items-center gap-2">
+              <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-2 border rounded-md text-sm mr-2" />
+              <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                <Plus size={18} />
+                Add {activeTab === 'members' ? 'Member' : 'New ' + (activeTab.slice(0, -1))}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="p-6">
-          {loading ? (
+          {/* ABOUT TAB INLINE EDITOR */}
+          {activeTab === 'about' && (
+            <div className="space-y-6 max-w-2xl">
+              <p className="text-sm text-slate-500 font-medium">
+                Manage the biography, image, and PDF history document displayed on the public About tab.
+              </p>
+              <div>
+                <label className="text-sm font-bold text-slate-700 block mb-1">Biography / Description</label>
+                <textarea
+                  rows={8}
+                  className="w-full border border-slate-200 px-4 py-3 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+                  placeholder="Enter a biography or description for this community..."
+                  value={aboutForm.biography}
+                  onChange={(e) => setAboutForm(v => ({ ...v, biography: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-slate-700 block mb-1">Saint / Community Image URL</label>
+                <input
+                  type="url"
+                  className="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="https://... (direct image link)"
+                  value={aboutForm.saint_image_url}
+                  onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
+                />
+                {aboutForm.saint_image_url && (
+                  <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border shadow-sm" />
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-bold text-slate-700 block mb-1">History PDF URL</label>
+                <input
+                  type="url"
+                  className="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="https://... (link to PDF document)"
+                  value={aboutForm.history_pdf_url}
+                  onChange={(e) => setAboutForm(v => ({ ...v, history_pdf_url: e.target.value }))}
+                />
+                {aboutForm.history_pdf_url && (
+                  <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-600 font-bold hover:underline">
+                    <FilePdf size={16} /> Preview PDF
+                  </a>
+                )}
+              </div>
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={handleSaveAbout}
+                  disabled={aboutSaving}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 disabled:opacity-60"
+                >
+                  {aboutSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  {aboutSaving ? 'Saving...' : 'Save About Content'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== 'about' && loading ? (
              <div className="flex flex-col items-center justify-center py-20">
                <Loader2 size={32} className="text-blue-500 animate-spin mb-4" />
                <p className="text-slate-400 text-sm">Synchronizing table data...</p>
              </div>
-          ) : data.length === 0 ? (
+          ) : activeTab !== 'about' && data.length === 0 ? (
              <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
                    {activeTab === 'activities' && <Calendar size={32} />}
@@ -324,7 +436,7 @@ export default function CommunityDetailEditor() {
                 <h4 className="text-slate-800 font-bold italic">No records found</h4>
                 <p className="text-slate-500 text-sm mt-1">Start by clicking the "Add" button to populate this section.</p>
              </div>
-          ) : (
+          ) : activeTab !== 'about' ? (
             <div className="overflow-x-auto">
               {activeTab === 'members' ? (
                 /* Members Table */
@@ -460,7 +572,7 @@ export default function CommunityDetailEditor() {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
       {/* Modal for Create / Edit */}
