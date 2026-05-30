@@ -79,6 +79,10 @@ export interface CommunityModule {
     };
     story?: string;
     registrationEndpoint?: string;
+    saint_image_url?: string;
+    image_url?: string;
+    history_pdf_url?: string;
+    pdf_url?: string;
 }
 
 const initialModules: CommunityModule[] = [
