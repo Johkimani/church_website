@@ -531,13 +531,56 @@ const CommunityDetail: React.FC = () => {
                                     </div>
                                 )}
                                 
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
-                                    Welcome to {moduleData.title}
-                                </h2>
-                                
-                                <p className="text-slate-600 leading-relaxed text-base md:text-lg whitespace-pre-line mb-8 font-medium">
-                                    {moduleData.story || moduleData.about || moduleData.description}
-                                </p>
+                                {(isCharismatic || isStFrancis) ? (
+                                    <div className="mb-10">
+                                        <div className="flex flex-col md:flex-row gap-8">
+                                            {/* Biography/Description Left Side */}
+                                            <div className="flex-1">
+                                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
+                                                    Welcome to {moduleData.title}
+                                                </h2>
+                                                <p className="text-slate-600 leading-relaxed text-base md:text-lg whitespace-pre-line font-medium mb-6">
+                                                    {moduleData.story || moduleData.about || moduleData.description}
+                                                </p>
+                                                
+                                                {/* PDF Button */}
+                                                {(moduleData.history_pdf_url || moduleData.pdf_url) && (
+                                                    <div className="mb-6">
+                                                        <a 
+                                                            href={moduleData.history_pdf_url || moduleData.pdf_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold hover:bg-red-100 transition-colors"
+                                                        >
+                                                            <FileText size={18} />
+                                                            View Full History (PDF)
+                                                        </a>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Image Right Side */}
+                                            {(moduleData.saint_image_url || moduleData.image_url) && (
+                                                <div className="w-full md:w-1/3 shrink-0">
+                                                    <img 
+                                                        src={moduleData.saint_image_url || moduleData.image_url} 
+                                                        alt={moduleData.title} 
+                                                        className="w-full h-auto rounded-2xl shadow-md object-cover" 
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
+                                            Welcome to {moduleData.title}
+                                        </h2>
+                                        <p className="text-slate-600 leading-relaxed text-base md:text-lg whitespace-pre-line mb-8 font-medium">
+                                            {moduleData.story || moduleData.about || moduleData.description}
+                                        </p>
+                                    </>
+                                )}
 
                                 {/* Agenda Section */}
                                 {moduleData.agenda && moduleData.agenda.length > 0 && (
