@@ -189,12 +189,22 @@ export default function CommunityDetailEditor() {
         payload = {
           class_id: categoryId,
           module_id: categoryId,
-          full_name: formValues.full_name || formValues.fullName,
-          voice_type: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? '' : (formValues.voice_type || ''),
-          music_level: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? '' : (formValues.music_level || 'Beginner'),
-          phone: ['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (formValues.phone || formValues.phoneNumber || '') : '',
-          email: formValues.email || '',
-          status: formValues.status || 'Pending'
+         full_name: formValues.full_name || formValues.fullName,
+
+voice_type: ['charismatic', 'dancers', 'youth'].includes(categoryId || '')
+  ? ''
+  : (formValues.voice_type || ''),
+
+music_level: ['charismatic', 'dancers', 'youth'].includes(categoryId || '')
+  ? ''
+  : (formValues.music_level || 'Beginner'),
+
+phone: ['charismatic', 'dancers', 'youth'].includes(categoryId || '')
+  ? (formValues.phone || formValues.phoneNumber || '')
+  : '',
+
+email: formValues.email || '',
+status: formValues.status || 'Pending'
         };
       }
 
@@ -441,25 +451,44 @@ export default function CommunityDetailEditor() {
               {activeTab === 'members' ? (
                 /* Members Table */
                 <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name</th>
-                      {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
-                        <>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone Number</th>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email Address</th>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Registration Date</th>
-                        </>
-                      ) : (
-                        <>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Type</th>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Level</th>
-                        </>
-                      )}
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
-                    </tr>
-                  </thead>
+                 <thead>
+  <tr className="border-b border-slate-100">
+    <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+      Full Name
+    </th>
+
+    {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+      <>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Phone Number
+        </th>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Email Address
+        </th>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Registration Date
+        </th>
+      </>
+    ) : (
+      <>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Voice Type
+        </th>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Level
+        </th>
+      </>
+    )}
+
+    <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+      Status
+    </th>
+
+    <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">
+      Actions
+    </th>
+  </tr>
+</thead>
                   <tbody>
                     {data.filter(m => {
                       const name = m.fullName || m.full_name || '';
@@ -474,14 +503,42 @@ export default function CommunityDetailEditor() {
                             <span className="font-bold text-slate-700">{member.fullName || member.full_name}</span>
                           </div>
                         </td>
-                        {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
-                          <>
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.phoneNumber || member.phone || 'N/A'}</td>
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.email || 'N/A'}</td>
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">
-                              {member.registrationDate || member.enrolled_at ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString() : 'N/A'}
-                            </td>
-                          </>
+                 {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+  <>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+      {member.phoneNumber || member.phone || 'N/A'}
+    </td>
+
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+      {member.email || 'N/A'}
+    </td>
+
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+      {member.registrationDate || member.enrolled_at
+        ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString()
+        : 'N/A'}
+    </td>
+  </>
+) : (
+  <>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.voice_type || 'N/A'}
+    </td>
+
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.music_level || 'N/A'}
+    </td>
+  </>
+)}
+  <>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.voice_type || 'N/A'}
+    </td>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.music_level || 'N/A'}
+    </td>
+  </>
+)}
                         ) : (
                           <>
                             <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.voice_type || 'N/A'}</td>
