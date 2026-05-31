@@ -451,29 +451,44 @@ status: formValues.status || 'Pending'
               {activeTab === 'members' ? (
                 /* Members Table */
                 <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name</th>
-             HEAD
-                      {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+                 <thead>
+  <tr className="border-b border-slate-100">
+    <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+      Full Name
+    </th>
 
-                      {['charismatic', 'dancers', 'youth'].includes(categoryId) ? (
-                        74592fd (Simplify Liturgical Dancers and Mentorship registration flows)
-                        <>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone Number</th>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email Address</th>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Registration Date</th>
-                        </>
-                      ) : (
-                        <>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Type</th>
-                          <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Level</th>
-                        </>
-                      )}
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
-                      <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
-                    </tr>
-                  </thead>
+    {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+      <>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Phone Number
+        </th>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Email Address
+        </th>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Registration Date
+        </th>
+      </>
+    ) : (
+      <>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Voice Type
+        </th>
+        <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          Level
+        </th>
+      </>
+    )}
+
+    <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+      Status
+    </th>
+
+    <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">
+      Actions
+    </th>
+  </tr>
+</thead>
                   <tbody>
                     {data.filter(m => {
                       const name = m.fullName || m.full_name || '';
@@ -488,18 +503,42 @@ status: formValues.status || 'Pending'
                             <span className="font-bold text-slate-700">{member.fullName || member.full_name}</span>
                           </div>
                         </td>
-                   HEAD
-                        {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+                 {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+  <>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+      {member.phoneNumber || member.phone || 'N/A'}
+    </td>
 
-                        {['charismatic', 'dancers', 'youth'].includes(categoryId) ? (
-                    74592fd (Simplify Liturgical Dancers and Mentorship registration flows)
-                          <>
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.phoneNumber || member.phone || 'N/A'}</td>
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">{member.email || 'N/A'}</td>
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">
-                              {member.registrationDate || member.enrolled_at ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString() : 'N/A'}
-                            </td>
-                          </>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+      {member.email || 'N/A'}
+    </td>
+
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+      {member.registrationDate || member.enrolled_at
+        ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString()
+        : 'N/A'}
+    </td>
+  </>
+) : (
+  <>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.voice_type || 'N/A'}
+    </td>
+
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.music_level || 'N/A'}
+    </td>
+  </>
+)}
+  <>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.voice_type || 'N/A'}
+    </td>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.music_level || 'N/A'}
+    </td>
+  </>
+)}
                         ) : (
                           <>
                             <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.voice_type || 'N/A'}</td>
@@ -649,11 +688,7 @@ status: formValues.status || 'Pending'
                     <label className="text-sm font-bold">Full name</label>
                     <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
                   </div>
- HEAD
                   {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
-
-                  {['charismatic', 'dancers', 'youth'].includes(categoryId) ? (
-               74592fd (Simplify Liturgical Dancers and Mentorship registration flows)
                     <>
                       <div>
                         <label className="text-sm font-bold">Phone Number</label>
