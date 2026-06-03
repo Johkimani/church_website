@@ -7,9 +7,9 @@ interface AdminActivitiesProps {
 
 const AdminActivities: React.FC<AdminActivitiesProps> = ({ selectedId }) => {
     const { jumuiyaList, updateMeetingSchedule } = useData();
-    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.id || '');
+    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.group_id || '');
 
-    const selectedJumuiya = jumuiyaList.find((j: any) => j.id === selectedJumuiyaId);
+    const selectedJumuiya = jumuiyaList.find((j: any) => j.group_id === selectedJumuiyaId);
 
     // Meeting Schedule State
     const [day, setDay] = useState('');
@@ -49,7 +49,7 @@ const AdminActivities: React.FC<AdminActivitiesProps> = ({ selectedId }) => {
                             style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                         >
                             {jumuiyaList.map((j: any) => (
-                                <option key={j.id} value={j.id}>{j.name}</option>
+                                <option key={j.id} value={j.group_id}>{j.name}</option>
                             ))}
                         </select>
                     )}

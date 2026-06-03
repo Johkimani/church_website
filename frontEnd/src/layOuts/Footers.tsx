@@ -21,18 +21,17 @@ const Footers = () => {
         <section className="flex flex-col items-center gap-4">
           <h2 className="text-xl text-blue-500 font-semi-bold">About CSA</h2>
           <ul>
-            <Link to="/mission"> <li className="hover:font-semibold">Our Mission</li></Link>
-            <Link to="/values"> <li className="hover:font-semibold">Our Values</li></Link>
-            <Link to="/history"> <li className="hover:font-semibold">Our History</li></Link>
+            <li className="hover:font-semibold"><a href="/#about">Our Mission</a></li>
+            <li className="hover:font-semibold"><a href="/#about">Our Values</a></li>
+            <li className="hover:font-semibold"><a href="/#explore">Our Communities</a></li>
           </ul>
         </section>
         <section className="flex flex-col items-center gap-4">
           <h2 className="text-xl text-blue-500 font-semi-bold">Resources</h2>
           <ul>
-            <Link to="/resources" ><li className="hover:font-semibold">View Resources</li></Link>
-            <Link to="/events"><li className="hover:font-semibold">Daily Readings</li></Link>
-            <Link to="/contact"><li className="hover:font-semibold">Saints Info</li></Link>
-
+            <Link to="/devotions" ><li className="hover:font-semibold">View Resources</li></Link>
+            <Link to="/devotions/readings"><li className="hover:font-semibold">Daily Readings</li></Link>
+            <Link to="/devotions/prayer"><li className="hover:font-semibold">Prayers</li></Link>
           </ul>
         </section>
         <section className="flex flex-col items-center gap-4">

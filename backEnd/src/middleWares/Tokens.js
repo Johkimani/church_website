@@ -3,6 +3,7 @@ dotenv.config();
 import jwt from "jsonwebtoken";
 import logger from "../logger/winston.js";
 import redisClient from "../Configs/redisConfig.js";
+import { db } from "../Configs/dbConfig.js";
 
 /**
  * Logout controller

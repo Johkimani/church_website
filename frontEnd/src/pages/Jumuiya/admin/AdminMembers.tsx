@@ -30,8 +30,8 @@ type ActivePanel = 'list' | 'bulk';
 
 const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
     const { jumuiyaList } = useData();
-    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.id || '');
-    const selectedJumuiya = jumuiyaList.find((j: any) => j.id === selectedJumuiyaId);
+    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || '');
+    const selectedJumuiya = jumuiyaList.find((j: any) => j.group_id === selectedJumuiyaId);
 
     const {
         members, isLoading, isAdding, isUpdating, isDeleting, isBulkJoining,
@@ -44,6 +44,7 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
     const [form, setForm] = useState<MemberFormData>(emptyForm());
     const [formError, setFormError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'registered' | 'unregistered'>('all');
 
     // --- Bulk registration state ---
     const [activePanel, setActivePanel] = useState<ActivePanel>('list');
@@ -70,6 +71,9 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
 
     const filteredUnregistered = unregistered.filter(m => {
         const q = bulkSearch.toLowerCase();
+        // Filter out members already in the currently selected Jumuiya
+        if (m.jumuiya_id === selectedJumuiyaId) return false;
+        
         return (
             m.first_name.toLowerCase().includes(q) ||
             m.last_name.toLowerCase().includes(q) ||
@@ -158,11 +162,19 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
         try { await deleteMember(id); } catch (err: any) { alert(err.message); }
     };
 
-    const filteredMembers = members.filter(m =>
-        m.name.toLowerCase().includes(search.toLowerCase()) ||
-        (m.email || '').toLowerCase().includes(search.toLowerCase()) ||
-        (m.phone || '').includes(search)
-    );
+    const filteredMembers = members.filter(m => {
+        // Search filter
+        const matchesSearch = (m.name || m.id).toLowerCase().includes(search.toLowerCase()) ||
+            (m.email || '').toLowerCase().includes(search.toLowerCase()) ||
+            (m.phone || '').includes(search);
+        
+        if (!matchesSearch) return false;
+
+        // Status filter
+        if (statusFilter === 'registered') return m.is_registered;
+        if (statusFilter === 'unregistered') return !m.is_registered;
+        return true;
+    });
 
     const registered = members.filter(m => m.is_registered).length;
 
@@ -179,8 +191,9 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                             onChange={(e) => { setSelectedJumuiyaId(e.target.value); setActivePanel('list'); }}
                             className="jumuiya-select"
                         >
+                            <option value="">All Communities</option>
                             {jumuiyaList.map((j: any) => (
-                                <option key={j.id} value={j.id}>{j.name}</option>
+                                <option key={j.id} value={j.group_id}>{j.name}</option>
                             ))}
                         </select>
                     )}
@@ -188,17 +201,41 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
 
                 {/* Summary stats */}
                 <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                    <div style={{ background: 'var(--bg-soft)', borderRadius: '12px', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div 
+                        onClick={() => setStatusFilter(prev => prev === 'registered' ? 'all' : 'registered')}
+                        style={{ 
+                            background: statusFilter === 'registered' ? 'var(--primary-light)' : 'var(--bg-soft)', 
+                            borderRadius: '12px', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '8px',
+                            cursor: 'pointer', border: statusFilter === 'registered' ? '1px solid var(--primary-color)' : '1px solid transparent',
+                            transition: 'all 0.2s'
+                        }}
+                    >
                         <FaUserCheck style={{ color: '#16a34a' }} />
                         <span style={{ fontWeight: 700 }}>{registered}</span>
                         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Registered</span>
                     </div>
-                    <div style={{ background: 'var(--bg-soft)', borderRadius: '12px', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div 
+                        onClick={() => setStatusFilter(prev => prev === 'unregistered' ? 'all' : 'unregistered')}
+                        style={{ 
+                            background: statusFilter === 'unregistered' ? 'var(--error-light)' : 'var(--bg-soft)', 
+                            borderRadius: '12px', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '8px',
+                            cursor: 'pointer', border: statusFilter === 'unregistered' ? '1px solid #dc2626' : '1px solid transparent',
+                            transition: 'all 0.2s'
+                        }}
+                    >
                         <FaUserTimes style={{ color: '#dc2626' }} />
                         <span style={{ fontWeight: 700 }}>{members.length - registered}</span>
                         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Unregistered</span>
                     </div>
-                    <div style={{ background: 'var(--bg-soft)', borderRadius: '12px', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div 
+                        onClick={() => setStatusFilter('all')}
+                        style={{ 
+                            background: statusFilter === 'all' ? 'var(--bg-soft)' : 'var(--bg-soft)', 
+                            borderRadius: '12px', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '8px',
+                            cursor: 'pointer', border: statusFilter === 'all' ? '1px solid var(--primary-color)' : '1px solid transparent',
+                            transition: 'all 0.2s'
+                        }}
+                    >
                         <FaUsers style={{ color: 'var(--primary-color)' }} />
                         <span style={{ fontWeight: 700 }}>{members.length}</span>
                         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Total</span>
@@ -227,7 +264,7 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                                 transition: 'all 0.2s',
                             }}
                         >
-                            {panel === 'list' ? <><FaUsers /> Member List</> : <><FaUserPlus /> Bulk Register</>}
+                            {panel === 'list' ? <><FaUsers /> Member List</> : <><FaUserPlus /> Finalize Registration</>}
                         </button>
                     ))}
                 </div>
@@ -253,6 +290,7 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                                     <tr>
                                         <th>Name</th>
                                         <th>Year</th>
+                                        <th>Jumuiya</th>
                                         <th>Phone</th>
                                         <th>Email</th>
                                         <th>Status</th>
@@ -261,15 +299,28 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                                 </thead>
                                 <tbody>
                                     {isLoading ? (
-                                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>Loading...</td></tr>
+                                        <tr><td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>Loading...</td></tr>
                                     ) : filteredMembers.length === 0 ? (
-                                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)' }}>
+                                        <tr><td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)' }}>
                                             {search ? 'No members match your search.' : 'No members found. Add the first one!'}
                                         </td></tr>
                                     ) : filteredMembers.map(member => (
                                         <tr key={member.id}>
-                                            <td style={{ fontWeight: 600 }}>{member.name}</td>
+                                            <td style={{ fontWeight: 600 }}>{member.name || <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontStyle: 'italic' }}>Profile Missing (ID: {member.id})</span>}</td>
                                             <td>{member.year || '—'}</td>
+                                            <td>
+                                                {member.jumuiya_name ? (
+                                                    <span style={{
+                                                        padding: '3px 10px', borderRadius: '20px', fontSize: '0.8rem',
+                                                        fontWeight: 600, background: '#eff6ff', color: '#2563eb',
+                                                        border: '1px solid #bfdbfe', display: 'inline-block'
+                                                    }}>
+                                                        {member.jumuiya_name}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>—</span>
+                                                )}
+                                            </td>
                                             <td>{member.phone || '—'}</td>
                                             <td>{member.email || '—'}</td>
                                             <td>
@@ -278,8 +329,9 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                                                     borderRadius: '20px',
                                                     fontSize: '0.8rem',
                                                     fontWeight: 700,
-                                                    background: member.is_registered ? '#dcfce7' : '#fee2e2',
-                                                    color: member.is_registered ? '#16a34a' : '#dc2626'
+                                                    background: member.is_registered ? `${jumuiya.color}20` : '#f3f4f6',
+                                                    color: member.is_registered ? jumuiya.color : '#9ca3af',
+                                                    border: member.is_registered ? `1px solid ${jumuiya.color}40` : '1px solid #e5e7eb'
                                                 }}>
                                                     {member.is_registered ? 'Registered' : 'Unregistered'}
                                                 </span>
@@ -296,9 +348,17 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
 
                         <button
                             className="btn-primary"
-                            style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                            style={{
+                                marginTop: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                opacity: !selectedJumuiyaId ? 0.5 : 1,
+                                cursor: !selectedJumuiyaId ? 'not-allowed' : 'pointer'
+                            }}
                             onClick={openAdd}
-                            disabled={isAdding}
+                            disabled={isAdding || !selectedJumuiyaId}
+                            title={!selectedJumuiyaId ? "Please select a specific Jumuiya to add members" : ""}
                         >
                             <FaPlus /> Add Member
                         </button>
@@ -308,10 +368,12 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                 {/* ====== BULK REGISTER PANEL ====== */}
                 {activePanel === 'bulk' && (
                     <div>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '0.95rem' }}>
-                            Select members from the university database who are not yet in any Jumuiya, then assign them to{' '}
-                            <strong>{selectedJumuiya?.name || 'this Jumuiya'}</strong>.
-                        </p>
+                        <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)' }}>
+                            <h3 style={{ margin: 0 }}>Finalize Registrations</h3>
+                        </div>
+                        <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', background: 'var(--primary-light)', fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 500 }}>
+                            Showing members assigned to <strong>{selectedJumuiya?.name || 'this community'}</strong> who are not yet officially registered.
+                        </div>
 
                         {/* Success banner */}
                         {bulkSuccess && (
@@ -337,7 +399,7 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                             <input
                                 value={bulkSearch}
                                 onChange={e => setBulkSearch(e.target.value)}
-                                placeholder="Search unregistered members..."
+                                placeholder="Search assigned members pending registration..."
                                 style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '10px', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}
                             />
                         </div>
@@ -369,6 +431,7 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                                     <tr>
                                         <th style={{ width: '44px' }}></th>
                                         <th>Name</th>
+                                        <th>Current Community</th>
                                         <th>Email</th>
                                         <th>Year</th>
                                     </tr>
@@ -379,8 +442,8 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                                             <span style={{ color: 'var(--text-secondary)' }}>Loading members from database…</span>
                                         </td></tr>
                                     ) : filteredUnregistered.length === 0 ? (
-                                        <tr><td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
-                                            {bulkSearch ? 'No members match your search.' : '🎉 All members are already assigned to a Jumuiya!'}
+                                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+                                            {bulkSearch ? 'No members match your search.' : '🎉 All members have already finished their registration!'}
                                         </td></tr>
                                     ) : filteredUnregistered.map(m => {
                                         const isChecked = selected.has(m.member_id);
@@ -400,6 +463,15 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                                                     </span>
                                                 </td>
                                                 <td style={{ fontWeight: 600 }}>{m.first_name} {m.last_name}</td>
+                                                <td style={{ fontSize: '0.85rem' }}>
+                                                    {m.jumuiya_id === selectedJumuiyaId ? (
+                                                        <span style={{ color: 'var(--primary-color)', fontWeight: 600 }}>Assigned here</span>
+                                                    ) : m.jumuiya_name ? (
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Assigned to {m.jumuiya_name}</span>
+                                                    ) : (
+                                                        <span style={{ color: '#d97706', fontStyle: 'italic' }}>Unassigned</span>
+                                                    )}
+                                                </td>
                                                 <td style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{m.email || '—'}</td>
                                                 <td>{m.year_of_study || '—'}</td>
                                             </tr>
@@ -413,9 +485,16 @@ const AdminMembers: React.FC<AdminMembersProps> = ({ selectedId }) => {
                         <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                             <button
                                 className="btn-primary"
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: selected.size === 0 ? 0.5 : 1 }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    opacity: (selected.size === 0 || !selectedJumuiyaId) ? 0.5 : 1,
+                                    cursor: (selected.size === 0 || !selectedJumuiyaId) ? 'not-allowed' : 'pointer'
+                                }}
                                 onClick={handleBulkSubmit}
-                                disabled={selected.size === 0 || isBulkJoining}
+                                disabled={selected.size === 0 || isBulkJoining || !selectedJumuiyaId}
+                                title={!selectedJumuiyaId ? "Please select a specific Jumuiya to register members" : ""}
                             >
                                 <FaUserPlus />
                                 {isBulkJoining

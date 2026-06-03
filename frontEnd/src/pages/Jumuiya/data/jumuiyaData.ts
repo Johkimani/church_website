@@ -67,7 +67,8 @@ export interface Member {
 }
 
 export interface JumuiyaData {
-    id: string;
+    id: string; // Slug for URLs
+    group_id: string; // UUID for database operations
     name: string;
     fullName: string;
     description: string;

@@ -3,12 +3,13 @@ import React, { useEffect, useState } from "react";
 import { FaHome, FaInfoCircle, FaUsers, FaPrayingHands } from "react-icons/fa";
 import { FiImage } from "react-icons/fi";
 import { HiOutlineMenu, HiOutlineSupport, HiOutlineX } from "react-icons/hi";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const Headers: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const token: string | null = localStorage.getItem("token");
 
@@ -22,6 +23,7 @@ const Headers: React.FC = () => {
 
     return () => window.removeEventListener("storage", checkAuth);
   }, []);
+
   const handleLogins = async () => {
     try {
       if (isLoggedIn) {
@@ -56,6 +58,22 @@ const Headers: React.FC = () => {
     }
   };
 
+  const isActive = (path: string) => {
+    if (path === "/" && location.pathname === "/") return true;
+    if (path !== "/" && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
+  const navLinks = [
+    { name: "Home", path: "/", icon: <FaHome /> },
+    { name: "Community", path: "/community", icon: <FaInfoCircle /> },
+    { name: "Jumuiya", path: "/jumuiya", icon: <FaInfoCircle /> },
+    { name: "Officials", path: "/officials", icon: <FaUsers /> },
+    { name: "Activities", path: "/activities", icon: <HiOutlineSupport /> },
+    { name: "Gallery", path: "/gallery", icon: <FiImage /> },
+    { name: "Devotions", path: "/devotions", icon: <FaPrayingHands /> },
+  ];
+
   return (
     <>
       {/* DESKTOP NAV */}
@@ -69,45 +87,25 @@ const Headers: React.FC = () => {
         </div>
 
         <ul className="flex gap-4 lg:gap-8">
-          <Link to="/" className="flex items-center gap-1">
-            <FaHome />
-            <li>Home</li>
-          </Link>
-
-          <Link to="/community" className="flex items-center gap-1">
-            <FaInfoCircle />
-            <li>Community</li>
-          </Link>
-
-          <Link to="/jumuiya" className="flex items-center gap-1">
-            <FaInfoCircle />
-            <li>Jumuiya</li>
-          </Link>
-
-          <Link to="/officials" className="flex items-center gap-1">
-            <FaUsers />
-            <li>Officials</li>
-          </Link>
-
-          <Link to="/activities" className="flex items-center gap-1">
-            <HiOutlineSupport />
-            <li>Activities</li>
-          </Link>
-
-          <Link to="/gallery" className="flex items-center gap-1">
-            <FiImage />
-            <li>Gallery</li>
-          </Link>
-
-          <Link to="/devotions" className="flex items-center gap-1">
-            <FaPrayingHands />
-            <li>Devotions</li>
-          </Link>
+          {navLinks.map((link) => (
+            <Link
+              key={link.path}
+              to={link.path}
+              className={`flex items-center gap-1 transition-all duration-300 pb-1 border-b-2 ${
+                isActive(link.path)
+                  ? "text-blue-600 border-blue-600 font-bold"
+                  : "text-gray-600 border-transparent hover:text-blue-500 hover:border-blue-300"
+              }`}
+            >
+              {link.icon}
+              <li>{link.name}</li>
+            </Link>
+          ))}
         </ul>
 
         <button
           onClick={handleLogins}
-          className="px-5 py-1 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          className="px-5 py-1 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
         >
           {isLoggedIn ? "Logout" : "Login"}
         </button>
@@ -115,25 +113,35 @@ const Headers: React.FC = () => {
 
       {/* MOBILE NAV */}
       <div className="md:hidden flex justify-between items-center px-[8%] py-4 bg-white shadow-md">
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-2xl">
           {isMenuOpen ? <HiOutlineX /> : <HiOutlineMenu />}
         </button>
 
         {isMenuOpen && (
-          <ul className="absolute left-0 flex flex-col items-center w-full gap-4 py-4 bg-white shadow-md top-16">
-            <Link to="/">Home</Link>
-            <Link to="/community">Community</Link>
-            <Link to="/jumuiya">Jumuiya</Link>
-            <Link to="/officials">Officials</Link>
-            <Link to="/activities">Activities</Link>
-            <Link to="/gallery">Gallery</Link>
+          <ul className="absolute left-0 flex flex-col items-center w-full gap-4 py-6 bg-white shadow-xl top-16 z-50">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setIsMenuOpen(false)}
+                className={`w-full text-center py-2 ${
+                  isActive(link.path)
+                    ? "text-blue-600 font-bold bg-blue-50"
+                    : "text-gray-600"
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
 
             <button
-              onClick={handleLogins}
-              className="px-4 py-2 text-white bg-blue-600 rounded-md"
+              onClick={() => {
+                handleLogins();
+                setIsMenuOpen(false);
+              }}
+              className="px-8 py-2 mt-4 text-white bg-blue-600 rounded-md shadow-lg"
             >
-              log out
-              {/* {isLoggedIn ? "Logout" : "Login"} */}
+              {isLoggedIn ? "Logout" : "Login"}
             </button>
           </ul>
         )}

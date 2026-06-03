@@ -1,5 +1,6 @@
 import { testDb as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { payAndWait } from "./stkPush/stkHelper.js";
 
 /**
  * GET /api/jumuiya-members?jumuiya_id=st-anthony
@@ -14,25 +15,28 @@ export const getAllJumuiyaMembers = async (req, res) => {
     // This provides data isolation between different Jumuiyas.
     let query = `
       SELECT 
-        member_id as id,
-        first_name,
-        last_name,
-        email,
-        year_of_study as year,
-        jumuiya_id,
-        (jumuiya_id IS NOT NULL) as is_registered,
-        sem_1_reg, sem_2_reg, sem_3_reg, sem_4_reg,
-        sem_5_reg, sem_6_reg, sem_7_reg, sem_8_reg
-      FROM members
+        COALESCE(m.member_id, r.member_id) as id,
+        m.first_name,
+        m.last_name,
+        m.email,
+        m.year_of_study as year,
+        COALESCE(m.jumuiya_id, r.jumuiya_id) as jumuiya_id,
+        sg.name as jumuiya_name,
+        (r.member_id IS NOT NULL) as is_registered,
+        m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
+        m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg
+      FROM members m
+      FULL OUTER JOIN registered r ON m.member_id = r.member_id AND m.jumuiya_id = r.jumuiya_id
+      LEFT JOIN sub_groups sg ON COALESCE(m.jumuiya_id, r.jumuiya_id) = sg.group_id
     `;
     
     const queryParams = [];
     if (jumuiya_id) {
-      query += ` WHERE jumuiya_id = $1`;
+      query += ` WHERE COALESCE(m.jumuiya_id, r.jumuiya_id) = $1`;
       queryParams.push(jumuiya_id);
     }
     
-    query += ` ORDER BY first_name ASC`;
+    query += ` ORDER BY m.first_name ASC`;
     
     const result = await pool.query(query, queryParams);
 
@@ -67,9 +71,18 @@ export const createJumuiyaMember = async (req, res) => {
     await pool.query('BEGIN');
 
     // 1. Update members table
-    const updateResult = await pool.query(
-      `UPDATE members SET jumuiya_id = $1 WHERE member_id = $2 RETURNING *`,
+    await pool.query(
+      `UPDATE members SET jumuiya_id = $1 WHERE member_id = $2`,
       [jumuiya_id, member_id]
+    );
+
+    // 2. Fetch updated member with jumuiya name via JOIN
+    const updateResult = await pool.query(
+      `SELECT m.*, sg.name as jumuiya_name
+       FROM members m
+       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+       WHERE m.member_id = $1`,
+      [member_id]
     );
 
     if (updateResult.rows.length === 0) {
@@ -77,9 +90,7 @@ export const createJumuiyaMember = async (req, res) => {
       return res.status(404).json({ success: false, message: "Member not found" });
     }
 
-    // 2. Insert into registered table
-    // Check if already registered first to avoid duplicates if necessary, 
-    // though the UI should prevent this.
+    // 3. Insert into registered table
     await pool.query(
       `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
        VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')
@@ -89,13 +100,14 @@ export const createJumuiyaMember = async (req, res) => {
 
     await pool.query('COMMIT');
 
+    const row = updateResult.rows[0];
     res.status(200).json({ 
       success: true, 
       message: "Successfully joined the community",
       data: {
-        ...updateResult.rows[0],
-        id: updateResult.rows[0].member_id,
-        name: `${updateResult.rows[0].first_name} ${updateResult.rows[0].last_name || ""}`.trim()
+        ...row,
+        id: row.member_id,
+        name: `${row.first_name} ${row.last_name || ""}`.trim()
       }
     });
   } catch (error) {
@@ -131,7 +143,7 @@ export const updateJumuiyaMember = async (req, res) => {
     const oldJumuiyaId = currentRes.rows[0].jumuiya_id;
 
     // 2. Update member details
-    const result = await pool.query(
+    await pool.query(
       `UPDATE members
        SET first_name = COALESCE($1, first_name),
            last_name = COALESCE($2, last_name),
@@ -146,7 +158,7 @@ export const updateJumuiyaMember = async (req, res) => {
            sem_6_reg = COALESCE($11, sem_6_reg),
            sem_7_reg = COALESCE($12, sem_7_reg),
            sem_8_reg = COALESCE($13, sem_8_reg)
-       WHERE member_id = $5 RETURNING *`,
+       WHERE member_id = $5`,
       [
         first_name, last_name, year_of_study, email, id,
         sem_1_reg, sem_2_reg, sem_3_reg, sem_4_reg,
@@ -155,15 +167,20 @@ export const updateJumuiyaMember = async (req, res) => {
       ]
     );
 
+    // Fetch updated record with jumuiya name via JOIN
+    const result = await pool.query(
+      `SELECT m.*, sg.name as jumuiya_name
+       FROM members m
+       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+       WHERE m.member_id = $1`,
+      [id]
+    );
+
     // 3. Sync Registration Table if jumuiya_id actually changed
-    // We only sync if jumuiya_id was explicitly provided in the request
     if (jumuiya_id !== undefined && jumuiya_id !== oldJumuiyaId) {
-      // Remove old registration link
       if (oldJumuiyaId) {
         await pool.query("DELETE FROM registered WHERE member_id = $1 AND jumuiya_id = $2", [id, oldJumuiyaId]);
       }
-      
-      // Add new registration link if they were moved TO a jumuiya (not unassigned)
       if (jumuiya_id) {
         await pool.query(
           "INSERT INTO registered (member_id, jumuiya_id, registration_date, status) VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')",
@@ -174,12 +191,13 @@ export const updateJumuiyaMember = async (req, res) => {
 
     await pool.query('COMMIT');
 
+    const row = result.rows[0];
     res.json({ 
       success: true, 
       data: {
-        ...result.rows[0],
-        id: result.rows[0].member_id,
-        name: `${result.rows[0].first_name} ${result.rows[0].last_name || ""}`.trim()
+        ...row,
+        id: row.member_id,
+        name: `${row.first_name} ${row.last_name || ""}`.trim()
       }
     });
   } catch (error) {
@@ -231,12 +249,28 @@ export const deleteJumuiyaMember = async (req, res) => {
  */
 export const getUnregisteredMembers = async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT member_id, first_name, last_name, email, year_of_study 
-       FROM members 
-       WHERE jumuiya_id IS NULL 
-       ORDER BY first_name ASC`
-    );
+    const { jumuiya_id } = req.query;
+
+    let query = `
+      SELECT 
+        m.member_id, m.first_name, m.last_name, m.email, m.year_of_study, m.jumuiya_id,
+        sg.name as jumuiya_name
+      FROM members m
+      LEFT JOIN registered r ON m.member_id = r.member_id
+      LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+      WHERE r.member_id IS NULL
+    `;
+
+    const queryParams = [];
+    if (jumuiya_id) {
+       // Optional: Filter logic if we specifically want to prioritize some, 
+       // but for now, we show everyone requested by the user.
+       // However, we'll keep the param for frontend compatibility.
+    }
+
+    query += ` ORDER BY m.first_name ASC`;
+
+    const result = await pool.query(query, queryParams);
     res.json({ success: true, data: result.rows });
   } catch (error) {
     logger.error("Error fetching unregistered members: " + error.message);
@@ -267,7 +301,8 @@ export const bulkJoinJumuiya = async (req, res) => {
       [jumuiya_id, member_ids]
     );
 
-    // 2. Insert into registered table in bulk using UNNEST
+    // 2. Insert into registered table
+    // This officially registers the members in the community
     await pool.query(
       `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
        SELECT unnest($1::text[]), $2, CURRENT_TIMESTAMP, 'active'
@@ -291,6 +326,71 @@ export const bulkJoinJumuiya = async (req, res) => {
 
 
 /**
+ * POST /api/jumuiya-members/bulk-register-with-payment
+ * Register multiple members after a single STK Push payment for the total amount.
+ */
+export const bulkRegisterWithPayment = async (req, res) => {
+  const { member_ids, jumuiya_id, phoneNumber, amount } = req.body;
+
+  if (!Array.isArray(member_ids) || member_ids.length === 0 || !jumuiya_id || !phoneNumber || !amount) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "member_ids (array), jumuiya_id, phoneNumber, and amount are required" 
+    });
+  }
+
+  try {
+    logger.info(`Initiating bulk registration payment for ${member_ids.length} members to jumuiya ${jumuiya_id}`);
+
+    // 1. Trigger STK Push and wait for result
+    // We use the first member_id as the user_id for the mpesa_request record
+    const paymentResult = await payAndWait(member_ids[0], phoneNumber, amount);
+
+    if (paymentResult.status !== "success") {
+      return res.status(402).json({ 
+        success: false, 
+        message: paymentResult.message || "Payment failed or timed out. Please try again." 
+      });
+    }
+
+    // 2. If payment success, proceed with bulk registration logic
+    // Start Transaction
+    await pool.query('BEGIN');
+
+    // Update members table directly
+    const updateResult = await pool.query(
+      `UPDATE members 
+       SET jumuiya_id = $1 
+       WHERE member_id = ANY($2) 
+       RETURNING *`,
+      [jumuiya_id, member_ids]
+    );
+
+    // Insert into registered table
+    await pool.query(
+      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
+       SELECT unnest($1::text[]), $2, CURRENT_TIMESTAMP, 'active'
+       ON CONFLICT DO NOTHING`,
+      [member_ids, jumuiya_id]
+    );
+
+    await pool.query('COMMIT');
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Payment successful and ${updateResult.rows.length} members registered!`,
+      count: updateResult.rows.length
+    });
+
+  } catch (error) {
+    if (pool) await pool.query('ROLLBACK');
+    logger.error("Error in bulkRegisterWithPayment: " + error.message);
+    res.status(500).json({ success: false, message: "Internal server error during bulk registration" });
+  }
+};
+
+
+/**
  * GET /api/jumuiya-members/registered?jumuiya_id=st-anthony
  * Fetch members from the 'registered' table.
  */
@@ -308,9 +408,11 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
         m.email,
         m.year_of_study as year,
         m.jumuiya_id,
+        sg.name as jumuiya_name,
         true as is_registered
       FROM registered r
       JOIN members m ON r.member_id = m.member_id
+      LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
     `;
 
     const queryParams = [];
@@ -376,3 +478,100 @@ export const unregisterJumuiyaMember = async (req, res) => {
 };
 
 
+/**
+ * POST /api/jumuiya-members/register-with-payment
+ * Register a member after a successful STK Push payment.
+ */
+export const registerWithPayment = async (req, res) => {
+  const { member_id, jumuiya_id, phoneNumber, amount } = req.body;
+
+  if (!member_id || !jumuiya_id || !phoneNumber || !amount) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "member_id, jumuiya_id, phoneNumber, and amount are required" 
+    });
+  }
+
+  try {
+    logger.info(`Initiating registration payment for member ${member_id} to jumuiya ${jumuiya_id}`);
+
+    // 1. Trigger STK Push and wait for result
+    const paymentResult = await payAndWait(member_id, phoneNumber, amount);
+
+    if (paymentResult.status !== "success") {
+      return res.status(402).json({ 
+        success: false, 
+        message: paymentResult.message || "Payment failed or timed out. Please try again." 
+      });
+    }
+
+    // 2. If payment success, proceed with registration logic
+    // Start Transaction
+    await pool.query('BEGIN');
+
+    // Update members table
+    await pool.query(
+      `UPDATE members SET jumuiya_id = $1 WHERE member_id = $2`,
+      [jumuiya_id, member_id]
+    );
+
+    // Fetch updated member with jumuiya name via JOIN
+    const updateResult = await pool.query(
+      `SELECT m.*, sg.name as jumuiya_name
+       FROM members m
+       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+       WHERE m.member_id = $1`,
+      [member_id]
+    );
+
+    if (updateResult.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: "Member not found" });
+    }
+
+    // Insert into registered table
+    await pool.query(
+      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
+       VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')
+       ON CONFLICT DO NOTHING`, 
+      [member_id, jumuiya_id]
+    );
+
+    await pool.query('COMMIT');
+
+    const row = updateResult.rows[0];
+    res.status(200).json({ 
+      success: true, 
+      message: "Payment successful and registration complete!",
+      data: {
+        ...row,
+        id: row.member_id,
+        name: `${row.first_name} ${row.last_name || ""}`.trim()
+      }
+    });
+
+  } catch (error) {
+    if (pool) await pool.query('ROLLBACK');
+    logger.error("Error in registerWithPayment: " + error.message);
+    res.status(500).json({ success: false, message: "Internal server error during registration" });
+  }
+};
+
+/**
+ * GET /api/jumuiya-members/lookup
+ * Returns a full slug → name mapping for all Jumuiyas.
+ * Useful for the frontend to translate IDs to display names.
+ */
+export const getJumuiyaLookup = async (req, res) => {
+  try {
+    const result = await pool.query("SELECT group_id, name, full_name FROM sub_groups ORDER BY name ASC");
+    const lookup = {};
+    result.rows.forEach(row => {
+      lookup[row.group_id] = { name: row.name, fullName: row.full_name || row.name };
+    });
+    res.json({ success: true, data: lookup });
+  } catch (error) {
+    logger.error("Error fetching jumuiya lookup: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch jumuiya lookup" });
+  }
+};

@@ -29,19 +29,19 @@ const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
     const renderContent = () => {
         switch (activeTab) {
             case 'notifications':
-                return <AdminNotifications selectedId={jumuiya.id} />;
+                return <AdminNotifications selectedId={jumuiya.group_id} />;
             case 'about':
-                return <AdminAbout selectedId={jumuiya.id} />;
+                return <AdminAbout selectedId={jumuiya.group_id} />;
             case 'officials':
-                return <AdminOfficials selectedId={jumuiya.id} />;
+                return <AdminOfficials selectedId={jumuiya.group_id} />;
             case 'members':
-                return <AdminMembers selectedId={jumuiya.id} />;
+                return <AdminMembers selectedId={jumuiya.group_id} />;
             case 'activities':
-                return <AdminActivities selectedId={jumuiya.id} />;
+                return <AdminActivities selectedId={jumuiya.group_id} />;
             case 'gallery':
-                return <AdminGallery selectedId={jumuiya.id} />;
+                return <AdminGallery selectedId={jumuiya.group_id} />;
             default:
-                return <AdminAbout selectedId={jumuiya.id} />;
+                return <AdminAbout selectedId={jumuiya.group_id} />;
         }
     };
 

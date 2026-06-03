@@ -13,7 +13,7 @@ const AdminNotifications: React.FC<AdminNotificationsProps> = ({ selectedId }) =
     const [message, setMessage] = useState('');
     const [type, setType] = useState<Notification['type']>('info');
     
-    const selectedJumuiya = jumuiyaList.find(j => j.id === selectedId);
+    const selectedJumuiya = jumuiyaList.find(j => j.group_id === selectedId);
     const notifications = selectedJumuiya?.notifications || [];
 
     const handleAddNotification = (e: React.FormEvent) => {
