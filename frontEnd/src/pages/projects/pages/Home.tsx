@@ -27,6 +27,13 @@ export const Home = () => {
                     <div className="mt-8 flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-center">
 
                         <NavLink
+    to="/sacramentals"
+    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-white border border-blue-300 text-blue-700 font-medium shadow-sm hover:bg-blue-50 transition duration-300 text-center"
+>
+    Sacramentals
+</NavLink>
+
+                        <NavLink
                             to="/t-shirts"
                             className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-white border border-blue-300 text-blue-700 font-medium shadow-sm hover:bg-blue-50 transition duration-300 text-center"
                         >
