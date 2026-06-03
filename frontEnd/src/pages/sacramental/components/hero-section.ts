@@ -3,8 +3,8 @@
  * Main landing section with choir description and CTA
  */
 
-import { DOMHelpers } from '../../backend/utils/dom-helpers.js';
-import { ChoirConfig } from '../../types.js';
+import { DOMHelpers } from '../../backend/utils/dom-helpers';
+import { ChoirConfig } from '../../types';
 
 export class HeroSection {
     private container: HTMLElement;
@@ -33,9 +33,9 @@ export class HeroSection {
 
         const ctaButton = DOMHelpers.createElement('a', 'csa-choir-btn csa-choir-btn--accent csa-choir-hero__cta', {
             href: '#registration',
-            'aria-label': `Join ${this.config.name}`
+            'aria-label': 'Join the choir'
         });
-        ctaButton.textContent = 'Join Us';
+        ctaButton.textContent = 'Join Choir';
 
         DOMHelpers.appendChildren(heroContent, [heading, description, ctaButton]);
         this.container.appendChild(heroContent);

@@ -1,9 +1,7 @@
-import { testDb } from "../../Configs/dbConfig.js";
+import { testDb, db } from "../../Configs/dbConfig.js";
 import axios from "axios";
 
-const db = testDb;
-
-export const initiateSTK = async (userId, phoneNumber, amount) => {
+export const initiateSTK = async (userId, phoneNumber, amount, description) => {
   const consumerKey = process.env.CONSUMER_KEY;
   const consumerSecret = process.env.CONSUMER_SECRET;
   const shortcode = process.env.SHORTCODE;
@@ -53,8 +51,8 @@ export const initiateSTK = async (userId, phoneNumber, amount) => {
       PartyB: shortcode,
       PhoneNumber: phoneNumber,
       CallBackURL: process.env.CALLBACK_URL,
-      AccountReference: "CSARegistration",
-      TransactionDesc: "Community Member Registration",
+      AccountReference: "ChurchContribution",
+      TransactionDesc: description || "Church Payment",
     },
     {
       headers: {
@@ -66,7 +64,7 @@ export const initiateSTK = async (userId, phoneNumber, amount) => {
   const checkoutId = stkRes.data.CheckoutRequestID;
 
   // Save as pending
-  await db.query(
+  await testDb.query(
     `INSERT INTO mpesa_request (checkout_id, user_id, amount, status)
      VALUES ($1, $2, $3, 'pending')`,
     [checkoutId, userId, amount],
@@ -83,6 +81,7 @@ export const callback = async (req, res) => {
 
     if (req.method === "POST") {
       const { Body } = req.body;
+      console.log("Received callback:", Body);
 
       //  Invalid structure
       if (!Body || !Body.stkCallback) {
@@ -97,19 +96,22 @@ export const callback = async (req, res) => {
       const CheckoutRequestID = stk.CheckoutRequestID;
       const ResultCode = stk.ResultCode;
 
+      const MerchantRequestID = stk.MerchantRequestID;
+      const ResultDesc = stk.ResultDesc;
+
       //  Respond FAST (important for Safaricom)
       res.status(200).json({ success: true });
 
       //  If payment failed
       if (ResultCode !== 0) {
         await client.query(
-          `UPDATE mpesa_request SET status='failed' WHERE checkout_id=$1`,
-          [CheckoutRequestID],
+          `UPDATE mpesa_request SET status='failed', result_code=$1, result_desc=$2, merchant_request_id=$3 WHERE checkout_id=$4`,
+          [ResultCode, ResultDesc, MerchantRequestID, CheckoutRequestID],
         );
 
         await client.query("COMMIT");
 
-        console.log("❌ Payment failed");
+        console.log(`❌ Payment failed: ${ResultDesc}`);
         return;
       }
 
@@ -145,13 +147,16 @@ export const callback = async (req, res) => {
       }
       //  Update payment
       await client.query(
-        `UPDATE mpesa_request SET status='paid' WHERE checkout_id=$1`,
-        [checkout_id],
+        `UPDATE mpesa_request SET status='paid', result_code=$1, result_desc=$2, mpesa_receipt=$3, merchant_request_id=$4 WHERE checkout_id=$5`,
+        [ResultCode, ResultDesc, paymentDetails.mpesaReceiptNumber, MerchantRequestID, checkout_id],
       );
 
       await client.query("COMMIT");
 
-      console.log("✅ Payment processed:", paymentDetails);
+      return checkout_id;
+    } else if (req.method === "GET") {
+      client.release();
+      res.status(200).json({ message: "MPESA Callback endpoint is live" });
       return;
     }
 
@@ -161,44 +166,51 @@ export const callback = async (req, res) => {
   } catch (error) {
     console.error(" Error processing callback:", error);
 
-    await client.query("ROLLBACK");
+    if (client) await client.query("ROLLBACK");
     return res.status(500).json({
       success: false,
       message: "Internal server error",
     });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 };
 
 export const waitForPaymentResult = (checkoutId, timeout = 60000) => {
+  console.log(`⏳ Waiting for payment result of ${checkoutId}...`);
+
   return new Promise((resolve, reject) => {
-    const interval = 3000; // check every 3 sec
+    const interval = 3000;
     let elapsed = 0;
 
     const timer = setInterval(async () => {
-      elapsed += interval;
+      try {
+        elapsed += interval;
 
-      const result = await db.query(
-        `SELECT status FROM mpesa_request WHERE checkout_id = $1`,
-        [checkoutId],
-      );
+        const result = await testDb.query(
+          `SELECT status FROM mpesa_request WHERE checkout_id = $1`,
+          [checkoutId],
+        );
 
-      const status = result.rows[0]?.status;
+        const status = result.rows[0]?.status;
 
-      if (status === "paid") {
+        if (status === "paid") {
+          clearInterval(timer);
+          return resolve({ status: "success" });
+        }
+
+        if (status === "failed") {
+          clearInterval(timer);
+          return resolve({ status: "failed" });
+        }
+
+        if (elapsed >= timeout) {
+          clearInterval(timer);
+          return reject(new Error("Timeout waiting for payment"));
+        }
+      } catch (err) {
         clearInterval(timer);
-        resolve({ status: "success" });
-      }
-
-      if (status === "failed") {
-        clearInterval(timer);
-        resolve({ status: "failed" });
-      }
-
-      if (elapsed >= timeout) {
-        clearInterval(timer);
-        reject(new Error("Timeout waiting for payment"));
+        return reject(err); // THIS prevents unhandled rejection
       }
     }, interval);
   });

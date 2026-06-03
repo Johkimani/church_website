@@ -27,11 +27,12 @@ const JumuiyaLanding: React.FC = () => {
                 {/* Jumuiya Cards Grid */}
                 <div className="jumuiya-grid">
                     {jumuiyaList.map((jumuiya, index) => (
-                        <div
+                        <button
                             key={jumuiya.id}
+                            type="button"
+                            aria-label={`View ${jumuiya.name}`}
                             className="jumuiya-card card card-clickable animate-fade-in"
                             style={{
-                                animationDelay: `${index * 0.1}s`,
                                 ['--jumuiya-color' as any]: jumuiya.color
                             }}
                             onClick={() => handleCardClick(jumuiya.id)}
@@ -54,7 +55,7 @@ const JumuiyaLanding: React.FC = () => {
                                     {/* <span className="card-link">Learn More →</span> */}
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     ))}
                 </div>
 

@@ -3,8 +3,8 @@
  * Displays choir social media channels
  */
 
-import { DOMHelpers } from '../../backend/utils/dom-helpers.js';
-import { SocialMediaLink } from '../../types.js';
+import { DOMHelpers } from '../../backend/utils/dom-helpers';
+import { SocialMediaLink } from '../../types';
 
 export class SocialMediaLinks {
     private container: HTMLElement;

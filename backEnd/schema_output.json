@@ -143,6 +143,68 @@
       "default": "CURRENT_TIMESTAMP"
     }
   ],
+  "enrollments": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('enrollments_id_seq'::regclass)"
+    },
+    {
+      "column": "class_id",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "full_name",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "voice_type",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "music_level",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "status",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": "'Pending'::character varying"
+    },
+    {
+      "column": "enrolled_at",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "column": "module_id",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "phone",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "email",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    }
+  ],
   "event_subgroup_attendance": [
     {
       "column": "event_id",
@@ -229,6 +291,38 @@
     {
       "column": "event_date",
       "type": "date",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    }
+  ],
+  "google_forms_distribution": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('google_forms_distribution_id_seq'::regclass)"
+    },
+    {
+      "column": "title",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "form_link",
+      "type": "text",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "group_id",
+      "type": "integer",
       "nullable": "YES",
       "default": null
     },
@@ -357,6 +451,118 @@
       "type": "timestamp with time zone",
       "nullable": "YES",
       "default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "column": "is_spotlight",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "seasonal_theme",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "moderation_status",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": "'Approved'::character varying"
+    },
+    {
+      "column": "contributor_id",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "public_id",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "event_date",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    }
+  ],
+  "hub_gallery_comments": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('hub_gallery_comments_id_seq'::regclass)"
+    },
+    {
+      "column": "gallery_id",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "user_id",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "user_name",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "comment",
+      "type": "text",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "status",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": "'Pending'::character varying"
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    }
+  ],
+  "hub_gallery_reactions": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('hub_gallery_reactions_id_seq'::regclass)"
+    },
+    {
+      "column": "gallery_id",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "user_id",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "emoji",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
     }
   ],
   "hub_modules": [
@@ -437,6 +643,68 @@
       "type": "timestamp with time zone",
       "nullable": "YES",
       "default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "column": "saint_image_url",
+      "type": "text",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "history_pdf_url",
+      "type": "text",
+      "nullable": "YES",
+      "default": null
+    }
+  ],
+  "hub_music_classes": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('hub_music_classes_id_seq'::regclass)"
+    },
+    {
+      "column": "module_id",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "title",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "instructor",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "schedule",
+      "type": "text",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "description",
+      "type": "text",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "skill_level",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": "'Beginner'::character varying"
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
     }
   ],
   "hub_officials": [
@@ -489,6 +757,50 @@
       "default": "CURRENT_TIMESTAMP"
     }
   ],
+  "hub_schedules": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('hub_schedules_id_seq'::regclass)"
+    },
+    {
+      "column": "module_id",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "day",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "start_time",
+      "type": "time without time zone",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "end_time",
+      "type": "time without time zone",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "location",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    }
+  ],
   "jumuiya_activities": [
     {
       "column": "id",
@@ -498,7 +810,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -554,7 +866,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -592,7 +904,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -656,7 +968,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -688,7 +1000,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -800,7 +1112,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -826,7 +1138,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -852,7 +1164,7 @@
     },
     {
       "column": "jumuiya_id",
-      "type": "character varying",
+      "type": "uuid",
       "nullable": "NO",
       "default": null
     },
@@ -935,7 +1247,7 @@
     {
       "column": "email",
       "type": "character varying",
-      "nullable": "YES",
+      "nullable": "NO",
       "default": null
     },
     {
@@ -959,7 +1271,7 @@
     {
       "column": "join_date",
       "type": "date",
-      "nullable": "YES",
+      "nullable": "NO",
       "default": "CURRENT_DATE"
     },
     {
@@ -970,6 +1282,116 @@
     },
     {
       "column": "jumuiya_id",
+      "type": "uuid",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "sem_1_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "sem_2_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "sem_3_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "sem_4_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "sem_5_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "sem_6_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "sem_7_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    },
+    {
+      "column": "sem_8_reg",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false"
+    }
+  ],
+  "mpesa_request": [
+    {
+      "column": "checkout_id",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "user_id",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "amount",
+      "type": "numeric",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "status",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": "'pending'::character varying"
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "column": "phone_number",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "result_code",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "result_desc",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "mpesa_receipt",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "merchant_request_id",
       "type": "character varying",
       "nullable": "YES",
       "default": null
@@ -1137,6 +1559,50 @@
       "default": null
     }
   ],
+  "permissions": [
+    {
+      "column": "permission_id",
+      "type": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()"
+    },
+    {
+      "column": "resource",
+      "type": "USER-DEFINED",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "action",
+      "type": "USER-DEFINED",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "description",
+      "type": "text",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_by",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "column": "status",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": "'active'::character varying"
+    }
+  ],
   "projects": [
     {
       "column": "id",
@@ -1237,6 +1703,52 @@
       "default": "false"
     }
   ],
+  "registered": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('registered_id_seq'::regclass)"
+    },
+    {
+      "column": "member_id",
+      "type": "text",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "jumuiya_id",
+      "type": "uuid",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "registration_date",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "column": "status",
+      "type": "text",
+      "nullable": "YES",
+      "default": "'active'::text"
+    }
+  ],
+  "role_permissions": [
+    {
+      "column": "role_id",
+      "type": "uuid",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "permission_id",
+      "type": "uuid",
+      "nullable": "NO",
+      "default": null
+    }
+  ],
   "roles": [
     {
       "column": "role_id",
@@ -1249,6 +1761,68 @@
       "type": "character varying",
       "nullable": "NO",
       "default": null
+    },
+    {
+      "column": "description",
+      "type": "text",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_by",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "column": "status",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": "'active'::character varying"
+    }
+  ],
+  "semester_activities": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('semester_activities_id_seq'::regclass)"
+    },
+    {
+      "column": "title",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "date_time",
+      "type": "timestamp without time zone",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "venue",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "description",
+      "type": "text",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
     }
   ],
   "sub_groups": [
@@ -1323,6 +1897,50 @@
       "type": "character varying",
       "nullable": "YES",
       "default": "'scc'::character varying"
+    },
+    {
+      "column": "saint_profile_picture",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "registered_members",
+      "type": "integer",
+      "nullable": "YES",
+      "default": "0"
+    }
+  ],
+  "suggestions": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('suggestions_id_seq'::regclass)"
+    },
+    {
+      "column": "name",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "email",
+      "type": "character varying",
+      "nullable": "YES",
+      "default": null
+    },
+    {
+      "column": "suggestion",
+      "type": "text",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
     }
   ],
   "uploads": [
@@ -1387,6 +2005,70 @@
       "type": "character varying",
       "nullable": "YES",
       "default": "'admin'::character varying"
+    }
+  ],
+  "weekly_activities": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('weekly_activities_id_seq'::regclass)"
+    },
+    {
+      "column": "day",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "time",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "activity",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "venue",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
+    }
+  ],
+  "whatsapp_groups": [
+    {
+      "column": "id",
+      "type": "integer",
+      "nullable": "NO",
+      "default": "nextval('whatsapp_groups_id_seq'::regclass)"
+    },
+    {
+      "column": "name",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "invite_link",
+      "type": "text",
+      "nullable": "NO",
+      "default": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp without time zone",
+      "nullable": "YES",
+      "default": "CURRENT_TIMESTAMP"
     }
   ]
 }

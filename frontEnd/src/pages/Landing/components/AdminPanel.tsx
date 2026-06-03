@@ -23,7 +23,7 @@ function AdminPanel({ onClose }: AdminPanelProps) {
   })
   const [uploading, setUploading] = useState(false)
 
-  const tables = ['members', 'events', 'contributions', 'officials', 'projects', 'activities', 'gallery', 'jumuiya', 'users']
+  const tables = ['members', 'events', 'contributions', 'officials', 'projects', 'activities', 'gallery', 'jumuiya', 'users', 'mpesa_request']
 
   useEffect(() => {
     loadData()
@@ -164,7 +164,7 @@ function AdminPanel({ onClose }: AdminPanelProps) {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('/authentication/register', {
+      const response = await fetch(`${import.meta.env.VITE_SERVER_URI}/authentication/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -393,7 +393,7 @@ function AdminPanel({ onClose }: AdminPanelProps) {
                         : 'hover:bg-gray-200 text-gray-700'
                         }`}
                     >
-                      {table.replace(/_/g, ' ').toUpperCase()}
+                      {table === 'mpesa_request' ? 'DONATION MONITOR' : table.replace(/_/g, ' ').toUpperCase()}
                     </button>
                   </li>
                 ))}

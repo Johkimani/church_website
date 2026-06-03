@@ -3,7 +3,7 @@
  * Step-by-step guide for joining the choir
  */
 
-import { DOMHelpers } from '../../backend/utils/dom-helpers.js';
+import { DOMHelpers } from '../../backend/utils/dom-helpers';
 
 export class HowToJoin {
     private container: HTMLElement;
