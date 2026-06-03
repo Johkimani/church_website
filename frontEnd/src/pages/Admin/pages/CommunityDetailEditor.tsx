@@ -544,7 +544,7 @@ status: formValues.status || 'Pending'
                             <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.voice_type || 'N/A'}</td>
                             <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">{member.music_level || 'N/A'}</td>
                           </>
-                        )}
+                        )
                         <td className="py-4 px-4">
                            <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
                              member.status === 'Pending' ? 'bg-amber-100 text-amber-700' : member.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
