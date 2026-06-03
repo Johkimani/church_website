@@ -418,7 +418,7 @@ const CommunityDetail: React.FC = () => {
         ...(moduleData?.musicClasses?.length ? [{ id: 'classes' as TabType, label: 'Classes', icon: 'fas fa-graduation-cap' }] : []),
         ...(moduleData?.practiceSchedules?.length ? [{ id: 'schedules' as TabType, label: moduleData.scheduleLabel || 'Schedule', icon: 'fas fa-clock' }] : []),
         { id: 'officials', label: 'Leadership', icon: 'fas fa-users' },
-        ...(enrollmentsData?.length || isStFrancis || isCharismatic || isDancers || isYouth ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
+        ...(enrollmentsData?.length && !isStFrancis && !isCharismatic && !isDancers && !isYouth ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
         { id: 'activities', label: 'Activities', icon: 'fas fa-calendar-alt' },
         { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' }
     ];

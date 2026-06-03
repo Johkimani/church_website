@@ -18,18 +18,34 @@ const router = Router()
 // Basic table routes
 // Authentication & Users
 router.use("/authentication", authRoutes);
-router.use("/member", verifyToken, memberProgressRoute);
+router.use("/member", verifyToken, memberProgressRoute); // Kept: user-level route, NOT admin
 
 // Features
 router.use("/officials", officialsRouter);
 router.use("/jumuiya-officials", jumuiyaOfficialsRouter);
 router.use("/", galleryRouter); // handles /choir/gallery
 router.use("/community-view", communityViewRouter);
-router.use("/questions", verifyToken, QuestionsRoutes);
-router.use("/files", verifyToken, uploadMedia);
-router.use("/notifications", verifyToken, notificationRoutes);
-router.use("/csa", verifyToken, JumuiComparisonRoutes);
-router.use("/distribution", verifyToken, formsDistributionRouter);
+
+// ======================================
+// TEMP DEVELOPMENT COMMENT
+// ADMIN AUTH DISABLED TEMPORARILY
+// RE-ENABLE BEFORE PRODUCTION
+// ======================================
+// router.use("/questions", verifyToken, QuestionsRoutes);
+router.use("/questions", QuestionsRoutes);
+
+// router.use("/files", verifyToken, uploadMedia);
+router.use("/files", uploadMedia);
+
+// router.use("/notifications", verifyToken, notificationRoutes);
+router.use("/notifications", notificationRoutes);
+
+// router.use("/csa", verifyToken, JumuiComparisonRoutes);
+router.use("/csa", JumuiComparisonRoutes);
+
+// router.use("/distribution", verifyToken, formsDistributionRouter);
+router.use("/distribution", formsDistributionRouter);
+
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
