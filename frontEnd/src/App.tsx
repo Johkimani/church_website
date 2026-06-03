@@ -95,9 +95,14 @@ const App: React.FC = () => {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            // ======================================
+            // TEMP DEVELOPMENT COMMENT
+            // ADMIN AUTH DISABLED TEMPORARILY
+            // RE-ENABLE BEFORE PRODUCTION
+            // ======================================
+            // <ProtectedRoute>
               <UniversalAdmin />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         >
           <Route index element={<AdminDashboard />} />
