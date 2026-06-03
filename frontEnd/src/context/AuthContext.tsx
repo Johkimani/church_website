@@ -1,80 +1,79 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import {  LocalStorage } from '../utils';
 
-// Define the shape of the context data
-interface User {
-  member_id: string;
+// Define the shape of User Data arriving from API and stored in localStorage
+interface UserData {
+  accessToken: string;
+  refreshToken: string;
+  role: string | string[];
+  name: string; // Combined firstName and lastName as per backend change
   email: string;
-  role: string;
-  jumuiya_id: string | null;
+  status: string; // e.g. "success"
+  jumuiya_id: string;
 }
 
-// Define the shape of the context data
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (userData: User, token: string) => void;
+  user: UserData | null;
+  login: (data: UserData) => void;
   logout: () => void;
+  register: () => void;
   isAuthenticated: boolean;
-  getAuthToken: () => string | null;
 }
 
-// Create the context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the context with defaults
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  login: () => {},
+  logout: () => {},
+  register: () => {},
+  isAuthenticated: false,
+});
 
 // Create the provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
 
-  // Check for stored user/token on initial load
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-
-    if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse stored user", e);
-      }
+  // Synchronously initialize state to prevent duplicate socket/API calls and loading lag
+  const [user, setUser] = useState<UserData | null>(() => {
+    const storedData = LocalStorage.get('userdata');
+    if (storedData && storedData.status === 'success') {
+      return storedData;
     }
-    if (storedToken && storedToken !== "undefined" && storedToken !== "null") {
-      setToken(storedToken);
+    return null;
+  });
+
+  // Verify stored user session on mount and clean up if invalid
+  useEffect(() => {
+    const storedData = LocalStorage.get('userdata');
+    if (storedData && storedData.status !== 'success') {
+      LocalStorage.remove('userdata');
+      setUser(null);
     }
   }, []);
 
-  const login = (userData: User, authToken: string) => {
-    console.log("AuthContext login called with:", userData, authToken);
-    setUser(userData);
-    setToken(authToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', authToken);
+  const login = (data: UserData) => {
+      setUser(data);
+      LocalStorage.set('userdata', data);
   };
 
   const logout = () => {
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    LocalStorage.remove('userdata');
   };
 
-  const getAuthToken = () => {
-    return token || localStorage.getItem('token');
-  };
+  const register = () => {};
 
-  // Compute isAuthenticated based on user state
-  const isAuthenticated = !!user && !!token;
+  // Compute isAuthenticated based on user status
+  const isAuthenticated = !!user && user.status === 'success';
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        token,
         login,
         logout,
+        register,
         isAuthenticated,
-        getAuthToken
       }}
     >
       {children}
@@ -82,7 +81,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-// Create a custom hook for easy access to the context
+// Custom hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

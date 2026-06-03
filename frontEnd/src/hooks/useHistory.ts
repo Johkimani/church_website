@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_HISTORY, API_RESTORE, API_JUMUIYA_HISTORY, API_JUMUIYA_RESTORE } from '../utils/officialsApi';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import type { Official } from './useOfficials';
 
 import { useAuth } from '../context/AuthContext';
+import apiService from '../pages/Landing/services/api';
 
 export interface HistoryResponse {
   data: Official[];
@@ -17,7 +18,7 @@ export interface HistoryResponse {
 
 export function useHistory(filters: { termId?: string; onlyArchived?: boolean; page?: number; limit?: number; mode?: 'csa' | 'jumuiya' }) {
   const queryClient = useQueryClient();
-  const { token } = useAuth();
+  const { user } = useAuth();
   const { termId, onlyArchived, page = 1, limit = 20, mode = 'csa' } = filters;
 
   const getBaseUrl = () => mode === 'jumuiya' ? API_JUMUIYA_HISTORY : API_HISTORY;
@@ -25,7 +26,7 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
 
   const historyQuery = useQuery({
     queryKey: ['history', filters],
-    enabled: !!termId,
+    enabled: true,
     queryFn: async () => {
       let url = getBaseUrl();
       if (termId) {
@@ -49,7 +50,7 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         },
         body: JSON.stringify({ officialIds }),
       });
@@ -60,12 +61,15 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
       return res.json();
     },
     onSuccess: (json) => {
+      // Clear persistence-level caches so public views pull fresh restored records
+      apiService.clearOfficialsCache();
+
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_officials'] : ['officials'] });
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
-      toast.success(json.message || 'Officials restored successfully!');
+      showSuccessToast('Officials Restored Successfully', json.message || 'The selected official records have been restored.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Restore Officials', error.message);
     },
   });
 
@@ -74,7 +78,7 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
       const res = await fetch(`${getBaseUrl()}/${officialId}`, { 
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         }
       });
       if (!res.ok) {
@@ -85,10 +89,10 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
-      toast.success('Archived official deleted successfully!');
+      showSuccessToast('Archived Official Deleted', 'The archived record has been permanently removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Delete Archived Official', error.message);
     },
   });
 
@@ -98,7 +102,7 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${user?.accessToken}`
         },
         body: JSON.stringify({ officialIds }),
       });
@@ -110,10 +114,10 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
-      toast.success('Archived officials deleted successfully!');
+      showSuccessToast('Archived Officials Deleted', 'The selected records have been permanently removed.');
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      showErrorToast('Failed to Perform Bulk Delete', error.message);
     },
   });
 

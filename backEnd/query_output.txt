@@ -1,0 +1,27 @@
+Success! Rows: 4
+Data: [
+  {
+    "id": 3,
+    "name": "James",
+    "photo": null,
+    "status": "active"
+  },
+  {
+    "id": 2,
+    "name": "Morris Maina",
+    "photo": null,
+    "status": "active"
+  },
+  {
+    "id": 3,
+    "name": "Mollen",
+    "photo": null,
+    "status": "active"
+  },
+  {
+    "id": 1,
+    "name": "Tress Njoroge",
+    "photo": null,
+    "status": "active"
+  }
+]

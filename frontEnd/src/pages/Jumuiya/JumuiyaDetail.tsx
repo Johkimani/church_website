@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from './context/DataContext';
 import AboutTab from './components/AboutTab';
@@ -6,18 +6,18 @@ import OfficialsTab from './components/OfficialsTab';
 import MembersTab from './components/MembersTab';
 import ActivitiesTab from './components/ActivitiesTab';
 import RegistrationTab from './components/RegistrationTab';
-import RegistrationCardTab from './components/RegistrationCardTab';
 import ChannelsTab from './components/ChannelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog, FaIdCard } from "react-icons/fa";
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
+import { useTerms } from '../../hooks/useTerms';
 import './JumuiyaDetail.css';
 import AdminPanelEmbed from './admin/AdminPanelEmbed';
 import { FaTimes } from 'react-icons/fa';
 
-type TabType = 'about' | 'officials' | 'registration' | 'card' | 'channels' | 'members' | 'activities' | 'tshirts' | 'admin';
+type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'admin';
 
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -28,8 +28,7 @@ const JumuiyaDetail: React.FC = () => {
     const { user } = useAuth();
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [hasNewNotif, setHasNewNotif] = useState(true); // Initial state for demo
-    // isAdmin if user has proper role, or allow development access for now
-    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'hub_official';
+    const isAdmin = user?.role === 'admin';
 
     // The ID in the data is 'st-anthony', but the URL might be /jumuiya/st-anthony
     // The previous getJumuiyaByName handled some normalization. Let's assume the URL param matches the ID for now, 
@@ -45,7 +44,75 @@ const JumuiyaDetail: React.FC = () => {
     const jumuiya = getJumuiyaById(jumuiyaId);
 
     // Fetch dynamic officials from backend
-    const { officials: dynamicOfficials, isLoading: officialsLoading } = useJumuiyaOfficials({ category: jumuiya?.name });
+    const { officials: dynamicOfficials } = useJumuiyaOfficials({ category: jumuiya?.name });
+    const { currentTerm } = useTerms();
+
+    // Derive term info dynamically
+    const dynamicTerm = (() => {
+        // Preference 1: Explicitly set term in the first official's record from backend
+        const recordWithTerm = dynamicOfficials?.find(o => !!o.term_of_service);
+        if (recordWithTerm?.term_of_service) {
+            const parts = recordWithTerm.term_of_service.split('-').map(p => p.trim());
+            const startYear = Number(parts[0]);
+            const endYear = Number(parts[1]);
+            if (!Number.isNaN(startYear) && !Number.isNaN(endYear)) {
+                return { startYear, endYear };
+            }
+        }
+        // Preference 2: Use the global current term from backend
+        if (currentTerm?.year) {
+            const parts = currentTerm.year.split('-').map(p => p.trim());
+            const startYear = Number(parts[0]);
+            const endYear = Number(parts[1]);
+            if (!Number.isNaN(startYear) && !Number.isNaN(endYear)) {
+                return { startYear, endYear };
+            }
+        }
+        // Fallback: use the stored term if available
+        return jumuiya?.termOfOffice;
+    })();
+
+    // officials to display
+    const displayedOfficials = useMemo(() => {
+        if (dynamicOfficials && dynamicOfficials.length > 0) {
+            return dynamicOfficials.map(doff => ({
+                id: String(doff.id),
+                name: doff.name,
+                position: doff.position,
+                email: '',
+                phone: doff.contact || '',
+                image: doff.photo ? (doff.photo.startsWith('http') ? doff.photo : `${window.location.origin}/${doff.photo}`) : undefined
+            }));
+        }
+
+        // Generate placeholders using Patron Saint image
+        return [
+            {
+                id: 'p1',
+                name: 'Awaiting Upload',
+                position: 'Chairperson',
+                email: '',
+                phone: '',
+                image: jumuiya?.saintImage
+            },
+            {
+                id: 'p2',
+                name: 'Awaiting Upload',
+                position: 'Secretary',
+                email: '',
+                phone: '',
+                image: jumuiya?.saintImage
+            },
+            {
+                id: 'p3',
+                name: 'Awaiting Upload',
+                position: 'Treasurer',
+                email: '',
+                phone: '',
+                image: jumuiya?.saintImage
+            }
+        ];
+    }, [dynamicOfficials, jumuiya?.saintImage]);
 
     if (!jumuiya) {
         return (
@@ -53,7 +120,7 @@ const JumuiyaDetail: React.FC = () => {
                 <div className="container">
                     <h1>Jumuiya Not Found</h1>
                     <p>The requested Jumuiya could not be found.</p>
-                    <button className="btn-premium primary" onClick={() => navigate('/')} style={{ margin: '0 auto' }}>
+                    <button className="btn-premium primary" onClick={() => navigate('/jumuiya')} style={{ margin: '0 auto' }}>
                         <FaArrowLeft style={{ marginRight: '8px' }} /> Back to Jumuiyas
                     </button>
                 </div>
@@ -66,7 +133,6 @@ const JumuiyaDetail: React.FC = () => {
         { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
         { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
         { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
-        { id: 'card' as TabType, label: 'Card', icon: <FaIdCard /> },
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
@@ -76,50 +142,25 @@ const JumuiyaDetail: React.FC = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'about':
-                return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/')} />;
-            case 'officials': {
-                // While loading, show a skeleton. Once loaded, always prefer DB data.
-                if (officialsLoading) {
-                    return (
-                        <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                            <div style={{ display: 'inline-block', width: '32px', height: '32px', border: `3px solid ${jumuiya.color}30`, borderTopColor: jumuiya.color, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                            <p style={{ marginTop: '16px', fontSize: '0.95rem' }}>Loading leadership team…</p>
-                        </div>
-                    );
-                }
-                // Map DB officials → OfficialsTab's Official shape
-                const displayedOfficials = dynamicOfficials.map(doff => ({
-                    id: String(doff.id),
-                    name: doff.name,
-                    position: doff.position,
-                    email: '',
-                    phone: doff.contact || '',
-                    image: doff.photo
-                        ? (doff.photo.startsWith('http') ? doff.photo : `${window.location.origin}/${doff.photo}`)
-                        : undefined
-                }));
-
+                return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/jumuiya')} />;
+            case 'officials':
                 return <OfficialsTab
                     officials={displayedOfficials}
-                    termOfOffice={jumuiya.termOfOffice}
+                    termOfOffice={dynamicTerm}
                     formerOfficials={jumuiya.formerOfficials}
-                    jumuiyaColor={jumuiya.color}
-                    jumuiyaName={jumuiya.name}
+                    jumuiyaColor={detailColor}
                     isAdmin={isAdmin}
                 />;
-            }
             case 'members':
-                return <MembersTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />
             case 'registration':
-                return <RegistrationTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
-            case 'card':
-                return <RegistrationCardTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
+                return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} />;
             case 'activities':
-                return <ActivitiesTab jumuiyaColor={jumuiya.color} />;
+                return <ActivitiesTab jumuiyaColor={detailColor} />;
             case 'channels':
-                return <ChannelsTab socialMedia={jumuiya.socialMedia} gallery={jumuiya.gallery} />;
+                return <ChannelsTab socialMedia={jumuiya.socialMedia || []} gallery={jumuiya.gallery} />;
             case 'tshirts':
-                return <TshirtsTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} orders={jumuiya.tshirtOrders || []} />;
+                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} />;
             case 'admin':
                 return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:
@@ -127,14 +168,16 @@ const JumuiyaDetail: React.FC = () => {
         }
     };
 
+    const detailColor = jumuiya.color || '#2c3e50';
+
     return (
         <div
             className="detail-page"
             style={{
-                '--jumuiya-color': jumuiya.color,
-                '--jumuiya-color-light': `${jumuiya.color}20`,
-                '--jumuiya-color-medium': `${jumuiya.color}50`,
-                '--jumuiya-color-dark': `${jumuiya.color}dd`,
+                '--jumuiya-color': detailColor,
+                '--jumuiya-color-light': `${detailColor}20`,
+                '--jumuiya-color-medium': `${detailColor}50`,
+                '--jumuiya-color-dark': `${detailColor}dd`,
             } as React.CSSProperties}
         >
             {/* Mobile Menu Toggle */}
@@ -204,7 +247,7 @@ const JumuiyaDetail: React.FC = () => {
 
             {/* Notification FAB */}
             <div className="notif-fab-container">
-                <button
+                <button 
                     className={`notif-fab ${isNotifOpen ? 'active' : ''}`}
                     onClick={() => {
                         setIsNotifOpen(!isNotifOpen);
@@ -226,7 +269,7 @@ const JumuiyaDetail: React.FC = () => {
                             </button>
                         </div>
                         <div className="notif-panel-content">
-                            <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={jumuiya.color} />
+                            <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={detailColor} />
                         </div>
                     </div>
                 )}

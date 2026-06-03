@@ -3,10 +3,10 @@
  * Handles registration with validation and submission
  */
 
-import { DOMHelpers } from '../../backend/utils/dom-helpers.js';
-import { Validators } from '../../backend/utils/validators.js';
-import { ChoirApiService } from '../services/choir-api.js';
-import { ChoirRegistration, VoiceType, SkillLevel, RegistrationFormState } from '../../types.js';
+import { DOMHelpers } from '../../backend/utils/dom-helpers';
+import { Validators } from '../../backend/utils/validators';
+import { ChoirApiService } from '../services/choir-api';
+import { ChoirRegistration, VoiceType, SkillLevel, RegistrationFormState } from '../../types';
 
 export class RegistrationForm {
   private container: HTMLElement;
@@ -15,14 +15,12 @@ export class RegistrationForm {
   private membershipFee: number;
   private currency: string;
   private checkoutID: string | null = null;
-  private isChoir: boolean;
 
   constructor(
     containerId: string,
     membershipFee: number = 20,
     currency: string = 'Ksh',
-    onSuccess?: (registrationId: string) => void,
-    private moduleName: string = 'Choir'
+    onSuccess?: (registrationId: string) => void
   ) {
     const element = document.getElementById(containerId);
     if (!element) {
@@ -32,7 +30,6 @@ export class RegistrationForm {
     this.membershipFee = membershipFee;
     this.currency = currency;
     this.onSuccess = onSuccess;
-    this.isChoir = this.moduleName.toLowerCase().includes('choir');
     this.formState = {
       data: {},
       errors: [],
@@ -48,7 +45,7 @@ export class RegistrationForm {
     const card = DOMHelpers.createElement('div', 'csa-choir-card csa-choir-registration__card');
 
     const title = DOMHelpers.createElement('h2', 'csa-choir-registration__title');
-    title.textContent = `Join ${this.moduleName}`;
+    title.textContent = 'Join Our Choir';
 
     const subtitle = DOMHelpers.createElement('p', 'csa-choir-registration__subtitle');
     subtitle.textContent = `Membership Fee: ${this.currency} ${this.membershipFee}`;
@@ -80,7 +77,18 @@ export class RegistrationForm {
         <span class="csa-choir-error-message" role="alert"></span>
       </div>
 
-
+      <div class="csa-choir-form-group">
+        <label class="csa-choir-label csa-choir-label--required" for="choir-registrationNumber">Registration Number / Student ID</label>
+        <input 
+          type="text" 
+          id="choir-registrationNumber" 
+          name="registrationNumber"
+          class="csa-choir-input"
+          placeholder="e.g., CSA/2024/001"
+          aria-required="true"
+        />
+        <span class="csa-choir-error-message" role="alert"></span>
+      </div>
 
       <div class="csa-choir-form-group">
         <label class="csa-choir-label csa-choir-label--required" for="choir-phoneNumber">Phone Number</label>
@@ -95,9 +103,19 @@ export class RegistrationForm {
         <span class="csa-choir-error-message" role="alert"></span>
       </div>
 
+      <div class="csa-choir-form-group">
+        <label class="csa-choir-label csa-choir-label--required" for="choir-email">Email</label>
+        <input 
+          type="email" 
+          id="choir-email" 
+          name="email"
+          class="csa-choir-input"
+          placeholder="you@example.com"
+          aria-required="true"
+        />
+        <span class="csa-choir-error-message" role="alert"></span>
+      </div>
 
-
-      ${this.isChoir ? `
       <div class="csa-choir-form-group">
         <label class="csa-choir-label csa-choir-label--required" for="choir-voiceType">Voice Type</label>
         <select 
@@ -130,7 +148,7 @@ export class RegistrationForm {
           <option value="Advanced">Advanced</option>
         </select>
         <span class="csa-choir-error-message" role="alert"></span>
-      </div>` : ''}
+      </div>
 
       <div class="csa-choir-payment-info">
         <div class="csa-choir-payment-info__header">
@@ -153,7 +171,7 @@ export class RegistrationForm {
             aria-required="true"
           />
           <label class="csa-choir-label" for="choir-hasAgreed">
-            I agree to the ${this.moduleName} terms and conditions, and commit to attending regular practices
+            I agree to the choir terms and conditions, and commit to attending regular practices
           </label>
         </div>
         <span class="csa-choir-error-message" role="alert"></span>
@@ -192,13 +210,15 @@ export class RegistrationForm {
 
     const data: Record<string, unknown> = {
       fullName: formData.get('fullName'),
+      registrationNumber: formData.get('registrationNumber'),
       phoneNumber: formData.get('phoneNumber'),
+      email: formData.get('email'),
       voiceType: formData.get('voiceType'),
       skillLevel: formData.get('skillLevel'),
       hasAgreed: formData.get('hasAgreed') === 'on'
     };
 
-    const errors = Validators.validateRegistrationForm(data, this.isChoir);
+    const errors = Validators.validateRegistrationForm(data);
 
     if (errors.length > 0) {
       this.displayErrors(errors);
@@ -235,7 +255,9 @@ export class RegistrationForm {
     // --- STEP 3: Submit Registration ---
     const registration: ChoirRegistration = {
       fullName: data.fullName as string,
+      registrationNumber: data.registrationNumber as string,
       phoneNumber: data.phoneNumber as string,
+      email: data.email as string,
       voiceType: data.voiceType as VoiceType,
       skillLevel: data.skillLevel as SkillLevel,
       hasAgreed: data.hasAgreed as boolean,

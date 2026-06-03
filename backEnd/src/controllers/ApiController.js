@@ -1,20 +1,68 @@
-import { testDb } from "../Configs/dbConfig.js";
+import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
+const TABLE_SORT_COLUMNS = {
+  events: "event_date",
+  contributions: "date",
+  gallery: "event_date",
+  activities: "activity_date",
+  members: "join_date",
+  officials: "id",
+  projects: "id",
+  jumuiya: "id",
+  mpesa_request: "created_at",
+};
+
 // Get all records from a table
-export const getTableData = async (tableName) => {
+export const getTableData = async (tableName, queryParams = {}) => {
+  const sortCol = TABLE_SORT_COLUMNS[tableName] || 'id';
+  const filterKeys = Object.keys(queryParams).filter((key) => queryParams[key] !== undefined && queryParams[key] !== '');
+
   try {
-    const result = await testDb.query(`SELECT * FROM ${tableName} ORDER BY id DESC`);
+    let query = `SELECT * FROM "${tableName}"`;
+    const values = [];
+
+    if (filterKeys.length > 0) {
+      const filters = filterKeys.map((key, index) => {
+        values.push(queryParams[key]);
+        return `"${key}" = $${index + 1}`;
+      });
+      query += ` WHERE ${filters.join(' AND ')}`;
+    }
+
+    query += ` ORDER BY "${sortCol}" DESC`;
+
+    const result = await pool.query(query, values);
     return result.rows;
-  } catch (error) {
-    console.error(`Error fetching ${tableName}:`, error.message);
-    logger.error(`Error fetching ${tableName}: ${error.message}`);
-    // Return empty array if table doesn't exist (PostgreSQL error code 42P01)
-    if (error.code === '42P01') {
-      logger.warn(`Table ${tableName} with error.code ${error.code} does not exist. Returning empty array.`);
+  } catch (firstError) {
+    // Fallback to unordered if ordering column is missing
+    if (firstError.code === '42703') {
+      logger.warn(`Falling back to unordered SELECT for "${tableName}" - column "${sortCol}" not found`);
+      try {
+        const fallback = await pool.query(`SELECT * FROM "${tableName}"`);
+        return fallback.rows;
+      } catch (fallbackError) {
+        console.error(`Fallback SELECT also failed for "${tableName}":`, fallbackError.message);
+        return [];
+      }
+    }
+    
+    // Check if table exists
+    if (firstError.code === '42P01') {
+      console.error(`[ApiController] Table "${tableName}" does not exist in DB.`);
       return [];
     }
-    throw error;
+    
+    // Other database errors - log to console for immediate visibility in server logs
+    console.error(`[ApiController] Database Error fetching ${tableName}:`, firstError);
+    logger.error(`Error fetching ${tableName}: ${firstError.message}`);
+    
+    // Connection issues fallback (return empty array instead of crashing app)
+    if (firstError.message.includes('connection') || firstError.message.includes('queryable')) {
+       return [];
+    }
+    
+    throw firstError;
   }
 };
 
@@ -32,7 +80,7 @@ export const createRecord = async (tableName, data) => {
       RETURNING *
     `;
     
-    const result = await testDb.query(query, values);
+    const result = await pool.query(query, values);
     return result.rows[0];
   } catch (error) {
     logger.error(`Error creating record in ${tableName}: ${error.message}`);
@@ -45,7 +93,7 @@ export const createRecord = async (tableName, data) => {
 export const deleteRecord = async (tableName, id) => {
   try {
     const query = `DELETE FROM ${tableName} WHERE id = $1 RETURNING *`;
-    const result = await testDb.query(query, [id]);
+    const result = await pool.query(query, [id]);
     return result.rows[0];
   } catch (error) {
     console.error(`Error deleting record from ${tableName}:`, error.message);
@@ -55,7 +103,7 @@ export const deleteRecord = async (tableName, id) => {
 
 // Get all data from all tables
 export const getAllData = async () => {
-  const tables = ['members', 'events', 'contributions', 'officials', 'projects', 'activities', 'gallery', 'jumuiya'];
+  const tables = ['members', 'events', 'contributions', 'officials', 'projects', 'activities', 'gallery', 'jumuiya', 'mpesa_request', 'suggestions'];
   const data = {};
   
   for (const table of tables) {
@@ -69,4 +117,24 @@ export const getAllData = async () => {
   
   return data;
 };
-
+// Update a record in a table
+export const updateRecord = async (tableName, id, data) => {
+  try {
+    const columns = Object.keys(data);
+    const values = Object.values(data);
+    const setClause = columns.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
+    
+    const query = `
+      UPDATE "${tableName}"
+      SET ${setClause}
+      WHERE id = $${columns.length + 1}
+      RETURNING *
+    `;
+    
+    const result = await pool.query(query, [...values, id]);
+    return result.rows[0];
+  } catch (error) {
+    console.error(`Error updating record in ${tableName}:`, error.message);
+    throw error;
+  }
+};

@@ -75,7 +75,8 @@
   }
 
   p {
-    @apply m-0 text-sm text-teal-950;
+    @apply m-0 text-base;
+    color: var(--text-secondary);
   }
 }
 
@@ -229,3 +230,4 @@
     }
   }
 }
+

@@ -3,9 +3,9 @@
  * Displays upcoming and past semester activities
  */
 
-import { DOMHelpers } from '../../backend/utils/dom-helpers.js';
-import { DateHelpers } from '../../backend/utils/date-helpers.js';
-import { SemesterActivity, ActivityStatus } from '../../types.js';
+import { DOMHelpers } from '../../backend/utils/dom-helpers';
+import { DateHelpers } from '../../backend/utils/date-helpers';
+import { SemesterActivity, ActivityStatus } from '../../types';
 
 export class SemesterActivities {
     private container: HTMLElement;

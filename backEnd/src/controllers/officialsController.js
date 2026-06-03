@@ -1,4 +1,4 @@
-import { testDb as pool } from "../Configs/dbConfig.js";
+import { db as pool } from "../Configs/dbConfig.js";
 import path from 'path';
 import ExcelJS from 'exceljs';
 import { 
@@ -11,6 +11,7 @@ import {
   formatPhoneForExcel 
 } from '../utils/helpers.js';
 import logger from "../logger/winston.js";
+import { emitSocketEvent } from "../socket/index.js";
 
 export const CATEGORY_LIMITS = {
   'Executive': 6,
@@ -27,6 +28,38 @@ export const CATEGORY_LIMITS = {
 };
 
 export const VALID_CATEGORIES = Object.keys(CATEGORY_LIMITS);
+
+export const CSA_SORT_SQL = `
+  CASE o.category
+    WHEN 'Executive' THEN 1
+    WHEN 'Jumuiya Coordinators' THEN 2
+    WHEN 'Bible Coordinators' THEN 3
+    WHEN 'Rosary' THEN 4
+    WHEN 'Pamphlet Managers' THEN 5
+    WHEN 'Project Managers' THEN 6
+    WHEN 'Liturgist' THEN 7
+    WHEN 'Instrument Managers' THEN 8
+    WHEN 'Choir Officials' THEN 9
+    WHEN 'Liturgical Dancers' THEN 10
+    WHEN 'Catechist' THEN 11
+    ELSE 100
+  END ASC,
+  CASE
+    WHEN LOWER(o.position) LIKE '%chairperson%' OR LOWER(o.position) LIKE '%chairman%' THEN
+      CASE WHEN LOWER(o.position) LIKE '%vice%' THEN 2 ELSE 1 END
+    WHEN LOWER(o.position) LIKE '%secretary%' THEN
+      CASE 
+        WHEN LOWER(o.position) LIKE '%organizing%' OR LOWER(o.position) LIKE '%organising%' THEN 3
+        WHEN LOWER(o.position) LIKE '%assistant%' OR LOWER(o.position) LIKE '%vice%' THEN 5
+        ELSE 4
+      END
+    WHEN LOWER(o.position) LIKE '%treasurer%' THEN 6
+    WHEN LOWER(o.position) LIKE '%coordinator%' OR LOWER(o.position) LIKE '%manager%' OR LOWER(o.position) LIKE '%liturgist%' OR LOWER(o.position) LIKE '%catechist%' THEN
+      CASE WHEN LOWER(o.position) LIKE '%assistant%' OR LOWER(o.position) LIKE '%vice%' THEN 12 ELSE 11 END
+    ELSE 100
+  END ASC,
+  o.name ASC
+`;
 
 // =============================================================================
 // ELECTION TERM MANAGEMENT
@@ -229,18 +262,21 @@ export const archiveCurrentOfficials = async (req, res) => {
       });
     }
 
-    const archivePromises = currentOfficials.rows.map(official =>
-      client.query(
-        `UPDATE officials SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
-        [termId, official.id]
-      )
+    // 3. Archive all current officials in one bulk operation
+    await client.query(
+      `UPDATE officials 
+       SET status = 'archived', 
+           election_term_id = $1, 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE (status = 'active' OR status IS NULL)`,
+      [termId]
     );
-
-    await Promise.all(archivePromises);
 
     const termInfo = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
 
     await client.query('COMMIT');
+
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "archive" });
 
     res.json({
       success: true,
@@ -303,7 +339,7 @@ export const getOfficialsByTerm = async (req, res) => {
     const dataQuery = `
       SELECT o.*, et.name as term_name, et.year as term_year 
       ${queryBase} 
-      ORDER BY ${termId || req.query.only_archived === 'true' ? 'et.year DESC, ' : ''}o.category, o.position 
+      ORDER BY ${termId || req.query.only_archived === 'true' ? 'et.year DESC, ' : ''}${CSA_SORT_SQL} 
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
@@ -396,6 +432,8 @@ export const restoreArchivedOfficials = async (req, res) => {
       [officialIds]
     );
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "restore", ids: officialIds });
+
     res.json({
       success: true,
       message: `Successfully restored ${result.rows.length} officials`,
@@ -433,7 +471,7 @@ export const getAllOfficials = async (req, res) => {
         query += ` AND o.term_of_service = $2`;
         params.push(termOfService);
       }
-      query += ` ORDER BY o.category, o.position`;
+      query += ` ORDER BY ${CSA_SORT_SQL}`;
     } else if (includeArchived) {
       query = `
         SELECT o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
@@ -444,7 +482,7 @@ export const getAllOfficials = async (req, res) => {
         query += ` WHERE o.term_of_service = $1`;
         params.push(termOfService);
       }
-      query += ` ORDER BY o.status, et.year DESC, o.category, o.position`;
+      query += ` ORDER BY o.status, et.year DESC, ${CSA_SORT_SQL}`;
     } else {
       query = `
         SELECT o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
@@ -456,7 +494,7 @@ export const getAllOfficials = async (req, res) => {
         query += ` AND o.term_of_service = $1`;
         params.push(termOfService);
       }
-      query += ` ORDER BY o.category, o.position`;
+      query += ` ORDER BY ${CSA_SORT_SQL}`;
     }
 
     const result = await pool.query(query, params);
@@ -499,26 +537,44 @@ export const createOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid phone number' });
     }
 
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+
+    // Build checking promises to run in parallel
+    const promises = [
+      pool.query("SELECT id, year, name FROM election_terms WHERE is_current = TRUE"),
+      pool.query("SELECT COUNT(*) FROM officials WHERE category = $1 AND (status = 'active' OR status IS NULL)", [category])
+    ];
+
+    let contactQueryIndex = -1;
     if (normalizedContact) {
-      const dup = await pool.query(
-        "SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)",
-        [normalizedContact]
+      promises.push(
+        pool.query("SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)", [normalizedContact])
       );
+      contactQueryIndex = promises.length - 1;
+    }
+
+    let positionQueryIndex = -1;
+    if (position && position.trim() !== '') {
+      promises.push(
+        pool.query("SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND (status = 'active' OR status IS NULL)", [position.trim()])
+      );
+      positionQueryIndex = promises.length - 1;
+    }
+
+    const results = await Promise.all(promises);
+    const currentTermResult = results[0];
+    const countResult = results[1];
+
+    if (contactQueryIndex !== -1) {
+      const dup = results[contactQueryIndex];
       if (dup.rows.length > 0) {
         return res.status(409).json({ success: false, message: 'Contact already in use by another official' });
       }
     }
 
-    if (!VALID_CATEGORIES.includes(category)) {
-      return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
-    }
-
-    const countResult = await pool.query(
-      "SELECT COUNT(*) FROM officials WHERE category = $1 AND (status = 'active' OR status IS NULL)",
-      [category]
-    );
     const currentCount = parseInt(countResult.rows[0].count);
-
     if (currentCount >= CATEGORY_LIMITS[category]) {
       return res.status(400).json({
         success: false,
@@ -526,12 +582,8 @@ export const createOfficial = async (req, res) => {
       });
     }
 
-    // New Requirement: Check for position uniqueness
-    if (position && position.trim() !== '') {
-      const posDup = await pool.query(
-        "SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND (status = 'active' OR status IS NULL)",
-        [position.trim()]
-      );
+    if (positionQueryIndex !== -1) {
+      const posDup = results[positionQueryIndex];
       if (posDup.rows.length > 0) {
         return res.status(409).json({
           success: false,
@@ -541,9 +593,7 @@ export const createOfficial = async (req, res) => {
     }
 
     let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
-
-    const currentTerm = await pool.query("SELECT id FROM election_terms WHERE is_current = TRUE");
-    const termId = currentTerm.rows.length > 0 ? currentTerm.rows[0].id : null;
+    const termId = currentTermResult.rows.length > 0 ? currentTermResult.rows[0].id : null;
 
     const result = await pool.query(
       `INSERT INTO officials (name, category, position, contact, photo, election_term_id, status, term_of_service) 
@@ -552,6 +602,8 @@ export const createOfficial = async (req, res) => {
     );
 
     await syncCurrentTerm(term_of_service);
+
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create", data: result.rows[0] });
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -629,6 +681,8 @@ export const updateOfficial = async (req, res) => {
       await syncCurrentTerm(term_of_service);
     }
 
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update", id, data: result.rows[0] });
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     logger.error('Error updating official: ' + error.message);
@@ -658,6 +712,7 @@ export const deleteOfficial = async (req, res) => {
 
 
     await pool.query('DELETE FROM officials WHERE id = $1', [id]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete", id });
     res.json({ success: true, message: 'Official deleted successfully' });
   } catch (error) {
     logger.error('Error deleting official: ' + error.message);
@@ -816,6 +871,7 @@ export const deleteArchivedOfficial = async (req, res) => {
 
 
     await pool.query('DELETE FROM officials WHERE id = $1', [officialId]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_archived", id: officialId });
     res.json({ success: true, message: 'Archived official deleted successfully' });
   } catch (error) {
     logger.error('Error deleting archived official: ' + error.message);
@@ -831,6 +887,7 @@ export const bulkDeleteArchivedOfficials = async (req, res) => {
     }
 
     await pool.query('DELETE FROM officials WHERE id = ANY($1)', [officialIds]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "bulk_delete_archived", ids: officialIds });
     res.json({ success: true, message: `Successfully deleted ${officialIds.length} archived officials` });
   } catch (error) {
     logger.error('Error bulk deleting archived officials: ' + error.message);

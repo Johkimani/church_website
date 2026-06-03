@@ -103,6 +103,12 @@ export const syncCurrentTerm = async (termOfService) => {
           [termOfService, `${termOfService} Committee`, term.id]
         );
       }
+    } else {
+      // If no current term exists (e.g. after a purge), create one
+      await pool.query(
+        'INSERT INTO election_terms (year, name, is_current, start_date) VALUES ($1, $2, TRUE, CURRENT_DATE)',
+        [termOfService, `${termOfService} Committee`]
+      );
     }
   } catch (err) {
     console.error('Error syncing current term:', err);

@@ -10,24 +10,29 @@ const pool = new Pool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: process.env.DB_HOST === "localhost" ? false : { rejectUnauthorized: false },
+  ssl:
+    (process.env.DB_HOST === "localhost" || process.env.DB_HOST === "127.0.0.1") ? false : { rejectUnauthorized: false },
 });
 
 export const db = pool;
 
-let client = undefined
+export let client = undefined;
 export const connectDb = async () => {
   try {
     client = await pool.connect();
     logger.info("Connected to postgree database successfully!");
   } catch (error) {
-    logger.error("Failed to connect postgree database:", error.message, { stack: error.stack });
+    logger.error("Failed to connect postgree database:", error.message, {
+      stack: error.stack,
+    });
     process.exit(1)
   }
 };
 
-// this function should use the client not the pool , singleton desing pattern one instance alone
-export const testDb = { query: (text, params) => pool.query(text, params) };
+// use the pool for queries to handle connections automatically
+export const testDb = { 
+  query: (text, params) => pool.query(text, params) 
+};
 
 // momgodb connection this will be used for storing questions
 // this is the reason for this
@@ -37,23 +42,16 @@ export const testDb = { query: (text, params) => pool.query(text, params) };
 export let dbInstance = undefined;
 
 export const connectToMongoDb = async () => {
-  if (!process.env.MONGODB_URI || process.env.MONGODB_URI === "undefined") {
-    logger.warn("⚡ MONGODB_URI not found in .env. MongoDB features (like AI questions) will be disabled.");
-    return;
-  }
   try {
-    const connectionInstance = await mongoose.connect(`${process.env.MONGODB_URI}`);
+    const connectionInstance = await mongoose.connect(
+      `${process.env.MONGODB_URI}`,
+    );
     dbInstance = connectionInstance;
-    logger.info(`☘️  MongoDB Connected! Db host: ${connectionInstance.connection.host}`);
+    logger.info(
+      `☘️  MongoDB Connected! Db host: ${connectionInstance.connection.host}`,
+    );
   } catch (error) {
-    logger.error("MongoDB connection error: ", error);
-
-    // process.exit(1)
-    // Log error but don't exit process so the main App (Postgres based) remains functional
-    logger.warn("Continuing without MongoDB...");
+    logger.error("MongoDB connection failed (non-fatal): ", error.message);
+    logger.info("Server will continue running without MongoDB features.");
   }
 };
-
-
-
-

@@ -3,15 +3,15 @@
  * Main page assembling all choir module components
  */
 
-import { HeroSection } from '../components/hero-section.js';
-import { NextPracticeCountdown } from '../components/next-practice-countdown.js';
-import { Announcements } from '../components/announcements.js';
-import { PracticeScheduleList } from '../components/practice-schedule.js';
-import { ChoirOfficials } from '../components/choir-officials.js';
-import { MusicClasses } from '../components/music-classes.js';
-import { SemesterActivities } from '../components/semester-activities.js';
-import { SocialMediaLinks } from '../components/social-media.js';
-import { ChoirApiService } from '../services/choir-api.js';
+import { HeroSection } from '../components/hero-section';
+import { NextPracticeCountdown } from '../components/next-practice-countdown';
+import { Announcements } from '../components/announcements';
+import { PracticeScheduleList } from '../components/practice-schedule';
+import { ChoirOfficials } from '../components/choir-officials';
+import { MusicClasses } from '../components/music-classes';
+import { SemesterActivities } from '../components/semester-activities';
+import { SocialMediaLinks } from '../components/social-media';
+import { ChoirApiService } from '../services/choir-api';
 
 export class ChoirLandingPage {
     private components: Array<{ destroy: () => void }> = [];
@@ -45,76 +45,57 @@ export class ChoirLandingPage {
             const classes = classesResponse.data || [];
             const announcements = announcementsResponse.data || [];
 
-            // Update page title and sidebar dynamically
-            document.title = `${config.name} - Catholic Student Association`;
-            const sidebarLogo = document.querySelector('.csa-choir-sidebar__logo-text');
-            if (sidebarLogo) {
-                sidebarLogo.textContent = config.name;
-            }
+            const socialMediaLinks = [
+                { platform: 'YouTube' as const, url: 'https://youtube.com/@st.thomasaquinaschoir-kiri3835?si=uyVSSCfg9fMYvAKi', iconClass: 'csa-choir-icon--youtube' },
+                { platform: 'TikTok' as const, url: 'https://www.tiktok.com/@stthomasaquinaskyu?_r=1&_t=ZS-93ke5caJ979', iconClass: 'csa-choir-icon--tiktok' },
+                { platform: 'WhatsApp' as const, url: 'https://chat.whatsapp.com/LocdRbR6Huo0QiXy9MYalD?mode=gi_t', iconClass: 'csa-choir-icon--whatsapp' }
+            ];
 
-            // Generate social media links dynamically from config
-            const socialMediaLinks = [];
-            if (config.socials) {
-                if (config.socials.youtube) socialMediaLinks.push({ platform: 'YouTube' as const, url: config.socials.youtube, iconClass: 'csa-choir-icon--youtube' });
-                if (config.socials.tiktok) socialMediaLinks.push({ platform: 'TikTok' as const, url: config.socials.tiktok, iconClass: 'csa-choir-icon--tiktok' });
-                if (config.socials.whatsapp) socialMediaLinks.push({ platform: 'WhatsApp' as const, url: config.socials.whatsapp, iconClass: 'csa-choir-icon--whatsapp' });
-            } else if (config.name.includes("Choir")) {
-                // Fallback for choir
-                socialMediaLinks.push(
-                    { platform: 'YouTube' as const, url: 'https://youtube.com/@st.thomasaquinaschoir-kiri3835?si=uyVSSCfg9fMYvAKi', iconClass: 'csa-choir-icon--youtube' },
-                    { platform: 'TikTok' as const, url: 'https://www.tiktok.com/@stthomasaquinaskyu?_r=1&_t=ZS-93ke5caJ979', iconClass: 'csa-choir-icon--tiktok' },
-                    { platform: 'WhatsApp' as const, url: 'https://chat.whatsapp.com/LocdRbR6Huo0QiXy9MYalD?mode=gi_t', iconClass: 'csa-choir-icon--whatsapp' }
-                );
-            }
+            const hero = new HeroSection('choir-hero', config);
+            hero.render();
+            this.components.push(hero);
 
-            const heroEl = document.getElementById('choir-hero');
-            if (heroEl) {
-                const hero = new HeroSection('choir-hero', config);
-                hero.render();
-                this.components.push(hero);
-            }
-
-            if (schedules.length > 0 && document.getElementById('choir-next-practice')) {
+            if (schedules.length > 0) {
                 const countdown = new NextPracticeCountdown('choir-next-practice', schedules);
                 countdown.render();
                 this.components.push(countdown);
             }
 
-            if (announcements.length > 0 && document.getElementById('choir-announcements')) {
+            if (announcements.length > 0) {
                 const announcementsComponent = new Announcements('choir-announcements', announcements);
                 announcementsComponent.render();
                 this.components.push(announcementsComponent);
             }
 
-            if (schedules.length > 0 && document.getElementById('choir-schedule')) {
+
+
+            if (schedules.length > 0) {
                 const schedule = new PracticeScheduleList('choir-schedule', schedules);
                 schedule.render();
                 this.components.push(schedule);
             }
 
-            if (officials.length > 0 && document.getElementById('choir-officials')) {
+            if (officials.length > 0) {
                 const officialsComponent = new ChoirOfficials('choir-officials', officials);
                 officialsComponent.render();
                 this.components.push(officialsComponent);
             }
 
-            if (classes.length > 0 && document.getElementById('choir-music-classes')) {
+            if (classes.length > 0) {
                 const musicClasses = new MusicClasses('choir-music-classes', classes);
                 musicClasses.render();
                 this.components.push(musicClasses);
             }
 
-            if (activities.length > 0 && document.getElementById('choir-activities')) {
+            if (activities.length > 0) {
                 const semesterActivities = new SemesterActivities('choir-activities', activities);
                 semesterActivities.render();
                 this.components.push(semesterActivities);
             }
 
-            if (socialMediaLinks.length > 0 && document.getElementById('choir-social')) {
-                const socialMedia = new SocialMediaLinks('choir-social', socialMediaLinks);
-                socialMedia.render();
-                this.components.push(socialMedia);
-            }
+            const socialMedia = new SocialMediaLinks('choir-social', socialMediaLinks);
+            socialMedia.render();
+            this.components.push(socialMedia);
 
         } catch (error) {
             console.error('Failed to initialize choir landing page:', error);

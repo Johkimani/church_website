@@ -1,31 +1,67 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
+import { createServer } from "http";
 import cors from "cors";
-import multer from "multer";
-
 import apiRoutes from "./routers/index.js";
-import { api } from "./routers/api.js";
-import officialsRouter from "./routers/officialsRouter.js";
-import jumuiyaOfficialsRouter from "./routers/jumuiyaOfficialsRouter.js";
-import jumuiyaMembersRouter from "./routers/jumuiyaMembersRouter.js";
-import jumuiyaDataRouter from "./routers/jumuiyaDataRouter.js";
-import { BackendDataService } from "./services/backend-data.js";
 import morganMiddleware from "./logger/morgan.js";
+import { BackendDataService } from "./services/backend-data.js";
 import { rateLimit } from "express-rate-limit";
 import requestIp from "request-ip";
-import corsOptions from "./Configs/corsConfigs.js";
-import upload from "./Configs/multerStorageConfig.js";
+import corsOptions, { allowedOrigins } from "./Configs/corsConfigs.js";
+import { Server } from "socket.io";
+import cookieParser from "cookie-parser"
+import { errorHandler } from "./middlewares/error.middlewares.js";
+import { initializeSocketIO, setSocketInstance } from "./socket/index.js";
+
+
+import helmet from "helmet";
+import hpp from "hpp";
+import compression from "compression";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Secure App with Helmet (Security Headers)
+app.use(helmet());
+
+// Performance: Compression for high-efficiency response delivery
+app.use(compression());
+
+// Prevent Parameter Pollution
+app.use(hpp());
+
+// app midlewares
+app.use(express.json({ limit: "16kb" }));
+app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(cookieParser());
+
+// create app using httserver so we can add a socket on top of the serve , unlike the http server
+const httpServer = createServer(app);
+
+const localOriginRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const io = new Server(httpServer, {
+  pingTimeout: 60000,
+  cors: {
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin) || localOriginRegex.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  },
+});
+
+initializeSocketIO(io)
+setSocketInstance(io);
+
+// this is the best way to to get the actual ip adress of a device even if the server is behind a proxy
+//rather than getting the proxy ip adress , usefull in fare shairing of resorces
+app.use(requestIp.mw());
+
 app.use(cors(corsOptions));
 
 // Rate limiter
@@ -39,78 +75,29 @@ const limiter = rateLimit({
   },
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
-      error: `There are too many requests. You are only allowed ${
-        options.max
+      error: `There are too many requests. You are only allowed ${options.max
       } requests per ${options.windowMs / 60000} minutes`,
     });
   },
 });
 
+// Rate limiter activation for DDoS protection
 app.use(limiter);
 app.use(morganMiddleware);
 
-// Static Files
-app.use(express.static(path.join(__dirname, "../../frontEnd/public")));
-app.use(
-  express.static(
-    path.join(__dirname, "../../frontEnd/src/pages/sacramental/public"),
-  ),
-);
-app.use(
-  "/community-assets/backend",
-  express.static(
-    path.join(__dirname, "../../frontEnd/src/pages/sacramental/dist/backend"),
-  ),
-);
-app.use(
-  "/community-assets",
-  express.static(path.join(__dirname, "../../frontEnd/src/pages/sacramental")),
-);
-app.use(
-  "/localFileUploads",
-  express.static(path.join(process.cwd(), "localFileUploads")),
-);
-app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "localFileUploads")),
-);
+app.use("/api", apiRoutes)
 
-// Routes
-app.get("/", (_req, res) => res.redirect("/community"));
-app.use("/authentication", apiRoutes);
-app.use("/api/officials", officialsRouter);
-app.use("/api/jumuiya-officials", jumuiyaOfficialsRouter);
-app.use("/api/jumuiya-members", jumuiyaMembersRouter);
-app.use("/api/jumuiya-data", jumuiyaDataRouter);
-app.use("/api", api);
+// Organized Static Routes for locally uploaded media files
+app.use("/uploads", express.static(path.join(__dirname, "../localFileUploads")));
+app.use("/gallery-images", express.static(path.join(__dirname, "../galleryImages")));
 
-app.use("/questions", apiRoutes);
-app.use("/files", apiRoutes);
-app.use("/community-view", express.static(path.join(__dirname, "../../frontEnd/src/pages/sacramental")));
-app.use("/community-view", apiRoutes);
+
+// Initialize Backend Data Service
+BackendDataService.init();
 
 
 
-// Gallery APIs
-app.get("/api/choir/gallery", (_req, res) => {
-  const gallery = BackendDataService.load("choir_gallery.json", []);
-  res.json(gallery);
-});
 
-app.post("/api/choir/gallery", upload.single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  const gallery = BackendDataService.load("choir_gallery.json", []);
-  const newPhoto = {
-    id: Date.now().toString(),
-    filename: req.file.filename,
-    eventName: req.body.eventName || "Untitled Event",
-    description: req.body.description || "",
-    uploadDate: new Date().toISOString(),
-    imageUrl: `/images/gallery/${req.file.filename}`,
-  };
-  gallery.push(newPhoto);
-  BackendDataService.save("choir_gallery.json", gallery);
-  res.status(201).json(newPhoto);
-});
+app.use(errorHandler)
 
-export { app };
+export { httpServer };
