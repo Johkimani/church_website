@@ -10,10 +10,10 @@ interface AdminOfficialsProps {
 
 const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
     const { jumuiyaList } = useData();
-    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.id || '');
+    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.group_id || '');
 
     const selectedJumuiya = useMemo(() =>
-        jumuiyaList.find((j: any) => j.id === selectedJumuiyaId),
+        jumuiyaList.find((j: any) => j.group_id === selectedJumuiyaId),
         [jumuiyaList, selectedJumuiyaId]);
 
     // Fetch dynamic officials from backend
@@ -113,7 +113,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                             className="jumuiya-select"
                         >
                             {jumuiyaList.map((j: any) => (
-                                <option key={j.id} value={j.id}>{j.name}</option>
+                                <option key={j.id} value={j.group_id}>{j.name}</option>
                             ))}
                         </select>
                     )}

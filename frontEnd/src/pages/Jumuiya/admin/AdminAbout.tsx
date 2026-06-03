@@ -7,7 +7,7 @@ interface AdminAboutProps {
 
 const AdminAbout: React.FC<AdminAboutProps> = ({ selectedId }) => {
     const { jumuiyaList, updateAbout, updateJumuiya } = useData();
-    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.id || '');
+    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.group_id || '');
 
     // Form states
     const [description, setDescription] = useState('');
@@ -15,7 +15,7 @@ const AdminAbout: React.FC<AdminAboutProps> = ({ selectedId }) => {
 
     useEffect(() => {
         if (selectedJumuiyaId) {
-            const jumuiya = jumuiyaList.find((j: any) => j.id === selectedJumuiyaId);
+            const jumuiya = jumuiyaList.find((j: any) => j.group_id === selectedJumuiyaId);
             if (jumuiya) {
                 setDescription(jumuiya.description);
                 setAbout(jumuiya.about);
@@ -35,7 +35,7 @@ const AdminAbout: React.FC<AdminAboutProps> = ({ selectedId }) => {
         alert('About section updated successfully!');
     };
 
-    const selectedJumuiya = jumuiyaList.find((j: any) => j.id === selectedJumuiyaId);
+    const selectedJumuiya = jumuiyaList.find((j: any) => j.group_id === selectedJumuiyaId);
 
     return (
         <div className="admin-page-container" style={{ '--admin-theme-color': selectedJumuiya?.color } as React.CSSProperties}>
@@ -52,7 +52,7 @@ const AdminAbout: React.FC<AdminAboutProps> = ({ selectedId }) => {
                                 className="jumuiya-select"
                             >
                                 {jumuiyaList.map((j: any) => (
-                                    <option key={j.id} value={j.id}>{j.name}</option>
+                                    <option key={j.id} value={j.group_id}>{j.name}</option>
                                 ))}
                             </select>
                         </div>

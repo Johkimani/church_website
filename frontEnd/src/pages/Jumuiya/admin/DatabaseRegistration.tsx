@@ -322,7 +322,7 @@ const DatabaseRegistration: React.FC = () => {
                                     >
                                         <option value="">— Unassigned —</option>
                                         {jumuiyaList.map((j: any) => (
-                                            <option key={j.id} value={j.id}>{j.name}</option>
+                                            <option key={j.id} value={j.group_id}>{j.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -420,7 +420,7 @@ const DatabaseRegistration: React.FC = () => {
                                     >
                                         <option value="">All Jumuiyas</option>
                                         {jumuiyaList.map((j: any) => (
-                                            <option key={j.id} value={j.id}>{j.name}</option>
+                                            <option key={j.id} value={j.group_id}>{j.name}</option>
                                         ))}
                                     </select>
                                     <select
@@ -512,7 +512,7 @@ const DatabaseRegistration: React.FC = () => {
                                                                 fontWeight: 600, background: 'linear-gradient(135deg, #2563eb10, #3b82f610)',
                                                                 color: '#2563eb', border: '1px solid #2563eb20', display: 'inline-block'
                                                             }}>
-                                                                {jumuiyaList.find((j: any) => j.id === m.jumuiya_id)?.name || m.jumuiya_id}
+                                                                {m.jumuiya_name || jumuiyaList.find((j: any) => j.group_id === m.jumuiya_id)?.name || m.jumuiya_id}
                                                             </span>
                                                         ) : (
                                                             <span style={{ color: '#94a3b8', fontSize: '0.7rem', fontStyle: 'italic', background: '#f8fafc', padding: '4px 8px', borderRadius: '12px', display: 'inline-block' }}>
@@ -635,7 +635,7 @@ const DatabaseRegistration: React.FC = () => {
                                     <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block', color: '#334155' }}>Jumuiya</label>
                                     <select value={editingMember.jumuiya_id || ''} onChange={e => setEditingMember({ ...editingMember, jumuiya_id: e.target.value || null })} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: 'white' }}>
                                         <option value="">— Unassigned —</option>
-                                        {jumuiyaList.map((j: any) => <option key={j.id} value={j.id}>{j.name}</option>)}
+                                        {jumuiyaList.map((j: any) => <option key={j.id} value={j.group_id}>{j.name}</option>)}
                                     </select>
                                 </div>
                             </div>

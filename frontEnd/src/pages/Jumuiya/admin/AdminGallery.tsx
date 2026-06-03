@@ -9,7 +9,7 @@ interface AdminGalleryProps {
 
 const AdminGallery: React.FC<AdminGalleryProps> = ({ selectedId }) => {
     const { jumuiyaList, updateGallery } = useData();
-    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.id || '');
+    const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.group_id || '');
 
     // Simple state to control form
     const [isAdding, setIsAdding] = useState(false);
@@ -17,7 +17,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ selectedId }) => {
     // State for temporary image URL input in the form
     const [tempImageUrl, setTempImageUrl] = useState('');
 
-    const selectedJumuiya = jumuiyaList.find((j: any) => j.id === selectedJumuiyaId);
+    const selectedJumuiya = jumuiyaList.find((j: any) => j.group_id === selectedJumuiyaId);
 
     const handleDelete = (albumId: string) => {
         if (window.confirm('Delete this album?')) {
@@ -70,7 +70,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ selectedId }) => {
                             style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', minWidth: '200px', background: 'white' }}
                         >
                             {jumuiyaList.map((j: any) => (
-                                <option key={j.id} value={j.id}>{j.name}</option>
+                                <option key={j.id} value={j.group_id}>{j.name}</option>
                             ))}
                         </select>
                     )}

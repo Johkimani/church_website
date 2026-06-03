@@ -3,6 +3,7 @@ import { useAuth } from '../../../context/AuthContext';
 import axios from 'axios';
 import { FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle } from 'react-icons/fa';
 import { useData } from '../context/DataContext';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
 
 interface RegistrationTabProps {
@@ -19,15 +20,19 @@ interface UnregisteredMember {
     last_name: string;
     email: string;
     year_of_study: string;
+    jumuiya_id?: string;
+    jumuiya_name?: string;
 }
 
 const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor = 'var(--primary)' }) => {
     const [regType, setRegType] = useState<'self' | 'bulk'>('self');
     const [selfPhone, setSelfPhone] = useState('');
+    const [bulkPhone, setBulkPhone] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [bulkResults, setBulkResults] = useState<{ count: number; message: string } | null>(null);
     const { user, login } = useAuth();
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isPendingPayment, setIsPendingPayment] = useState(false);
     const { refetchData } = useData();
 
     // Bulk Registration State
@@ -47,7 +52,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
     const fetchUnregistered = async () => {
         try {
             setIsLoadingUnregistered(true);
-            const response = await axios.get(`${baseUrl}/api/jumuiya-members/unregistered`);
+            const response = await axios.get(`${baseUrl}/api/jumuiya-members/unregistered?jumuiya_id=${encodeURIComponent(jumuiyaId)}`);
             if (response.data.success) {
                 setUnregisteredMembers(response.data.data);
             }
@@ -65,10 +70,18 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
             return;
         }
 
+        if (!selfPhone) {
+            alert("Please provide an M-Pesa phone number");
+            return;
+        }
+
         try {
-            const response = await axios.post(`${baseUrl}/api/jumuiya-members`, {
+            setIsPendingPayment(true);
+            const response = await axios.post(`${baseUrl}/api/jumuiya-members/register-with-payment`, {
                 member_id: user.member_id,
-                jumuiya_id: jumuiyaId
+                jumuiya_id: jumuiyaId,
+                phoneNumber: selfPhone,
+                amount: REGISTRATION_FEE
             });
 
             if (response.data.success) {
@@ -83,9 +96,12 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
             } else {
                 alert(response.data.message || "Registration failed");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Registration error:", error);
-            alert("An error occurred during registration. Please try again.");
+            const errorMsg = error.response?.data?.message || "An error occurred during registration. Please try again.";
+            alert(errorMsg);
+        } finally {
+            setIsPendingPayment(false);
         }
     };
 
@@ -96,10 +112,20 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
             return;
         }
 
+        if (!bulkPhone) {
+            alert("Please provide an M-Pesa phone number for the payment");
+            return;
+        }
+
         try {
-            const response = await axios.post(`${baseUrl}/api/jumuiya-members/bulk-join`, {
+            setIsPendingPayment(true);
+            const totalAmount = selectedMemberIds.length * REGISTRATION_FEE;
+            
+            const response = await axios.post(`${baseUrl}/api/jumuiya-members/bulk-register-with-payment`, {
                 member_ids: selectedMemberIds,
-                jumuiya_id: jumuiyaId
+                jumuiya_id: jumuiyaId,
+                phoneNumber: bulkPhone,
+                amount: totalAmount
             });
 
             if (response.data.success) {
@@ -109,11 +135,17 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                 });
                 setIsSubmitted(true);
                 setSelectedMemberIds([]);
+                setBulkPhone('');
                 await refetchData(); // Refresh global data in background
+            } else {
+                alert(response.data.message || "Bulk registration failed");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Bulk registration error:", error);
-            alert("Failed to register members in bulk.");
+            const errorMsg = error.response?.data?.message || "An error occurred during bulk registration. Please try again.";
+            alert(errorMsg);
+        } finally {
+            setIsPendingPayment(false);
         }
     };
 
@@ -239,8 +271,23 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: jumuiyaColor }}>KES {REGISTRATION_FEE}</div>
                                 </div>
 
-                                <button type="submit" className="btn-premium primary" style={{ width: '100%', justifyContent: 'center' }} disabled={!user}>
-                                    Pay & Complete Registration
+                                <button 
+                                    type="submit" 
+                                    className={`btn-premium primary ${isPendingPayment ? 'loading' : ''}`} 
+                                    style={{ width: '100%', justifyContent: 'center', cursor: isPendingPayment ? 'wait' : 'pointer' }} 
+                                    disabled={!user || isPendingPayment}
+                                >
+                                    {isPendingPayment ? (
+                                        <>
+                                            <span className="spinner-small" style={{ marginRight: '8px', borderTopColor: 'white' }}></span>
+                                            Waiting for M-Pesa PIN...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaMoneyBillWave style={{ marginRight: '8px' }} />
+                                            Pay KES {REGISTRATION_FEE} & Complete Registration
+                                        </>
+                                    )}
                                 </button>
                             </form>
                         )
@@ -271,12 +318,14 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                                     marginBottom: '20px'
                                 }}>
                                     {isLoadingUnregistered ? (
-                                        <div style={{ padding: '20px', textAlign: 'center' }}>Loading unregistered members...</div>
+                                        <div style={{ padding: '48px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                            <PageLoader message="Fetching unregistered members..." />
+                                        </div>
                                     ) : (unregisteredMembers.filter(m => 
                                         `${m.first_name} ${m.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
                                         m.member_id.toLowerCase().includes(searchQuery.toLowerCase())
                                     )).length === 0 ? (
-                                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No unregistered members found.</div>
+                                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No available database members found.</div>
                                     ) : (
                                         (unregisteredMembers.filter(m => 
                                             `${m.first_name} ${m.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -299,11 +348,28 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                                                 <input 
                                                     type="checkbox" 
                                                     checked={selectedMemberIds.includes(m.member_id)}
-                                                    onChange={() => {}} // Handled by div click
+                                                    readOnly
                                                 />
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontWeight: 600 }}>{m.first_name} {m.last_name}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.member_id} • {m.email}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        {m.member_id} • Year {m.year_of_study}
+                                                    </div>
+                                                    <div style={{ marginTop: '4px' }}>
+                                                        {m.jumuiya_id === jumuiyaId ? (
+                                                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: `${jumuiyaColor}15`, color: jumuiyaColor, borderRadius: '4px', fontWeight: 600 }}>
+                                                                Assigned here
+                                                            </span>
+                                                        ) : m.jumuiya_name ? (
+                                                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: '#f3f4f6', color: '#6b7280', borderRadius: '4px' }}>
+                                                                Current: {m.jumuiya_name}
+                                                            </span>
+                                                        ) : (
+                                                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: '#fffbeb', color: '#b45309', borderRadius: '4px', fontStyle: 'italic' }}>
+                                                                Unassigned
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
@@ -328,13 +394,39 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaId, jumuiyaNam
                                 </div>
                             </div>
 
+                            <div className="form-field-group" style={{ marginBottom: '24px' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>M-PESA PAYMENT PHONE</label>
+                                <div style={{ position: 'relative' }}>
+                                    <FaPhoneAlt style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <input
+                                        className="form-input-premium"
+                                        style={{ paddingLeft: '44px' }}
+                                        type="tel"
+                                        value={bulkPhone}
+                                        onChange={(e) => setBulkPhone(e.target.value)}
+                                        placeholder="07XX XXX XXX (Number for group payment)"
+                                        disabled={isPendingPayment}
+                                    />
+                                </div>
+                            </div>
+
                             <button 
-                                className="btn-premium primary" 
-                                style={{ width: '100%', justifyContent: 'center' }} 
-                                disabled={selectedMemberIds.length === 0}
+                                className={`btn-premium primary ${isPendingPayment ? 'loading' : ''}`} 
+                                style={{ width: '100%', justifyContent: 'center', cursor: isPendingPayment ? 'wait' : 'pointer' }} 
+                                disabled={selectedMemberIds.length === 0 || isPendingPayment}
                                 onClick={handleBulkSubmit}
                             >
-                                Register Selected ({selectedMemberIds.length})
+                                {isPendingPayment ? (
+                                    <>
+                                        <span className="spinner-small" style={{ marginRight: '8px', borderTopColor: 'white' }}></span>
+                                        Processing Payment...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaMoneyBillWave style={{ marginRight: '8px' }} />
+                                        Register Selected ({selectedMemberIds.length})
+                                    </>
+                                )}
                             </button>
                         </div>
                     )

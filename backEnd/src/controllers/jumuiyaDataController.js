@@ -16,10 +16,10 @@ export const getAllJumuiyaData = async (req, res) => {
     }
 
     // Prepare arrays to hold grouped queries
-    const jumuiyaIds = subGroups.map(sg => sg.slug).filter(Boolean);
+    const jumuiyaIds = subGroups.map(sg => sg.group_id).filter(Boolean);
     const jumuiyaNames = subGroups.map(sg => sg.name).filter(Boolean);
 
-    // If no slugs, return early
+    // If no ids, return early
     if (jumuiyaIds.length === 0) {
         return res.json({ success: true, data: [] });
     }
@@ -66,7 +66,7 @@ export const getAllJumuiyaData = async (req, res) => {
 
     // Build the final response
     const formattedData = subGroups.map(sg => {
-        const jId = sg.slug;
+        const jId = sg.group_id;
         const jName = sg.name;
 
         // Form officials
@@ -152,7 +152,8 @@ export const getAllJumuiyaData = async (req, res) => {
         }));
 
         return {
-            id: jId,
+            id: sg.slug,
+            group_id: jId,
             name: jName,
             fullName: sg.full_name || jName,
             description: sg.description || '',

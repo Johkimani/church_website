@@ -52,32 +52,32 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const getJumuiyaById = (id: string) => {
-        return jumuiyaList.find(j => j.id === id);
+        return jumuiyaList.find(j => j.id === id || j.group_id === id);
     };
 
     const updateJumuiya = (id: string, updates: Partial<JumuiyaData>) => {
-        setJumuiyaList(prev => prev.map(j => j.id === id ? { ...j, ...updates } : j));
+        setJumuiyaList(prev => prev.map(j => (j.id === id || j.group_id === id) ? { ...j, ...updates } : j));
     };
 
     const updateAbout = (id: string, about: JumuiyaData['about']) => {
-        setJumuiyaList(prev => prev.map(j => j.id === id ? { ...j, about } : j));
+        setJumuiyaList(prev => prev.map(j => (j.id === id || j.group_id === id) ? { ...j, about } : j));
     };
 
     const updateOfficials = (id: string, officials: Official[]) => {
-        setJumuiyaList(prev => prev.map(j => j.id === id ? { ...j, officials } : j));
+        setJumuiyaList(prev => prev.map(j => (j.id === id || j.group_id === id) ? { ...j, officials } : j));
     };
 
     const updateMeetingSchedule = (id: string, schedule: MeetingSchedule) => {
-        setJumuiyaList(prev => prev.map(j => j.id === id ? { ...j, meetingSchedule: schedule } : j));
+        setJumuiyaList(prev => prev.map(j => (j.id === id || j.group_id === id) ? { ...j, meetingSchedule: schedule } : j));
     };
 
     const updateGallery = (id: string, gallery: GalleryImage[]) => {
-        setJumuiyaList(prev => prev.map(j => j.id === id ? { ...j, gallery } : j));
+        setJumuiyaList(prev => prev.map(j => (j.id === id || j.group_id === id) ? { ...j, gallery } : j));
     };
 
     const addTshirtOrder = (jumuiyaId: string, order: TshirtOrder) => {
         setJumuiyaList(prev => prev.map(j =>
-            j.id === jumuiyaId
+            (j.id === jumuiyaId || j.group_id === jumuiyaId)
                 ? { ...j, tshirtOrders: [...(j.tshirtOrders || []), order] }
                 : j
         ));

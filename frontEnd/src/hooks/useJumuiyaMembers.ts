@@ -5,6 +5,7 @@ const API_BASE = '/api/jumuiya-members';
 export interface JumuiyaMember {
   id: string;
   jumuiya_id: string;
+  jumuiya_name?: string;
   first_name?: string;
   last_name?: string;
   name: string;
@@ -31,6 +32,7 @@ export interface UnregisteredMember {
   last_name: string;
   email: string;
   year_of_study?: string;
+  jumuiya_id?: string;
 }
 
 export type MemberFormData = Omit<JumuiyaMember, 'id' | 'joined_at'>;
@@ -78,9 +80,13 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
     fetchMembers();
   }, [fetchMembers]);
 
-  // --- Fetch unregistered members (not yet in any Jumuiya) ---
+  // --- Fetch unregistered members (targeted for this Jumuiya if provided) ---
   const fetchUnregistered = async (): Promise<UnregisteredMember[]> => {
-    const res = await fetch(`${API_BASE}/unregistered`);
+    let url = `${API_BASE}/unregistered`;
+    if (jumuiya_id) {
+      url += `?jumuiya_id=${encodeURIComponent(jumuiya_id)}`;
+    }
+    const res = await fetch(url);
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Failed to load unregistered members');
     return json.data;

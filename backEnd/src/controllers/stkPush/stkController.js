@@ -53,8 +53,8 @@ export const initiateSTK = async (userId, phoneNumber, amount) => {
       PartyB: shortcode,
       PhoneNumber: phoneNumber,
       CallBackURL: process.env.CALLBACK_URL,
-      AccountReference: "YogurtBlast",
-      TransactionDesc: "Payment",
+      AccountReference: "CSARegistration",
+      TransactionDesc: "Community Member Registration",
     },
     {
       headers: {

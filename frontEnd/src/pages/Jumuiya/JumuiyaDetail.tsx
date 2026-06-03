@@ -109,17 +109,17 @@ const JumuiyaDetail: React.FC = () => {
                 />;
             }
             case 'members':
-                return <MembersTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+                return <MembersTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
             case 'registration':
-                return <RegistrationTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
+                return <RegistrationTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
             case 'card':
-                return <RegistrationCardTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
+                return <RegistrationCardTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />;
             case 'activities':
                 return <ActivitiesTab jumuiyaColor={jumuiya.color} />;
             case 'channels':
                 return <ChannelsTab socialMedia={jumuiya.socialMedia} gallery={jumuiya.gallery} />;
             case 'tshirts':
-                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} orders={jumuiya.tshirtOrders || []} />;
+                return <TshirtsTab jumuiyaId={jumuiya.group_id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} orders={jumuiya.tshirtOrders || []} />;
             case 'admin':
                 return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:
@@ -187,7 +187,7 @@ const JumuiyaDetail: React.FC = () => {
                 <div className="sidebar-footer">
                     <button
                         className="btn-premium"
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/jumuiya')}
                         style={{ width: '100%', justifyContent: 'center' }}
                     >
                         <FaArrowLeft style={{ marginRight: '8px' }} /> All Jumuiyas
