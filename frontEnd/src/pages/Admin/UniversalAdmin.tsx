@@ -29,6 +29,12 @@ const menuItems = [
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
+  {
+  id: 'projects',
+  name: 'Projects Management',
+  icon: LayoutGrid,
+  path: '/admin/projects'
+},
   { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' },
 ];
