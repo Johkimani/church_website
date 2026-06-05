@@ -31,7 +31,7 @@ const menuItems = [
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   {
   id: 'projects',
-  name: 'Projects Management',
+  name: 'Project Management',
   icon: LayoutGrid,
   path: '/admin/projects'
 },
