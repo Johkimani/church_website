@@ -3,6 +3,7 @@ import { httpServer } from "./app.js";
 import { connectDb, connectToMongoDb } from "./Configs/dbConfig.js";
 import logger from "./logger/winston.js";
 import { runMigration } from "./migrations/scripts/index.js";
+import { setupCommunityDatabase } from "./migrations/communityDbInit.js";
 import { startKeepAliveWorker } from "./services/keep-alive.js";
 
 process.on('uncaughtException', (err) => {
@@ -18,6 +19,9 @@ const initServer = async () => {
   // Start DB connections in parallel without blocking the app server
   try {
     await connectDb();
+    // Run automated schema checks & migrations for the Community Hub
+    await setupCommunityDatabase();
+    
     // await connectToMongoDb();
     // await runMigration();
 
