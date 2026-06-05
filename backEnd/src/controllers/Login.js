@@ -42,12 +42,23 @@ export const Login = async (req, res) => {
     }
 
     const user = result.rows[0];
-    const match = await bcrypt.compare(password, user.password);
 
-    if (!match) {
-      logger.error(`Invalid username or password for '${userReg || "<empty>"}'`);
-      return res.status(401).json({ status: false, message: "Invalid username or password" });
-    }
+console.log("User found:", user.member_id);
+console.log("Password entered:", JSON.stringify(password));
+console.log("Password length:", password.length);
+
+const storedHash = typeof user.password === 'string' ? user.password.trim() : user.password;
+const match = await bcrypt.compare(password, storedHash);
+
+console.log("Match result:", match);
+
+if (!match) {
+  logger.error(`Invalid username or password for '${userReg}'`);
+  return res.status(401).json({
+    status: false,
+    message: "Invalid username or password"
+  });
+}
 
     const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
     const refreshToken = generateRefreshtoken(user.member_id, user.roles);

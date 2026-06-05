@@ -19,6 +19,11 @@ const OfficialProfile = lazy(() => import("./pages/officials/OfficialProfile"));
 const Layout = lazy(() => import("./pages/Devotions/components/Layout"));
 const UniversalAdmin = lazy(() => import("./pages/Admin/UniversalAdmin"));
 const ProjectsHome = lazy(() => import("./pages/projects/pages/Home").then((module) => ({ default: module.Home })));
+const SacramentalsPage = lazy(() =>
+  import("./pages/projects/pages/Sacramentals").then((module) => ({
+    default: module.Sacramentals,
+  }))
+);
 const TshirtsPage = lazy(() => import("./pages/projects/pages/Tshirts").then((module) => ({ default: module.Tshirts })));
 const ChairsPage = lazy(() => import("./pages/projects/pages/Chairs").then((module) => ({ default: module.Chairs })));
 const InstrumentsPage = lazy(() => import("./pages/projects/pages/Instruments").then((module) => ({ default: module.Instruments })));
@@ -48,6 +53,9 @@ const JumuiyaDetail = lazy(() => import("./pages/Jumuiya/JumuiyaDetail"));
 // Admin
 const AdminDashboard = lazy(() => import("./pages/Admin/pages/AdminDashboard"));
 const RecordsExplorer = lazy(() => import("./pages/Admin/pages/RecordsExplorer"));
+const ProjectsManager = lazy(() =>
+  import("./pages/Admin/pages/ProjectsManager")
+);
 const DonationMonitor = lazy(() => import("./pages/Admin/pages/DonationMonitor"));
 // Admin Components
 const CommunityManager = lazy(() => import("./pages/Admin/pages/CommunityManager"));
@@ -114,6 +122,7 @@ const App: React.FC = () => {
           <Route path="community-management/:categoryId" element={<CommunityDetailEditor />} />
           <Route path="suggestions" element={<AdminSuggestions />} />
           <Route path="gallery" element={<GalleryManager />} />
+          <Route path="projects" element={<ProjectsManager />} />
           <Route path="forms-distribution" element={<FormsDistribution />} />
           <Route path="settings" element={<div className="p-8 bg-white rounded-2xl shadow-sm border border-slate-200">Settings Page Coming Soon</div>} />
         </Route>
@@ -128,6 +137,14 @@ const App: React.FC = () => {
           {/* Standalone Landing Pages */}
           <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
           <Route path="projects" element={<ProtectedRoute><ProjectsHome /></ProtectedRoute>} />
+          <Route
+  path="sacramentals"
+  element={
+    <ProtectedRoute>
+      <SacramentalsPage />
+    </ProtectedRoute>
+  }
+/>
           <Route path="t-shirts" element={<ProtectedRoute><TshirtsPage /></ProtectedRoute>} />
           <Route path="chairs" element={<ProtectedRoute><ChairsPage /></ProtectedRoute>} />
           <Route path="instruments" element={<ProtectedRoute><InstrumentsPage /></ProtectedRoute>} />
