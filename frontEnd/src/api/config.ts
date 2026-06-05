@@ -5,9 +5,7 @@
  */
 
 const rawServerUri = import.meta.env.VITE_SERVER_URI || '';
-const normalizedServerUri = rawServerUri
-  .replace(/\/api(\/v\d+)?\/?$/i, '')
-  .replace(/\/$/, '');
+const normalizedServerUri = rawServerUri.replace(/\/$/, '');
 
 export const BASE_URL = normalizedServerUri;
 export const UPLOAD_BASE = BASE_URL;
