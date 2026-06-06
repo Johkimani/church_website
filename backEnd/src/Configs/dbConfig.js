@@ -25,7 +25,11 @@ export const connectDb = async () => {
     logger.error("Failed to connect postgree database:", error.message, {
       stack: error.stack,
     });
-    process.exit(1)
+    // Do not exit the process here. Allow the server to start so routes
+    // can return a 503 Service Unavailable when DB operations are attempted.
+    // This improves developer experience in environments where the DB
+    // may be temporarily unreachable.
+    client = undefined;
   }
 };
 
