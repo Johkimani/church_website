@@ -42,6 +42,7 @@ interface AppContextType {
     // Global Filters/States
     sacCategory: SacramentalCategory;
     setSacCategory: (cat: SacramentalCategory) => void;
+    sectionBanners: Record<string, { img: string; title: string; subtitle: string }> | null;
 
     // Auth
     isAdmin: boolean;
@@ -54,6 +55,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [products, setProducts] = useState<any[]>([]);
     const [apiMessages, setApiMessages] = useState<Record<string, string[]>>(DEFAULT_MESSAGES);
     const [sliderImages, setSliderImages] = useState<any[]>([]);
+    const [sectionBanners, setSectionBanners] = useState<Record<string, { img: string; title: string; subtitle: string }> | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [sacCategory, setSacCategory] = useState<SacramentalCategory>('all');
@@ -115,6 +117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     const config = await configRes.json();
                     if (config.MESSAGES) setApiMessages(config.MESSAGES);
                     if (config.SLIDER_IMAGES) setSliderImages(config.SLIDER_IMAGES);
+                    if (config.SECTION_BANNERS) setSectionBanners(config.SECTION_BANNERS);
                 }
             } catch (err) {
                 console.error('Failed to fetch data', err);
@@ -197,7 +200,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return (
         <AppContext.Provider value={{
-            products, apiMessages, sliderImages, isLoading,
+            products, apiMessages, sliderImages, sectionBanners, isLoading,
             isDarkMode, toggleDarkMode,
             cart, addToCart, removeFromCart, clearCart, cartTotal,
             isCartOpen, setIsCartOpen,

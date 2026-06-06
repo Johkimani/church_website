@@ -9,6 +9,7 @@ import officialsRouter from "./officialsRouter.js";
 import jumuiyaOfficialsRouter from "./jumuiyaOfficialsRouter.js";
 import galleryRouter from "./galleryRouter.js";
 import communityViewRouter from "./communityViewRouter.js";
+import sliderRoutes from "./sliderRoutes.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import formsDistributionRouter from "./FormsDistributionRouter.js"
@@ -46,6 +47,8 @@ router.use("/csa", JumuiComparisonRoutes);
 // router.use("/distribution", verifyToken, formsDistributionRouter);
 router.use("/distribution", formsDistributionRouter);
 
+// Slider and config endpoints for frontend banners
+router.use("/", sliderRoutes);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

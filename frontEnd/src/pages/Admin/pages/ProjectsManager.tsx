@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import apiService from "../../../pages/Landing/services/api";
 import { getSafeImageUrl } from "../../../api/config";
+import { uploadFile } from "../../../api/axiosInstance";
 
 type Project = {
   id?: string | number;
@@ -13,7 +14,10 @@ type Project = {
   created_at?: string;
 };
 
-type ProjectForm = Omit<Project, 'id' | 'created_at'>;
+type ProjectForm = Omit<Project, 'id' | 'created_at'> & {
+  imageFile?: File | null;
+  imagePreview?: string;
+};
 
 const defaultForm: ProjectForm = {
   title: '',
@@ -22,6 +26,8 @@ const defaultForm: ProjectForm = {
   status: 'pending',
   budget: '0',
   image_url: '',
+  imageFile: null,
+  imagePreview: '',
 };
 
 const ProjectsManager = () => {
@@ -72,6 +78,8 @@ const ProjectsManager = () => {
         status: project.status ?? 'pending',
         budget: project.budget?.toString() ?? '0',
         image_url: project.image_url ?? '',
+        imageFile: null,
+        imagePreview: project.image_url ?? '',
       });
     } else {
       setIsEditing(false);
@@ -95,12 +103,17 @@ const ProjectsManager = () => {
   };
 
   const handleImageUpload = (file: File | null) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm((prev) => ({ ...prev, image_url: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
+    if (!file) {
+      setForm((prev) => ({ ...prev, imageFile: null, imagePreview: '' }));
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setForm((prev) => ({
+      ...prev,
+      imageFile: file,
+      imagePreview: previewUrl,
+    }));
   };
 
   const handleSaveProject = async () => {
@@ -113,13 +126,21 @@ const ProjectsManager = () => {
     setErrorMessage('');
 
     try {
+      let imageUrl = form.image_url || '';
+
+      if (form.imageFile) {
+        const uploadResponse = await uploadFile(form.imageFile);
+        const uploadedResult = uploadResponse.data?.data || uploadResponse.data;
+        imageUrl = uploadedResult?.secure_url || uploadedResult?.url || uploadedResult?.path || uploadedResult?.image_url || imageUrl;
+      }
+
       const payload = {
         title: form.title.trim(),
         description: form.description?.trim() || '',
         category: form.category?.toLowerCase() || 'sacramentals',
         status: form.status?.toLowerCase() || 'pending',
         budget: Number(form.budget) || 0,
-        image_url: form.image_url || '',
+        image_url: imageUrl,
       };
 
       if (isEditing && currentProjectId !== null) {
@@ -155,17 +176,19 @@ const ProjectsManager = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Project Management</h1>
-          <p className="text-slate-500 mt-1">Create, edit, and remove sacramentals, tshirts, chairs, and instruments projects.</p>
+      <div className="admin-card-section">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="admin-panel-title">Project Management</h1>
+            <p className="admin-panel-subtitle mt-1">Create, edit, and remove sacramentals, tshirts, chairs, and instruments projects.</p>
+          </div>
+          <button
+            onClick={() => openProjectForm()}
+            className="admin-btn-primary"
+          >
+            Add New Project
+          </button>
         </div>
-        <button
-          onClick={() => openProjectForm()}
-          className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          Add New Project
-        </button>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -174,11 +197,7 @@ const ProjectsManager = () => {
             key={category}
             type="button"
             onClick={() => setSelectedCategory(category)}
-            className={`px-4 py-2 rounded-full border transition ${
-              selectedCategory === category
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-            }`}
+            className={selectedCategory === category ? 'admin-chip-active' : 'admin-chip'}
           >
             {category === 'all' ? 'All' : category.charAt(0).toUpperCase() + category.slice(1)}
           </button>
@@ -186,21 +205,21 @@ const ProjectsManager = () => {
       </div>
 
       {loading ? (
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500">Loading projects...</div>
+        <div className="admin-card-section text-center text-slate-500">Loading projects...</div>
       ) : (
         <div className="space-y-4">
           {filteredProjects.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 p-10 text-center text-slate-500 bg-white">
+            <div className="admin-card-section text-center text-slate-500">
               No projects found for the selected category.
             </div>
           ) : (
             filteredProjects.map((project) => (
-              <div key={project.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div key={project.id} className="admin-panel-card">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-3">
                       <h2 className="text-xl font-semibold text-slate-900">{project.title}</h2>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-600">
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-blue-700">
                         {project.category ? project.category.toString() : 'General'}
                       </span>
                     </div>
@@ -219,7 +238,7 @@ const ProjectsManager = () => {
                     <img
                       src={getSafeImageUrl(project.image_url)}
                       alt={project.title}
-                      className="h-28 w-28 rounded-3xl object-cover border border-slate-200"
+                      className="h-28 w-28 rounded-[28px] object-cover border border-slate-200 shadow-sm"
                     />
                   )}
                 </div>
@@ -227,13 +246,13 @@ const ProjectsManager = () => {
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
                     onClick={() => openProjectForm(project)}
-                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    className="admin-btn-primary"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteProject(project.id as string | number)}
-                    className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
+                    className="admin-btn-outline bg-rose-600 border-rose-600 text-white hover:bg-rose-700 hover:border-rose-700"
                   >
                     Delete
                   </button>
@@ -245,14 +264,16 @@ const ProjectsManager = () => {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-[32px] bg-white p-6 shadow-[0_25px_60px_rgba(15,23,42,0.2)]">
+            <div className="flex flex-col gap-4 pb-4 border-b border-slate-200 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">{isEditing ? 'Edit Project' : 'New Project'}</h2>
                 <p className="text-sm text-slate-500">Save project details and optionally upload a preview image.</p>
               </div>
-              <button onClick={closeModal} className="text-slate-400 hover:text-slate-700">Close</button>
+              <button onClick={closeModal} className="inline-flex items-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                Close
+              </button>
             </div>
 
             <div className="grid gap-4 py-6 sm:grid-cols-2">
@@ -323,9 +344,9 @@ const ProjectsManager = () => {
                     onChange={(e) => handleImageUpload(e.target.files?.[0] ?? null)}
                     className="block w-full text-sm text-slate-600"
                   />
-                  {form.image_url ? (
+                  {(form.imagePreview || form.image_url) ? (
                     <img
-                      src={getSafeImageUrl(form.image_url)}
+                      src={form.imagePreview?.startsWith('blob:') ? form.imagePreview : getSafeImageUrl(form.imagePreview || form.image_url)}
                       alt="Project preview"
                       className="h-40 w-full rounded-3xl object-cover border border-slate-200"
                     />
@@ -346,7 +367,7 @@ const ProjectsManager = () => {
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="admin-btn-outline"
               >
                 Cancel
               </button>
@@ -354,7 +375,7 @@ const ProjectsManager = () => {
                 type="button"
                 onClick={handleSaveProject}
                 disabled={saving}
-                className="rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                className="admin-btn-primary disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
                 {saving ? (isEditing ? 'Saving changes...' : 'Saving project...') : (isEditing ? 'Update project' : 'Create project')}
               </button>

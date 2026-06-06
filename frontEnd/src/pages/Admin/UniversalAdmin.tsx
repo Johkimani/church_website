@@ -28,6 +28,7 @@ const menuItems = [
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
+  { id: 'sacramentals-banners', name: 'Sacramentals Banners', icon: ImageIcon, path: '/admin/sacramentals-banners' },
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   {
   id: 'projects',
@@ -111,22 +112,22 @@ const {user , logout} = useAuth()
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex overflow-hidden">
+    <div className="min-h-screen bg-slate-100 flex overflow-hidden">
       {/* Sidebar */}
       <aside 
         className={`${
           isSidebarOpen ? 'w-72' : 'w-20'
-        } bg-slate-900 text-slate-300 transition-all duration-300 ease-in-out flex flex-col z-50`}
+        } bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-100 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-2xl`}
       >
         {/* Sidebar Header */}
         <div className="h-20 flex items-center px-6 border-b border-slate-800 shrink-0">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xl">C</span>
+          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 shadow-inner shadow-slate-900/20">
+            <span className="text-white font-bold text-xl tracking-tight">C</span>
           </div>
           {isSidebarOpen && (
             <div className="ml-4 overflow-hidden">
-              <h1 className="text-white font-bold truncate">CSA KIRINYAGA</h1>
-              <p className="text-xs text-slate-500 truncate">Admin Command Center</p>
+              <h1 className="text-white font-bold truncate text-lg">CSA KIRINYAGA</h1>
+              <p className="text-xs text-slate-400 truncate">Admin Command Center</p>
             </div>
           )}
         </div>
@@ -139,17 +140,17 @@ const {user , logout} = useAuth()
               <Link
                 key={item.id}
                 to={item.path}
-                className={`flex items-center group transition-all duration-200 px-4 py-3 rounded-xl ${
+                className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${
                   isActive 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
-                    : 'hover:bg-slate-800 hover:text-white'
+                    ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30' 
+                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <item.icon size={22} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-400'} />
+                <item.icon size={22} className={isActive ? 'text-white' : 'text-slate-300 group-hover:text-blue-200'} />
                 {isSidebarOpen && (
-                  <div className="ml-4 flex-1 flex items-center justify-between">
-                    <span className="font-semibold text-sm">{item.name}</span>
-                    {isActive && <ChevronRight size={16} />}
+                  <div className="ml-4 flex-1 flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm leading-tight">{item.name}</span>
+                    {isActive && <ChevronRight size={16} className="text-blue-200" />}
                   </div>
                 )}
               </Link>
@@ -172,18 +173,18 @@ const {user , logout} = useAuth()
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+        <header className="admin-panel-header">
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg lg:hidden"
+            className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
           >
             <Menu size={24} />
           </button>
 
-          <div className="flex-1 hidden md:block">
-            <div className="relative max-w-md">
-                   <h2 className='text-slate-800 font-bold text-lg'>Welcome back, {user?.name || 'Admin'}</h2>
-                   <p className='text-xs text-slate-500'>Here's what's happening with the church today.</p>
+          <div className="flex-1 hidden md:flex md:items-center md:justify-center">
+            <div className="relative max-w-lg text-center">
+              <h2 className="text-slate-900 font-bold text-lg">Welcome back, {user?.name || 'Admin'}</h2>
+              <p className="text-xs text-slate-500 mt-1">Here's what's happening with your church dashboard today.</p>
             </div>
           </div>
 
@@ -218,9 +219,11 @@ const {user , logout} = useAuth()
         </header>
 
         {/* Dynamic Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50">
-          <div className="p-8">
-            <Outlet />
+        <main className="flex-1 overflow-y-auto bg-slate-100">
+          <div className="p-8 max-w-full">
+            <div className="admin-panel-card min-h-[calc(100vh-5rem)]">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>

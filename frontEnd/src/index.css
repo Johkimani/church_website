@@ -170,6 +170,46 @@
   @apply bg-white rounded-lg shadow-md p-6;
 }
 
+.admin-panel-card {
+  @apply bg-white rounded-[32px] border border-slate-200 shadow-xl p-6;
+}
+
+.admin-panel-header {
+  @apply h-20 bg-white/95 border-b border-slate-200 flex items-center justify-between px-8 shrink-0 shadow-sm backdrop-blur-xl;
+}
+
+.admin-panel-title {
+  @apply text-2xl font-black text-slate-900;
+}
+
+.admin-panel-subtitle {
+  @apply text-sm text-slate-500;
+}
+
+.admin-panel-badge {
+  @apply inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-blue-700;
+}
+
+.admin-card-section {
+  @apply rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm;
+}
+
+.admin-btn-primary {
+  @apply inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-700;
+}
+
+.admin-btn-outline {
+  @apply inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-slate-900;
+}
+
+.admin-chip {
+  @apply inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition duration-200 hover:border-blue-200 hover:text-slate-900 hover:bg-slate-50;
+}
+
+.admin-chip-active {
+  @apply inline-flex items-center justify-center rounded-full border border-blue-500 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-500/20;
+}
+
 /* Use components layer for inputs */
 @layer components {
   input {
