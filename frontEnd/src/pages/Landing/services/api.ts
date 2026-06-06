@@ -78,6 +78,16 @@ class ApiService {
     }
   }
 
+  async updateRecord(tableName: string, id: string | number, data: Record<string, any>): Promise<any> {
+    try {
+      const response = await apiClient.patch(`/${tableName}/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating record in ${tableName}:`, error);
+      throw error;
+    }
+  }
+
   // Specific methods for different tables
 
   /**
