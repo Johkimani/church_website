@@ -167,6 +167,31 @@ class ApiService {
     return this.fetchTableData('gallery');
   }
 
+  async getSacramentalsSliderImages(section: string = 'sacramentals'): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`/slider-images?section=${encodeURIComponent(section)}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sacramentals slider images:', error);
+      return [];
+    }
+  }
+
+  async createSacramentalsSliderImage(payload: Record<string, any>): Promise<any> {
+    const response = await apiClient.post('/slider-images', payload);
+    return response.data;
+  }
+
+  async updateSacramentalsSliderImage(id: string | number, payload: Record<string, any>): Promise<any> {
+    const response = await apiClient.patch(`/slider-images/${id}`, payload);
+    return response.data;
+  }
+
+  async deleteSacramentalsSliderImage(id: string | number): Promise<any> {
+    const response = await apiClient.delete(`/slider-images/${id}`);
+    return response.data;
+  }
+
   /**
    * Fetches a single official by their ID.
    * @param id - The ID of the official.
