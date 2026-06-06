@@ -93,7 +93,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [isAdmin]);
 
     useEffect(() => {
-        const apiBase = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api/v1" : undefined);
+        const apiBase = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api" : undefined);
 
         if (!apiBase) {
             console.warn('AppContext: No backend URL configured for products/config loading.');
@@ -164,7 +164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             customer_phone: customerPhone
         };
 
-        const apiBase = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api/v1" : undefined);
+        const apiBase = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api" : undefined);
 
         try {
             if (apiBase) {
