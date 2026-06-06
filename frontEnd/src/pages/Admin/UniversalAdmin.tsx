@@ -210,8 +210,8 @@ const {user , logout} = useAuth()
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-slate-800">{user?.name}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
-                   <img src={"image/1.png"} alt="avatar" />
+              <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center text-slate-700 font-black">
+                {user?.name?.[0] ?? 'A'}
               </div>
             </div>
           </div>
