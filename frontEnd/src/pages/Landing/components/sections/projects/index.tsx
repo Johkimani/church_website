@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import apiService from '../../../services/api';
+import { getSafeImageUrl } from '../../../../api/config';
 
 interface Project {
   id: number;
@@ -15,7 +16,8 @@ interface Project {
   start_date: string;
   end_date: string;
   budget: number;
-  image: string;
+  image?: string;
+  image_url?: string;
 }
 
 const ProjectsSection: React.FC = () => {
@@ -73,30 +75,48 @@ const ProjectsSection: React.FC = () => {
           <p className="text-center text-gray-500">No projects found.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {projects.map((project) => (
-              <div key={project.id} className="bg-green-50 rounded-lg shadow-md p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
-                  <h3 className="text-lg md:text-xl font-bold text-green-800">{project.title}</h3>
-                  <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${project.status === 'completed' ? 'bg-green-200 text-green-800' : project.status === 'ongoing' ? 'bg-blue-200 text-blue-800' : project.status === 'planned' ? 'bg-purple-200 text-purple-800' : 'bg-gray-200 text-gray-800'}`}>
-                    {project.status}
-                  </span>
+            {projects.map((project) => {
+              const imageUrl = project.image_url || project.image || '';
+              return (
+                <div key={project.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
+                  {imageUrl ? (
+                    <div className="h-44 overflow-hidden bg-slate-100">
+                      <img
+                        src={getSafeImageUrl(imageUrl)}
+                        alt={project.title}
+                        className="h-full w-full object-cover transition duration-300 hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-44 items-center justify-center bg-slate-100 text-slate-400">
+                      No preview image available
+                    </div>
+                  )}
+                  <div className="p-4 md:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                      <h3 className="text-lg md:text-xl font-bold text-slate-900">{project.title}</h3>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${project.status === 'completed' ? 'bg-green-100 text-green-800' : project.status === 'ongoing' ? 'bg-blue-100 text-blue-800' : project.status === 'planned' ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700'}`}>
+                        {project.status}
+                      </span>
+                    </div>
+                    {project.description && (
+                      <p className="text-gray-700 mb-3 text-sm md:text-base">{project.description}</p>
+                    )}
+                    <div className="grid gap-2 sm:grid-cols-2 text-sm text-slate-600">
+                      {project.start_date && (
+                        <p>📅 Started: {new Date(project.start_date).toLocaleDateString()}</p>
+                      )}
+                      {project.end_date && (
+                        <p>🏁 Target: {new Date(project.end_date).toLocaleDateString()}</p>
+                      )}
+                      {project.budget && (
+                        <p>💰 Budget: KES {project.budget.toLocaleString()}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                {project.description && (
-                  <p className="text-gray-700 mb-3 text-sm md:text-base">{project.description}</p>
-                )}
-                <div className="text-xs md:text-sm text-gray-600">
-                  {project.start_date && (
-                    <p>📅 Started: {new Date(project.start_date).toLocaleDateString()}</p>
-                  )}
-                  {project.end_date && (
-                    <p>🏁 Target: {new Date(project.end_date).toLocaleDateString()}</p>
-                  )}
-                  {project.budget && (
-                    <p>💰 Budget: KES {project.budget.toLocaleString()}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
