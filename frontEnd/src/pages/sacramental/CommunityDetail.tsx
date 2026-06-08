@@ -268,7 +268,7 @@ const CommunityDetail: React.FC = () => {
         if (!activeCheckoutId) return;
         setIsProcessingPayment(true);
         try {
-            const statusRes = await apiClient.get(`/api/authentication/stk-push-status/${activeCheckoutId}`);
+            const statusRes = await apiClient.get(`/authentication/stk-push-status/${activeCheckoutId}`);
             if (statusRes.data.status === 'paid') {
                 setIsProcessingPayment(false);
                 toast.success('Payment received! Completing registration...');
@@ -304,7 +304,7 @@ const CommunityDetail: React.FC = () => {
         const loadingToast = toast.loading('Initiating M-Pesa Payment...');
 
         try {
-            const res = await apiClient.post('/api/authentication/stk-push-guest', {
+            const res = await apiClient.post('/authentication/stk-push-guest', {
                 phoneNumber: formData.phone,
                 amount: pendingPayment.amount,
                 description: pendingPayment.description
@@ -317,7 +317,7 @@ const CommunityDetail: React.FC = () => {
 
             const pollPayment = setInterval(async () => {
                 try {
-                    const statusRes = await apiClient.get(`/api/authentication/stk-push-status/${checkoutId}`);
+                    const statusRes = await apiClient.get(`/authentication/stk-push-status/${checkoutId}`);
                     if (statusRes.data.status === 'paid') {
                         clearInterval(pollPayment);
                         setIsProcessingPayment(false);
@@ -362,7 +362,7 @@ const CommunityDetail: React.FC = () => {
     const { data: serverModuleData, isLoading, isError } = useQuery({
         queryKey: ['community', moduleId],
         queryFn: async () => {
-            const res = await apiClient.get(`/api/community-view/${moduleId}`);
+            const res = await apiClient.get(`/community-view/${moduleId}`);
             if (res.data?.isMissing || res.data?.isServerError) throw new Error('Not available');
             return res.data;
         },
@@ -373,7 +373,7 @@ const CommunityDetail: React.FC = () => {
     const { data: enrollmentsData = [] } = useQuery({
         queryKey: ['enrollments', moduleId],
         queryFn: async () => {
-            const res = await apiClient.get('/api/enrollments');
+            const res = await apiClient.get('/enrollments');
             if (moduleId === 'charismatic') {
                 console.log("Charismatic Members:", res.data);
             }

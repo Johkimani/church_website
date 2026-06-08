@@ -269,7 +269,12 @@ export const deleteNotification = async (req, res) => {
 //function that receives a jumuiyaid , fetches all notification with the jumuia id  and any other notification where posted to is csa and return the notifications 
 
 export const getNotification = async (req, res) => {
-  const { jumuiya_id: jumuiyaId } = req.user;
+  const jumuiyaId = req.user?.jumuiya_id;
+
+  if (!jumuiyaId) {
+    logger.warn("Unauthorized notification fetch attempt without valid user session");
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   try {
     const result = await pool.query(
