@@ -7,12 +7,30 @@ import socketio from "socket.io-client";
 
 import { useAuth } from "./AuthContext.tsx";
 
+const parseJwtPayload = (token: string) => {
+  try {
+    const payloadBase64 = token.split('.')[1];
+    return JSON.parse(atob(payloadBase64));
+  } catch {
+    return null;
+  }
+};
+
+const isJwtExpired = (token: string) => {
+  const payload = parseJwtPayload(token);
+  if (!payload || typeof payload.exp !== 'number') return false;
+  return payload.exp * 1000 < Date.now();
+};
+
 // Function to establish a socket connection with authorization token
 const getSocket = (token: string | undefined): ReturnType<typeof socketio> | null => { 
   if (!token) return null;
   // Basic JWT format check (3 parts separated by dots). Prevent connecting with malformed tokens.
   if (typeof token === 'string' && token.split('.').length !== 3) {
     console.warn('Socket connection aborted: malformed JWT token');
+    return null;
+  }
+  if (typeof token === 'string' && isJwtExpired(token)) {
     return null;
   }
   try {
@@ -41,6 +59,14 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
   useEffect(() => {
     if (user?.accessToken) {
       const newSocket = getSocket(user.accessToken);
+      if (newSocket) {
+        newSocket.on("connect_error", (err: any) => {
+          if (err?.message?.toLowerCase?.().includes("jwt expired")) {
+            console.warn("Socket connection failed due to expired JWT. Closing socket.");
+            newSocket.close();
+          }
+        });
+      }
       setSocket(newSocket);
       return () => {
         newSocket?.close();

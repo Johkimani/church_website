@@ -38,8 +38,7 @@ router.use("/questions", QuestionsRoutes);
 // router.use("/files", verifyToken, uploadMedia);
 router.use("/files", uploadMedia);
 
-// router.use("/notifications", verifyToken, notificationRoutes);
-router.use("/notifications", notificationRoutes);
+router.use("/notifications", verifyToken, notificationRoutes);
 
 // router.use("/csa", verifyToken, JumuiComparisonRoutes);
 router.use("/csa", JumuiComparisonRoutes);

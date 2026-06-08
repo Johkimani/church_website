@@ -38,7 +38,7 @@ export default function CommunityManager() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get('/api/hub_modules');
+      const response = await apiClient.get('/hub_modules');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       
       const allowedIds = ['choir', 'dancers', 'st-francis', 'charismatic', 'youth', 'mentorship'];

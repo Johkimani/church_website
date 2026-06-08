@@ -21,6 +21,8 @@ const allowedTables = [
   "gallery",
   "jumuiya",
   "users",
+  "products",
+  "config",
   "mpesa_request",
   "hub_modules",
   "hub_activities",
