@@ -10,6 +10,7 @@ import jumuiyaOfficialsRouter from "./jumuiyaOfficialsRouter.js";
 import galleryRouter from "./galleryRouter.js";
 import communityViewRouter from "./communityViewRouter.js";
 import sliderRoutes from "./sliderRoutes.js";
+import activitiesRouter from "./activitiesRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import formsDistributionRouter from "./FormsDistributionRouter.js"
@@ -48,6 +49,9 @@ router.use("/distribution", formsDistributionRouter);
 
 // Slider and config endpoints for frontend banners
 router.use("/", sliderRoutes);
+
+// Activities (weekly + semester)
+router.use("/activities", activitiesRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

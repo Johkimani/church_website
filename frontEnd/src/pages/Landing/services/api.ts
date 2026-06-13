@@ -160,6 +160,14 @@ class ApiService {
     return this.fetchTableData('activities');
   }
 
+  async getWeeklyActivities(): Promise<any[]> {
+    return this.fetchTableData('activities/weekly');
+  }
+
+  async getSemesterActivities(): Promise<any[]> {
+    return this.fetchTableData('activities/semester');
+  }
+
   /**
    * Fetches all gallery items.
    */

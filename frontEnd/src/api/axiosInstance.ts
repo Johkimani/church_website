@@ -1,0 +1,194 @@
+import axios from "axios";
+import { LocalStorage } from "../utils";
+import type { fileUpload } from "../interface/api";
+import { normalizeFiles } from "../pages/Devotions/utitlty";
+import { BASE_URL } from "./config";
+
+const API_BASE_URL = BASE_URL || (import.meta.env.DEV ? "http://localhost:3000/api/v1" : "");
+
+const getApiErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    if (error.response) {
+      return (
+        error.response.data?.error ||
+        error.response.data?.message ||
+        `Server responded with status ${error.response.status}`
+      );
+    }
+    if (error.request) {
+      return "Unable to reach the backend. Please ensure the server is running and the URL is correct.";
+    }
+    return error.message;
+  }
+  return typeof error === "string" ? error : "An unexpected error occurred.";
+};
+
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  timeout: 120000,
+});
+
+export const getApiErrorMessageFromError = getApiErrorMessage;
+
+// Request interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    const userdata = LocalStorage.get("userdata");
+    if (userdata?.accessToken) {
+      const token = userdata.accessToken;
+      if (typeof token === "string" && token.split(".").length === 3) {
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn("Malformed access token detected; clearing it.");
+        LocalStorage.remove("userdata");
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => (error ? prom.reject(error) : prom.resolve(token)));
+  failedQueue = [];
+};
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    const isAuthRoute =
+      originalRequest.url?.includes("authentication/login") ||
+      originalRequest.url?.includes("authentication/refresh");
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const userdata = LocalStorage.get("userdata");
+        if (!userdata?.refreshToken) throw new Error("No refresh token available");
+
+        const { data } = await refreshAccessAndRefreshToken(userdata.refreshToken);
+
+        const updatedData = {
+          ...userdata,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken || userdata.refreshToken,
+        };
+        LocalStorage.set("userdata", updatedData);
+
+        processQueue(null, data.accessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        return apiClient(originalRequest);
+      } catch (err) {
+        processQueue(err, null);
+        LocalStorage.remove("userdata");
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/login?expired=true";
+        }
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+const refreshClient = axios.create({ baseURL: API_BASE_URL });
+
+const refreshAccessAndRefreshToken = (refreshToken: string) =>
+  refreshClient.post("authentication/refresh", { refreshToken });
+
+// --- Your API functions below ---
+export const generateAndSaveQuestions = (data: { topic: string }) =>
+  apiClient.post("/questions", data);
+
+export const fetchDailyQuestions = (limit: number = 10) =>
+  apiClient.get(`/questions/?limit=${limit}`);
+
+export const fetchJumuiyaComparisonData = () => apiClient.get("/csa/jumuiya-comparison");
+
+export const fetchGalleryTeaser = () => apiClient.get("/gallery/teaser");
+
+export const memberProgressData = () => apiClient.get("/member/progress");
+
+export const memberSummaryData = () => apiClient.get("/member/summary");
+
+export const individualJumuiAttemptsData = (jumuiyaId: number) =>
+  apiClient.get(`/attempts/jumuiya/${jumuiyaId}`);
+
+export const fetchNotifications = () => apiClient.get("/notifications");
+
+export const createNotificationEventApi = (payload: {
+  title: string;
+  message: string;
+  images?: fileUpload[];
+  posted_To?: string;
+  status?: string;
+}) => apiClient.post("/notifications", payload);
+
+export const uploadFile = (files: File[] | File) => {
+  const formData = new FormData();
+  normalizeFiles(files).forEach((file) => formData.append("files", file));
+  return apiClient.post("/files", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
+export const fetchAllUploadedFiles = () => apiClient.post("/files");
+
+export const deleteOneOrMoreFiles = (publicIds: string | string[]) => {
+  const ids = Array.isArray(publicIds) ? publicIds : [publicIds];
+  return apiClient.delete("/files", { data: { publicIds: ids } });
+};
+
+export const fetchTable = (table: string, params: Record<string, any> = {}) => {
+  const qs = new URLSearchParams(params as Record<string, string>).toString();
+  return apiClient.get(`/api/${table}${qs ? `?${qs}` : ""}`);
+};
+
+export const createTableRecord = (table: string, payload: Record<string, any>) =>
+  apiClient.post(`/api/${table}`, payload);
+
+export const updateTableRecord = (table: string, id: string | number, payload: Record<string, any>) =>
+  apiClient.patch(`/api/${table}/${id}`, payload);
+
+export const deleteTableRecord = (table: string, id: string | number) =>
+  apiClient.delete(`/api/${table}/${id}`);
+
+export const loginApi = (data: { userReg: string; password: string }) =>
+  apiClient.post("/authentication/login", data);
+
+export const initiateSTKPush = (data: { amount: number; phoneNumber: string }) =>
+  apiClient.post("/authentication/stk-push", data);
+
+export const initiateGuestSTKPush = (data: { amount: number; phoneNumber: string }) =>
+  apiClient.post("/authentication/stk-push-guest", data);
+
+export const getSTKPushStatus = (checkoutId: string) =>
+  apiClient.get(`/authentication/stk-push-status/${checkoutId}`);
+
+export const resetEmailApi = (data: { email: string; password?: string; purpose: string }) =>
+  apiClient.post("/authentication/reset-email", data);
+
+export const resetPasswordApi = (data: { email: string; password?: string; purpose: string }) =>
+  apiClient.post("/authentication/reset", data);
