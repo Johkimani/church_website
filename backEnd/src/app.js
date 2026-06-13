@@ -97,9 +97,25 @@ app.use("/gallery-images", express.static(path.join(__dirname, "../galleryImages
 // Initialize Backend Data Service
 BackendDataService.init();
 
+// SPA: serve built frontend + fallback to index.html for non-API routes
+const frontendDistPath = path.join(__dirname, "../../frontEnd/dist");
+const indexHtmlPath = path.join(frontendDistPath, "index.html");
 
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(frontendDistPath));
 
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    if (req.path.startsWith('/uploads')) return next();
+    if (req.path.startsWith('/gallery-images')) return next();
+
+    res.sendFile(indexHtmlPath, (err) => {
+      if (err) next(err);
+    });
+  });
+}
 
 app.use(errorHandler)
 
 export { httpServer };
+

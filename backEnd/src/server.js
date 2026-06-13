@@ -1,3 +1,8 @@
+import dotenv from "dotenv";
+
+dotenv.config({ path: "./config.env" });
+
+console.log("ENV TEST:", process.env.DB_HOST);
 import { serverConfig } from "./Configs/serverConfigs.js";
 import { httpServer } from "./app.js";
 import { connectDb, connectToMongoDb } from "./Configs/dbConfig.js";
