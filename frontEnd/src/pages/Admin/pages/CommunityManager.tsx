@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useCachedData } from '../../../hooks/useCachedData';
 import { apiClient } from '../../../api/axiosInstance';
 import {
   Users,
@@ -25,31 +26,18 @@ const COMMUNITY_IMAGES: Record<string, string> = {
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600";
 
 export default function CommunityManager() {
-  const [modules, setModules] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadModules();
-  }, []);
-
-  const loadModules = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data: modules = [], loading, error, refetch: loadModules, setData: setModules } = useCachedData<any[]>(
+    'csa_cache_hub_modules',
+    async () => {
       const response = await apiClient.get('/hub_modules');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      
       const allowedIds = ['choir', 'dancers', 'st-francis', 'charismatic', 'youth', 'mentorship'];
-      setModules(Array.isArray(data) ? data.filter((m: any) => allowedIds.includes(m.id)) : []);
-    } catch (err: any) {
-      console.error('[CommunityManager] load error:', err);
-      setError(err?.message || 'Failed to load community modules');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(data) ? data.filter((m: any) => allowedIds.includes(m.id)) : [];
+    },
+    []
+  );
 
   const filteredModules = modules.filter(m => 
     m.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCachedData } from '../../../hooks/useCachedData';
 import apiService from '../../Landing/services/api';
 import { 
   Users, 
@@ -12,30 +12,15 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [data, setData] = useState({
-    members: 0,
-    donations: 0,
-    events: 0,
-    activities: [] as any[]
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data, loading, error, refetch: loadDashboardData } = useCachedData(
+    'csa_cache_dashboard_overview',
+    async () => {
       const [members, donations, events] = await Promise.all([
         apiService.fetchTableData('members'),
         apiService.fetchTableData('mpesa_request'),
         apiService.fetchTableData('events')
       ]);
 
-      // Guard: if response is an error object, treat as empty
       const membersArr = Array.isArray(members) ? members : [];
       const donationsArr = Array.isArray(donations) ? donations : [];
       const eventsArr = Array.isArray(events) ? events : [];
@@ -47,19 +32,20 @@ export default function AdminDashboard() {
         return !isNaN(d.getTime()) && d > new Date();
       });
 
-      setData({
+      return {
         members: membersArr.length,
         donations: totalDonated,
         events: upcomingEvents.length,
         activities: donationsArr.slice(0, 5)
-      });
-    } catch (err: any) {
-      console.error('[Dashboard] load error:', err);
-      setError(err?.message || 'Failed to load data');
-    } finally {
-      setLoading(false);
+      };
+    },
+    {
+      members: 0,
+      donations: 0,
+      events: 0,
+      activities: [] as any[]
     }
-  };
+  );
 
   const stats = [
     { name: 'Total Members', value: data.members.toLocaleString(), icon: Users, change: '+100%', trend: 'up', color: 'bg-blue-500' },
