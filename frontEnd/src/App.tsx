@@ -172,27 +172,11 @@ const App: React.FC = () => {
             <Route path="challenge" element={<Challenge />} />
           </Route>
 
-          {/* Jumuiya (Protected) */}
-          <Route
-            path="jumuiya"
-            element={
-              <ProtectedRoute>
-                <DataProvider>
-                  <JumuiyaLanding />
-                </DataProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="jumuiya/:id"
-            element={
-              <ProtectedRoute>
-                <DataProvider>
-                  <JumuiyaDetail />
-                </DataProvider>
-              </ProtectedRoute>
-            }
-          />
+          {/* Jumuiya (Protected with persistent provider wrapper to optimize load speed) */}
+          <Route element={<ProtectedRoute><DataProvider><Outlet /></DataProvider></ProtectedRoute>}>
+            <Route path="jumuiya" element={<JumuiyaLanding />} />
+            <Route path="jumuiya/:id" element={<JumuiyaDetail />} />
+          </Route>
 
           {/* Community Hub with persistent provider wrapper to optimize load speed */}
           <Route element={<CommunityProvider><Outlet /></CommunityProvider>}>
