@@ -11,12 +11,14 @@ class ApiService {
    * @param tableName - The name of the table to fetch data from.
    * @returns A promise that resolves to an array of records.
    */
-  async fetchTableData(tableName: string): Promise<any[]> {
+  async fetchTableData(tableName: string, bypassCache = false): Promise<any[]> {
     const CACHE_KEY = `csa_cache_${tableName}`;
     
-    // Attempt local cache first
-    const cached = localStorage.getItem(CACHE_KEY);
-    const fallbackData = cached ? JSON.parse(cached) : [];
+    // Attempt local cache first if not bypassing
+    if (!bypassCache) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    }
 
     try {
       const response = await apiClient.get(`/${tableName}`);
@@ -123,6 +125,33 @@ class ApiService {
    */
   async getSubGroups(): Promise<any[]> {
     return this.fetchTableData('sub_groups');
+  }
+  
+  /**
+   * Fetches all members (admin only)
+   */
+  async getAdminMembers(): Promise<any[]> {
+    const response = await apiClient.get('/authentication/list-all-memebrs');
+    return response.data;
+  }
+
+  /**
+   * Fetches roles and permissions (admin only)
+   */
+  async getAdminRoles(): Promise<any> {
+    const response = await apiClient.get('/authentication/list-roles-permissions');
+    return response.data;
+  }
+
+  /**
+   * Updates a member's roles
+   */
+  async updateMemberRoles(memberId: string, roleNames: string[]): Promise<any> {
+    const response = await apiClient.post('/authentication/update-user-roles', {
+      member_id: memberId,
+      role_names: roleNames
+    });
+    return response.data;
   }
 
   /**

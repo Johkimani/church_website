@@ -21,16 +21,16 @@ import { useEffect, useState } from 'react';
 import { timeAgo } from '../../utils';
 
 const menuItems = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-  { id: 'officials', name: 'Officials Management', icon: Users, path: '/admin/officials' },
-  { id: 'community', name: 'Community Management', icon: LayoutGrid, path: '/admin/community-management' },
-  { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations' },
-  { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
-  { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
-  { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
-  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
-  { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
-  { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' },
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin', roles: ['all'] },
+  { id: 'officials', name: 'Officials Management', icon: Users, path: '/admin/officials', roles: ['Chairperson', 'Secretary'] },
+  { id: 'community', name: 'Community Management', icon: LayoutGrid, path: '/admin/community-management', roles: ['Chairperson', 'Secretary', 'Assistant_Secretary', 'Organizing_Secretary'] },
+  { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations', roles: ['Chairperson', 'Treasurer'] },
+  { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions', roles: ['Chairperson', 'Liturgist', 'Assistant_Liturgist'] },
+  { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions', roles: ['Chairperson', 'Secretary', 'Organizing_Secretary'] },
+  { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery', roles: ['Chairperson', 'Secretary', 'Liturgist'] },
+  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution', roles: ['Chairperson', 'Secretary'] },
+  { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records', roles: ['Chairperson'] },
+  { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings', roles: ['Chairperson'] },
 ];
 
 export default function UniversalAdmin() {
@@ -97,7 +97,8 @@ export default function UniversalAdmin() {
     setIsNotificationsOpen(false);
   };
 
-const {user , logout} = useAuth()
+const {user , logout} = useAuth();
+const userRoles = Array.isArray(user?.role) ? user.role : (user?.role ? [user.role] : []);
 
   const handleLogout = () => {
     logout();
@@ -127,7 +128,9 @@ const {user , logout} = useAuth()
 
         {/* Navigation Links */}
         <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => {
+          {menuItems
+            .filter(item => item.roles.includes('all') || item.roles.some(r => userRoles.includes(r)))
+            .map((item) => {
             const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin');
             return (
               <Link

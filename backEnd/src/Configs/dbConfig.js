@@ -25,17 +25,13 @@ export const connectDb = async () => {
     logger.error(`Failed to connect postgree database: ${error.message}`, {
       stack: error.stack,
     });
-    // Do not exit the process here. Allow the server to start so routes
-    // can return a 503 Service Unavailable when DB operations are attempted.
-    // This improves developer experience in environments where the DB
-    // may be temporarily unreachable.
-    client = undefined;
+    // Removed process.exit(1) to allow server to stay alive and retry connections via pool
   }
 };
 
 // use the pool for queries to handle connections automatically
-export const testDb = { 
-  query: (text, params) => pool.query(text, params) 
+export const testDb = {
+  query: (text, params) => pool.query(text, params)
 };
 
 // momgodb connection this will be used for storing questions

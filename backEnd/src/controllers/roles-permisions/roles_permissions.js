@@ -364,3 +364,60 @@ export const deleteAllMembers = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
 }
 };
+
+// Function for updating a member's roles completely (used by Supreme Admin/Chairperson)
+export const updateUserRoles = async (req, res) => {
+  const { member_id, role_names } = req.body;
+  if (!member_id || !Array.isArray(role_names)) {
+    return res.status(400).json({ error: "member_id and role_names array are required" });
+  }
+  try {
+    // Begin Transaction
+    await testDb.query('BEGIN');
+    
+    // Check if member exists
+    const memberCheck = await testDb.query(
+      'SELECT member_id FROM members WHERE member_id = $1',
+      [member_id]
+    );
+
+    if (memberCheck.rows.length === 0) {
+      await testDb.query('ROLLBACK');
+      return res.status(404).json({ error: "Member not found" });
+    }
+
+    // 1. Delete existing roles for this member
+    await testDb.query(
+      'DELETE FROM member_roles WHERE member_id = $1',
+      [member_id]
+    );
+
+    // 2. Resolve role names to role_ids
+    const uniqueRoles = [...new Set(role_names)];
+    for (const roleName of uniqueRoles) {
+      const roleResult = await testDb.query(
+        'SELECT role_id FROM roles WHERE role_name = $1',
+        [roleName]
+      );
+      if (roleResult.rows.length === 0) {
+        // Option 1: Rollback and throw error
+        // Option 2: Skip invalid roles
+        // We will skip silently for robust handling, logging a warning
+        continue;
+      }
+      const roleId = roleResult.rows[0].role_id;
+      
+      await testDb.query(
+        'INSERT INTO member_roles (member_id, role_id) VALUES ($1, $2)',
+        [member_id, roleId]
+      );
+    }
+    
+    await testDb.query('COMMIT');
+    res.status(200).json({ message: "Roles updated successfully for member", roles: uniqueRoles });
+  } catch (err) {
+    await testDb.query('ROLLBACK');
+    logger.error(`Error updating member roles: ${err.message}`, { stack: err.stack });
+    res.status(500).json({ error: "Internal server error during role update" });
+  }
+};

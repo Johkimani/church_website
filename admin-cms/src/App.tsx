@@ -21,6 +21,7 @@ const CommunityDetailEditor = lazy(() => import("./pages/Admin/pages/CommunityDe
 const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions"));
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
 const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribution"));
+const Settings = lazy(() => import("./pages/Admin/pages/Settings"));
 
 // Auth Pages
 const Reset = lazy(() => import("./pages/Authorization/Reset"));
@@ -76,7 +77,7 @@ const App: React.FC = () => {
           <Route path="suggestions" element={<AdminSuggestions />} />
           <Route path="gallery" element={<GalleryManager />} />
           <Route path="forms-distribution" element={<FormsDistribution />} />
-          <Route path="settings" element={<div className="p-8 bg-white rounded-2xl shadow-sm border border-slate-200">Settings Page Coming Soon</div>} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Catch-all - redirect to admin */}

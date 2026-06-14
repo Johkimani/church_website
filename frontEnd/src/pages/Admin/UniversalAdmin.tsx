@@ -1,11 +1,11 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Heart, 
-  BookOpen, 
-  Database, 
-  Settings, 
-  Menu, 
+import {
+  LayoutDashboard,
+  Users,
+  Heart,
+  BookOpen,
+  Database,
+  Settings,
+  Menu,
   ChevronRight,
   LogOut,
   Bell,
@@ -31,11 +31,11 @@ const menuItems = [
   { id: 'sacramentals-banners', name: 'Sacramentals Banners', icon: ImageIcon, path: '/admin/sacramentals-banners' },
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   {
-  id: 'projects',
-  name: 'Project Management',
-  icon: LayoutGrid,
-  path: '/admin/projects'
-},
+    id: 'projects',
+    name: 'Project Management',
+    icon: LayoutGrid,
+    path: '/admin/projects'
+  },
   { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' },
 ];
@@ -74,7 +74,7 @@ export default function UniversalAdmin() {
       const formattedDonations: Notification[] = donations
         .filter((d: any) => d.status === 'paid')
         .map((d: any) => ({
-          id: `d-${d.id}`,
+          id: `d-${d.checkout_id || Math.random()}`,
           type: 'donation',
           title: 'New Donation',
           message: `Received KES ${Number(d.amount).toLocaleString()} from ${d.user_id}`,
@@ -88,7 +88,7 @@ export default function UniversalAdmin() {
       const combined = [...formattedSuggestions, ...formattedDonations]
         .sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime())
         .slice(0, 10);
-      
+
       setNotifications(combined);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -104,7 +104,7 @@ export default function UniversalAdmin() {
     setIsNotificationsOpen(false);
   };
 
-const {user , logout} = useAuth()
+  const { user, logout } = useAuth()
 
   const handleLogout = () => {
     logout();
@@ -114,10 +114,9 @@ const {user , logout} = useAuth()
   return (
     <div className="h-screen bg-slate-100 flex overflow-hidden">
       {/* Sidebar */}
-      <aside 
-        className={`${
-          isSidebarOpen ? 'w-72' : 'w-20'
-        } bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-100 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-2xl`}
+      <aside
+        className={`${isSidebarOpen ? 'w-72' : 'w-20'
+          } bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-100 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-2xl`}
       >
         {/* Sidebar Header */}
         <div className="h-20 flex items-center px-6 border-b border-slate-800 shrink-0">
@@ -140,11 +139,10 @@ const {user , logout} = useAuth()
               <Link
                 key={item.id}
                 to={item.path}
-                className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${
-                  isActive 
-                    ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30' 
+                className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isActive
+                    ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30'
                     : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                }`}
+                  }`}
               >
                 <item.icon size={22} className={isActive ? 'text-white' : 'text-slate-300 group-hover:text-blue-200'} />
                 {isSidebarOpen && (
@@ -160,7 +158,7 @@ const {user , logout} = useAuth()
 
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-slate-800">
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center px-4 py-3 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all duration-200"
           >
@@ -174,7 +172,7 @@ const {user , logout} = useAuth()
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="admin-panel-header">
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
           >
@@ -189,7 +187,7 @@ const {user , logout} = useAuth()
           </div>
 
           <div className="flex items-center gap-6 relative">
-            <button 
+            <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className={`relative p-2 transition-colors ${isNotificationsOpen ? 'text-blue-600' : 'text-slate-400 hover:text-blue-600'}`}
             >
@@ -200,7 +198,7 @@ const {user , logout} = useAuth()
             </button>
 
             {isNotificationsOpen && (
-              <NotificationDropdown 
+              <NotificationDropdown
                 notifications={notifications}
                 onClose={() => setIsNotificationsOpen(false)}
                 onMarkAsRead={handleMarkAsRead}
