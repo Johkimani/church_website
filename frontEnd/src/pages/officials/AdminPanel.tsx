@@ -250,56 +250,7 @@ export default function AdminPanel() {
             allOfficials={activeOfficialsList}
           />
 
-          {/* Table Controls (Search & Export) */}
-          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-6 transition-colors">
-            <div className="relative flex-1 max-w-full xl:max-w-md">
-              <input 
-                type="text"
-                placeholder="Search officials..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-gray-900 transition-all outline-none font-medium"
-              />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-            </div>
-            
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 xl:gap-8 bg-gray-50/50 p-3 rounded-xl border border-gray-100/50">
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                {Object.entries(downloadFields).map(([key, value]) => (
-                  <label key={key} className="flex items-center gap-2.5 cursor-pointer group select-none">
-                    <div className="relative flex items-center">
-                      <input 
-                        type="checkbox" 
-                        checked={value} 
-                        onChange={e => setDownloadFields({...downloadFields, [key]: e.target.checked})}
-                        className="peer w-5 h-5 opacity-0 absolute cursor-pointer" 
-                      />
-                      <div className={`w-5 h-5 border-2 rounded-md bg-white transition-all flex items-center justify-center ${value ? 'border-blue-600' : 'border-gray-300'}`}>
-                        <Check className={`w-4 h-4 text-blue-600 transition-all duration-200 stroke-[3] ${value ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-tight group-hover:text-gray-900 transition-colors">{key}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <button 
-                  onClick={handleDownload}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-5 py-2.5 bg-green-50 text-green-700 font-bold rounded-xl border border-green-100 hover:bg-green-100 transition-all text-xs sm:text-sm active:scale-95"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download</span>
-                </button>
-                <button 
-                  onClick={() => setIsShareOpen(true)}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-5 py-2.5 bg-blue-50 text-blue-700 font-bold rounded-xl border border-blue-100 hover:bg-blue-100 transition-all text-xs sm:text-sm active:scale-95"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>Share</span>
-                </button>
-              </div>
-            </div>
-          </div>
+
 
           {/* Data Table */}
           {isListLoading ? (
@@ -311,12 +262,56 @@ export default function AdminPanel() {
             <OfficialsTable 
               officials={activeOfficialsList}
               searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
               onEdit={setEditingOfficial}
               onDelete={handleDelete}
               isDeleting={isListDeleting}
               displayTerm={displayTerm}
               mode={adminMode}
             />
+          )}
+
+          {/* Export Data */}
+          {!isListLoading && (
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-6 transition-colors">
+              <h3 className="font-bold text-gray-700 hidden xl:block">Export Data</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-end w-full gap-4 xl:gap-8 bg-gray-50/50 p-3 rounded-xl border border-gray-100/50">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                  {Object.entries(downloadFields).map(([key, value]) => (
+                    <label key={key} className="flex items-center gap-2.5 cursor-pointer group select-none">
+                      <div className="relative flex items-center">
+                        <input 
+                          type="checkbox" 
+                          checked={value} 
+                          onChange={e => setDownloadFields({...downloadFields, [key]: e.target.checked})}
+                          className="peer w-5 h-5 opacity-0 absolute cursor-pointer" 
+                        />
+                        <div className={`w-5 h-5 border-2 rounded-md bg-white transition-all flex items-center justify-center ${value ? 'border-blue-600' : 'border-gray-300'}`}>
+                          <Check className={`w-4 h-4 text-blue-600 transition-all duration-200 stroke-[3] ${value ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-tight group-hover:text-gray-900 transition-colors">{key}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                  <button 
+                    onClick={handleDownload}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-5 py-2.5 bg-green-50 text-green-700 font-bold rounded-xl border border-green-100 hover:bg-green-100 transition-all text-xs sm:text-sm active:scale-95"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download</span>
+                  </button>
+                  <button 
+                    onClick={() => setIsShareOpen(true)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-5 py-2.5 bg-blue-50 text-blue-700 font-bold rounded-xl border border-blue-100 hover:bg-blue-100 transition-all text-xs sm:text-sm active:scale-95"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>Share</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
