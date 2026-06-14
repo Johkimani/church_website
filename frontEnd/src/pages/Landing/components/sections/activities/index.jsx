@@ -2,6 +2,7 @@
 // Mirrors repo's ActivitiesSection structure: loadActivities, groupedActivities,
 // same loading/error states, same card design system (white bg, slate text, blue accents)
 import { useState, useEffect } from "react";
+import { useCachedData } from "../../../../../hooks/useCachedData";
 import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, Zap } from "lucide-react";
 import apiService from "../../../services/api";
 import toast from "react-hot-toast";
@@ -234,35 +235,37 @@ function AddSemesterForm({ onAdd, onClose }) {
 // Mirrors repo's ActivitiesSection: loadActivities() in useEffect,
 // grouped rendering, same loading/error patterns
 const ActivitiesSection = () => {
-  const [weekly,   setWeekly]   = useState([]);
-  const [semester, setSemester] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-  const [showAddWeekly,   setShowAddWeekly]   = useState(false);
-  const [showAddSemester, setShowAddSemester] = useState(false);
-
-  // Mirrors repo's loadActivities pattern exactly
-  useEffect(() => {
-    loadActivities();
-  }, []);
-
-  const loadActivities = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data: activitiesData, loading, error, refetch: loadActivities, setData: setActivitiesData } = useCachedData(
+    'csa_cache_public_activities',
+    async () => {
       const [weeklyData, semesterData] = await Promise.all([
         apiService.getWeeklyActivities(),
         apiService.getSemesterActivities(),
       ]);
-      setWeekly(weeklyData);
-      setSemester(semesterData);
-    } catch (err) {
-      console.error("Error loading activities:", err);
-      setError("Failed to load activities");
-    } finally {
-      setLoading(false);
-    }
+      return { weekly: weeklyData, semester: semesterData };
+    },
+    { weekly: [], semester: [] }
+  );
+
+  const weekly = activitiesData.weekly || [];
+  const semester = activitiesData.semester || [];
+
+  const setWeekly = (updater) => {
+    setActivitiesData((prev) => ({
+      ...prev,
+      weekly: typeof updater === 'function' ? updater(prev.weekly) : updater,
+    }));
   };
+
+  const setSemester = (updater) => {
+    setActivitiesData((prev) => ({
+      ...prev,
+      semester: typeof updater === 'function' ? updater(prev.semester) : updater,
+    }));
+  };
+
+  const [showAddWeekly,   setShowAddWeekly]   = useState(false);
+  const [showAddSemester, setShowAddSemester] = useState(false);
 
   const handleAddWeekly = async (data) => {
     const id = toast.loading("Adding activity...");
