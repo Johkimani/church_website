@@ -1,22 +1,17 @@
 import { useState, useEffect } from 'react'
+import { useCachedData } from '../../../hooks/useCachedData'
 import apiService from '../../Landing/services/api'
 import { Database, Search, Plus, Trash2 } from 'lucide-react'
 
 export default function RecordsExplorer() {
   const [activeTab, setActiveTab] = useState('members')
-  const [data, setData] = useState<Record<string, any[]>>({})
-  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
   const tables = ['members', 'events', 'contributions', 'officials', 'projects', 'activities', 'gallery', 'jumuiya', 'users', 'mpesa_request']
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
+  const { data = {}, loading, refetch: loadData } = useCachedData<Record<string, any[]>>(
+    'csa_cache_records_explorer',
+    async () => {
       const promises = tables.map(async (table) => {
         try {
           return await apiService.fetchTableData(table)
@@ -31,11 +26,10 @@ export default function RecordsExplorer() {
       tables.forEach((table, index) => {
         dataObj[table] = results[index]
       })
-      setData(dataObj)
-    } finally {
-      setLoading(false)
-    }
-  }
+      return dataObj
+    },
+    {}
+  );
 
   const handleDelete = async (table: string, id: string | number) => {
     if (window.confirm('Are you sure you want to delete this record?')) {

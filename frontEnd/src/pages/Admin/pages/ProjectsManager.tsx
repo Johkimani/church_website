@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useCachedData } from "../../../hooks/useCachedData";
 import apiService from "../../../pages/Landing/services/api";
 import { getSafeImageUrl } from "../../../api/config";
 import { uploadFile } from "../../../api/axiosInstance";
@@ -31,9 +32,17 @@ const defaultForm: ProjectForm = {
 };
 
 const ProjectsManager = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [loading, setLoading] = useState(true);
+
+  const { data: projects = [], loading, refetch: loadProjects, setData: setProjects } = useCachedData<Project[]>(
+    'csa_cache_projects_manager',
+    async () => {
+      const data = await apiService.getProjects();
+      return Array.isArray(data) ? data : [];
+    },
+    []
+  );
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | number | null>(null);
@@ -51,21 +60,7 @@ const ProjectsManager = () => {
     );
   }, [projects, selectedCategory]);
 
-  const loadProjects = async () => {
-    setLoading(true);
-    try {
-      const data = await apiService.getProjects();
-      setProjects(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to load projects', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
 
   const openProjectForm = (project?: Project) => {
     if (project) {
