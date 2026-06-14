@@ -112,7 +112,7 @@ const {user , logout} = useAuth()
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex overflow-hidden">
+    <div className="h-screen bg-slate-100 flex overflow-hidden">
       {/* Sidebar */}
       <aside 
         className={`${
@@ -133,7 +133,7 @@ const {user , logout} = useAuth()
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin');
             return (
@@ -221,7 +221,7 @@ const {user , logout} = useAuth()
         {/* Dynamic Content */}
         <main className="flex-1 overflow-y-auto bg-slate-100">
           <div className="p-8 max-w-full">
-            <div className="admin-panel-card min-h-[calc(100vh-5rem)]">
+            <div className="admin-panel-card min-h-[calc(100vh-9rem)]">
               <Outlet />
             </div>
           </div>
