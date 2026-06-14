@@ -15,24 +15,42 @@ const calcTimeLeft = (targetDate: Date) => {
 export default function useCountdown(target: string | Date | null | undefined) {
   const targetDate = useMemo(() => {
     if (!target) return null;
-    return typeof target === "string" ? new Date(target) : target;
+    const d = typeof target === "string" ? new Date(target) : target;
+    if (Number.isNaN(d?.getTime?.())) return null;
+    return d;
   }, [target]);
 
-  const [timeLeft, setTimeLeft] = useState(() =>
-    targetDate ? calcTimeLeft(targetDate) : { diff: 0, total: 0, days: 0, hours: 0, minutes: 0, seconds: 0 }
-  );
+  const initial = {
+    isValid: false,
+    diff: 0,
+    total: 0,
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  };
+
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (!targetDate) return initial;
+    return { ...calcTimeLeft(targetDate), isValid: true };
+  });
 
   useEffect(() => {
-    if (!targetDate || Number.isNaN(targetDate.getTime())) return;
+    if (!targetDate) {
+      setTimeLeft(initial);
+      return;
+    }
 
-    setTimeLeft(calcTimeLeft(targetDate));
+    // Client-safe interval (avoids SSR window usage)
+    setTimeLeft({ ...calcTimeLeft(targetDate), isValid: true });
 
-    const interval = window.setInterval(() => {
-      setTimeLeft(calcTimeLeft(targetDate));
+    const intervalId = window.setInterval(() => {
+      setTimeLeft({ ...calcTimeLeft(targetDate), isValid: true });
     }, 1000);
 
-    return () => window.clearInterval(interval);
-  }, [targetDate]);
+    return () => window.clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetDate?.getTime?.()]);
 
   return timeLeft;
 }

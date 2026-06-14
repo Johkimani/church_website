@@ -6,6 +6,7 @@ import { useCachedData } from "../../../../../hooks/useCachedData";
 import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, Zap } from "lucide-react";
 import apiService from "../../../services/api";
 import toast from "react-hot-toast";
+import useCountdown from "../../../../../hooks/useCountdown";
 
 // ── Activity icons — matches repo's emoji/icon style ──────────────
 const ACTIVITY_ICONS = {
@@ -25,11 +26,114 @@ const DAY_COLORS = {
   Saturday:  "border-l-indigo-400 bg-indigo-50/40",
   Sunday:    "border-l-slate-400  bg-slate-50/40",
 };
+const ACTIVITY_IMAGES = {
+  Monday: "/images/rosary_prayers.jpg",
+  Tuesday: "/images/choir.png",
+  Wednesday: "/images/biblestudy.webp",
+  Thursday: "/images/rosary_prayers.jpg",
+  Friday: "/images/mass.webp",
+  Saturday: "/images/sta-choir.png",
+};
+
+// ── Image mapping for Weekly Activities ───────────────────────────
+const DEFAULT_ACTIVITY_IMAGE = "/images/church.png";
+
+const getWeeklyActivityImage = (activity) => {
+  const title = String(activity?.activity || "").trim();
+  const day = String(activity?.day || "").trim();
+
+  // Requirements mapping
+  if (title === "Saturday Choir Practice") return "/images/sta choir.png";
+  if (title === "Tuesday Choir Practice") return "/images/choir.png";
+
+  if (title === "Monday Rosary Prayers") return  "/images/rosary_prayers.jpg";
+  if (title === "Thursday Rosary Prayers") return  "/images/rosary_prayers.jpg";
+
+  if (title === "Wednesday Bible Study") return "/images/biblestudy.webp";
+
+  if (title === "Friday Mass") return "/images/mass.webp";
+
+  // Defensive mapping if titles don’t match exactly (based on day)
+  if (day === "Saturday") return "/images/sta choir.png";
+  if (day === "Tuesday") return "/images/choir.png";
+  if (day === "Wednesday") return "/images/biblestudy.webp";
+  if (day === "Monday" || day === "Thursday") return "/images/rosary_prayers.jpg";
+  if (day === "Friday") return "/images/mass.webp";
+
+  return null;
+};
 
 // ── Weekly Activity Card ───────────────────────────────────────────
 function WeeklyCard({ activity, onDelete }) {
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
   const icon = ACTIVITY_ICONS[activity.activity] || "✝";
+
+  const mappedImage = getWeeklyActivityImage(activity);
+  const imgSrc = mappedImage || DEFAULT_ACTIVITY_IMAGE;
+
+
+  const getNextWeeklyOccurrence = () => {
+    const dayToIndex = {
+      Sunday: 0,
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+    };
+
+    const targetDayIndex = dayToIndex[(activity.day || "").trim()];
+    if (targetDayIndex === undefined) return null;
+
+    // Accept common formats: "7:30 PM" or "7:30" or "19:30"
+    const timeStr = String(activity.time || "").trim();
+    const now = new Date();
+
+    let hours = 0;
+    let minutes = 0;
+
+    // HH:MM (24h)
+    const m24 = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (m24) {
+      hours = Number(m24[1]);
+      minutes = Number(m24[2]);
+    } else {
+      // H:MM AM/PM
+      const m12 = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (m12) {
+        hours = Number(m12[1]);
+        minutes = Number(m12[2]);
+        const ampm = m12[3].toUpperCase();
+        if (ampm === "PM" && hours < 12) hours += 12;
+        if (ampm === "AM" && hours === 12) hours = 0;
+      }
+    }
+
+    const daysUntil = (targetDayIndex - now.getDay() + 7) % 7;
+    const target = new Date(now);
+    target.setDate(now.getDate() + daysUntil);
+    target.setHours(hours, minutes, 0, 0);
+
+    // If it's today but already passed, jump to next week.
+    if (target <= now) {
+      target.setDate(target.getDate() + 7);
+    }
+
+    return target;
+  };
+
+  const nextOccurrence = getNextWeeklyOccurrence();
+
+  // useCountdown is a hook; use it directly (no require/CommonJS).
+  // eslint-disable-next-line import/no-unresolved
+  const { isValid, days, hours, minutes, seconds } = useCountdown(nextOccurrence ?? null);
+
+  const timerText = !isValid
+    ? "Starts soon"
+    : days > 0
+      ? `Starts in ${days}d ${hours}h ${minutes}m`
+      : `Starts in ${hours}h ${minutes}m ${seconds}s`;
 
   return (
     <div
@@ -37,11 +141,15 @@ function WeeklyCard({ activity, onDelete }) {
         hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.08)] transition-all duration-500
         hover:-translate-y-0.5 cursor-default group`}
     >
+    <img
+      src={imgSrc}
+      alt={activity.activity}
+      className="w-full h-56 object-cover rounded-xl mb-4"
+      loading="lazy"
+    />
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">
-            {activity.day}
-          </p>
+          <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">{activity.day}</p>
           <h4 className="text-base font-black text-slate-800 group-hover:text-primary transition-colors duration-300">
             {icon} {activity.activity}
           </h4>
@@ -58,6 +166,7 @@ function WeeklyCard({ activity, onDelete }) {
         <p className="flex items-center gap-2">
           <Clock size={12} className="text-primary/60" />{activity.time}
         </p>
+        <p className="text-[11px] text-slate-600 font-semibold">⏳ {timerText}</p>
         <p className="flex items-center gap-2">
           <MapPin size={12} className="text-primary/60" />{activity.venue}
         </p>
@@ -66,10 +175,21 @@ function WeeklyCard({ activity, onDelete }) {
   );
 }
 
+
 // ── Semester Event Card ────────────────────────────────────────────
 function SemesterCard({ event, onDelete }) {
   const dt = new Date(event.date_time);
   const isPast = dt < new Date();
+
+  const { isValid, days, hours, minutes, seconds } = useCountdown(event.date_time ?? null);
+
+  const timerText = !isValid
+    ? "No date set"
+    : days > 0
+      ? `Starts in ${days}d ${hours}h ${minutes}m`
+      : `Starts in ${hours}h ${minutes}m ${seconds}s`;
+
+  const labelWhenPast = isPast ? "Started" : timerText;
 
   return (
     <div
@@ -113,6 +233,7 @@ function SemesterCard({ event, onDelete }) {
           <Clock size={12} className="text-primary/60" />
           {dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
         </p>
+        <p className="text-[11px] text-slate-600 font-semibold">⏳ {timerText}</p>
         <p className="flex items-center gap-2">
           <MapPin size={12} className="text-primary/60" />
           {event.venue}
@@ -121,6 +242,7 @@ function SemesterCard({ event, onDelete }) {
     </div>
   );
 }
+
 
 // ── Add Weekly Form ────────────────────────────────────────────────
 function AddWeeklyForm({ onAdd, onClose }) {
