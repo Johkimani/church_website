@@ -296,6 +296,12 @@ export const setupCommunityDatabase = async () => {
       );
     `);
 
+    // Ensure projects table has the columns expected by the current admin UI
+    await db.query(`
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS category VARCHAR(255);
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS image_url TEXT;
+    `);
+
     // 3. Seed hub_modules metadata
     for (const meta of modulesMeta) {
       await db.query(`

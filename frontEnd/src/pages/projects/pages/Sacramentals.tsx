@@ -5,8 +5,7 @@ import { useApp } from '../../../context/AppContext';
 import { SECTION_BANNERS, TRUST_BADGES, RENTAL_PROCESS_STEPS, SLIDE_IMAGES } from '../pages/data';
 import { FaChair, FaMapPin, FaMusic, FaOtter, FaSearch, FaStar, FaTshirt } from 'react-icons/fa';
 import { FaMessage, FaShield } from 'react-icons/fa6';
-
-
+import ProjectList from "../../Landing/components/projectlist";
 /* ---------------- ICON HELPERS ---------------- */
 
 const getCategoryIcon = (category: string) => {
@@ -266,6 +265,7 @@ export const Sacramentals = () => {
 
             <ImageSlider images={sliderImages && sliderImages.length > 0 ? sliderImages : SLIDE_IMAGES} />
             <TrustBar category="sacramentals" />
+            <ProjectList category="sacramentals" />
             <ProcessGuide />
         </div>
 
