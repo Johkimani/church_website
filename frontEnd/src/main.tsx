@@ -8,10 +8,12 @@ import { AuthProvider } from './context/AuthContext.tsx'
 import { SocketProvider } from './context/SocketContext.tsx'
 import { NotificationProvider } from './context/NotificationContext.tsx'
 import { AppProvider } from './context/AppContext.tsx'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
+  <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SocketProvider>
@@ -26,4 +28,6 @@ createRoot(document.getElementById('root')!).render(
         </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
+  </ErrorBoundary>
 )
+

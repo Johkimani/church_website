@@ -31,4 +31,8 @@ Thumbs.db
 backEnd/tmp/
 backEnd/localFileUploads/
 backEnd/list_tables.js
-git_status_output.txt
+git_status_output.txt
+
+# Runtime / process files
+.runtime/
+*.pid

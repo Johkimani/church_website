@@ -160,6 +160,7 @@ const GalleryTeaser: React.FC = () => {
 
           {items && Array.isArray(items) && items.map((item, index) => (
             <div 
+
               key={item.id}
               onClick={() => navigate('/gallery')}
               className={`group relative p-3 bg-white border border-slate-100 rounded-[3rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] hover:shadow-[0_60px_100px_-20px_rgba(0,0,0,0.08)] cursor-pointer ${

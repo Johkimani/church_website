@@ -1,7 +1,8 @@
 
 
 import React from 'react';
-import { SECTION_BANNERS, TRUST_BADGES, RENTAL_PROCESS_STEPS ,SLIDE_IMAGES } from '../pages/data';
+import { useApp } from '../../../context/AppContext';
+import { SECTION_BANNERS, TRUST_BADGES, RENTAL_PROCESS_STEPS, SLIDE_IMAGES } from '../pages/data';
 import { FaChair, FaMapPin, FaMusic, FaOtter, FaSearch, FaStar, FaTshirt } from 'react-icons/fa';
 import { FaMessage, FaShield } from 'react-icons/fa6';
 
@@ -36,8 +37,9 @@ const getGeneralIcon = (iconName: string) => {
 
 export const CategoryHero: React.FC<{
     category: 'sacramentals' | 'tshirts' | 'chairs' | 'instruments' | 'other'
-}> = ({ category }) => {
-    const banner = SECTION_BANNERS[category];
+    overrideBanner?: { img: string; title: string; subtitle: string }
+}> = ({ category, overrideBanner }) => {
+    const banner = overrideBanner || SECTION_BANNERS[category];
     if (!banner) return null;
 
     return (
@@ -257,11 +259,12 @@ export const ImageSlider: React.FC<{
 
 
 export const Sacramentals = () => {
+    const { sliderImages } = useApp();
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-100 px-4 py-6">
 
-            <ImageSlider images={SLIDE_IMAGES} />
+            <ImageSlider images={sliderImages && sliderImages.length > 0 ? sliderImages : SLIDE_IMAGES} />
             <TrustBar category="sacramentals" />
             <ProcessGuide />
         </div>

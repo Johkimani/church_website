@@ -223,7 +223,7 @@ export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children 
     useEffect(() => {
         const fetchModules = async () => {
             try {
-                const response = await apiClient.get('/api/community-view/data');
+                const response = await apiClient.get('/community-view/data');
                 if (response.data && Array.isArray(response.data) && response.data.length > 0) {
                     setModules(response.data);
                     localStorage.setItem('community_modules_cache', JSON.stringify(response.data));

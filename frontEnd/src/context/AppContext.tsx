@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { BASE_URL } from '../api/config';
 import {  MESSAGES as DEFAULT_MESSAGES, SACRAMENTAL_CATEGORIES} from '../pages/projects/pages/data';
 import type { CartItem, SacramentalCategory } from '../pages/projects/pages/data';
 
@@ -41,6 +42,7 @@ interface AppContextType {
     // Global Filters/States
     sacCategory: SacramentalCategory;
     setSacCategory: (cat: SacramentalCategory) => void;
+    sectionBanners: Record<string, { img: string; title: string; subtitle: string }> | null;
 
     // Auth
     isAdmin: boolean;
@@ -53,6 +55,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [products, setProducts] = useState<any[]>([]);
     const [apiMessages, setApiMessages] = useState<Record<string, string[]>>(DEFAULT_MESSAGES);
     const [sliderImages, setSliderImages] = useState<any[]>([]);
+    const [sectionBanners, setSectionBanners] = useState<Record<string, { img: string; title: string; subtitle: string }> | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [sacCategory, setSacCategory] = useState<SacramentalCategory>('all');
@@ -92,13 +95,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [isAdmin]);
 
     useEffect(() => {
-        const apiBase = import.meta.env.VITE_SERVER_URI?.replace(/\/+$/, '') || '';
+        const apiBase = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api" : undefined);
+
+        if (!apiBase) {
+            console.warn('AppContext: No backend URL configured for products/config loading.');
+            setIsLoading(false);
+            return;
+        }
 
         const fetchData = async () => {
             try {
                 const [prodRes, configRes] = await Promise.all([
-                    fetch(`${apiBase}/api/products`),
-                    fetch(`${apiBase}/api/config`)
+                    fetch(`${apiBase}/products`),
+                    fetch(`${apiBase}/config`)
                 ]);
                 if (prodRes.ok) {
                     const prodData = await prodRes.json();
@@ -108,6 +117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     const config = await configRes.json();
                     if (config.MESSAGES) setApiMessages(config.MESSAGES);
                     if (config.SLIDER_IMAGES) setSliderImages(config.SLIDER_IMAGES);
+                    if (config.SECTION_BANNERS) setSectionBanners(config.SECTION_BANNERS);
                 }
             } catch (err) {
                 console.error('Failed to fetch data', err);
@@ -157,14 +167,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             customer_phone: customerPhone
         };
 
-        const apiBase = import.meta.env.VITE_SERVER_URI?.replace(/\/+$/, '') || '';
+        const apiBase = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api" : undefined);
 
         try {
-            await fetch(`${apiBase}/api/orders`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(orderData)
-            });
+            if (apiBase) {
+                await fetch(`${apiBase}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+            }
             showToast("Order placed successfully! Redirecting to WhatsApp...");
         } catch (err) {
             console.error("Failed to save order to database:", err);
@@ -188,7 +200,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return (
         <AppContext.Provider value={{
-            products, apiMessages, sliderImages, isLoading,
+            products, apiMessages, sliderImages, sectionBanners, isLoading,
             isDarkMode, toggleDarkMode,
             cart, addToCart, removeFromCart, clearCart, cartTotal,
             isCartOpen, setIsCartOpen,

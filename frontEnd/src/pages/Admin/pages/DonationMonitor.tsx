@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useCachedData } from '../../../hooks/useCachedData';
 import apiService from '../../Landing/services/api';
 import { 
   Heart, 
@@ -12,40 +13,33 @@ import {
 } from 'lucide-react';
 
 export default function DonationMonitor() {
-  const [donations, setDonations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchDonations();
-    const interval = setInterval(fetchDonations, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchDonations = async () => {
-    try {
+  const { data: donations = [], loading, refetch: fetchDonations, setData: setDonations } = useCachedData<any[]>(
+    'csa_cache_donation_monitor',
+    async () => {
       const [mpesaData, membersData] = await Promise.all([
         apiService.fetchTableData('mpesa_request'),
         apiService.fetchTableData('members')
       ]);
 
-      const enhanced = mpesaData.map((d: any) => {
+      return mpesaData.map((d: any) => {
         const member = membersData.find((m: any) => m.member_id === d.user_id);
         return {
           ...d,
           donorName: member ? `${member.first_name} ${member.last_name}` : d.user_id
         };
       });
+    },
+    []
+  );
 
-      setDonations(enhanced);
-    } catch (error) {
-      console.error('Failed to fetch donations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const interval = setInterval(() => fetchDonations(true), 30000);
+    return () => clearInterval(interval);
+  }, [fetchDonations]);
 
   const filteredDonations = donations.filter(d => {
     const matchesSearch = 

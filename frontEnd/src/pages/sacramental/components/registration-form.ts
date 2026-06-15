@@ -239,6 +239,7 @@ export class RegistrationForm {
     }
 
     this.checkoutID = paymentResponse.data.checkoutID;
+    console.log(paymentResponse.data);
     this.setSubmitButtonText('<span class="csa-choir-loading"></span> Waiting for PIN...');
 
     // --- STEP 2: Poll for Payment Status ---

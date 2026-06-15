@@ -62,7 +62,7 @@ const containerVariants = {
       delayChildren: 0.1
     }
   }
-};
+} as const;
 
 const cardVariants = {
   hidden: { y: 40, opacity: 0 },
@@ -70,12 +70,12 @@ const cardVariants = {
     y: 0, 
     opacity: 1, 
     transition: { 
-      type: "spring", 
+      type: "spring" as const, 
       stiffness: 70, 
       damping: 15 
     } 
   }
-};
+} as const;
 
 const Community: React.FC = () => {
   const navigate = useNavigate();
@@ -191,8 +191,7 @@ const Community: React.FC = () => {
                   </p>
 
                   {/* Action Link Footer */}
-                  <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-black uppercase tracking-wider text-blue-600 group-hover:text-blue-700 transition-colors">
-                    <span>Explore Community</span>
+                  <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-end text-blue-600 group-hover:text-blue-700 transition-colors">
                     <div className="w-8 h-8 rounded-full bg-blue-50 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 flex items-center justify-center text-blue-600">
                       <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
