@@ -128,7 +128,8 @@ const GalleryPage: React.FC = () => {
               </h2>
               {/* Masonry Layout Container */}
               <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3 space-y-3">
-                {items.map((item) => (
+                {(Array.isArray(items) ? items : []).map((item) => (
+
                   <div 
                     key={item.id} 
                     className="break-inside-avoid relative group cursor-pointer"

@@ -5,11 +5,11 @@ import mongoose from "mongoose";
 dotenv.config();
 
 const pool = new Pool({
-  host: process.env.DB_HOST,
+  host: process.env.DB_HOST || "localhost",
   port: parseInt(process.env.DB_PORT || "5432"),
-  user: process.env.DB_USER,
+  user: process.env.DB_USER || "postgres",
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  database: process.env.DB_NAME || "csa_db",
   ssl:
     (process.env.DB_HOST === "localhost" || process.env.DB_HOST === "127.0.0.1") ? false : { rejectUnauthorized: false },
 });
@@ -25,7 +25,11 @@ export const connectDb = async () => {
     logger.error("Failed to connect postgree database:", error.message, {
       stack: error.stack,
     });
-    process.exit(1)
+    // Do not exit the process here. Allow the server to start so routes
+    // can return a 503 Service Unavailable when DB operations are attempted.
+    // This improves developer experience in environments where the DB
+    // may be temporarily unreachable.
+    client = undefined;
   }
 };
 

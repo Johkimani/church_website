@@ -59,8 +59,9 @@ const OfficialProfile: React.FC = () => {
                 }
                 
                 if (!officialsList || !Array.isArray(officialsList) || officialsList.length === 0) {
-                    const fetched: any = await apiService.getOfficials();
-                    officialsList = Array.isArray(fetched) ? fetched : (fetched?.data || []);
+                    const fetched = await apiService.getOfficials() as any;
+                    const maybeData = fetched && typeof fetched === 'object' ? fetched.data : undefined;
+                    officialsList = Array.isArray(fetched) ? fetched : (Array.isArray(maybeData) ? maybeData : []);
                 }
                 
                 if (Array.isArray(officialsList)) {

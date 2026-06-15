@@ -20,35 +20,34 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [jumuiyaList, setJumuiyaList] = useState<JumuiyaData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [jumuiyaList, setJumuiyaList] = useState<JumuiyaData[]>(() => {
+        const storedVersion = localStorage.getItem('jumuiya_data_version');
+        const storedData = localStorage.getItem('jumuiya_data');
+        if (storedVersion === DATA_VERSION && storedData) {
+            try {
+                return JSON.parse(storedData);
+            } catch (e) {
+                console.error('Failed to parse stored data', e);
+            }
+        }
+        return initialJumuiyaList;
+    });
+
+    const [isLoading, setIsLoading] = useState(() => {
+        const storedVersion = localStorage.getItem('jumuiya_data_version');
+        const storedData = localStorage.getItem('jumuiya_data');
+        return storedVersion !== DATA_VERSION || !storedData;
+    });
 
     useEffect(() => {
-        const loadData = () => {
-            const storedVersion = localStorage.getItem('jumuiya_data_version');
-            const storedData = localStorage.getItem('jumuiya_data');
-
-            if (storedVersion !== DATA_VERSION || !storedData) {
-                // Version mismatch or missing data — reset to fresh data
-                console.log('Data version mismatch or missing, resetting to initial data.');
-                setJumuiyaList(initialJumuiyaList);
-                localStorage.setItem('jumuiya_data', JSON.stringify(initialJumuiyaList));
-                localStorage.setItem('jumuiya_data_version', DATA_VERSION);
-            } else {
-                try {
-                    setJumuiyaList(JSON.parse(storedData));
-                } catch (e) {
-                    console.error('Failed to parse stored data', e);
-                    setJumuiyaList(initialJumuiyaList);
-                    localStorage.setItem('jumuiya_data', JSON.stringify(initialJumuiyaList));
-                    localStorage.setItem('jumuiya_data_version', DATA_VERSION);
-                }
-            }
+        if (isLoading) {
+            console.log('Resetting to initial data.');
+            setJumuiyaList(initialJumuiyaList);
+            localStorage.setItem('jumuiya_data', JSON.stringify(initialJumuiyaList));
+            localStorage.setItem('jumuiya_data_version', DATA_VERSION);
             setIsLoading(false);
-        };
-
-        loadData();
-    }, []);
+        }
+    }, [isLoading]);
 
     useEffect(() => {
         if (!isLoading && jumuiyaList.length > 0) {

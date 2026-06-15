@@ -12,6 +12,7 @@ import {
   Calendar,
   Search,
 } from 'lucide-react';
+import { useCachedData } from '../../../../../hooks/useCachedData';
 import { apiClient } from '../../../../../api/axiosInstance';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,10 +33,7 @@ interface GalleryResponse {
 }
 
 const GallerySection: React.FC = () => {
-  const [items, setItems] = useState<GalleryItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [theme, setTheme] = useState('default');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
@@ -51,20 +49,17 @@ const GallerySection: React.FC = () => {
     });
   };
 
-  useEffect(() => {
-    const loadGallery = async () => {
-      try {
-        const { data } = await apiClient.get<GalleryResponse>('/gallery');
-        setItems(data.items || []);
-        setTheme(data.theme || 'default');
-      } catch (error) {
-        console.error("Failed to load gallery:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadGallery();
-  }, []);
+  const { data: galleryData, loading } = useCachedData<GalleryResponse>(
+    'csa_cache_public_gallery',
+    async () => {
+      const { data } = await apiClient.get<GalleryResponse>('/gallery');
+      return data;
+    },
+    { items: [], theme: 'default', userContext: null }
+  );
+
+  const items = galleryData.items || [];
+  const theme = galleryData.theme || 'default';
 
   const filteredItems = items.filter(item => {
     const matchesSearch = 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useCachedData } from '../../../hooks/useCachedData';
 import { apiClient } from '../../../api/axiosInstance';
 import {
   Users,
@@ -6,8 +7,6 @@ import {
   Plus,
   Search,
   ExternalLink,
-  Edit2,
-  Trash2,
   Loader2,
   RefreshCcw,
   LayoutGrid
@@ -15,32 +14,30 @@ import {
 import { Link } from 'react-router-dom';
 import ClickableCard from '../../../components/ClickableCard';
 
+const COMMUNITY_IMAGES: Record<string, string> = {
+  choir: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600",
+  dancers: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600",
+  charismatic: "https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=600",
+  "st-francis": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600",
+  youth: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600",
+  mentorship: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600"
+};
+
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600";
+
 export default function CommunityManager() {
-  const [modules, setModules] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadModules();
-  }, []);
-
-  const loadModules = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.get('/api/hub_modules');
+  const { data: modules = [], loading, error, refetch: loadModules, setData: setModules } = useCachedData<any[]>(
+    'csa_cache_hub_modules',
+    async () => {
+      const response = await apiClient.get('/hub_modules');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      
       const allowedIds = ['choir', 'dancers', 'st-francis', 'charismatic', 'youth', 'mentorship'];
-      setModules(Array.isArray(data) ? data.filter((m: any) => allowedIds.includes(m.id)) : []);
-    } catch (err: any) {
-      console.error('[CommunityManager] load error:', err);
-      setError(err?.message || 'Failed to load community modules');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(data) ? data.filter((m: any) => allowedIds.includes(m.id)) : [];
+    },
+    []
+  );
 
   const filteredModules = modules.filter(m => 
     m.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -137,38 +134,27 @@ export default function CommunityManager() {
             key={module.id}
             to={`/admin/community-management/${module.id}`}
             ariaLabel={`Manage ${module.title}`}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-all duration-300 overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-all duration-300 overflow-hidden flex flex-col group"
           >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg"
-                  style={{ backgroundColor: module.theme_color || '#3b82f6' }}
-                >
-                  <i className={`${module.icon_class} text-xl`}></i>
-                </div>
-                <div className="flex items-center gap-1">
-                    <button onClick={(e) => e.stopPropagation()} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                      <Edit2 size={18} />
-                    </button>
-                    <button onClick={(e) => e.stopPropagation()} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
-                      <Trash2 size={18} />
-                    </button>
-                </div>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase">{module.title}</h3>
-              <p className="text-xs font-mono text-slate-400 mt-0.5 tracking-tighter">ID: {module.id}</p>
-              <p className="text-sm text-slate-500 mt-3 line-clamp-2">
-                {module.description}
-              </p>
-              
-              <div className="mt-6 flex flex-wrap gap-2">
-                 <div className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{module.location || 'N/A'}</div>
-                 <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{module.schedule_label || 'Weekly'}</div>
-              </div>
+            {/* Card Image Banner */}
+            <div className="h-48 w-full overflow-hidden relative bg-slate-100">
+              <img 
+                src={COMMUNITY_IMAGES[module.id] || DEFAULT_IMAGE} 
+                alt={module.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent" />
+            </div>
+
+            {/* Card Content */}
+            <div className="p-6 flex-grow flex flex-col justify-between">
+              <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase group-hover:text-blue-600 transition-colors">
+                {module.title}
+              </h3>
             </div>
             
-            <div className="mt-auto p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+            {/* Card Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-center">
                <Link 
                 to={`/community/${module.id}`} 
                 target="_blank"
@@ -176,13 +162,6 @@ export default function CommunityManager() {
                 className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors"
                >
                  <ExternalLink size={14} /> View Public Page
-               </Link>
-               <Link 
-                to={`/admin/community-management/${module.id}`}
-                onClick={(e) => e.stopPropagation()}
-                className="text-xs font-bold text-blue-600 hover:underline"
-               >
-                 Edit Content
                </Link>
             </div>
           </ClickableCard>

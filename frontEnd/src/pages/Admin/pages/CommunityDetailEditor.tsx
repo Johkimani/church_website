@@ -60,7 +60,7 @@ export default function CommunityDetailEditor() {
     try {
       // 1. Fetch Module Meta if not already loaded or category changed
       if (!moduleMeta || moduleMeta.id !== categoryId) {
-        const modulesResponse = await apiClient.get('/api/hub_modules');
+        const modulesResponse = await apiClient.get('/hub_modules');
         const modules = Array.isArray(modulesResponse.data) ? modulesResponse.data : (modulesResponse.data?.data || []);
         const meta = modules.find((m: any) => m.id === categoryId);
         setModuleMeta(meta);
@@ -79,7 +79,7 @@ export default function CommunityDetailEditor() {
         case 'members': tableName = 'enrollments'; break;
       }
 
-      const response = await apiClient.get(`/api/${tableName}`);
+      const response = await apiClient.get(`/${tableName}`);
       const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       // Filter by module_id (or class_id for members)
       const filtered = items.filter((item: any) =>
@@ -268,7 +268,7 @@ export default function CommunityDetailEditor() {
       });
       showToast('About content saved successfully!');
       // refresh meta
-      const modulesResponse = await apiClient.get('/api/hub_modules');
+      const modulesResponse = await apiClient.get('/hub_modules');
       const modules = Array.isArray(modulesResponse.data) ? modulesResponse.data : (modulesResponse.data?.data || []);
       const meta = modules.find((m: any) => m.id === categoryId);
       setModuleMeta(meta);
@@ -512,23 +512,24 @@ export default function CommunityDetailEditor() {
                               {member.email || 'N/A'}
                             </td>
 
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium">
-                              {member.registrationDate || member.enrolled_at
-                                ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString()
-                                : 'N/A'}
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
-                              {member.voice_type || 'N/A'}
-                            </td>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium">
+      {member.registrationDate || member.enrolled_at
+        ? new Date(member.registrationDate || member.enrolled_at).toLocaleDateString()
+        : 'N/A'}
+    </td>
+  </>
+) : (
+  <>
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.voice_type || 'N/A'}
+    </td>
 
-                            <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
-                              {member.music_level || 'N/A'}
-                            </td>
-                          </>
-                        )}
+    <td className="py-4 px-4 text-sm text-slate-600 font-medium capitalize">
+      {member.music_level || 'N/A'}
+    </td>
+  </>
+)}
+
                         <td className="py-4 px-4">
                           <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${member.status === 'Pending' ? 'bg-amber-100 text-amber-700' : member.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
                             }`}>

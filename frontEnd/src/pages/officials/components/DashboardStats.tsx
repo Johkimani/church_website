@@ -39,7 +39,7 @@ export function DashboardStats({ officialsCount, archivedCount, currentTerm, dis
  return (
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
  {stats.map((stat) => (
- <div key={stat.label} className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 transition-colors">
+ <div key={stat.label} className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border-2 border-gray-200 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-4 transition-colors">
  <div className={`p-2 sm:p-3 rounded-lg ${stat.color} `}>
  <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
  </div>

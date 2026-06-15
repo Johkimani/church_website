@@ -78,6 +78,16 @@ class ApiService {
     }
   }
 
+  async updateRecord(tableName: string, id: string | number, data: Record<string, any>): Promise<any> {
+    try {
+      const response = await apiClient.patch(`/${tableName}/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating record in ${tableName}:`, error);
+      throw error;
+    }
+  }
+
   // Specific methods for different tables
 
   /**
@@ -150,11 +160,44 @@ class ApiService {
     return this.fetchTableData('activities');
   }
 
+  async getWeeklyActivities(): Promise<any[]> {
+    return this.fetchTableData('activities/weekly');
+  }
+
+  async getSemesterActivities(): Promise<any[]> {
+    return this.fetchTableData('activities/semester');
+  }
+
   /**
    * Fetches all gallery items.
    */
   async getGallery(): Promise<any[]> {
     return this.fetchTableData('gallery');
+  }
+
+  async getSacramentalsSliderImages(section: string = 'sacramentals'): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`/slider-images?section=${encodeURIComponent(section)}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sacramentals slider images:', error);
+      return [];
+    }
+  }
+
+  async createSacramentalsSliderImage(payload: Record<string, any>): Promise<any> {
+    const response = await apiClient.post('/slider-images', payload);
+    return response.data;
+  }
+
+  async updateSacramentalsSliderImage(id: string | number, payload: Record<string, any>): Promise<any> {
+    const response = await apiClient.patch(`/slider-images/${id}`, payload);
+    return response.data;
+  }
+
+  async deleteSacramentalsSliderImage(id: string | number): Promise<any> {
+    const response = await apiClient.delete(`/slider-images/${id}`);
+    return response.data;
   }
 
   /**

@@ -21,6 +21,8 @@ const allowedTables = [
   "gallery",
   "jumuiya",
   "users",
+  "products",
+  "config",
   "mpesa_request",
   "hub_modules",
   "hub_activities",
@@ -83,6 +85,12 @@ api.get("/:table", validateTable, async (req, res) => {
   } catch (error) {
     logger.error(`Error in '/:table': ${error.message}\n${error.stack}`);
 
+    // If the error looks like a DB connection problem, return 503 Service Unavailable
+    const msg = (error && error.message) ? error.message : '';
+    if (msg.includes('connect ECONNREFUSED') || msg.includes('getaddrinfo ENOTFOUND') || msg.includes('database') || msg.includes('connection')) {
+      return res.status(503).json({ error: 'Database unavailable. Please try again later.' });
+    }
+
     return res.status(500).json({ error: error.message });
   }
 });
@@ -112,6 +120,11 @@ api.post("/:table", validateTable, async (req, res) => {
     return res.status(201).json(newRecord);
   } catch (error) {
     logger.error(`Error in POST '/:table': ${error.message}`);
+
+    const msg = (error && error.message) ? error.message : '';
+    if (msg.includes('connect ECONNREFUSED') || msg.includes('getaddrinfo ENOTFOUND') || msg.includes('database') || msg.includes('connection')) {
+      return res.status(503).json({ error: 'Database unavailable. Please try again later.' });
+    }
 
     return res.status(500).json({ error: error.message });
   }

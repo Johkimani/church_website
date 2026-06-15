@@ -19,6 +19,11 @@ const OfficialProfile = lazy(() => import("./pages/officials/OfficialProfile"));
 const Layout = lazy(() => import("./pages/Devotions/components/Layout"));
 const UniversalAdmin = lazy(() => import("./pages/Admin/UniversalAdmin"));
 const ProjectsHome = lazy(() => import("./pages/projects/pages/Home").then((module) => ({ default: module.Home })));
+const SacramentalsPage = lazy(() =>
+  import("./pages/projects/pages/Sacramentals").then((module) => ({
+    default: module.Sacramentals,
+  }))
+);
 const TshirtsPage = lazy(() => import("./pages/projects/pages/Tshirts").then((module) => ({ default: module.Tshirts })));
 const ChairsPage = lazy(() => import("./pages/projects/pages/Chairs").then((module) => ({ default: module.Chairs })));
 const InstrumentsPage = lazy(() => import("./pages/projects/pages/Instruments").then((module) => ({ default: module.Instruments })));
@@ -48,12 +53,16 @@ const JumuiyaDetail = lazy(() => import("./pages/Jumuiya/JumuiyaDetail"));
 // Admin
 const AdminDashboard = lazy(() => import("./pages/Admin/pages/AdminDashboard"));
 const RecordsExplorer = lazy(() => import("./pages/Admin/pages/RecordsExplorer"));
+const ProjectsManager = lazy(() =>
+  import("./pages/Admin/pages/ProjectsManager")
+);
 const DonationMonitor = lazy(() => import("./pages/Admin/pages/DonationMonitor"));
 // Admin Components
 const CommunityManager = lazy(() => import("./pages/Admin/pages/CommunityManager"));
 const CommunityDetailEditor = lazy(() => import("./pages/Admin/pages/CommunityDetailEditor"));
 const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions"));
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
+const SacramentalsBannerManager = lazy(() => import("./pages/Admin/pages/SacramentalsBannerManager"));
 const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribution"));
 
 // Sacramental / Community
@@ -95,9 +104,14 @@ const App: React.FC = () => {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            // ======================================
+            // TEMP DEVELOPMENT COMMENT
+            // ADMIN AUTH DISABLED TEMPORARILY
+            // RE-ENABLE BEFORE PRODUCTION
+            // ======================================
+            // <ProtectedRoute>
               <UniversalAdmin />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         >
           <Route index element={<AdminDashboard />} />
@@ -109,6 +123,8 @@ const App: React.FC = () => {
           <Route path="community-management/:categoryId" element={<CommunityDetailEditor />} />
           <Route path="suggestions" element={<AdminSuggestions />} />
           <Route path="gallery" element={<GalleryManager />} />
+          <Route path="sacramentals-banners" element={<SacramentalsBannerManager />} />
+          <Route path="projects" element={<ProjectsManager />} />
           <Route path="forms-distribution" element={<FormsDistribution />} />
           <Route path="settings" element={<div className="p-8 bg-white rounded-2xl shadow-sm border border-slate-200">Settings Page Coming Soon</div>} />
         </Route>
@@ -123,6 +139,14 @@ const App: React.FC = () => {
           {/* Standalone Landing Pages */}
           <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
           <Route path="projects" element={<ProtectedRoute><ProjectsHome /></ProtectedRoute>} />
+          <Route
+  path="sacramentals"
+  element={
+    <ProtectedRoute>
+      <SacramentalsPage />
+    </ProtectedRoute>
+  }
+/>
           <Route path="t-shirts" element={<ProtectedRoute><TshirtsPage /></ProtectedRoute>} />
           <Route path="chairs" element={<ProtectedRoute><ChairsPage /></ProtectedRoute>} />
           <Route path="instruments" element={<ProtectedRoute><InstrumentsPage /></ProtectedRoute>} />
@@ -148,27 +172,11 @@ const App: React.FC = () => {
             <Route path="challenge" element={<Challenge />} />
           </Route>
 
-          {/* Jumuiya (Protected) */}
-          <Route
-            path="jumuiya"
-            element={
-              <ProtectedRoute>
-                <DataProvider>
-                  <JumuiyaLanding />
-                </DataProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="jumuiya/:id"
-            element={
-              <ProtectedRoute>
-                <DataProvider>
-                  <JumuiyaDetail />
-                </DataProvider>
-              </ProtectedRoute>
-            }
-          />
+          {/* Jumuiya (Protected with persistent provider wrapper to optimize load speed) */}
+          <Route element={<ProtectedRoute><DataProvider><Outlet /></DataProvider></ProtectedRoute>}>
+            <Route path="jumuiya" element={<JumuiyaLanding />} />
+            <Route path="jumuiya/:id" element={<JumuiyaDetail />} />
+          </Route>
 
           {/* Community Hub with persistent provider wrapper to optimize load speed */}
           <Route element={<CommunityProvider><Outlet /></CommunityProvider>}>

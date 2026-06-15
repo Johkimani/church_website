@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, Phone, ChevronDown, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Phone, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import type { Official } from '../../../hooks/useOfficials';
 import { CATEGORY_ORDER, CATEGORY_COLORS, POSITION_RANK, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS, JUMUIYA_ROLES } from '../constants/adminConstants';
 import { UPLOAD_BASE } from '../../../utils/officialsApi';
@@ -7,6 +7,7 @@ import { UPLOAD_BASE } from '../../../utils/officialsApi';
 interface OfficialsTableProps {
  officials: Official[];
  searchTerm: string;
+ onSearchChange?: (val: string) => void;
  onEdit: (official: Official) => void;
  onDelete: (official: Official) => void;
  isDeleting: number | boolean;
@@ -14,7 +15,7 @@ interface OfficialsTableProps {
  mode?: 'csa' | 'jumuiya';
 }
 
-export function OfficialsTable({ officials, searchTerm, onEdit, onDelete, isDeleting, displayTerm, mode = 'csa' }: OfficialsTableProps) {
+export function OfficialsTable({ officials, searchTerm, onSearchChange, onEdit, onDelete, isDeleting, displayTerm, mode = 'csa' }: OfficialsTableProps) {
  const [expandedJumuiya, setExpandedJumuiya] = React.useState<string | null>(null);
 
  const filteredOfficials = React.useMemo(() => {
@@ -144,11 +145,26 @@ export function OfficialsTable({ officials, searchTerm, onEdit, onDelete, isDele
 
  return (
  <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-100 transition-colors">
- <div className="bg-gradient-to-r from-gray-700 to-gray-800 p-6 text-white text-center">
- <h2 className="text-2xl font-bold italic underline">
+ <div className="bg-blue-600 p-6 text-white text-center">
+ <h2 className="text-2xl font-bold">
  Current Officials ({filteredOfficials.length}) {officials.length > 0 && displayTerm && `- ${displayTerm}`}
  </h2>
  </div>
+
+ {onSearchChange && (
+   <div className="p-4 bg-white border-b border-gray-100">
+     <div className="relative max-w-md mx-auto xl:mx-0">
+       <input 
+         type="text"
+         placeholder="Search officials..."
+         value={searchTerm}
+         onChange={e => onSearchChange(e.target.value)}
+         className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-gray-900 transition-all outline-none font-medium"
+       />
+       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 -mt-1 w-5 h-5 text-gray-400 pointer-events-none" />
+     </div>
+   </div>
+ )}
 
  <div className="overflow-x-auto scrollbar-hide flex-1">
  {mode === 'csa' ? (

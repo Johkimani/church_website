@@ -7,6 +7,7 @@ import { useSocket } from '../../context/SocketContext'
 import apiService from '../../pages/Landing/services/api'
 import { UPLOAD_BASE } from '../../api/config'
 import { getAvatarForCategory } from './constants/positionInfo'
+import OfficialsCardsBackground from '../../components/OfficialsCardsBackground'
 
 const CATEGORY_ORDER = [
   'Executive','Jumuiya Coordinators','Bible Coordinators','Rosary',
@@ -137,11 +138,11 @@ export default function PublicView() {
     <article
       key={off.id}
       onClick={() => navigate(`/officials/${off.id}`)}
-      className="group bg-white rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+      className="group bg-white border border-slate-200 rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
       style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
       title={`View ${off.name}'s profile`}
     >
-      <div className="relative h-36 sm:h-44 md:h-52 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
+      <div className="relative h-36 sm:h-44 md:h-52 bg-slate-100 overflow-hidden">
         <img
           src={off.photo ? `${UPLOAD_BASE}${off.photo}` : getAvatarForCategory(cat)}
           alt={off.name}
@@ -157,10 +158,10 @@ export default function PublicView() {
       </div>
 
       <div className="p-4 sm:p-5 text-center">
-        <h3 className="font-bold text-gray-900 text-base sm:text-lg group-hover:text-blue-600 transition-colors truncate">
+        <h3 className="font-bold text-slate-950 text-base sm:text-lg group-hover:text-slate-950 transition-colors truncate">
           {off.name}
         </h3>
-        <p className={`text-xs sm:text-sm font-semibold bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} bg-clip-text text-transparent mt-2`}>
+        <p className="text-sm font-semibold text-slate-700 mt-2">
           {off.position || off.category}
         </p>
 
@@ -224,23 +225,24 @@ export default function PublicView() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-16">
       {/* Hero Header Section */}
-      <div className="relative bg-white overflow-hidden border-b border-gray-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] mb-12">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-100/60 rounded-full blur-3xl"></div>
-          <div className="absolute top-12 -left-24 w-80 h-80 bg-blue-100/60 rounded-full blur-3xl"></div>
-          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)', backgroundSize: '32px 32px', opacity: 0.4 }}></div>
+      <div className="relative bg-slate-950 text-white overflow-hidden border-b border-slate-900/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.12)] mb-12">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-x-0 bottom-0 h-72 hero-wave hero-wave-1" />
+          <div className="absolute inset-x-0 bottom-8 h-80 hero-wave hero-wave-2" />
+          <div className="absolute inset-x-0 bottom-16 h-88 hero-wave hero-wave-3" />
+          <div className="absolute inset-x-0 bottom-24 h-96 hero-wave hero-wave-4" />
+          <div className="absolute inset-0 bg-slate-950/70" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl" />
+          <div className="absolute top-12 -left-24 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:24px_24px]" />
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-6 py-16 sm:py-20 text-center">
           
-          <h1 
-            className="font-bold mb-4 relative z-10"
+          <h1
+            className="font-bold mb-4 relative z-10 text-white"
             style={{
               fontSize: 'clamp(2rem, 4vw, 3rem)',
-              background: 'linear-gradient(135deg, var(--text-primary) 0%, color-mix(in srgb, var(--primary), black 20%) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
               lineHeight: 1.1,
               fontFamily: "'Outfit', sans-serif",
               letterSpacing: '-0.03em'
@@ -248,7 +250,7 @@ export default function PublicView() {
           >
             Our CSA Officials
           </h1>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto relative z-10">
+          <p className="text-slate-200 text-lg max-w-2xl mx-auto relative z-10">
             Discover the dedicated leaders guiding our Catholic Students Association through faith, service, and spiritual growth.
           </p>
 
@@ -263,7 +265,7 @@ export default function PublicView() {
                        window.scrollTo({top: y, behavior: 'smooth'});
                      }
                   }}
-                  className="px-4 py-1.5 bg-white/80 backdrop-blur-md border border-gray-200 text-gray-600 text-sm font-semibold rounded-full hover:border-purple-300 hover:text-purple-700 hover:bg-purple-50 transition-all shadow-sm"
+                  className="px-4 py-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-700/60 text-white text-sm font-semibold rounded-full hover:border-slate-200 hover:text-white hover:bg-slate-800 transition-all shadow-lg"
                >
                  {cat}
                </button>
@@ -272,9 +274,10 @@ export default function PublicView() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="relative">
+        <div className="relative max-w-7xl mx-auto px-6 text-slate-800">
 
-        {fetchError ? (
+          {fetchError ? (
           <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-xl flex items-center justify-center gap-4">
             <div className="text-sm text-red-700">Unable to load officials: {fetchError}</div>
             <button onClick={fetchOfficials} className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm font-bold">Retry</button>
@@ -290,7 +293,7 @@ export default function PublicView() {
               <div className="mb-8">
                 <div className="flex items-center justify-center gap-3 mb-6">
                   <div className={`h-1 w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
-                  <h2 className="text-2xl font-bold text-gray-900">{cat}</h2>
+                  <h2 className="text-2xl font-bold text-slate-950">{cat}</h2>
                   <div className={`h-1 w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
                 </div>
                 <div className="flex justify-center">
@@ -309,10 +312,10 @@ export default function PublicView() {
         {/* View Past Officials */}
         <div className="mt-20 mb-12 flex flex-col items-center">
           <div className="w-full max-w-lg h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-8"></div>
-          <p className="text-gray-400 text-sm font-medium mb-6">Want to see our leadership history?</p>
+          <p className="text-slate-400 text-sm font-medium mb-6">Want to see our leadership history?</p>
           <button
             onClick={() => navigate('/officials/history')}
-            className="group flex items-center gap-3 px-8 py-4 bg-white border border-gray-200 text-gray-800 rounded-2xl shadow-sm hover:shadow-xl hover:border-purple-200 hover:-translate-y-1 transition-all duration-300 font-bold"
+            className="group flex items-center gap-3 px-8 py-4 bg-slate-950 text-white border border-slate-900/40 rounded-2xl shadow-lg hover:shadow-2xl hover:border-slate-200 hover:-translate-y-1 transition-all duration-300 font-bold"
           >
             <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,5 +330,6 @@ export default function PublicView() {
         </div>
       </div>
     </div>
+  </div>
   )
 }
