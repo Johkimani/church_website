@@ -22,7 +22,7 @@ export const connectDb = async () => {
     client = await pool.connect();
     logger.info("Connected to postgree database successfully!");
   } catch (error) {
-    logger.error("Failed to connect postgree database:", error.message, {
+    logger.error(`Failed to connect postgree database: ${error.message}`, {
       stack: error.stack,
     });
     // Do not exit the process here. Allow the server to start so routes
