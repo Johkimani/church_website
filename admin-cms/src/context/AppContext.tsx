@@ -97,8 +97,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const fetchData = async () => {
             try {
                 const [prodRes, configRes] = await Promise.all([
-                    fetch(`${apiBase}/api/products`),
-                    fetch(`${apiBase}/api/config`)
+                    fetch(`${apiBase}/products`),
+                    fetch(`${apiBase}/config`)
                 ]);
                 if (prodRes.ok) {
                     const prodData = await prodRes.json();
@@ -160,7 +160,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const apiBase = import.meta.env.VITE_SERVER_URI?.replace(/\/+$/, '') || '';
 
         try {
-            await fetch(`${apiBase}/api/orders`, {
+            await fetch(`${apiBase}/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
