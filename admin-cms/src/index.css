@@ -229,5 +229,56 @@
       transform: translateX(-33.33%);
     }
   }
+
+  /* Utility to hide scrollbar while keeping scroll functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Custom scrollbar utility for the gallery container */
+  .gallery-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(37, 99, 235, 0.25) transparent;
+    scroll-behavior: smooth;
+  }
+
+  .gallery-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .gallery-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .gallery-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(37, 99, 235, 0.25);
+    border-radius: 9999px;
+  }
+
+  .gallery-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(37, 99, 235, 0.45);
+  }
+
+  .community-gallery-container {
+    height: 480px;
+    overflow-y: auto;
+  }
+  
+  @media (min-width: 768px) {
+    .community-gallery-container {
+      height: 600px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .community-gallery-container {
+      height: 750px;
+    }
+  }
 }
 

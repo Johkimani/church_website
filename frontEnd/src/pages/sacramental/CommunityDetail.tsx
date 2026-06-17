@@ -176,6 +176,7 @@ const CommunityDetail: React.FC = () => {
     const [formData, setFormData] = useState({ name: '', phone: '', email: '', experience: '', voiceType: '', musicLevel: 'Beginner' });
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [activePhoto, setActivePhoto] = useState<any | null>(null);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [activeCheckoutId, setActiveCheckoutId] = useState<string | null>(null);
     const [verificationTimeout, setVerificationTimeout] = useState(false);
@@ -1020,30 +1021,54 @@ const CommunityDetail: React.FC = () => {
 
                         {/* GALLERY TAB */}
                         {activeTab === 'gallery' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative flex flex-col">
                                 {isError && (
                                     <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                                         <AlertTriangle size={14} /> Offline Mode
                                     </div>
                                 )}
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">Photo Gallery</h2>
+                                
+                                {/* Photo Gallery Header with Photo Count */}
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+                                    <div>
+                                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Photo Gallery</h2>
+                                        <p className="text-slate-500 font-semibold text-xs mt-1">Capturing our memorable moments and celebrations</p>
+                                    </div>
+                                    {moduleData.gallery && moduleData.gallery.length > 0 && (
+                                        <span className="px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 font-black text-xs uppercase tracking-wider shrink-0 w-fit">
+                                            {moduleData.gallery.length} {moduleData.gallery.length === 1 ? 'Photo' : 'Photos'}
+                                        </span>
+                                    )}
+                                </div>
+
                                 {moduleData.gallery && moduleData.gallery.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {moduleData.gallery.map((img: any) => (
-                                            <div key={img.id} className="group relative rounded-3xl overflow-hidden aspect-video shadow-sm hover:shadow-xl transition cursor-zoom-in border border-slate-100">
-                                                <img 
-                                                    src={img.url || img.imageUrl || img.image_url} 
-                                                    alt={img.caption || img.eventName} 
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" 
-                                                />
-                                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                    <p className="text-white font-bold text-sm">{img.caption || img.eventName}</p>
+                                    /* Scrollable Gallery Container with Fixed Responsive Height */
+                                    <div 
+                                        className="pr-3 gallery-scrollbar"
+                                        style={{ height: '650px', maxHeight: '75vh', overflowY: 'auto' }}
+                                    >
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 pb-4">
+                                            {moduleData.gallery.map((img: any) => (
+                                                <div 
+                                                    key={img.id} 
+                                                    onClick={() => setActivePhoto(img)}
+                                                    className="group relative rounded-3xl overflow-hidden aspect-[4/3] shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-out cursor-zoom-in border border-slate-100 bg-slate-50"
+                                                >
+                                                    <img 
+                                                        src={img.url || img.imageUrl || img.image_url} 
+                                                        alt={img.caption || img.eventName} 
+                                                        loading="lazy"
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" 
+                                                    />
+                                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                        <p className="text-white font-bold text-sm leading-snug">{img.caption || img.eventName}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12 text-slate-400">
+                                    <div className="text-center py-16 text-slate-400">
                                         <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-40" />
                                         <p className="font-semibold text-sm">Photos will appear here soon.</p>
                                     </div>
@@ -1260,6 +1285,42 @@ const CommunityDetail: React.FC = () => {
                     </button>
                 )}
             </CommunityModal>
+
+            {/* Gallery Lightbox Modal */}
+            {activePhoto && (
+                <div 
+                    className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in cursor-zoom-out"
+                    onClick={() => setActivePhoto(null)}
+                >
+                    {/* Close button */}
+                    <button 
+                        onClick={() => setActivePhoto(null)} 
+                        className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-110"
+                    >
+                        <X size={24} />
+                    </button>
+
+                    {/* Image container */}
+                    <div 
+                        className="relative max-w-5xl max-h-[80vh] flex flex-col items-center justify-center cursor-default"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <img 
+                            src={activePhoto.url || activePhoto.imageUrl || activePhoto.image_url} 
+                            alt={activePhoto.caption || activePhoto.eventName} 
+                            className="max-w-full max-h-[70vh] object-contain rounded-2xl shadow-2xl border border-white/10 animate-scale-in" 
+                        />
+                        
+                        {/* Caption info panel */}
+                        <div className="mt-5 text-center text-white max-w-xl px-4">
+                            <h3 className="text-xl font-black tracking-tight">{activePhoto.caption || activePhoto.eventName}</h3>
+                            {activePhoto.description && (
+                                <p className="text-slate-300 text-sm mt-2 font-medium leading-relaxed">{activePhoto.description}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
