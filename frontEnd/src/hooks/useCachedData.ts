@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export function useCachedData<T>(
   key: string,
@@ -9,19 +9,26 @@ export function useCachedData<T>(
     const cached = localStorage.getItem(key);
     return cached ? JSON.parse(cached) : initialFallback;
   });
-  
+
   const [loading, setLoading] = useState(() => {
     const cached = localStorage.getItem(key);
-    return !cached; // only show loader if no cache exists
+    return !cached;
   });
-  
+
   const [error, setError] = useState<any>(null);
+
+  const fetchRef = useRef(fetchFn);
+
+  useEffect(() => {
+    fetchRef.current = fetchFn;
+  }, [fetchFn]);
 
   const refetch = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
+
     try {
-      const result = await fetchFn();
+      const result = await fetchRef.current();
       setData(result);
       localStorage.setItem(key, JSON.stringify(result));
     } catch (err) {
@@ -30,11 +37,11 @@ export function useCachedData<T>(
     } finally {
       setLoading(false);
     }
-  }, [key, fetchFn]);
+  }, [key]);
 
   useEffect(() => {
-    refetch(true); // silent fetch in background on mount
-  }, [refetch]);
+    refetch(true);
+  }, [key]);
 
   return { data, loading, error, setData, refetch };
 }
