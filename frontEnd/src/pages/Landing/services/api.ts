@@ -11,42 +11,59 @@ class ApiService {
    * @param tableName - The name of the table to fetch data from.
    * @returns A promise that resolves to an array of records.
    */
-  async fetchTableData(tableName: string, bypassCache = false): Promise<any[]> {
-    const CACHE_KEY = `csa_cache_${tableName}`;
-    
-    // Attempt local cache first if not bypassing
-    if (!bypassCache) {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) return JSON.parse(cached);
-    }
+ async fetchTableData(tableName: string, bypassCache = false): Promise<any[]> {
+  const CACHE_KEY = `csa_cache_${tableName}`;
 
-    try {
-      const response = await apiClient.get(`/${tableName}`);
-      // Extract the actual array from { success: true, data: [...] } or use raw if already array
-      const rawData = response.data;
-      const dataArray = Array.isArray(rawData) ? rawData : (rawData?.data && Array.isArray(rawData.data) ? rawData.data : null);
-
-      // Update cache on success if we found an array
-      if (dataArray) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(dataArray));
-        return dataArray;
-      }
-      
-      return rawData;
-    } catch (error) {
-      console.warn(`Error fetching ${tableName}, using fallback content:`, error);
-      
-      // Provide high-quality mock data for the gallery if both API and Cache fail
-      if (tableName === 'gallery' && fallbackData.length === 0) {
-        return [
-           { id: 101, title: "Sacred Choir", image_url: "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200", description: "Lead through music." },
-           { id: 102, title: "Youth Ministry", image_url: "https://images.unsplash.com/photo-1523050853063-bd80e2904760?auto=format&fit=crop&w=1200", description: "The future of our faith." }
-        ];
-      }
-      
-      return fallbackData;
-    }
+  // Attempt local cache first if not bypassing
+  if (!bypassCache) {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) return JSON.parse(cached);
   }
+
+  try {
+    const response = await apiClient.get(`/${tableName}`);
+    const rawData = response.data;
+
+    // Case 1: API already returns array
+    if (Array.isArray(rawData)) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawData));
+      return rawData;
+    }
+
+    // Case 2: API returns { data: [...] }
+    if (Array.isArray(rawData?.data)) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawData.data));
+      return rawData.data;
+    }
+
+    // fallback safe return
+    return [];
+  } catch (error) {
+    console.warn(`Error fetching ${tableName}:`, error);
+
+    // ONLY fallback for gallery
+    if (tableName === "gallery") {
+      return [
+        {
+          id: 101,
+          name: "Sacred Choir",
+          image_url:
+            "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200",
+          description: "Lead through music.",
+        },
+        {
+          id: 102,
+          name: "Youth Ministry",
+          image_url:
+            "https://images.unsplash.com/photo-1523050853063-bd80e2904760?auto=format&fit=crop&w=1200",
+          description: "The future of our faith.",
+        },
+      ];
+    }
+
+    return [];
+  }
+}
 
   /**
    * Creates a new record in the specified table.

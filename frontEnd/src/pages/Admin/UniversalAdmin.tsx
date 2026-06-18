@@ -38,6 +38,24 @@ const menuItems = [
   },
   { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' },
+  {
+  id: "products",
+  name: "Products",
+  icon: Database,
+  path: "/admin/products"
+},
+{
+  id: "orders",
+  name: "Orders",
+  icon: Database,
+  path: "/admin/orders"
+},
+{
+  id: "hire",
+  name: "Hire Requests",
+  icon: Database,
+  path: "/admin/hire-requests"
+},
 ];
 
 export default function UniversalAdmin() {

@@ -14,6 +14,8 @@ const getApiErrorMessage = (error: unknown): string => {
         error.response.data?.message ||
         `Server responded with status ${error.response.status}`
       );
+
+      
     }
     if (error.request) {
       return "Unable to reach the backend. Please ensure the server is running and the URL is correct.";
@@ -178,8 +180,9 @@ export const deleteTableRecord = (table: string, id: string | number) =>
 export const loginApi = (data: { userReg: string; password: string }) =>
   apiClient.post("/authentication/login", data);
 
-export const initiateSTKPush = (data: { amount: number; phoneNumber: string }) =>
-  apiClient.post("/authentication/stk-push", data);
+export const initiateSTKPush = (data: { amount: number; phoneNumber: string }) => {
+  return apiClient.post("/payments/stkpush", data);
+};
 
 export const initiateGuestSTKPush = (data: { amount: number; phoneNumber: string }) =>
   apiClient.post("/authentication/stk-push-guest", data);
