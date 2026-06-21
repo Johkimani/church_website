@@ -2,7 +2,15 @@ import { Pool } from "pg";
 import dotenv from "dotenv";
 import logger from "../logger/winston.js";
 import mongoose from "mongoose";
-dotenv.config();
+
+// Ensure we load the backend env file (church_website/backEnd/.env)
+// rather than whatever the process CWD happens to be.
+dotenv.config({
+  path: new URL("../../.env", import.meta.url),
+});
+
+
+
 
 const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
@@ -11,8 +19,10 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || "csa_db",
   ssl:
-    (process.env.DB_HOST === "localhost" || process.env.DB_HOST === "127.0.0.1") ? false : { rejectUnauthorized: false },
+    // Explicit control: set DB_SSL=true when your Postgres requires SSL.
+    process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
 });
+
 
 export const db = pool;
 

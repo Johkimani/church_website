@@ -3,7 +3,9 @@ import fs from "fs";
 import path from "path";
 import net from "net";
 
-dotenv.config({ path: "./config.env" });
+dotenv.config({
+  path: new URL("../.env", import.meta.url),
+});
 
 import { serverConfig } from "./Configs/serverConfigs.js";
 import { httpServer } from "./app.js";

@@ -16,8 +16,15 @@ export default function ClickableCard({
   children,
 }: ClickableCardProps) {
   const navigate = useNavigate();
+  const [isPopping, setIsPopping] = React.useState(false);
+
+  const pop = () => {
+    setIsPopping(true);
+    window.setTimeout(() => setIsPopping(false), 170);
+  };
 
   const handleActivate = () => {
+    pop();
     onActivate?.();
     if (to) {
       navigate(to);
@@ -36,7 +43,9 @@ export default function ClickableCard({
       role="button"
       tabIndex={0}
       aria-label={ariaLabel || 'Open details'}
-      className={`group ${className} cursor-pointer transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 hover:-translate-y-0.5 hover:shadow-xl`}
+      className={`group ${className} cursor-pointer transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 hover:-translate-y-0.5 hover:shadow-xl ${
+        isPopping ? 'scale-95' : 'scale-100'
+      } transform`}
       onClick={handleActivate}
       onKeyDown={handleKeyDown}
     >

@@ -123,7 +123,7 @@ const Notifications: React.FC = () => {
 
   // roles is always an array (string[]) from UserData
   const roles = useMemo(() => (Array.isArray(user?.role) ? user.role : []), [user?.role]);
-  const isAdmin = true;
+  const isAdmin = roles.some((r) => String(r).toLowerCase().includes('admin'));
 
   useEffect(() => {
     if (activeCategory) {

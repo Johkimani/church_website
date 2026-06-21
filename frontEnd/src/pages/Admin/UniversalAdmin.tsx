@@ -22,6 +22,9 @@ import { timeAgo } from '../../utils';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { id: 'weekly-activities', name: 'Weekly Activities', icon: LayoutGrid, path: '/admin/weekly-activities' },
+  { id: 'semester-activities', name: 'Semester Activities', icon: LayoutGrid, path: '/admin/semester-activities' },
+  { id: 'announcements', name: 'Announcements Management', icon: Bell, path: '/admin/announcements' },
   { id: 'officials', name: 'Officials Management', icon: Users, path: '/admin/officials' },
   { id: 'community', name: 'Community Management', icon: LayoutGrid, path: '/admin/community-management' },
   { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations' },
