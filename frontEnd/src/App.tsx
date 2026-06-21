@@ -59,6 +59,17 @@ const ProjectsManager = lazy(() =>
 const DonationMonitor = lazy(() => import("./pages/Admin/pages/DonationMonitor"));
 // Admin Components
 const CommunityManager = lazy(() => import("./pages/Admin/pages/CommunityManager"));
+const WeeklyActivitiesAdmin = lazy(() =>
+  import("./pages/Admin/pages/WeeklyActivitiesAdmin")
+);
+
+const SemesterActivitiesAdmin = lazy(() =>
+  import("./pages/Admin/pages/SemesterActivitiesAdmin")
+);
+
+const AnnouncementsAdmin = lazy(() =>
+  import("./pages/Admin/pages/AnnouncementsAdmin")
+);
 const CommunityDetailEditor = lazy(() => import("./pages/Admin/pages/CommunityDetailEditor"));
 const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions"));
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
@@ -116,6 +127,9 @@ const App: React.FC = () => {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="weekly-activities" element={<WeeklyActivitiesAdmin />} />
+          <Route path="semester-activities" element={<SemesterActivitiesAdmin />} />
+          <Route path="announcements" element={<AnnouncementsAdmin />} />
           <Route path="officials" element={<AdminPanel />} />
           <Route path="devotions" element={<Appadmin />} />
           <Route path="records" element={<RecordsExplorer />} />
@@ -129,6 +143,7 @@ const App: React.FC = () => {
           <Route path="forms-distribution" element={<FormsDistribution />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
+
 
         {/* Public Routes with Page Layout */}
         <Route path="/" element={<Pageoulet />}>

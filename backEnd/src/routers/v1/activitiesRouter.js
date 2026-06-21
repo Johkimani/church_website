@@ -1,28 +1,8 @@
-// src/routers/activitiesRouter.js
-import { Router } from "express";
-import {
-  getWeeklyActivities,
-  createWeeklyActivity,
-  updateWeeklyActivity,
-  deleteWeeklyActivity,
-  getSemesterActivities,
-  createSemesterActivity,
-  updateSemesterActivity,
-  deleteSemesterActivity,
-} from "../../controllers/activitiesController.js";
+// Deprecated: activity management endpoints were split into:
+// - /api/v1/activities/* (public read-only)
+// - /api/v1/admin/activities/* (admin-only management)
+// This file is kept only to avoid import errors elsewhere.
 
-const router = Router();
+export default (null);
 
-// Weekly Activities
-router.get("/weekly", getWeeklyActivities);
-router.post("/weekly", createWeeklyActivity);
-router.patch("/weekly/:id", updateWeeklyActivity);
-router.delete("/weekly/:id", deleteWeeklyActivity);
 
-// Semester Activities
-router.get("/semester", getSemesterActivities);
-router.post("/semester", createSemesterActivity);
-router.patch("/semester/:id", updateSemesterActivity);
-router.delete("/semester/:id", deleteSemesterActivity);
-
-export default router;

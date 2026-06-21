@@ -6,7 +6,8 @@ import { ApiError } from "../../utils/ApiError.js";
 
 // /notifications-event/v1/event + payload
 export const createNotification = async (req, res) => {
-  const { title, message, images, posted_to, status } = req.body;
+  const { title, message, images, status } = req.body;
+  const posted_to = req.body.posted_to || req.body.posted_To;
 
   //get the logged in user_id , from authentication middleware
   const member_id = req.user?.member_id;
@@ -22,7 +23,7 @@ export const createNotification = async (req, res) => {
     //insert the payload to the notification table for persistency , incase we have late commers we need to show them order of notification received
     const result = await pool.query(
       `INSERT INTO notifications (title, message, posted_to, member_id, status)
-   VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+   VALUES ($1,$2,$3,$4,$5) RETURNING *`,
       [title, message, posted_to, member_id, status || "normal"],
     );
 
@@ -270,6 +271,7 @@ export const deleteNotification = async (req, res) => {
 
 export const getNotification = async (req, res) => {
   const jumuiyaId = req.user?.jumuiya_id;
+  const userRole = req.user?.role;
 
   if (!jumuiyaId) {
     logger.warn("Unauthorized notification fetch attempt without valid user session");
@@ -277,11 +279,23 @@ export const getNotification = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `SELECT * FROM notifications 
-       WHERE posted_to=$1 OR posted_to='csa' `,
-      [jumuiyaId],
-    );
+    const isUserAdmin = Array.isArray(userRole)
+      ? userRole.some(r => r.toLowerCase().includes('admin'))
+      : typeof userRole === 'string' && userRole.toLowerCase().includes('admin');
+
+    let result;
+    if (isUserAdmin) {
+      result = await pool.query(
+        `SELECT * FROM notifications ORDER BY created_at DESC`
+      );
+    } else {
+      result = await pool.query(
+        `SELECT * FROM notifications 
+         WHERE posted_to=$1 OR posted_to='csa' 
+         ORDER BY created_at DESC`,
+        [jumuiyaId],
+      );
+    }
     
     if (result.rows.length === 0) {
       logger.info("⚠️ No notifications found", {
@@ -292,7 +306,7 @@ export const getNotification = async (req, res) => {
     return res.json(result.rows);
   } catch (err) {
     logger.error("❌ Error fetching notifications", {
-      message: err,
+      message: err.message,
       stack: err.stack,
       jumuiyaId,
     });

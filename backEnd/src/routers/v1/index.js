@@ -10,12 +10,15 @@ import jumuiyaOfficialsRouter from "./jumuiyaOfficialsRouter.js";
 import galleryRouter from "./galleryRouter.js";
 import communityViewRouter from "./communityViewRouter.js";
 import sliderRoutes from "./sliderRoutes.js";
-import activitiesRouter from "./activitiesRouter.js";
+import activitiesPublicRouter from "./activitiesPublicRouter.js";
+import activitiesAdminRouter from "./activitiesAdminRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import formsDistributionRouter from "./FormsDistributionRouter.js"
 
+
 const router = Router()
+
 
 // Basic table routes
 // Authentication & Users
@@ -50,8 +53,10 @@ router.use("/distribution", formsDistributionRouter);
 // Slider and config endpoints for frontend banners
 router.use("/", sliderRoutes);
 
-// Activities (weekly + semester)
-router.use("/activities", activitiesRouter);
+// Activities (weekly/novena effective schedule = public read; management = admin-only)
+router.use("/activities", activitiesPublicRouter);
+router.use("/admin/activities", activitiesAdminRouter);
+
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
