@@ -74,6 +74,7 @@ class ApiService {
   async createRecord(tableName: string, data: Record<string, any>): Promise<any> {
     try {
       const response = await apiClient.post(`/${tableName}`, data);
+      this.clearCache(tableName);
       return response.data;
     } catch (error) {
       console.error(`Error creating record in ${tableName}:`, error);
@@ -90,6 +91,7 @@ class ApiService {
   async deleteRecord(tableName: string, id: string | number): Promise<any> {
     try {
       const response = await apiClient.delete(`/${tableName}/${id}`);
+      this.clearCache(tableName);
       return response.data;
     } catch (error) {
       console.error(`Error deleting record from ${tableName}:`, error);
@@ -100,6 +102,7 @@ class ApiService {
   async updateRecord(tableName: string, id: string | number, data: Record<string, any>): Promise<any> {
     try {
       const response = await apiClient.patch(`/${tableName}/${id}`, data);
+      this.clearCache(tableName);
       return response.data;
     } catch (error) {
       console.error(`Error updating record in ${tableName}:`, error);
@@ -372,6 +375,17 @@ class ApiService {
   clearCache(tableName: string): void {
     const CACHE_KEY = `csa_cache_${tableName}`;
     localStorage.removeItem(CACHE_KEY);
+
+    // Clear related aggregated caches to prevent stale data delays across the app
+    if (tableName.startsWith('hub_') || tableName.includes('community')) {
+      localStorage.removeItem('community_modules_cache');
+    }
+    if (tableName.includes('jumuiya')) {
+      localStorage.removeItem('jumuiya_data');
+    }
+    if (tableName === 'products' || tableName === 'projects') {
+      // Any specific product caches if we add them later
+    }
   }
 
   /**
@@ -401,6 +415,32 @@ class ApiService {
       }
     });
   }
+
+  // --- STK PUSH METHODS ---
+  async initiateStkPush(phoneNumber: string, amount: number, items: any[]): Promise<any> {
+    try {
+      const response = await apiClient.post('/stkPush/initiate/guest', {
+        phone: phoneNumber,
+        amount,
+        items
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error initiating STK push:', error);
+      throw error;
+    }
+  }
+
+  async checkStkStatus(checkoutId: string): Promise<any> {
+    try {
+      const response = await apiClient.get(`/stkPush/check/${checkoutId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking STK status:', error);
+      throw error;
+    }
+  }
+
 }
 
 export default new ApiService();

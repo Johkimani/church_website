@@ -3,6 +3,7 @@ import {
   getTableData,
   createRecord,
   deleteRecord,
+  updateRecord,
   getAllData,
 } from "../controllers/ApiController.js";
 import logger from "../logger/winston.js";
@@ -16,11 +17,30 @@ const allowedTables = [
   "contributions",
   "officials",
   "projects",
+  "products",
   "activities",
   "gallery",
   "jumuiya",
   "users",
-  "announcements"
+  "announcements",
+  "product",
+  "orders",
+  "cart",
+  "hire_requests",
+  "payments",
+  "categories",
+  "customers",
+  "roles",
+  "member_roles",
+  "permissions",
+  "role_permissions",
+  "notifications",
+  "sub_groups",
+  "event_subgroup_attendance",
+  "mpesa_request",
+  "suggestions",
+  "gallery_images",
+  "slider_images"
 ];
 
 // Middleware to validate table name
@@ -72,6 +92,21 @@ api.post("/:table", validateTable, async (req, res) => {
     logger.error(`${error.message}  from route '/:table'`);
 
     return res.status(500).json({ error: error.message });
+  }
+});
+
+// PATCH update a record in a table
+api.patch("/:table/:id", validateTable, async (req, res) => {
+  try {
+    const { table, id } = req.params;
+    const updated = await updateRecord(table, id, req.body);
+    if (!updated) {
+      return res.status(404).json({ error: "Record not found" });
+    }
+    res.json(updated);
+  } catch (error) {
+    logger.error(`${error.message} from route '/:table/:id' PATCH`);
+    res.status(500).json({ error: error.message });
   }
 });
 

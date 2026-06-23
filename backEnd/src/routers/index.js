@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import v1Routes from "./v1/index.js";
 
@@ -10,5 +11,4 @@ router.use("/v1", v1Routes);
 router.use("/", v1Routes);
 
 export default router;
-
 

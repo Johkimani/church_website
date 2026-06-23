@@ -9,7 +9,8 @@ import {
   ArrowRight,
   ShieldCheck,
   MoreVertical,
-  Sliders
+  Sliders,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { toast } from 'react-hot-toast';
@@ -330,6 +331,43 @@ export default function Settings() {
                  Administrative roles grant access to sensitive data and management functions. ONLY assign roles to trusted officials. Supreme Admin role grants full system control.
                </p>
              </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Settings - System Configurations */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mt-8 p-8">
+        <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <SettingsIcon className="w-6 h-6 text-blue-600" />
+          System Configuration
+        </h2>
+        <div className="max-w-md">
+          <label className="block text-sm font-bold text-slate-700 mb-2">
+            Hire Request Admin WhatsApp Number
+          </label>
+          <p className="text-xs text-slate-500 mb-4">
+            This number will be used to receive direct WhatsApp messages when users submit a request to hire Chairs or Instruments.
+          </p>
+          <div className="flex gap-3">
+            <input 
+              type="text" 
+              placeholder="e.g. 254112051739" 
+              className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              defaultValue={localStorage.getItem("csa_hire_admin_phone") || "254112051739"}
+              id="adminPhoneInput"
+            />
+            <button 
+              onClick={() => {
+                const val = (document.getElementById("adminPhoneInput") as HTMLInputElement).value;
+                if(val) {
+                  localStorage.setItem("csa_hire_admin_phone", val);
+                  toast.success("Admin WhatsApp number saved!");
+                }
+              }}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition-all"
+            >
+              Save
+            </button>
           </div>
         </div>
       </div>

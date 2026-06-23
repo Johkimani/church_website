@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../api/config';
 import {  MESSAGES as DEFAULT_MESSAGES, SACRAMENTAL_CATEGORIES} from '../pages/projects/pages/data';
 import type { CartItem, SacramentalCategory } from '../pages/projects/pages/data';
+import apiService from '../pages/Landing/services/api';
 
 interface ToastMessage {
     id: number;
@@ -23,8 +25,10 @@ interface AppContextType {
     cart: CartItem[];
     addToCart: (item: CartItem) => void;
     removeFromCart: (index: number) => void;
+    updateCartQuantity: (index: number, delta: number) => void;
     clearCart: () => void;
     cartTotal: number;
+    cartItemsCount: number;
     isCartOpen: boolean;
     setIsCartOpen: (open: boolean) => void;
 
@@ -33,6 +37,10 @@ interface AppContextType {
     setCustomerName: (name: string) => void;
     customerPhone: string;
     setCustomerPhone: (phone: string) => void;
+    customerEmail: string;
+    setCustomerEmail: (email: string) => void;
+    deliveryAddress: string;
+    setDeliveryAddress: (address: string) => void;
     proceedToCheckout: () => Promise<void>;
 
     // Toasts
@@ -52,6 +60,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const navigate = useNavigate();
     const [products, setProducts] = useState<any[]>([]);
     const [apiMessages, setApiMessages] = useState<Record<string, string[]>>(DEFAULT_MESSAGES);
     const [sliderImages, setSliderImages] = useState<any[]>([]);
@@ -66,6 +75,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
+    const [deliveryAddress, setDeliveryAddress] = useState('');
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [isAdmin, setIsAdmin] = useState<boolean>(() => {
         return localStorage.getItem('csa_admin_auth') === 'true';
@@ -138,9 +149,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }, 3000);
     };
 
+    const updateCartQuantity = (indexToUpdate: number, delta: number) => {
+        setCart(prev => prev.map((item, index) => {
+            if (index !== indexToUpdate) return item;
+            const newQty = (item.quantity || 1) + delta;
+            if (newQty <= 0) return item;
+            return { ...item, quantity: newQty };
+        }));
+    };
+
     const addToCart = (item: CartItem) => {
-        setCart(prev => [...prev, item]);
-        showToast(`Added ${item.item.name} to cart`);
+        setCart(prev => {
+            // If same item exists, increment quantity
+            const existingIdx = prev.findIndex(p =>
+                p.item?.name === item.item?.name &&
+                p.item?.price === item.price &&
+                p.category === item.category
+            );
+            if (existingIdx >= 0) {
+                return prev.map((p, i) =>
+                    i === existingIdx
+                        ? { ...p, quantity: (p.quantity || 1) + 1 }
+                        : p
+                );
+            }
+            return [...prev, { ...item, quantity: 1 }];
+        });
+        setIsCartOpen(true);
+        showToast(`Added ${item.item?.name || 'item'} to cart`);
     };
 
     const removeFromCart = (indexToRemove: number) => {
@@ -150,8 +186,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const clearCart = () => setCart([]);
 
     const cartTotal = cart.reduce((total, item) => {
-        return total + (item.price * (item.rentalDays || 1));
+        return total + (item.price * (item.quantity || item.rentalDays || 1));
     }, 0);
+
+    const cartItemsCount = cart.reduce((count, item) => count + (item.quantity || 1), 0);
 
     const proceedToCheckout = async () => {
         if (cart.length === 0) return;
@@ -160,51 +198,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
         }
 
-        const orderData = {
-            items: cart,
-            total: cartTotal,
-            customer_name: customerName,
-            customer_phone: customerPhone
-        };
-
-        const apiBase = BASE_URL || (import.meta.env.DEV ? "http://localhost:3001/api" : undefined);
+        // Standardize phone number to 254 format for Safaricom
+        let phone = customerPhone.trim();
+        if (phone.startsWith('0')) phone = '254' + phone.slice(1);
+        else if (phone.startsWith('+')) phone = phone.slice(1);
 
         try {
-            if (apiBase) {
-                await fetch(`${apiBase}/orders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
+            showToast("Initiating M-Pesa payment... Please check your phone.");
+            const response = await apiService.initiateStkPush(phone, cartTotal, cart);
+            
+            if (response && response.checkoutId) {
+                const checkoutId = response.checkoutId;
+
+                // Create a pending order linked to this checkout
+                try {
+                    await apiService.createRecord('orders', {
+                        amount: cartTotal,
+                        phone,
+                        checkout_id: checkoutId,
+                        items: cart,
+                        status: 'pending',
+                    });
+                } catch (e) {
+                    console.error("Failed to create pending order:", e);
+                }
+                
+                // Poll for status
+                let attempts = 0;
+                const pollInterval = setInterval(async () => {
+                    attempts++;
+                    try {
+                        const statusRes = await apiService.checkStkStatus(checkoutId);
+                        
+                        if (statusRes.status === 'paid') {
+                            clearInterval(pollInterval);
+                            showToast("Payment successful! Order placed.");
+                            const orderId = statusRes.order_id || statusRes.orderId || checkoutId;
+                            setCart([]);
+                            setIsCartOpen(false);
+                            setCustomerName('');
+                            setCustomerPhone('');
+                            navigate(`/order-confirmation?order_id=${orderId}`);
+                        } else if (statusRes.status === 'failed') {
+                            clearInterval(pollInterval);
+                            showToast(`Payment failed: ${statusRes.result_desc || 'Cancelled'}`);
+                        }
+                    } catch (e) {
+                        console.error("Error polling:", e);
+                    }
+                    
+                    if (attempts > 12) { // 1 minute timeout (5s * 12)
+                        clearInterval(pollInterval);
+                        showToast("Payment timeout. Please check your messages and try again if it failed.");
+                    }
+                }, 5000);
+            } else {
+                showToast("Failed to initiate payment. Please try again.");
             }
-            showToast("Order placed successfully! Redirecting to WhatsApp...");
-        } catch (err) {
-            console.error("Failed to save order to database:", err);
+        } catch (err: any) {
+            console.error("Checkout error:", err);
+            showToast(err?.response?.data?.error || "An error occurred during checkout.");
         }
-
-        const SELLER_NUMBERS = { sacramentals: "254112051739" }; // Simplified for now
-
-        const message = `Order Details:\nName: ${customerName}\nPhone: ${customerPhone}\n\n` + cart.map(c =>
-            `- ${c.item.name} ${c.size ? `(Size: ${c.size})` : ''} ` +
-            `${c.rentalDays ? `[Rental: ${c.rentalDays} days]` : ''} ` +
-            `KES ${c.price * (c.rentalDays || 1)}`
-        ).join('\n') + `\n\nTotal: KES ${cartTotal}`;
-
-        window.open(`https://wa.me/${SELLER_NUMBERS.sacramentals}?text=${encodeURIComponent(message)}`, '_blank');
-
-        setCart([]);
-        setIsCartOpen(false);
-        setCustomerName('');
-        setCustomerPhone('');
     };
 
     return (
         <AppContext.Provider value={{
             products, apiMessages, sliderImages, sectionBanners, isLoading,
             isDarkMode, toggleDarkMode,
-            cart, addToCart, removeFromCart, clearCart, cartTotal,
+            cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartTotal, cartItemsCount,
             isCartOpen, setIsCartOpen,
-            customerName, setCustomerName, customerPhone, setCustomerPhone, proceedToCheckout,
+            customerName, setCustomerName, customerPhone, setCustomerPhone,
+            customerEmail, setCustomerEmail, deliveryAddress, setDeliveryAddress,
+            proceedToCheckout,
             toasts, showToast,
             sacCategory, setSacCategory,
             isAdmin, setIsAdmin
