@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CartItem } from '../data';
+import { X, Trash2, ShoppingBag, ShieldCheck, Plus, Minus } from 'lucide-react';
 
 interface CartDrawerProps {
     isOpen: boolean;
@@ -7,102 +8,197 @@ interface CartDrawerProps {
     cart: CartItem[];
     cartTotal: number;
     removeFromCart: (index: number) => void;
+    updateCartQuantity: (index: number, delta: number) => void;
     customerName: string;
     setCustomerName: (val: string) => void;
     customerPhone: string;
     setCustomerPhone: (val: string) => void;
+    customerEmail: string;
+    setCustomerEmail: (val: string) => void;
+    deliveryAddress: string;
+    setDeliveryAddress: (val: string) => void;
     proceedToCheckout: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
-    isOpen, onClose, cart, cartTotal, removeFromCart,
-    customerName, setCustomerName, customerPhone, setCustomerPhone, proceedToCheckout
+    isOpen, onClose, cart, cartTotal, removeFromCart, updateCartQuantity,
+    customerName, setCustomerName, customerPhone, setCustomerPhone,
+    customerEmail, setCustomerEmail, deliveryAddress, setDeliveryAddress,
+    proceedToCheckout
 }) => {
     if (!isOpen) return null;
 
     return (
-        <>
-            <div className="cart-overlay animate-fade-in" onClick={onClose}
-                style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }} />
-            <div className="cart-drawer animate-slide-in"
-                style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '400px', backgroundColor: 'var(--color-bg)', zIndex: 1001, display: 'flex', flexDirection: 'column', boxShadow: '-5px 0 25px rgba(0,0,0,0.1)' }}>
-                <div className="cart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid var(--color-border)' }}>
-                    <h2 style={{ margin: 0, fontSize: '20px' }}>Your Cart ({cart.length})</h2>
-                    <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--color-text)' }}>&times;</button>
+        <div className="fixed inset-0 z-[1000] flex justify-end">
+            <div
+                className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+                onClick={onClose}
+            />
+
+            <div className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col z-[1001] transition-transform duration-300 animate-in slide-in-from-right">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                    <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                        <ShoppingBag size={20} className="text-blue-600" />
+                        Your Cart ({cart.length})
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
 
-                <div className="cart-items" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+                {/* Items list */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {cart.length === 0 ? (
-                        <div style={{ textAlign: 'center', marginTop: '40px', color: 'var(--color-text-muted)' }}>
-                            <p>Your cart is empty.</p>
-                            <button className="btn-secondary" onClick={onClose} style={{ marginTop: '10px' }}>Continue Shopping</button>
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-4">
+                                <ShoppingBag size={28} />
+                            </div>
+                            <p className="text-slate-500 font-medium">Your cart is empty</p>
+                            <p className="text-xs text-slate-400 mt-1 max-w-[200px]">Browse items and add them to your cart.</p>
+                            <button
+                                className="mt-6 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-200 transition-all"
+                                onClick={onClose}
+                            >
+                                Continue Shopping
+                            </button>
                         </div>
                     ) : (
-                        cart.map((item, index) => (
-                            <div key={index} className="cart-item" style={{ display: 'flex', gap: '15px', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid var(--color-border)' }}>
-                                {item.item.img ? (
-                                    <img src={item.item.img} alt={item.item.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
-                                ) : (
-                                    <div style={{ width: '80px', height: '80px', background: 'var(--color-card)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No img</div>
-                                )}
-                                <div style={{ flex: 1 }}>
-                                    <h4 style={{ margin: '0 0 5px 0', fontSize: '15px' }}>{item.item.name}</h4>
-                                    <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '5px' }}>
-                                        {item.size && <span>Size: {item.size} &bull; </span>}
-                                        {item.rentalDays ? <span>Rental: {item.rentalDays} days</span> : <span>Purchase</span>}
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                                        <span style={{ fontWeight: 600 }}>KES {item.price}</span>
-                                        <button onClick={() => removeFromCart(index)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>Remove</button>
+                        cart.map((item, index) => {
+                            const product = item.item;
+                            const image = product.image_url || product.img || item.img;
+                            return (
+                                <div key={index} className="flex gap-4 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                                    {image ? (
+                                        <img src={image} alt={product.name} className="w-16 h-16 object-cover rounded-xl border border-slate-200/60" />
+                                    ) : (
+                                        <div className="w-16 h-16 bg-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-xs font-semibold">
+                                            No Img
+                                        </div>
+                                    )}
+                                    <div className="flex-1 flex flex-col justify-between py-0.5">
+                                        <div>
+                                            <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{product.name}</h4>
+                                            <div className="flex items-center gap-1.5 mt-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                                {item.size && <><span>Size: {item.size}</span><span>•</span></>}
+                                                <span>{item.rentalDays ? `Rental: ${item.rentalDays} days` : 'Purchase'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => updateCartQuantity(index, -1)}
+                                                    className="p-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+                                                >
+                                                    <Minus size={12} />
+                                                </button>
+                                                <span className="text-sm font-bold text-slate-700 min-w-[20px] text-center">
+                                                    {item.quantity || 1}
+                                                </span>
+                                                <button
+                                                    onClick={() => updateCartQuantity(index, 1)}
+                                                    className="p-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+                                                >
+                                                    <Plus size={12} />
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-black text-blue-600">
+                                                    KES {Number(item.price * (item.quantity || 1)).toLocaleString()}
+                                                </span>
+                                                <button
+                                                    onClick={() => removeFromCart(index)}
+                                                    className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
 
+                {/* Footer and Checkout Form */}
                 {cart.length > 0 && (
-                    <div className="cart-footer" style={{ padding: '20px', background: 'var(--color-card)', borderTop: '1px solid var(--color-border)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '18px', fontWeight: 'bold' }}>
-                            <span>Total:</span>
-                            <span>KES {cartTotal}</span>
+                    <div className="p-6 bg-slate-50 border-t border-slate-100">
+                        <div className="flex justify-between items-center mb-5">
+                            <span className="text-sm font-bold text-slate-500">Total Amount:</span>
+                            <span className="text-xl font-black text-slate-900">KES {cartTotal.toLocaleString()}</span>
                         </div>
 
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 500 }}>Your Name <span style={{ color: 'red' }}>*</span></label>
-                            <input
-                                type="text"
-                                required
-                                className="checkout-input"
-                                placeholder="John Doe"
-                                value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)}
-                            />
-                            <label style={{ display: 'block', marginTop: '10px', marginBottom: '5px', fontSize: '14px', fontWeight: 500 }}>Phone Number <span style={{ color: 'red' }}>*</span></label>
-                            <input
-                                type="tel"
-                                required
-                                className="checkout-input"
-                                placeholder="07XX XXX XXX"
-                                value={customerPhone}
-                                onChange={(e) => setCustomerPhone(e.target.value)}
-                            />
+                        <div className="space-y-3 mb-6">
+                            <div>
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                    Your Name <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-slate-800 placeholder:text-slate-400"
+                                    placeholder="Enter your full name"
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                    Phone Number <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="tel"
+                                    required
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-slate-800 placeholder:text-slate-400"
+                                    placeholder="e.g. 0712345678"
+                                    value={customerPhone}
+                                    onChange={(e) => setCustomerPhone(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-slate-800 placeholder:text-slate-400"
+                                    placeholder="you@example.com"
+                                    value={customerEmail}
+                                    onChange={(e) => setCustomerEmail(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                    Delivery Address
+                                </label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-slate-800 placeholder:text-slate-400"
+                                    placeholder="Town / Area / Landmark"
+                                    value={deliveryAddress}
+                                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                                />
+                            </div>
                         </div>
 
                         <button
-                            className="btn-primary"
-                            style={{ width: '100%', padding: '15px' }}
+                            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-black rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                             onClick={proceedToCheckout}
                             disabled={!customerName.trim() || !customerPhone.trim()}
                         >
-                            Checkout via WhatsApp
+                            <ShieldCheck size={16} />
+                            Pay via M-Pesa (STK Push)
                         </button>
-                        <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '10px' }}>
-                            We will prepare your order and contact you shortly.
+                        <p className="text-center text-[10px] text-slate-400 mt-3">
+                            A secure M-Pesa STK push prompt will be sent to your phone.
                         </p>
                     </div>
                 )}
             </div>
-        </>
+        </div>
     );
 };

@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { CategoryHero, TrustBar, ProcessGuide } from '../components/PageAddons';
 
 export const Tshirts = () => {
     const { products, addToCart } = useApp();
+    const navigate = useNavigate();
     const [searchTshirts, setSearchTshirts] = useState('');
     const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
+    const [selectedColors, setSelectedColors] = useState<Record<string, string>>({});
 
-    const tshirtsProducts = products.filter(
-        p => p.category?.toLowerCase() === 'tshirts'
-    );
+    const tshirtsProducts = products
+        .filter(p => p.category?.toLowerCase() === 'tshirts')
+        .map(p => ({ ...p, img: p.image_url || p.img }));
 
     const visibleTshirts = tshirtsProducts.filter(p =>
         !searchTshirts ||
@@ -113,7 +116,8 @@ export const Tshirts = () => {
                         {visibleTshirts.map(product => (
                             <div
                                 key={product.id}
-                                className="group transform transition duration-300 hover:scale-105"
+                                className="group transform transition duration-300 hover:scale-105 cursor-pointer"
+                                onClick={() => { if (product.id) navigate(`/product/${product.id}`); }}
                             >
                                 <div className="rounded-2xl overflow-hidden group-hover:shadow-xl transition duration-300">
                                     <ProductCard

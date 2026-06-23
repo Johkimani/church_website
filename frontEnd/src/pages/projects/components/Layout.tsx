@@ -15,7 +15,7 @@ const PhoneIcon = () => (
 
 export const Layout = () => {
     const {
-        cart, isCartOpen, setIsCartOpen, removeFromCart,
+        cart, isCartOpen, setIsCartOpen, removeFromCart, updateCartQuantity,
         customerName, setCustomerName, customerPhone, setCustomerPhone,
         cartTotal, proceedToCheckout, toasts, isDarkMode, toggleDarkMode,
         apiMessages
@@ -54,6 +54,7 @@ export const Layout = () => {
                 cart={cart}
                 cartTotal={cartTotal}
                 removeFromCart={removeFromCart}
+                updateCartQuantity={updateCartQuantity}
                 customerName={customerName}
                 setCustomerName={setCustomerName}
                 customerPhone={customerPhone}

@@ -15,9 +15,13 @@ import activitiesAdminRouter from "./activitiesAdminRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import formsDistributionRouter from "./FormsDistributionRouter.js"
-
-
+import ordersRouter from "./orders.router.js";
+import stkPushRouter from "./stkPush.route.js";
 const router = Router()
+import paymentRouter from "./payment.router.js";
+
+router.use("/payments", paymentRouter);
+router.use("/stkPush", stkPushRouter);
 
 
 // Basic table routes
@@ -30,6 +34,7 @@ router.use("/officials", officialsRouter);
 router.use("/jumuiya-officials", jumuiyaOfficialsRouter);
 router.use("/", galleryRouter); // handles /choir/gallery
 router.use("/community-view", communityViewRouter);
+router.use("/orders", ordersRouter);
 
 // ======================================
 // TEMP DEVELOPMENT COMMENT

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { ProductCard } from '../components/ProductCard';
 import { CategoryHero, TrustBar, ProcessGuide } from '../components/PageAddons';
+import { HireModal } from '../components/HireModal';
 
 export const Chairs = () => {
-    const { products, addToCart } = useApp();
+    const { products } = useApp();
     const [searchChairs, setSearchChairs] = useState('');
+    const [hireItem, setHireItem] = useState<{ id: number; name: string; category?: string } | null>(null);
 
     const chairsProducts = products.filter(
         p => p.category?.toLowerCase() === 'chairs'
@@ -19,6 +20,14 @@ export const Chairs = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-100 px-4 py-6">
+
+            {/* Hire Modal */}
+            {hireItem && (
+                <HireModal
+                    item={hireItem}
+                    onClose={() => setHireItem(null)}
+                />
+            )}
 
             {/* Top Search Bar */}
             <div className="max-w-4xl mx-auto mb-6">
@@ -67,12 +76,29 @@ export const Chairs = () => {
                                 key={product.id}
                                 className="transform hover:scale-105 transition duration-300"
                             >
-                                <ProductCard
-                                    product={product}
-                                    categoryType="chairs"
-                                    addToCart={addToCart}
-                                    isRental={true}
-                                />
+                                <div className="bg-white rounded-2xl border border-blue-100 shadow-md p-4 flex flex-col gap-3">
+                                    {product.image_url && (
+                                        <img src={product.image_url} alt={product.name} className="w-full h-40 object-cover rounded-xl" />
+                                    )}
+                                    <h3 className="font-bold text-slate-800">{product.name}</h3>
+                                    {product.description && <p className="text-xs text-slate-500">{product.description}</p>}
+                                    <div className="flex items-center justify-between text-sm">
+                                        {product.price && (
+                                            <span className="font-bold text-blue-700">KES {Number(product.price).toLocaleString()}/day</span>
+                                        )}
+                                        {product.stock != null && (
+                                            <span className={`text-xs font-bold ${Number(product.stock) > 5 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                                {Number(product.stock)} available
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setHireItem({ id: product.id, name: product.name, category: 'chairs' })}
+                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors"
+                                    >
+                                        Request Booking
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -87,8 +113,9 @@ export const Chairs = () => {
 
             {/* Footer Note (Faith touch) */}
             <div className="text-center mt-10 text-sm text-blue-700 italic">
-                “Let all things be done decently and in order.” – 1 Corinthians 14:40
+                "Let all things be done decently and in order." – 1 Corinthians 14:40
             </div>
         </div>
     );
 };
+

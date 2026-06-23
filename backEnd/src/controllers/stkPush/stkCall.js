@@ -1,4 +1,4 @@
-import { initiateSTK } from "./stkController.js";
+import { initiateSTK, handleCallback } from "./stkController.js";
 import { testDb } from "../../Configs/dbConfig.js";
 
 export const stkCalls = async (req, res) => {
@@ -10,7 +10,7 @@ export const stkCalls = async (req, res) => {
     res.json({
       status: "success",
       message: "STK Push initiated successfully",
-      checkoutId
+      checkoutId,
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
@@ -18,14 +18,14 @@ export const stkCalls = async (req, res) => {
 };
 
 export const stkGuestCalls = async (req, res) => {
-  const { amount, phoneNumber } = req.body;
+  const { amount, phone: phoneNumber } = req.body;
 
   try {
     const checkoutId = await initiateSTK(null, phoneNumber, amount);
     res.json({
       status: "success",
       message: "STK Push initiated successfully",
-      checkoutId
+      checkoutId,
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
@@ -45,7 +45,21 @@ export const checkStatus = async (req, res) => {
       return res.status(404).json({ status: "error", message: "Transaction not found" });
     }
 
-    res.json({ status: result.rows[0].status, result_desc: result.rows[0].result_desc });
+    const { status, result_desc } = result.rows[0];
+
+    // If paid, also return the order_id linked to this checkout
+    let orderId = null;
+    if (status === 'paid') {
+      const orderResult = await testDb.query(
+        `SELECT id FROM orders WHERE checkout_id = $1 LIMIT 1`,
+        [checkoutId]
+      );
+      if (orderResult.rows.length > 0) {
+        orderId = orderResult.rows[0].id;
+      }
+    }
+
+    res.json({ status, result_desc, order_id: orderId });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }

@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 export class MpesaService {
-    static consumerKey = 'YOUR_SANDBOX_CONSUMER_KEY'; // Placeholder for sandbox
-    static consumerSecret = 'YOUR_SANDBOX_CONSUMER_SECRET'; // Placeholder for sandbox
-    static shortCode = '174379'; // Common Sandbox Shortcode
-    static passKey = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'; // Common Sandbox Passkey
+    static get consumerKey() { return process.env.CONSUMER_KEY || ''; }
+    static get consumerSecret() { return process.env.CONSUMER_SECRET || ''; }
+    static get shortCode() { return process.env.SHORTCODE || '174379'; }
+    static get passKey() { return process.env.PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'; }
     static baseUrl = 'https://sandbox.safaricom.co.ke';
 
     static async getAccessToken() {
@@ -46,7 +46,9 @@ export class MpesaService {
         };
 
         try {
-            const response = await axios.post(`${this.baseUrl}/mpesa/stkpush/v1/query`, data, {
+            const response = await axios.post(
+  `${this.baseUrl}/mpesa/stkpush/v1/processrequest`,
+  data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return response.data;

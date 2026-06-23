@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { ProductCard } from '../components/ProductCard';
 import { CategoryHero, TrustBar, ProcessGuide } from '../components/PageAddons';
+import { HireModal } from '../components/HireModal';
 
 export const Instruments = () => {
-    const { products, addToCart } = useApp();
+    const { products } = useApp();
     const [searchInstruments, setSearchInstruments] = useState('');
+    const [hireItem, setHireItem] = useState<{ id: number; name: string; category?: string } | null>(null);
 
     const instrumentsProducts = products.filter(
         p => p.category?.toLowerCase() === 'instruments'
@@ -19,6 +20,14 @@ export const Instruments = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-100 px-4 py-6">
+
+            {/* Hire Modal */}
+            {hireItem && (
+                <HireModal
+                    item={hireItem}
+                    onClose={() => setHireItem(null)}
+                />
+            )}
 
             {/* Search Bar */}
             <div className="max-w-4xl mx-auto mb-6">
@@ -50,12 +59,11 @@ export const Instruments = () => {
                     </span>
 
                     <h2 className="text-3xl md:text-4xl font-bold text-blue-800">
-                        Music Instruments
+                        Musical Instruments
                     </h2>
 
                     <p className="mt-2 text-gray-600 max-w-xl mx-auto">
-                        Enhance your worship and events with quality instruments that inspire praise,
-                        harmony, and joyful expression.
+                        High-quality instruments available to elevate your worship and events.
                     </p>
                 </div>
 
@@ -67,12 +75,29 @@ export const Instruments = () => {
                                 key={product.id}
                                 className="transform hover:scale-105 transition duration-300"
                             >
-                                <ProductCard
-                                    product={product}
-                                    categoryType="instruments"
-                                    addToCart={addToCart}
-                                    isRental={true}
-                                />
+                                <div className="bg-white rounded-2xl border border-blue-100 shadow-md p-4 flex flex-col gap-3">
+                                    {product.image_url && (
+                                        <img src={product.image_url} alt={product.name} className="w-full h-40 object-cover rounded-xl" />
+                                    )}
+                                    <h3 className="font-bold text-slate-800">{product.name}</h3>
+                                    {product.desc && <p className="text-xs text-slate-500">{product.desc}</p>}
+                                    <div className="flex items-center justify-between text-sm">
+                                        {product.price && (
+                                            <span className="font-bold text-blue-700">KES {Number(product.price).toLocaleString()}/day</span>
+                                        )}
+                                        {product.stock != null && (
+                                            <span className={`text-xs font-bold ${Number(product.stock) > 5 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                                {Number(product.stock)} available
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setHireItem({ id: product.id, name: product.name, category: 'instruments' })}
+                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors"
+                                    >
+                                        Request Booking
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -87,7 +112,7 @@ export const Instruments = () => {
 
             {/* Faith Footer */}
             <div className="text-center mt-10 text-sm text-blue-700 italic">
-                “Praise Him with the sound of the trumpet.” – Psalm 150:3
+                "Praise Him with sounding cymbals; praise Him with loud clashing cymbals!" – Psalm 150:5
             </div>
         </div>
     );

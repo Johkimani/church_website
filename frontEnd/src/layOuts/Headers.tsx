@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
-import { FaBell } from "react-icons/fa";
+import { useApp } from "../context/AppContext";
+import { FaBell, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 // Assuming AdminPanel is needed, linking to its original location
 import AdminPanel from "../pages/Landing/components/AdminPanel";
@@ -18,10 +19,12 @@ const isAdminRole = (role: string | string[] | undefined): boolean => {
 const Headers = () => {
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const { cart, cartItemsCount, setIsCartOpen } = useApp();
   const navigate = useNavigate();
   const [showAdmin, setShowAdmin] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [animateBadge, setAnimateBadge] = useState(false);
+  const [animateCart, setAnimateCart] = useState(false);
 
   // Trigger animation when unread count increases
   useEffect(() => {
@@ -31,6 +34,15 @@ const Headers = () => {
       return () => clearTimeout(timer);
     }
   }, [unreadCount]);
+
+  // Trigger animation when cart items count changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      setAnimateCart(true);
+      const timer = setTimeout(() => setAnimateCart(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [cart.length]);
 
   const handleLogout = () => {
     logout();
@@ -83,11 +95,26 @@ const Headers = () => {
           <div 
             className="relative cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors"
             onClick={() => navigate("/Notification")}
+            title="Notifications"
           >
             <FaBell className={`text-xl ${unreadCount > 0 ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
             <span className={`absolute -top-1 -right-1 bg-red-500 shadow-red-200 text-white text-[9px] font-black px-1 rounded-full border-[1.5px] border-white shadow-sm flex items-center justify-center min-w-[18px] h-[18px] ${animateBadge ? 'animate-bounce' : ''} transition-colors`}>
               {unreadCount}
             </span>
+          </div>
+
+          {/* Shopping Cart */}
+          <div 
+            className="relative cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors group"
+            onClick={() => setIsCartOpen(true)}
+            title="Shopping Cart"
+          >
+            <FaShoppingCart className={`text-xl ${cart.length > 0 ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+            {cart.length > 0 && (
+              <span className={`absolute -top-1 -right-1 bg-blue-600 shadow-blue-200 text-white text-[9px] font-black px-1 rounded-full border-[1.5px] border-white shadow-sm flex items-center justify-center min-w-[18px] h-[18px] ${animateCart ? 'animate-bounce' : ''} transition-colors`}>
+                {cartItemsCount}
+              </span>
+            )}
           </div>
 
           {user ? (

@@ -1,217 +1,121 @@
-import { testDb, db } from "../../Configs/dbConfig.js";
-import axios from "axios";
+import { db } from "../../Configs/dbConfig.js";
+import logger from "../../logger/winston.js";
 
-export const initiateSTK = async (userId, phoneNumber, amount, description) => {
-  const consumerKey = process.env.CONSUMER_KEY;
-  const consumerSecret = process.env.CONSUMER_SECRET;
-  const shortcode = process.env.SHORTCODE;
-  const passkey = process.env.PASSKEY;
-
-  const formatPhone = (phone) => {
-    if (phone.startsWith("0")) {
-      return "254" + phone.slice(1);
-    }
-    if (phone.startsWith("+254")) {
-      return phone.slice(1);
-    }
-    return phone;
-  };
-
-  phoneNumber = formatPhone(phoneNumber);
-
-  const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
-    "base64",
-  );
-
-  const tokenRes = await axios.get(
-    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-    { headers: { Authorization: `Basic ${credentials}` } },
-  );
-
-  const accessToken = tokenRes.data.access_token;
-
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[^0-9]/g, "")
-    .slice(0, 14);
-
-  const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString(
-    "base64",
-  );
-
-  const stkRes = await axios.post(
-    "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
-    {
-      BusinessShortCode: shortcode,
-      Password: password,
-      Timestamp: timestamp,
-      TransactionType: "CustomerPayBillOnline",
-      Amount: amount,
-      PartyA: phoneNumber,
-      PartyB: shortcode,
-      PhoneNumber: phoneNumber,
-      CallBackURL: process.env.CALLBACK_URL,
-      AccountReference: "ChurchContribution",
-      TransactionDesc: description || "Church Payment",
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  );
-
-  const checkoutId = stkRes.data.CheckoutRequestID;
-
-  // Save as pending
-  await testDb.query(
-    `INSERT INTO mpesa_request (checkout_id, user_id, amount, status)
-     VALUES ($1, $2, $3, 'pending')`,
-    [checkoutId, userId, amount],
-  );
-
-  return checkoutId;
-};
-
-export const callback = async (req, res) => {
-  const client = await db.connect();
+/**
+ * SAFARICOM STK PUSH CALLBACK
+ * 
+ * Real Safaricom payload structure:
+ *   req.body.Body.stkCallback.ResultCode (0 = success)
+ *   req.body.Body.stkCallback.CheckoutRequestID
+ *   req.body.Body.stkCallback.CallbackMetadata.Item (array of {Name, Value})
+ */
+export const handleCallback = async (req, res) => {
+  // Always respond immediately to Safaricom to prevent retries
+  res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
 
   try {
-    await client.query("BEGIN");
+    const stkCallback = req.body?.Body?.stkCallback;
 
-    if (req.method === "POST") {
-      const { Body } = req.body;
-      console.log("Received callback:", Body);
-
-      //  Invalid structure
-      if (!Body || !Body.stkCallback) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          status: "error",
-          message: "Invalid callback data",
-        });
-      }
-
-      const stk = Body.stkCallback;
-      const CheckoutRequestID = stk.CheckoutRequestID;
-      const ResultCode = stk.ResultCode;
-
-      const MerchantRequestID = stk.MerchantRequestID;
-      const ResultDesc = stk.ResultDesc;
-
-      //  Respond FAST (important for Safaricom)
-      res.status(200).json({ success: true });
-
-      //  If payment failed
-      if (ResultCode !== 0) {
-        await client.query(
-          `UPDATE mpesa_request SET status='failed', result_code=$1, result_desc=$2, merchant_request_id=$3 WHERE checkout_id=$4`,
-          [ResultCode, ResultDesc, MerchantRequestID, CheckoutRequestID],
-        );
-
-        await client.query("COMMIT");
-
-        console.log(`❌ Payment failed: ${ResultDesc}`);
-        return;
-      }
-
-      //  Safe metadata extraction
-      const metaData = stk.CallbackMetadata?.Item || [];
-      const getValue = (name) =>
-        metaData.find((item) => item.Name === name)?.Value || null;
-
-      const paymentDetails = {
-        amount: getValue("Amount"),
-        mpesaReceiptNumber: getValue("MpesaReceiptNumber"),
-        transactionDate: getValue("TransactionDate"),
-        phoneNumber: getValue("PhoneNumber"),
-      };
-
-      //  Find matching request
-      const results = await client.query(
-        `SELECT user_id, amount, checkout_id , status FROM mpesa_request WHERE checkout_id = $1`,
-        [CheckoutRequestID],
-      );
-
-      if (!results.rows.length) {
-        await client.query("ROLLBACK");
-        console.log("No matching payment request");
-        return;
-      }
-
-      const { user_id, checkout_id, amount, status } = results.rows[0];
-      if (status === "paid" || status === "failed") {
-        await client.query("ROLLBACK");
-        console.log("⚠️ Already processed");
-        return;
-      }
-      //  Update payment
-      await client.query(
-        `UPDATE mpesa_request SET status='paid', result_code=$1, result_desc=$2, mpesa_receipt=$3, merchant_request_id=$4 WHERE checkout_id=$5`,
-        [ResultCode, ResultDesc, paymentDetails.mpesaReceiptNumber, MerchantRequestID, checkout_id],
-      );
-
-      await client.query("COMMIT");
-
-      return checkout_id;
-    } else if (req.method === "GET") {
-      client.release();
-      res.status(200).json({ message: "MPESA Callback endpoint is live" });
+    if (!stkCallback) {
+      logger.warn("STK callback: missing Body.stkCallback in payload");
       return;
     }
 
-    // Fallback
-    await client.query("ROLLBACK");
-    return res.status(405).json({ message: "Method not allowed" });
-  } catch (error) {
-    console.error(" Error processing callback:", error);
+    const {
+      ResultCode,
+      ResultDesc,
+      CheckoutRequestID,
+      MerchantRequestID
+    } = stkCallback;
 
-    if (client) await client.query("ROLLBACK");
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  } finally {
-    if (client) client.release();
+    logger.info(`STK Callback received: CheckoutID=${CheckoutRequestID}, ResultCode=${ResultCode}`);
+
+    if (ResultCode === 0) {
+      // ✅ Payment succeeded — extract metadata items
+      const items = stkCallback.CallbackMetadata?.Item || [];
+      const getMeta = (name) => items.find(i => i.Name === name)?.Value ?? null;
+
+      const mpesaReceipt = getMeta("MpesaReceiptNumber");
+      const amount       = getMeta("Amount");
+      const phoneNumber  = getMeta("PhoneNumber");
+
+      // 1. Update or insert mpesa_request row
+      await db.query(
+        `INSERT INTO mpesa_request
+          (checkout_id, merchant_request_id, phone, amount, status, result_code, result_desc, mpesa_receipt)
+         VALUES ($1, $2, $3, $4, 'paid', $5, $6, $7)
+         ON CONFLICT (checkout_id) DO UPDATE SET
+           status       = 'paid',
+           result_code  = EXCLUDED.result_code,
+           result_desc  = EXCLUDED.result_desc,
+           mpesa_receipt = EXCLUDED.mpesa_receipt,
+           phone        = COALESCE(EXCLUDED.phone, mpesa_request.phone),
+           amount       = COALESCE(EXCLUDED.amount, mpesa_request.amount),
+           updated_at   = CURRENT_TIMESTAMP`,
+        [CheckoutRequestID, MerchantRequestID, String(phoneNumber), amount, ResultCode, ResultDesc, mpesaReceipt]
+      );
+
+      // 2. Update orders that were waiting on this checkout_id
+      await db.query(
+        `UPDATE orders
+            SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE checkout_id = $2 AND status = 'pending'`,
+        [mpesaReceipt, CheckoutRequestID]
+      );
+
+      logger.info(`✅ Payment recorded: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`);
+
+    } else {
+      // ❌ Payment failed / cancelled
+      await db.query(
+        `INSERT INTO mpesa_request
+          (checkout_id, merchant_request_id, status, result_code, result_desc)
+         VALUES ($1, $2, 'failed', $3, $4)
+         ON CONFLICT (checkout_id) DO UPDATE SET
+           status      = 'failed',
+           result_code = EXCLUDED.result_code,
+           result_desc = EXCLUDED.result_desc,
+           updated_at  = CURRENT_TIMESTAMP`,
+        [CheckoutRequestID, MerchantRequestID, ResultCode, ResultDesc]
+      );
+
+      // Also mark any pending order as failed
+      await db.query(
+        `UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP
+          WHERE checkout_id = $1 AND status = 'pending'`,
+        [CheckoutRequestID]
+      );
+
+      logger.warn(`❌ Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`);
+    }
+
+  } catch (error) {
+    logger.error("STK callback processing error:", { message: error.message, stack: error.stack });
   }
 };
 
-export const waitForPaymentResult = (checkoutId, timeout = 60000) => {
-  console.log(`⏳ Waiting for payment result of ${checkoutId}...`);
+/**
+ * INITIATE STK PUSH
+ * Called by stkCalls / stkGuestCalls in stkCall.js
+ * Returns the CheckoutRequestID for the frontend to poll
+ */
+export const initiateSTK = async (userId, phoneNumber, amount) => {
+  const { MpesaService } = await import("../../services/mpesa.js");
 
-  return new Promise((resolve, reject) => {
-    const interval = 3000;
-    let elapsed = 0;
+  const callbackUrl = process.env.CALLBACK_URL || "https://example.com/api/v1/stkPush/callback";
+  const response = await MpesaService.stkPush(phoneNumber, amount, callbackUrl);
 
-    const timer = setInterval(async () => {
-      try {
-        elapsed += interval;
+  const checkoutId        = response.CheckoutRequestID;
+  const merchantRequestId = response.MerchantRequestID;
 
-        const result = await testDb.query(
-          `SELECT status FROM mpesa_request WHERE checkout_id = $1`,
-          [checkoutId],
-        );
+  // Save a pending record immediately so polling can find it
+  await db.query(
+    `INSERT INTO mpesa_request (user_id, checkout_id, merchant_request_id, phone, amount, status)
+     VALUES ($1, $2, $3, $4, $5, 'pending')
+     ON CONFLICT (checkout_id) DO NOTHING`,
+    [userId ? String(userId) : null, checkoutId, merchantRequestId, phoneNumber, amount]
+  );
 
-        const status = result.rows[0]?.status;
-
-        if (status === "paid") {
-          clearInterval(timer);
-          return resolve({ status: "success" });
-        }
-
-        if (status === "failed") {
-          clearInterval(timer);
-          return resolve({ status: "failed" });
-        }
-
-        if (elapsed >= timeout) {
-          clearInterval(timer);
-          return reject(new Error("Timeout waiting for payment"));
-        }
-      } catch (err) {
-        clearInterval(timer);
-        return reject(err); // THIS prevents unhandled rejection
-      }
-    }, interval);
-  });
-};
+  logger.info(`STK Push initiated: CheckoutID=${checkoutId}, User=${userId}`);
+  return checkoutId;
+};
