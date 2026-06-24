@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar, FaQuoteLeft } from 'react-icons/fa';
 import { POSITION_INFO, DEFAULT_POSITION_INFO, getAvatarForCategory } from './constants/positionInfo';
+import { getSafeImageUrl } from '../../api/config';
 
 import apiService from '../Landing/services/api'
 import { useSocket } from '../../context/SocketContext'
-// Extract only the domain from the versioned API URI for image assets
-const UPLOAD_BASE = (import.meta.env.VITE_SERVER_URI || '').split('/api')[0]
 
 const CATEGORY_COLORS: Record<string, string> = {
     'Executive': 'from-purple-600 to-purple-800',
@@ -192,7 +191,7 @@ const OfficialProfile: React.FC = () => {
                         <div className="relative group shrink-0">
                             <div className="absolute -inset-1 bg-white/30 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
                             <img 
-                                src={official.photo ? (official.photo.startsWith('http') ? official.photo : `${UPLOAD_BASE}${official.photo}`) : getAvatarForCategory(official.category)} 
+                                src={official.photo ? getSafeImageUrl(official.photo) : getAvatarForCategory(official.category)}
                                 alt={official.name}
                                 loading="lazy"
                                 className="relative w-36 h-36 sm:w-52 sm:h-52 rounded-full object-cover border-4 border-white shadow-2xl"
@@ -339,7 +338,7 @@ const OfficialProfile: React.FC = () => {
                                 >
                                     <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200 relative shadow-inner">
                                         <img 
-                                            src={rel.photo ? (rel.photo.startsWith('http') ? rel.photo : `${UPLOAD_BASE}${rel.photo}`) : getAvatarForCategory(rel.category)}
+                                            src={rel.photo ? getSafeImageUrl(rel.photo) : getAvatarForCategory(rel.category)}
                                             alt={rel.name}
                                             loading="lazy"
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"

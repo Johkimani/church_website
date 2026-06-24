@@ -23,6 +23,9 @@ export function uploadMiddleware(req, res, next) {
       ...(req.files?.photo || [])
     ];
 
+    console.log("uploadMiddleware req.files object:", req.files);
+    console.log("uploadMiddleware merged req.files length:", req.files.length);
+
     // Populate req.file for single-file handlers
     if (req.files.length > 0) {
       req.file = req.files[0];

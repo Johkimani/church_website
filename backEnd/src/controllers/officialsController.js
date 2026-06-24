@@ -592,6 +592,9 @@ export const createOfficial = async (req, res) => {
       }
     }
 
+    console.log("createOfficial req.file:", req.file);
+    console.log("createOfficial req.files:", req.files);
+    console.log("createOfficial req.body:", req.body);
     let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
     const termId = currentTermResult.rows.length > 0 ? currentTermResult.rows[0].id : null;
 

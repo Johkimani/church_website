@@ -5,14 +5,14 @@ import { FaPhoneAlt, FaWhatsapp } from 'react-icons/fa'
 import { useSocket } from '../../context/SocketContext'
 
 import apiService from '../../pages/Landing/services/api'
-import { UPLOAD_BASE } from '../../api/config'
+import { getSafeImageUrl } from '../../api/config'
 import { getAvatarForCategory } from './constants/positionInfo'
 import OfficialsCardsBackground from '../../components/OfficialsCardsBackground'
 
 const CATEGORY_ORDER = [
   'Executive','Jumuiya Coordinators','Bible Coordinators','Rosary',
-  'Pamphlet Managers','Project Managers','Liturgist','Instrument Managers',
-  'Choir Officials','Liturgical Dancers','Catechist'
+  'Pamphlet Managers','Project Managers','Instrument Managers',
+  'Choir Officials','Liturgical Dancers','Liturgist','Catechist'
 ]
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -45,13 +45,13 @@ export default function PublicView() {
     if (!socket) {
       // Fallback: poll every 15s for unauthorized/guest viewers
       const interval = setInterval(() => {
-        fetchOfficials()
+        fetchOfficials(true) // bypass cache on poll
       }, 15000)
       return () => clearInterval(interval)
     }
 
     const handleUpdate = () => {
-      fetchOfficials()
+      fetchOfficials(true) // bypass cache so new photos/data show immediately
     }
 
     socket.on('officialsUpdated', handleUpdate)
@@ -60,24 +60,31 @@ export default function PublicView() {
     }
   }, [socket])
 
-  async function fetchOfficials() {
-    const cached = localStorage.getItem('csa_cache_officials');
-    if (cached) {
-      try {
-        setData(JSON.parse(cached));
-        setLoading(false);
-      } catch (e) {
+  async function fetchOfficials(bypassCache = false) {
+    if (!bypassCache) {
+      const cached = localStorage.getItem('csa_cache_officials');
+      if (cached) {
+        try {
+          setData(JSON.parse(cached));
+          setLoading(false);
+        } catch (e) {
+          setLoading(true);
+        }
+      } else {
         setLoading(true);
       }
     } else {
+      // On forced refresh (socket event / poll), clear old cache first
+      localStorage.removeItem('csa_cache_officials');
       setLoading(true);
     }
     setFetchError('')
 
     try {
-      const officials = await apiService.getOfficials();
+      const officials = await apiService.getOfficials(bypassCache);
       setData(officials || [])
     } catch (e) {
+      const cached = localStorage.getItem('csa_cache_officials');
       if (!cached) {
         setFetchError((e as Error).message || 'Failed to load officials')
       }
@@ -112,6 +119,51 @@ export default function PublicView() {
     return map
   }, [data])
 
+  const groupedCategories = React.useMemo(() => {
+    const explicitPairs: Record<string, string> = {
+      'Project Managers': 'Instrument Managers',
+      'Choir Officials': 'Liturgical Dancers',
+      'Liturgist': 'Catechist'
+    };
+    const isPairedRight = Object.values(explicitPairs);
+
+    const rows: any[] = [];
+    let currentSmallRow: string[] = [];
+
+    CATEGORY_ORDER.forEach(cat => {
+      if (explicitPairs[cat]) {
+        if (currentSmallRow.length > 0) {
+          rows.push({ type: 'small-group', categories: currentSmallRow });
+          currentSmallRow = [];
+        }
+        rows.push({ type: 'small-group', categories: [cat, explicitPairs[cat]] });
+      } else if (isPairedRight.includes(cat)) {
+        // Skip, handled by the left side
+      } else {
+        const members = grouped[cat] || [];
+        if (cat === 'Executive' || members.length > 2) {
+          if (currentSmallRow.length > 0) {
+            rows.push({ type: 'small-group', categories: currentSmallRow });
+            currentSmallRow = [];
+          }
+          rows.push({ type: 'large', category: cat });
+        } else if (members.length > 0) {
+          currentSmallRow.push(cat);
+          if (currentSmallRow.length === 2) {
+            rows.push({ type: 'small-group', categories: currentSmallRow });
+            currentSmallRow = [];
+          }
+        }
+      }
+    });
+
+    if (currentSmallRow.length > 0) {
+      rows.push({ type: 'small-group', categories: currentSmallRow });
+    }
+
+    return rows;
+  }, [grouped]);
+
   const EXECUTIVE_TOP_ROW_TITLES = ['chairperson', 'vice chairperson', 'organizing secretary', 'organising secretary', 'treasurer'];
 
   const getExecutiveTopRow = (officials: any[]) => {
@@ -144,7 +196,7 @@ export default function PublicView() {
     >
       <div className="relative h-36 sm:h-44 md:h-52 bg-slate-100 overflow-hidden">
         <img
-          src={off.photo ? `${UPLOAD_BASE}${off.photo}` : getAvatarForCategory(cat)}
+          src={off.photo ? getSafeImageUrl(off.photo) : getAvatarForCategory(cat)}
           alt={off.name}
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -287,26 +339,56 @@ export default function PublicView() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
           </div>
         ) : (
-          CATEGORY_ORDER.map(cat => (
-            <section key={cat} id={`category-${cat.replace(/\s+/g, '-')}`} className="mb-16 scroll-mt-24">
-              {/* Category Header */}
-              <div className="mb-8">
-                <div className="flex items-center justify-center gap-3 mb-6">
-                  <div className={`h-1 w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
-                  <h2 className="text-2xl font-bold text-slate-950">{cat}</h2>
-                  <div className={`h-1 w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
-                </div>
-                <div className="flex justify-center">
-                  <span className={`inline-block px-4 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`}>
-                    {(grouped[cat] || []).length} member{(grouped[cat] || []).length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
+          groupedCategories.map((row, index) => {
+            if (row.type === 'large') {
+              const cat = row.category;
+              return (
+                <section key={cat} id={`category-${cat.replace(/\s+/g, '-')}`} className="mb-16 scroll-mt-24">
+                  {/* Category Header */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                      <div className={`h-1 w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
+                      <h2 className="text-2xl font-bold text-slate-950">{cat}</h2>
+                      <div className={`h-1 w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
+                    </div>
+                    <div className="flex justify-center">
+                      <span className={`inline-block px-4 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`}>
+                        {(grouped[cat] || []).length} member{(grouped[cat] || []).length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Cards */}
-              {renderOfficialsSection(cat, grouped[cat] || [])}
-            </section>
-          ))
+                  {/* Cards */}
+                  {renderOfficialsSection(cat, grouped[cat] || [])}
+                </section>
+              );
+            } else {
+              return (
+                <div key={`small-group-${index}`} className="flex flex-col md:flex-row gap-8 mb-16 items-start justify-center">
+                  {row.categories.map((cat: string) => (
+                    <section key={cat} id={`category-${cat.replace(/\s+/g, '-')}`} className="flex-1 scroll-mt-24 w-full">
+                      {/* Category Header */}
+                      <div className="mb-8">
+                        <div className="flex items-center justify-center gap-3 mb-6">
+                          <div className={`h-1 w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
+                          <h2 className="text-2xl font-bold text-slate-950 text-center">{cat}</h2>
+                          <div className={`h-1 w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
+                        </div>
+                        <div className="flex justify-center">
+                          <span className={`inline-block px-4 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`}>
+                            {(grouped[cat] || []).length} member{(grouped[cat] || []).length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Cards */}
+                      {renderOfficialsSection(cat, grouped[cat] || [])}
+                    </section>
+                  ))}
+                </div>
+              );
+            }
+          })
         )}
 
         {/* View Past Officials */}
