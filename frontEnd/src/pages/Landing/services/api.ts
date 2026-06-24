@@ -186,10 +186,30 @@ class ApiService {
   }
 
   /**
-   * Fetches all officials.
+   * Fetches all officials from the correct /officials/list endpoint.
+   * Always bypasses cache to ensure fresh data (images, updates) are reflected.
    */
-  async getOfficials(): Promise<any[]> {
-    return this.fetchTableData('officials');
+  async getOfficials(bypassCache = false): Promise<any[]> {
+    const CACHE_KEY = 'csa_cache_officials';
+
+    if (!bypassCache) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try { return JSON.parse(cached); } catch { /* ignore */ }
+      }
+    }
+
+    try {
+      const response = await apiClient.get('/officials/list');
+      const data = response.data?.data || response.data || [];
+      if (Array.isArray(data)) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      }
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.warn('Error fetching officials:', error);
+      return [];
+    }
   }
 
   /**
