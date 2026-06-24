@@ -1,318 +1,267 @@
-import { db as pool } from "../../Configs/dbConfig.js";
-import { ChatEventEnum } from "../../constant.js";
-import logger from "../../logger/winston.js";
-import { emitSocketEvent } from "../../socket/index.js";
-import { ApiError } from "../../utils/ApiError.js";
+import { db as pool }            from "../../Configs/dbConfig.js";
+import logger                     from "../../logger/winston.js";
+import { ApiError }               from "../../utils/ApiError.js";
+import {
+  broadcastToAll,
+  broadcastToJumuiya,
+  sendToUser,
+} from "../../sse/sseManager.js";
 
-// /notifications-event/v1/event + payload
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Map a DB row + image URL array into the shape the frontend expects.
+ * Key aliases kept for backward compatibility:
+ *   posted_to  → category ("csa" | "jumuiya")
+ *   title      → text
+ *   is_read    → read
+ *   created_at → createdAt
+ */
+const normalizeNotification = (row, images = []) => ({
+  id:          row.id,
+  title:       row.title,
+  text:        row.title,                              // alias for Event.text
+  message:     row.message,
+  category:    row.posted_to?.toLowerCase() === "csa" ? "csa" : "jumuiya",
+  posted_to:   row.posted_to,
+  posted_by:   row.posted_by ?? null,
+  status:      row.status    ?? "normal",
+  is_read:     row.is_read   ?? false,
+  read:        row.is_read   ?? false,                 // alias for Event.read
+  createdAt:   row.created_at ?? row.posted_at ?? null,
+  created_at:  row.created_at ?? row.posted_at ?? null,
+  updated_at:  row.updated_at ?? null,
+  images:      Array.isArray(images) ? images : [],
+});
+
+/**
+ * Fetch all image URLs linked to a notification (via notification_uploads join table).
+ */
+const getImages = async (notificationId) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.url
+       FROM uploads u
+       JOIN notification_uploads nu ON u.id = nu.upload_id
+       WHERE nu.notification_id = $1`,
+      [notificationId]
+    );
+    return rows.map(r => r.url);
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Route an SSE broadcast to the correct channel based on posted_to value.
+ *   "csa"        → CSA channel  (all connected clients)
+ *   <jumuiya_id> → Jumuiya channel  (only that jumuiya's members)
+ */
+const sseEmit = (postedTo, eventName, payload) => {
+  if (!postedTo || postedTo.toLowerCase() === "csa") {
+    broadcastToAll(eventName, payload);
+  } else {
+    broadcastToJumuiya(postedTo, eventName, payload);
+  }
+};
+
+// ─── Controllers ──────────────────────────────────────────────────────────────
+
+/**
+ * POST /notifications
+ * Admin creates a new notification → saved to DB → broadcast via SSE immediately.
+ */
 export const createNotification = async (req, res) => {
   const { title, message, images, status } = req.body;
   const posted_to = req.body.posted_to || req.body.posted_To;
-
-  //get the logged in user_id , from authentication middleware
   const member_id = req.user?.member_id;
+  const postedBy  = req.user?.firstName
+    ? `${req.user.firstName} ${req.user.lastName ?? ""}`.trim()
+    : "Admin";
 
-  // check for criticals data before anything else , we can abstract it into a utility function , sanitize it , validate imputs , will do this later, if any field misses ,we return direct not after reaching this furthest endpoint function
   if (!title || !message || !posted_to) {
-    logger.warn("⚠️ Missing required fields", { body: req.body });
     throw new ApiError(400, "Title, message, and posted_to are required");
   }
-  //since this  function is doing multiple read and write operation at once then we cosider it as a transaction , of which it should be atomic if one db operation fails the entire fails also
-  await pool.query("BEGIN");
+
+  const client = await pool.connect();
   try {
-    //insert the payload to the notification table for persistency , incase we have late commers we need to show them order of notification received
-    const result = await pool.query(
-      `INSERT INTO notifications (title, message, posted_to, member_id, status)
-   VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [title, message, posted_to, member_id, status || "normal"],
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `INSERT INTO notifications
+         (title, message, posted_to, member_id, status, is_read, posted_by, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, false, $6, NOW(), NOW())
+       RETURNING *`,
+      [title, message, posted_to, member_id, status || "normal", postedBy]
     );
 
-    const notif = result.rows[0];
+    const notif = rows[0];
 
-    //perform bulk insert of images_id and notification_id  from the upload route to link them to notification_uploads ,
-    // this is a result of m:N relationship where 1 Notification can contain 3 images , same to many images can be contained in 1 notification
-    // remeber this image is aleady uploaded on its api url /files/v1/upload/ and we get a responce with the following data
-    //   id: number; // generated by backend
-    //   public_id: string; // unique identifier from cloud storage (e.g. Cloudinary)
-    //   url: string; // direct access URL
-    //   format?: string; // optional: file format (e.g. 'jpg', 'pdf')
-    //   resource_type?: string; // optional: 'image', 'video', 'raw', etc.
-    //   created_at?: string; // optional: ISO timestamp
-    //this data + notification_id is what we are gonig to upload it to the table notification_uploads as mentioned early
-    if (images && images.length > 0) {
-      const publicIds = images.map((img) => img.public_id);
-      const uploadRes = await pool.query(
-        `SELECT id FROM uploads WHERE public_id = ANY($1)`,
-        [publicIds],
-      );
-      const values = uploadRes.rows.map((row) => `('${notif.id}', ${row.id})`);
-      if (values.length > 0) {
-        await pool.query(
-          `INSERT INTO notification_uploads (notification_id, upload_id)
-       VALUES ${values.join(",")}`,
+    // ── Link uploaded images ────────────────────────────────────────────────
+    let imageUrls = [];
+    if (Array.isArray(images) && images.length > 0) {
+      const publicIds = images.map(img => img.public_id).filter(Boolean);
+      if (publicIds.length > 0) {
+        const uploadRes = await client.query(
+          `SELECT id, url FROM uploads WHERE public_id = ANY($1)`,
+          [publicIds]
         );
+        if (uploadRes.rows.length > 0) {
+          const vals = uploadRes.rows
+            .map(row => `('${notif.id}', ${row.id})`)
+            .join(",");
+          await client.query(
+            `INSERT INTO notification_uploads (notification_id, upload_id)
+             VALUES ${vals} ON CONFLICT DO NOTHING`
+          );
+          imageUrls = uploadRes.rows.map(r => r.url);
+        }
       }
     }
 
-    //normalise the payload such that if we add anything else we never breake the socket imteded data for consistency and later if we think to add anything to the table
-    const payload = {
-      id: notif.id,
-      title: notif.title,
-      message: notif.message,
-      posted_by: notif.posted_by,
-      posted_to: notif.posted_to,
-      created_at: notif.created_at,
-    };
+    await client.query("COMMIT");
 
-    //emiit the event to the other members either in the csa room or jumui_<id> room level
-    if (posted_to?.toLowerCase() === "csa") {
-      emitSocketEvent(
-        "CSA_NOTIFICATIONS", //this represent the default room which the user is being joined to on login if authentication succed , we dont want any member , but only authenticated once , thus security, if you tamper with token it will not work
-        ChatEventEnum.NOTIFY_CSA_ON_NEW_NOTIFICATION_EVENT, //this is the event emmited which will be caught by client and display the payload to the user notification page
-        payload,
-      );
-      logger.info("📡 Emitted CSA notification", { notificationId: notif.id });
-    } else {
-      emitSocketEvent(
-        posted_to, //this is only useful when we have an admin who is at both csa and jumui level , so to track which room the user wants to send the notification , by default it falls under csa , but if explicitly declared it will go to jumuiya room of where the user tocken jumui_id directs us
-        ChatEventEnum.NOTIFY_SPECIFIC_JUMUIA_ON_NEW_NOTIFICATION_EVENT,
-        payload,
-      );
-      logger.info("📡 Emitted Jumuia notification", {
-        jumuia: posted_to,
-        notificationId: notif.id,
-      });
-    }
-    //on succes we commit the transactions
-    await pool.query("COMMIT");
-    return res.status(201).json(notif);
+    const payload = normalizeNotification(notif, imageUrls);
+
+    // ── Broadcast via SSE ──────────────────────────────────────────────────
+    sseEmit(posted_to, "notification_new", payload);
+    logger.info(`[Notification] Created id:${notif.id} posted_to:${posted_to}`);
+
+    return res.status(201).json(payload);
 
   } catch (err) {
-    //else if some went through we remove them and go back to the previous knowk checkpoint
-    await pool.query("ROLLBACK");
-    logger.error("❌ Error creating notification", {
-      message: err.message,
-      stack: err.stack,
-      body: req.body,
-    });
+    await client.query("ROLLBACK");
+    logger.error("Error creating notification", { message: err.message });
     return res.status(500).json({ error: "Error creating notification" });
+  } finally {
+    client.release();
   }
 };
 
-// "/notifications/:id"
+/**
+ * PATCH /notifications/:id
+ * Admin edits a notification → update saved → broadcast notification_updated via SSE.
+ */
 export const updateNotification = async (req, res) => {
-  const { id } = req.params;
+  const { id }                    = req.params;
   const { title, message, status } = req.body;
 
-  if (!id) {
-    logger.warn("⚠️ Missing notification ID");
-    return res.status(400).json({ error: "Notification ID is required" });
-  }
+  if (!id) return res.status(400).json({ error: "Notification ID is required" });
 
   try {
-    logger.info("✏️ Updating notification", {
-      notificationId: id,
-      updates: { title, message, status },
-    });
-
-    const result = await pool.query(
-      `UPDATE notifications 
-       SET title=$1, message=$2, status=$3 
-       WHERE id=$4 
+    const { rows } = await pool.query(
+      `UPDATE notifications
+       SET title = $1, message = $2, status = $3, updated_at = NOW()
+       WHERE id = $4
        RETURNING *`,
-      [title, message, status, id],
+      [title, message, status, id]
     );
 
-    if (result.rows.length === 0) {
-      logger.warn("⚠️ Notification not found", { notificationId: id });
-
-      return res.status(404).json({
-        error: "Notification not found",
-      });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Notification not found" });
     }
 
-    const updated = result.rows[0];
+    const updated   = rows[0];
+    const imageUrls = await getImages(id);
+    const payload   = normalizeNotification(updated, imageUrls);
 
-    logger.info("✅ Notification updated", {
-      notificationId: updated.id,
-    });
+    sseEmit(updated.posted_to, "notification_updated", payload);
+    logger.info(`[Notification] Updated id:${id}`);
 
-    // 🔹 5. Prepare payload
-    const payload = {
-      id: updated.id,
-      title: updated.title,
-      message: updated.message,
-      status: updated.status,
-      posted_to: updated.posted_to,
-      updated_at: updated.updated_at,
-    };
+    return res.json(payload);
 
-    // 🔹 6. Emit to correct room (NOT global)
-    if (updated.posted_to?.toLowerCase() === "csa") {
-      emitSocketEvent(
-        "CSA_NOTIFICATIONS",
-        ChatEventEnum.NOTIFICATION_UPDATED_EVENT,
-        payload,
-      );
-
-      logger.info("📡 Emitted CSA notification update", {
-        notificationId: updated.id,
-      });
-    } else {
-      emitSocketEvent(
-        updated.posted_to,
-        ChatEventEnum.NOTIFICATION_UPDATED_EVENT,
-        payload,
-      );
-
-      logger.info("📡 Emitted Jumuia notification update", {
-        jumuia: updated.posted_to,
-        notificationId: updated.id,
-      });
-    }
-    return res.json(updated);
   } catch (err) {
-    logger.error("❌ Error updating notification", {
-      message: err.message,
-      stack: err.stack,
-      notificationId: id,
-      body: req.body,
-    });
-
-    return res.status(500).json({
-      error: "Error updating notification",
-    });
+    logger.error("Error updating notification", { message: err.message });
+    return res.status(500).json({ error: "Error updating notification" });
   }
 };
 
-// "/notifications/:id"
-
+/**
+ * DELETE /notifications/:id
+ * Admin deletes a notification → removed from DB → broadcast notification_deleted via SSE.
+ */
 export const deleteNotification = async (req, res) => {
   const { id } = req.params;
 
-  if (!id) {
-    logger.warn("⚠️ Missing notification ID");
-    return res.status(400).json({
-      error: "Notification ID is required",
-    });
-  }
+  if (!id) return res.status(400).json({ error: "Notification ID is required" });
 
   try {
-    logger.info("🗑️ Deleting notification", {
-      notificationId: id,
-    });
-
-    const existing = await pool.query(
-      "SELECT * FROM notifications WHERE id=$1",
-      [id],
+    const { rows } = await pool.query(
+      "SELECT * FROM notifications WHERE id = $1",
+      [id]
     );
 
-    if (existing.rows.length === 0) {
-      logger.warn("⚠️ Notification not found", {
-        notificationId: id,
-      });
-
-      return res.status(404).json({
-        error: "Notification not found",
-      });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Notification not found" });
     }
 
-    const notification = existing.rows[0];
+    const notification = rows[0];
+    await pool.query("DELETE FROM notifications WHERE id = $1", [id]);
 
-    await pool.query("DELETE FROM notifications WHERE id=$1", [id]);
+    const payload = { id, posted_to: notification.posted_to };
+    sseEmit(notification.posted_to, "notification_deleted", payload);
+    logger.info(`[Notification] Deleted id:${id}`);
 
-    logger.info("✅ Notification deleted", {
-      notificationId: id,
-    });
-
-    const payload = {
-      id: notification.id,
-      posted_to: notification.posted_to,
-    };
-
-    // 🔹 5. Emit to correct room (NOT global)
-    if (notification.posted_to?.toLowerCase() === "csa") {
-      emitSocketEvent(
-        "CSA_NOTIFICATIONS",
-        ChatEventEnum.NOTIFICATION_DELETE_EVENT,
-        payload,
-      );
-
-      logger.info("📡 Emitted CSA notification deletion", {
-        notificationId: id,
-      });
-    } else {
-      emitSocketEvent(
-        notification.posted_to,
-        ChatEventEnum.NOTIFICATION_DELETE_EVENT,
-        payload,
-      );
-
-      logger.info("📡 Emitted Jumuia notification deletion", {
-        jumuia: notification.posted_to,
-        notificationId: id,
-      });
-    }
     return res.sendStatus(204);
-  } catch (err) {
-    logger.error(" Error deleting notification", {
-      message: err.message,
-      stack: err.stack,
-      notificationId: id,
-    });
 
-    return res.status(500).json({
-      error: "Error deleting notification",
-    });
+  } catch (err) {
+    logger.error("Error deleting notification", { message: err.message });
+    return res.status(500).json({ error: "Error deleting notification" });
   }
 };
 
-//function that receives a jumuiyaid , fetches all notification with the jumuia id  and any other notification where posted to is csa and return the notifications 
-
+/**
+ * GET /notifications
+ * Fetch notifications for the logged-in user, enriched with image URLs.
+ * Admins see all notifications; regular members see CSA + their jumuiya.
+ */
 export const getNotification = async (req, res) => {
   const jumuiyaId = req.user?.jumuiya_id;
-  const userRole = req.user?.role;
+  const userRole  = req.user?.role;
 
   if (!jumuiyaId) {
-    logger.warn("Unauthorized notification fetch attempt without valid user session");
     return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
-    const isUserAdmin = Array.isArray(userRole)
-      ? userRole.some(r => r.toLowerCase().includes('admin'))
-      : typeof userRole === 'string' && userRole.toLowerCase().includes('admin');
-
-    let result;
-    if (isUserAdmin) {
-      result = await pool.query(
-        `SELECT * FROM notifications ORDER BY created_at DESC`
+    const isAdmin =
+      (Array.isArray(userRole) ? userRole : [userRole]).some(r =>
+        String(r).toLowerCase().includes("admin")
       );
-    } else {
-      result = await pool.query(
-        `SELECT * FROM notifications 
-         WHERE posted_to=$1 OR posted_to='csa' 
-         ORDER BY created_at DESC`,
-        [jumuiyaId],
-      );
-    }
-    
-    if (result.rows.length === 0) {
-      logger.info("⚠️ No notifications found", {
-        jumuiyaId,
-      });
-    }
 
-    return res.json(result.rows);
+    const baseQuery = `
+      SELECT n.*,
+             COALESCE(
+               json_agg(u.url ORDER BY nu.id) FILTER (WHERE u.url IS NOT NULL),
+               '[]'
+             ) AS images
+      FROM notifications n
+      LEFT JOIN notification_uploads nu ON nu.notification_id = n.id
+      LEFT JOIN uploads u               ON u.id = nu.upload_id
+    `;
+
+    const { rows } = isAdmin
+      ? await pool.query(
+          `${baseQuery}
+           GROUP BY n.id
+           ORDER BY COALESCE(n.created_at, n.posted_at) DESC`
+        )
+      : await pool.query(
+          `${baseQuery}
+           WHERE n.posted_to = 'csa' OR n.posted_to = $1
+           GROUP BY n.id
+           ORDER BY COALESCE(n.created_at, n.posted_at) DESC`,
+          [String(jumuiyaId)]
+        );
+
+    const notifications = rows.map(row =>
+      normalizeNotification(row, Array.isArray(row.images) ? row.images : [])
+    );
+
+    return res.json(notifications);
+
   } catch (err) {
-    logger.error("❌ Error fetching notifications", {
-      message: err.message,
-      stack: err.stack,
-      jumuiyaId,
-    });
-
-    return res.status(500).json({
-      error: "Error fetching notifications",
-    });
+    logger.error("Error fetching notifications", { message: err.message });
+    return res.status(500).json({ error: "Error fetching notifications" });
   }
 };
