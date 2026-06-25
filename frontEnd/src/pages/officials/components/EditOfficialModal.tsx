@@ -98,7 +98,7 @@ export function EditOfficialModal({
  }
  }
 
- await onUpdate(official.id, fd);
+ onUpdate(official.id, fd);
  onClose();
  };
 

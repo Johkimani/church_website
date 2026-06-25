@@ -1,7 +1,12 @@
-import { Pool } from "pg";
+import pg from "pg";
+const { Pool, types } = pg;
 import dotenv from "dotenv";
 import logger from "../logger/winston.js";
 import mongoose from "mongoose";
+
+// Parse timestamp without timezone (OID 1114) as UTC
+types.setTypeParser(1114, (str) => new Date(str + "Z"));
+
 
 // Ensure we load the backend env file (church_website/backEnd/.env)
 // rather than whatever the process CWD happens to be.

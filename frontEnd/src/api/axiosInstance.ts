@@ -148,6 +148,18 @@ export const createNotificationEventApi = (payload: {
   status?: string;
 }) => apiClient.post("/notifications", payload);
 
+export const updateNotificationEventApi = (
+  id: string | number,
+  payload: {
+    title?: string;
+    message?: string;
+    images?: fileUpload[];
+    posted_To?: string;
+    status?: string;
+  }
+) => apiClient.patch(`/notifications/${id}`, payload);
+
+
 export const uploadFile = (files: File[] | File) => {
   const formData = new FormData();
   normalizeFiles(files).forEach((file) => formData.append("files", file));

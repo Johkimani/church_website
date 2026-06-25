@@ -1,22 +1,32 @@
 import { useState } from "react";
-import { FiUpload, FiX, FiSend } from "react-icons/fi";
+import { FiUpload, FiX, FiSend, FiEdit2 } from "react-icons/fi";
 import type { fileUpload, NotificationModalProps } from "../../../interface/api";
 import { uploadFile } from "../../../api/axiosInstance";
 import { useAuth } from "../../../context/AuthContext";
 
-const NotificationModal: React.FC<NotificationModalProps> = ({ createNotification, onClose, roles }) => {
+const NotificationModal: React.FC<NotificationModalProps> = ({
+  createNotification,
+  onClose,
+  roles,
+  initialData,
+  lockedTo,
+}) => {
   const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
+  const isEditMode = !!initialData;
+
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [message, setMessage] = useState(initialData?.message ?? "");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const [status, setStatus] = useState<"normal" | "urgent">("normal");
+  const [status, setStatus] = useState<"normal" | "urgent">(
+    (initialData?.status as "normal" | "urgent") ?? "normal"
+  );
   const [hasInteractedPriority, setHasInteractedPriority] = useState(false);
 
-  const [postedTo, setPostedTo] = useState(
-    roles.includes("CSA_LEADER") ? "csa" : "jumuia"
-  );
+  // Destination: locked externally, or derive default from roles
+  const defaultDestination = lockedTo ?? (roles.includes("CSA_LEADER") ? "csa" : "jumuia");
+  const [postedTo, setPostedTo] = useState(defaultDestination);
 
   const isFormIncomplete = [title, message].some((field) => !field.trim());
 
@@ -48,7 +58,14 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ createNotificatio
         message,
         images: uploadedImages,
         status,
-        posted_to: postedTo === "jumuia" ? String(user?.jumuiya_id) : "csa",
+        posted_to: lockedTo
+          ? lockedTo === "jumuiya"
+            ? String(user?.jumuiya_id)
+            : "csa"
+          : postedTo === "jumuia"
+          ? String(user?.jumuiya_id)
+          : "csa",
+        ...(isEditMode ? { _editId: initialData.id } as any : {}),
       });
       onClose();
     } catch (error) {
@@ -62,6 +79,14 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ createNotificatio
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 overflow-y-auto scrollbar-hide p-4">
       <div className="relative bg-white w-full max-w-4xl h-auto rounded-3xl border-none animate-in scale-in duration-500 select-none shadow-2xl">
         
+        {/* Header badge for edit mode */}
+        {isEditMode && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 bg-amber-500 text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg shadow-amber-500/30">
+            <FiEdit2 className="text-xs" />
+            Editing Notification
+          </div>
+        )}
+
         {/* Simple Close */}
         <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-50">
           <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all shadow-sm">
@@ -75,26 +100,42 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ createNotificatio
             <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
               {/* LEFT COLUMN: Specify & Title */}
               <div className="flex-1 space-y-6">
-                  {/* Destination Segment */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Choose where to send the message</label>
-                    <div className="flex p-1 bg-gray-50 rounded-2xl border border-gray-100">
-                      <button 
-                        type="button" 
-                        onClick={() => setPostedTo('csa')} 
-                        className={`flex-1 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${postedTo === 'csa' ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'text-gray-400 hover:text-gray-600'}`}
-                      >
-                        CSA
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => setPostedTo('jumuia')} 
-                        className={`flex-1 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${postedTo === 'jumuia' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' : 'text-gray-400 hover:text-gray-600'}`}
-                      >
-                        Jumuia
-                      </button>
+                  {/* Destination Segment — hidden when lockedTo is set */}
+                  {!lockedTo && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Choose where to send the message</label>
+                      <div className="flex p-1 bg-gray-50 rounded-2xl border border-gray-100">
+                        <button 
+                          type="button" 
+                          onClick={() => setPostedTo('csa')} 
+                          className={`flex-1 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${postedTo === 'csa' ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          CSA
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setPostedTo('jumuia')} 
+                          className={`flex-1 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${postedTo === 'jumuia' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          Jumuiya
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Locked destination indicator */}
+                  {lockedTo && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Destination</label>
+                      <div className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 ${lockedTo === 'csa' ? 'border-blue-100 bg-blue-50 text-blue-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
+                        <div className={`w-2 h-2 rounded-full ${lockedTo === 'csa' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+                        <span className="text-[11px] font-black uppercase tracking-widest">
+                          {lockedTo === 'csa' ? 'CSA — All Members' : 'Jumuiya — Your Group'}
+                        </span>
+                        <span className="ml-auto text-[9px] font-black uppercase tracking-widest opacity-60">locked</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Priority Segment */}
                   <div className="space-y-2">
@@ -151,40 +192,43 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ createNotificatio
                     />
                   </div>
 
-                  {/* Media Assets */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Attachments ({previews.length}/3)</label>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:flex gap-2">
-                        <label className={`aspect-square w-full sm:w-16 rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-1 text-gray-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all ${previews.length >= 3 ? 'hidden' : ''}`}>
-                          <FiUpload className="text-lg" />
-                          <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
-                        </label>
+                  {/* Media Assets — hidden in edit mode to keep it simple */}
+                  {!isEditMode && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Attachments ({previews.length}/3)</label>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:flex gap-2">
+                          <label className={`aspect-square w-full sm:w-16 rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-1 text-gray-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all ${previews.length >= 3 ? 'hidden' : ''}`}>
+                            <FiUpload className="text-lg" />
+                            <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
+                          </label>
 
-                        {previews.map((src, index) => (
-                          <div key={index} className="relative aspect-square w-full sm:w-16 rounded-2xl overflow-hidden group shadow-sm border border-gray-50">
-                              <img src={src} alt="p" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
-                              <button
-                                type="button"
-                                onClick={() => handleRemovePreview(index)}
-                                className="absolute inset-0 bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <FiX className="text-lg" />
-                              </button>
-                          </div>
-                        ))}
+                          {previews.map((src, index) => (
+                            <div key={index} className="relative aspect-square w-full sm:w-16 rounded-2xl overflow-hidden group shadow-sm border border-gray-50">
+                                <img src={src} alt="p" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePreview(index)}
+                                  className="absolute inset-0 bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <FiX className="text-lg" />
+                                </button>
+                            </div>
+                          ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
               </div>
             </div>
 
-            {/* 4. Final Action */}
+            {/* Final Action */}
             <div className="pt-2 border-t border-gray-50">
               <button
                  type="submit"
                  disabled={isFormIncomplete || isSending}
-                 className={`w-full py-4 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-[0.4em] transition-all ${isFormIncomplete || isSending ? 'bg-gray-100 text-gray-400' : 'bg-black text-white hover:bg-gray-900 active:scale-[0.98] shadow-lg shadow-gray-100'}`}
+                 className={`w-full py-4 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-[0.4em] transition-all ${isFormIncomplete || isSending ? 'bg-gray-100 text-gray-400' : isEditMode ? 'bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.98] shadow-lg shadow-amber-100' : 'bg-black text-white hover:bg-gray-900 active:scale-[0.98] shadow-lg shadow-gray-100'}`}
               >
-                 {isSending ? "Syncing..." : "Send Notification"} { !isSending && <FiSend className="text-xl" /> }
+                 {isSending ? "Saving..." : isEditMode ? "Save Changes" : "Send Notification"}
+                 {!isSending && <FiSend className="text-xl" />}
               </button>
             </div>
           </form>

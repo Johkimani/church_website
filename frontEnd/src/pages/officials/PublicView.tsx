@@ -60,9 +60,14 @@ export default function PublicView() {
     }
   }, [socket])
 
-  async function fetchOfficials(bypassCache = false) {
-    if (!bypassCache) {
-      const cached = localStorage.getItem('csa_cache_officials');
+  async function fetchOfficials(bypassCache: any = false) {
+    const isEvent = bypassCache && typeof bypassCache === 'object' && 'preventDefault' in bypassCache;
+    const actualBypass = isEvent ? true : !!bypassCache;
+
+    const cached = localStorage.getItem('csa_cache_officials');
+    
+    // Only show loading spinner on initial load (no cache) or on retry/forced user actions where cache is missing
+    if (!actualBypass || !cached) {
       if (cached) {
         try {
           setData(JSON.parse(cached));
@@ -73,22 +78,20 @@ export default function PublicView() {
       } else {
         setLoading(true);
       }
-    } else {
-      // On forced refresh (socket event / poll), clear old cache first
-      localStorage.removeItem('csa_cache_officials');
-      setLoading(true);
     }
     setFetchError('')
 
     try {
-      const officials = await apiService.getOfficials(bypassCache);
+      const shouldBypass = actualBypass || !!cached;
+      const officials = await apiService.getOfficials(shouldBypass);
       setData(officials || [])
     } catch (e) {
-      const cached = localStorage.getItem('csa_cache_officials');
       if (!cached) {
         setFetchError((e as Error).message || 'Failed to load officials')
       }
-    } finally { setLoading(false) }
+    } finally { 
+      setLoading(false) 
+    }
   }
 
   const getPositionRank = (pos: string) => {

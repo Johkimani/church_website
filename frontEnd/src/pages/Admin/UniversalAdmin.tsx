@@ -19,6 +19,7 @@ import NotificationDropdown, { type Notification } from './components/Notificati
 import apiService from '../Landing/services/api';
 import { useEffect, useState } from 'react';
 import { timeAgo } from '../../utils';
+import { ArtDeco404 } from './components/ArtDeco404';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -125,7 +126,51 @@ export default function UniversalAdmin() {
     setIsNotificationsOpen(false);
   };
 
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
+
+  // ── Role Access Controls ──────────────────────────────────────────────────
+  const userRoles = Array.isArray(user?.role)
+    ? user.role
+    : user?.role
+    ? [user.role]
+    : [];
+  const normalized = userRoles.map((r) => String(r).toUpperCase().trim());
+  const isSuperAdmin = normalized.some(
+    (r) => r.includes("ADMIN") || r.includes("SUPREME")
+  );
+
+  const checkAccess = (path: string): boolean => {
+    if (isSuperAdmin) return true;
+    if (path === "/admin" || path === "/admin/") return true;
+
+    if (path.startsWith("/admin/announcements")) {
+      return normalized.some(
+        (r) =>
+          r.includes("CSA_LEADER") ||
+          r.includes("CSA_OS") ||
+          r.includes("JUMUIYA_LEADER") ||
+          r.includes("JUMUIYA_OS")
+      );
+    }
+    if (path.startsWith("/admin/officials")) {
+      return normalized.includes("OFFICIALS MANAGEMENT");
+    }
+    if (path.startsWith("/admin/community-management")) {
+      return normalized.includes("COMMUNITY MANAGEMENT");
+    }
+    if (path.startsWith("/admin/devotions")) {
+      return normalized.includes("DEVOTIONS AND AI");
+    }
+    if (path.startsWith("/admin/gallery") || path.startsWith("/admin/sacramentals-banners")) {
+      return normalized.includes("GALLERY MANAGER ASSISTANT");
+    }
+
+    // Default: other admin views require admin/super admin
+    return false;
+  };
+
+  const hasAccess = checkAccess(location.pathname);
+  const allowedMenuItems = menuItems.filter((item) => checkAccess(item.path));
 
   const handleLogout = () => {
     logout();
@@ -154,7 +199,7 @@ export default function UniversalAdmin() {
 
         {/* Navigation Links */}
         <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar">
-          {menuItems.map((item) => {
+          {allowedMenuItems.map((item) => {
             const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin');
             return (
               <Link
@@ -241,7 +286,7 @@ export default function UniversalAdmin() {
         <main className="flex-1 overflow-y-auto bg-slate-100">
           <div className="p-8 max-w-full">
             <div className="admin-panel-card min-h-[calc(100vh-9rem)]">
-              <Outlet />
+              {hasAccess ? <Outlet /> : <ArtDeco404 />}
             </div>
           </div>
         </main>
