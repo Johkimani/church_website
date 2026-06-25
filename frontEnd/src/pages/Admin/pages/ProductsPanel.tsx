@@ -1,32 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCachedData } from "../../../hooks/useCachedData";
-import apiService from "../../../pages/Landing/services/api";
+import { apiClient } from "../../../api/axiosInstance";
 import { getSafeImageUrl } from "../../../api/config";
 import { uploadFile } from "../../../api/axiosInstance";
 
-type Project = {
+type Product = {
   id?: string | number;
-  title: string;
+  name: string;
   description?: string;
   category?: string;
-  status?: string;
-  budget?: number | string;
+  price?: number | string;
+  stock?: number;
   image_url?: string;
+  is_hireable?: boolean;
   created_at?: string;
 };
 
-type ProjectForm = Omit<Project, 'id' | 'created_at'> & {
+type ProductForm = Omit<Product, 'id' | 'created_at'> & {
   imageFile?: File | null;
   imagePreview?: string;
 };
 
-const defaultForm: ProjectForm = {
-  title: '',
+const defaultForm: ProductForm = {
+  name: '',
   description: '',
   category: 'sacramentals',
-  status: 'pending',
-  budget: '0',
+  price: 0,
+  stock: 50,
   image_url: '',
+  is_hireable: false,
   imageFile: null,
   imagePreview: '',
 };
@@ -34,51 +36,55 @@ const defaultForm: ProjectForm = {
 const ProductsPanel = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const { data: projects = [], loading, refetch: loadProjects, setData: setProjects } = useCachedData<Project[]>(
-    'csa_cache_projects_manager',
+  const { data: products = [], loading, refetch: loadProducts, setData: setProducts } = useCachedData<Product[]>(
+    'csa_cache_products_manager',
     async () => {
-      const data = await apiService.getProjects();
-      return Array.isArray(data) ? data : [];
+      try {
+        const response = await apiClient.get('/products');
+        const data = response.data;
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
     },
     []
   );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentProjectId, setCurrentProjectId] = useState<string | number | null>(null);
-  const [form, setForm] = useState<ProjectForm>(defaultForm);
+  const [currentProductId, setCurrentProductId] = useState<string | number | null>(null);
+  const [form, setForm] = useState<ProductForm>(defaultForm);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const categories = ['all', 'sacramentals', 'tshirts', 'chairs', 'instruments'];
-  const statusOptions = ['pending', 'active', 'completed', 'cancelled'];
+  const productCategories = ['sacramentals', 'tshirts', 'chairs', 'instruments'];
 
-  const filteredProjects = useMemo(() => {
-    if (selectedCategory === 'all') return projects;
-    return projects.filter(
-      (project) => project.category?.toLowerCase() === selectedCategory
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === 'all') return products;
+    return products.filter(
+      (p) => p.category?.toLowerCase() === selectedCategory
     );
-  }, [projects, selectedCategory]);
+  }, [products, selectedCategory]);
 
-
-
-  const openProjectForm = (project?: Project) => {
-    if (project) {
+  const openProductForm = (product?: Product) => {
+    if (product) {
       setIsEditing(true);
-      setCurrentProjectId(project.id ?? null);
+      setCurrentProductId(product.id ?? null);
       setForm({
-        title: project.title ?? '',
-        description: project.description ?? '',
-        category: project.category ?? 'sacramentals',
-        status: project.status ?? 'pending',
-        budget: project.budget?.toString() ?? '0',
-        image_url: project.image_url ?? '',
+        name: product.name ?? '',
+        description: product.description ?? '',
+        category: product.category ?? 'sacramentals',
+        price: product.price ?? 0,
+        stock: product.stock ?? 50,
+        image_url: product.image_url ?? '',
+        is_hireable: product.is_hireable ?? false,
         imageFile: null,
-        imagePreview: project.image_url ?? '',
+        imagePreview: product.image_url ?? '',
       });
     } else {
       setIsEditing(false);
-      setCurrentProjectId(null);
+      setCurrentProductId(null);
       setForm(defaultForm);
     }
     setErrorMessage('');
@@ -89,11 +95,11 @@ const ProductsPanel = () => {
     setIsModalOpen(false);
     setErrorMessage('');
     setForm(defaultForm);
-    setCurrentProjectId(null);
+    setCurrentProductId(null);
     setIsEditing(false);
   };
 
-  const handleFormChange = (field: keyof ProjectForm, value: string) => {
+  const handleFormChange = (field: keyof ProductForm, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -102,18 +108,13 @@ const ProductsPanel = () => {
       setForm((prev) => ({ ...prev, imageFile: null, imagePreview: '' }));
       return;
     }
-
     const previewUrl = URL.createObjectURL(file);
-    setForm((prev) => ({
-      ...prev,
-      imageFile: file,
-      imagePreview: previewUrl,
-    }));
+    setForm((prev) => ({ ...prev, imageFile: file, imagePreview: previewUrl }));
   };
 
-  const handleSaveProject = async () => {
-    if (!form.title.trim()) {
-      setErrorMessage('Project title is required.');
+  const handleSaveProduct = async () => {
+    if (!form.name.trim()) {
+      setErrorMessage('Product name is required.');
       return;
     }
 
@@ -123,49 +124,57 @@ const ProductsPanel = () => {
     try {
       let imageUrl = form.image_url || '';
 
+      // Try uploading image, but don't block product creation if it fails
       if (form.imageFile) {
-        const uploadResponse = await uploadFile(form.imageFile);
-        const uploadedResult = uploadResponse.data?.data || uploadResponse.data;
-        imageUrl = uploadedResult?.secure_url || uploadedResult?.url || uploadedResult?.path || uploadedResult?.image_url || imageUrl;
+        try {
+          const uploadResponse = await uploadFile(form.imageFile);
+          const uploadedResult = uploadResponse.data?.data || uploadResponse.data;
+          imageUrl = uploadedResult?.secure_url || uploadedResult?.url || uploadedResult?.path || uploadedResult?.image_url || imageUrl;
+        } catch (uploadErr) {
+          console.warn('Image upload failed, saving product without image:', uploadErr);
+          // Continue without image — don't block product creation
+        }
       }
 
       const payload = {
-        title: form.title.trim(),
+        name: form.name.trim(),
         description: form.description?.trim() || '',
         category: form.category?.toLowerCase() || 'sacramentals',
-        status: form.status?.toLowerCase() || 'pending',
-        budget: Number(form.budget) || 0,
+        price: Number(form.price) || 0,
+        stock: Number(form.stock) || 0,
         image_url: imageUrl,
+        is_hireable: form.is_hireable ?? false,
       };
 
-      if (isEditing && currentProjectId !== null) {
-        const updated = await apiService.updateRecord('projects', currentProjectId, payload);
-        setProjects((prev) => prev.map((item) => (item.id === currentProjectId ? updated : item)));
+      if (isEditing && currentProductId !== null) {
+        const response = await apiClient.patch(`/products/${currentProductId}`, payload);
+        const updated = response.data;
+        setProducts((prev) => prev.map((item) => (item.id === currentProductId ? updated : item)));
       } else {
-        const created = await apiService.createRecord('projects', payload);
-        setProjects((prev) => [created, ...prev]);
+        const response = await apiClient.post('/products', payload);
+        const created = response.data;
+        setProducts((prev) => [created, ...prev]);
       }
 
-      apiService.clearCache('projects');
+      localStorage.removeItem('csa_cache_products');
       closeModal();
     } catch (err) {
-      console.error('Failed to save project', err);
-      setErrorMessage((err as any)?.message || 'Unable to save project at this time.');
+      console.error('Failed to save product', err);
+      setErrorMessage((err as any)?.response?.data?.error || (err as any)?.message || 'Unable to save product at this time.');
     } finally {
       setSaving(false);
     }
   };
 
-  const deleteProject = async (id: string | number) => {
-    if (!window.confirm('Delete this project?')) return;
-
+  const deleteProduct = async (id: string | number) => {
+    if (!window.confirm('Delete this product?')) return;
     try {
-      await apiService.deleteRecord('projects', id);
-      apiService.clearCache('projects');
-      setProjects((prev) => prev.filter((project) => project.id !== id));
+      await apiClient.delete(`/products/${id}`);
+      localStorage.removeItem('csa_cache_products');
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      console.error('Failed to delete project', err);
-      setErrorMessage('Could not delete the project.');
+      console.error('Failed to delete product', err);
+      setErrorMessage('Could not delete the product.');
     }
   };
 
@@ -174,14 +183,11 @@ const ProductsPanel = () => {
       <div className="admin-card-section">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="admin-panel-title">Project Management</h1>
-            <p className="admin-panel-subtitle mt-1">Create, edit, and remove sacramentals, tshirts, chairs, and instruments projects.</p>
+            <h1 className="admin-panel-title">Product Management</h1>
+            <p className="admin-panel-subtitle mt-1">Create, edit, and remove sacramentals, t-shirts, chairs, and instruments.</p>
           </div>
-          <button
-            onClick={() => openProjectForm()}
-            className="admin-btn-primary"
-          >
-            Add New Project
+          <button onClick={() => openProductForm()} className="admin-btn-primary">
+            Add New Product
           </button>
         </div>
       </div>
@@ -200,53 +206,58 @@ const ProductsPanel = () => {
       </div>
 
       {loading ? (
-        <div className="admin-card-section text-center text-slate-500">Loading projects...</div>
+        <div className="admin-card-section text-center text-slate-500">Loading products...</div>
       ) : (
         <div className="space-y-4">
-          {filteredProjects.length === 0 ? (
+          {filteredProducts.length === 0 ? (
             <div className="admin-card-section text-center text-slate-500">
-              No projects found for the selected category.
+              No products found for the selected category.
             </div>
           ) : (
-            filteredProjects.map((project) => (
-              <div key={project.id} className="admin-panel-card">
+            filteredProducts.map((product) => (
+              <div key={product.id} className="admin-panel-card">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3">
+                  <div className="space-y-3 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-xl font-semibold text-slate-900">{project.title}</h2>
+                      <h2 className="text-xl font-semibold text-slate-900">{product.name}</h2>
                       <span className="rounded-full bg-blue-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-blue-700">
-                        {project.category ? project.category.toString() : 'General'}
+                        {product.category || 'General'}
                       </span>
+                      {product.is_hireable && (
+                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-700">
+                          Hireable
+                        </span>
+                      )}
                     </div>
-                    <p className="text-slate-600">{project.description || 'No description available.'}</p>
-                    <div className="grid gap-2 sm:grid-cols-2 text-sm text-slate-700">
+                    <p className="text-slate-600">{product.description || 'No description available.'}</p>
+                    <div className="grid gap-2 sm:grid-cols-3 text-sm text-slate-700">
                       <div>
-                        <span className="font-semibold">Status:</span> {project.status || 'N/A'}
+                        <span className="font-semibold">Price:</span> KES {Number(product.price || 0).toLocaleString()}
                       </div>
                       <div>
-                        <span className="font-semibold">Budget:</span> KES {project.budget ?? '0'}
+                        <span className="font-semibold">Stock:</span> {product.stock ?? 'N/A'}
+                      </div>
+                      <div>
+                        <span className="font-semibold">ID:</span> {product.id}
                       </div>
                     </div>
                   </div>
 
-                  {project.image_url && (
+                  {product.image_url && (
                     <img
-                      src={getSafeImageUrl(project.image_url)}
-                      alt={project.title}
-                      className="h-28 w-28 rounded-[28px] object-cover border border-slate-200 shadow-sm"
+                      src={getSafeImageUrl(product.image_url)}
+                      alt={product.name}
+                      className="h-28 w-28 rounded-[28px] object-cover border border-slate-200 shadow-sm flex-shrink-0"
                     />
                   )}
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => openProjectForm(project)}
-                    className="admin-btn-primary"
-                  >
+                  <button onClick={() => openProductForm(product)} className="admin-btn-primary">
                     Edit
                   </button>
                   <button
-                    onClick={() => deleteProject(project.id as string | number)}
+                    onClick={() => deleteProduct(product.id as string | number)}
                     className="admin-btn-outline bg-rose-600 border-rose-600 text-white hover:bg-rose-700 hover:border-rose-700"
                   >
                     Delete
@@ -263,8 +274,8 @@ const ProductsPanel = () => {
           <div className="w-full max-w-2xl overflow-hidden rounded-[32px] bg-white p-6 shadow-[0_25px_60px_rgba(15,23,42,0.2)]">
             <div className="flex flex-col gap-4 pb-4 border-b border-slate-200 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">{isEditing ? 'Edit Project' : 'New Project'}</h2>
-                <p className="text-sm text-slate-500">Save project details and optionally upload a preview image.</p>
+                <h2 className="text-2xl font-bold text-slate-900">{isEditing ? 'Edit Product' : 'New Product'}</h2>
+                <p className="text-sm text-slate-500">Save product details and optionally upload a preview image.</p>
               </div>
               <button onClick={closeModal} className="inline-flex items-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
                 Close
@@ -273,12 +284,12 @@ const ProductsPanel = () => {
 
             <div className="grid gap-4 py-6 sm:grid-cols-2">
               <label className="space-y-2 text-sm text-slate-700">
-                Title
+                Product Name
                 <input
-                  value={form.title}
-                  onChange={(e) => handleFormChange('title', e.target.value)}
+                  value={form.name}
+                  onChange={(e) => handleFormChange('name', e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                  placeholder="Project title"
+                  placeholder="e.g. Handcrafted Wood Rosary"
                 />
               </label>
 
@@ -289,10 +300,32 @@ const ProductsPanel = () => {
                   onChange={(e) => handleFormChange('category', e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                 >
-                  {categories.filter((item) => item !== 'all').map((category) => (
-                    <option key={category} value={category}>{category.charAt(0).toUpperCase() + category.slice(1)}</option>
+                  {productCategories.map((cat) => (
+                    <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
                   ))}
                 </select>
+              </label>
+
+              <label className="space-y-2 text-sm text-slate-700">
+                Price (KES)
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => handleFormChange('price', e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  placeholder="0"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-slate-700">
+                Stock Quantity
+                <input
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => handleFormChange('stock', e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  placeholder="50"
+                />
               </label>
 
               <label className="space-y-2 text-sm text-slate-700 sm:col-span-2">
@@ -302,32 +335,18 @@ const ProductsPanel = () => {
                   onChange={(e) => handleFormChange('description', e.target.value)}
                   rows={4}
                   className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                  placeholder="Add a short project summary"
+                  placeholder="Add a short product description"
                 />
               </label>
 
-              <label className="space-y-2 text-sm text-slate-700">
-                Status
-                <select
-                  value={form.status}
-                  onChange={(e) => handleFormChange('status', e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                >
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2 text-sm text-slate-700">
-                Budget (KES)
+              <label className="flex items-center gap-3 text-sm text-slate-700">
                 <input
-                  type="number"
-                  value={form.budget}
-                  onChange={(e) => handleFormChange('budget', e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                  placeholder="0"
+                  type="checkbox"
+                  checked={form.is_hireable ?? false}
+                  onChange={(e) => handleFormChange('is_hireable', e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
+                This product is hireable (rental item)
               </label>
 
               <label className="space-y-2 text-sm text-slate-700 sm:col-span-2">
@@ -342,7 +361,7 @@ const ProductsPanel = () => {
                   {(form.imagePreview || form.image_url) ? (
                     <img
                       src={form.imagePreview?.startsWith('blob:') ? form.imagePreview : getSafeImageUrl(form.imagePreview || form.image_url)}
-                      alt="Project preview"
+                      alt="Product preview"
                       className="h-40 w-full rounded-3xl object-cover border border-slate-200"
                     />
                   ) : (
@@ -359,20 +378,16 @@ const ProductsPanel = () => {
             )}
 
             <div className="mt-4 flex flex-wrap items-center gap-3 justify-end">
-              <button
-                type="button"
-                onClick={closeModal}
-                className="admin-btn-outline"
-              >
+              <button type="button" onClick={closeModal} className="admin-btn-outline">
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleSaveProject}
+                onClick={handleSaveProduct}
                 disabled={saving}
                 className="admin-btn-primary disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
-                {saving ? (isEditing ? 'Saving changes...' : 'Saving project...') : (isEditing ? 'Update project' : 'Create project')}
+                {saving ? (isEditing ? 'Saving changes...' : 'Saving product...') : (isEditing ? 'Update product' : 'Create product')}
               </button>
             </div>
           </div>

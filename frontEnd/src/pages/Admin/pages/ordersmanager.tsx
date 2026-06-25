@@ -23,7 +23,11 @@ export default function OrdersManager() {
   const [tab, setTab]         = useState<StatusTab>("all");
   const [updating, setUpdating] = useState<number | null>(null);
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => {
+    loadOrders();
+    const interval = setInterval(loadOrders, 15000); // Auto-refresh every 15s
+    return () => clearInterval(interval);
+  }, []);
 
   const loadOrders = async () => {
     setLoading(true);

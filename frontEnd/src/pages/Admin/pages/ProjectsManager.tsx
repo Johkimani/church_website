@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  ShoppingBag, Package, CalendarDays, Tag, UserCircle, BarChart3
+  ShoppingBag, Package, CalendarDays, Tag, UserCircle, BarChart3, Image, Bell
 } from "lucide-react";
 import ProductsPanel from "./ProductsPanel";
 import OrdersPanel from "./ordersmanager";
@@ -8,20 +8,24 @@ import HireRequestsPanel from "./hirerequestsmanager";
 import CategoriesPanel from "./CategoryManager";
 import CustomersPanel from "./CustomerManager";
 import ReportsPanel from "./Reports";
+import SliderManager from "./SliderManager";
+import NotificationsPanel from "./NotificationsPanel";
 
 const tabs = [
-  { id: "products",    label: "Products",       icon: ShoppingBag },
-  { id: "orders",      label: "Orders",         icon: Package },
-  { id: "hire",        label: "Hire Requests",  icon: CalendarDays },
-  { id: "categories",  label: "Categories",     icon: Tag },
-  { id: "customers",   label: "Customers",      icon: UserCircle },
-  { id: "reports",     label: "Reports",        icon: BarChart3 },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "products",      label: "Products",      icon: ShoppingBag },
+  { id: "orders",        label: "Orders",        icon: Package },
+  { id: "hire",          label: "Hire Requests", icon: CalendarDays },
+  { id: "categories",    label: "Categories",    icon: Tag },
+  { id: "customers",     label: "Customers",     icon: UserCircle },
+  { id: "sliders",       label: "Slider Images", icon: Image },
+  { id: "reports",       label: "Reports",       icon: BarChart3 },
 ] as const;
 
 type TabId = typeof tabs[number]["id"];
 
 export default function ProjectsManager() {
-  const [activeTab, setActiveTab] = useState<TabId>("products");
+  const [activeTab, setActiveTab] = useState<TabId>("notifications");
 
   return (
     <div>
@@ -47,11 +51,13 @@ export default function ProjectsManager() {
       </div>
 
       {/* Tab Content */}
+      {activeTab === "notifications" && <NotificationsPanel />}
       {activeTab === "products" && <ProductsPanel />}
       {activeTab === "orders" && <OrdersPanel />}
       {activeTab === "hire" && <HireRequestsPanel />}
       {activeTab === "categories" && <CategoriesPanel />}
       {activeTab === "customers" && <CustomersPanel />}
+      {activeTab === "sliders" && <SliderManager />}
       {activeTab === "reports" && <ReportsPanel />}
     </div>
   );

@@ -144,7 +144,7 @@ const TrustStrip: React.FC = () => {
         <div className="flex flex-wrap justify-center gap-2 sm:gap-4 py-4">
             {badges.map((b, i) => (
                 <div key={i} className="flex items-center gap-2 bg-white border border-blue-100 px-3 sm:px-4 py-2 rounded-xl shadow-sm text-xs sm:text-sm font-semibold text-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all">
-                    <span className="text-base">{TRUST_ICONS[b.icon] || b.icon}</span>
+                    {b.icon && <span className="text-base">{TRUST_ICONS[b.icon] || b.icon}</span>}
                     {b.text}
                 </div>
             ))}
@@ -174,14 +174,14 @@ const CategoryFilterBar: React.FC<{
                         id={`filter-cat-${cat.id}`}
                         onClick={() => onChange(cat.id)}
                         className={`
-                            flex items-center gap-1.5 whitespace-nowrap px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex-shrink-0
+                            flex items-center gap-1.5 whitespace-nowrap px-4 sm:px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex-shrink-0 min-h-[44px]
                             ${active
                                 ? 'bg-blue-600 text-white shadow-md shadow-blue-200 scale-105'
                                 : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50'
                             }
                         `}
                     >
-                        <span>{cat.icon}</span>
+                        {cat.icon && <span>{cat.icon}</span>}
                         <span className="hidden sm:inline">{cat.label}</span>
                         <span className="sm:hidden">{cat.label.split(' ')[0]}</span>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -225,31 +225,36 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
     };
 
     return (
-        <div className="group bg-white rounded-2xl border border-slate-100 shadow hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col cursor-pointer"
+        <div
+            className="group bg-white rounded-xl border border-slate-100 hover:border-blue-200 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 overflow-hidden flex flex-col cursor-pointer"
             onClick={() => { if (product.id) navigate(`/product/${product.id}`); }}
         >
             {/* Image */}
-            <div className="relative h-40 sm:h-48 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden flex-shrink-0">
+            <div className="relative aspect-square bg-gradient-to-br from-blue-50 to-slate-50 overflow-hidden">
                 {image ? (
                     <img
                         src={image}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl sm:text-6xl select-none">✝️</div>
+                    <div className="w-full h-full flex items-center justify-center">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                        </svg>
+                    </div>
                 )}
                 {/* Subcategory badge */}
                 {product.subcategory && product.subcategory !== 'sacramentals' && (
-                    <span className="absolute top-2 left-2 px-2 py-0.5 bg-white/90 backdrop-blur-sm text-blue-700 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-full shadow-sm">
+                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-white/90 backdrop-blur-sm text-blue-700 text-[8px] font-black uppercase tracking-wider rounded-md shadow-sm">
                         {product.subcategory}
                     </span>
                 )}
-                {/* Out of stock */}
+                {/* Out of stock overlay */}
                 {!inStock && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                        <span className="text-rose-600 font-black text-xs sm:text-sm bg-white px-3 py-1 rounded-full shadow-md border border-rose-100">
+                        <span className="text-rose-600 font-black text-[10px] bg-white px-2 py-0.5 rounded-full shadow-md border border-rose-100">
                             Out of Stock
                         </span>
                     </div>
@@ -257,51 +262,46 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
             </div>
 
             {/* Content */}
-            <div className="flex flex-col flex-1 p-3 sm:p-4 gap-1.5">
-                <h3 className="font-black text-slate-800 text-sm leading-tight line-clamp-2">
+            <div className="flex flex-col flex-1 p-2.5 sm:p-3 gap-1">
+                <h3 className="font-bold text-slate-800 text-[11px] sm:text-xs leading-tight line-clamp-2 min-h-[28px]">
                     {product.name}
                 </h3>
-                {desc && (
-                    <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed line-clamp-2">
-                        {desc}
-                    </p>
-                )}
 
-                {/* Stars */}
-                <div className="flex gap-0.5 mt-1">
-                    {[1,2,3,4,5].map(s => <FaStar key={s} size={9} className="text-amber-400" />)}
+                {/* Stars + rating count */}
+                <div className="flex items-center gap-1">
+                    <div className="flex gap-px">
+                        {[1,2,3,4,5].map(s => <FaStar key={s} size={8} className="text-amber-400" />)}
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-medium">(128)</span>
                 </div>
 
-                <div className="flex items-center justify-between mt-auto pt-2">
-                    <span className="text-base sm:text-lg font-black text-blue-700">
-                        KES {Number(product.price).toLocaleString()}
+                {/* Price */}
+                <div className="mt-auto pt-1">
+                    <span className="text-sm sm:text-base font-black text-slate-900">
+                        KSh {Number(product.price).toLocaleString()}
                     </span>
-                    {product.stock != null && Number(product.stock) > 0 && Number(product.stock) <= 5 && (
-                        <span className="text-[9px] sm:text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
-                            Only {product.stock} left!
-                        </span>
-                    )}
                 </div>
 
+                {/* Add to Cart */}
                 <button
                     id={`add-cart-${product.id || product.name}`}
                     onClick={(e) => { e.stopPropagation(); handleAdd(); }}
                     disabled={adding || !inStock}
                     className={`
-                        w-full mt-1 py-2.5 flex items-center justify-center gap-2
-                        text-xs sm:text-sm font-black rounded-xl transition-all duration-300 select-none
+                        w-full mt-1 py-2 flex items-center justify-center gap-1.5 min-h-[36px]
+                        text-[10px] sm:text-xs font-bold rounded-lg transition-all duration-300 select-none
                         ${adding
-                            ? 'bg-emerald-500 text-white scale-95 shadow-lg shadow-emerald-200'
+                            ? 'bg-emerald-500 text-white scale-95'
                             : inStock
-                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 active:scale-95'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow active:scale-95'
                                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                         }
                     `}
                 >
                     {adding ? (
-                        <><FaCheckCircle size={12} /> Added!</>
+                        <><FaCheckCircle size={10} /> Added!</>
                     ) : (
-                        <><FaShoppingCart size={12} /> Add to Cart</>
+                        <>Add to Cart</>
                     )}
                 </button>
             </div>
@@ -312,7 +312,6 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
 /* ───────────────────────────────────────────────
    PROCESS GUIDE
 ─────────────────────────────────────────────── */
-const STEP_ICONS: Record<string, string> = { '🔍': '🔍', '💬': '💬', '📍': '📍' };
 
 const ProcessGuide: React.FC = () => (
     <div className="py-12 sm:py-16 px-4">
@@ -335,10 +334,7 @@ const ProcessGuide: React.FC = () => (
                         <div className="hidden sm:block absolute top-10 -right-3 w-6 h-0.5 bg-blue-200 z-10" />
                     )}
                     <div className="flex items-center justify-center mb-4 mx-auto w-fit relative">
-                        <div className="w-14 sm:w-16 h-14 sm:h-16 flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl text-2xl group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                            {STEP_ICONS[step.icon] || step.icon}
-                        </div>
-                        <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-black w-6 h-6 flex items-center justify-center rounded-full shadow-md">
+                        <div className="w-14 sm:w-16 h-14 sm:h-16 flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl text-2xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300 shadow-inner">
                             {step.step}
                         </div>
                     </div>
@@ -413,13 +409,13 @@ const TestimonialsSection: React.FC = () => (
    SKELETON LOADER
 ─────────────────────────────────────────────── */
 const SkeletonCard = () => (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow overflow-hidden animate-pulse">
-        <div className="h-40 sm:h-48 bg-slate-200" />
-        <div className="p-4 space-y-3">
-            <div className="h-4 bg-slate-200 rounded w-3/4" />
-            <div className="h-3 bg-slate-100 rounded w-full" />
-            <div className="h-3 bg-slate-100 rounded w-5/6" />
-            <div className="h-8 bg-slate-200 rounded-xl mt-2" />
+    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-pulse">
+        <div className="aspect-square bg-slate-200" />
+        <div className="p-2.5 space-y-2">
+            <div className="h-3 bg-slate-200 rounded w-3/4" />
+            <div className="h-2 bg-slate-100 rounded w-1/2" />
+            <div className="h-4 bg-slate-200 rounded w-1/3 mt-1" />
+            <div className="h-7 bg-slate-200 rounded-lg mt-1" />
         </div>
     </div>
 );
@@ -579,7 +575,7 @@ export const Sacramentals = () => {
                         {search && (
                             <button
                                 onClick={() => setSearch('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-lg leading-none"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg text-lg leading-none transition-colors"
                             >×</button>
                         )}
                     </div>
@@ -621,11 +617,11 @@ export const Sacramentals = () => {
 
                 {/* Grid */}
                 {isLoading ? (
-                    <div className="grid gap-4 sm:gap-5 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+                    <div className="grid gap-2.5 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
                     </div>
                 ) : filtered.length > 0 ? (
-                    <div className="grid gap-4 sm:gap-5 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    <div className="grid gap-2.5 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                         {filtered.map(product => (
                             <ProductCard
                                 key={product.id || product.name}

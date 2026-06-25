@@ -44,7 +44,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
                     >
                         <X size={20} />
                     </button>
@@ -87,36 +87,34 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                                 <span>{item.rentalDays ? `Rental: ${item.rentalDays} days` : 'Purchase'}</span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => updateCartQuantity(index, -1)}
-                                                    className="p-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
-                                                >
-                                                    <Minus size={12} />
-                                                </button>
-                                                <span className="text-sm font-bold text-slate-700 min-w-[20px] text-center">
-                                                    {item.quantity || 1}
-                                                </span>
-                                                <button
-                                                    onClick={() => updateCartQuantity(index, 1)}
-                                                    className="p-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
-                                                >
-                                                    <Plus size={12} />
-                                                </button>
-                                            </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => updateCartQuantity(index, -1)}
+                                                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+                                                    >
+                                                        <Minus size={14} />
+                                                    </button>
+                                                    <span className="text-sm font-bold text-slate-700 min-w-[24px] text-center">
+                                                        {item.quantity || 1}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => updateCartQuantity(index, 1)}
+                                                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+                                                    >
+                                                        <Plus size={14} />
+                                                    </button>
+                                                </div>
                                                 <span className="text-sm font-black text-blue-600">
                                                     KES {Number(item.price * (item.quantity || 1)).toLocaleString()}
                                                 </span>
                                                 <button
                                                     onClick={() => removeFromCart(index)}
-                                                    className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
                                                 >
                                                     <Trash2 size={15} />
                                                 </button>
                                             </div>
-                                        </div>
                                     </div>
                                 </div>
                             );
@@ -173,12 +171,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             </div>
                             <div>
                                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                                    Delivery Address
+                                    Pickup Location
                                 </label>
                                 <input
                                     type="text"
                                     className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-slate-800 placeholder:text-slate-400"
-                                    placeholder="Town / Area / Landmark"
+                                    placeholder="                                    Pickup point / landmark"
                                     value={deliveryAddress}
                                     onChange={(e) => setDeliveryAddress(e.target.value)}
                                 />
