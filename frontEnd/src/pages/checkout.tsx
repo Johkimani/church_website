@@ -7,6 +7,8 @@ export default function Checkout() {
   const { cart, clearCart } = useCart();
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [checkoutId, setCheckoutId] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -15,44 +17,97 @@ export default function Checkout() {
     0
   );
 
-  const handlePayment = async () => {
-    if (!phone) {
-      alert("Enter phone number");
-      return;
-    }
+  const showToast = (message: string) => alert(message);
 
-    if (cart.length === 0) {
-      alert("Cart is empty");
-      return;
-    }
-
-    try {
+  const handleSTKPush = async (e: React.FormEvent) => {
+      e.preventDefault();
       setLoading(true);
+      setError('');
 
-      const res = await apiClient.post("/payments/stkpush", {
-  userId: 1, // later replace with logged-in user id
-  phoneNumber: phone,
-  amount: total,
-  description: "Cart Purchase"
-});
+      if (phone.length < 9) {
+          setError('Please enter a valid phone number');
+          setLoading(false);
+          return;
+      }
 
-      console.log("STK response:", res.data);
+      try {
+          const res = await apiClient.post('/stkPush/initiate/guest', {
+              amount: total,
+              phoneNumber: phone
+          });
 
-      alert("STK Push sent to phone");
+          const cid = res.data.checkoutId || res.data.CheckoutRequestID;
+          if (!cid) throw new Error("No checkout ID received");
 
-      clearCart();
-      navigate("/");
-    } catch (err) {
-      console.error(err);
-      alert("Payment failed. Try again.");
-    } finally {
-      setLoading(false);
-    }
+          setCheckoutId(cid);
+          showToast('Please check your phone for the M-Pesa prompt.');
+
+          pollPaymentStatus(cid);
+
+      } catch (err: any) {
+          setError(err.response?.data?.message || 'Failed to initiate STK Push. Try again.');
+          setLoading(false);
+      }
+  };
+
+  const pollPaymentStatus = async (cid: string) => {
+      let attempts = 0;
+      const maxAttempts = 15;
+
+      const interval = setInterval(async () => {
+          attempts++;
+          try {
+              const checkRes = await apiClient.get(`/stkPush/check/${cid}`);
+              const status = checkRes.data.status;
+
+              if (status === 'paid') {
+                  clearInterval(interval);
+                  showToast('Payment successful!');
+                  
+                  await createOrder(checkRes.data.mpesa_receipt);
+              } else if (status === 'failed') {
+                  clearInterval(interval);
+                  setError('Payment failed or was cancelled.');
+                  setLoading(false);
+                  setCheckoutId(null);
+              }
+          } catch (err) {
+              console.error("Polling error", err);
+          }
+
+          if (attempts >= maxAttempts) {
+              clearInterval(interval);
+              setError('Payment timeout. Please check your messages.');
+              setLoading(false);
+              setCheckoutId(null);
+          }
+      }, 3000);
+  };
+
+  const createOrder = async (receipt: string) => {
+      try {
+          await apiClient.post('/orders', {
+              amount: total,
+              phone: phone,
+              checkout_id: checkoutId,
+              mpesa_receipt: receipt,
+              items: cart,
+              status: 'paid'
+          });
+          clearCart();
+          showToast('Order confirmed successfully!');
+          navigate('/');
+      } catch (err) {
+          setError('Payment succeeded but failed to save order details. Contact admin.');
+          setLoading(false);
+      }
   };
 
   return (
     <div style={{ padding: "20px" }}>
       <h2>💳 Checkout</h2>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       <input
         type="text"
@@ -73,7 +128,7 @@ export default function Checkout() {
       <h2>Total: KES {total}</h2>
 
       <button
-        onClick={handlePayment}
+        onClick={handleSTKPush}
         disabled={loading}
         style={{
           padding: "10px 20px",

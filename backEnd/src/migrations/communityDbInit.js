@@ -300,6 +300,8 @@ export const setupCommunityDatabase = async () => {
     await db.query(`
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS category VARCHAR(255);
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS image_url TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending';
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS budget NUMERIC(12, 2) DEFAULT 0;
     `);
 
     // 3. Seed hub_modules metadata
@@ -442,8 +444,366 @@ export const setupCommunityDatabase = async () => {
       logger.info("✔ Seeding community gallery complete.");
     }
 
+    // ============================================================
+    // SYSTEM SETTINGS TABLE — stores admin-configurable values
+    // ============================================================
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT NOT NULL,
+        description TEXT,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    logger.info("Table 'system_settings' ready");
+
+    // Seed default hire handler phone numbers if not present
+    const defaultSettings = [
+      { key: 'chairs_handler_phone', value: '254112051739', description: 'Phone number for chair hire requests' },
+      { key: 'instruments_handler_phone', value: '254112051740', description: 'Phone number for instrument hire requests' },
+      { key: 'hire_admin_phone', value: '254112051739', description: 'Default hire admin phone number' },
+    ];
+    for (const s of defaultSettings) {
+      await db.query(
+        `INSERT INTO system_settings (key, value, description) VALUES ($1, $2, $3) ON CONFLICT (key) DO NOTHING`,
+        [s.key, s.value, s.description]
+      );
+    }
+
+    // ============================================================
+    // COMMERCE TABLES — products, orders, hire_requests, mpesa_request
+    // Added here because they are referenced by routes but were
+    // never created. Using IF NOT EXISTS so this is safe to re-run.
+    // ============================================================
+
+    // Product categories (referenced by products)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS product_categories (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    logger.info("Table 'product_categories' ready");
+
+    // Products table — sacramentals, t-shirts (for sale)
+    // chairs, instruments are hire-only and use hire_requests
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        price NUMERIC(10, 2) NOT NULL DEFAULT 0,
+        category VARCHAR(100),
+        stock INTEGER DEFAULT 0,
+        image_url TEXT,
+        is_hireable BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Safely add columns if they don't exist (for pre-existing tables)
+    await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_hireable BOOLEAN DEFAULT FALSE`);
+    await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP`);
+    logger.info("Table 'products' ready");
+
+    // Seed default products if empty
+    const productCount = await db.query("SELECT COUNT(*) FROM products");
+    if (parseInt(productCount.rows[0].count, 10) === 0) {
+      logger.info("Seeding default products catalog...");
+      const defaultProducts = [
+        // --- Rosaries ---
+        {
+          name: "Handcrafted Wood Rosary",
+          description: "Durable, beautiful wooden beads for daily meditation.",
+          price: 150,
+          category: "rosaries",
+          stock: 50,
+          image_url: "https://images.unsplash.com/photo-1590076215667-873d5836ab65?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Crystal Rosary – Blue",
+          description: "Sparkling crystal beads with a silver-plated crucifix.",
+          price: 250,
+          category: "rosaries",
+          stock: 30,
+          image_url: "https://images.unsplash.com/photo-1584446549557-ca5e7baf3cc1?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Pearl Rosary – White",
+          description: "Elegant pearl finish, perfect gift for First Communion.",
+          price: 200,
+          category: "rosaries",
+          stock: 40,
+          image_url: "https://images.unsplash.com/photo-1609170846962-a8024f8e69d2?w=600&fit=crop",
+          is_hireable: false
+        },
+        // --- Bibles ---
+        {
+          name: "Prayer Book & Bible Set",
+          description: "Comprehensive guide for morning and evening prayers.",
+          price: 1200,
+          category: "bibles",
+          stock: 25,
+          image_url: "https://images.unsplash.com/photo-1438283173091-5dbf5c5a3206?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Holy Bible – Leather Bound",
+          description: "Premium leather-bound Bible with gold-edge pages.",
+          price: 1800,
+          category: "bibles",
+          stock: 15,
+          image_url: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Children's Illustrated Bible",
+          description: "Colorful stories that bring Scripture alive for young readers.",
+          price: 650,
+          category: "bibles",
+          stock: 20,
+          image_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&fit=crop",
+          is_hireable: false
+        },
+        // --- Chains & Medals ---
+        {
+          name: "St. Benedict Medal",
+          description: "Wearable protection and blessing.",
+          price: 300,
+          category: "chains",
+          stock: 100,
+          image_url: "https://images.unsplash.com/photo-1627582531065-bcffbfbd65e5?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Miraculous Medal Chain",
+          description: "Silver-plated chain featuring the Miraculous Medal of Our Lady.",
+          price: 350,
+          category: "chains",
+          stock: 80,
+          image_url: "https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Gold Cross Pendant Chain",
+          description: "Elegant gold-tone cross pendant on a sturdy chain.",
+          price: 500,
+          category: "chains",
+          stock: 60,
+          image_url: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&fit=crop",
+          is_hireable: false
+        },
+        // --- Crucifixes ---
+        {
+          name: "Wall Crucifix",
+          description: "Detailed resin and wood finish for your home altar.",
+          price: 700,
+          category: "crucifixes",
+          stock: 15,
+          image_url: "https://images.unsplash.com/photo-1574016024951-404323afba98?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Standing Desk Crucifix",
+          description: "Compact crucifix for office or bedside devotion.",
+          price: 450,
+          category: "crucifixes",
+          stock: 20,
+          image_url: "https://images.unsplash.com/photo-1445445290350-18a3b86e0b5a?w=600&fit=crop",
+          is_hireable: false
+        },
+        // --- Statues ---
+        {
+          name: "Marian Statue (Our Lady)",
+          description: "Delicate features painted with care.",
+          price: 850,
+          category: "statues",
+          stock: 10,
+          image_url: "https://images.unsplash.com/photo-1582294157833-287515dbe3ba?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Sacred Heart of Jesus Statue",
+          description: "Hand-painted, inspired by classic Catholic imagery.",
+          price: 950,
+          category: "statues",
+          stock: 8,
+          image_url: "https://images.unsplash.com/photo-1577083552431-6e5ea573543e?w=600&fit=crop",
+          is_hireable: false
+        },
+        // --- Candles & Accessories ---
+        {
+          name: "Beeswax Altar Candles",
+          description: "Set of 2 pure beeswax candles, slow-burning.",
+          price: 450,
+          category: "candles",
+          stock: 35,
+          image_url: "https://images.unsplash.com/photo-1528695027588-ac0fb8a9b2b0?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Scented Devotional Candles",
+          description: "Lavender & frankincense blend to enhance prayer.",
+          price: 200,
+          category: "candles",
+          stock: 50,
+          image_url: "https://images.unsplash.com/photo-1602523961358-f9f03dd557db?w=600&fit=crop",
+          is_hireable: false
+        },
+        {
+          name: "Holy Water Font",
+          description: "Ceramic wall-mount font for home blessing.",
+          price: 380,
+          category: "candles",
+          stock: 15,
+          image_url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&fit=crop",
+          is_hireable: false
+        },
+        // --- T-Shirts ---
+        {
+          name: "CSA Polo Shirt",
+          description: "Official CSA polo shirt — pure grey with a smart black collar. Premium fabric, comfortable fit. Show your community pride in style.",
+          price: 650,
+          category: "tshirts",
+          stock: 100,
+          image_url: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&fit=crop",
+          is_hireable: false
+        },
+        // --- Chairs ---
+        {
+          name: "White Event Chair",
+          description: "Elegant, sturdy, and classic for indoor or marquee events.",
+          price: 50,
+          category: "chairs",
+          stock: 200,
+          image_url: "https://images.unsplash.com/photo-1549615555-5dc63920dcbc?w=600&fit=crop",
+          is_hireable: true
+        },
+        {
+          name: "Garden/Outdoor Chair",
+          description: "Durable, weather-resistant seating perfect for open-air functions.",
+          price: 30,
+          category: "chairs",
+          stock: 150,
+          image_url: "https://images.unsplash.com/photo-1560965380-48e02ea2ea1b?w=600&fit=crop",
+          is_hireable: true
+        },
+        // --- Instruments ---
+        {
+          name: "Speakers and Microphones",
+          description: "Crystal clear vocal projection and deep bass for large spaces.",
+          price: 2000,
+          category: "instruments",
+          stock: 5,
+          image_url: "https://images.unsplash.com/photo-1545128485-c400e7702796?w=600&fit=crop",
+          is_hireable: true
+        },
+        {
+          name: "Piano",
+          description: "Rich acoustics and beautiful melodies for any event.",
+          price: 3000,
+          category: "instruments",
+          stock: 2,
+          image_url: "https://images.unsplash.com/photo-1552422535-c45813c61732?w=600&fit=crop",
+          is_hireable: true
+        },
+        {
+          name: "Organ",
+          description: "Traditional, powerful sound for solemn mass settings.",
+          price: 5000,
+          category: "instruments",
+          stock: 1,
+          image_url: "https://images.unsplash.com/photo-1541819665672-132d7ed161ec?w=600&fit=crop",
+          is_hireable: true
+        }
+      ];
+
+      for (const p of defaultProducts) {
+        await db.query(
+          `INSERT INTO products (name, description, price, category, stock, image_url, is_hireable)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [p.name, p.description, p.price, p.category, p.stock, p.image_url, p.is_hireable]
+        );
+      }
+      logger.info("✔ Seeded default products catalog.");
+    }
+
+
+    // M-Pesa STK push transaction log
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS mpesa_request (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255),
+        checkout_id VARCHAR(255) UNIQUE,
+        merchant_request_id VARCHAR(255),
+        phone VARCHAR(20),
+        amount NUMERIC(10, 2),
+        status VARCHAR(50) DEFAULT 'pending',
+        result_code INTEGER,
+        result_desc TEXT,
+        mpesa_receipt VARCHAR(100),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    logger.info("Table 'mpesa_request' ready");
+
+    // Orders — created after successful payment
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255),
+        amount NUMERIC(10, 2) NOT NULL,
+        phone VARCHAR(20),
+        checkout_id VARCHAR(255),
+        mpesa_receipt VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'pending',
+        items JSONB,
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    logger.info("Table 'orders' ready");
+
+    // Hire requests — for chairs and instruments (not a purchase)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS hire_requests (
+        id SERIAL PRIMARY KEY,
+        customer_name VARCHAR(255) NOT NULL,
+        phone_number VARCHAR(20) NOT NULL,
+        email VARCHAR(255),
+        item_name VARCHAR(255) NOT NULL,
+        item_category VARCHAR(100),
+        quantity INTEGER DEFAULT 1,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        notes TEXT,
+        admin_notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    logger.info("Table 'hire_requests' ready");
+
+    // Ensure all hire_requests columns exist (for pre-existing tables)
+    try {
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS location VARCHAR(500)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS item_category VARCHAR(100)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS total_cost NUMERIC(10,2) DEFAULT 0`);
+    } catch (e) {
+      // Column may already exist, ignore
+    }
+
     const duration = Date.now() - startTime;
-    logger.info(`✔ Community Hub database schema ready. (Duration: ${duration}ms)`);
+    logger.info(`✔ Community Hub database schema ready (including commerce tables). (Duration: ${duration}ms)`);
   } catch (error) {
     logger.error("❌ Community Hub database schema initialization failed:", error.message, { stack: error.stack });
     // Non-fatal, do not exit server process here to let basic app routes function

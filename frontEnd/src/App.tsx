@@ -29,6 +29,10 @@ const ChairsPage = lazy(() => import("./pages/projects/pages/Chairs").then((modu
 const InstrumentsPage = lazy(() => import("./pages/projects/pages/Instruments").then((module) => ({ default: module.Instruments })));
 const OtherProjectsPage = lazy(() => import("./pages/projects/pages/OtherProjects").then((module) => ({ default: module.OtherProjects })));
 const ActivitiesPage = lazy(() => import("./pages/Landing/components/page/ActivitiesPage"));
+const ProductDetailsPage = lazy(() => import("./pages/projects/pages/ProductDetails"));
+
+// New Admin Pages
+const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 
 // Utility pages
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -144,6 +148,8 @@ const App: React.FC = () => {
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
+        {/* Order Confirmation (no layout) */}
+        <Route path="/order-confirmation" element={<OrderConfirmation />} />
 
         {/* Public Routes with Page Layout */}
         <Route path="/" element={<Pageoulet />}>
@@ -168,6 +174,7 @@ const App: React.FC = () => {
           <Route path="instruments" element={<ProtectedRoute><InstrumentsPage /></ProtectedRoute>} />
           <Route path="other-projects" element={<ProtectedRoute><OtherProjectsPage /></ProtectedRoute>} />
           <Route path="activities" element={<ProtectedRoute><ActivitiesPage /></ProtectedRoute>} />
+          <Route path="product/:id" element={<ProtectedRoute><ProductDetailsPage /></ProtectedRoute>} />
           
           {/* show notification to all */}
           <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />

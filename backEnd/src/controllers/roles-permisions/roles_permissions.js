@@ -399,13 +399,19 @@ export const updateUserRoles = async (req, res) => {
         'SELECT role_id FROM roles WHERE role_name = $1',
         [roleName]
       );
+      let roleId;
       if (roleResult.rows.length === 0) {
-        // Option 1: Rollback and throw error
-        // Option 2: Skip invalid roles
-        // We will skip silently for robust handling, logging a warning
-        continue;
+        const newRoleResult = await testDb.query(
+          `INSERT INTO roles (role_name, description, created_by, status) 
+           VALUES ($1, $2, $3, 'active') 
+           RETURNING role_id`,
+          [roleName, 'Auto-generated from official position', 'system']
+        );
+        roleId = newRoleResult.rows[0].role_id;
+      } else {
+        roleId = roleResult.rows[0].role_id;
       }
-      const roleId = roleResult.rows[0].role_id;
+
       
       await testDb.query(
         'INSERT INTO member_roles (member_id, role_id) VALUES ($1, $2)',
