@@ -1041,12 +1041,12 @@ const CommunityDetail: React.FC = () => {
                                     )}
                                 </div>
 
-                                {moduleData.gallery && moduleData.gallery.length > 0 ? (
-                                    /* Scrollable Gallery Container with Fixed Responsive Height */
-                                    <div 
-                                        className="pr-3 gallery-scrollbar"
-                                        style={{ height: '650px', maxHeight: '75vh', overflowY: 'auto' }}
-                                    >
+                                {/* Scrollable Gallery Container with Fixed Responsive Height */}
+                                <div 
+                                    className="pr-3 gallery-scrollbar"
+                                    style={{ height: '650px', maxHeight: '75vh', overflowY: 'scroll' }}
+                                >
+                                    {moduleData.gallery && moduleData.gallery.length > 0 ? (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 pb-4">
                                             {moduleData.gallery.map((img: any) => (
                                                 <div 
@@ -1066,13 +1066,13 @@ const CommunityDetail: React.FC = () => {
                                                 </div>
                                             ))}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-16 text-slate-400">
-                                        <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                                        <p className="font-semibold text-sm">Photos will appear here soon.</p>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-center text-slate-400">
+                                            <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                                            <p className="font-semibold text-sm">Photos will appear here soon.</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
