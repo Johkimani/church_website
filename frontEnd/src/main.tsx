@@ -17,16 +17,15 @@ createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {/* SSE must wrap NotificationProvider — notifications read from useSSE() */}
         <SSEProvider>
           <SocketProvider>
             <NotificationProvider>
-              <AppProvider>
-                <BrowserRouter>
+              <BrowserRouter>
+                <AppProvider>
                   <ScrollToTop />
                   <App />
-                </BrowserRouter>
-              </AppProvider>
+                </AppProvider>
+              </BrowserRouter>
             </NotificationProvider>
           </SocketProvider>
         </SSEProvider>

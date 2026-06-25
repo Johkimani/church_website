@@ -1,162 +1,309 @@
-import { useState } from 'react';
+import React from 'react';
 import { useApp } from '../../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { ProductCard } from '../components/ProductCard';
-import { CategoryHero, TrustBar, ProcessGuide } from '../components/PageAddons';
+import { HeroSlider, useSliderImages } from '../components/HeroSlider';
+import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS, TSHIRT_PRODUCTS } from './data';
+import { FaStar, FaCheckCircle, FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
 
-export const Tshirts = () => {
-    const { products, addToCart } = useApp();
-    const navigate = useNavigate();
-    const [searchTshirts, setSearchTshirts] = useState('');
-    const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
-    const [selectedColors, setSelectedColors] = useState<Record<string, string>>({});
+const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
-    const tshirtsProducts = products
-        .filter(p => p.category?.toLowerCase() === 'tshirts')
-        .map(p => ({ ...p, img: p.image_url || p.img }));
+interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
-    const visibleTshirts = tshirtsProducts.filter(p =>
-        !searchTshirts ||
-        p.name?.toLowerCase().includes(searchTshirts.toLowerCase()) ||
-        p.desc?.toLowerCase().includes(searchTshirts.toLowerCase())
-    );
+const HeroSliderComponent: React.FC<{
+    images: SliderImg[];
+    isAdmin?: boolean;
+    onDelete?: (id: number | string) => void;
+}> = ({ images, isAdmin, onDelete }) => {
+    const [idx, setIdx] = React.useState(0);
+    const len = images.length;
+    const next = React.useCallback(() => setIdx(p => (p + 1) % len), [len]);
+    const prev = React.useCallback(() => setIdx(p => (p - 1 + len) % len), [len]);
+
+    React.useEffect(() => {
+        if (len <= 1) return;
+        const t = setInterval(next, 5500);
+        return () => clearInterval(t);
+    }, [len, next]);
+
+    if (!len) return null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-6">
-
-            {/* Search */}
-            <div className="max-w-3xl mx-auto mb-8">
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search t-shirts..."
-                        value={searchTshirts}
-                        onChange={(e) => setSearchTshirts(e.target.value)}
-                        className="w-full px-5 py-3 pl-12 rounded-2xl border border-blue-200 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition duration-300 bg-white text-gray-700 placeholder-gray-400"
-                    />
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400">
-                        👕
-                    </span>
-                </div>
-            </div>
-
-            {/* Page Add-ons */}
-            <div className="space-y-6 mb-12">
-                <CategoryHero category="tshirts" />
-                <TrustBar category="tshirts" />
-                <ProcessGuide />
-            </div>
-
-            {/* Section */}
-            <section className="max-w-7xl mx-auto bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl p-6 md:p-10 border border-blue-100">
-
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <span className="inline-block px-4 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-full mb-3">
-                        Fashion
-                    </span>
-
-                    <h2 className="text-3xl md:text-4xl font-extrabold text-blue-800">
-                        Premium T-Shirts
-                    </h2>
-
-                    <p className="mt-3 text-gray-600 max-w-2xl mx-auto text-sm md:text-base">
-                        Express your faith and style with comfortable, high-quality T-shirts
-                        designed for everyday wear and meaningful moments.
-                    </p>
-                </div>
-
-                {/* Spotlight */}
-                {visibleTshirts.length === 1 && !searchTshirts ? (
-                    <div className="grid md:grid-cols-2 gap-8 items-center">
-
-                        {/* Image */}
-                        <div className="rounded-3xl overflow-hidden shadow-lg">
-                            <img
-                                src={visibleTshirts[0].img}
-                                alt={visibleTshirts[0].name}
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-
-                        {/* Info */}
-                        <div>
-                            <span className="inline-block px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-full mb-3">
-                                Featured Item
-                            </span>
-
-                            <h2 className="text-2xl md:text-3xl font-bold text-blue-800">
-                                {visibleTshirts[0].name}
-                            </h2>
-
-                            <p className="mt-3 text-gray-600">
-                                {visibleTshirts[0].desc}
-                            </p>
-
-                            <div className="mt-5">
-                                <ProductCard
-                                    product={visibleTshirts[0]}
-                                    categoryType="tshirts"
-                                    selectedSize={selectedSizes[visibleTshirts[0].id]}
-                                    setSelectedSize={(sz) =>
-                                        setSelectedSizes(prev => ({
-                                            ...prev,
-                                            [visibleTshirts[0].id]: sz
-                                        }))
-                                    }
-                                    addToCart={addToCart}
-                                />
-                            </div>
-                        </div>
+        <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl">
+            {images.map((img, i) => (
+                <div key={i} className={`absolute inset-0 transition-all duration-700 ease-in-out ${i === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+                    <img src={img.url} alt={img.title || img.message || 'slide'} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 md:p-12">
+                        {img.title && <p className="text-white/70 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1">{img.title}</p>}
+                        {img.message && <h2 className="text-white text-lg sm:text-2xl md:text-4xl font-black leading-tight drop-shadow-lg max-w-2xl">{img.message}</h2>}
+                        <div className="mt-4 h-1 w-10 sm:w-16 bg-blue-400 rounded-full" />
+                        <a href="#tshirts" className="mt-4 inline-block px-6 py-2.5 bg-white text-blue-700 font-bold text-sm rounded-xl shadow-lg hover:bg-blue-50 transition-colors">Shop Now</a>
                     </div>
-                ) : visibleTshirts.length > 0 ? (
-
-                    /* Grid */
-                    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {visibleTshirts.map(product => (
-                            <div
-                                key={product.id}
-                                className="group transform transition duration-300 hover:scale-105 cursor-pointer"
-                                onClick={() => { if (product.id) navigate(`/product/${product.id}`); }}
-                            >
-                                <div className="rounded-2xl overflow-hidden group-hover:shadow-xl transition duration-300">
-                                    <ProductCard
-                                        product={product}
-                                        categoryType="tshirts"
-                                        selectedSize={selectedSizes[product.id]}
-                                        setSelectedSize={(sz) =>
-                                            setSelectedSizes(prev => ({
-                                                ...prev,
-                                                [product.id]: sz
-                                            }))
-                                        }
-                                        addToCart={addToCart}
-                                    />
-                                </div>
-                            </div>
+                    {isAdmin && img.id && onDelete && (
+                        <button onClick={() => onDelete(img.id!)} className="absolute top-3 right-3 z-20 bg-rose-600/90 hover:bg-rose-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-lg transition">
+                            <FaTrash size={10} /> Delete
+                        </button>
+                    )}
+                </div>
+            ))}
+            {len > 1 && (
+                <>
+                    <button onClick={prev} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white rounded-full p-2 sm:p-3 shadow-lg transition-all hover:scale-110"><FaChevronLeft size={14} /></button>
+                    <button onClick={next} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white rounded-full p-2 sm:p-3 shadow-lg transition-all hover:scale-110"><FaChevronRight size={14} /></button>
+                    <div className="absolute bottom-3 sm:bottom-5 right-4 sm:right-8 z-20 flex gap-1.5">
+                        {images.map((_, i) => (
+                            <button key={i} onClick={() => setIdx(i)} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`} />
                         ))}
                     </div>
+                </>
+            )}
+        </div>
+    );
+};
 
-                ) : (
-                    /* Empty State */
-                    <div className="text-center py-12">
-                        <div className="text-4xl mb-3">👕</div>
-                        <p className="text-gray-500 text-lg">
-                            No T-shirts found
-                        </p>
-                        <p className="text-gray-400 text-sm mt-1">
-                            Try a different search
-                        </p>
+const TRUST_ICONS: Record<string, React.ReactNode> = {};
+
+const TrustStrip: React.FC = () => {
+    const badges = TRUST_BADGES['tshirts'] || [];
+    return (
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 py-4">
+            {badges.map((b, i) => (
+                <div key={i} className="flex items-center gap-2 bg-white border border-blue-100 px-3 sm:px-4 py-2 rounded-xl shadow-sm text-xs sm:text-sm font-semibold text-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    {b.text}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const TestimonialsSection: React.FC = () => {
+    const testimonials = [
+        { id: 1, name: 'Faith Wanjiku', role: 'KYU Student', text: 'The CSA polo shirt is amazing quality! I wear it to every campus event. The fabric is comfortable and the branding looks sharp.', rating: 5 },
+        { id: 2, name: 'Brian Muturi', role: 'CSA Member', text: 'Ordered shirts for the entire committee. Great fit, excellent material, and the price was very reasonable. Highly recommended!', rating: 5 },
+        { id: 3, name: 'Alice Njeri', role: 'Parishioner', text: 'Love the KYU CSA branding! It really brings the community together. Quick pickup too.', rating: 4 },
+    ];
+    return (
+        <div className="py-10 sm:py-14 px-4">
+            <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-10">
+                <span className="inline-block text-[10px] sm:text-xs font-black text-blue-600 bg-blue-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">What Our Customers Say</span>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-800">Loved by KYU Students</h2>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
+                {testimonials.map(t => (
+                    <div key={t.id} className="bg-white rounded-2xl p-5 sm:p-6 shadow hover:shadow-lg transition-all duration-300 border border-blue-50 hover:-translate-y-1 text-center">
+                        <div className="flex justify-center gap-0.5 mb-3">
+                            {Array.from({ length: t.rating }).map((_, i) => <FaStar key={i} size={12} className="text-amber-400" />)}
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4 italic">"{t.text}"</p>
+                        <div>
+                            <p className="font-bold text-slate-800 text-sm">{t.name}</p>
+                            <p className="text-xs text-slate-400">{t.role}</p>
+                        </div>
                     </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const ProcessGuide: React.FC = () => (
+    <div className="py-12 sm:py-16 px-4">
+        <div className="max-w-4xl mx-auto text-center mb-8 sm:mb-10">
+            <span className="inline-block text-[10px] sm:text-xs font-black text-blue-600 bg-blue-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">Simple Process</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-800">How to Order</h2>
+            <p className="text-slate-500 mt-2 text-sm max-w-sm mx-auto">Getting your KYU CSA apparel is quick and easy.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3 max-w-4xl mx-auto">
+            {RENTAL_PROCESS_STEPS.map((step, i) => (
+                <div key={step.step} className="relative bg-white rounded-2xl p-5 sm:p-6 text-center shadow hover:shadow-lg transition-all duration-300 border border-blue-50 hover:-translate-y-1 group">
+                    {i < RENTAL_PROCESS_STEPS.length - 1 && <div className="hidden sm:block absolute top-10 -right-3 w-6 h-0.5 bg-blue-200 z-10" />}
+                    <div className="flex items-center justify-center mb-4 mx-auto w-fit relative">
+                        <div className="w-14 sm:w-16 h-14 sm:h-16 flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl text-2xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300 shadow-inner">{step.step}</div>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-black text-slate-800 mb-1">{step.title}</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{step.desc}</p>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+export const Tshirts = () => {
+    const { products, addToCart, setIsCartOpen } = useApp();
+    const [selectedSize, setSelectedSize] = React.useState<string>('');
+    const [adding, setAdding] = React.useState(false);
+    const { sliderImgs, sliderLoading, isAdmin: sliderIsAdmin, deleteSlide } = useSliderImages('tshirts');
+
+    const product = React.useMemo(() => {
+        const dbProduct = products.find(p => p.category?.toLowerCase() === 'tshirts');
+        if (dbProduct) return { ...dbProduct, sizes: dbProduct.sizes || TSHIRT_SIZES };
+        const fallback = TSHIRT_PRODUCTS[0];
+        return { id: `static-tshirt-0`, name: fallback.name, price: fallback.price, description: fallback.desc, image_url: fallback.img, category: 'tshirts', stock: 50, sizes: fallback.sizes || TSHIRT_SIZES };
+    }, [products]);
+
+    const image = product.image_url || product.img;
+    const stock = product.stock != null ? Number(product.stock) : 50;
+    const inStock = stock > 0;
+
+    const handleAddToCart = () => {
+        if (!inStock) return;
+        if (TSHIRT_SIZES.length > 0 && !selectedSize) {
+            alert('Please select a size first!');
+            return;
+        }
+        setAdding(true);
+        addToCart({ item: { ...product, img: product.image_url }, price: Number(product.price) || 0, category: 'tshirts', size: selectedSize });
+        setTimeout(() => setAdding(false), 1300);
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
+
+            {/* Hero Slider */}
+            <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+                {sliderLoading ? (
+                    <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
+                ) : (
+                    <HeroSliderComponent images={sliderImgs} isAdmin={sliderIsAdmin} onDelete={deleteSlide} />
                 )}
+            </div>
+
+            {/* Page Header */}
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-2 text-center">
+                <span className="inline-block px-3 sm:px-5 py-1.5 text-[10px] sm:text-xs font-black text-blue-700 bg-blue-100 rounded-full uppercase tracking-widest mb-3">KYU CSA Apparel</span>
+                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-800 leading-tight">
+                    Official{' '}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">CSA T-Shirt</span>
+                </h1>
+                <p className="mt-2 sm:mt-3 text-slate-500 max-w-lg mx-auto text-xs sm:text-sm">
+                    The official KYU Catholic Student Association polo shirt — pure grey with a smart black collar. Wear your faith and community pride.
+                </p>
+            </div>
+
+            {/* Trust Strip */}
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
+                <TrustStrip />
+            </div>
+
+            {/* ── SHOWCASE CARD ── */}
+            <section id="tshirts" className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 pb-10 sm:pb-16">
+                <div className="bg-white rounded-3xl shadow-xl border border-blue-50 overflow-hidden">
+                    <div className="grid md:grid-cols-2 gap-0">
+
+                        {/* Left: Product Image */}
+                        <div className="relative bg-gradient-to-br from-blue-50 to-slate-100 aspect-square md:aspect-auto md:min-h-[480px] flex items-center justify-center overflow-hidden">
+                            {image ? (
+                                <img src={image} alt={product.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-48 h-48 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10h12V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" />
+                                    </svg>
+                                </div>
+                            )}
+                            <span className="absolute top-4 left-4 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg">KYU CSA Official</span>
+                            {!inStock && (
+                                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+                                    <span className="text-rose-600 font-black text-sm bg-white px-4 py-2 rounded-full shadow-lg border border-rose-100">Out of Stock</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Right: Product Details */}
+                        <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
+                            <div className="space-y-5">
+                                <div>
+                                    <span className="text-[10px] font-black text-blue-600 bg-blue-100 px-3 py-1 rounded-full uppercase tracking-widest">CSA Merchandise</span>
+                                    <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mt-3">{product.name}</h2>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="flex gap-0.5">
+                                        {[1,2,3,4,5].map(s => <FaStar key={s} size={14} className="text-amber-400" />)}
+                                    </div>
+                                    <span className="text-sm text-slate-400 font-medium">(128 reviews)</span>
+                                </div>
+
+                                <p className="text-slate-500 text-sm leading-relaxed">
+                                    Official CSA polo shirt — pure grey with a smart black collar. Premium fabric, comfortable fit. Perfect for campus events, church gatherings, and everyday wear. Show your KYU Catholic Student Association pride.
+                                </p>
+
+                                {/* Features */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['Premium Cotton', 'Black Collar', 'All Sizes S-XXL', 'Pickup at KYU'].map((feat, i) => (
+                                        <div key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                            <FaCheckCircle size={10} className="text-blue-500 shrink-0" />
+                                            {feat}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Price */}
+                                <div className="bg-blue-50 rounded-2xl p-4">
+                                    <p className="text-xs text-slate-500 font-semibold mb-1">Price per shirt</p>
+                                    <p className="text-3xl font-black text-slate-900">
+                                        KES {Number(product.price).toLocaleString()}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Pickup at KYU campus — no delivery</p>
+                                </div>
+
+                                {/* Size Selector */}
+                                <div>
+                                    <label className="text-xs font-bold text-slate-600 mb-2 block">Select Size *</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {TSHIRT_SIZES.map(size => (
+                                            <button
+                                                key={size}
+                                                onClick={() => setSelectedSize(size)}
+                                                className={`min-w-[48px] h-11 px-3 text-sm font-bold rounded-xl border-2 transition-all duration-200 ${
+                                                    selectedSize === size
+                                                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200'
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {selectedSize && (
+                                        <p className="text-xs text-blue-600 font-semibold mt-2">Size {selectedSize} selected</p>
+                                    )}
+                                </div>
+
+                                {/* Add to Cart */}
+                                <button
+                                    onClick={handleAddToCart}
+                                    disabled={adding || !inStock}
+                                    className={`w-full py-4 rounded-2xl font-black text-base transition-all duration-300 ${
+                                        adding
+                                            ? 'bg-emerald-500 text-white scale-95'
+                                            : inStock
+                                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 hover:shadow-xl active:scale-95'
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                    }`}
+                                >
+                                    {adding ? (
+                                        <span className="flex items-center justify-center gap-2"><FaCheckCircle size={16} /> Added to Cart!</span>
+                                    ) : (
+                                        'Add to Cart'
+                                    )}
+                                </button>
+
+                                {/* View Cart */}
+                                <button onClick={() => setIsCartOpen(true)} className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition-colors text-sm">
+                                    View Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
-            {/* Faith Footer */}
-            <div className="text-center mt-12 text-sm text-blue-700 italic px-4">
-                “Clothe yourselves with compassion, kindness, humility.”
-                <br className="hidden sm:block" />
-                – Colossians 3:12
-            </div>
+            {/* Testimonials */}
+            <TestimonialsSection />
+
+            {/* Process Guide */}
+            <ProcessGuide />
         </div>
     );
 };

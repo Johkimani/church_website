@@ -203,12 +203,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (phone.startsWith('0')) phone = '254' + phone.slice(1);
         else if (phone.startsWith('+')) phone = phone.slice(1);
 
+        let checkoutId: string | null = null;
+        let orderCreated = false;
+
         try {
             showToast("Initiating M-Pesa payment... Please check your phone.");
             const response = await apiService.initiateStkPush(phone, cartTotal, cart);
             
             if (response && response.checkoutId) {
-                const checkoutId = response.checkoutId;
+                checkoutId = response.checkoutId;
 
                 // Create a pending order linked to this checkout
                 try {
@@ -219,25 +222,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         items: cart,
                         status: 'pending',
                     });
+                    orderCreated = true;
                 } catch (e) {
                     console.error("Failed to create pending order:", e);
+                    showToast("Warning: Order record failed, but payment will proceed.");
                 }
                 
-                // Poll for status
+                // Poll for status - longer timeout (3 min) for M-Pesa callbacks
                 let attempts = 0;
+                const maxAttempts = 36; // 3 minutes (5s * 36)
                 const pollInterval = setInterval(async () => {
                     attempts++;
                     try {
-                        const statusRes = await apiService.checkStkStatus(checkoutId);
+                        const statusRes = await apiService.checkStkStatus(checkoutId!);
                         
                         if (statusRes.status === 'paid') {
                             clearInterval(pollInterval);
-                            showToast("Payment successful! Order placed.");
+                            showToast("Payment successful! Order confirmed.");
                             const orderId = statusRes.order_id || statusRes.orderId || checkoutId;
+                            // Clear cart and customer info
                             setCart([]);
                             setIsCartOpen(false);
                             setCustomerName('');
                             setCustomerPhone('');
+                            setCustomerEmail('');
+                            setDeliveryAddress('');
+                            // Navigate to confirmation
                             navigate(`/order-confirmation?order_id=${orderId}`);
                         } else if (statusRes.status === 'failed') {
                             clearInterval(pollInterval);
@@ -247,9 +257,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         console.error("Error polling:", e);
                     }
                     
-                    if (attempts > 12) { // 1 minute timeout (5s * 12)
+                    if (attempts >= maxAttempts) {
                         clearInterval(pollInterval);
-                        showToast("Payment timeout. Please check your messages and try again if it failed.");
+                        if (checkoutId) {
+                            showToast("Payment taking longer than expected. Check your phone for M-Pesa prompt. Order will update when payment completes.");
+                        } else {
+                            showToast("Payment timeout. Please try again.");
+                        }
                     }
                 }, 5000);
             } else {

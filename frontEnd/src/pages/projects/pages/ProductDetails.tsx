@@ -71,7 +71,7 @@ export default function ProductDetails() {
             <div className="max-w-6xl mx-auto px-4 pt-6">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition"
+                    className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition py-2 px-3 -ml-3 rounded-xl hover:bg-slate-100 min-h-[44px]"
                 >
                     <FaChevronLeft size={12} /> Back
                 </button>
@@ -141,7 +141,7 @@ export default function ProductDetails() {
                                             <button
                                                 key={c.name}
                                                 onClick={() => setSelectedColor(c.name)}
-                                                className={`w-10 h-10 rounded-full border-2 transition-all ${
+                                                className={`w-11 h-11 rounded-full border-2 transition-all ${
                                                     selectedColor === c.name
                                                         ? 'border-blue-600 ring-2 ring-blue-200 scale-110'
                                                         : 'border-slate-200 hover:border-slate-400'
@@ -183,14 +183,14 @@ export default function ProductDetails() {
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                    className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
+                                    className="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
                                 >
                                     <FaMinus size={12} />
                                 </button>
                                 <span className="text-lg font-bold text-slate-800 min-w-[30px] text-center">{quantity}</span>
                                 <button
                                     onClick={() => setQuantity(q => q + 1)}
-                                    className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
+                                    className="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
                                 >
                                     <FaPlus size={12} />
                                 </button>
@@ -218,7 +218,7 @@ export default function ProductDetails() {
 
                         {/* Trust badges */}
                         <div className="flex flex-wrap gap-4 pt-2">
-                            {['Secure Payment', 'Quality Guaranteed', 'Fast Delivery'].map(badge => (
+                            {['Secure Payment', 'Quality Guaranteed', 'Pickup Available'].map(badge => (
                                 <div key={badge} className="flex items-center gap-1.5 text-xs text-slate-500">
                                     <FaCheckCircle size={10} className="text-emerald-500" />
                                     {badge}
