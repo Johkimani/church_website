@@ -300,6 +300,8 @@ export const setupCommunityDatabase = async () => {
     await db.query(`
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS category VARCHAR(255);
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS image_url TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending';
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS budget NUMERIC(12, 2) DEFAULT 0;
     `);
 
     // 3. Seed hub_modules metadata
@@ -440,6 +442,32 @@ export const setupCommunityDatabase = async () => {
         }
       }
       logger.info("✔ Seeding community gallery complete.");
+    }
+
+    // ============================================================
+    // SYSTEM SETTINGS TABLE — stores admin-configurable values
+    // ============================================================
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT NOT NULL,
+        description TEXT,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    logger.info("Table 'system_settings' ready");
+
+    // Seed default hire handler phone numbers if not present
+    const defaultSettings = [
+      { key: 'chairs_handler_phone', value: '254112051739', description: 'Phone number for chair hire requests' },
+      { key: 'instruments_handler_phone', value: '254112051740', description: 'Phone number for instrument hire requests' },
+      { key: 'hire_admin_phone', value: '254112051739', description: 'Default hire admin phone number' },
+    ];
+    for (const s of defaultSettings) {
+      await db.query(
+        `INSERT INTO system_settings (key, value, description) VALUES ($1, $2, $3) ON CONFLICT (key) DO NOTHING`,
+        [s.key, s.value, s.description]
+      );
     }
 
     // ============================================================
@@ -762,6 +790,17 @@ export const setupCommunityDatabase = async () => {
       );
     `);
     logger.info("Table 'hire_requests' ready");
+
+    // Ensure all hire_requests columns exist (for pre-existing tables)
+    try {
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS location VARCHAR(500)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS item_category VARCHAR(100)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS total_cost NUMERIC(10,2) DEFAULT 0`);
+    } catch (e) {
+      // Column may already exist, ignore
+    }
 
     const duration = Date.now() - startTime;
     logger.info(`✔ Community Hub database schema ready (including commerce tables). (Duration: ${duration}ms)`);

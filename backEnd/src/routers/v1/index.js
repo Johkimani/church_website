@@ -19,6 +19,7 @@ import ordersRouter from "./orders.router.js";
 import stkPushRouter from "./stkPush.route.js";
 const router = Router()
 import paymentRouter from "./payment.router.js";
+import settingsRouter from "./settingsRoutes.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -62,6 +63,9 @@ router.use("/", sliderRoutes);
 router.use("/activities", activitiesPublicRouter);
 router.use("/admin/activities", activitiesAdminRouter);
 
+
+// System settings (hire admin numbers, etc.)
+router.use("/settings", settingsRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
