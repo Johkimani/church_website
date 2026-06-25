@@ -44,14 +44,25 @@ export default function Settings() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Define the core roles we want to highlight based on user request
-  const highlightedRoles = [
-    'officials management',
-    'community management',
-    'devotions and ai',
-    'gallery manager assistant',
-    'supreme_admin'
-  ];
+  // Dynamically compute assignable roles
+  const dynamicRoles = useMemo(() => {
+    const baseRoles = [
+      'officials management',
+      'community management',
+      'devotions and ai',
+      'gallery manager assistant',
+      'supreme_admin'
+    ];
+    
+    const dbRoles = availableRoles.map(r => r.role_name);
+    
+    const officialRoles = officials
+      .filter(o => o.position)
+      .map(o => o.position.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+
+    // Remove empty strings just in case
+    return Array.from(new Set([...baseRoles, ...dbRoles, ...officialRoles])).filter(Boolean);
+  }, [availableRoles, officials]);
 
   useEffect(() => {
     fetchData();
@@ -258,7 +269,7 @@ export default function Settings() {
                   Available Privileges
                 </p>
                 <div className="grid grid-cols-1 gap-3">
-                  {highlightedRoles.map((roleName) => (
+                  {dynamicRoles.map((roleName) => (
                     <button
                       key={roleName}
                       onClick={() => handleRoleToggle(roleName)}
