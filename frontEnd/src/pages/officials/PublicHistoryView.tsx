@@ -41,7 +41,7 @@ export default function PublicHistoryView() {
 
   const getPhotoUrl = (photo: string | null | undefined) => {
     if (!photo) return DEFAULT_AVATAR;
-    if (photo.startsWith('http') || photo.startsWith('data:')) return photo;
+    if (photo.startsWith('http') || photo.startsWith('data:') || photo.startsWith('blob:')) return photo;
     return `${UPLOAD_BASE}${photo.startsWith('/') ? '' : '/'}${photo}`;
   };
 

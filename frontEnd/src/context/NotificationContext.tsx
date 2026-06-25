@@ -48,6 +48,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [notifications, setNotifications] = useState<Event[]>([]);
   const [loading, setLoading]             = useState(false);
 
+  // Helper: check localStorage for read status and enrich notifications list
+  const enrichNotificationsWithReadStatus = useCallback((items: Event[]): Event[] => {
+    try {
+      const stored = localStorage.getItem("csa_read_notification_ids");
+      const readIds: string[] = stored ? JSON.parse(stored) : [];
+      return items.map((item) => ({
+        ...item,
+        read: readIds.includes(String(item.id)) ? true : (item.read || false),
+      }));
+    } catch {
+      return items;
+    }
+  }, []);
+
   // ── Initial REST fetch (notification history) ────────────────────────────
   const refreshNotifications = useCallback(async () => {
     if (!user) return;
@@ -56,14 +70,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       const res = await fetchNotifications();
       const data = res.data;
       if (Array.isArray(data)) {
-        setNotifications(data as Event[]);
+        setNotifications(enrichNotificationsWithReadStatus(data as Event[]));
       }
     } catch (err) {
       console.warn("[Notifications] Fetch failed:", err);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, enrichNotificationsWithReadStatus]);
 
   useEffect(() => {
     refreshNotifications();
@@ -88,10 +102,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         // pass everything through so extra fields are preserved
         ...data,
       };
-      setNotifications((prev) => [
-        notif,
-        ...prev.filter((n) => n.id !== notif.id),
-      ]);
+      setNotifications((prev) => {
+        const enriched = enrichNotificationsWithReadStatus([notif])[0];
+        return [
+          enriched,
+          ...prev.filter((n) => n.id !== enriched.id),
+        ];
+      });
     });
 
     /**
@@ -124,7 +141,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       unsubUpdated();
       unsubDeleted();
     };
-  }, [subscribe]);
+  }, [subscribe, enrichNotificationsWithReadStatus]);
 
   // ── Badge count (from SSE individual channel) ────────────────────────────
   // The server sends the authoritative unread count on connect and after each
@@ -134,8 +151,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   // ── Mark all read for a category (local only) ────────────────────────────
   const markAllAsRead = useCallback((category: "csa" | "jumuiya") => {
     setNotifications((prev) => {
-      const hasUnread = prev.some((n) => n.category === category && !n.read);
-      if (!hasUnread) return prev;
+      const targets = prev.filter((n) => n.category === category && !n.read);
+      if (targets.length === 0) return prev;
+
+      try {
+        const stored = localStorage.getItem("csa_read_notification_ids");
+        const readIds: string[] = stored ? JSON.parse(stored) : [];
+        const updatedReadIds = [...new Set([...readIds, ...targets.map((t) => String(t.id))])];
+        localStorage.setItem("csa_read_notification_ids", JSON.stringify(updatedReadIds));
+      } catch (err) {
+        console.warn("Failed to persist read notifications:", err);
+      }
+
       return prev.map((n) =>
         n.category === category ? { ...n, read: true } : n
       );

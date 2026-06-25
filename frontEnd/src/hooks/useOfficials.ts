@@ -47,14 +47,64 @@ export function useOfficials() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (formData: FormData) => {
+      await queryClient.cancelQueries({ queryKey: ['officials'] });
+      const previousOfficials = queryClient.getQueryData<Official[]>(['officials']) || [];
+
+      const name = formData.get('name') as string | null;
+      const category = formData.get('category') as string | null;
+      const position = formData.get('position') as string | null;
+      const contact = formData.get('contact') as string | null;
+      const term_of_service = formData.get('term_of_service') as string | null;
+      const status = formData.get('status') as string | null;
+      const term_name = formData.get('term_name') as string | null;
+      const term_year = formData.get('term_year') as string | null;
+      const photoFile = formData.get('photo');
+
+      let photoUrl: string | undefined = undefined;
+      if (photoFile instanceof File && photoFile.size > 0) {
+        photoUrl = URL.createObjectURL(photoFile);
+      }
+
+      const tempId = Date.now() * -1;
+      const optimisticOfficial: Official = {
+        id: tempId,
+        name: name || '',
+        category: category || '',
+        position: position || '',
+        contact: contact || '',
+        term_of_service: term_of_service || '',
+        status: status || 'active',
+        term_name: term_name || '',
+        term_year: term_year || '',
+        photo: photoUrl,
+      };
+
+      queryClient.setQueryData<Official[]>(['officials'], [optimisticOfficial, ...previousOfficials]);
+
+      return { previousOfficials, photoUrl };
+    },
+    onError: (error: Error, formData, context) => {
+      if (context?.previousOfficials) {
+        queryClient.setQueryData(['officials'], context.previousOfficials);
+      }
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
+      showErrorToast('Failed to Add Official', error.message);
+    },
+    onSuccess: (data, formData, context) => {
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
       apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
     },
-    onError: (error: Error) => {
-      showErrorToast('Failed to Add Official', error.message);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['officials'] });
+      queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
     },
   });
 
@@ -73,15 +123,74 @@ export function useOfficials() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async ({ id, formData }: { id: number; formData: FormData }) => {
+      await queryClient.cancelQueries({ queryKey: ['officials'] });
+      const previousOfficials = queryClient.getQueryData<Official[]>(['officials']) || [];
+
+      const name = formData.get('name') as string | null;
+      const category = formData.get('category') as string | null;
+      const position = formData.get('position') as string | null;
+      const contact = formData.get('contact') as string | null;
+      const term_of_service = formData.get('term_of_service') as string | null;
+      const status = formData.get('status') as string | null;
+      const term_name = formData.get('term_name') as string | null;
+      const term_year = formData.get('term_year') as string | null;
+      const photoFile = formData.get('photo');
+
+      const existing = previousOfficials.find(o => o.id === id);
+      let photoUrl = existing?.photo;
+      let newPhotoUrlCreated = false;
+
+      if (photoFile instanceof File && photoFile.size > 0) {
+        photoUrl = URL.createObjectURL(photoFile);
+        newPhotoUrlCreated = true;
+      } else if (typeof photoFile === 'string') {
+        photoUrl = photoFile;
+      }
+
+      const optimisticOfficial: Official = {
+        id,
+        name: name !== null ? name : (existing?.name || ''),
+        category: category !== null ? category : (existing?.category || ''),
+        position: position !== null ? position : (existing?.position || ''),
+        contact: contact !== null ? contact : (existing?.contact || ''),
+        term_of_service: term_of_service !== null ? term_of_service : (existing?.term_of_service || ''),
+        status: status !== null ? status : (existing?.status || ''),
+        term_name: term_name !== null ? term_name : (existing?.term_name || ''),
+        term_year: term_year !== null ? term_year : (existing?.term_year || ''),
+        photo: photoUrl,
+      };
+
+      queryClient.setQueryData<Official[]>(
+        ['officials'],
+        previousOfficials.map(o => o.id === id ? optimisticOfficial : o)
+      );
+
+      return { previousOfficials, photoUrl: newPhotoUrlCreated ? photoUrl : undefined };
+    },
+    onError: (error: Error, variables, context) => {
+      if (context?.previousOfficials) {
+        queryClient.setQueryData(['officials'], context.previousOfficials);
+      }
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
+      showErrorToast('Failed to Update Official', error.message);
+    },
+    onSuccess: (data, variables, context) => {
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
       apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       showSuccessToast('Official Updated Successfully', 'The official details have been updated.');
     },
-    onError: (error: Error) => {
-      showErrorToast('Failed to Update Official', error.message);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['officials'] });
+      queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
+      queryClient.invalidateQueries({ queryKey: ['terms'] });
     },
   });
 
@@ -99,6 +208,23 @@ export function useOfficials() {
       }
       return res.json();
     },
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['officials'] });
+      const previousOfficials = queryClient.getQueryData<Official[]>(['officials']) || [];
+
+      queryClient.setQueryData<Official[]>(
+        ['officials'],
+        previousOfficials.filter(o => o.id !== id)
+      );
+
+      return { previousOfficials };
+    },
+    onError: (error: Error, id, context) => {
+      if (context?.previousOfficials) {
+        queryClient.setQueryData(['officials'], context.previousOfficials);
+      }
+      showErrorToast('Failed to Delete Official', error.message);
+    },
     onSuccess: () => {
       apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
@@ -106,8 +232,10 @@ export function useOfficials() {
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       showSuccessToast('Official Deleted Successfully', 'The official record has been removed.');
     },
-    onError: (error: Error) => {
-      showErrorToast('Failed to Delete Official', error.message);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['officials'] });
+      queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
+      queryClient.invalidateQueries({ queryKey: ['terms'] });
     },
   });
 
