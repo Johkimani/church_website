@@ -7,11 +7,12 @@ import {
   Settings,
   Menu,
   ChevronRight,
+  ChevronDown,
   LogOut,
   Bell,
   LayoutGrid,
   MessageSquare,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -23,8 +24,15 @@ import { ArtDeco404 } from './components/ArtDeco404';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-  { id: 'weekly-activities', name: 'Weekly Activities', icon: LayoutGrid, path: '/admin/weekly-activities' },
-  { id: 'semester-activities', name: 'Semester Activities', icon: LayoutGrid, path: '/admin/semester-activities' },
+  { 
+    id: 'activities', 
+    name: 'Activities', 
+    icon: LayoutGrid, 
+    subItems: [
+      { id: 'weekly-activities', name: 'Weekly Activities', path: '/admin/weekly-activities' },
+      { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' }
+    ]
+  },
   { id: 'announcements', name: 'Announcements Management', icon: Bell, path: '/admin/announcements' },
   { id: 'officials', name: 'Officials Management', icon: Users, path: '/admin/officials' },
   { id: 'community', name: 'Community Management', icon: LayoutGrid, path: '/admin/community-management' },
@@ -32,34 +40,21 @@ const menuItems = [
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
-  { id: 'sacramentals-banners', name: 'Sacramentals Banners', icon: ImageIcon, path: '/admin/sacramentals-banners' },
-  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   {
-    id: 'projects',
-    name: 'Project Management',
-    icon: LayoutGrid,
-    path: '/admin/projects'
+    id: "sacramental-section",
+    name: "Sacramentals section",
+    icon: Database,
+    subItems: [
+      { id: 'sacramentals-banners', name: 'Sacramentals Banners', path: '/admin/sacramentals-banners' },
+      { id: "products", name: "Products", path: "/admin/products" },
+      { id: "orders", name: "Orders", path: "/admin/orders" },
+      { id: "hire", name: "Hire Requests", path: "/admin/hire-requests" }
+    ]
   },
+  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
+  { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
   { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
-  { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' },
-  {
-  id: "products",
-  name: "Products",
-  icon: Database,
-  path: "/admin/products"
-},
-{
-  id: "orders",
-  name: "Orders",
-  icon: Database,
-  path: "/admin/orders"
-},
-{
-  id: "hire",
-  name: "Hire Requests",
-  icon: Database,
-  path: "/admin/hire-requests"
-},
+  { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' }
 ];
 
 export default function UniversalAdmin() {
@@ -68,6 +63,11 @@ export default function UniversalAdmin() {
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [openMenus, setOpenMenus] = useState<string[]>(['activities', 'sacramental-section']); // Optional default open
+
+  const toggleMenu = (id: string) => {
+    setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -200,24 +200,72 @@ export default function UniversalAdmin() {
         {/* Navigation Links */}
         <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar">
           {allowedMenuItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin');
+            const hasSub = !!item.subItems;
+
+            if (!hasSub) {
+              const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin');
+              return (
+                <Link
+                  key={item.id}
+                  to={item.path!}
+                  className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isActive
+                      ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                  <item.icon size={22} className={isActive ? 'text-white' : 'text-slate-300 group-hover:text-blue-200'} />
+                  {isSidebarOpen && (
+                    <div className="ml-4 flex-1 flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm leading-tight">{item.name}</span>
+                      {isActive && <ChevronRight size={16} className="text-blue-200" />}
+                    </div>
+                  )}
+                </Link>
+              );
+            }
+
+            const isOpen = openMenus.includes(item.id);
+            const isChildActive = item.subItems!.some(child => location.pathname === child.path);
+
             return (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isActive
-                    ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                  }`}
-              >
-                <item.icon size={22} className={isActive ? 'text-white' : 'text-slate-300 group-hover:text-blue-200'} />
-                {isSidebarOpen && (
-                  <div className="ml-4 flex-1 flex items-center justify-between gap-2">
-                    <span className="font-semibold text-sm leading-tight">{item.name}</span>
-                    {isActive && <ChevronRight size={16} className="text-blue-200" />}
+              <div key={item.id} className="flex flex-col space-y-1">
+                <button
+                  onClick={() => {
+                    toggleMenu(item.id);
+                    if (!isSidebarOpen) setIsSidebarOpen(true);
+                  }}
+                  className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isChildActive && !isOpen
+                      ? 'bg-blue-500/20 text-blue-300'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                  <item.icon size={22} className={isChildActive ? 'text-blue-300' : 'text-slate-300 group-hover:text-blue-200'} />
+                  {isSidebarOpen && (
+                    <div className="ml-4 flex-1 flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm leading-tight">{item.name}</span>
+                      {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </div>
+                  )}
+                </button>
+                {isSidebarOpen && isOpen && (
+                  <div className="ml-12 border-l border-slate-700 pl-4 space-y-2 mt-1 py-1">
+                    {item.subItems!.map(child => {
+                      const isSubActive = location.pathname === child.path;
+                      return (
+                        <Link
+                          key={child.id}
+                          to={child.path}
+                          className={`flex items-center text-sm px-3 py-2 rounded-xl transition-colors ${
+                            isSubActive ? 'bg-blue-500/95 text-white shadow-md shadow-blue-900/30' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          {child.name}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </nav>

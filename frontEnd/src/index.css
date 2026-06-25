@@ -419,7 +419,7 @@
 /* Use components layer for inputs */
 @layer components {
   input {
-    @apply pl-2 font-semibold bg-slate-100 outline-none rounded-lg border-2 ml-2 mb-6;
+    @apply pl-2 font-semibold bg-slate-100 outline-none rounded-lg border-2;
   }
   /* Main layout container */
   .main-container {
@@ -528,3 +528,11 @@
   }
 }
 
+/* ── Scrollbar hide utility ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

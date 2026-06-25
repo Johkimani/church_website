@@ -66,10 +66,6 @@ export const SLIDE_IMAGES = [
     {
         url: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=1200&fit=crop",
         message: "Experience the Grace of the Sacramentals"
-    },
-    {
-        url: "https://images.unsplash.com/photo-1438283173091-5dbf5c5a3206?w=1200&fit=crop",
-        message: "Faith is the Light that Guides Your Path"
     }
 ];
 
@@ -77,13 +73,13 @@ export const SLIDE_IMAGES = [
 export type SacramentalCategory = 'all' | 'rosaries' | 'bibles' | 'chains' | 'crucifixes' | 'statues' | 'candles';
 
 export const SACRAMENTAL_CATEGORIES: { id: SacramentalCategory; label: string; icon: string }[] = [
-    { id: 'all', label: 'All Items', icon: '✦' },
-    { id: 'rosaries', label: 'Rosaries', icon: '📿' },
-    { id: 'bibles', label: 'Bibles & Books', icon: '📖' },
-    { id: 'chains', label: 'Chains & Medals', icon: '⛓️' },
-    { id: 'crucifixes', label: 'Crucifixes', icon: '✝️' },
-    { id: 'statues', label: 'Statues', icon: '🗿' },
-    { id: 'candles', label: 'Candles & More', icon: '🕯️' },
+    { id: 'all', label: 'All Items', icon: '' },
+    { id: 'rosaries', label: 'Rosaries', icon: '' },
+    { id: 'bibles', label: 'Bibles & Books', icon: '' },
+    { id: 'chains', label: 'Chains & Medals', icon: '' },
+    { id: 'crucifixes', label: 'Crucifixes', icon: '' },
+    { id: 'statues', label: 'Statues', icon: '' },
+    { id: 'candles', label: 'Candles & More', icon: '' },
 ];
 
 export interface SacramentalProduct {
@@ -233,6 +229,13 @@ export const TSHIRT_PRODUCTS = [
 ];
 
 // ADVANCED RENTAL PRODUCTS
+export const INSTRUMENT_PRICES: Record<string, number> = {
+    'piano': 2000,
+    'speakers and microphones': 2500,
+    'speakers': 2500,
+    'organ': 3000,
+};
+
 export const CHAIR_PRODUCTS = [
     {
         name: "White Event Chair",
@@ -251,19 +254,22 @@ export const CHAIR_PRODUCTS = [
 export const INSTRUMENT_PRODUCTS = [
     {
         name: "Speakers and Microphones",
-        desc: "Crystal clear vocal projection and deep bass for large spaces.",
+        price: 2500,
+        desc: "Crystal clear vocal projection and deep bass for large spaces. Includes mixer, 2 speakers, and 2 wireless microphones.",
         img: "https://images.unsplash.com/photo-1545128485-c400e7702796?w=600&fit=crop",
-        features: ["High-power Speakers", "Wireless Microphones", "Clear Audio"]
+        features: ["High-power Speakers", "Wireless Microphones", "Mixer Included", "Clear Audio"]
     },
     {
         name: "Piano",
-        desc: "Rich acoustics and beautiful melodies for any event.",
+        price: 2000,
+        desc: "Rich acoustics and beautiful melodies for any event. Professional-grade digital piano with stand.",
         img: "https://images.unsplash.com/photo-1552422535-c45813c61732?w=600&fit=crop",
         features: ["Weighted Keys", "Includes Stand", "Professional Sound"]
     },
     {
         name: "Organ",
-        desc: "Traditional, powerful sound for solemn mass settings.",
+        price: 3000,
+        desc: "Traditional, powerful sound for solemn mass settings. Dual manual with bass pedals.",
         img: "https://images.unsplash.com/photo-1541819665672-132d7ed161ec?w=600&fit=crop",
         features: ["Dual Manual", "Bass Pedals", "Authentic Church Reverb"]
     }
@@ -286,7 +292,7 @@ export const SECTION_BANNERS: Record<SectionType, { img: string; title: string; 
     chairs: {
         img: "",
         title: "Event Seating Rentals",
-        subtitle: "Impeccable quality chairs for weddings, banquets, and large gatherings — pickup available, delivery at customer cost.",
+        subtitle: "Impeccable quality chairs for weddings, banquets, and large gatherings — pickup at KYU campus.",
         icon: "🪑"
     },
     instruments: {
@@ -306,40 +312,40 @@ export const SECTION_BANNERS: Record<SectionType, { img: string; title: string; 
 // --- TRUST BADGES ---
 export const TRUST_BADGES: Record<SectionType, { icon: string; text: string }[]> = {
     sacramentals: [
-        { icon: "✨", text: "Blessed Items" },
-        { icon: "🛡️", text: "Authentic" },
-        { icon: "🌍", text: "Global Faith" },
-        { icon: "📦", text: "Careful Packing" }
+        { icon: "", text: "Blessed Items" },
+        { icon: "", text: "Authentic" },
+        { icon: "", text: "Global Faith" },
+        { icon: "", text: "Careful Packing" }
     ],
     tshirts: [
-        { icon: "🧵", text: "Premium Fabric" },
-        { icon: "📏", text: "All Sizes (S–XXL)" },
-        { icon: "🚚", text: "Nationwide Delivery" },
-        { icon: "✨", text: "Official CSA Brand" }
+        { icon: "", text: "Premium Fabric" },
+        { icon: "", text: "All Sizes (S–XXL)" },
+        { icon: "", text: "Pickup at Campus" },
+        { icon: "", text: "Official CSA Brand" }
     ],
     chairs: [
-        { icon: "🪑", text: "200+ Chairs Available" },
-        { icon: "📍", text: "Pickup Only (No Delivery)" },
-        { icon: "✅", text: "Spotlessly Cleaned" },
-        { icon: "📞", text: "24/7 Support" }
+        { icon: "", text: "200+ Chairs Available" },
+        { icon: "", text: "Pickup Only (No Delivery)" },
+        { icon: "", text: "Spotlessly Cleaned" },
+        { icon: "", text: "24/7 Support" }
     ],
     instruments: [
-        { icon: "🎵", text: "Professional Grade" },
-        { icon: "🔧", text: "Setup Included" },
-        { icon: "🎧", text: "Sound Engineer Support" },
-        { icon: "🛡️", text: "Insured Equipment" }
+        { icon: "", text: "Professional Grade" },
+        { icon: "", text: "Setup Included" },
+        { icon: "", text: "Sound Engineer Support" },
+        { icon: "", text: "Insured Equipment" }
     ],
     other: [
-        { icon: "🌟", text: "New Initiatives" },
-        { icon: "🤝", text: "Community Focus" },
-        { icon: "📈", text: "Growth Driven" },
-        { icon: "💡", text: "Innovative Ideas" }
+        { icon: "", text: "New Initiatives" },
+        { icon: "", text: "Community Focus" },
+        { icon: "", text: "Growth Driven" },
+        { icon: "", text: "Innovative Ideas" }
     ]
 };
 
 // --- RENTAL PROCESS STEPS ---
 export const RENTAL_PROCESS_STEPS = [
-    { step: 1, icon: "🔍", title: "Browse", desc: "Explore our curated collection" },
-    { step: 2, icon: "💬", title: "Contact", desc: "Reach our manager via WhatsApp" },
-    { step: 3, icon: "📍", title: "Pickup", desc: "Collect from us — delivery available at your cost" }
+    { step: 1, icon: "", title: "Browse", desc: "Explore our curated collection" },
+    { step: 2, icon: "", title: "Contact", desc: "Reach our manager via WhatsApp" },
+    { step: 3, icon: "", title: "Pickup", desc: "Collect from us at KYU campus" }
 ];

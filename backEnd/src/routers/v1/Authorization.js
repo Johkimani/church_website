@@ -3,7 +3,7 @@ import { Login, refreshAccessToken } from "../../controllers/Login.js";
 import { OTPverification, Reset } from "../../controllers/Reset.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import { stkCalls, stkGuestCalls, checkStatus } from "../../controllers/stkPush/stkCall.js";
-import { callback } from "../../controllers/stkPush/stkController.js";
+import { handleCallback as callback } from "../../controllers/stkPush/stkController.js";
 
 import { assignPermissionsToRole, deleteAllMembers, getPermissionsByRole, getRolesAndPermissions, getUserRolesAndPermissions , listAllMembers, listAllUsersRolesPermissions, registerPermissions, registerRoles  , registerUser, updateUserRoles} from "../../controllers/roles-permisions/roles_permissions.js";
 import { assignRolePermissionValidator, registerPermissionValidator, registerRoleValidator } from "../../validators/index.js";

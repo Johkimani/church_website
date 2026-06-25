@@ -9,9 +9,14 @@ import {
   ArrowRight,
   ShieldCheck,
   MoreVertical,
-  Sliders
+  Sliders,
+  Settings as SettingsIcon,
+  Phone,
+  Save,
+  Loader2
 } from 'lucide-react';
 import apiService from '../../Landing/services/api';
+import { apiClient } from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
 interface Member {
@@ -44,14 +49,25 @@ export default function Settings() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Define the core roles we want to highlight based on user request
-  const highlightedRoles = [
-    'officials management',
-    'community management',
-    'devotions and ai',
-    'gallery manager assistant',
-    'supreme_admin'
-  ];
+  // Dynamically compute assignable roles
+  const dynamicRoles = useMemo(() => {
+    const baseRoles = [
+      'officials management',
+      'community management',
+      'devotions and ai',
+      'gallery manager assistant',
+      'supreme_admin'
+    ];
+    
+    const dbRoles = availableRoles.map(r => r.role_name);
+    
+    const officialRoles = officials
+      .filter(o => o.position)
+      .map(o => o.position.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+
+    // Remove empty strings just in case
+    return Array.from(new Set([...baseRoles, ...dbRoles, ...officialRoles])).filter(Boolean);
+  }, [availableRoles, officials]);
 
   useEffect(() => {
     fetchData();
@@ -258,7 +274,7 @@ export default function Settings() {
                   Available Privileges
                 </p>
                 <div className="grid grid-cols-1 gap-3">
-                  {highlightedRoles.map((roleName) => (
+                  {dynamicRoles.map((roleName) => (
                     <button
                       key={roleName}
                       onClick={() => handleRoleToggle(roleName)}
@@ -320,6 +336,154 @@ export default function Settings() {
                </p>
              </div>
           </div>
+        </div>
+      </div>
+
+      {/* Settings - System Configurations */}
+      <HireSettingsSection />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   HIRE SETTINGS — saved to database (shared)
+   ═══════════════════════════════════════════ */
+function HireSettingsSection() {
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [phones, setPhones] = useState({
+    chairs_handler_phone: '',
+    instruments_handler_phone: '',
+    hire_admin_phone: '',
+  });
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.get('/settings');
+      const data = response.data;
+      setSettings(data);
+      setPhones({
+        chairs_handler_phone: data.chairs_handler_phone || '',
+        instruments_handler_phone: data.instruments_handler_phone || '',
+        hire_admin_phone: data.hire_admin_phone || '',
+      });
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+      toast.error('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await apiClient.put('/settings', phones);
+      // Also sync to localStorage as backup for the HireModal
+      localStorage.setItem('csa_chairs_handler_phone', phones.chairs_handler_phone);
+      localStorage.setItem('csa_instruments_handler_phone', phones.instruments_handler_phone);
+      localStorage.setItem('csa_hire_admin_phone', phones.hire_admin_phone);
+      toast.success('Phone numbers saved successfully!');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mt-8">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 size={24} className="animate-spin text-blue-600" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+      <div className="p-8 bg-gradient-to-r from-blue-600 to-indigo-600">
+        <h2 className="text-2xl font-black text-white flex items-center gap-3">
+          <Phone className="w-6 h-6" />
+          Hire Request Admin Numbers
+        </h2>
+        <p className="text-blue-100 text-sm mt-2">
+          Configure who receives WhatsApp messages when a hire request is submitted. These numbers are shared across all admin users.
+        </p>
+      </div>
+
+      <div className="p-8 space-y-6">
+        {/* Chairs Handler */}
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700">Chairs Handler Phone</label>
+          <p className="text-xs text-slate-400">Receives WhatsApp messages for chair hire requests.</p>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={phones.chairs_handler_phone}
+              onChange={(e) => setPhones(prev => ({ ...prev, chairs_handler_phone: e.target.value }))}
+              placeholder="e.g. 254712345678"
+              className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
+            />
+          </div>
+        </div>
+
+        {/* Instruments Handler */}
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700">Instruments Handler Phone</label>
+          <p className="text-xs text-slate-400">Receives WhatsApp messages for instrument hire requests.</p>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={phones.instruments_handler_phone}
+              onChange={(e) => setPhones(prev => ({ ...prev, instruments_handler_phone: e.target.value }))}
+              placeholder="e.g. 254798765432"
+              className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
+            />
+          </div>
+        </div>
+
+        {/* Default Admin */}
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700">Default Hire Admin Phone</label>
+          <p className="text-xs text-slate-400">Fallback number if no category-specific handler is set.</p>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={phones.hire_admin_phone}
+              onChange={(e) => setPhones(prev => ({ ...prev, hire_admin_phone: e.target.value }))}
+              placeholder="e.g. 254112051739"
+              className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <button
+            onClick={loadSettings}
+            className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition text-sm"
+          >
+            Reset
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition-all text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            {saving ? (
+              <><Loader2 size={16} className="animate-spin" /> Saving...</>
+            ) : (
+              <><Save size={16} /> Save Phone Numbers</>
+            )}
+          </button>
         </div>
       </div>
     </div>
