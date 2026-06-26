@@ -11,6 +11,8 @@ interface UserData {
   email: string;
   status: string; // e.g. "success"
   jumuiya_id: string;
+  member_id?: string; // Member's unique ID (e.g. "CSA-001"), optional for backwards compat
+  year?: string;      // Academic year of the member, optional for backwards compat
 }
 
 interface AuthContextType {

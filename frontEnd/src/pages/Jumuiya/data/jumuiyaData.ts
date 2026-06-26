@@ -62,6 +62,7 @@ export interface Notification {
 
 export interface JumuiyaData {
   id: string;
+  group_id?: string;
   name: string;
   fullName?: string;
   description?: string;
@@ -78,6 +79,7 @@ export interface JumuiyaData {
   socialMedia?: SocialMedia[];
   tshirtOrders?: TshirtOrder[];
 }
+
 
 export const jumuiyaList: JumuiyaData[] = [
   {

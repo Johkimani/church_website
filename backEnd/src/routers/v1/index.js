@@ -14,6 +14,9 @@ import activitiesRouter from "./activitiesRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import formsDistributionRouter from "./FormsDistributionRouter.js"
+import jumuiyaMembersRouter from "../jumuiyaMembersRouter.js"
+import jumuiyaDataRouter from "../jumuiyaDataRouter.js"
+
 
 const router = Router()
 
@@ -52,6 +55,12 @@ router.use("/", sliderRoutes);
 
 // Activities (weekly + semester)
 router.use("/activities", activitiesRouter);
+
+// Jumuiya members endpoints
+router.use("/jumuiya-members", jumuiyaMembersRouter);
+
+// Jumuiya data (full aggregated data with group_id)
+router.use("/jumuiya-data", jumuiyaDataRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
