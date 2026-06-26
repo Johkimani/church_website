@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FaPlus, FaCheckCircle, FaInbox, FaUsers, FaChurch, FaRegClock } from "react-icons/fa";
+import { FaCheckCircle, FaInbox, FaUsers, FaChurch, FaRegClock } from "react-icons/fa";
 import { MdUpdate, MdHistory } from "react-icons/md";
 import { useNotifications } from "../../../context/NotificationContext";
 import { useAuth } from "../../../context/AuthContext";
-import { createNotificationEventApi } from "../../../api/axiosInstance";
-import NotificationModal from "../components/NotificationModal";
 import { timeAgo } from "../../../utils";
-import type { NotificationPayload, fileUpload, Event as BaseEvent } from "../../../interface/api";
+import type { fileUpload, Event as BaseEvent } from "../../../interface/api";
 
 // Extend the base Event with fields the card actually uses
 type NotificationEvent = BaseEvent & {
@@ -90,9 +88,16 @@ const NotificationCard: React.FC<{ event: NotificationEvent }> = ({ event }) => 
                 {event.text}
              </h4>
 
-             <p className="text-sm text-gray-500 font-medium mb-5 leading-relaxed">
-                {event.posted_by} shared an update to the community.
+             <p className="text-xs text-gray-400 font-black uppercase tracking-widest mb-3">
+                Posted by {event.posted_by || "Admin"}
              </p>
+
+             {event.message && (
+               <p className="text-sm text-gray-600 font-medium mb-5 leading-relaxed whitespace-pre-line">
+                  {event.message}
+               </p>
+             )}
+
 
              {Array.isArray(event.images) && event.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -115,15 +120,13 @@ const NotificationCard: React.FC<{ event: NotificationEvent }> = ({ event }) => 
 };
 
 const Notifications: React.FC = () => {
-  const { notifications, markAllAsRead, refreshNotifications, isConnected } = useNotifications();
+  const { notifications, markAllAsRead, isConnected } = useNotifications();
   const { user } = useAuth();
 
   const [activeCategory, setActiveCategory] = useState<"csa" | "jumuiya" | null>(null);
-  const [showModal, setShowModal] = useState(false);
 
-  // roles is always an array (string[]) from UserData
-  const roles = useMemo(() => (Array.isArray(user?.role) ? user.role : []), [user?.role]);
-  const isAdmin = true;
+  // roles is always an array (string[]) from UserData — kept for future use
+  const _roles = useMemo(() => (Array.isArray(user?.role) ? user.role : []), [user?.role]);
 
   useEffect(() => {
     if (activeCategory) {
@@ -131,15 +134,6 @@ const Notifications: React.FC = () => {
       if (hasUnread) markAllAsRead(activeCategory);
     }
   }, [activeCategory, markAllAsRead, notifications]);
-
-  const createNotification = useCallback(async (data: NotificationPayload) => {
-    try {
-      await createNotificationEventApi(data);
-      refreshNotifications();
-    } catch (error) {
-      console.error("Failed to create notification:", error);
-    }
-  }, [refreshNotifications]);
 
   const unreadCSA = notifications.filter(e => e.category === "csa" && !e.read).length;
   const unreadJumuiya = notifications.filter(e => e.category === "jumuiya" && !e.read).length;
@@ -171,17 +165,11 @@ const Notifications: React.FC = () => {
              </div>
           </div>
 
-          {!isConnected && (
-            <div className="mb-6 flex items-center justify-center gap-2 text-amber-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-amber-50/50 border border-amber-100/50 backdrop-blur-sm">
-               <MdUpdate className="text-base animate-spin" />
-               Connecting...
-            </div>
-          )}
-
           {/* Switcher */}
           <div className="flex justify-center mb-8">
             <div className="inline-flex p-1 bg-gray-200/50 backdrop-blur-md rounded-2xl border border-white gap-1.5 min-w-[300px]">
                <button
+                  id="notif-csa-tab"
                   onClick={() => setActiveCategory("csa")}
                   className={`flex-1 py-2 px-6 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
                      activeCategory === "csa"
@@ -192,6 +180,7 @@ const Notifications: React.FC = () => {
                   CSA {unreadCSA > 0 && <span className="ml-1 text-blue-400">({unreadCSA})</span>}
                </button>
                <button
+                  id="notif-jumuiya-tab"
                   onClick={() => setActiveCategory("jumuiya")}
                   className={`flex-1 py-2 px-6 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
                      activeCategory === "jumuiya"
@@ -233,35 +222,7 @@ const Notifications: React.FC = () => {
              )}
           </div>
 
-          {/* Admin Action */}
-          {isAdmin && (
-            <button
-               onClick={() => setShowModal(true)}
-               className={`fixed z-50 flex items-center justify-center bg-black text-white shadow-2xl hover:bg-gray-900 transition-all duration-300 ease-out border border-gray-800 backdrop-blur-md group overflow-hidden ${
-                 !!activeCategory
-                   ? "top-20 right-4 sm:top-24 sm:right-6 w-12 h-12 rounded-full hover:scale-110 active:scale-95 shadow-blue-900/20"
-                   : "top-[calc(100vh-6rem)] right-8 sm:top-[calc(100vh-7rem)] sm:right-10 px-8 h-14 rounded-full gap-3 hover:scale-105 active:scale-95"
-               }`}
-            >
-               <FaPlus className={`text-lg transition-transform duration-300 shrink-0 ${!!activeCategory ? 'group-hover:rotate-180' : 'group-hover:rotate-90'}`} />
-               <span className={`font-black uppercase tracking-[0.2em] transform transition-all duration-300 ${
-                 !!activeCategory ? "text-[0px] w-0 opacity-0 translate-x-10" : "text-[10px] w-auto opacity-100 translate-x-0 pt-0.5"
-               }`}>
-                 Create Notification
-               </span>
-            </button>
-          )}
-
         </div>
-
-        {/* Modal */}
-        {showModal && (
-          <NotificationModal
-             roles={roles}
-             createNotification={createNotification}
-             onClose={() => setShowModal(false)}
-          />
-        )}
      </div>
   );
 };

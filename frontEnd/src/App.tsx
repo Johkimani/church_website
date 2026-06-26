@@ -29,6 +29,10 @@ const ChairsPage = lazy(() => import("./pages/projects/pages/Chairs").then((modu
 const InstrumentsPage = lazy(() => import("./pages/projects/pages/Instruments").then((module) => ({ default: module.Instruments })));
 const OtherProjectsPage = lazy(() => import("./pages/projects/pages/OtherProjects").then((module) => ({ default: module.OtherProjects })));
 const ActivitiesPage = lazy(() => import("./pages/Landing/components/page/ActivitiesPage"));
+const ProductDetailsPage = lazy(() => import("./pages/projects/pages/ProductDetails"));
+
+// New Admin Pages
+const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 
 // Utility pages
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -59,11 +63,23 @@ const ProjectsManager = lazy(() =>
 const DonationMonitor = lazy(() => import("./pages/Admin/pages/DonationMonitor"));
 // Admin Components
 const CommunityManager = lazy(() => import("./pages/Admin/pages/CommunityManager"));
+const WeeklyActivitiesAdmin = lazy(() =>
+  import("./pages/Admin/pages/WeeklyActivitiesAdmin")
+);
+
+const SemesterActivitiesAdmin = lazy(() =>
+  import("./pages/Admin/pages/SemesterActivitiesAdmin")
+);
+
+const AnnouncementsAdmin = lazy(() =>
+  import("./pages/Admin/pages/AnnouncementsAdmin")
+);
 const CommunityDetailEditor = lazy(() => import("./pages/Admin/pages/CommunityDetailEditor"));
 const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions"));
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
 const SacramentalsBannerManager = lazy(() => import("./pages/Admin/pages/SacramentalsBannerManager"));
 const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribution"));
+const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -115,6 +131,9 @@ const App: React.FC = () => {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="weekly-activities" element={<WeeklyActivitiesAdmin />} />
+          <Route path="semester-activities" element={<SemesterActivitiesAdmin />} />
+          <Route path="announcements" element={<AnnouncementsAdmin />} />
           <Route path="officials" element={<AdminPanel />} />
           <Route path="devotions" element={<Appadmin />} />
           <Route path="records" element={<RecordsExplorer />} />
@@ -126,8 +145,11 @@ const App: React.FC = () => {
           <Route path="sacramentals-banners" element={<SacramentalsBannerManager />} />
           <Route path="projects" element={<ProjectsManager />} />
           <Route path="forms-distribution" element={<FormsDistribution />} />
-          <Route path="settings" element={<div className="p-8 bg-white rounded-2xl shadow-sm border border-slate-200">Settings Page Coming Soon</div>} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
+
+        {/* Order Confirmation (no layout) */}
+        <Route path="/order-confirmation" element={<OrderConfirmation />} />
 
         {/* Public Routes with Page Layout */}
         <Route path="/" element={<Pageoulet />}>
@@ -152,6 +174,7 @@ const App: React.FC = () => {
           <Route path="instruments" element={<ProtectedRoute><InstrumentsPage /></ProtectedRoute>} />
           <Route path="other-projects" element={<ProtectedRoute><OtherProjectsPage /></ProtectedRoute>} />
           <Route path="activities" element={<ProtectedRoute><ActivitiesPage /></ProtectedRoute>} />
+          <Route path="product/:id" element={<ProtectedRoute><ProductDetailsPage /></ProtectedRoute>} />
           
           {/* show notification to all */}
           <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />

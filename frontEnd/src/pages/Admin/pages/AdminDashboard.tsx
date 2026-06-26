@@ -15,43 +15,47 @@ export default function AdminDashboard() {
   const { data, loading, error, refetch: loadDashboardData } = useCachedData(
     'csa_cache_dashboard_overview',
     async () => {
-      const [members, donations, events] = await Promise.all([
+      const [members, donations, events, orders, hire_requests] = await Promise.all([
         apiService.fetchTableData('members'),
         apiService.fetchTableData('mpesa_request'),
-        apiService.fetchTableData('events')
+        apiService.fetchTableData('events'),
+        apiService.fetchTableData('orders'),
+        apiService.fetchTableData('hire_requests')
       ]);
 
       const membersArr = Array.isArray(members) ? members : [];
       const donationsArr = Array.isArray(donations) ? donations : [];
-      const eventsArr = Array.isArray(events) ? events : [];
+      const ordersArr = Array.isArray(orders) ? orders : [];
+      const hiresArr = Array.isArray(hire_requests) ? hire_requests : [];
 
       const paidDonations = donationsArr.filter((d: any) => d.status === 'paid');
       const totalDonated = paidDonations.reduce((acc: number, d: any) => acc + Number(d.amount || 0), 0);
-      const upcomingEvents = eventsArr.filter((e: any) => {
-        const d = new Date(e.date || e.event_date || e.created_at);
-        return !isNaN(d.getTime()) && d > new Date();
-      });
+      
+      const pendingOrders = ordersArr.filter((o: any) => o.status === 'pending').length;
+      const pendingHires = hiresArr.filter((h: any) => h.status === 'pending').length;
 
       return {
         members: membersArr.length,
         donations: totalDonated,
-        events: upcomingEvents.length,
+        pendingOrders,
+        pendingHires,
         activities: donationsArr.slice(0, 5)
       };
     },
     {
       members: 0,
       donations: 0,
-      events: 0,
+      pendingOrders: 0,
+      pendingHires: 0,
       activities: [] as any[]
     }
   );
 
   const stats = [
-    { name: 'Total Members', value: data.members.toLocaleString(), icon: Users, change: '+100%', trend: 'up', color: 'bg-blue-500' },
-    { name: 'Total Donations', value: `KES ${data.donations.toLocaleString()}`, icon: Heart, change: '+24.1%', trend: 'up', color: 'bg-rose-500' },
-    { name: 'Upcoming Events', value: data.events.toString(), icon: Calendar, change: 'Active', trend: 'up', color: 'bg-amber-500' },
-    { name: 'System Pulse', value: 'Active', icon: TrendingUp, change: '100%', trend: 'up', color: 'bg-emerald-500' },
+    { name: 'Total Members', value: Number(data?.members || 0).toLocaleString(), icon: Users, change: '+100%', trend: 'up', color: 'bg-blue-500' },
+    { name: 'Total Donations', value: `KES ${Number(data?.donations || 0).toLocaleString()}`, icon: Heart, change: '+24.1%', trend: 'up', color: 'bg-rose-500' },
+    { name: 'Pending Orders', value: String(data?.pendingOrders || 0), icon: Calendar, change: 'Orders', trend: 'up', color: 'bg-amber-500' },
+    { name: 'Pending Hires', value: String(data?.pendingHires || 0), icon: TrendingUp, change: 'Hires', trend: 'up', color: 'bg-purple-500' },
   ];
 
   if (loading) {
@@ -119,24 +123,24 @@ export default function AdminDashboard() {
             <button className="text-xs font-bold text-blue-600 hover:text-blue-700">Live Feed</button>
           </div>
           <div className="p-0">
-            {data.activities.length > 0 ? data.activities.map((activity, i) => (
+            {(data?.activities || []).length > 0 ? (data?.activities || []).map((activity: any, i: number) => (
               <div key={i} className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 px-6">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                     activity.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'
                 }`}>
-                   {activity.user_id?.substring(0, 2).toUpperCase()}
+                   {String(activity?.user_id || 'U').substring(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-slate-800 truncate">
                     {activity.status === 'paid' ? 'New Contribution Received' : 'Donation Initialized'}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {activity.user_id} • KES {activity.amount} • <span className="capitalize">{activity.status}</span>
+                    {activity.user_id || 'Unknown'} • KES {activity.amount || 0} • <span className="capitalize">{activity.status || 'unknown'}</span>
                   </p>
                 </div>
                 <div className="text-right whitespace-nowrap">
                   <p className="text-[10px] text-slate-400 font-medium italic">
-                    {new Date(activity.created_at).toLocaleTimeString()}
+                    {activity.created_at ? new Date(activity.created_at).toLocaleTimeString() : ''}
                   </p>
                 </div>
               </div>

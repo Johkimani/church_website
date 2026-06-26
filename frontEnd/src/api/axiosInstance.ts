@@ -14,6 +14,8 @@ const getApiErrorMessage = (error: unknown): string => {
         error.response.data?.message ||
         `Server responded with status ${error.response.status}`
       );
+
+      
     }
     if (error.request) {
       return "Unable to reach the backend. Please ensure the server is running and the URL is correct.";
@@ -146,6 +148,18 @@ export const createNotificationEventApi = (payload: {
   status?: string;
 }) => apiClient.post("/notifications", payload);
 
+export const updateNotificationEventApi = (
+  id: string | number,
+  payload: {
+    title?: string;
+    message?: string;
+    images?: fileUpload[];
+    posted_To?: string;
+    status?: string;
+  }
+) => apiClient.patch(`/notifications/${id}`, payload);
+
+
 export const uploadFile = (files: File[] | File) => {
   const formData = new FormData();
   normalizeFiles(files).forEach((file) => formData.append("files", file));
@@ -178,8 +192,9 @@ export const deleteTableRecord = (table: string, id: string | number) =>
 export const loginApi = (data: { userReg: string; password: string }) =>
   apiClient.post("/authentication/login", data);
 
-export const initiateSTKPush = (data: { amount: number; phoneNumber: string }) =>
-  apiClient.post("/authentication/stk-push", data);
+export const initiateSTKPush = (data: { amount: number; phoneNumber: string }) => {
+  return apiClient.post("/payments/stkpush", data);
+};
 
 export const initiateGuestSTKPush = (data: { amount: number; phoneNumber: string }) =>
   apiClient.post("/authentication/stk-push-guest", data);

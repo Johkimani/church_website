@@ -89,4 +89,13 @@ export interface NotificationModalProps {
   createNotification: (payload: NotificationPayload) => Promise<void>;
   onClose: () => void;
   roles: string[];
+  /** Pre-fills the form for edit mode. If provided, the modal acts as an editor. */
+  initialData?: {
+    id: string | number;
+    title?: string;
+    message?: string;
+    status?: string;
+  };
+  /** Locks the destination to a specific channel and hides the switcher. */
+  lockedTo?: "csa" | "jumuiya";
 }

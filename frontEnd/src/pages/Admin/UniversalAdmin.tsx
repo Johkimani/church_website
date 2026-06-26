@@ -1,17 +1,18 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Heart, 
-  BookOpen, 
-  Database, 
-  Settings, 
-  Menu, 
+import {
+  LayoutDashboard,
+  Users,
+  Heart,
+  BookOpen,
+  Database,
+  Settings,
+  Menu,
   ChevronRight,
+  ChevronDown,
   LogOut,
   Bell,
   LayoutGrid,
   MessageSquare,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -19,25 +20,41 @@ import NotificationDropdown, { type Notification } from './components/Notificati
 import apiService from '../Landing/services/api';
 import { useEffect, useState } from 'react';
 import { timeAgo } from '../../utils';
+import { ArtDeco404 } from './components/ArtDeco404';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { 
+    id: 'activities', 
+    name: 'Activities', 
+    icon: LayoutGrid, 
+    subItems: [
+      { id: 'weekly-activities', name: 'Weekly Activities', path: '/admin/weekly-activities' },
+      { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' }
+    ]
+  },
+  { id: 'announcements', name: 'Announcements Management', icon: Bell, path: '/admin/announcements' },
   { id: 'officials', name: 'Officials Management', icon: Users, path: '/admin/officials' },
   { id: 'community', name: 'Community Management', icon: LayoutGrid, path: '/admin/community-management' },
   { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations' },
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
-  { id: 'sacramentals-banners', name: 'Sacramentals Banners', icon: ImageIcon, path: '/admin/sacramentals-banners' },
-  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   {
-  id: 'projects',
-  name: 'Project Management',
-  icon: LayoutGrid,
-  path: '/admin/projects'
-},
+    id: "sacramental-section",
+    name: "Sacramentals section",
+    icon: Database,
+    subItems: [
+      { id: 'sacramentals-banners', name: 'Sacramentals Banners', path: '/admin/sacramentals-banners' },
+      { id: "products", name: "Products", path: "/admin/products" },
+      { id: "orders", name: "Orders", path: "/admin/orders" },
+      { id: "hire", name: "Hire Requests", path: "/admin/hire-requests" }
+    ]
+  },
+  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
+  { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
   { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
-  { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' },
+  { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' }
 ];
 
 export default function UniversalAdmin() {
@@ -46,6 +63,11 @@ export default function UniversalAdmin() {
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [openMenus, setOpenMenus] = useState<string[]>(['activities', 'sacramental-section']); // Optional default open
+
+  const toggleMenu = (id: string) => {
+    setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -74,7 +96,7 @@ export default function UniversalAdmin() {
       const formattedDonations: Notification[] = donations
         .filter((d: any) => d.status === 'paid')
         .map((d: any) => ({
-          id: `d-${d.id}`,
+          id: `d-${d.checkout_id || Math.random()}`,
           type: 'donation',
           title: 'New Donation',
           message: `Received KES ${Number(d.amount).toLocaleString()} from ${d.user_id}`,
@@ -88,7 +110,7 @@ export default function UniversalAdmin() {
       const combined = [...formattedSuggestions, ...formattedDonations]
         .sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime())
         .slice(0, 10);
-      
+
       setNotifications(combined);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -104,7 +126,51 @@ export default function UniversalAdmin() {
     setIsNotificationsOpen(false);
   };
 
-const {user , logout} = useAuth()
+  const { user, logout } = useAuth();
+
+  // ── Role Access Controls ──────────────────────────────────────────────────
+  const userRoles = Array.isArray(user?.role)
+    ? user.role
+    : user?.role
+    ? [user.role]
+    : [];
+  const normalized = userRoles.map((r) => String(r).toUpperCase().trim());
+  const isSuperAdmin = normalized.some(
+    (r) => r.includes("ADMIN") || r.includes("SUPREME")
+  );
+
+  const checkAccess = (path: string): boolean => {
+    if (isSuperAdmin) return true;
+    if (path === "/admin" || path === "/admin/") return true;
+
+    if (path.startsWith("/admin/announcements")) {
+      return normalized.some(
+        (r) =>
+          r.includes("CSA_LEADER") ||
+          r.includes("CSA_OS") ||
+          r.includes("JUMUIYA_LEADER") ||
+          r.includes("JUMUIYA_OS")
+      );
+    }
+    if (path.startsWith("/admin/officials")) {
+      return normalized.includes("OFFICIALS MANAGEMENT");
+    }
+    if (path.startsWith("/admin/community-management")) {
+      return normalized.includes("COMMUNITY MANAGEMENT");
+    }
+    if (path.startsWith("/admin/devotions")) {
+      return normalized.includes("DEVOTIONS AND AI");
+    }
+    if (path.startsWith("/admin/gallery") || path.startsWith("/admin/sacramentals-banners")) {
+      return normalized.includes("GALLERY MANAGER ASSISTANT");
+    }
+
+    // Default: other admin views require admin/super admin
+    return false;
+  };
+
+  const hasAccess = checkAccess(location.pathname);
+  const allowedMenuItems = menuItems.filter((item) => checkAccess(item.path));
 
   const handleLogout = () => {
     logout();
@@ -114,10 +180,9 @@ const {user , logout} = useAuth()
   return (
     <div className="h-screen bg-slate-100 flex overflow-hidden">
       {/* Sidebar */}
-      <aside 
-        className={`${
-          isSidebarOpen ? 'w-72' : 'w-20'
-        } bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-100 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-2xl`}
+      <aside
+        className={`${isSidebarOpen ? 'w-72' : 'w-20'
+          } bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-100 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-2xl`}
       >
         {/* Sidebar Header */}
         <div className="h-20 flex items-center px-6 border-b border-slate-800 shrink-0">
@@ -134,33 +199,80 @@ const {user , logout} = useAuth()
 
         {/* Navigation Links */}
         <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin');
+          {allowedMenuItems.map((item) => {
+            const hasSub = !!item.subItems;
+
+            if (!hasSub) {
+              const isActive = location.pathname === item.path || (item.id === 'dashboard' && location.pathname === '/admin');
+              return (
+                <Link
+                  key={item.id}
+                  to={item.path!}
+                  className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isActive
+                      ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                  <item.icon size={22} className={isActive ? 'text-white' : 'text-slate-300 group-hover:text-blue-200'} />
+                  {isSidebarOpen && (
+                    <div className="ml-4 flex-1 flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm leading-tight">{item.name}</span>
+                      {isActive && <ChevronRight size={16} className="text-blue-200" />}
+                    </div>
+                  )}
+                </Link>
+              );
+            }
+
+            const isOpen = openMenus.includes(item.id);
+            const isChildActive = item.subItems!.some(child => location.pathname === child.path);
+
             return (
-              <Link
-                key={item.id}
-                to={item.path}
-                className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${
-                  isActive 
-                    ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30' 
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <item.icon size={22} className={isActive ? 'text-white' : 'text-slate-300 group-hover:text-blue-200'} />
-                {isSidebarOpen && (
-                  <div className="ml-4 flex-1 flex items-center justify-between gap-2">
-                    <span className="font-semibold text-sm leading-tight">{item.name}</span>
-                    {isActive && <ChevronRight size={16} className="text-blue-200" />}
+              <div key={item.id} className="flex flex-col space-y-1">
+                <button
+                  onClick={() => {
+                    toggleMenu(item.id);
+                    if (!isSidebarOpen) setIsSidebarOpen(true);
+                  }}
+                  className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isChildActive && !isOpen
+                      ? 'bg-blue-500/20 text-blue-300'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                  <item.icon size={22} className={isChildActive ? 'text-blue-300' : 'text-slate-300 group-hover:text-blue-200'} />
+                  {isSidebarOpen && (
+                    <div className="ml-4 flex-1 flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm leading-tight">{item.name}</span>
+                      {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </div>
+                  )}
+                </button>
+                {isSidebarOpen && isOpen && (
+                  <div className="ml-12 border-l border-slate-700 pl-4 space-y-2 mt-1 py-1">
+                    {item.subItems!.map(child => {
+                      const isSubActive = location.pathname === child.path;
+                      return (
+                        <Link
+                          key={child.id}
+                          to={child.path}
+                          className={`flex items-center text-sm px-3 py-2 rounded-xl transition-colors ${
+                            isSubActive ? 'bg-blue-500/95 text-white shadow-md shadow-blue-900/30' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          {child.name}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </nav>
 
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-slate-800">
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center px-4 py-3 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all duration-200"
           >
@@ -174,7 +286,7 @@ const {user , logout} = useAuth()
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="admin-panel-header">
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
           >
@@ -189,7 +301,7 @@ const {user , logout} = useAuth()
           </div>
 
           <div className="flex items-center gap-6 relative">
-            <button 
+            <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className={`relative p-2 transition-colors ${isNotificationsOpen ? 'text-blue-600' : 'text-slate-400 hover:text-blue-600'}`}
             >
@@ -200,7 +312,7 @@ const {user , logout} = useAuth()
             </button>
 
             {isNotificationsOpen && (
-              <NotificationDropdown 
+              <NotificationDropdown
                 notifications={notifications}
                 onClose={() => setIsNotificationsOpen(false)}
                 onMarkAsRead={handleMarkAsRead}
@@ -222,7 +334,7 @@ const {user , logout} = useAuth()
         <main className="flex-1 overflow-y-auto bg-slate-100">
           <div className="p-8 max-w-full">
             <div className="admin-panel-card min-h-[calc(100vh-9rem)]">
-              <Outlet />
+              {hasAccess ? <Outlet /> : <ArtDeco404 />}
             </div>
           </div>
         </main>

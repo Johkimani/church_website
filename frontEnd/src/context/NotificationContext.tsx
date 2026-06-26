@@ -1,134 +1,173 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { useSocket } from "./SocketContext";
-import { useAuth } from "./AuthContext";
-import { fetchNotifications } from "../api/axiosInstance";
-import type { Event } from "../interface/api";
+/**
+ * NotificationContext — application-wide notification state.
+ *
+ * Data sources:
+ *   1. REST  GET /notifications  on mount and manual refresh  (history)
+ *   2. SSE events  notification_new / notification_updated / notification_deleted
+ *      (real-time delivery via SSEContext — no Socket.IO dependency here)
+ *
+ * Socket.IO (SocketContext) is left untouched; it serves the officials page.
+ */
 
-export const NotificationEvents = {
-  CONNECTION: "connection",
-  DISCONNECT: "disconnect",
-  JOIN_JUMUIYA: "joinIndividualJumuia",
-  CSA_NOTIFICATION: "csaNotification",
-  JUMUIYA_NOTIFICATION: "jumuiyaNotification",
-  NOTIFICATION_UPDATED: "notificationUpdated",
-  NOTIFICATION_DELETED: "notificationDeleted",
-  SOCKET_ERROR: "socketError",
-  CONNECT_ERROR: "connect_error",
-} as const;
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { useSSE }        from "./SSEContext";
+import { useAuth }       from "./AuthContext";
+import { fetchNotifications } from "../api/axiosInstance";
+import type { Event }    from "../interface/api";
+
+// ── Context shape ─────────────────────────────────────────────────────────────
 
 interface NotificationContextType {
   notifications: Event[];
-  unreadCount: number;
+  unreadCount:   number;
   markAllAsRead: (category: "csa" | "jumuiya") => void;
-  loading: boolean;
+  loading:       boolean;
   refreshNotifications: () => Promise<void>;
-  isConnected: boolean;
-  socketError: any;
+  isConnected:   boolean;
+  socketError:   any;          // kept for backward-compat (always null with SSE)
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined
+);
 
-export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { socket } = useSocket();
-  const { user } = useAuth();
+// ── Provider ──────────────────────────────────────────────────────────────────
+
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { subscribe, isConnected } = useSSE();
+  const { user }                    = useAuth();
+
   const [notifications, setNotifications] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [socketError, setSocketError] = useState<any>(null);
+  const [loading, setLoading]             = useState(false);
 
+  // Helper: check localStorage for read status and enrich notifications list
+  const enrichNotificationsWithReadStatus = useCallback((items: Event[]): Event[] => {
+    try {
+      const stored = localStorage.getItem("csa_read_notification_ids");
+      const readIds: string[] = stored ? JSON.parse(stored) : [];
+      return items.map((item) => ({
+        ...item,
+        read: readIds.includes(String(item.id)) ? true : (item.read || false),
+      }));
+    } catch {
+      return items;
+    }
+  }, []);
+
+  // ── Initial REST fetch (notification history) ────────────────────────────
   const refreshNotifications = useCallback(async () => {
     if (!user) return;
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await fetchNotifications();
-      if (res.data) {
-        setNotifications(res.data);
+      const data = res.data;
+      if (Array.isArray(data)) {
+        setNotifications(enrichNotificationsWithReadStatus(data as Event[]));
       }
     } catch (err) {
-      console.error("Failed to fetch notifications:", err);
+      console.warn("[Notifications] Fetch failed:", err);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, enrichNotificationsWithReadStatus]);
 
   useEffect(() => {
     refreshNotifications();
   }, [refreshNotifications]);
 
+  // ── SSE real-time subscriptions ──────────────────────────────────────────
   useEffect(() => {
-    if (!socket) return;
-
-    const onConnect = () => {
-      setIsConnected(true);
-      if (user?.jumuiya_id) {
-        socket.emit(NotificationEvents.JOIN_JUMUIYA, user.jumuiya_id);
-      }
-    };
-
-    const onDisconnect = () => {
-      setIsConnected(false);
-    };
-
-    socket.on(NotificationEvents.CONNECTION, onConnect);
-    socket.on(NotificationEvents.DISCONNECT, onDisconnect);
-    if (socket.connected) onConnect();
-
-    const handleNewNotification = (msg: any) => {
-      const normalizedEvent: Event = {
-        id: msg.id || Date.now().toString(),
-        text: msg.text || msg.message?.title || "New notification",
-        category: msg.category || (msg.message?.posted_to === "csa" ? "csa" : "jumuiya"),
-        posted_by: msg.posted_by || "system",
-        createdAt: msg.createdAt || new Date().toISOString(),
-        read: false,
-        images: Array.isArray(msg.images) ? msg.images : [],
+    /**
+     * notification_new  → prepend to the list (unread by default).
+     * Deduplication: if the same id already exists (e.g. REST and SSE race),
+     * the SSE version wins (it's fresher).
+     */
+    const unsubNew = subscribe<any>("notification_new", (data) => {
+      const notif: Event = {
+        id:        data.id,
+        text:      data.title  ?? data.text ?? "New notification",
+        category:  data.category ?? (data.posted_to === "csa" ? "csa" : "jumuiya"),
+        posted_by: data.posted_by ?? "",
+        createdAt: data.createdAt ?? data.created_at ?? new Date().toISOString(),
+        read:      false,
+        images:    Array.isArray(data.images) ? data.images : [],
+        // pass everything through so extra fields are preserved
+        ...data,
       };
-      setNotifications((prev) => [normalizedEvent, ...prev]);
-    };
+      setNotifications((prev) => {
+        const enriched = enrichNotificationsWithReadStatus([notif])[0];
+        return [
+          enriched,
+          ...prev.filter((n) => n.id !== enriched.id),
+        ];
+      });
+    });
 
-    const handleUpdateNotification = (updatedMsg: any) => {
+    /**
+     * notification_updated  → merge changes into the existing entry.
+     */
+    const unsubUpdated = subscribe<any>("notification_updated", (data) => {
       setNotifications((prev) =>
-        prev.map((n) => (n.id === updatedMsg.id ? { ...n, ...updatedMsg } : n))
+        prev.map((n) =>
+          n.id === data.id
+            ? {
+                ...n,
+                ...data,
+                text: data.title ?? data.text ?? n.text,
+                read: n.read,     // preserve local read state on edit
+              }
+            : n
+        )
       );
-    };
+    });
 
-    const handleDeleteNotification = (payload: { id: string }) => {
-      setNotifications((prev) => prev.filter((n) => n.id !== payload.id));
-    };
-
-    const onErrorHandler = (error: any) => {
-      console.error("Socket error occurred:", error.message || error);
-      setSocketError(error);
-    };
-
-    socket.on(NotificationEvents.CSA_NOTIFICATION, handleNewNotification);
-    socket.on(NotificationEvents.JUMUIYA_NOTIFICATION, handleNewNotification);
-    socket.on(NotificationEvents.NOTIFICATION_UPDATED, handleUpdateNotification);
-    socket.on(NotificationEvents.NOTIFICATION_DELETED, handleDeleteNotification);
-    socket.on(NotificationEvents.SOCKET_ERROR, onErrorHandler);
-    socket.on(NotificationEvents.CONNECT_ERROR, onErrorHandler);
+    /**
+     * notification_deleted  → remove by id instantly.
+     */
+    const unsubDeleted = subscribe<{ id: string }>("notification_deleted", ({ id }) => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    });
 
     return () => {
-      socket.off(NotificationEvents.CONNECTION, onConnect);
-      socket.off(NotificationEvents.DISCONNECT, onDisconnect);
-      socket.off(NotificationEvents.CSA_NOTIFICATION, handleNewNotification);
-      socket.off(NotificationEvents.JUMUIYA_NOTIFICATION, handleNewNotification);
-      socket.off(NotificationEvents.NOTIFICATION_UPDATED, handleUpdateNotification);
-      socket.off(NotificationEvents.NOTIFICATION_DELETED, handleDeleteNotification);
-      socket.off(NotificationEvents.SOCKET_ERROR, onErrorHandler);
-      socket.off(NotificationEvents.CONNECT_ERROR, onErrorHandler);
+      unsubNew();
+      unsubUpdated();
+      unsubDeleted();
     };
-  }, [socket, user]);
+  }, [subscribe, enrichNotificationsWithReadStatus]);
 
+  // ── Badge count (from SSE individual channel) ────────────────────────────
+  // The server sends the authoritative unread count on connect and after each
+  // CRUD operation — we also derive it locally from state for instant UI.
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // ── Mark all read for a category (local only) ────────────────────────────
   const markAllAsRead = useCallback((category: "csa" | "jumuiya") => {
     setNotifications((prev) => {
-      const hasUnread = prev.some((n) => n.category === category && !n.read);
-      if (!hasUnread) return prev;
-      return prev.map((n) => (n.category === category ? { ...n, read: true } : n));
+      const targets = prev.filter((n) => n.category === category && !n.read);
+      if (targets.length === 0) return prev;
+
+      try {
+        const stored = localStorage.getItem("csa_read_notification_ids");
+        const readIds: string[] = stored ? JSON.parse(stored) : [];
+        const updatedReadIds = [...new Set([...readIds, ...targets.map((t) => String(t.id))])];
+        localStorage.setItem("csa_read_notification_ids", JSON.stringify(updatedReadIds));
+      } catch (err) {
+        console.warn("Failed to persist read notifications:", err);
+      }
+
+      return prev.map((n) =>
+        n.category === category ? { ...n, read: true } : n
+      );
     });
   }, []);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <NotificationContext.Provider
@@ -139,7 +178,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         loading,
         refreshNotifications,
         isConnected,
-        socketError,
+        socketError: null,
       }}
     >
       {children}
@@ -147,10 +186,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
 };
 
+// ── Hook ─────────────────────────────────────────────────────────────────────
+
 export const useNotifications = () => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error("useNotifications must be used within a NotificationProvider");
+  const ctx = useContext(NotificationContext);
+  if (!ctx) {
+    throw new Error("useNotifications must be used within NotificationProvider");
   }
-  return context;
+  return ctx;
 };

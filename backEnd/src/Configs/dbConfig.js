@@ -1,8 +1,21 @@
-import { Pool } from "pg";
+import pg from "pg";
+const { Pool, types } = pg;
 import dotenv from "dotenv";
 import logger from "../logger/winston.js";
 import mongoose from "mongoose";
-dotenv.config();
+
+// Parse timestamp without timezone (OID 1114) as UTC
+types.setTypeParser(1114, (str) => new Date(str + "Z"));
+
+
+// Ensure we load the backend env file (church_website/backEnd/.env)
+// rather than whatever the process CWD happens to be.
+dotenv.config({
+  path: new URL("../../.env", import.meta.url),
+});
+
+
+
 
 const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
@@ -11,8 +24,10 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || "csa_db",
   ssl:
-    (process.env.DB_HOST === "localhost" || process.env.DB_HOST === "127.0.0.1") ? false : { rejectUnauthorized: false },
+    // Explicit control: set DB_SSL=true when your Postgres requires SSL.
+    process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
 });
+
 
 export const db = pool;
 
@@ -22,20 +37,16 @@ export const connectDb = async () => {
     client = await pool.connect();
     logger.info("Connected to postgree database successfully!");
   } catch (error) {
-    logger.error("Failed to connect postgree database:", error.message, {
+    logger.error(`Failed to connect postgree database: ${error.message}`, {
       stack: error.stack,
     });
-    // Do not exit the process here. Allow the server to start so routes
-    // can return a 503 Service Unavailable when DB operations are attempted.
-    // This improves developer experience in environments where the DB
-    // may be temporarily unreachable.
-    client = undefined;
+    // Removed process.exit(1) to allow server to stay alive and retry connections via pool
   }
 };
 
 // use the pool for queries to handle connections automatically
-export const testDb = { 
-  query: (text, params) => pool.query(text, params) 
+export const testDb = {
+  query: (text, params) => pool.query(text, params)
 };
 
 // momgodb connection this will be used for storing questions

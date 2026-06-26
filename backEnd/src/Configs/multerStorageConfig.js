@@ -1,60 +1,82 @@
 import multer from "multer";
 import path from "path";
-import fs from "fs";
+import { Readable } from "stream";
 import logger from "../logger/winston.js";
 import { UploadError } from "../utils/ApiError.js";
+import cloudinary from "./cloudinaryConfigs.js";
 
-// Ensure upload folder exists
-function ensureUploadsFolder(uploadPath) {
-  if (!fs.existsSync(uploadPath)) {
-    fs.mkdirSync(uploadPath, { recursive: true });
-  }
-}
+/**
+ * Custom multer storage engine that uploads files directly to Cloudinary v2.
+ * Each uploaded file will have `file.path` set to the Cloudinary secure_url
+ * and `file.filename` set to the Cloudinary public_id.
+ */
+const cloudinaryStorage = {
+  _handleFile(req, file, cb) {
+    const folder = "church_officials";
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const publicId = `${folder}/${file.fieldname}-${uniqueSuffix}`;
 
-// Storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    try {
-      const uploadPath = "localFileUploads/";
-      ensureUploadsFolder(uploadPath);
-      cb(null, uploadPath);
-    } catch (err) {
-      logger.error("Failed to set upload destination", err);
-      cb(new UploadError("Failed to prepare upload folder", "DESTINATION_ERROR"));
-    }
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        public_id: `${file.fieldname}-${uniqueSuffix}`,
+        resource_type: "image",
+        transformation: [
+          { width: 800, height: 800, crop: "limit" },
+          { quality: "auto:good" },
+          { fetch_format: "auto" },
+        ],
+      },
+      (error, result) => {
+        if (error) {
+          logger.error("Cloudinary upload error: " + error.message);
+          return cb(new UploadError("Failed to upload image to Cloudinary", "CLOUDINARY_UPLOAD_ERROR"));
+        }
+        // Expose result on the file object so downstream code can use it
+        cb(null, {
+          path: result.secure_url,      // used by formatPhotoUrl()
+          filename: result.public_id,   // public_id for later deletion
+          size: result.bytes,
+          mimetype: file.mimetype,
+          cloudinary: result,
+        });
+      }
+    );
+
+    // Pipe the incoming file buffer into Cloudinary's upload stream
+    file.stream.pipe(uploadStream);
   },
 
-  filename: (req, file, cb) => {
-    try {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
-    } catch (err) {
-      logger.error("Failed to generate filename", err);
-      cb(new UploadError("Failed to generate filename", "FILENAME_GENERATION_ERROR"));
+  _removeFile(req, file, cb) {
+    if (file.filename) {
+      cloudinary.uploader.destroy(file.filename, (error) => {
+        if (error) logger.warn("Failed to remove file from Cloudinary: " + error.message);
+        cb(null);
+      });
+    } else {
+      cb(null);
     }
   },
-});
+};
 
 // File type validation
 function fileFilter(req, file, cb) {
-  const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
-  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
 
   if (allowedTypes.test(ext)) {
     cb(null, true);
   } else {
     logger.warn(`Unsupported file type attempted: ${ext}`);
-    cb(new UploadError("Unsupported file type", "UNSUPPORTED_TYPE"), false);
+    cb(new UploadError("Unsupported file type. Only images (jpg, png, gif, webp) are allowed.", "UNSUPPORTED_TYPE"), false);
   }
 }
 
-// Multer instance
+// Multer instance using Cloudinary storage
 const upload = multer({
-  storage,
+  storage: cloudinaryStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
   fileFilter,
 });
-
-
 
 export default upload;

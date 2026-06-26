@@ -1,14 +1,28 @@
+import { Router }       from "express";
+import {
+  createNotification,
+  deleteNotification,
+  updateNotification,
+  getNotification,
+} from "../../controllers/events/index.js";
+import verifyToken      from "../../middlewares/Tokens.js";
+import { authorize }    from "../../middlewares/authorization.js";
+import sseRouter        from "../../sse/sseRouter.js";
 
+const router = Router();
 
-import {Router} from "express"
-import { createNotification, deleteNotification, updateNotification , getNotification } from "../../controllers/events/index.js";
+const permission   = (action, resource) => authorize(action, resource);
+const requireAdmin = (action, resource) => [verifyToken, permission(action, resource)];
 
-const router = Router()
+// ── SSE persistent connection ─────────────────────────────────────────────────
+// No auth middleware here — the SSE router handles token verification itself
+// because EventSource cannot send Authorization headers.
+router.use("/sse", sseRouter);
 
-router.post("/", createNotification);
-router.get("/", getNotification);
-router.put("/", updateNotification);
-router.delete("/", deleteNotification);
-
+// ── REST endpoints ────────────────────────────────────────────────────────────
+router.post(  "/",    ...requireAdmin("create", "notifications"), createNotification);
+router.get(   "/",    verifyToken,                                getNotification);
+router.patch( "/:id", ...requireAdmin("update", "notifications"), updateNotification);
+router.delete("/:id", ...requireAdmin("delete", "notifications"), deleteNotification);
 
 export default router;

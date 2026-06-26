@@ -24,11 +24,11 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  const [page, setPage] = useState(1);
  const limit = 10;
 
- const getPhotoUrl = (photo: string | null | undefined) => {
- if (!photo) return DEFAULT_AVATAR;
- if (photo.startsWith('http') || photo.startsWith('data:')) return photo;
- return `${UPLOAD_BASE}${photo.startsWith('/') ? '' : '/'}${photo}`;
- };
+  const getPhotoUrl = (photo: string | null | undefined) => {
+  if (!photo) return DEFAULT_AVATAR;
+  if (photo.startsWith('http') || photo.startsWith('data:') || photo.startsWith('blob:')) return photo;
+  return `${UPLOAD_BASE}${photo.startsWith('/') ? '' : '/'}${photo}`;
+  };
 
  const { terms } = useTerms();
  const { 

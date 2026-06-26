@@ -211,21 +211,44 @@
                                                                 <div class="info-section" data-reveal="fade-up">
                                                                     <h4><i class="fas fa-images"></i> Spiritual Moments
                                                                     </h4>
-                                                                    <div class="gallery-grid">
-                                                                        <% module.gallery.forEach(photo=> { %>
-                                                                            <div class="gallery-item">
-                                                                                <img src="<%= photo.imageUrl %>"
-                                                                                    alt="<%= photo.eventName %>">
-                                                                                <div class="gallery-item-overlay">
-                                                                                    <h5 class="gallery-item-title">
-                                                                                        <%= photo.eventName %>
-                                                                                    </h5>
-                                                                                    <p class="gallery-item-desc">
-                                                                                        <%= photo.description %>
-                                                                                    </p>
+                                                                    <style>
+                                                                        .ejs-gallery-scroll-container {
+                                                                            height: 600px;
+                                                                            overflow-y: auto;
+                                                                            padding-right: 12px;
+                                                                            scrollbar-width: thin;
+                                                                            scrollbar-color: rgba(37, 99, 235, 0.25) transparent;
+                                                                        }
+                                                                        .ejs-gallery-scroll-container::-webkit-scrollbar {
+                                                                            width: 6px;
+                                                                        }
+                                                                        .ejs-gallery-scroll-container::-webkit-scrollbar-thumb {
+                                                                            background-color: rgba(37, 99, 235, 0.25);
+                                                                            border-radius: 9999px;
+                                                                        }
+                                                                        @media (max-width: 768px) {
+                                                                            .ejs-gallery-scroll-container {
+                                                                                height: 480px;
+                                                                            }
+                                                                        }
+                                                                    </style>
+                                                                    <div class="ejs-gallery-scroll-container">
+                                                                        <div class="gallery-grid">
+                                                                            <% module.gallery.forEach(photo=> { %>
+                                                                                <div class="gallery-item">
+                                                                                    <img src="<%= photo.imageUrl || photo.url || photo.image_url %>"
+                                                                                        alt="<%= photo.caption || photo.eventName %>">
+                                                                                    <div class="gallery-item-overlay">
+                                                                                        <h5 class="gallery-item-title">
+                                                                                            <%= photo.caption || photo.eventName %>
+                                                                                        </h5>
+                                                                                        <p class="gallery-item-desc">
+                                                                                            <%= photo.description %>
+                                                                                        </p>
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                            <% }) %>
+                                                                                <% }) %>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                                 <% } %>
