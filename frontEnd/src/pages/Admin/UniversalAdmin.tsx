@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   MessageSquare,
   Image as ImageIcon,
+  UserPlus,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -51,6 +52,7 @@ const menuItems = [
       { id: "hire", name: "Hire Requests", path: "/admin/hire-requests" }
     ]
   },
+  { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
   { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },

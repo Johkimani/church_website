@@ -1,0 +1,140 @@
+const VALID_JUMUIYAS = [
+  "St. Anthony", "St. Augustine", "St. Catherine",
+  "St. Dominic", "St. Elizabeth", "St. Maria Goretti", "St. Monica"
+];
+
+const REG_NUM_PATTERN = /^[A-Za-z]{2}\d{3}\/[A-Za-z0-9]+\/\d{4}\/\d{2}$/;
+
+const JUMUIYA_ALIASES = {
+  "anthony": "St. Anthony", "st anthony": "St. Anthony", "st. anthony": "St. Anthony",
+  "augustine": "St. Augustine", "st augustine": "St. Augustine", "st. augustine": "St. Augustine",
+  "catherine": "St. Catherine", "st catherine": "St. Catherine", "st. catherine": "St. Catherine",
+  "dominie": "St. Dominic", "st dominic": "St. Dominic", "st. dominic": "St. Dominic",
+  "elizabeth": "St. Elizabeth", "st elizabeth": "St. Elizabeth", "st. elizabeth": "St. Elizabeth",
+  "maria goretti": "St. Maria Goretti", "st maria goretti": "St. Maria Goretti",
+  "monica": "St. Monica", "st monica": "St. Monica", "st. monica": "St. Monica",
+};
+
+export const standardizeName = (name) => {
+  if (!name || typeof name !== "string") return { cleaned: null, warnings: [] };
+  const warnings = [];
+  let cleaned = name.trim().replace(/\s+/g, " ");
+  cleaned = cleaned.replace(/[^a-zA-Z\s'-]/g, "");
+  if (cleaned !== name.trim()) warnings.push("Removed special characters from name");
+  cleaned = cleaned.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  if (cleaned.length < 2) warnings.push("Name is too short");
+  return { cleaned: cleaned || null, warnings };
+};
+
+export const standardizeRegNumber = (regNumber) => {
+  if (!regNumber || typeof regNumber !== "string") return { cleaned: null, errors: ["Registration number is required"], warnings: [] };
+  let cleaned = regNumber.trim().toUpperCase();
+  if (!REG_NUM_PATTERN.test(cleaned)) return { cleaned, errors: [`Invalid format: "${cleaned}" — expected format e.g. CS01/A/2024/01`], warnings: [] };
+  return { cleaned, errors: [], warnings: [] };
+};
+
+export const standardizeGender = (gender) => {
+  if (!gender || typeof gender !== "string") return { cleaned: null, errors: ["Gender is required"], warnings: [] };
+  const warnings = [];
+  const g = gender.trim().toLowerCase();
+  if (["m", "male", "man", "boy"].includes(g)) return { cleaned: "Male", warnings };
+  if (["f", "female", "woman", "girl"].includes(g)) return { cleaned: "Female", warnings };
+  warnings.push(`Unrecognized gender "${gender}" — set to null for review`);
+  return { cleaned: null, warnings };
+};
+
+export const matchJumuiya = (input) => {
+  if (!input || typeof input !== "string") return { cleaned: null, errors: ["Jumuiya is required"], warnings: [] };
+  const key = input.trim().toLowerCase().replace(/\s+/g, " ");
+  if (VALID_JUMUIYAS.includes(input.trim())) return { cleaned: input.trim(), errors: [], warnings: [] };
+  const match = JUMUIYA_ALIASES[key];
+  if (match) return { cleaned: match, errors: [], warnings: [] };
+  for (const valid of VALID_JUMUIYAS) {
+    if (valid.toLowerCase().includes(key) || key.includes(valid.toLowerCase().slice(0, 6))) {
+      return { cleaned: valid, errors: [], warnings: [`Auto-matched "${input}" to ${valid}`] };
+    }
+  }
+  return { cleaned: null, errors: [`"${input}" does not match any known Jumuiya`], warnings: [] };
+};
+
+export const validatePhone = (phone) => {
+  if (!phone || !phone.trim()) return { cleaned: null, warnings: [] };
+  let cleaned = phone.trim().replace(/[\s\-\(\)]/g, "");
+  if (cleaned.startsWith("0")) cleaned = "+254" + cleaned.slice(1);
+  else if (cleaned.startsWith("7")) cleaned = "+2547" + cleaned.slice(1);
+  else if (cleaned.startsWith("1")) cleaned = "+254" + cleaned;
+  if (!cleaned.startsWith("+")) cleaned = "+" + cleaned;
+  if (cleaned.length < 10) return { cleaned: null, warnings: ["Phone number too short"] };
+  return { cleaned, warnings: [] };
+};
+
+export const validateEmail = (email) => {
+  if (!email || !email.trim()) return { cleaned: null, warnings: [] };
+  const cleaned = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleaned)) return { cleaned: null, warnings: ["Invalid email format"] };
+  return { cleaned, warnings: [] };
+};
+
+export const validateMemberRow = (row) => {
+  const errors = [];
+  const warnings = [];
+
+  const nameResult = standardizeName(row.name || row.fullName || row.full_name);
+  if (nameResult.warnings) warnings.push(...nameResult.warnings);
+
+  const regResult = standardizeRegNumber(row.registrationNumber || row.regNumber || row.reg_number || row.registration_number);
+  errors.push(...regResult.errors);
+  warnings.push(...regResult.warnings);
+
+  const genderResult = standardizeGender(row.gender);
+  if (genderResult.errors) errors.push(...genderResult.errors);
+  if (genderResult.warnings) warnings.push(...genderResult.warnings);
+
+  const jumuiyaResult = matchJumuiya(row.jumuiya || row.jumuiya_name || row.community);
+  if (jumuiyaResult.errors) errors.push(...jumuiyaResult.errors);
+  if (jumuiyaResult.warnings) warnings.push(...jumuiyaResult.warnings);
+
+  const phoneResult = validatePhone(row.phone || row.phoneNumber || row.phone_number);
+  if (phoneResult.warnings) warnings.push(...phoneResult.warnings);
+
+  const emailResult = validateEmail(row.email);
+  if (emailResult.warnings) warnings.push(...emailResult.warnings);
+
+  let status = "valid";
+  if (errors.length > 0) status = "error";
+  else if (warnings.length > 0) status = "warning";
+
+  return {
+    raw: {
+      name: row.name || row.fullName || row.full_name || null,
+      regNumber: row.registrationNumber || row.regNumber || row.reg_number || row.registration_number || null,
+      gender: row.gender || null,
+      jumuiya: row.jumuiya || row.jumuiya_name || row.community || null,
+      phone: row.phone || row.phoneNumber || row.phone_number || null,
+      email: row.email || null,
+    },
+    cleaned: {
+      name: nameResult.cleaned,
+      regNumber: regResult.cleaned,
+      gender: genderResult.cleaned,
+      jumuiya: jumuiyaResult.cleaned,
+      phone: phoneResult.cleaned,
+      email: emailResult.cleaned,
+    },
+    status,
+    errors,
+    warnings,
+  };
+};
+
+export const parseExcelRow = (row) => ({
+  name: row.Name || row.NAME || row.name || row.fullName || row["Full Name"],
+  registrationNumber: row.RegistrationNumber || row["Registration Number"] || row.RegNo || row.regNumber || row.registration_number,
+  gender: row.Gender || row.gender || row.GENDER,
+  jumuiya: row.Jumuiya || row.jumuiya || row.JUMUIYA || row.Community || row.community,
+  phone: row.Phone || row.phone || row["Phone Number"] || row.phoneNumber,
+  email: row.Email || row.email || row.EMAIL,
+});
+
+export { VALID_JUMUIYAS, REG_NUM_PATTERN };
