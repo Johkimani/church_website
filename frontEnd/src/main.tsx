@@ -6,6 +6,7 @@ import App from './App.tsx'
 import ScrollToTop from './utils/ScrollToTop.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
 import { SocketProvider } from './context/SocketContext.tsx'
+import { SSEProvider } from './context/SSEContext.tsx'
 import { NotificationProvider } from './context/NotificationContext.tsx'
 import { AppProvider } from './context/AppContext.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -16,18 +17,22 @@ createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SocketProvider>
-          <NotificationProvider>
-            <AppProvider>
+        <SSEProvider>
+          <SocketProvider>
+            <NotificationProvider>
               <BrowserRouter>
-                <ScrollToTop />
-                <App />
+                <AppProvider>
+                  <ScrollToTop />
+                  <App />
+                </AppProvider>
               </BrowserRouter>
-            </AppProvider>
-          </NotificationProvider>
-        </SocketProvider>
+            </NotificationProvider>
+          </SocketProvider>
+        </SSEProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 )
+
+
 

@@ -53,15 +53,76 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (formData: FormData) => {
+      await queryClient.cancelQueries({ queryKey: ['jumuiya-officials'] });
+
+      const name = formData.get('name') as string | null;
+      const category = formData.get('category') as string | null;
+      const position = formData.get('position') as string | null;
+      const contact = formData.get('contact') as string | null;
+      const term_of_service = formData.get('term_of_service') as string | null;
+      const status = formData.get('status') as string | null;
+      const photoFile = formData.get('photo');
+
+      let photoUrl: string | undefined = undefined;
+      if (photoFile instanceof File && photoFile.size > 0) {
+        photoUrl = URL.createObjectURL(photoFile);
+      }
+
+      const tempId = Date.now() * -1;
+      const optimisticOfficial: JumuiyaOfficial = {
+        id: tempId,
+        name: name || '',
+        category: category || '',
+        position: position || '',
+        contact: contact || '',
+        term_of_service: term_of_service || '',
+        status: status || 'active',
+        photo: photoUrl,
+      };
+
+      const queries = queryClient.getQueryCache().findAll({ queryKey: ['jumuiya-officials'] });
+      const snapshots = queries.map(query => ({
+        queryKey: query.queryKey,
+        data: query.state.data as JumuiyaOfficial[] | undefined
+      }));
+
+      snapshots.forEach(snapshot => {
+        if (!snapshot.data) return;
+        const queryCategory = snapshot.queryKey[2] as string | undefined;
+        if (queryCategory && queryCategory !== optimisticOfficial.category) {
+          return;
+        }
+        queryClient.setQueryData(snapshot.queryKey, [optimisticOfficial, ...snapshot.data]);
+      });
+
+      return { snapshots, photoUrl };
+    },
+    onError: (error: Error, formData, context) => {
+      if (context?.snapshots) {
+        context.snapshots.forEach(snapshot => {
+          queryClient.setQueryData(snapshot.queryKey, snapshot.data);
+        });
+      }
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
+      showErrorToast('Failed to Add Jumuiya Official', error.message);
+    },
+    onSuccess: (data, formData, context) => {
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
       apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       showSuccessToast('Jumuiya Official Added Successfully', 'The Jumuiya official has been registered.');
     },
-    onError: (error: Error) => {
-      showErrorToast('Failed to Add Jumuiya Official', error.message);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
+      queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
+      queryClient.invalidateQueries({ queryKey: ['terms'] });
     },
   });
 
@@ -80,15 +141,86 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async ({ id, formData }: { id: number; formData: FormData }) => {
+      await queryClient.cancelQueries({ queryKey: ['jumuiya-officials'] });
+
+      const name = formData.get('name') as string | null;
+      const category = formData.get('category') as string | null;
+      const position = formData.get('position') as string | null;
+      const contact = formData.get('contact') as string | null;
+      const term_of_service = formData.get('term_of_service') as string | null;
+      const status = formData.get('status') as string | null;
+      const photoFile = formData.get('photo');
+
+      const queries = queryClient.getQueryCache().findAll({ queryKey: ['jumuiya-officials'] });
+      const snapshots = queries.map(query => ({
+        queryKey: query.queryKey,
+        data: query.state.data as JumuiyaOfficial[] | undefined
+      }));
+
+      let photoUrl: string | undefined = undefined;
+      let newPhotoUrlCreated = false;
+      if (photoFile instanceof File && photoFile.size > 0) {
+        photoUrl = URL.createObjectURL(photoFile);
+        newPhotoUrlCreated = true;
+      } else if (typeof photoFile === 'string') {
+        photoUrl = photoFile;
+      }
+
+      snapshots.forEach(snapshot => {
+        if (!snapshot.data) return;
+
+        const existing = snapshot.data.find(o => o.id === id);
+        if (!existing) return;
+
+        const optimisticOfficial: JumuiyaOfficial = {
+          id,
+          name: name !== null ? name : (existing.name || ''),
+          category: category !== null ? category : (existing.category || ''),
+          position: position !== null ? position : (existing.position || ''),
+          contact: contact !== null ? contact : (existing.contact || ''),
+          term_of_service: term_of_service !== null ? term_of_service : (existing.term_of_service || ''),
+          status: status !== null ? status : (existing.status || ''),
+          photo: newPhotoUrlCreated ? photoUrl : (photoUrl || existing.photo),
+        };
+
+        const updatedData = snapshot.data.map(o => o.id === id ? optimisticOfficial : o);
+        const queryCategory = snapshot.queryKey[2] as string | undefined;
+        let finalData = updatedData;
+        if (queryCategory && optimisticOfficial.category !== queryCategory) {
+          finalData = updatedData.filter(o => o.id !== id);
+        }
+
+        queryClient.setQueryData(snapshot.queryKey, finalData);
+      });
+
+      return { snapshots, photoUrl: newPhotoUrlCreated ? photoUrl : undefined };
+    },
+    onError: (error: Error, variables, context) => {
+      if (context?.snapshots) {
+        context.snapshots.forEach(snapshot => {
+          queryClient.setQueryData(snapshot.queryKey, snapshot.data);
+        });
+      }
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
+      showErrorToast('Failed to Update Jumuiya Official', error.message);
+    },
+    onSuccess: (data, variables, context) => {
+      if (context?.photoUrl) {
+        URL.revokeObjectURL(context.photoUrl);
+      }
       apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       showSuccessToast('Jumuiya Official Updated Successfully', 'The Jumuiya official details have been updated.');
     },
-    onError: (error: Error) => {
-      showErrorToast('Failed to Update Jumuiya Official', error.message);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
+      queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
+      queryClient.invalidateQueries({ queryKey: ['terms'] });
     },
   });
 
@@ -106,6 +238,33 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       return res.json();
     },
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['jumuiya-officials'] });
+
+      const queries = queryClient.getQueryCache().findAll({ queryKey: ['jumuiya-officials'] });
+      const snapshots = queries.map(query => ({
+        queryKey: query.queryKey,
+        data: query.state.data as JumuiyaOfficial[] | undefined
+      }));
+
+      snapshots.forEach(snapshot => {
+        if (!snapshot.data) return;
+        queryClient.setQueryData(
+          snapshot.queryKey,
+          snapshot.data.filter(o => o.id !== id)
+        );
+      });
+
+      return { snapshots };
+    },
+    onError: (error: Error, id, context) => {
+      if (context?.snapshots) {
+        context.snapshots.forEach(snapshot => {
+          queryClient.setQueryData(snapshot.queryKey, snapshot.data);
+        });
+      }
+      showErrorToast('Failed to Delete Jumuiya Official', error.message);
+    },
     onSuccess: () => {
       apiService.clearAllCache();
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
@@ -113,8 +272,10 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       showSuccessToast('Jumuiya Official Deleted Successfully', 'The Jumuiya official record has been removed.');
     },
-    onError: (error: Error) => {
-      showErrorToast('Failed to Delete Jumuiya Official', error.message);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
+      queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
+      queryClient.invalidateQueries({ queryKey: ['terms'] });
     },
   });
 

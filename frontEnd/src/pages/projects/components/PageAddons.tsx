@@ -77,9 +77,11 @@ export const TrustBar: React.FC<{ category: 'sacramentals' | 'tshirts' | 'chairs
                     key={i}
                     className="flex items-center gap-3 bg-white/70 backdrop-blur-md p-3 rounded-2xl shadow-sm border border-blue-100 hover:shadow-md transition"
                 >
-                    <div className="text-blue-600 text-lg">
-                        {getGeneralIcon(badge.icon)}
-                    </div>
+                    {badge.icon && (
+                        <div className="text-blue-600 text-lg">
+                            {getGeneralIcon(badge.icon)}
+                        </div>
+                    )}
                     <span className="text-sm text-gray-700 font-medium">
                         {badge.text}
                     </span>
@@ -118,11 +120,7 @@ export const ProcessGuide: React.FC = () => {
                             <div className="flex items-center justify-center mb-4">
 
                                 <div className="relative">
-                                    <div className="w-14 h-14 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full text-xl">
-                                        {getGeneralIcon(step.icon)}
-                                    </div>
-
-                                    <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs w-6 h-6 flex items-center justify-center rounded-full">
+                                    <div className="w-14 h-14 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full text-xl font-bold">
                                         {step.step}
                                     </div>
                                 </div>

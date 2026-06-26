@@ -11,40 +11,59 @@ class ApiService {
    * @param tableName - The name of the table to fetch data from.
    * @returns A promise that resolves to an array of records.
    */
-  async fetchTableData(tableName: string): Promise<any[]> {
-    const CACHE_KEY = `csa_cache_${tableName}`;
-    
-    // Attempt local cache first
+ async fetchTableData(tableName: string, bypassCache = false): Promise<any[]> {
+  const CACHE_KEY = `csa_cache_${tableName}`;
+
+  // Attempt local cache first if not bypassing
+  if (!bypassCache) {
     const cached = localStorage.getItem(CACHE_KEY);
-    const fallbackData = cached ? JSON.parse(cached) : [];
-
-    try {
-      const response = await apiClient.get(`/${tableName}`);
-      // Extract the actual array from { success: true, data: [...] } or use raw if already array
-      const rawData = response.data;
-      const dataArray = Array.isArray(rawData) ? rawData : (rawData?.data && Array.isArray(rawData.data) ? rawData.data : null);
-
-      // Update cache on success if we found an array
-      if (dataArray) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(dataArray));
-        return dataArray;
-      }
-      
-      return rawData;
-    } catch (error) {
-      console.warn(`Error fetching ${tableName}, using fallback content:`, error);
-      
-      // Provide high-quality mock data for the gallery if both API and Cache fail
-      if (tableName === 'gallery' && fallbackData.length === 0) {
-        return [
-           { id: 101, title: "Sacred Choir", image_url: "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200", description: "Lead through music." },
-           { id: 102, title: "Youth Ministry", image_url: "https://images.unsplash.com/photo-1523050853063-bd80e2904760?auto=format&fit=crop&w=1200", description: "The future of our faith." }
-        ];
-      }
-      
-      return fallbackData;
-    }
+    if (cached) return JSON.parse(cached);
   }
+
+  try {
+    const response = await apiClient.get(`/${tableName}`);
+    const rawData = response.data;
+
+    // Case 1: API already returns array
+    if (Array.isArray(rawData)) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawData));
+      return rawData;
+    }
+
+    // Case 2: API returns { data: [...] }
+    if (Array.isArray(rawData?.data)) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawData.data));
+      return rawData.data;
+    }
+
+    // fallback safe return
+    return [];
+  } catch (error) {
+    console.warn(`Error fetching ${tableName}:`, error);
+
+    // ONLY fallback for gallery
+    if (tableName === "gallery") {
+      return [
+        {
+          id: 101,
+          name: "Sacred Choir",
+          image_url:
+            "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200",
+          description: "Lead through music.",
+        },
+        {
+          id: 102,
+          name: "Youth Ministry",
+          image_url:
+            "https://images.unsplash.com/photo-1523050853063-bd80e2904760?auto=format&fit=crop&w=1200",
+          description: "The future of our faith.",
+        },
+      ];
+    }
+
+    return [];
+  }
+}
 
   /**
    * Creates a new record in the specified table.
@@ -55,6 +74,7 @@ class ApiService {
   async createRecord(tableName: string, data: Record<string, any>): Promise<any> {
     try {
       const response = await apiClient.post(`/${tableName}`, data);
+      this.clearCache(tableName);
       return response.data;
     } catch (error) {
       console.error(`Error creating record in ${tableName}:`, error);
@@ -71,6 +91,7 @@ class ApiService {
   async deleteRecord(tableName: string, id: string | number): Promise<any> {
     try {
       const response = await apiClient.delete(`/${tableName}/${id}`);
+      this.clearCache(tableName);
       return response.data;
     } catch (error) {
       console.error(`Error deleting record from ${tableName}:`, error);
@@ -81,6 +102,7 @@ class ApiService {
   async updateRecord(tableName: string, id: string | number, data: Record<string, any>): Promise<any> {
     try {
       const response = await apiClient.patch(`/${tableName}/${id}`, data);
+      this.clearCache(tableName);
       return response.data;
     } catch (error) {
       console.error(`Error updating record in ${tableName}:`, error);
@@ -124,6 +146,33 @@ class ApiService {
   async getSubGroups(): Promise<any[]> {
     return this.fetchTableData('sub_groups');
   }
+  
+  /**
+   * Fetches all members (admin only)
+   */
+  async getAdminMembers(): Promise<any[]> {
+    const response = await apiClient.get('/authentication/list-all-memebrs');
+    return response.data;
+  }
+
+  /**
+   * Fetches roles and permissions (admin only)
+   */
+  async getAdminRoles(): Promise<any> {
+    const response = await apiClient.get('/authentication/list-roles-permissions');
+    return response.data;
+  }
+
+  /**
+   * Updates a member's roles
+   */
+  async updateMemberRoles(memberId: string, roleNames: string[]): Promise<any> {
+    const response = await apiClient.post('/authentication/update-user-roles', {
+      member_id: memberId,
+      role_names: roleNames
+    });
+    return response.data;
+  }
 
   /**
    * Fetches all member roles.
@@ -140,10 +189,30 @@ class ApiService {
   }
 
   /**
-   * Fetches all officials.
+   * Fetches all officials from the correct /officials/list endpoint.
+   * Always bypasses cache to ensure fresh data (images, updates) are reflected.
    */
-  async getOfficials(): Promise<any[]> {
-    return this.fetchTableData('officials');
+  async getOfficials(bypassCache = false): Promise<any[]> {
+    const CACHE_KEY = 'csa_cache_officials';
+
+    if (!bypassCache) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try { return JSON.parse(cached); } catch { /* ignore */ }
+      }
+    }
+
+    try {
+      const response = await apiClient.get('/officials/list');
+      const data = response.data?.data || response.data || [];
+      if (Array.isArray(data)) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      }
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.warn('Error fetching officials:', error);
+      return [];
+    }
   }
 
   /**
@@ -306,6 +375,17 @@ class ApiService {
   clearCache(tableName: string): void {
     const CACHE_KEY = `csa_cache_${tableName}`;
     localStorage.removeItem(CACHE_KEY);
+
+    // Clear related aggregated caches to prevent stale data delays across the app
+    if (tableName.startsWith('hub_') || tableName.includes('community')) {
+      localStorage.removeItem('community_modules_cache');
+    }
+    if (tableName.includes('jumuiya')) {
+      localStorage.removeItem('jumuiya_data');
+    }
+    if (tableName === 'products' || tableName === 'projects') {
+      // Any specific product caches if we add them later
+    }
   }
 
   /**
@@ -335,6 +415,32 @@ class ApiService {
       }
     });
   }
+
+  // --- STK PUSH METHODS ---
+  async initiateStkPush(phoneNumber: string, amount: number, items: any[]): Promise<any> {
+    try {
+      const response = await apiClient.post('/stkPush/initiate/guest', {
+        phone: phoneNumber,
+        amount,
+        items
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error initiating STK push:', error);
+      throw error;
+    }
+  }
+
+  async checkStkStatus(checkoutId: string): Promise<any> {
+    try {
+      const response = await apiClient.get(`/stkPush/check/${checkoutId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking STK status:', error);
+      throw error;
+    }
+  }
+
 }
 
 export default new ApiService();

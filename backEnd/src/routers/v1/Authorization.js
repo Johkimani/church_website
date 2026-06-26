@@ -3,9 +3,9 @@ import { Login, refreshAccessToken } from "../../controllers/Login.js";
 import { OTPverification, Reset } from "../../controllers/Reset.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import { stkCalls, stkGuestCalls, checkStatus } from "../../controllers/stkPush/stkCall.js";
-import { callback } from "../../controllers/stkPush/stkController.js";
+import { handleCallback as callback } from "../../controllers/stkPush/stkController.js";
 
-import { assignPermissionsToRole, deleteAllMembers, getPermissionsByRole, getRolesAndPermissions, getUserRolesAndPermissions , listAllMembers, listAllUsersRolesPermissions, registerPermissions, registerRoles  , registerUser} from "../../controllers/roles-permisions/roles_permissions.js";
+import { assignPermissionsToRole, deleteAllMembers, getPermissionsByRole, getRolesAndPermissions, getUserRolesAndPermissions , listAllMembers, listAllUsersRolesPermissions, registerPermissions, registerRoles  , registerUser, updateUserRoles} from "../../controllers/roles-permisions/roles_permissions.js";
 import { assignRolePermissionValidator, registerPermissionValidator, registerRoleValidator } from "../../validators/index.js";
 import { validate } from "../../middlewares/validateRequestBody.js";
 
@@ -39,5 +39,6 @@ route.get("/users-role-permissions", getUserRolesAndPermissions);
 route.get("/list-all-memebrs-roles-permisions", listAllUsersRolesPermissions);
 route.get("/list-all-memebrs", listAllMembers);
 route.get("/delete-all-memebers", deleteAllMembers);
+route.post("/update-user-roles", updateUserRoles);
 
 export default route;

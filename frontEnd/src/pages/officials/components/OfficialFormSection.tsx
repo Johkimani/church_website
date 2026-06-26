@@ -93,7 +93,7 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  fd.append('photo', optimizedPhotoBlob, 'photo.jpg');
  }
 
- await onSubmit(fd);
+ onSubmit(fd);
  
  // Reset form
  setName('');
