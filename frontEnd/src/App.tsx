@@ -79,6 +79,7 @@ const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
 const SacramentalsBannerManager = lazy(() => import("./pages/Admin/pages/SacramentalsBannerManager"));
 const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribution"));
+const JumuiyaMembersAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaMembersAdmin"));
 const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 
 // Sacramental / Community
@@ -145,6 +146,8 @@ const App: React.FC = () => {
           <Route path="sacramentals-banners" element={<SacramentalsBannerManager />} />
           <Route path="projects" element={<ProjectsManager />} />
           <Route path="forms-distribution" element={<FormsDistribution />} />
+          <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
+          <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 

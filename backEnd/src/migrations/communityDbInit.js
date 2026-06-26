@@ -97,6 +97,20 @@ export const setupCommunityDatabase = async () => {
     `);
     logger.info("Table 'semester_activities' ready");
 
+    // ── Add missing columns for existing tables ─────────────────────
+    await db.query(`
+      ALTER TABLE weekly_activities
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true,
+        ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+    `);
+    logger.info("weekly_activities columns verified");
+
+    await db.query(`
+      ALTER TABLE semester_activities
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+    `);
+    logger.info("semester_activities columns verified");
+
     // Seed Weekly Activities if empty
     const weeklyCount = await db.query("SELECT COUNT(*) FROM weekly_activities");
     if (parseInt(weeklyCount.rows[0].count, 10) === 0) {

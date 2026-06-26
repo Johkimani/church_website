@@ -23,6 +23,7 @@ import ordersRouter from "./orders.router.js";
 import stkPushRouter from "./stkPush.route.js";
 const router = Router()
 import paymentRouter from "./payment.router.js";
+import jumuiyaMemberRouter from "./jumuiyaMemberRouter.js";
 import settingsRouter from "./settingsRoutes.js";
 
 router.use("/payments", paymentRouter);
@@ -67,6 +68,9 @@ router.use("/", sliderRoutes);
 router.use("/activities", activitiesPublicRouter);
 router.use("/admin/activities", activitiesAdminRouter);
 
+
+// Jumuiya Member Collection System
+router.use("/jumuiya-members", jumuiyaMemberRouter);
 
 // System settings (hire admin numbers, etc.)
 router.use("/settings", settingsRouter);

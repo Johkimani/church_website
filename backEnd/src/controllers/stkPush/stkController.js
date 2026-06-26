@@ -95,6 +95,37 @@ export const handleCallback = async (req, res) => {
 };
 
 /**
+ * WAIT FOR PAYMENT RESULT
+ * Polls the mpesa_request table until the payment completes or times out.
+ */
+export const waitForPaymentResult = async (checkoutId, timeoutMs = 60000, pollMs = 1500) => {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const { rows } = await db.query(
+      `SELECT status, mpesa_receipt, result_code, result_desc
+       FROM mpesa_request
+       WHERE checkout_id = $1`,
+      [checkoutId]
+    );
+
+    if (rows.length > 0) {
+      const row = rows[0];
+      if (row.status === "paid") {
+        return { status: "paid", mpesaReceipt: row.mpesa_receipt };
+      }
+      if (row.status === "failed") {
+        return { status: "failed", message: row.result_desc };
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+
+  return { status: "timeout", message: "Payment confirmation timed out" };
+};
+
+/**
  * INITIATE STK PUSH
  * Called by stkCalls / stkGuestCalls in stkCall.js
  * Returns the CheckoutRequestID for the frontend to poll

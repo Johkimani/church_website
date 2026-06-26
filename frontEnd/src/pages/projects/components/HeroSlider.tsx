@@ -37,7 +37,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         return () => clearInterval(t);
     }, [len, next]);
 
-    if (!len) return null;
+    if (!len) {
+        return (
+            <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-gradient-to-br from-slate-800 to-indigo-900 flex items-center justify-center">
+                <div className="text-center text-white px-6">
+                    <p className="text-lg font-bold mb-2 opacity-80">No slider images yet</p>
+                    <p className="text-sm opacity-60 mb-6">Upload images to display here</p>
+                    {isAdmin && (
+                        <a
                             href="/admin/projects"
                             className="px-6 py-2.5 bg-white text-indigo-600 font-bold text-sm rounded-xl shadow-lg hover:bg-blue-50 transition-colors"
                         >
@@ -48,6 +55,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             </div>
         );
     }
+
 
     return (
         <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl">
