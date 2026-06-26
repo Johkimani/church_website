@@ -149,18 +149,17 @@ const JumuiyaDetail: React.FC = () => {
                     termOfOffice={dynamicTerm}
                     formerOfficials={jumuiya.formerOfficials}
                     jumuiyaColor={detailColor}
-                    isAdmin={isAdmin}
-                />;
+                    isAdmin={isAdmin} jumuiyaName={''}                />;
             case 'members':
-                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />
+                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} />
             case 'registration':
-                return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} />;
+                return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaColor={detailColor} />;
             case 'activities':
                 return <ActivitiesTab jumuiyaColor={detailColor} />;
             case 'channels':
                 return <ChannelsTab socialMedia={jumuiya.socialMedia || []} gallery={jumuiya.gallery} />;
             case 'tshirts':
-                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} />;
+                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={''} />;
             case 'admin':
                 return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:

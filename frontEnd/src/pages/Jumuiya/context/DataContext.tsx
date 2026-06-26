@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
 import type { JumuiyaData, GalleryImage, Official, MeetingSchedule, TshirtOrder } from '../data/jumuiyaData';
 import { jumuiyaList as initialJumuiyaList } from '../data/jumuiyaData';
+import { apiClient } from '../../../api/axiosInstance';
 
 // Increment this whenever the data structure changes to force a localStorage reset
 const DATA_VERSION = '5';
@@ -48,6 +49,46 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setIsLoading(false);
         }
     }, [isLoading]);
+
+    useEffect(() => {
+        const fetchBackendData = async () => {
+            try {
+                const response = await apiClient.get('/jumuiya-data/all');
+                if (response.data && response.data.success) {
+                    const backendList = response.data.data;
+                    setJumuiyaList(prevList => {
+                        return prevList.map(item => {
+                            const found = backendList.find((b: any) => b.id === item.id);
+                            if (found) {
+                                return {
+                                    ...item,
+                                    group_id: found.group_id || item.group_id,
+                                    fullName: found.fullName || item.fullName,
+                                    description: found.description || item.description,
+                                    about: found.about || item.about,
+                                    color: found.color || item.color,
+                                    saintImage: found.saintImage || item.saintImage,
+                                    historyPdf: found.historyPdf || item.historyPdf,
+                                    meetingSchedule: found.meetingSchedule || item.meetingSchedule,
+                                    officials: found.officials && found.officials.length > 0 ? found.officials : item.officials,
+                                    formerOfficials: found.formerOfficials && found.formerOfficials.length > 0 ? found.formerOfficials : item.formerOfficials,
+                                    termOfOffice: found.termOfOffice || item.termOfOffice,
+                                    socialMedia: found.socialMedia && found.socialMedia.length > 0 ? found.socialMedia : item.socialMedia,
+                                    tshirtOrders: found.tshirtOrders && found.tshirtOrders.length > 0 ? found.tshirtOrders : item.tshirtOrders,
+                                };
+                            }
+                            return item;
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch jumuiya data from backend:', error);
+            }
+        };
+
+        fetchBackendData();
+    }, []);
+
 
     useEffect(() => {
         if (!isLoading && jumuiyaList.length > 0) {

@@ -4,7 +4,7 @@ import type { fileUpload } from "../interface/api";
 import { normalizeFiles } from "../pages/Devotions/utitlty";
 import { BASE_URL } from "./config";
 
-const API_BASE_URL = BASE_URL || (import.meta.env.DEV ? "http://localhost:3000/api/v1" : "");
+const API_BASE_URL = BASE_URL;
 
 const getApiErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {

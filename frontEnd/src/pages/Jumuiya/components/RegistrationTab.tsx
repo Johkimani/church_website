@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { membersList, currentUser } from '../data/members';
+import { useAuth } from '../../../context/AuthContext';
+import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
 import { FaUserPlus, FaUsers, FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle } from 'react-icons/fa';
 import './TabsSystem.css';
 import ChoirJoinForm from '../choir/ChoirJoinForm';
@@ -17,15 +18,23 @@ type RegistrationType = 'self' | 'bulk';
 const REGISTRATION_FEE = 50;
 
 const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaId, jumuiyaColor = 'var(--primary)' }) => {
+    const { user } = useAuth();
+    const { members } = useJumuiyaMembers({ jumuiya_id: jumuiyaId });
     const [registrationType, setRegistrationType] = useState<RegistrationType>('self');
     const [selfPhone, setSelfPhone] = useState('');
     const [bulkPhone, setBulkPhone] = useState('');
-    const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
+    const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
     const [isSubmitted, setIsSubmitted] = useState(false);
 
+    // Current user's membership record in this specific jumuiya
+    const currentMember = useMemo(() => {
+        return members.find(m => m.id === user?.member_id && m.jumuiya_id === jumuiyaId);
+    }, [members, user, jumuiyaId]);
+
+    // Members that have not yet registered this semester
     const unregisteredMembers = useMemo(() => {
-        return membersList.filter(member => !member.isRegistered);
-    }, []);
+        return members.filter(m => !m.is_registered);
+    }, [members]);
 
     const handleSelfSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,7 +46,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
         setIsSubmitted(true);
     };
 
-    const toggleMemberSelection = (id: number) => {
+    const toggleMemberSelection = (id: string) => {
         setSelectedMemberIds(prev =>
             prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id]
         );
@@ -89,7 +98,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 {registrationType === 'self' ? (
                     <div className="tab-card glass-card animate-fade">
-                        {currentUser.isRegistered ? (
+                        {currentMember?.is_registered ? (
                             <div style={{ textAlign: 'center', padding: '40px 0' }}>
                                 <FaCheckCircle style={{ fontSize: '3rem', color: 'var(--success)', marginBottom: '16px' }} />
                                 <h3>You're all set!</h3>
@@ -112,7 +121,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                 <div className="form-field-group">
                                     <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>MEMBER NAME</label>
                                     <div className="form-input-premium" style={{ background: 'var(--bg-soft)', color: 'var(--text-muted)', border: 'none' }}>
-                                        {currentUser.name} (Normalized Profile)
+                                        {currentMember?.name ?? user?.name ?? 'Member'} (Normalized Profile)
                                     </div>
                                 </div>
 
@@ -167,7 +176,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                         unregisteredMembers.map(member => (
                                             <div
                                                 key={member.id}
-                                                onClick={() => toggleMemberSelection(member.id)}
+                                                onClick={() => toggleMemberSelection(String(member.id))}
                                                 style={{
                                                     padding: '12px 16px',
                                                     borderBottom: '1px solid var(--border-light)',
@@ -175,23 +184,23 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                                     alignItems: 'center',
                                                     gap: '12px',
                                                     cursor: 'pointer',
-                                                    background: selectedMemberIds.includes(member.id) ? 'white' : 'transparent',
+                                                    background: selectedMemberIds.includes(String(member.id)) ? 'white' : 'transparent',
                                                     transition: 'var(--t-fast)'
                                                 }}
                                             >
                                                 <div style={{
                                                     width: '20px',
                                                     height: '20px',
-                                                    border: `2px solid ${selectedMemberIds.includes(member.id) ? 'var(--jumuiya-color)' : 'var(--border)'}`,
+                                                    border: `2px solid ${selectedMemberIds.includes(String(member.id)) ? 'var(--jumuiya-color)' : 'var(--border)'}`,
                                                     borderRadius: '4px',
-                                                    background: selectedMemberIds.includes(member.id) ? 'var(--jumuiya-color)' : 'transparent',
+                                                    background: selectedMemberIds.includes(String(member.id)) ? 'var(--jumuiya-color)' : 'transparent',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     color: 'white',
                                                     fontSize: '0.7rem'
                                                 }}>
-                                                    {selectedMemberIds.includes(member.id) && <FaCheckCircle />}
+                                                    {selectedMemberIds.includes(String(member.id)) && <FaCheckCircle />}
                                                 </div>
                                                 <span style={{ flex: 1, fontWeight: 500 }}>{member.name}</span>
                                             </div>

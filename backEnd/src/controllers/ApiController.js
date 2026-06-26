@@ -9,17 +9,26 @@ const TABLE_SORT_COLUMNS = {
   members: "join_date",
   officials: "id",
   projects: "id",
-  jumuiya: "id",
+  jumuiya: "group_id",
+  sub_groups: "group_id",
   mpesa_request: "created_at",
+};
+
+const TABLE_PRIMARY_KEYS = {
+  members: "member_id",
+  users: "user_id",
+  sub_groups: "group_id",
+  jumuiya: "group_id",
 };
 
 // Get all records from a table
 export const getTableData = async (tableName, queryParams = {}) => {
-  const sortCol = TABLE_SORT_COLUMNS[tableName] || 'id';
+  const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
+  const sortCol = TABLE_SORT_COLUMNS[tableName] || (dbTableName === 'sub_groups' ? 'group_id' : 'id');
   const filterKeys = Object.keys(queryParams).filter((key) => queryParams[key] !== undefined && queryParams[key] !== '');
 
   try {
-    let query = `SELECT * FROM "${tableName}"`;
+    let query = `SELECT * FROM "${dbTableName}"`;
     const values = [];
 
     if (filterKeys.length > 0) {
@@ -37,25 +46,25 @@ export const getTableData = async (tableName, queryParams = {}) => {
   } catch (firstError) {
     // Fallback to unordered if ordering column is missing
     if (firstError.code === '42703') {
-      logger.warn(`Falling back to unordered SELECT for "${tableName}" - column "${sortCol}" not found`);
+      logger.warn(`Falling back to unordered SELECT for "${dbTableName}" - column "${sortCol}" not found`);
       try {
-        const fallback = await pool.query(`SELECT * FROM "${tableName}"`);
+        const fallback = await pool.query(`SELECT * FROM "${dbTableName}"`);
         return fallback.rows;
       } catch (fallbackError) {
-        console.error(`Fallback SELECT also failed for "${tableName}":`, fallbackError.message);
+        console.error(`Fallback SELECT also failed for "${dbTableName}":`, fallbackError.message);
         return [];
       }
     }
     
     // Check if table exists
     if (firstError.code === '42P01') {
-      console.error(`[ApiController] Table "${tableName}" does not exist in DB.`);
+      console.error(`[ApiController] Table "${dbTableName}" does not exist in DB.`);
       return [];
     }
     
     // Other database errors - log to console for immediate visibility in server logs
-    console.error(`[ApiController] Database Error fetching ${tableName}:`, firstError);
-    logger.error(`Error fetching ${tableName}: ${firstError.message}`);
+    console.error(`[ApiController] Database Error fetching ${dbTableName}:`, firstError);
+    logger.error(`Error fetching ${dbTableName}: ${firstError.message}`);
     
     // Connection issues fallback (return empty array instead of crashing app)
     if (firstError.message.includes('connection') || firstError.message.includes('queryable')) {
@@ -68,14 +77,15 @@ export const getTableData = async (tableName, queryParams = {}) => {
 
 // Create a new record in a table
 export const createRecord = async (tableName, data) => {
+  const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   try {
     const columns = Object.keys(data);
     const values = Object.values(data);
     const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-    const columnNames = columns.join(', ');
+    const columnNames = columns.map(col => `"${col}"`).join(', ');
     
     const query = `
-      INSERT INTO ${tableName} (${columnNames})
+      INSERT INTO "${dbTableName}" (${columnNames})
       VALUES (${placeholders})
       RETURNING *
     `;
@@ -83,20 +93,22 @@ export const createRecord = async (tableName, data) => {
     const result = await pool.query(query, values);
     return result.rows[0];
   } catch (error) {
-    logger.error(`Error creating record in ${tableName}: ${error.message}`);
-    console.error(`Error creating record in ${tableName}:`, error.message);
+    logger.error(`Error creating record in ${dbTableName}: ${error.message}`);
+    console.error(`Error creating record in ${dbTableName}:`, error.message);
     throw error;
   }
 };
 
 // Delete a record from a table
 export const deleteRecord = async (tableName, id) => {
+  const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
+  const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';
   try {
-    const query = `DELETE FROM ${tableName} WHERE id = $1 RETURNING *`;
+    const query = `DELETE FROM "${dbTableName}" WHERE "${pkName}" = $1 RETURNING *`;
     const result = await pool.query(query, [id]);
     return result.rows[0];
   } catch (error) {
-    console.error(`Error deleting record from ${tableName}:`, error.message);
+    console.error(`Error deleting record from ${dbTableName}:`, error.message);
     throw error;
   }
 };
@@ -119,22 +131,24 @@ export const getAllData = async () => {
 };
 // Update a record in a table
 export const updateRecord = async (tableName, id, data) => {
+  const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
+  const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';
   try {
     const columns = Object.keys(data);
     const values = Object.values(data);
     const setClause = columns.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
     
     const query = `
-      UPDATE "${tableName}"
+      UPDATE "${dbTableName}"
       SET ${setClause}
-      WHERE id = $${columns.length + 1}
+      WHERE "${pkName}" = $${columns.length + 1}
       RETURNING *
     `;
     
     const result = await pool.query(query, [...values, id]);
     return result.rows[0];
   } catch (error) {
-    console.error(`Error updating record in ${tableName}:`, error.message);
+    console.error(`Error updating record in ${dbTableName}:`, error.message);
     throw error;
   }
 };
