@@ -526,7 +526,7 @@ export const getOfficialById = async (req, res) => {
 
 export const createOfficial = async (req, res) => {
   try {
-    const { name, category, position, contact, term_of_service } = req.body;
+    const { name, category, position, contact, term_of_service, reg_number } = req.body;
 
     if (!name || !category) {
         return res.status(400).json({ success: false, message: 'Name and category are required' });
@@ -539,6 +539,23 @@ export const createOfficial = async (req, res) => {
 
     if (!VALID_CATEGORIES.includes(category)) {
       return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+
+    // Validate reg_number if provided
+    let validatedRegNumber = null;
+    if (reg_number && reg_number.trim()) {
+      const memberResult = await pool.query(
+        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
+         UNION ALL
+         SELECT cleaned_reg_number FROM import_records
+         WHERE cleaned_reg_number LIKE '%/' || $1 || '/%' OR cleaned_reg_number ILIKE $2
+         LIMIT 1`,
+        [reg_number.trim(), reg_number.trim().toUpperCase()]
+      );
+      if (memberResult.rows.length === 0) {
+        return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}"` });
+      }
+      validatedRegNumber = memberResult.rows[0].member_id;
     }
 
     // Build checking promises to run in parallel
@@ -592,16 +609,13 @@ export const createOfficial = async (req, res) => {
       }
     }
 
-    console.log("createOfficial req.file:", req.file);
-    console.log("createOfficial req.files:", req.files);
-    console.log("createOfficial req.body:", req.body);
     let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
     const termId = currentTermResult.rows.length > 0 ? currentTermResult.rows[0].id : null;
 
     const result = await pool.query(
-      `INSERT INTO officials (name, category, position, contact, photo, election_term_id, status, term_of_service) 
-       VALUES ($1, $2, $3, $4, $5, $6, 'active', $7) RETURNING *`,
-      [name, category, position || null, normalizedContact || null, photoUrl, termId, term_of_service || null]
+      `INSERT INTO officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number) 
+       VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8) RETURNING *`,
+      [name, category, position || null, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
     );
 
     await syncCurrentTerm(term_of_service);
@@ -621,7 +635,7 @@ export const createOfficial = async (req, res) => {
 export const updateOfficial = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category, position, contact, term_of_service } = req.body;
+    const { name, category, position, contact, term_of_service, reg_number } = req.body;
 
     const existing = await pool.query('SELECT * FROM officials WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
@@ -641,6 +655,23 @@ export const updateOfficial = async (req, res) => {
       if (dup.rows.length > 0) {
         return res.status(409).json({ success: false, message: 'Contact already in use' });
       }
+    }
+
+    // Validate reg_number if provided
+    let validatedRegNumber = existing.rows[0].reg_number;
+    if (reg_number && reg_number.trim()) {
+      const memberResult = await pool.query(
+        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
+         UNION ALL
+         SELECT cleaned_reg_number FROM import_records
+         WHERE cleaned_reg_number LIKE '%/' || $1 || '/%' OR cleaned_reg_number ILIKE $2
+         LIMIT 1`,
+        [reg_number.trim(), reg_number.trim().toUpperCase()]
+      );
+      if (memberResult.rows.length === 0) {
+        return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}"` });
+      }
+      validatedRegNumber = memberResult.rows[0].member_id;
     }
 
     // New Requirement: Check for position uniqueness (if changed or newly provided)
@@ -675,9 +706,10 @@ export const updateOfficial = async (req, res) => {
       `UPDATE officials SET name = COALESCE($1, name), category = COALESCE($2, category),
        position = COALESCE($3, position), contact = COALESCE($4, contact),
        photo = COALESCE($5, photo), term_of_service = COALESCE($6, term_of_service),
+       reg_number = COALESCE($7, reg_number),
        updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7 RETURNING *`,
-      [name, category, position, normalizedContact, photoUrl, term_of_service || null, id]
+       WHERE id = $8 RETURNING *`,
+      [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
     if (term_of_service) {
@@ -879,6 +911,33 @@ export const deleteArchivedOfficial = async (req, res) => {
   } catch (error) {
     logger.error('Error deleting archived official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to delete archived official' });
+  }
+};
+
+export const clearAllOfficials = async (req, res) => {
+  try {
+    const snapshot = await pool.query(
+      `SELECT photo FROM officials WHERE photo IS NOT NULL`
+    );
+
+    const result = await pool.query(`DELETE FROM officials`);
+
+    for (const row of snapshot.rows) {
+      if (row.photo) {
+        if (row.photo.startsWith('http')) {
+          await deleteFromCloudinary(row.photo);
+        } else {
+          const filePath = path.join(process.cwd(), 'localFileUploads', path.basename(row.photo));
+          deleteFile(filePath);
+        }
+      }
+    }
+
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "clear_all" });
+    res.json({ success: true, message: `All officials cleared (${result.rowCount} deleted)` });
+  } catch (error) {
+    logger.error('Error clearing all officials: ' + error.message);
+    res.status(500).json({ success: false, message: 'Failed to clear officials' });
   }
 };
 

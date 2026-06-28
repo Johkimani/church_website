@@ -11,7 +11,8 @@ import {
   exportJumuiyaOfficials,
   exportArchivedJumuiyaOfficials,
   deleteArchivedJumuiyaOfficial,
-  bulkDeleteArchivedJumuiyaOfficials
+  bulkDeleteArchivedJumuiyaOfficials,
+  clearAllJumuiyaOfficials,
 } from '../../controllers/jumuiyaOfficialsController.js';
 import { uploadMiddleware } from '../../middlewares/uploadMiddleware.js';
 
@@ -25,6 +26,9 @@ router.get('/term/:termId', getJumuiyaOfficialsByTerm);
 router.get('/term/:termId/export', exportArchivedJumuiyaOfficials);
 router.delete('/term', bulkDeleteArchivedJumuiyaOfficials);
 router.delete('/term/:id', deleteArchivedJumuiyaOfficial);
+
+// Clear all (admin utility)
+router.delete('/clear-all', clearAllJumuiyaOfficials);
 
 // Basic CRUD routes for Jumuiya Officials
 router.get('/', getAllJumuiyaOfficials);

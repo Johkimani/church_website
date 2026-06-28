@@ -5,17 +5,17 @@ import RegistrationDashboard from "./RegistrationDashboard";
 import MemberImportForm from "./MemberImportForm";
 import ValidationReview from "./ValidationReview";
 import OrganizationPanel from "./OrganizationPanel";
-import DistributionResults from "./DistributionResults";
-import { FaTachometerAlt, FaUpload, FaCheckCircle, FaLayerGroup, FaChartBar } from "react-icons/fa";
+import MembersList from "./MembersList";
+import { FaTachometerAlt, FaUpload, FaCheckCircle, FaLayerGroup, FaUsers } from "react-icons/fa";
 
-type TabId = "dashboard" | "import" | "review" | "organize" | "results";
+type TabId = "dashboard" | "import" | "review" | "organize" | "members";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
   { id: "import", label: "Import", icon: <FaUpload /> },
   { id: "review", label: "Review", icon: <FaCheckCircle /> },
   { id: "organize", label: "Organize", icon: <FaLayerGroup /> },
-  { id: "results", label: "Results", icon: <FaChartBar /> },
+  { id: "members", label: "All Members", icon: <FaUsers /> },
 ];
 
 const MemberManagementPage: React.FC = () => {
@@ -38,8 +38,8 @@ const MemberManagementPage: React.FC = () => {
         return <ValidationReview jumuiyaId={jumuiyaId} />;
       case "organize":
         return <OrganizationPanel jumuiyaId={jumuiyaId} />;
-      case "results":
-        return <DistributionResults jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />;
+      case "members":
+        return <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />;
     }
   };
 
