@@ -3,51 +3,241 @@ import logger from "../logger/winston.js";
 import { payAndWait } from "./stkPush/stkHelper.js";
 
 /**
+ * Resolve a Jumuiya slug (e.g. "st-anthony") to a UUID from sub_groups.
+ * Returns null if no match is found.
+ */
+const resolveJumuiyaUuid = async (slug) => {
+  if (!slug) return null;
+
+  // 1. If the input already looks like a UUID, try direct match
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+  if (isUuid) {
+    const uuidResult = await pool.query(
+      `SELECT group_id FROM sub_groups WHERE group_id = $1`,
+      [slug]
+    );
+    if (uuidResult.rows.length) return uuidResult.rows[0].group_id;
+  }
+
+  // 2. Convert slug to title-case name: "st-anthony" → "St. Anthony"
+  const nameGuess = slug.split("-").map(w => {
+    if (w.toLowerCase() === "st") return "St.";
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join(" ");
+
+  const nameResult = await pool.query(
+    `SELECT group_id FROM sub_groups WHERE LOWER(name) = LOWER($1) OR LOWER(full_name) = LOWER($1)`,
+    [nameGuess]
+  );
+  if (nameResult.rows.length) return nameResult.rows[0].group_id;
+
+  // 3. Fuzzy match: try substring
+  const fuzzyResult = await pool.query(
+    `SELECT group_id FROM sub_groups WHERE LOWER(name) LIKE $1 OR LOWER(full_name) LIKE $1`,
+    [`%${slug.replace(/-/g, "%")}%`]
+  );
+  if (fuzzyResult.rows.length) return fuzzyResult.rows[0].group_id;
+
+  return null;
+};
+
+/**
+ * Internal: fetch members from all three sources (legacy, CSA, direct imports).
+ * Used by getAllJumuiyaMembers and getAllMembersAcrossJumuiyas.
+ */
+function deriveYearFromReg(memberId) {
+  if (!memberId) return null;
+  const match = memberId.match(/(\d{2})$/);
+  if (!match) return null;
+  const lastTwo = parseInt(match[1], 10);
+  const year = lastTwo <= 50 ? 2000 + lastTwo : 1900 + lastTwo;
+  return `${year}-${year + 1}`;
+}
+
+async function fetchAllMembers(jumuiya_id) {
+  const resolvedUuid = await resolveJumuiyaUuid(jumuiya_id);
+
+  if (jumuiya_id && !resolvedUuid) {
+    return [];
+  }
+
+  // ── Part 1: legacy members table ──
+  let legacyQuery = `
+    SELECT 
+      m.member_id as id,
+      m.first_name,
+      m.last_name,
+      m.email,
+      m.phone,
+      m.gender,
+      m.year_of_study as year,
+      m.jumuiya_id,
+      sg.name as jumuiya_name,
+      (r.member_id IS NOT NULL) as is_registered,
+      m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
+      m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg,
+      m.join_date,
+      'legacy' as source
+    FROM members m
+    LEFT JOIN registered r ON m.member_id = r.member_id AND r.jumuiya_id = m.jumuiya_id
+    LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+    WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+  `;
+
+  const legacyParams = [];
+  if (resolvedUuid) {
+    legacyQuery += ` AND m.jumuiya_id = $1`;
+    legacyParams.push(resolvedUuid);
+  }
+
+  legacyQuery += ` ORDER BY m.first_name ASC`;
+
+  const legacyResult = await pool.query(legacyQuery, legacyParams);
+
+  const formattedLegacy = legacyResult.rows.map(row => {
+    const firstName = row.first_name || "";
+    const lastName = row.last_name || "";
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || row.id || "Unknown";
+    return {
+      ...row,
+      name: fullName,
+      member_id: row.id,
+      year: row.year || deriveYearFromReg(row.id),
+      is_current_jumuiya: !!(resolvedUuid && row.jumuiya_id === resolvedUuid),
+      jumuiya_id: jumuiya_id || row.jumuiya_id,
+      import_status: null,
+    };
+  });
+
+  // ── Part 2: CSA-distributed import records ──
+  let csaQuery = `
+    SELECT 
+      ir.id,
+      ir.cleaned_name as name,
+      ir.cleaned_reg_number as member_id,
+      NULL as first_name,
+      NULL as last_name,
+      ir.cleaned_email as email,
+      NULL as phone,
+      ir.cleaned_gender as gender,
+      NULL as year,
+      csa_sg.group_id as jumuiya_uuid,
+      csa_sg.name as jumuiya_name,
+      false as is_registered,
+      NULL as sem_1_reg, NULL as sem_2_reg, NULL as sem_3_reg, NULL as sem_4_reg,
+      NULL as sem_5_reg, NULL as sem_6_reg, NULL as sem_7_reg, NULL as sem_8_reg,
+      NULL as join_date,
+      'csa' as source,
+      ir.status as import_status
+    FROM import_records ir
+    JOIN member_imports mi ON mi.id = ir.import_id
+    LEFT JOIN sub_groups csa_sg ON csa_sg.name = ir.cleaned_jumuiya
+    WHERE mi.jumuiya_id = 'csa' AND ir.status IN ('valid', 'warning')
+      AND csa_sg.group_id IS NOT NULL
+      AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)
+  `;
+  const csaParams = [];
+  if (resolvedUuid) {
+    csaQuery += ` AND csa_sg.group_id = $1`;
+    csaParams.push(resolvedUuid);
+  }
+  const csaResult = await pool.query(csaQuery, csaParams);
+
+  const formattedCSA = csaResult.rows.map(row => ({
+    ...row,
+    year: row.year || deriveYearFromReg(row.member_id),
+    jumuiya_id: jumuiya_id || row.jumuiya_uuid || row.jumuiya_name,
+    is_current_jumuiya: !!(resolvedUuid && row.jumuiya_uuid === resolvedUuid),
+  }));
+
+  // ── Part 3: Direct per-jumuiya processed imports ──
+  let directQuery = `
+    SELECT 
+      ir.id,
+      ir.cleaned_reg_number as member_id,
+      ir.cleaned_name as name,
+      NULL as first_name,
+      NULL as last_name,
+      ir.cleaned_email as email,
+      ir.cleaned_phone as phone,
+      ir.cleaned_gender as gender,
+      NULL as year,
+      mi.jumuiya_id as import_slug,
+      'import' as source,
+      ir.status as import_status
+    FROM import_records ir
+    JOIN member_imports mi ON mi.id = ir.import_id
+    WHERE mi.jumuiya_id != 'csa' AND mi.status = 'processed'
+      AND ir.status IN ('valid', 'warning')
+      AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)
+  `;
+  const directParams = [];
+  if (resolvedUuid) {
+    directQuery += ` AND mi.jumuiya_id = $1`;
+    directParams.push(jumuiya_id);
+  }
+  directQuery += ` ORDER BY ir.cleaned_name ASC`;
+
+  const directResult = await pool.query(directQuery, directParams);
+
+  const getJumuiyaNameFromId = (slug) => {
+    const map = {
+      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
+      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
+      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
+      "st-monica": "St. Monica",
+    };
+    return map[slug] || slug;
+  };
+
+  const formattedDirect = directResult.rows.map(row => {
+    const slug = jumuiya_id || row.import_slug;
+    return {
+      id: row.id,
+      name: row.name,
+      member_id: row.member_id,
+      first_name: row.first_name,
+      last_name: row.last_name,
+      email: row.email,
+      phone: row.phone,
+      gender: row.gender,
+      year: row.year || deriveYearFromReg(row.member_id),
+      jumuiya_name: getJumuiyaNameFromId(slug || ""),
+      jumuiya_id: slug || row.member_id,
+      is_registered: false,
+      sem_1_reg: null, sem_2_reg: null, sem_3_reg: null, sem_4_reg: null,
+      sem_5_reg: null, sem_6_reg: null, sem_7_reg: null, sem_8_reg: null,
+      source: row.source,
+      import_status: row.import_status,
+      join_date: null,
+      is_current_jumuiya: true,
+    };
+  });
+
+  // ── Merge (dedup by member_id when available, fallback to name|jumuiya_id for CSA) ──
+  const seen = new Set();
+  const merged = [...formattedLegacy, ...formattedCSA, ...formattedDirect].filter(row => {
+    const dedupKey = row.member_id
+      ? `id:${row.member_id.toString().toLowerCase()}`
+      : `${row.name}|${row.jumuiya_id}`;
+    if (seen.has(dedupKey)) return false;
+    seen.add(dedupKey);
+    return true;
+  });
+
+  return merged;
+}
+
+/**
  * GET /api/jumuiya-members?jumuiya_id=st-anthony
- * Fetch all members who are registered to a jumuiya.
- * Queries members table directly where jumuiya_id matches.
+ * Fetch all members from both the legacy members/registered tables and
+ * the new import_records table (Jumuiya Member Collection System).
  */
 export const getAllJumuiyaMembers = async (req, res) => {
   try {
     const { jumuiya_id } = req.query;
-    
-    // If jumuiya_id is provided, filter the results to only show members of that community.
-    // This provides data isolation between different Jumuiyas.
-    let query = `
-      SELECT 
-        COALESCE(m.member_id, r.member_id) as id,
-        m.first_name,
-        m.last_name,
-        m.email,
-        m.year_of_study as year,
-        COALESCE(m.jumuiya_id, r.jumuiya_id) as jumuiya_id,
-        sg.name as jumuiya_name,
-        (r.member_id IS NOT NULL) as is_registered,
-        m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
-        m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg
-      FROM members m
-      FULL OUTER JOIN registered r ON m.member_id = r.member_id AND m.jumuiya_id = r.jumuiya_id
-      LEFT JOIN sub_groups sg ON COALESCE(m.jumuiya_id, r.jumuiya_id) = sg.group_id
-    `;
-    
-    const queryParams = [];
-    if (jumuiya_id) {
-      query += ` WHERE COALESCE(m.jumuiya_id, r.jumuiya_id) = $1`;
-      queryParams.push(jumuiya_id);
-    }
-    
-    query += ` ORDER BY m.first_name ASC`;
-    
-    const result = await pool.query(query, queryParams);
-
-    // Map fields and add current membership status
-    const formattedData = result.rows.map(row => ({
-      ...row,
-      name: `${row.first_name} ${row.last_name || ""}`.trim(),
-      is_current_jumuiya: jumuiya_id ? (row.jumuiya_id === jumuiya_id) : false
-    }));
-
-    res.json({ success: true, data: formattedData });
+    const merged = await fetchAllMembers(jumuiya_id);
+    res.json({ success: true, data: merged });
   } catch (error) {
     logger.error("Error fetching all members: " + error.message);
     res.status(500).json({ success: false, error: "Failed to fetch members" });
@@ -120,89 +310,158 @@ export const createJumuiyaMember = async (req, res) => {
 
 /**
  * PUT /api/jumuiya-members/:id
- * Update a membership record (actually updates member details in this case)
+ * Update a member's details and jumuiya assignment across ALL related tables.
+ * Propagates changes to members, import_records, and registered tables.
  */
 export const updateJumuiyaMember = async (req, res) => {
   try {
-    const { id } = req.params; // Expect member_id
-    const { 
-      first_name, last_name, year_of_study, email, jumuiya_id,
-      sem_1_reg, sem_2_reg, sem_3_reg, sem_4_reg,
-      sem_5_reg, sem_6_reg, sem_7_reg, sem_8_reg
+    const { id } = req.params;
+    const {
+      member_id, first_name, last_name, year_of_study, email, jumuiya_id,
+      phone, gender,
     } = req.body;
 
-    // Start Transaction
+    const newMemberId = member_id && member_id.trim() ? member_id.trim() : null;
+    const effectiveId = newMemberId || id;
+    const memberIdChanged = newMemberId && newMemberId !== id;
+
+    // Resolve jumuiya slug/UUID to UUID + display name (logic before BEGIN)
+    let jumuiyaUuid = null;
+    let jumuiyaName = null;
+    if (jumuiya_id) {
+      jumuiyaUuid = await resolveJumuiyaUuid(jumuiya_id);
+      if (jumuiyaUuid) {
+        const nameRes = await pool.query("SELECT name FROM sub_groups WHERE group_id = $1", [jumuiyaUuid]);
+        jumuiyaName = nameRes.rows[0]?.name || null;
+      }
+    }
+
     await pool.query('BEGIN');
 
-    // 1. Get current membership info for syncing
-    const currentRes = await pool.query("SELECT jumuiya_id FROM members WHERE member_id = $1", [id]);
-    if (currentRes.rows.length === 0) {
-      await pool.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Member not found" });
-    }
-    const oldJumuiyaId = currentRes.rows[0].jumuiya_id;
-
-    // 2. Update member details
-    await pool.query(
-      `UPDATE members
-       SET first_name = COALESCE($1, first_name),
-           last_name = COALESCE($2, last_name),
-           year_of_study = COALESCE($3, year_of_study),
-           email = COALESCE($4, email),
-           jumuiya_id = COALESCE($14, jumuiya_id),
-           sem_1_reg = COALESCE($6, sem_1_reg),
-           sem_2_reg = COALESCE($7, sem_2_reg),
-           sem_3_reg = COALESCE($8, sem_3_reg),
-           sem_4_reg = COALESCE($9, sem_4_reg),
-           sem_5_reg = COALESCE($10, sem_5_reg),
-           sem_6_reg = COALESCE($11, sem_6_reg),
-           sem_7_reg = COALESCE($12, sem_7_reg),
-           sem_8_reg = COALESCE($13, sem_8_reg)
-       WHERE member_id = $5`,
-      [
-        first_name, last_name, year_of_study, email, id,
-        sem_1_reg, sem_2_reg, sem_3_reg, sem_4_reg,
-        sem_5_reg, sem_6_reg, sem_7_reg, sem_8_reg,
-        jumuiya_id
-      ]
-    );
-
-    // Fetch updated record with jumuiya name via JOIN
-    const result = await pool.query(
-      `SELECT m.*, sg.name as jumuiya_name
-       FROM members m
-       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-       WHERE m.member_id = $1`,
+    // ── Try members table first ──
+    const currentRes = await pool.query(
+      "SELECT jumuiya_id, first_name, last_name FROM members WHERE member_id = $1",
       [id]
     );
 
-    // 3. Sync Registration Table if jumuiya_id actually changed
-    if (jumuiya_id !== undefined && jumuiya_id !== oldJumuiyaId) {
-      if (oldJumuiyaId) {
-        await pool.query("DELETE FROM registered WHERE member_id = $1 AND jumuiya_id = $2", [id, oldJumuiyaId]);
+    if (currentRes.rows.length > 0) {
+      // ─── Path A: update members table ───
+      const oldJumuiyaId = currentRes.rows[0].jumuiya_id;
+      const oldFirstName = currentRes.rows[0].first_name;
+      const oldLastName = currentRes.rows[0].last_name;
+
+      if (memberIdChanged) {
+        await pool.query("UPDATE members SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
       }
-      if (jumuiya_id) {
-        await pool.query(
-          "INSERT INTO registered (member_id, jumuiya_id, registration_date, status) VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')",
-          [id, jumuiya_id]
-        );
+
+      await pool.query(
+        `UPDATE members
+         SET first_name = COALESCE($1, first_name),
+             last_name = COALESCE($2, last_name),
+             year_of_study = COALESCE($3, year_of_study),
+             email = COALESCE($4, email),
+             phone = COALESCE($5, phone),
+             gender = COALESCE($6, gender),
+             jumuiya_id = COALESCE($7, jumuiya_id)
+         WHERE member_id = $8`,
+        [first_name, last_name, year_of_study, email, phone, gender, jumuiyaUuid, effectiveId]
+      );
+
+      // Sync import_records
+      const shouldSync = first_name || last_name || email || phone || gender || jumuiya_id;
+      if (shouldSync || memberIdChanged) {
+        const syncSets = [];
+        const syncVals = [];
+        let sp = 1;
+        if (first_name || last_name) {
+          const syncName = `${first_name || oldFirstName} ${last_name || oldLastName}`.trim();
+          syncSets.push(`cleaned_name = $${sp++}`); syncVals.push(syncName);
+        }
+        if (email !== undefined) { syncSets.push(`cleaned_email = $${sp++}`); syncVals.push(email); }
+        if (phone !== undefined) { syncSets.push(`cleaned_phone = $${sp++}`); syncVals.push(phone); }
+        if (gender !== undefined) { syncSets.push(`cleaned_gender = $${sp++}`); syncVals.push(gender); }
+        syncSets.push(`cleaned_jumuiya = $${sp++}`); syncVals.push(jumuiyaName);
+        syncVals.push(id);
+        await pool.query(`UPDATE import_records SET ${syncSets.join(", ")} WHERE cleaned_reg_number = $${sp}`, syncVals);
+        if (memberIdChanged) {
+          await pool.query("UPDATE import_records SET cleaned_reg_number = $1 WHERE cleaned_reg_number = $2", [newMemberId, id]);
+        }
       }
+
+      // Registration table sync
+      if (oldJumuiyaId || jumuiyaUuid) {
+        if (jumuiyaUuid !== oldJumuiyaId) {
+          if (oldJumuiyaId) {
+            await pool.query("DELETE FROM registered WHERE member_id = $1 AND jumuiya_id = $2", [effectiveId, oldJumuiyaId]);
+          }
+          if (jumuiyaUuid) {
+            await pool.query(
+              "INSERT INTO registered (member_id, jumuiya_id, registration_date, status) VALUES ($1, $2, CURRENT_TIMESTAMP, 'active') ON CONFLICT DO NOTHING",
+              [effectiveId, jumuiyaUuid]
+            );
+          }
+        }
+      }
+
+      await pool.query('COMMIT');
+
+      const result = await pool.query(
+        `SELECT m.*, sg.name as jumuiya_name
+         FROM members m
+         LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+         WHERE m.member_id = $1`,
+        [effectiveId]
+      );
+
+      const row = result.rows[0];
+      return res.json({
+        success: true,
+        data: {
+          ...row,
+          id: row.member_id,
+          name: `${row.first_name} ${row.last_name || ""}`.trim()
+        }
+      });
+    }
+
+    // ─── Path B: update import_records only ───
+    const syncSets = [];
+    const syncVals = [];
+    let sp = 1;
+    const syncName = [first_name, last_name].filter(Boolean).join(" ").trim();
+    if (syncName) { syncSets.push(`cleaned_name = $${sp++}`); syncVals.push(syncName); }
+    if (email !== undefined) { syncSets.push(`cleaned_email = $${sp++}`); syncVals.push(email); }
+    if (phone !== undefined) { syncSets.push(`cleaned_phone = $${sp++}`); syncVals.push(phone); }
+    if (gender !== undefined) { syncSets.push(`cleaned_gender = $${sp++}`); syncVals.push(gender); }
+    syncSets.push(`cleaned_jumuiya = $${sp++}`); syncVals.push(jumuiyaName);
+    syncVals.push(id);
+    await pool.query(`UPDATE import_records SET ${syncSets.join(", ")} WHERE cleaned_reg_number = $${sp}`, syncVals);
+    if (memberIdChanged) {
+      await pool.query("UPDATE import_records SET cleaned_reg_number = $1 WHERE cleaned_reg_number = $2", [newMemberId, id]);
     }
 
     await pool.query('COMMIT');
 
-    const row = result.rows[0];
-    res.json({ 
-      success: true, 
+    return res.json({
+      success: true,
       data: {
-        ...row,
-        id: row.member_id,
-        name: `${row.first_name} ${row.last_name || ""}`.trim()
+        member_id: effectiveId,
+        id: effectiveId,
+        name: syncName || effectiveId,
+        first_name: first_name || null,
+        last_name: last_name || null,
+        email: email || null,
+        phone: phone || null,
+        gender: gender || null,
+        jumuiya_name: jumuiyaName,
+        jumuiya_id: jumuiyaUuid,
+        source: "import",
       }
     });
+
   } catch (error) {
-    await pool.query('ROLLBACK');
-    logger.error("Error updating jumuiya member: " + error.message);
+    try { await pool.query('ROLLBACK'); } catch (_) { /* no active txn */ }
+    logger.error(`Error updating jumuiya member: ${error.message} | stack: ${error.stack}`);
     res.status(500).json({ success: false, message: "Failed to update member" });
   }
 };
@@ -210,7 +469,8 @@ export const updateJumuiyaMember = async (req, res) => {
 
 /**
  * DELETE /api/jumuiya-members/:id
- * Remove member from a Jumuiya (resets jumuiya_id in members)
+ * Permanently delete a member from ALL tables in the system.
+ * Cleans up members, registered, import_records, group_assignments, allocation_approvals.
  */
 export const deleteJumuiyaMember = async (req, res) => {
   try {
@@ -219,10 +479,28 @@ export const deleteJumuiyaMember = async (req, res) => {
     // Start Transaction
     await pool.query('BEGIN');
 
-    // 1. Remove from registered table first
+    // 1. Remove from registered table
     await pool.query("DELETE FROM registered WHERE member_id = $1", [id]);
 
-    // 2. Totally remove member from members database
+    // 2. Find matching import_records to also clean up child references
+    const importRecs = await pool.query(
+      "SELECT id FROM import_records WHERE cleaned_reg_number = $1",
+      [id]
+    );
+    const importRecIds = importRecs.rows.map(r => r.id);
+
+    if (importRecIds.length > 0) {
+      // 3. Remove group_assignments linked to these import_records
+      await pool.query("DELETE FROM group_assignments WHERE import_record_id = ANY($1::int[])", [importRecIds]);
+
+      // 4. Remove allocation_approvals linked to these import_records
+      await pool.query("DELETE FROM allocation_approvals WHERE import_record_id = ANY($1::int[])", [importRecIds]);
+
+      // 5. Remove the import_records themselves
+      await pool.query("DELETE FROM import_records WHERE id = ANY($1::int[])", [importRecIds]);
+    }
+
+    // 6. Totally remove member from members database
     const result = await pool.query(
       "DELETE FROM members WHERE member_id = $1 RETURNING *", 
       [id]
@@ -235,7 +513,7 @@ export const deleteJumuiyaMember = async (req, res) => {
 
     await pool.query('COMMIT');
 
-    res.json({ success: true, message: "Member removed from community and database successfully" });
+    res.json({ success: true, message: "Member permanently removed from the system" });
   } catch (error) {
     await pool.query('ROLLBACK');
     logger.error("Error deleting jumuiya member: " + error.message);
@@ -398,6 +676,9 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
   try {
     const { jumuiya_id } = req.query;
 
+    // Resolve slug → UUID
+    const resolvedUuid = await resolveJumuiyaUuid(jumuiya_id);
+
     let query = `
       SELECT 
         r.id as registration_id,
@@ -409,29 +690,80 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
         m.year_of_study as year,
         m.jumuiya_id,
         sg.name as jumuiya_name,
-        true as is_registered
+        true as is_registered,
+        'legacy' as source,
+        null as import_status
       FROM registered r
       JOIN members m ON r.member_id = m.member_id
       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
     `;
 
     const queryParams = [];
-    if (jumuiya_id) {
+    if (resolvedUuid) {
       query += ` WHERE r.jumuiya_id = $1`;
-      queryParams.push(jumuiya_id);
+      queryParams.push(resolvedUuid);
     }
 
     query += ` ORDER BY m.first_name ASC`;
 
-    const result = await pool.query(query, queryParams);
+    const legacyResult = await pool.query(query, queryParams);
 
-    const formattedData = result.rows.map(row => ({
+    const formattedLegacy = legacyResult.rows.map(row => ({
       ...row,
       name: `${row.first_name} ${row.last_name || ""}`.trim(),
-      is_current_jumuiya: true // These are specifically from the registered table for this jumuiya
+      is_current_jumuiya: true,
+      jumuiya_id: jumuiya_id || row.jumuiya_id,
     }));
 
-    res.json({ success: true, data: formattedData });
+    // Also include import_records (not yet registered, but present)
+    let importQuery = `
+      SELECT 
+        ir.id,
+        ir.cleaned_name as name,
+        NULL as first_name,
+        NULL as last_name,
+        ir.cleaned_email as email,
+        NULL as year,
+        sg.group_id as jumuiya_uuid,
+        sg.name as jumuiya_name,
+        false as is_registered,
+        'import' as source,
+        ir.status as import_status
+      FROM import_records ir
+      JOIN member_imports mi ON mi.id = ir.import_id
+      LEFT JOIN sub_groups sg ON sg.name = ir.cleaned_jumuiya
+      WHERE ir.status IN ('valid', 'warning')
+    `;
+
+    const importParams = [];
+    if (resolvedUuid) {
+      importQuery += ` AND sg.group_id = $1`;
+      importParams.push(resolvedUuid);
+    }
+
+    importQuery += ` ORDER BY ir.cleaned_name ASC`;
+
+    const importResult = await pool.query(importQuery, importParams);
+
+    const formattedImport = importResult.rows.map(row => {
+      const { jumuiya_uuid, ...rest } = row;
+      return {
+        ...rest,
+        jumuiya_id: jumuiya_id || jumuiya_uuid,
+        is_current_jumuiya: true,
+      };
+    });
+
+    // Merge: deduplicate by name + jumuiya_id
+    const seen = new Set();
+    const merged = [...formattedLegacy, ...formattedImport].filter(row => {
+      const key = `${row.name}|${row.jumuiya_id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    res.json({ success: true, data: merged });
   } catch (error) {
     logger.error("Error fetching registered members: " + error.message);
     res.status(500).json({ success: false, error: "Failed to fetch registered members" });
@@ -554,6 +886,22 @@ export const registerWithPayment = async (req, res) => {
     if (pool) await pool.query('ROLLBACK');
     logger.error("Error in registerWithPayment: " + error.message);
     res.status(500).json({ success: false, message: "Internal server error during registration" });
+  }
+};
+
+/**
+ * GET /api/jumuiya-members/all
+ * Returns ALL members across ALL jumuiyas (unfiltered).
+ * Combines legacy members, CSA-distributed, and direct processed imports.
+ * Used by the "All CSA Members" admin view.
+ */
+export const getAllMembersAcrossJumuiyas = async (req, res) => {
+  try {
+    const merged = await fetchAllMembers(null);
+    res.json({ success: true, data: merged });
+  } catch (error) {
+    logger.error("Error fetching all members across jumuiyas: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch members" });
   }
 };
 

@@ -16,7 +16,8 @@ import {
   exportOfficials,
   exportArchivedOfficials,
   deleteArchivedOfficial,
-  bulkDeleteArchivedOfficials
+  bulkDeleteArchivedOfficials,
+  clearAllOfficials,
 } from '../../controllers/officialsController.js';
 
 import { uploadMiddleware } from '../../middlewares/uploadMiddleware.js';
@@ -38,6 +39,9 @@ router.get('/term/:termId', getOfficialsByTerm);
 router.get('/term/:termId/export', exportArchivedOfficials);
 router.delete('/term', bulkDeleteArchivedOfficials);
 router.delete('/term/:officialId', deleteArchivedOfficial);
+
+// Clear all (admin utility)
+router.delete('/clear-all', clearAllOfficials);
 
 // Basic CRUD routes for Officials
 router.get('/list', getAllOfficials); 

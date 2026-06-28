@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { FaPlus, FaTrash, FaUsers, FaRandom, FaRedo } from "react-icons/fa";
-import toast from "react-hot-toast";
+import { Plus, Users, RefreshCw, AlertTriangle, Trash2 } from "lucide-react";
 
 interface Props {
   jumuiyaId: string;
@@ -9,210 +8,137 @@ interface Props {
 
 const OrganizationPanel: React.FC<Props> = ({ jumuiyaId }) => {
   const [groups, setGroups] = useState<any[]>([]);
-  const [seasons, setSeasons] = useState<any[]>([]);
-  const [selectedSeason, setSelectedSeason] = useState<number | undefined>();
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newGroups, setNewGroups] = useState([{ group_name: "", capacity: 20, group_type: "mixed", description: "" }]);
-  const [distributing, setDistributing] = useState(false);
-  const [distributionResult, setDistributionResult] = useState<any>(null);
-  const [strategy, setStrategy] = useState("balanced-mixed");
+  const [error, setError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newGroup, setNewGroup] = useState({ name: "", capacity: 0, leader_name: "", leader_phone: "" });
 
-  const fetchData = async () => {
+  const fetchGroups = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [groupsRes, seasonsRes] = await Promise.all([
-        memberService.getGroups(jumuiyaId, { season_id: selectedSeason }),
-        memberService.getSeasons(jumuiyaId),
-      ]);
-      setGroups(groupsRes.data || []);
-      setSeasons(seasonsRes.data || []);
-    } catch (err) {
-      console.error("Failed to load organization data", err);
+      const res = await memberService.getGroups(jumuiyaId);
+      setGroups(res.data || []);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || "Failed to fetch groups");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, [jumuiyaId, selectedSeason]);
+  useEffect(() => { fetchGroups(); }, [jumuiyaId]);
 
-  const handleCreateGroups = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const createGroup = async () => {
+    if (!newGroup.name.trim()) return;
+    setError(null);
     try {
-      await memberService.createGroups(jumuiyaId, {
-        groups: newGroups.filter(g => g.group_name.trim()),
-        season_id: selectedSeason,
-      });
-      setShowCreateModal(false);
-      setNewGroups([{ group_name: "", capacity: 20, group_type: "mixed", description: "" }]);
-      toast.success("Groups created successfully");
-      fetchData();
+      await memberService.createGroup(jumuiyaId, newGroup);
+      setNewGroup({ name: "", capacity: 0, leader_name: "", leader_phone: "" });
+      setShowCreate(false);
+      fetchGroups();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to create groups");
+      setError(err?.response?.data?.error || "Group creation failed");
     }
   };
 
-  const handleAutoDistribute = async () => {
-    setDistributing(true);
-    setDistributionResult(null);
-    try {
-      const res = await memberService.autoDistribute(jumuiyaId, {
-        season_id: selectedSeason,
-        strategy,
-      });
-      setDistributionResult(res.data);
-      toast.success("Distribution complete!");
-      fetchData();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Distribution failed");
-    } finally {
-      setDistributing(false);
-    }
-  };
-
-  const handleDeleteGroup = async (groupId: number) => {
-    if (!confirm("Delete this group? This will remove all assignments.")) return;
+  const deleteGroup = async (groupId: number) => {
+    setError(null);
     try {
       await memberService.deleteGroup(jumuiyaId, groupId);
-      toast.success("Group deleted");
-      fetchData();
+      fetchGroups();
     } catch (err: any) {
-      toast.error("Failed to delete group");
+      setError(err?.response?.data?.error || "Delete failed");
     }
-  };
-
-  const addGroupRow = () => {
-    setNewGroups([...newGroups, { group_name: "", capacity: 20, group_type: "mixed", description: "" }]);
   };
 
   if (loading) {
-    return <div className="admin-card"><p style={{ textAlign: "center", padding: "40px" }}>Loading...</p></div>;
+    return (
+      <div className="space-y-3 animate-pulse">
+        <div className="h-8 bg-slate-200 rounded-lg w-1/3" />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-24 bg-slate-100 rounded-xl" />
+          <div className="h-24 bg-slate-100 rounded-xl" />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="admin-card">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2>Organization & Groups</h2>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <select value={selectedSeason || ""} onChange={e => setSelectedSeason(e.target.value ? Number(e.target.value) : undefined)} style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
-            <option value="">All Seasons</option>
-            {seasons.map(s => <option key={s.id} value={s.id}>{s.season_name}</option>)}
-          </select>
-          <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
-            <FaPlus /> Create Groups
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-slate-800">Organization</h3>
+          <p className="text-xs text-slate-500">Create and manage small Christian community groups.</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+            <Plus size={14} /> Create Group
+          </button>
+          <button onClick={fetchGroups} className="p-2.5 text-slate-500 hover:text-slate-700 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">
+            <RefreshCw size={14} />
           </button>
         </div>
       </div>
 
-      {groups.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
-          <FaUsers size={40} style={{ marginBottom: "12px", opacity: 0.4 }} />
-          <p>No groups created yet. Create groups to organize members.</p>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-start gap-2">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-            {groups.map((g) => (
-              <div key={g.id} style={{
-                padding: "20px", borderRadius: "12px", background: "white",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
-                  <h3 style={{ margin: 0 }}>{g.group_name}</h3>
-                  <button onClick={() => handleDeleteGroup(g.id)} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>
-                    <FaTrash size={14} />
-                  </button>
-                </div>
-                <div style={{ display: "flex", gap: "16px", fontSize: "0.9rem" }}>
-                  <span>Type: <strong>{g.group_type}</strong></span>
-                  <span>Capacity: <strong>{g.capacity || "Unlimited"}</strong></span>
-                </div>
-                <div style={{ marginTop: "12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
-                    <span>Members: <strong>{g.member_count || 0}</strong></span>
-                    {g.capacity > 0 && <span>{Math.round(((g.member_count || 0) / g.capacity) * 100)}% full</span>}
-                  </div>
-                  {g.capacity > 0 && (
-                    <div style={{ height: "6px", background: "#e5e7eb", borderRadius: "3px", overflow: "hidden" }}>
-                      <div style={{
-                        height: "100%", borderRadius: "3px", transition: "width 0.3s",
-                        background: "linear-gradient(90deg, #6366f1, #8b5cf6)",
-                        width: `${Math.min(((g.member_count || 0) / g.capacity) * 100, 100)}%`,
-                      }} />
-                    </div>
-                  )}
-                </div>
-                {g.description && <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "8px" }}>{g.description}</p>}
-              </div>
-            ))}
-          </div>
-
-          <div style={{ padding: "20px", background: "#f3f4f6", borderRadius: "8px", marginTop: "16px" }}>
-            <h3><FaRandom /> Auto-Distribution</h3>
-            <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "12px", flexWrap: "wrap" }}>
-              <select value={strategy} onChange={e => setStrategy(e.target.value)} style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db" }}>
-                <option value="balanced-mixed">Balanced Mixed Teams</option>
-                <option value="gender-separate">Gender-Separate Teams</option>
-              </select>
-              <button className="btn-primary" onClick={handleAutoDistribute} disabled={distributing || groups.length === 0}>
-                {distributing ? "Distributing..." : "Auto-Distribute Members"}
-              </button>
-            </div>
-
-            {distributionResult && (
-              <div style={{ marginTop: "16px", padding: "16px", background: "#f0fdf4", borderRadius: "8px" }}>
-                <h4 style={{ color: "#22c55e" }}>Distribution Complete</h4>
-                <p>Total members assigned: {distributionResult.stats?.totalMembers || 0}</p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px", marginTop: "8px" }}>
-                  {distributionResult.stats?.assignmentsByGroup?.map((a: any) => (
-                    <div key={a.groupId} style={{ padding: "8px", background: "white", borderRadius: "6px" }}>
-                      <strong>{a.groupName}</strong>: {a.count} members
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </>
       )}
 
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "600px" }}>
-            <h3>Create Groups</h3>
-            <form onSubmit={handleCreateGroups}>
-              {newGroups.map((g, i) => (
-                <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" }}>
-                  <input required placeholder="Group name" value={g.group_name} onChange={e => {
-                    const updated = [...newGroups];
-                    updated[i].group_name = e.target.value;
-                    setNewGroups(updated);
-                  }} style={{ flex: 1 }} />
-                  <input type="number" placeholder="Capacity" value={g.capacity} onChange={e => {
-                    const updated = [...newGroups];
-                    updated[i].capacity = Number(e.target.value);
-                    setNewGroups(updated);
-                  }} style={{ width: "80px" }} />
-                  <select value={g.group_type} onChange={e => {
-                    const updated = [...newGroups];
-                    updated[i].group_type = e.target.value;
-                    setNewGroups(updated);
-                  }} style={{ width: "100px" }}>
-                    <option value="mixed">Mixed</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                </div>
-              ))}
-              <button type="button" className="btn-secondary" onClick={addGroupRow} style={{ marginTop: "8px" }}>
-                <FaPlus /> Add Group
+      {/* Create Group Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Create Group</h3>
+            <div className="space-y-3">
+              <input value={newGroup.name} onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })} placeholder="Group name"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+              <input type="number" value={newGroup.capacity || ""} onChange={(e) => setNewGroup({ ...newGroup, capacity: parseInt(e.target.value) || 0 })} placeholder="Max capacity"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+              <input value={newGroup.leader_name} onChange={(e) => setNewGroup({ ...newGroup, leader_name: e.target.value })} placeholder="Leader name"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+              <input value={newGroup.leader_phone} onChange={(e) => setNewGroup({ ...newGroup, leader_phone: e.target.value })} placeholder="Leader phone"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+            </div>
+            <div className="flex gap-2 justify-end mt-5">
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                Cancel
               </button>
-              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create Groups</button>
-              </div>
-            </form>
+              <button onClick={createGroup} disabled={!newGroup.name.trim()}
+                className="px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded-lg transition-colors">
+                Create
+              </button>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Groups Grid */}
+      {groups.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
+          <Users size={32} className="text-slate-200 mx-auto mb-2" />
+          <p className="text-slate-400 text-sm">No groups yet.</p>
+          <p className="text-slate-300 text-xs mt-1">Create groups to organize members into small communities.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {groups.map((g) => (
+            <div key={g.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-bold text-slate-800">{g.name}</h4>
+                <button onClick={() => deleteGroup(g.id)} className="text-red-300 hover:text-red-500 transition-colors p-1">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className="space-y-1.5 text-xs text-slate-500">
+                <p><span className="font-semibold text-slate-700">Capacity:</span> {g.capacity || "Unlimited"}</p>
+                {g.leader_name && <p><span className="font-semibold text-slate-700">Leader:</span> {g.leader_name} {g.leader_phone && `(${g.leader_phone})`}</p>}
+                <p className="text-emerald-600 font-medium">{g.member_count || 0} member{g.member_count !== 1 ? "s" : ""}</p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

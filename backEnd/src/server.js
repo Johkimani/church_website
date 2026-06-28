@@ -14,6 +14,8 @@ import { connectDb } from "./Configs/dbConfig.js";
 import logger from "./logger/winston.js";
 import { setupCommunityDatabase } from "./migrations/communityDbInit.js";
 import { setupJumuiyaMemberSystem } from "./migrations/jumuiyaMemberSystem.js";
+import { setupAssociatesSystem } from "./migrations/associatesMigration.js";
+import { setupOfficialMemberLink } from "./migrations/officialMemberLink.js";
 import { startKeepAliveWorker } from "./services/keep-alive.js";
 
 process.on("uncaughtException", (err) => {
@@ -148,6 +150,8 @@ const initServer = async () => {
     await connectDb();
     await setupCommunityDatabase();
     await setupJumuiyaMemberSystem();
+    await setupAssociatesSystem();
+    await setupOfficialMemberLink();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

@@ -13,6 +13,7 @@ export interface JumuiyaOfficial {
   photo?: string;
   term_of_service?: string;
   status?: string;
+  reg_number?: string;
 }
 
 export function useJumuiyaOfficials(filters: { termId?: number | string; category?: string } = {}) {

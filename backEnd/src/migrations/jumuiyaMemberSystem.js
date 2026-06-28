@@ -105,6 +105,41 @@ const setupJumuiyaMemberSystem = async () => {
       );
     `);
 
+    // Add academic_year column if not present (for filtering by academic cycle)
+    await pool.query(`
+      ALTER TABLE member_imports
+      ADD COLUMN IF NOT EXISTS academic_year VARCHAR(9) DEFAULT NULL;
+    `);
+
+    // Tables for coordinator approval workflow
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS distribution_batches (
+        id SERIAL PRIMARY KEY,
+        academic_year VARCHAR(9),
+        status VARCHAR(30) DEFAULT 'pending_approval'
+          CHECK (status IN ('pending_approval', 'partially_approved', 'all_approved', 'finalized', 'cancelled')),
+        created_by INTEGER,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        finalized_at TIMESTAMP WITH TIME ZONE
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS allocation_approvals (
+        id SERIAL PRIMARY KEY,
+        distribution_batch_id INTEGER NOT NULL REFERENCES distribution_batches(id) ON DELETE CASCADE,
+        import_record_id INTEGER NOT NULL REFERENCES import_records(id) ON DELETE CASCADE,
+        target_jumuiya VARCHAR(100) NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending'
+          CHECK (status IN ('pending', 'approved', 'rejected')),
+        reviewed_by INTEGER,
+        reviewed_at TIMESTAMP WITH TIME ZONE,
+        rejection_reason TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(import_record_id, distribution_batch_id)
+      );
+    `);
+
     logger.info("Jumuiya Member Collection System tables created successfully");
   } catch (error) {
     logger.error("Failed to create Jumuiya Member Collection System tables:", error.message);

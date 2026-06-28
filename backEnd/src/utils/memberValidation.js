@@ -3,7 +3,10 @@ const VALID_JUMUIYAS = [
   "St. Dominic", "St. Elizabeth", "St. Maria Goretti", "St. Monica"
 ];
 
-const REG_NUM_PATTERN = /^[A-Za-z]{2}\d{3}\/[A-Za-z0-9]+\/\d{4}\/\d{2}$/;
+// Known flexible pattern: e.g. CS01/A/2024/01, PA106/G/12345/23, ED101/G/98765/26
+const REG_NUM_PATTERN = /^[A-Za-z]+\d+\/[A-Za-z]+\/\d+\/\d{2}$/;
+// Very loose — any alphanumeric with at least one slash, so admins can enter custom formats
+const REG_NUM_LOOSE_PATTERN = /^[A-Za-z0-9\/.\-_]+\/\d{2}$/;
 
 const JUMUIYA_ALIASES = {
   "anthony": "St. Anthony", "st anthony": "St. Anthony", "st. anthony": "St. Anthony",
@@ -29,8 +32,22 @@ export const standardizeName = (name) => {
 export const standardizeRegNumber = (regNumber) => {
   if (!regNumber || typeof regNumber !== "string") return { cleaned: null, errors: ["Registration number is required"], warnings: [] };
   let cleaned = regNumber.trim().toUpperCase();
-  if (!REG_NUM_PATTERN.test(cleaned)) return { cleaned, errors: [`Invalid format: "${cleaned}" — expected format e.g. CS01/A/2024/01`], warnings: [] };
-  return { cleaned, errors: [], warnings: [] };
+
+  // 1. Known format → clean pass
+  if (REG_NUM_PATTERN.test(cleaned)) return { cleaned, errors: [], warnings: [] };
+
+  // 2. Loose format → warn but accept (admin knows it's valid)
+  if (REG_NUM_LOOSE_PATTERN.test(cleaned)) {
+    return { cleaned, errors: [], warnings: [`Unrecognised format "${cleaned}" — stored as-is. It will be auto-recognised in future.`] };
+  }
+
+  // 3. Has at least a slash and some content → suspect but accept with warning
+  if (cleaned.includes("/") && cleaned.replace(/[\/]/g, "").length >= 3) {
+    return { cleaned, errors: [], warnings: [`Unusual format "${cleaned}" — please verify it is correct. It will be auto-recognised in future.`] };
+  }
+
+  // 4. Garbage → error
+  return { cleaned: null, errors: [`Invalid registration number: "${cleaned}"`], warnings: [] };
 };
 
 export const standardizeGender = (gender) => {
@@ -44,7 +61,7 @@ export const standardizeGender = (gender) => {
 };
 
 export const matchJumuiya = (input) => {
-  if (!input || typeof input !== "string") return { cleaned: null, errors: ["Jumuiya is required"], warnings: [] };
+  if (!input || typeof input !== "string") return { cleaned: null, errors: [], warnings: [] };
   const key = input.trim().toLowerCase().replace(/\s+/g, " ");
   if (VALID_JUMUIYAS.includes(input.trim())) return { cleaned: input.trim(), errors: [], warnings: [] };
   const match = JUMUIYA_ALIASES[key];

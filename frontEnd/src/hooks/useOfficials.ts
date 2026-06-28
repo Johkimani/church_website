@@ -16,6 +16,7 @@ export interface Official {
   status?: string;
   term_name?: string;
   term_year?: string;
+  reg_number?: string;
 }
 
 export function useOfficials() {
