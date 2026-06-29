@@ -25,6 +25,10 @@ const router = Router()
 import paymentRouter from "./payment.router.js";
 import jumuiyaMemberRouter from "./jumuiyaMemberRouter.js";
 import settingsRouter from "./settingsRoutes.js";
+import categoryCardsRouter from "./categoryCardsRoutes.js";
+import hireAvailabilityRouter from "./hireAvailability.js";
+import hireSubmitRouter from "./hireSubmit.js";
+import hireStatusRouter from "./hireStatus.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -72,6 +76,9 @@ router.use("/admin/activities", activitiesAdminRouter);
 // Jumuiya Member Collection System
 router.use("/jumuiya-members", jumuiyaMemberRouter);
 
+// Category cards (home page card images)
+router.use("/", categoryCardsRouter);
+
 // System settings (hire admin numbers, etc.)
 router.use("/settings", settingsRouter);
 
@@ -80,6 +87,15 @@ router.use("/jumuiya-members", jumuiyaMembersRouter);
 
 // Jumuiya data (full aggregated data with group_id)
 router.use("/jumuiya-data", jumuiyaDataRouter);
+
+// Hire availability checking
+router.use("/hire", hireAvailabilityRouter);
+
+// Hire bulk submission
+router.use("/hire", hireSubmitRouter);
+
+// Hire status management & payment
+router.use("/hire", hireStatusRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

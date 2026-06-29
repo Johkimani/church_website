@@ -34,6 +34,9 @@ const ProductDetailsPage = lazy(() => import("./pages/projects/pages/ProductDeta
 // New Admin Pages
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 
+// Hire Status / Payment
+const HireStatus = lazy(() => import("./pages/HireStatus"));
+
 // Utility pages
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -153,6 +156,7 @@ const App: React.FC = () => {
 
         {/* Order Confirmation (no layout) */}
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
+        <Route path="/hire-status" element={<HireStatus />} />
 
         {/* Public Routes with Page Layout */}
         <Route path="/" element={<Pageoulet />}>

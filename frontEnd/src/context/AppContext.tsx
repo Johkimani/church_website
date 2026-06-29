@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../api/config';
 import {  MESSAGES as DEFAULT_MESSAGES, SACRAMENTAL_CATEGORIES} from '../pages/projects/pages/data';
 import type { CartItem, SacramentalCategory } from '../pages/projects/pages/data';
+
+export interface HireItem {
+  id: number;
+  name: string;
+  category?: string;
+  price: number;
+  quantity: number;
+}
 import apiService from '../pages/Landing/services/api';
 
 interface ToastMessage {
@@ -41,7 +49,10 @@ interface AppContextType {
     setCustomerEmail: (email: string) => void;
     deliveryAddress: string;
     setDeliveryAddress: (address: string) => void;
+    collectionMethod: "pickup" | "delivery";
+    setCollectionMethod: (method: "pickup" | "delivery") => void;
     proceedToCheckout: () => Promise<void>;
+    proceedWithCash: () => Promise<void>;
 
     // Toasts
     toasts: ToastMessage[];
@@ -51,6 +62,16 @@ interface AppContextType {
     sacCategory: SacramentalCategory;
     setSacCategory: (cat: SacramentalCategory) => void;
     sectionBanners: Record<string, { img: string; title: string; subtitle: string }> | null;
+
+    // Hire Cart
+    hireItems: HireItem[];
+    addToHire: (item: HireItem) => void;
+    removeFromHire: (name: string) => void;
+    updateHireQty: (name: string, delta: number) => void;
+    clearHire: () => void;
+    hireItemsCount: number;
+    isHireModalOpen: boolean;
+    setHireModalOpen: (open: boolean) => void;
 
     // Auth
     isAdmin: boolean;
@@ -77,7 +98,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
     const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [collectionMethod, setCollectionMethod] = useState<"pickup" | "delivery">("pickup");
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
+    const [hireItems, setHireItems] = useState<HireItem[]>([]);
+    const [isHireModalOpen, setHireModalOpen] = useState(false);
+
+    const addToHire = (item: HireItem) => {
+        setHireItems(prev => {
+            const existing = prev.find(i => i.name === item.name);
+            if (existing) {
+                return prev.map(i =>
+                    i.name === item.name ? { ...i, quantity: i.quantity + item.quantity } : i
+                );
+            }
+            return [...prev, item];
+        });
+    };
+
+    const removeFromHire = (name: string) => {
+        setHireItems(prev => prev.filter(i => i.name !== name));
+    };
+
+    const updateHireQty = (name: string, delta: number) => {
+        setHireItems(prev => prev.map(i => {
+            if (i.name !== name) return i;
+            const newQty = i.quantity + delta;
+            return newQty <= 0 ? i : { ...i, quantity: newQty };
+        }));
+    };
+
+    const clearHire = () => setHireItems([]);
+
+    const hireItemsCount = hireItems.reduce((sum, i) => sum + (i.quantity || 0), 0);
+
     const [isAdmin, setIsAdmin] = useState<boolean>(() => {
         return localStorage.getItem('csa_admin_auth') === 'true';
     });
@@ -218,6 +271,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     await apiService.createRecord('orders', {
                         amount: cartTotal,
                         phone,
+                        customer_name: customerName.trim(),
+                        customer_email: customerEmail.trim() || null,
+                        payment_method: 'mpesa',
+                        collection_method: collectionMethod,
+                        delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
                         checkout_id: checkoutId,
                         items: cart,
                         status: 'pending',
@@ -248,7 +306,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             setCustomerEmail('');
                             setDeliveryAddress('');
                             // Navigate to confirmation
-                            navigate(`/order-confirmation?order_id=${orderId}`);
+                            navigate(`/order-confirmation?order_id=${orderId}&method=mpesa`);
                         } else if (statusRes.status === 'failed') {
                             clearInterval(pollInterval);
                             showToast(`Payment failed: ${statusRes.result_desc || 'Cancelled'}`);
@@ -275,6 +333,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     };
 
+    const proceedWithCash = async () => {
+        if (cart.length === 0) return;
+        if (!customerName.trim() || !customerPhone.trim()) {
+            showToast("Please provide your name and phone number");
+            return;
+        }
+
+        let phone = customerPhone.trim();
+
+        try {
+            const order = await apiService.createRecord('orders', {
+                amount: cartTotal,
+                phone,
+                customer_name: customerName.trim(),
+                customer_email: customerEmail.trim() || null,
+                payment_method: 'cash',
+                collection_method: collectionMethod,
+                delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
+                items: cart,
+                status: 'pending',
+            });
+
+            const orderRef = order?.order_reference || order?.id;
+            setCart([]);
+            setIsCartOpen(false);
+            setCustomerName('');
+            setCustomerPhone('');
+            setCustomerEmail('');
+            setDeliveryAddress('');
+            setCollectionMethod('pickup');
+            navigate(`/order-confirmation?order_id=${orderRef}&method=cash`);
+        } catch (err: any) {
+            console.error("Cash checkout error:", err);
+            showToast(err?.response?.data?.error || "Failed to place order. Try again.");
+        }
+    };
+
     return (
         <AppContext.Provider value={{
             products, apiMessages, sliderImages, sectionBanners, isLoading,
@@ -283,9 +378,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             isCartOpen, setIsCartOpen,
             customerName, setCustomerName, customerPhone, setCustomerPhone,
             customerEmail, setCustomerEmail, deliveryAddress, setDeliveryAddress,
-            proceedToCheckout,
+            collectionMethod, setCollectionMethod,
+            proceedToCheckout, proceedWithCash,
             toasts, showToast,
             sacCategory, setSacCategory,
+            hireItems, addToHire, removeFromHire, updateHireQty, clearHire, hireItemsCount,
+            isHireModalOpen, setHireModalOpen,
             isAdmin, setIsAdmin
         }}>
             {children}

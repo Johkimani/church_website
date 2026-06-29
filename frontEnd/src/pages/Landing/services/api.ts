@@ -441,6 +441,28 @@ class ApiService {
     }
   }
 
+  // ── Category Cards (Home Page) ──
+
+  async getCategoryCards(): Promise<any[]> {
+    try {
+      const response = await apiClient.get('/category-cards');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching category cards:', error);
+      return [];
+    }
+  }
+
+  async upsertCategoryCard(payload: { category: string; image_url: string; label: string; tag?: string }): Promise<any> {
+    const response = await apiClient.post('/category-cards', payload);
+    return response.data;
+  }
+
+  async deleteCategoryCard(category: string): Promise<any> {
+    const response = await apiClient.delete(`/category-cards/${category}`);
+    return response.data;
+  }
+
 }
 
 export default new ApiService();
