@@ -50,6 +50,7 @@ CREATE TABLE mpesa_request (
   amount NUMERIC(10, 2),
    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed')),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES members(member_id) ON DELETE CASCADE
  );
 
