@@ -3,7 +3,7 @@ import { useApp } from '../../../context/AppContext';
 import { HireModal } from '../components/HireModal';
 import { HeroSlider, useSliderImages } from '../components/HeroSlider';
 import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS } from './data';
-import { FaStar, FaCalendarCheck, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle, FaChair } from 'react-icons/fa';
+import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle, FaChair } from 'react-icons/fa';
 
 interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
@@ -124,9 +124,11 @@ const ProcessGuide: React.FC = () => (
     </div>
 );
 
+const CHAIR_PRICE = 10;
+
 export const Chairs = () => {
-    const { products, isLoading } = useApp();
-    const [hireItem, setHireItem] = React.useState<{ id: number; name: string; category?: string; price?: number } | null>(null);
+    const { products, isLoading, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
+    const [chairQty, setChairQty] = React.useState(1);
     const { sliderImgs, sliderLoading, isAdmin, deleteSlide } = useSliderImages('chairs');
 
     const product = React.useMemo(() => {
@@ -135,13 +137,19 @@ export const Chairs = () => {
 
     const image = product?.image_url || product?.img;
     const stock = product?.stock != null ? Number(product.stock) : 0;
-    const price = product?.price || 10;
+    const price = Number(product?.price) || CHAIR_PRICE;
     const name = product?.name || 'Event Chairs';
+
+    const handleHire = () => {
+        if (chairQty < 1) return;
+        addToHire({ id: product?.id || 0, name, category: 'chairs', price, quantity: chairQty });
+        setHireModalOpen(true);
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-amber-50/20 to-white">
 
-            {hireItem && <HireModal item={hireItem} onClose={() => setHireItem(null)} />}
+            {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} />}
 
             {/* Hero Slider */}
             <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
@@ -238,15 +246,36 @@ export const Chairs = () => {
                                     </div>
                                 </div>
 
-                                {/* CTA */}
-                                <button
-                                    onClick={() => setHireItem({ id: product?.id || 0, name, category: 'chairs', price: Number(price) })}
-                                    className="w-full py-4 rounded-2xl font-black text-base bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200 hover:shadow-xl active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
-                                >
-                                    <FaCalendarCheck size={16} /> Request Booking
-                                </button>
-
-                                <p className="text-[10px] text-slate-400 text-center">You'll be redirected to WhatsApp to confirm your booking</p>
+                                {/* Quantity + Hire Button */}
+                                <div className="flex items-center gap-3">
+                                    <div className="flex-1">
+                                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Quantity</label>
+                                        <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden">
+                                            <button
+                                                onClick={() => setChairQty(q => Math.max(1, q - 10))}
+                                                className="w-10 h-11 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors"
+                                            >-</button>
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                value={chairQty}
+                                                onChange={e => setChairQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                                className="flex-1 h-11 text-center text-sm font-bold border-x border-slate-200 focus:outline-none"
+                                            />
+                                            <button
+                                                onClick={() => setChairQty(q => Math.min(999, q + 10))}
+                                                className="w-10 h-11 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors"
+                                            >+</button>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleHire}
+                                        className="flex-1 h-11 rounded-2xl font-black text-sm bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200 hover:shadow-xl active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
+                                    >
+                                        Hire
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 text-center">Pickup at KYU campus. No delivery.</p>
                             </div>
                         </div>
                     </div>
@@ -263,6 +292,7 @@ export const Chairs = () => {
             <div className="text-center py-10 text-sm text-amber-700 italic px-4">
                 "Let all things be done decently and in order." — 1 Corinthians 14:40
             </div>
+
         </div>
     );
 };

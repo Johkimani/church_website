@@ -63,6 +63,16 @@ export const handleCallback = async (req, res) => {
         [mpesaReceipt, CheckoutRequestID]
       );
 
+      // 3. Update hire_requests that were waiting on this checkout_id
+      await db.query(
+        `UPDATE hire_requests
+            SET payment_status = 'paid', payment_method = 'mpesa',
+                mpesa_receipt = $1, paid_at = CURRENT_TIMESTAMP,
+                status = 'paid', updated_at = CURRENT_TIMESTAMP
+          WHERE mpesa_checkout_id = $2 AND payment_status = 'pending'`,
+        [mpesaReceipt, CheckoutRequestID]
+      );
+
       logger.info(`✅ Payment recorded: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`);
 
     } else {
@@ -83,6 +93,13 @@ export const handleCallback = async (req, res) => {
       await db.query(
         `UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP
           WHERE checkout_id = $1 AND status = 'pending'`,
+        [CheckoutRequestID]
+      );
+
+      // Also mark hire_requests as payment failed
+      await db.query(
+        `UPDATE hire_requests SET payment_status = 'failed', updated_at = CURRENT_TIMESTAMP
+          WHERE mpesa_checkout_id = $1 AND payment_status = 'pending'`,
         [CheckoutRequestID]
       );
 
