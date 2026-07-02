@@ -13,7 +13,7 @@ const JUMUIYAS = [
   { id: "st-monica", name: "St. Monica" },
 ];
 
-export default function AssociatesTable() {
+export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: number }) {
   const [associates, setAssociates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ export default function AssociatesTable() {
     }
   }, []);
 
-  useEffect(() => { fetchAssociates(); }, []);
+  useEffect(() => { fetchAssociates(); }, [refreshKey]);
 
   const graduationYears = useMemo(() => {
     const years = new Set<number>();
@@ -267,9 +267,10 @@ export default function AssociatesTable() {
                     <td className="py-2.5 px-3">
                       <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
                         a.source === "legacy" ? "bg-amber-50 text-amber-700" :
-                        a.source === "csa" ? "bg-cyan-50 text-cyan-700" : "bg-indigo-50 text-indigo-700"
+                        a.source === "csa" ? "bg-cyan-50 text-cyan-700" :
+                        a.source === "jum" ? "bg-indigo-50 text-indigo-700" : "bg-slate-50 text-slate-700"
                       }`}>
-                        {a.source === "legacy" ? "Legacy" : a.source === "csa" ? "CSA" : "Import"}
+                        {a.source === "legacy" ? "Legacy" : a.source === "csa" ? "CSA" : a.source === "jum" ? "Jum" : "Import"}
                       </span>
                     </td>
                     <td className="py-2.5 px-3">

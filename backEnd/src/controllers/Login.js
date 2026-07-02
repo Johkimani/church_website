@@ -29,7 +29,7 @@ export const Login = async (req, res) => {
           ARRAY[]::text[]
         ) as roles
       FROM members m 
-      LEFT JOIN member_roles mr ON m.member_id = mr.member_id 
+      LEFT JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
       LEFT JOIN roles r ON mr.role_id = r.role_id 
       WHERE m.member_id = $1
       GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email`,
@@ -43,22 +43,19 @@ export const Login = async (req, res) => {
 
     const user = result.rows[0];
 
-console.log("User found:", user.member_id);
-console.log("Password entered:", JSON.stringify(password));
-console.log("Password length:", password.length);
+    const storedHash = typeof user.password === 'string' ? user.password.trim() : user.password;
+    const match = await bcrypt.compare(password, storedHash);
 
-const storedHash = typeof user.password === 'string' ? user.password.trim() : user.password;
-const match = await bcrypt.compare(password, storedHash);
+    if (!match) {
+      logger.error(`Invalid username or password for '${userReg}'`);
+      return res.status(401).json({
+        status: false,
+        message: "Invalid username or password"
+      });
+    }
 
-console.log("Match result:", match);
-
-if (!match) {
-  logger.error(`Invalid username or password for '${userReg}'`);
-  return res.status(401).json({
-    status: false,
-    message: "Invalid username or password"
-  });
-}
+    // Detect first login: password matches their reg number
+    const isDefaultPassword = await bcrypt.compare(userReg, storedHash);
 
     const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
     const refreshToken = generateRefreshtoken(user.member_id, user.roles);
@@ -66,7 +63,7 @@ if (!match) {
     // Save hashed refresh token to database
     const hashedToken = await bcrypt.hash(refreshToken, 10);
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 20); // Matches generateRefreshtoken expiresIn: "20h"
+    expiresAt.setHours(expiresAt.getHours() + 20);
 
     await pool.query(
       `INSERT INTO refresh_tokens (member_id, token, expires_at) VALUES ($1, $2, $3)`,
@@ -75,12 +72,15 @@ if (!match) {
 
     res.status(200).json({
       status: "success",
+      member_id: user.member_id,
       accessToken,
       refreshToken,
-      role: user.roles, // returning role as array
+      role: user.roles,
       name: `${user.first_name} ${user.last_name}`.trim(),
       email: user.email,
-      jumuiya_id: user.jumuiya_id
+      jumuiya_id: user.jumuiya_id,
+      forcePasswordChange: isDefaultPassword,
+      hasEmail: !!user.email,
     });
   } catch (err) {
     logger.error("Server error during login:", err);
@@ -145,7 +145,7 @@ export const refreshAccessToken = async (req, res) => {
                 ARRAY[]::text[]
               ) as roles
        FROM members m
-       LEFT JOIN member_roles mr ON m.member_id = mr.member_id
+       LEFT JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
        LEFT JOIN roles r ON mr.role_id = r.role_id
        WHERE m.member_id = $1
        GROUP BY m.member_id, m.jumuiya_id, m.first_name, m.last_name, m.email`,
@@ -180,5 +180,59 @@ export const refreshAccessToken = async (req, res) => {
       error: error.message,
       detail: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
+  }
+};
+
+/**
+ * First-login setup: force password change + optional email update.
+ * Verifies current password (should be the default reg number) before
+ * allowing the update.
+ */
+export const firstLoginSetup = async (req, res) => {
+  try {
+    const { member_id, currentPassword, newPassword, email } = req.body;
+
+    if (!member_id || !currentPassword || !newPassword) {
+      return res.status(400).json({ status: false, message: "member_id, currentPassword, and newPassword are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ status: false, message: "New password must be at least 6 characters" });
+    }
+
+    // Fetch member
+    const member = await pool.query(
+      "SELECT member_id, password, first_name, last_name FROM members WHERE member_id = $1",
+      [member_id]
+    );
+    if (member.rows.length === 0) {
+      return res.status(404).json({ status: false, message: "Member not found" });
+    }
+
+    const storedHash = typeof member.rows[0].password === 'string' ? member.rows[0].password.trim() : member.rows[0].password;
+    const valid = await bcrypt.compare(currentPassword, storedHash);
+    if (!valid) {
+      return res.status(401).json({ status: false, message: "Current password is incorrect" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // Update password and optionally email
+    if (email && email.trim()) {
+      await pool.query(
+        "UPDATE members SET password = $1, email = $2 WHERE member_id = $3",
+        [hashed, email.trim(), member_id]
+      );
+    } else {
+      await pool.query(
+        "UPDATE members SET password = $1 WHERE member_id = $2",
+        [hashed, member_id]
+      );
+    }
+
+    res.json({ status: true, message: "Password updated successfully" });
+  } catch (error) {
+    logger.error("firstLoginSetup error:", error.message);
+    res.status(500).json({ status: false, message: "Server error" });
   }
 };

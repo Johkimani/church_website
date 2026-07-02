@@ -14,6 +14,7 @@ import GalleryPage from "./pages/Landing/components/page/GalleryPage";
 // Adaptive Discovery Paths (Lazy Loading for Performance)
 const Reset = lazy(() => import("./pages/Authorization/Reset"));
 const ResetPasswordPage = lazy(() => import("./pages/Authorization/ResetPasswordPage"));
+const FirstLoginSetup = lazy(() => import("./pages/Authorization/FirstLoginSetup"));
 const PublicView = lazy(() => import("./pages/officials/PublicView"));
 const OfficialProfile = lazy(() => import("./pages/officials/OfficialProfile"));
 const Layout = lazy(() => import("./pages/Devotions/components/Layout"));
@@ -115,6 +116,7 @@ const App: React.FC = () => {
           <Route index element={<Login />} />
           <Route path="reset" element={<Reset />} />
           <Route path="otp/:reg" element={<ResetPasswordPage />} />
+          <Route path="first-login-setup" element={<FirstLoginSetup />} />
         </Route>
 
         {/* Admin Routes */}

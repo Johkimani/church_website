@@ -345,9 +345,9 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
         <button onClick={handleValidate} disabled={importing} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors disabled:opacity-50">
           <CheckCircle size={14} /> Validate
         </button>
-        <button onClick={handleImport} disabled={importing || hasValidationErrors}
+        <button onClick={handleImport} disabled={importing || !validationResults || hasValidationErrors}
           className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded-lg transition-colors"
-          title={hasValidationErrors ? "Fix validation errors before importing" : ""}>
+          title={!validationResults ? "Run validation first" : hasValidationErrors ? "Fix validation errors before importing" : ""}>
           {importing ? "Importing..." : "Import Members"}
         </button>
         <button onClick={resetForm} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">

@@ -65,7 +65,7 @@ export default function UniversalAdmin() {
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [openMenus, setOpenMenus] = useState<string[]>(['activities', 'sacramental-section']); // Optional default open
+  const [openMenus, setOpenMenus] = useState<string[]>(['activities', 'sacramental-section']);
 
   const toggleMenu = (id: string) => {
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
@@ -73,9 +73,13 @@ export default function UniversalAdmin() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000); // Check every minute
+    const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('admin_last_path', location.pathname);
+  }, [location.pathname]);
 
   const fetchNotifications = async () => {
     try {
@@ -138,41 +142,69 @@ export default function UniversalAdmin() {
     : [];
   const normalized = userRoles.map((r) => String(r).toUpperCase().trim());
   const isSuperAdmin = normalized.some(
-    (r) => r.includes("ADMIN") || r.includes("SUPREME")
+    (r) => r === "CSA_CHAIR" || r.includes("ADMIN") || r.includes("SUPREME")
   );
 
   const checkAccess = (path: string): boolean => {
     if (isSuperAdmin) return true;
-    if (path === "/admin" || path === "/admin/") return true;
+    if (path === "/admin" || path === "/admin/") return normalized.length > 0;
 
-    if (path.startsWith("/admin/announcements")) {
-      return normalized.some(
-        (r) =>
-          r.includes("CSA_LEADER") ||
-          r.includes("CSA_OS") ||
-          r.includes("JUMUIYA_LEADER") ||
-          r.includes("JUMUIYA_OS")
-      );
-    }
-    if (path.startsWith("/admin/officials")) {
-      return normalized.includes("OFFICIALS MANAGEMENT");
-    }
-    if (path.startsWith("/admin/community-management")) {
-      return normalized.includes("COMMUNITY MANAGEMENT");
-    }
-    if (path.startsWith("/admin/devotions")) {
-      return normalized.includes("DEVOTIONS AND AI");
-    }
-    if (path.startsWith("/admin/gallery") || path.startsWith("/admin/sacramentals-banners")) {
-      return normalized.includes("GALLERY MANAGER ASSISTANT");
+    const allowedPrefixes = new Set<string>();
+
+    normalized.forEach((role) => {
+      switch (role) {
+        case "JUMUIYA_COORDINATOR":
+          allowedPrefixes.add("/admin/officials");
+          allowedPrefixes.add("/admin/jumuiya-members");
+          break;
+        case "OS":
+          allowedPrefixes.add("/admin/announcements");
+          allowedPrefixes.add("/admin/weekly-activities");
+          allowedPrefixes.add("/admin/semester-activities");
+          allowedPrefixes.add("/admin/gallery");
+          break;
+        case "JUMUIYA_OS":
+          allowedPrefixes.add("/admin/gallery");
+          break;
+        case "PROJECT_MANAGER":
+          allowedPrefixes.add("/admin/sacramentals-banners");
+          allowedPrefixes.add("/admin/products");
+          allowedPrefixes.add("/admin/orders");
+          allowedPrefixes.add("/admin/hire-requests");
+          allowedPrefixes.add("/admin/projects");
+          break;
+        case "TREASURER":
+          allowedPrefixes.add("/admin/donations");
+          break;
+        case "LITURGIST":
+          allowedPrefixes.add("/admin/devotions");
+          break;
+        case "JUMUIYA_CHAIRPERSON":
+        case "JUMUIYA_SECRETARY":
+          allowedPrefixes.add("/admin/jumuiya-members");
+          break;
+        case "CHOIR_CHAIRPERSON":
+        case "CHOIR_SECRETARY":
+        case "CHOIR_PROJECT_COORDINATOR":
+        case "SUB_GROUP_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          break;
+      }
+    });
+
+    for (const prefix of allowedPrefixes) {
+      if (path.startsWith(prefix)) return true;
     }
 
-    // Default: other admin views require admin/super admin
     return false;
   };
 
   const hasAccess = checkAccess(location.pathname);
-  const allowedMenuItems = menuItems.filter((item) => checkAccess(item.path));
+  const allowedMenuItems = menuItems.filter((item) => {
+    if (item.path) return checkAccess(item.path);
+    if (item.subItems) return item.subItems.some((child) => checkAccess(child.path));
+    return false;
+  });
 
   const handleLogout = () => {
     logout();

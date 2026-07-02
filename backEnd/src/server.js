@@ -16,7 +16,11 @@ import { setupCommunityDatabase } from "./migrations/communityDbInit.js";
 import { setupJumuiyaMemberSystem } from "./migrations/jumuiyaMemberSystem.js";
 import { setupAssociatesSystem } from "./migrations/associatesMigration.js";
 import { setupOfficialMemberLink } from "./migrations/officialMemberLink.js";
+import { consolidateMemberData } from "./migrations/memberDataConsolidation.js";
+import { repointForeignKeys } from "./migrations/repointForeignKeys.js";
+import { setupRoleSystem } from "./migrations/roleAccessControl.js";
 import { startKeepAliveWorker } from "./services/keep-alive.js";
+import { startImportSyncWorker } from "./services/importSyncJob.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -152,6 +156,9 @@ const initServer = async () => {
     await setupJumuiyaMemberSystem();
     await setupAssociatesSystem();
     await setupOfficialMemberLink();
+    await consolidateMemberData();
+    await repointForeignKeys();
+    await setupRoleSystem();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
@@ -169,9 +176,11 @@ const initServer = async () => {
     } else {
       logger.warn("startKeepAliveWorker is not a function or is undefined");
     }
+
+    startImportSyncWorker();
   } catch (error) {
     releaseLock();
-    logger.error("Failed to start server:", error?.message || error);
+    logger.error(`Failed to start server: ${error?.message || error}`);
     process.exit(1);
   }
 };

@@ -47,7 +47,7 @@ const styles = `
   .hide-scrollbar::-webkit-scrollbar { display: none; }
 `;
 
-export default function AllMembersTable() {
+export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: number }) {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +105,7 @@ export default function AllMembersTable() {
           else if (k === "Phone") out.Phone = row.phone || "";
           else if (k === "Year") out.Year = row.year || row.year_of_study || "";
           else if (k === "Jumuiya") out.Jumuiya = row.jumuiya_name || formatJumuiyaName(row.jumuiya_id);
-          else if (k === "Source") out.Source = row.source === "csa" ? "CSA" : row.source === "legacy" ? "Legacy" : row.source === "import" ? "Import" : row.source || "";
+          else if (k === "Source") out.Source = row.source === "csa" ? "CSA" : row.source === "jum" ? "Jum" : row.source || "";
         });
         return out;
       });
@@ -164,7 +164,7 @@ export default function AllMembersTable() {
     }
   }, []);
 
-  useEffect(() => { fetchMembers(); }, []);
+  useEffect(() => { fetchMembers(); }, [refreshKey]);
 
   const handleEdit = (m: any) => {
     const nameStr = m.name || "";
@@ -266,8 +266,7 @@ export default function AllMembersTable() {
     };
   }, [filtered, currentPage]);
 
-  const totalLegacy = members.filter(m => m.source === "legacy").length;
-  const totalImported = members.filter(m => m.source === "import").length;
+  const totalJum = members.filter(m => m.source === "jum").length;
   const totalCSA = members.filter(m => m.source === "csa").length;
 
   if (loading) {
@@ -282,18 +281,14 @@ export default function AllMembersTable() {
   return (
     <div className="space-y-6">
       {/* Dashboard summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-3xl font-bold text-slate-800">{members.length}</p>
           <p className="text-xs text-slate-500 font-medium">Total Members</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-3xl font-bold text-indigo-600">{totalLegacy}</p>
-          <p className="text-xs text-slate-500 font-medium">Legacy</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-3xl font-bold text-emerald-600">{totalImported}</p>
-          <p className="text-xs text-slate-500 font-medium">Imported</p>
+          <p className="text-3xl font-bold text-indigo-600">{totalJum}</p>
+          <p className="text-xs text-slate-500 font-medium">Jum</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-3xl font-bold text-cyan-600">{totalCSA}</p>
@@ -436,11 +431,11 @@ export default function AllMembersTable() {
                       </td>
                       <td className="py-2.5 px-3">
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
-                          m.source === "legacy" ? "bg-amber-50 text-amber-700" :
+                          m.source === "jum" ? "bg-indigo-50 text-indigo-700" :
                           m.source === "csa" ? "bg-cyan-50 text-cyan-700" :
-                          "bg-indigo-50 text-indigo-700"
+                          "bg-slate-50 text-slate-700"
                         }`}>
-                          {m.source === "legacy" ? "Legacy" : m.source === "csa" ? "CSA" : "Import"}
+                          {m.source === "csa" ? "CSA" : "Jum"}
                         </span>
                       </td>
                       <td className="py-2.5 px-3">

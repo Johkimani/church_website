@@ -30,17 +30,18 @@ function isGraduated(memberId) {
   return getRawYearOfStudy(memberId) > 4;
 }
 
+const slugToJumuiyaName = {
+  "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
+  "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
+  "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
+  "st-monica": "St. Monica",
+};
+
 // ── GET pending graduated members ──
 export const getPendingMigrationMembers = async (req, res) => {
   try {
     const { jumuiya_id } = req.query;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
+    const jumuiyaName = slugToJumuiyaName[jumuiya_id] || jumuiya_id;
 
     let members = [];
 
@@ -51,14 +52,15 @@ export const getPendingMigrationMembers = async (req, res) => {
       const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
       if (jumuiyaUUID) {
-        const leg = await pool.query(
-          `SELECT member_id, first_name, last_name, gender, email, phone,
-                  year_of_study, join_date, 'legacy' as source
-           FROM members WHERE jumuiya_id = $1
-           AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`,
+        const result = await pool.query(
+          `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.email, m.phone,
+                  m.year_of_study, m.join_date, m.source
+           FROM members m
+           WHERE m.jumuiya_id = $1
+             AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)`,
           [jumuiyaUUID]
         );
-        members = leg.rows.map(r => ({
+        members = result.rows.map(r => ({
           member_id: r.member_id,
           name: [r.first_name, r.last_name].filter(Boolean).join(" "),
           gender: r.gender || "",
@@ -69,46 +71,16 @@ export const getPendingMigrationMembers = async (req, res) => {
           jumuiya_name: jumuiyaName,
         }));
       }
-
-      const direct = await pool.query(
-        `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-                ir.cleaned_gender as gender, ir.cleaned_email as email,
-                ir.cleaned_phone as phone, mi.academic_year as year,
-                'import' as source
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE mi.jumuiya_id = $1 AND mi.status = 'processed'
-           AND ir.status IN ('valid', 'warning')
-           AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)`,
-        [jumuiya_id]
-      );
-      direct.rows.forEach(r => members.push({ ...r, jumuiya_name: jumuiyaName }));
-
-      const csa = await pool.query(
-        `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-                ir.cleaned_gender as gender, ir.cleaned_email as email,
-                ir.cleaned_phone as phone, mi.academic_year as year,
-                'csa' as source
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya = $1
-           AND ir.status IN ('valid', 'warning')
-           AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)`,
-        [jumuiyaName]
-      );
-      csa.rows.forEach(r => members.push({ ...r, jumuiya_name: jumuiyaName }));
-
     } else {
-      // All jumuiyas
-      const leg = await pool.query(
+      const result = await pool.query(
         `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.email, m.phone,
-                m.year_of_study, m.join_date, 'legacy' as source,
+                m.year_of_study, m.join_date, m.source,
                 sg.name as jumuiya_name
          FROM members m
          LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
          WHERE m.migrated_to_associates IS NULL OR m.migrated_to_associates = false`
       );
-      members = leg.rows.map(r => ({
+      members = result.rows.map(r => ({
         member_id: r.member_id,
         name: [r.first_name, r.last_name].filter(Boolean).join(" "),
         gender: r.gender || "",
@@ -118,35 +90,6 @@ export const getPendingMigrationMembers = async (req, res) => {
         source: r.source,
         jumuiya_name: r.jumuiya_name || "",
       }));
-
-      const direct = await pool.query(
-        `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-                ir.cleaned_gender as gender, ir.cleaned_email as email,
-                ir.cleaned_phone as phone, mi.academic_year as year,
-                'import' as source, mi.jumuiya_id as import_slug
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE mi.jumuiya_id != 'csa' AND mi.status = 'processed'
-           AND ir.status IN ('valid', 'warning')
-           AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)`
-      );
-      const getName = (slug) => slugToName[slug] || slug;
-      direct.rows.forEach(r => members.push({
-        ...r, jumuiya_name: getName(r.import_slug),
-      }));
-
-      const csa = await pool.query(
-        `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-                ir.cleaned_gender as gender, ir.cleaned_email as email,
-                ir.cleaned_phone as phone, mi.academic_year as year,
-                'csa' as source, ir.cleaned_jumuiya as jumuiya_name
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE mi.jumuiya_id = 'csa'
-           AND ir.status IN ('valid', 'warning')
-           AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)`
-      );
-      csa.rows.forEach(r => members.push(r));
     }
 
     const seen = new Set();
@@ -177,8 +120,7 @@ export const migrateToAssociates = async (req, res) => {
       const admissionYear = deriveAdmissionYear(memberId);
       const graduationYear = calcGraduationYear(admissionYear);
 
-      // Look up member data from legacy table
-      const leg = await pool.query(
+      const member = await pool.query(
         `SELECT m.*, sg.name as jumuiya_name
          FROM members m
          LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
@@ -186,54 +128,21 @@ export const migrateToAssociates = async (req, res) => {
         [memberId]
       );
 
-      if (leg.rows.length > 0) {
-        const m = leg.rows[0];
+      if (member.rows.length > 0) {
+        const m = member.rows[0];
         const name = [m.first_name, m.last_name].filter(Boolean).join(" ");
         await pool.query(
           `INSERT INTO associates (member_id, name, gender, email, phone, jumuiya_name, jumuiya_id, year_of_study, admission_year, graduation_year, source, migrated_by)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
            ON CONFLICT (member_id) DO NOTHING`,
-          [memberId, name, m.gender, m.email, m.phone, m.jumuiya_name, m.jumuiya_id, m.year_of_study, admissionYear, graduationYear, 'legacy', migrated_by || null]
+          [memberId, name, m.gender, m.email, m.phone, m.jumuiya_name, m.jumuiya_id, m.year_of_study, admissionYear, graduationYear, m.source, migrated_by || null]
         );
         await pool.query(`UPDATE members SET migrated_to_associates = true WHERE member_id = $1`, [memberId]);
         await pool.query(`UPDATE import_records SET migrated_to_associates = true WHERE cleaned_reg_number = $1`, [memberId]);
-        results.push({ member_id: memberId, status: "migrated", source: "legacy" });
-        continue;
+        results.push({ member_id: memberId, status: "migrated", source: m.source });
+      } else {
+        results.push({ member_id: memberId, status: "not_found" });
       }
-
-      // Look up from import_records
-      const imp = await pool.query(
-        `SELECT ir.*, mi.jumuiya_id as import_slug
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE ir.cleaned_reg_number = $1 AND ir.status IN ('valid', 'warning')
-         LIMIT 1`,
-        [memberId]
-      );
-
-      if (imp.rows.length > 0) {
-        const r = imp.rows[0];
-        const slugToName = {
-          "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-          "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-          "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-          "st-monica": "St. Monica",
-        };
-        const jName = r.cleaned_jumuiya || slugToName[r.import_slug] || r.import_slug;
-        const source = r.import_slug === 'csa' ? 'csa' : 'import';
-        await pool.query(
-          `INSERT INTO associates (member_id, name, gender, email, phone, jumuiya_name, jumuiya_id, year_of_study, admission_year, graduation_year, source, migrated_by)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-           ON CONFLICT (member_id) DO NOTHING`,
-          [memberId, r.cleaned_name, r.cleaned_gender, r.cleaned_email, r.cleaned_phone, jName, r.import_slug, null, admissionYear, graduationYear, source, migrated_by || null]
-        );
-        await pool.query(`UPDATE import_records SET migrated_to_associates = true WHERE cleaned_reg_number = $1`, [memberId]);
-        await pool.query(`UPDATE members SET migrated_to_associates = true WHERE member_id = $1`, [memberId]);
-        results.push({ member_id: memberId, status: "migrated", source });
-        continue;
-      }
-
-      results.push({ member_id: memberId, status: "not_found" });
     }
 
     res.json({ success: true, data: results, migrated: results.filter(r => r.status === "migrated").length });
@@ -252,14 +161,8 @@ export const getAssociatesList = async (req, res) => {
     const conditions = [];
 
     if (jumuiya_id) {
-      const slugToName = {
-        "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-        "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-        "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-        "st-monica": "St. Monica",
-      };
       conditions.push(`(jumuiya_id = $${params.length + 1} OR jumuiya_name = $${params.length + 1})`);
-      params.push(slugToName[jumuiya_id] || jumuiya_id);
+      params.push(slugToJumuiyaName[jumuiya_id] || jumuiya_id);
     }
 
     if (graduation_year) {
@@ -296,14 +199,8 @@ export const exportAssociates = async (req, res) => {
       params.push(parseInt(graduation_year));
     }
     if (jumuiya_id) {
-      const slugToName = {
-        "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-        "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-        "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-        "st-monica": "St. Monica",
-      };
       conditions.push(`(jumuiya_id = $${params.length + 1} OR jumuiya_name = $${params.length + 1})`);
-      params.push(slugToName[jumuiya_id] || jumuiya_id);
+      params.push(slugToJumuiyaName[jumuiya_id] || jumuiya_id);
     }
 
     if (conditions.length > 0) query += ` WHERE ${conditions.join(" AND ")}`;

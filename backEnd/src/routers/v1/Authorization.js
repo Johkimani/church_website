@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Login, refreshAccessToken } from "../../controllers/Login.js";
+import { Login, refreshAccessToken, firstLoginSetup } from "../../controllers/Login.js";
 import { OTPverification, Reset } from "../../controllers/Reset.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import { stkCalls, stkGuestCalls, checkStatus } from "../../controllers/stkPush/stkCall.js";
@@ -14,6 +14,7 @@ import { validate } from "../../middlewares/validateRequestBody.js";
 const route = Router();
 
 route.post("/login", Login);
+route.post("/first-login-setup", firstLoginSetup);
 route.post("/reset", Reset);
 route.post("/reset-email", verifyToken, Reset);
 route.post("/otp/:regNo", OTPverification);

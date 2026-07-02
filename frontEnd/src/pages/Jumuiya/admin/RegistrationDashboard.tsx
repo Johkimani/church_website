@@ -236,25 +236,25 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
               </div>
             </div>
           </div>
-          <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
+          <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
-                <CheckCircle size={20} />
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                <Users size={20} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-800">{stats.imports?.valid || 0}</p>
-                <p className="text-xs text-slate-500 font-medium">Valid Imports</p>
+                <p className="text-2xl font-bold text-slate-800">{stats.jum?.total || 0}</p>
+                <p className="text-xs text-slate-500 font-medium">Jum Members</p>
               </div>
             </div>
           </div>
-          <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
+          <div className="bg-cyan-50 rounded-xl border border-cyan-100 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                <Calendar size={20} />
+              <div className="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center text-cyan-600">
+                <CheckCircle size={20} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-800">{stats.legacy?.total || 0}</p>
-                <p className="text-xs text-slate-500 font-medium">Legacy Members</p>
+                <p className="text-2xl font-bold text-slate-800">{stats.csa?.total || 0}</p>
+                <p className="text-xs text-slate-500 font-medium">CSA Members</p>
               </div>
             </div>
           </div>

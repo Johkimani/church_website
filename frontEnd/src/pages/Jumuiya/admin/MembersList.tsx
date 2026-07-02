@@ -14,11 +14,11 @@ const MemberRow = memo(({ m }: { m: any }) => (
     <td className="py-3 px-4 text-slate-700">{m.first_name} {m.last_name}</td>
     <td className="py-3 px-4">
       <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
-        m.source === "legacy" ? "bg-amber-50 text-amber-700" :
+        m.source === "jum" ? "bg-indigo-50 text-indigo-700" :
         m.source === "csa" ? "bg-cyan-50 text-cyan-700" :
-        "bg-indigo-50 text-indigo-700"
+        "bg-slate-50 text-slate-700"
       }`}>
-        {m.source === "legacy" ? "Legacy" : m.source === "csa" ? "CSA" : "Import"}
+        {m.source === "csa" ? "CSA" : "Jum"}
       </span>
     </td>
     <td className="py-3 px-4">

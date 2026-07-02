@@ -10,6 +10,7 @@ import {
   syncCurrentTerm,
   formatPhoneForExcel 
 } from '../utils/helpers.js';
+import { autoAssignRoleForOfficial, removeRoleForOfficial } from '../utils/positionToRole.js';
 import logger from "../logger/winston.js";
 import { emitSocketEvent } from "../socket/index.js";
 
@@ -458,10 +459,13 @@ export const getAllOfficials = async (req, res) => {
     let query;
     let params = [];
 
+    const SELECT_COLS = `o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
+               o.reg_number,
+               et.name as term_name, et.year as term_year`;
+
     if (termId) {
       query = `
-        SELECT o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
-               et.name as term_name, et.year as term_year
+        SELECT ${SELECT_COLS}
         FROM officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE (o.election_term_id = $1 OR o.status = 'active' OR o.status IS NULL)
@@ -474,8 +478,7 @@ export const getAllOfficials = async (req, res) => {
       query += ` ORDER BY ${CSA_SORT_SQL}`;
     } else if (includeArchived) {
       query = `
-        SELECT o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
-               et.name as term_name, et.year as term_year
+        SELECT ${SELECT_COLS}
         FROM officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id`;
       if (termOfService) {
@@ -485,8 +488,7 @@ export const getAllOfficials = async (req, res) => {
       query += ` ORDER BY o.status, et.year DESC, ${CSA_SORT_SQL}`;
     } else {
       query = `
-        SELECT o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
-               et.name as term_name, et.year as term_year
+        SELECT ${SELECT_COLS}
         FROM officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE (o.status = 'active' OR o.status IS NULL)`;
@@ -546,9 +548,6 @@ export const createOfficial = async (req, res) => {
     if (reg_number && reg_number.trim()) {
       const memberResult = await pool.query(
         `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
-         UNION ALL
-         SELECT cleaned_reg_number FROM import_records
-         WHERE cleaned_reg_number LIKE '%/' || $1 || '/%' OR cleaned_reg_number ILIKE $2
          LIMIT 1`,
         [reg_number.trim(), reg_number.trim().toUpperCase()]
       );
@@ -618,6 +617,15 @@ export const createOfficial = async (req, res) => {
       [name, category, position || null, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
     );
 
+    if (validatedRegNumber && position) {
+      const roleResult = await autoAssignRoleForOfficial(
+        validatedRegNumber, position, false, category, req.user?.member_id || null
+      );
+      if (roleResult) {
+        logger.info(`Auto-assigned role for official ${name}: ${JSON.stringify(roleResult)}`);
+      }
+    }
+
     await syncCurrentTerm(term_of_service);
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create", data: result.rows[0] });
@@ -662,9 +670,6 @@ export const updateOfficial = async (req, res) => {
     if (reg_number && reg_number.trim()) {
       const memberResult = await pool.query(
         `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
-         UNION ALL
-         SELECT cleaned_reg_number FROM import_records
-         WHERE cleaned_reg_number LIKE '%/' || $1 || '/%' OR cleaned_reg_number ILIKE $2
          LIMIT 1`,
         [reg_number.trim(), reg_number.trim().toUpperCase()]
       );
@@ -712,6 +717,32 @@ export const updateOfficial = async (req, res) => {
       [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
+    const oldPosition = existing.rows[0].position;
+    const oldRegNumber = existing.rows[0].reg_number;
+    const newPosition = position || oldPosition;
+    const newRegNumber = validatedRegNumber || oldRegNumber;
+
+    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
+      if (oldPosition && oldRegNumber) {
+        await removeRoleForOfficial(oldRegNumber, oldPosition, false);
+      }
+      if (newRegNumber && newPosition) {
+        const roleResult = await autoAssignRoleForOfficial(
+          newRegNumber, newPosition, false, result.rows[0].category, req.user?.member_id || null
+        );
+        if (roleResult) {
+          logger.info(`Auto-assigned role for updated official: ${JSON.stringify(roleResult)}`);
+        }
+      }
+    } else if (validatedRegNumber && position && oldPosition === position) {
+      const roleResult = await autoAssignRoleForOfficial(
+        validatedRegNumber, position, false, result.rows[0].category, req.user?.member_id || null
+      );
+      if (roleResult) {
+        logger.info(`Re-assigned role for official: ${JSON.stringify(roleResult)}`);
+      }
+    }
+
     if (term_of_service) {
       await syncCurrentTerm(term_of_service);
     }
@@ -745,6 +776,10 @@ export const deleteOfficial = async (req, res) => {
       }
     }
 
+
+    if (official.reg_number && official.position) {
+      await removeRoleForOfficial(official.reg_number, official.position, false);
+    }
 
     await pool.query('DELETE FROM officials WHERE id = $1', [id]);
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete", id });

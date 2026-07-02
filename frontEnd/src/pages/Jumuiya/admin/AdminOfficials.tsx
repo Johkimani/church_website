@@ -160,6 +160,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
 
     const themeColor: string = (selectedJumuiya as any)?.color || '#6366f1';
     const patronSaint: string = SAINT_IMAGES[selectedJumuiya?.name || ''] || '';
+    const jumuiyaMismatch = Boolean(current.matchedJumuiyaSlug && current.matchedJumuiyaSlug !== selectedJumuiyaId);
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
@@ -191,6 +192,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                     ...prev,
                     name: `${m.first_name} ${m.last_name}`,
                     phone: m.phone || prev.phone,
+                    jumuiyaName: m.jumuiya_name || prev.jumuiyaName || '',
                     matchedJumuiyaSlug: m.jumuiya_slug || '',
                     matchedJumuiyaName: m.jumuiya_name || '',
                 }));
@@ -213,7 +215,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
 
     const handleRegNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
-        setCurrent((prev: any) => ({ ...prev, regNumber: val, matchedJumuiyaSlug: '', matchedJumuiyaName: '' }));
+        setCurrent((prev: any) => ({ ...prev, regNumber: val, jumuiyaName: '', matchedJumuiyaSlug: '', matchedJumuiyaName: '' }));
         setMemberFound(false);
         if (lookupTimerRef.current) clearTimeout(lookupTimerRef.current);
         lookupTimerRef.current = setTimeout(() => regLookup(val), 500);
@@ -225,6 +227,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
             name: `${m.first_name} ${m.last_name}`,
             phone: m.phone || prev.phone,
             regNumber: m.member_id,
+            jumuiyaName: m.jumuiya_name || prev.jumuiyaName || '',
             matchedJumuiyaSlug: m.jumuiya_slug || '',
             matchedJumuiyaName: m.jumuiya_name || '',
         }));
@@ -234,11 +237,11 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
     };
 
     const openAdd = () => {
-        setCurrent({ category: selectedJumuiya?.name });
+        setCurrent({ category: selectedJumuiya?.name, jumuiyaName: '' });
         setPreviewUrl(null); setSelectedFile(null); setSaveSuccess(false); setMemberFound(false); setLookupError(''); setIsEditing(true);
     };
     const openEdit = (o: any) => {
-        setCurrent({ ...o, phone: o.contact || o.phone || '', regNumber: o.reg_number || '' });
+        setCurrent({ ...o, phone: o.contact || o.phone || '', regNumber: o.reg_number || '', jumuiyaName: o.category || o.jumuiyaName || selectedJumuiya?.name || '' });
         const src = o.photo ? (o.photo.startsWith('http') ? o.photo : `/${o.photo}`) : null;
         setPreviewUrl(src);
         setSelectedFile(null); setSaveSuccess(false); setMemberFound(false); setIsEditing(true);
@@ -260,6 +263,10 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedJumuiya || !current.name) return;
+        if (jumuiyaMismatch) {
+            setLookupError(`This member belongs to ${current.matchedJumuiyaName || 'another Jumuiya'}, so they cannot be saved under ${selectedJumuiya?.name}.`);
+            return;
+        }
         try {
             const fd = new FormData();
             fd.append('name', current.name);
@@ -440,7 +447,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                                     {lookupError && <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#f43f5e', fontWeight: '600' }}>{lookupError}</p>}
                                     {memberFound && (
                                         <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#22c55e', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <FaCheck size={10} /> Member found — name & phone auto-filled
+                                            <FaCheck size={10} /> Member found — name, phone & jumuiya auto-filled
                                         </p>
                                     )}
                                     {showLookupDropdown && lookupResults.length > 1 && (
@@ -473,7 +480,16 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                                     />
                                 </Field>
 
-                                {current.matchedJumuiyaSlug && current.matchedJumuiyaSlug !== selectedJumuiyaId && (
+                                <Field label="Jumuiya" required>
+                                    <input
+                                        value={current.jumuiyaName || ''}
+                                        readOnly
+                                        placeholder="Auto-filled from member lookup"
+                                        style={{ ...inp(themeColor), background: '#f8fafc', cursor: 'not-allowed' }}
+                                    />
+                                </Field>
+
+                                {jumuiyaMismatch && (
                                     <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span style={{ color: '#dc2626', fontSize: '0.82rem', fontWeight: '600' }}>
                                             ⚠ This member belongs to <strong>{current.matchedJumuiyaName}</strong>, not {selectedJumuiya?.name}. Registering them here will assign them to the wrong Jumuiya.
@@ -526,7 +542,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                                     style={{ flex: 1, padding: '13px', border: '2px solid #e2e8f0', background: 'white', borderRadius: '14px', cursor: 'pointer', fontWeight: '700', color: '#64748b', fontSize: '0.875rem' }}>
                                     Cancel
                                 </button>
-                                <button type="submit" disabled={isAdding || isUpdating || saveSuccess}
+                                <button type="submit" disabled={isAdding || isUpdating || saveSuccess || jumuiyaMismatch}
                                     style={{ flex: 2, padding: '13px', border: 'none', borderRadius: '14px', cursor: 'pointer', fontWeight: '700', color: 'white', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: saveSuccess ? '#22c55e' : themeColor, transition: 'background 0.3s', opacity: (isAdding || isUpdating) ? 0.75 : 1 }}>
                                     {saveSuccess ? <><FaCheck size={13} /> Saved!</> : (isAdding || isUpdating) ? 'Saving…' : <><FaCheck size={13} /> Save Official</>}
                                 </button>
