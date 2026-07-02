@@ -25,6 +25,7 @@ const router = Router()
 import paymentRouter from "./payment.router.js";
 import jumuiyaMemberRouter from "./jumuiyaMemberRouter.js";
 import settingsRouter from "./settingsRoutes.js";
+import { roleManagementRouter } from "./roleManagementRouter.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -80,6 +81,9 @@ router.use("/jumuiya-members", jumuiyaMembersRouter);
 
 // Jumuiya data (full aggregated data with group_id)
 router.use("/jumuiya-data", jumuiyaDataRouter);
+
+// Role management
+router.use("/", roleManagementRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

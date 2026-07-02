@@ -1,5 +1,6 @@
 import { useCachedData } from '../../../hooks/useCachedData';
 import apiService from '../../Landing/services/api';
+import { memberService } from '../../../api/jumuiyaMemberService';
 import { 
   Users, 
   Heart, 
@@ -15,15 +16,16 @@ export default function AdminDashboard() {
   const { data, loading, error, refetch: loadDashboardData } = useCachedData(
     'csa_cache_dashboard_overview',
     async () => {
-      const [members, donations, events, orders, hire_requests] = await Promise.all([
-        apiService.fetchTableData('members'),
+      const [batchStats, donations, events, orders, hire_requests] = await Promise.all([
+        memberService.getBatchStatistics().catch(() => null),
         apiService.fetchTableData('mpesa_request'),
         apiService.fetchTableData('events'),
         apiService.fetchTableData('orders'),
         apiService.fetchTableData('hire_requests')
       ]);
 
-      const membersArr = Array.isArray(members) ? members : [];
+      const jumuiyas = batchStats?.data || {};
+      const totalMembers = Object.values(jumuiyas).reduce((sum: number, s: any) => sum + (s?.totalMembers || 0), 0);
       const donationsArr = Array.isArray(donations) ? donations : [];
       const ordersArr = Array.isArray(orders) ? orders : [];
       const hiresArr = Array.isArray(hire_requests) ? hire_requests : [];
@@ -35,7 +37,7 @@ export default function AdminDashboard() {
       const pendingHires = hiresArr.filter((h: any) => h.status === 'pending').length;
 
       return {
-        members: membersArr.length,
+        members: totalMembers,
         donations: totalDonated,
         pendingOrders,
         pendingHires,

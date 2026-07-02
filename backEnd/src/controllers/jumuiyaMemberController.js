@@ -46,7 +46,9 @@ const checkExistingDuplicates = async (members) => {
   if (allRegs.length > 0) {
     queries.push(
       pool.query(
-        `SELECT DISTINCT 'import' as source, cleaned_reg_number as val FROM import_records WHERE cleaned_reg_number = ANY($1) AND status IN ('valid', 'warning')`,
+        `SELECT DISTINCT 'members' as source, member_id as val FROM members WHERE member_id = ANY($1)
+         UNION ALL
+         SELECT DISTINCT 'import' as source, cleaned_reg_number as val FROM import_records WHERE cleaned_reg_number = ANY($1) AND status IN ('valid', 'warning')`,
         [allRegs]
       ).then(r => ({ field: "regNumber", rows: r.rows }))
     );
@@ -423,8 +425,8 @@ export const updateImportStatus = async (req, res) => {
         const genderValue = rec.cleaned_gender ? rec.cleaned_gender.toLowerCase() : null;
         const insertResult = await pool.query(
           `INSERT INTO members
-             (member_id, jumuiya_id, first_name, last_name, gender, email, phone, year_of_study, password, join_date)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)
+             (member_id, jumuiya_id, first_name, last_name, gender, email, phone, year_of_study, password, join_date, source, import_batch_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE, 'jum', $10)
            RETURNING member_id, first_name, last_name, gender, email, phone`,
           [
             rec.cleaned_reg_number,
@@ -436,6 +438,7 @@ export const updateImportStatus = async (req, res) => {
             rec.cleaned_phone || null,
             imp.academic_year || null,
             defaultPassword,
+            importId,
           ]
         );
         createdMembers.push(insertResult.rows[0]);
@@ -606,15 +609,22 @@ export const autoDistribute = async (req, res) => {
     let members;
     if (import_id) {
       const recordsResult = await pool.query(
-        `SELECT id as member_id, cleaned_name as name, cleaned_gender as gender
-         FROM import_records WHERE import_id = $1 AND status IN ('valid', 'warning')`,
+        `SELECT COALESCE(m.member_id, ir.cleaned_reg_number) as member_id,
+                CONCAT_WS(' ', m.first_name, m.last_name) as name,
+                COALESCE(m.gender, ir.cleaned_gender) as gender
+         FROM import_records ir
+         LEFT JOIN members m ON m.member_id = ir.cleaned_reg_number
+         WHERE ir.import_id = $1 AND ir.status IN ('valid', 'warning')`,
         [import_id]
       );
       members = recordsResult.rows.map(r => ({ id: r.member_id, name: r.name, gender: r.gender }));
     } else {
       const importResult = await pool.query(
-        `SELECT ir.id as member_id, ir.cleaned_name as name, ir.cleaned_gender as gender
+        `SELECT COALESCE(m.member_id, ir.cleaned_reg_number) as member_id,
+                CONCAT_WS(' ', m.first_name, m.last_name) as name,
+                COALESCE(m.gender, ir.cleaned_gender) as gender
          FROM import_records ir
+         LEFT JOIN members m ON m.member_id = ir.cleaned_reg_number
          JOIN member_imports mi ON mi.id = ir.import_id
          WHERE mi.jumuiya_id = $1 AND mi.status = 'processed' AND ir.status IN ('valid', 'warning')`,
         [jumuiya_id]
@@ -687,12 +697,15 @@ export const getGroupMembers = async (req, res) => {
   try {
     const { groupId } = req.params;
     const result = await pool.query(
-      `SELECT ga.*, ir.cleaned_name as member_name, ir.cleaned_gender as member_gender,
-              ir.cleaned_reg_number as reg_number, ir.cleaned_phone as phone, ir.cleaned_email as email
+      `SELECT ga.*,
+              CONCAT_WS(' ', m.first_name, m.last_name) as member_name,
+              m.gender as member_gender,
+              m.member_id as reg_number,
+              m.phone, m.email
        FROM group_assignments ga
-       LEFT JOIN import_records ir ON ir.id = ga.member_id
+       LEFT JOIN members m ON m.member_id = ga.member_id
        WHERE ga.group_id = $1 AND ga.status = 'active'
-       ORDER BY ir.cleaned_name`,
+       ORDER BY member_name`,
       [groupId]
     );
     res.json({ status: "success", data: result.rows });
@@ -715,94 +728,70 @@ export const getStatistics = async (req, res) => {
     };
     const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
 
-    // Legacy members from the members table
     const sgResult = await pool.query(
       `SELECT group_id FROM sub_groups WHERE name = $1 OR slug = $1`, [jumuiyaName]
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
-    const legacy = jumuiyaUUID
-      ? await pool.query(
-          `SELECT COUNT(*)::int as total,
-                  COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
-                  COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
-           FROM members WHERE jumuiya_id = $1`,
-          [jumuiyaUUID]
-        )
-      : { rows: [{ total: 0, male_count: 0, female_count: 0 }] };
 
-    // Direct imports (jumuiya-specific member_imports)
-    const directImports = await pool.query(
-      `SELECT COUNT(*)::int as total, COALESCE(SUM(valid_records), 0)::int as valid, COALESCE(SUM(error_records), 0)::int as errors,
-              (SELECT COUNT(*)::int FROM import_records ir2 JOIN member_imports mi2 ON mi2.id = ir2.import_id
-               WHERE mi2.jumuiya_id = $1 AND ir2.status IN ('valid', 'warning') AND mi2.status = 'processed'
-                 AND NOT EXISTS (SELECT 1 FROM members WHERE member_id = ir2.cleaned_reg_number)) as import_members
-       FROM member_imports WHERE jumuiya_id = $1`,
-      [jumuiya_id]
-    );
+    const [jumMembers, csaMembers, genderBrkdwn, groupStats, activeSeason] = await Promise.all([
+      jumuiyaUUID
+        ? pool.query(
+            `SELECT COUNT(*)::int as total,
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
+             FROM members WHERE jumuiya_id = $1 AND source = 'jum'`,
+            [jumuiyaUUID]
+          )
+        : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
 
-    // CSA-distributed records (imported via CSA then assigned to this jumuiya)
-    const csaDistributed = await pool.query(
-      `SELECT COUNT(*)::int as total,
-              COALESCE(SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
-              COALESCE(SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya = $1 AND ir.status IN ('valid', 'warning')`,
-      [jumuiyaName]
-    );
+      jumuiyaUUID
+        ? pool.query(
+            `SELECT COUNT(*)::int as total,
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
+             FROM members WHERE jumuiya_id = $1 AND source = 'csa'`,
+            [jumuiyaUUID]
+          )
+        : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
 
-    // Combined gender breakdown (direct imports + CSA-distributed)
-    const genderBreakdown = await pool.query(
-      `SELECT gender, SUM(count)::int as count FROM (
-         SELECT ir.cleaned_gender as gender, COUNT(*)::int as count
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE mi.jumuiya_id = $1 AND ir.status IN ('valid', 'warning')
-         GROUP BY ir.cleaned_gender
-         UNION ALL
-         SELECT ir.cleaned_gender as gender, COUNT(*)::int as count
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya = $2 AND ir.status IN ('valid', 'warning')
-         GROUP BY ir.cleaned_gender
-       ) sub
-       GROUP BY gender`,
-       [jumuiya_id, jumuiyaName]
-    );
+      jumuiyaUUID
+        ? pool.query(
+            `SELECT LOWER(gender) as gender, COUNT(*)::int as count
+             FROM members WHERE jumuiya_id = $1 AND source IN ('jum', 'csa')
+             GROUP BY LOWER(gender)`,
+            [jumuiyaUUID]
+          )
+        : Promise.resolve({ rows: [] }),
 
-    const groupStats = await pool.query(
-      `SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
-              COUNT(ga.id)::int as assigned_count
-       FROM member_groups mg
-       LEFT JOIN group_assignments ga ON ga.group_id = mg.id AND ga.status = 'active'
-       WHERE mg.jumuiya_id = $1
-       GROUP BY mg.id, mg.group_name, mg.group_type, mg.capacity
-       ORDER BY mg.group_name`,
-      [jumuiya_id]
-    );
+      pool.query(
+        `SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
+                COUNT(ga.id)::int as assigned_count
+         FROM member_groups mg
+         LEFT JOIN group_assignments ga ON ga.group_id = mg.id AND ga.status = 'active'
+         WHERE mg.jumuiya_id = $1
+         GROUP BY mg.id, mg.group_name, mg.group_type, mg.capacity
+         ORDER BY mg.group_name`,
+        [jumuiya_id]
+      ),
 
-    const activeSeason = await pool.query(
-      `SELECT * FROM registration_seasons
-       WHERE jumuiya_id = $1 AND status = 'active'
-       LIMIT 1`,
-      [jumuiya_id]
-    );
+      pool.query(
+        `SELECT * FROM registration_seasons
+         WHERE jumuiya_id = $1 AND status = 'active'
+         LIMIT 1`,
+        [jumuiya_id]
+      ),
+    ]);
 
-    const legacyRow = legacy.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-    const csaRow = csaDistributed.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+    const jumRow = jumMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+    const csaRow = csaMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
 
     res.json({
       status: "success",
       data: {
-        imports: {
-          total: (directImports.rows[0]?.total || 0) + (csaRow.total || 0),
-          valid: (directImports.rows[0]?.valid || 0),
-          errors: (directImports.rows[0]?.errors || 0),
-          csaDistributed: csaRow.total || 0,
-        },
-        legacy: legacyRow,
-        totalMembers: (legacyRow.total || 0) + (directImports.rows[0]?.import_members || 0) + (csaRow.total || 0),
-        genderBreakdown: genderBreakdown.rows,
+        jum: jumRow,
+        csa: csaRow,
+        totalMembers: (jumRow.total || 0) + (csaRow.total || 0),
+        genderBreakdown: genderBrkdwn.rows,
         groups: groupStats.rows,
         activeSeason: activeSeason.rows[0] || null,
       },
@@ -832,25 +821,22 @@ export const getBatchStatistics = async (req, res) => {
       );
       const uuid = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
-      const [legacy, directImports, csaDist, groupStats, activeSeason] = await Promise.all([
+      const [jumMembers, csaMembers, groupStats, activeSeason] = await Promise.all([
         uuid
           ? pool.query(`SELECT COUNT(*)::int as total,
                                COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
                                COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
-                        FROM members WHERE jumuiya_id = $1`, [uuid])
+                        FROM members WHERE jumuiya_id = $1 AND source = 'jum'
+                        AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`, [uuid])
           : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
 
-        pool.query(`SELECT (SELECT COUNT(*)::int FROM import_records ir2 JOIN member_imports mi2 ON mi2.id=ir2.import_id
-                     WHERE mi2.jumuiya_id=$1 AND ir2.status IN ('valid','warning') AND mi2.status='processed'
-                       AND NOT EXISTS (SELECT 1 FROM members WHERE member_id=ir2.cleaned_reg_number)) as import_members,
-                     COALESCE(SUM(mi.valid_records),0)::int as valid_records
-                     FROM member_imports mi WHERE mi.jumuiya_id=$1`, [slug]),
-
-        pool.query(`SELECT COUNT(*)::int as total,
-                           COALESCE(SUM(CASE WHEN LOWER(cleaned_gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
-                           COALESCE(SUM(CASE WHEN LOWER(cleaned_gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
-                    FROM import_records ir JOIN member_imports mi ON mi.id=ir.import_id
-                    WHERE mi.jumuiya_id='csa' AND ir.cleaned_jumuiya=$1 AND ir.status IN ('valid','warning')`, [jumuiyaName]),
+        uuid
+          ? pool.query(`SELECT COUNT(*)::int as total,
+                               COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
+                               COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
+                        FROM members WHERE jumuiya_id = $1 AND source = 'csa'
+                        AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`, [uuid])
+          : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
 
         pool.query(`SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
                            COUNT(ga.id)::int as assigned_count
@@ -860,21 +846,20 @@ export const getBatchStatistics = async (req, res) => {
         pool.query(`SELECT * FROM registration_seasons WHERE jumuiya_id=$1 AND status='active' LIMIT 1`, [slug]),
       ]);
 
-      const leg = legacy.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      const imp = directImports.rows[0] || { import_members: 0, valid_records: 0 };
-      const csa = csaDist.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      const totalMembers = (leg.total || 0) + (imp.import_members || 0) + (csa.total || 0);
+      const j = jumMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+      const c = csaMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+      const totalMembers = (j.total || 0) + (c.total || 0);
 
       return {
         [slug]: {
           totalMembers,
-          legacy: leg,
-          imports: { total: (imp.valid_records || 0) + (csa.total || 0), valid: imp.valid_records || 0, csaDistributed: csa.total || 0 },
+          jum: j,
+          csa: c,
           groups: groupStats.rows,
           activeSeason: activeSeason.rows[0] || null,
           genderBreakdown: [
-            ...(leg.male_count || csa.male_count ? [{ gender: "Male", count: (leg.male_count || 0) + (csa.male_count || 0) }] : []),
-            ...(leg.female_count || csa.female_count ? [{ gender: "Female", count: (leg.female_count || 0) + (csa.female_count || 0) }] : []),
+            ...((j.male_count || c.male_count) ? [{ gender: "Male", count: (j.male_count || 0) + (c.male_count || 0) }] : []),
+            ...((j.female_count || c.female_count) ? [{ gender: "Female", count: (j.female_count || 0) + (c.female_count || 0) }] : []),
           ],
         },
       };
@@ -930,86 +915,32 @@ export const getMembers = async (req, res) => {
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
-    // 1. Legacy members from members table
-    const legacyMembers = jumuiyaUUID
-      ? await pool.query(
-          `SELECT member_id, first_name, last_name, gender, email, phone, year_of_study, join_date, 'legacy' as source
-           FROM members WHERE jumuiya_id = $1 ORDER BY first_name`,
-          [jumuiyaUUID]
-        )
-      : { rows: [] };
+    if (!jumuiyaUUID) {
+      return res.json({ status: "success", data: [] });
+    }
 
-    // 2. Direct imports (per-jumuiya, processed status)
-    const directImports = await pool.query(
-      `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-              ir.cleaned_gender as gender, ir.cleaned_email as email,
-              ir.cleaned_phone as phone, mi.academic_year as year_of_study,
-              mi.import_date as join_date, 'import' as source
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = $1 AND mi.status = 'processed' AND ir.status IN ('valid', 'warning')
-       ORDER BY ir.cleaned_name`,
-      [jumuiya_id]
+    const result = await pool.query(
+      `SELECT member_id, first_name, last_name, gender, email, phone, year_of_study, join_date, source
+       FROM members
+       WHERE jumuiya_id = $1 AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
+       ORDER BY first_name`,
+      [jumuiyaUUID]
     );
 
-    // 3. CSA-distributed members
-    const csaMembers = await pool.query(
-      `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-              ir.cleaned_gender as gender, ir.cleaned_email as email,
-              ir.cleaned_phone as phone, mi.academic_year as year_of_study,
-              mi.import_date as join_date, 'csa' as source
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya = $1 AND ir.status IN ('valid', 'warning')
-       ORDER BY ir.cleaned_name`,
-      [jumuiyaName]
-    );
+    const data = result.rows.map(r => ({
+      member_id: r.member_id,
+      first_name: r.first_name || "",
+      last_name: r.last_name || "",
+      gender: r.gender || null,
+      email: r.email || null,
+      phone: r.phone || null,
+      year_of_study: r.year_of_study || deriveYearFromReg(r.member_id),
+      join_date: r.join_date || null,
+      source: r.source,
+    }));
 
-    const combined = [
-      ...legacyMembers.rows.map(r => ({
-        member_id: r.member_id,
-        first_name: r.first_name || "",
-        last_name: r.last_name || "",
-        gender: r.gender || null,
-        email: r.email || null,
-        phone: r.phone || null,
-        year_of_study: r.year_of_study || deriveYearFromReg(r.member_id),
-        join_date: r.join_date || null,
-        source: r.source,
-      })),
-      ...directImports.rows.map(r => {
-        const parts = (r.name || "").split(" ");
-        return {
-          member_id: r.member_id,
-          first_name: parts[0] || "",
-          last_name: parts.slice(1).join(" ") || parts[0] || "",
-          gender: r.gender || null,
-          email: r.email || null,
-          phone: r.phone || null,
-          year_of_study: r.year_of_study || deriveYearFromReg(r.member_id),
-          join_date: r.join_date || null,
-          source: r.source,
-        };
-      }),
-      ...csaMembers.rows.map(r => {
-        const parts = (r.name || "").split(" ");
-        return {
-          member_id: r.member_id,
-          first_name: parts[0] || "",
-          last_name: parts.slice(1).join(" ") || parts[0] || "",
-          gender: r.gender || null,
-          email: r.email || null,
-          phone: r.phone || null,
-          year_of_study: r.year_of_study || deriveYearFromReg(r.member_id),
-          join_date: r.join_date || null,
-          source: r.source,
-        };
-      }),
-    ];
-
-    // Deduplicate by member_id
     const seen = new Set();
-    const deduped = combined.filter(m => {
+    const deduped = data.filter(m => {
       if (!m.member_id) return false;
       const key = m.member_id.toLowerCase();
       if (seen.has(key)) return false;
@@ -1017,7 +948,6 @@ export const getMembers = async (req, res) => {
       return true;
     });
 
-    // Sort by first_name, then move null names to end
     deduped.sort((a, b) => {
       if (!a.first_name) return 1;
       if (!b.first_name) return -1;
@@ -1046,50 +976,22 @@ export const exportMembers = async (req, res) => {
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
-    // 1. Legacy members
-    const legacyMembers = jumuiyaUUID
-      ? await pool.query(
-          `SELECT member_id, first_name, last_name, gender, email, phone, year_of_study, join_date, 'Legacy' as source
-           FROM members WHERE jumuiya_id = $1
-           AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
-           ORDER BY first_name`,
-          [jumuiyaUUID]
-        )
-      : { rows: [] };
+    if (!jumuiyaUUID) {
+      return res.json({ status: "success", data: [] });
+    }
 
-    // 2. Direct imports
-    const directImports = await pool.query(
-      `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-              ir.cleaned_gender as gender, ir.cleaned_email as email,
-              ir.cleaned_phone as phone, mi.academic_year as year_of_study,
-              mi.import_date as join_date, 'Import' as source
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = $1 AND mi.status = 'processed' AND ir.status IN ('valid', 'warning')
-       AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)
-       ORDER BY ir.cleaned_name`,
-      [jumuiya_id]
+    const result = await pool.query(
+      `SELECT member_id, first_name, last_name, gender, email, phone, year_of_study, join_date, source
+       FROM members
+       WHERE jumuiya_id = $1 AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
+       ORDER BY first_name`,
+      [jumuiyaUUID]
     );
 
-    // 3. CSA-distributed members
-    const csaMembers = await pool.query(
-      `SELECT ir.cleaned_reg_number as member_id, ir.cleaned_name as name,
-              ir.cleaned_gender as gender, ir.cleaned_email as email,
-              ir.cleaned_phone as phone, mi.academic_year as year_of_study,
-              mi.import_date as join_date, 'CSA' as source
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya = $1 AND ir.status IN ('valid', 'warning')
-       AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)
-       ORDER BY ir.cleaned_name`,
-      [jumuiyaName]
-    );
-
-    // Combine & deduplicate
     const combined = [];
     const seen = new Set();
 
-    for (const r of legacyMembers.rows) {
+    for (const r of result.rows) {
       const key = r.member_id ? r.member_id.toLowerCase() : r.member_id;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -1100,23 +1002,6 @@ export const exportMembers = async (req, res) => {
         Email: r.email || "",
         Phone: r.phone || "",
         Year: r.year_of_study || "",
-        Joined: r.join_date ? r.join_date.toISOString().slice(0, 10) : "",
-        Source: r.source,
-      });
-    }
-
-    for (const r of [...directImports.rows, ...csaMembers.rows]) {
-      const parts = (r.name || "").split(" ");
-      const key = r.member_id ? r.member_id.toLowerCase() : r.member_id;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      combined.push({
-        RegNo: r.member_id,
-        Name: r.name || "",
-        Gender: r.gender || "",
-        Email: r.email || "",
-        Phone: r.phone || "",
-        Year: r.year_of_study || (r.member_id ? deriveYearFromReg(r.member_id) : ""),
         Joined: r.join_date ? r.join_date.toISOString().slice(0, 10) : "",
         Source: r.source,
       });
@@ -1133,13 +1018,14 @@ export const exportAssignments = async (req, res) => {
   try {
     const { jumuiya_id } = req.params;
     const result = await pool.query(
-      `SELECT mg.group_name, ir.cleaned_name as member_name,
-              ir.cleaned_gender as gender, ir.cleaned_reg_number as reg_number
+      `SELECT mg.group_name,
+              CONCAT_WS(' ', m.first_name, m.last_name) as member_name,
+              m.gender, m.member_id as reg_number
        FROM group_assignments ga
        JOIN member_groups mg ON mg.id = ga.group_id
-       LEFT JOIN import_records ir ON ir.id = ga.member_id
+       LEFT JOIN members m ON m.member_id = ga.member_id
        WHERE mg.jumuiya_id = $1 AND ga.status = 'active'
-       ORDER BY mg.group_name, ir.cleaned_name`,
+       ORDER BY mg.group_name, member_name`,
       [jumuiya_id]
     );
     res.json({ status: "success", data: result.rows });
@@ -1249,9 +1135,8 @@ export const csaGetPendingMembers = async (req, res) => {
   try {
     const { academic_year, gender } = req.query;
     const conditions = [
-      `mi.jumuiya_id = 'csa'`,
-      `ir.cleaned_jumuiya IS NULL`,
-      `ir.status IN ('valid', 'warning')`,
+      `m.source = 'csa'`,
+      `m.jumuiya_id IS NULL`,
     ];
     const params = [];
 
@@ -1261,18 +1146,20 @@ export const csaGetPendingMembers = async (req, res) => {
     }
     if (gender) {
       params.push(gender);
-      conditions.push(`LOWER(ir.cleaned_gender) = LOWER($${params.length})`);
+      conditions.push(`LOWER(m.gender) = LOWER($${params.length})`);
     }
 
     const result = await pool.query(
-      `SELECT ir.id, ir.cleaned_name as name, ir.cleaned_reg_number as reg_number,
-              ir.cleaned_gender as gender, ir.cleaned_phone as phone,
-              ir.cleaned_email as email, ir.status, ir.validation_errors, ir.validation_warnings,
-              mi.id as import_id, mi.import_date, mi.file_name, mi.academic_year
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
+      `SELECT m.member_id, 
+              CONCAT_WS(' ', m.first_name, m.last_name) as name,
+              m.member_id as reg_number,
+              m.gender, m.phone, m.email,
+              m.status, m.import_batch_id as import_id,
+              mi.import_date, mi.file_name, mi.academic_year
+       FROM members m
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
        WHERE ${conditions.join(" AND ")}
-       ORDER BY mi.import_date DESC, ir.cleaned_name`,
+       ORDER BY mi.import_date DESC, m.first_name`,
       params
     );
 
@@ -1297,7 +1184,7 @@ export const csaGetJumuiyaStats = async (req, res) => {
     for (const name of JUMUIYA_NAMES) {
       const slug = JUMUIYA_SLUG_MAP[name];
 
-      const legacyResult = await pool.query(
+      const totalResult = await pool.query(
         `SELECT COUNT(*)::int as total,
                 SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
                 SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
@@ -1307,35 +1194,36 @@ export const csaGetJumuiyaStats = async (req, res) => {
         [name]
       );
 
-      const importResult = await pool.query(
+      const csaResult = await pool.query(
         `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM import_records ir
-         JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE ir.cleaned_jumuiya = $1 AND ir.status IN ('valid', 'warning') ${yearFilter}`,
+                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
+                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
+         FROM members m
+         LEFT JOIN sub_groups sg ON sg.name = $1
+         LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+         WHERE m.jumuiya_id = sg.group_id AND m.source = 'csa' ${yearFilter}`,
         [name]
       );
 
+      const tRow = totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+      const cRow = csaResult.rows[0] || { total: 0, male_count: 0, female_count: 0 };
       jumuiyaStats.push({
         slug,
         name,
-        legacy: legacyResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-        imported: importResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-        total: (legacyResult.rows[0]?.total || 0) + (importResult.rows[0]?.total || 0),
-        male_count: (legacyResult.rows[0]?.male_count || 0) + (importResult.rows[0]?.male_count || 0),
-        female_count: (legacyResult.rows[0]?.female_count || 0) + (importResult.rows[0]?.female_count || 0),
+        total: tRow.total,
+        male_count: tRow.male_count,
+        female_count: tRow.female_count,
+        csa: cRow,
       });
     }
 
     const pendingResult = await pool.query(
       `SELECT COUNT(*)::int as total,
-              SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-              SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya IS NULL
-         AND ir.status IN ('valid', 'warning') ${yearFilter.replace("mi.", "mi.")}`
+              SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
+              SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
+       FROM members m
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+       WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}`
     );
 
     res.json({
@@ -1404,12 +1292,13 @@ export const csaDistributePreview = async (req, res) => {
     const yearFilter = academic_year ? `AND mi.academic_year = '${academic_year.replace(/'/g, "''")}'` : "";
 
     const pendingResult = await pool.query(
-      `SELECT ir.id, ir.cleaned_name as name, ir.cleaned_gender as gender
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya IS NULL
-         AND ir.status IN ('valid', 'warning') ${yearFilter}
-       ORDER BY ir.cleaned_name`
+      `SELECT m.member_id as id,
+              CONCAT_WS(' ', m.first_name, m.last_name) as name,
+              m.gender
+       FROM members m
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+       WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}
+       ORDER BY m.first_name`
     );
 
     if (!pendingResult.rows.length) {
@@ -1418,28 +1307,20 @@ export const csaDistributePreview = async (req, res) => {
 
     const jumuiyaRows = [];
     for (const name of JUMUIYA_NAMES) {
-      const legacyResult = await pool.query(
+      const totalResult = await pool.query(
         `SELECT COUNT(*)::int as total,
                 SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
                 SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
          FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id`,
         [name]
       );
-      const importResult = await pool.query(
-        `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM import_records ir JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE ir.cleaned_jumuiya = $1 AND ir.status IN ('valid', 'warning') ${yearFilter.replace("mi.", "mi.")}`,
-        [name]
-      );
       jumuiyaRows.push({
         slug: JUMUIYA_SLUG_MAP[name],
         name,
         existing: {
-          total: (legacyResult.rows[0]?.total || 0) + (importResult.rows[0]?.total || 0),
-          male_count: (legacyResult.rows[0]?.male_count || 0) + (importResult.rows[0]?.male_count || 0),
-          female_count: (legacyResult.rows[0]?.female_count || 0) + (importResult.rows[0]?.female_count || 0),
+          total: totalResult.rows[0]?.total || 0,
+          male_count: totalResult.rows[0]?.male_count || 0,
+          female_count: totalResult.rows[0]?.female_count || 0,
         },
       });
     }
@@ -1515,12 +1396,13 @@ export const csaDistributeMembers = async (req, res) => {
     const yearFilter = academic_year ? `AND mi.academic_year = '${academic_year.replace(/'/g, "''")}'` : "";
 
     const pendingResult = await pool.query(
-      `SELECT ir.id, ir.cleaned_name as name, ir.cleaned_gender as gender
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya IS NULL
-         AND ir.status IN ('valid', 'warning') ${yearFilter}
-       ORDER BY ir.cleaned_name`
+      `SELECT m.member_id as id,
+              CONCAT_WS(' ', m.first_name, m.last_name) as name,
+              m.gender
+       FROM members m
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+       WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}
+       ORDER BY m.first_name`
     );
 
     if (!pendingResult.rows.length) {
@@ -1529,26 +1411,18 @@ export const csaDistributeMembers = async (req, res) => {
 
     const jumuiyaRows = [];
     for (const name of JUMUIYA_NAMES) {
-      const legacyResult = await pool.query(
+      const totalResult = await pool.query(
         `SELECT COUNT(*)::int as total,
                 SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
                 SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
          FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id`,
         [name]
       );
-      const importResult = await pool.query(
-        `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM import_records ir JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE ir.cleaned_jumuiya = $1 AND ir.status IN ('valid', 'warning') ${yearFilter.replace("mi.", "mi.")}`,
-        [name]
-      );
       jumuiyaRows.push({
         slug: JUMUIYA_SLUG_MAP[name],
         name,
-        existing: legacyResult.rows[0],
-        imported: importResult.rows[0],
+        existing: totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
+        imported: { total: 0 },
       });
     }
 
@@ -1556,9 +1430,9 @@ export const csaDistributeMembers = async (req, res) => {
     const jumuiyaSlots = jumuiyaRows.map(j => ({
       slug: j.slug,
       name: j.name,
-      currentTotal: (j.existing?.total || 0) + (j.imported?.total || 0),
-      maleCount: (j.existing?.male_count || 0) + (j.imported?.male_count || 0),
-      femaleCount: (j.existing?.female_count || 0) + (j.imported?.female_count || 0),
+      currentTotal: j.existing?.total || 0,
+      maleCount: j.existing?.male_count || 0,
+      femaleCount: j.existing?.female_count || 0,
       newCount: 0,
     }));
 
@@ -1596,8 +1470,14 @@ export const csaDistributeMembers = async (req, res) => {
 
     for (const a of assignments) {
       await pool.query(
-        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE id = $2`,
+        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
         [a.target_name, a.member_id]
+      );
+      await pool.query(
+        `UPDATE members SET jumuiya_id = sg.group_id
+         FROM sub_groups sg
+         WHERE members.member_id = $1 AND sg.name = $2`,
+        [a.member_id, a.target_name]
       );
     }
 
@@ -1644,45 +1524,39 @@ const computeDistributionPlan = async (academicYear) => {
   const yearFilter = academicYear ? `AND mi.academic_year = '${academicYear.replace(/'/g, "''")}'` : "";
 
   const pendingResult = await pool.query(
-    `SELECT ir.id, ir.cleaned_name as name, ir.cleaned_gender as gender
-     FROM import_records ir
-     JOIN member_imports mi ON mi.id = ir.import_id
-     WHERE mi.jumuiya_id = 'csa' AND ir.cleaned_jumuiya IS NULL
-       AND ir.status IN ('valid', 'warning') ${yearFilter}
-     ORDER BY ir.cleaned_name`
+    `SELECT m.member_id as id,
+            CONCAT_WS(' ', m.first_name, m.last_name) as name,
+            m.gender
+     FROM members m
+     LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+     WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}
+     ORDER BY m.first_name`
   );
 
   if (!pendingResult.rows.length) return null;
 
   const jumuiyaRows = [];
   for (const name of JUMUIYA_NAMES) {
-    const legacyResult = await pool.query(
+    const totalResult = await pool.query(
       `SELECT COUNT(*)::int as total,
               SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
               SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
        FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id`,
       [name]
     );
-    const importResult = await pool.query(
-      `SELECT COUNT(*)::int as total,
-              SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-              SUM(CASE WHEN LOWER(ir.cleaned_gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-       FROM import_records ir JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE ir.cleaned_jumuiya = $1 AND ir.status IN ('valid', 'warning') ${yearFilter.replace("mi.", "mi.")}`,
-      [name]
-    );
     jumuiyaRows.push({
       slug: JUMUIYA_SLUG_MAP[name], name,
-      existing: legacyResult.rows[0], imported: importResult.rows[0],
+      existing: totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
+      imported: { total: 0 },
     });
   }
 
   const members = pendingResult.rows;
   const slots = jumuiyaRows.map(j => ({
     slug: j.slug, name: j.name,
-    currentTotal: (j.existing?.total || 0) + (j.imported?.total || 0),
-    maleCount: (j.existing?.male_count || 0) + (j.imported?.male_count || 0),
-    femaleCount: (j.existing?.female_count || 0) + (j.imported?.female_count || 0),
+    currentTotal: j.existing?.total || 0,
+    maleCount: j.existing?.male_count || 0,
+    femaleCount: j.existing?.female_count || 0,
     newCount: 0,
   }));
 
@@ -1707,7 +1581,7 @@ const computeDistributionPlan = async (academicYear) => {
     else target.femaleCount++;
     target.newCount++;
     assignments.push({
-      import_record_id: member.id,
+      member_id: member.id,
       member_name: member.name,
       member_gender: member.gender,
       target_name: target.name,
@@ -1744,9 +1618,9 @@ export const csaSubmitForApproval = async (req, res) => {
 
     for (const a of plan.assignments) {
       await pool.query(
-        `INSERT INTO allocation_approvals (distribution_batch_id, import_record_id, target_jumuiya, status)
+        `INSERT INTO allocation_approvals (distribution_batch_id, member_id, target_jumuiya, status)
          VALUES ($1, $2, $3, 'pending')`,
-        [batchId, a.import_record_id, a.target_name]
+        [batchId, a.member_id, a.target_name]
       );
     }
 
@@ -1786,13 +1660,14 @@ export const csaGetApprovals = async (req, res) => {
     const result = await pool.query(
       `SELECT aa.id, aa.status, aa.rejection_reason, aa.reviewed_at,
               aa.distribution_batch_id,
-              ir.id as import_record_id, ir.cleaned_name as name,
-              ir.cleaned_reg_number as reg_number, ir.cleaned_gender as gender,
-              ir.cleaned_phone as phone, ir.cleaned_email as email,
+              aa.member_id as import_record_id,
+              CONCAT_WS(' ', m.first_name, m.last_name) as name,
+              m.member_id as reg_number,
+              m.gender, m.phone, m.email,
               mi.academic_year
        FROM allocation_approvals aa
-       JOIN import_records ir ON ir.id = aa.import_record_id
-       JOIN member_imports mi ON mi.id = ir.import_id
+       LEFT JOIN members m ON m.member_id = aa.member_id
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
        JOIN distribution_batches db ON db.id = aa.distribution_batch_id
        WHERE aa.target_jumuiya = $1 AND db.status IN ('pending_approval', 'partially_approved')
        ORDER BY aa.created_at DESC`,
@@ -2010,14 +1885,13 @@ export const csaFinalizeDistribution = async (req, res) => {
 
     // Get all approved allocations in this batch
     const approved = await pool.query(
-      `SELECT aa.import_record_id, aa.target_jumuiya
+      `SELECT aa.member_id, aa.target_jumuiya
        FROM allocation_approvals aa
        WHERE aa.distribution_batch_id = $1 AND aa.status = 'approved'`,
       [batchId]
     );
 
     if (approved.rows.length === 0) {
-      // All were rejected — just mark batch as finalized
       await pool.query(
         `UPDATE distribution_batches SET status = 'finalized', finalized_at = NOW() WHERE id = $1`,
         [batchId]
@@ -2032,11 +1906,16 @@ export const csaFinalizeDistribution = async (req, res) => {
       });
     }
 
-    // Update import_records: set cleaned_jumuiya to the target jumuiya
     for (const a of approved.rows) {
       await pool.query(
-        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE id = $2`,
-        [a.target_jumuiya, a.import_record_id]
+        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
+        [a.target_jumuiya, a.member_id]
+      );
+      await pool.query(
+        `UPDATE members SET jumuiya_id = sg.group_id
+         FROM sub_groups sg
+         WHERE members.member_id = $1 AND sg.name = $2`,
+        [a.member_id, a.target_jumuiya]
       );
     }
 
@@ -2089,13 +1968,14 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
     if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
 
     let query = `
-      SELECT ir.cleaned_name as name, ir.cleaned_reg_number as reg_number,
-             ir.cleaned_gender as gender, ir.cleaned_phone as phone,
-             ir.cleaned_email as email, mi.academic_year,
+      SELECT CONCAT_WS(' ', m.first_name, m.last_name) as name,
+             m.member_id as reg_number,
+             m.gender, m.phone, m.email,
+             mi.academic_year,
              aa.status as allocation_status
       FROM allocation_approvals aa
-      JOIN import_records ir ON ir.id = aa.import_record_id
-      JOIN member_imports mi ON mi.id = ir.import_id
+      LEFT JOIN members m ON m.member_id = aa.member_id
+      LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
       JOIN distribution_batches db ON db.id = aa.distribution_batch_id
       WHERE aa.target_jumuiya = $1 AND aa.status = 'approved'
         AND db.status = 'finalized'
@@ -2112,7 +1992,7 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
       params.push(academic_year);
     }
 
-    query += ` ORDER BY ir.cleaned_name`;
+    query += ` ORDER BY m.first_name`;
 
     const result = await pool.query(query, params);
 
@@ -2151,17 +2031,19 @@ export const getCsaAllocations = async (req, res) => {
     const yearFilter = academic_year ? `AND mi.academic_year = '${academic_year.replace(/'/g, "''")}'` : "";
 
     const result = await pool.query(
-      `SELECT ir.id, ir.cleaned_name as name, ir.cleaned_reg_number as reg_number,
-              ir.cleaned_gender as gender, ir.cleaned_phone as phone, ir.cleaned_email as email,
-              ir.status, ir.validation_errors, ir.validation_warnings,
+      `SELECT m.member_id as id,
+              CONCAT_WS(' ', m.first_name, m.last_name) as name,
+              m.member_id as reg_number,
+              m.gender, m.phone, m.email,
+              m.status,
               mi.academic_year, mi.import_date
-       FROM import_records ir
-       JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE mi.jumuiya_id = 'csa'
-         AND ir.cleaned_jumuiya = $1
-         AND ir.status IN ('valid', 'warning')
+       FROM members m
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+       LEFT JOIN sub_groups sg ON sg.name = $1
+       WHERE m.source = 'csa'
+         AND m.jumuiya_id = sg.group_id
          ${yearFilter}
-       ORDER BY ir.cleaned_name ASC`,
+       ORDER BY m.first_name`,
       [jumuiyaName]
     );
 
@@ -2186,19 +2068,20 @@ export const getCsaAllocations = async (req, res) => {
 export const csaGetRejectedMembers = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ir.id, ir.import_id,
-              ir.cleaned_name as name, ir.cleaned_reg_number as reg_number,
-              ir.cleaned_gender as gender, ir.cleaned_phone as phone, ir.cleaned_email as email,
-              ir.status, ir.validation_errors,
+      `SELECT m.member_id as id, m.import_batch_id as import_id,
+              CONCAT_WS(' ', m.first_name, m.last_name) as name,
+              m.member_id as reg_number,
+              m.gender, m.phone, m.email,
+              m.status,
               aa.rejection_reason, aa.reviewed_at,
               aa.distribution_batch_id as batch_id,
               mi.academic_year
        FROM allocation_approvals aa
-       JOIN import_records ir ON ir.id = aa.import_record_id
-       JOIN member_imports mi ON mi.id = ir.import_id
+       LEFT JOIN members m ON m.member_id = aa.member_id
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
        WHERE aa.status = 'rejected'
          AND aa.distribution_batch_id IN (SELECT id FROM distribution_batches WHERE status = 'finalized')
-         AND ir.cleaned_jumuiya IS NULL
+         AND m.jumuiya_id IS NULL
        ORDER BY aa.reviewed_at DESC`
     );
     res.json({ status: "success", data: result.rows });
@@ -2218,34 +2101,60 @@ export const csaUpdateRejectedMember = async (req, res) => {
     const { name, reg_number, gender, phone, email, assign_jumuiya } = req.body;
 
     const existing = await pool.query(
-      `SELECT ir.id, ir.import_id FROM import_records ir
-       JOIN allocation_approvals aa ON aa.import_record_id = ir.id
-       WHERE ir.id = $1 AND aa.status = 'rejected'
+      `SELECT aa.member_id, m.member_id, m.import_batch_id
+       FROM allocation_approvals aa
+       LEFT JOIN members m ON m.member_id = aa.member_id
+       WHERE aa.member_id = $1 AND aa.status = 'rejected'
          AND aa.distribution_batch_id IN (SELECT id FROM distribution_batches WHERE status = 'finalized')`,
       [id]
     );
     if (!existing.rows.length) return res.status(404).json({ error: "Rejected member not found" });
 
-    const updates = [];
+    const memUpdates = [];
+    const irUpdates = [];
     const values = [];
     let idx = 1;
 
-    if (name !== undefined) { updates.push(`cleaned_name = $${idx++}`); values.push(name); }
-    if (reg_number !== undefined) { updates.push(`cleaned_reg_number = $${idx++}`); values.push(reg_number); }
-    if (gender !== undefined) { updates.push(`cleaned_gender = $${idx++}`); values.push(gender); }
-    if (phone !== undefined) { updates.push(`cleaned_phone = $${idx++}`); values.push(phone); }
-    if (email !== undefined) { updates.push(`cleaned_email = $${idx++}`); values.push(email); }
-    if (assign_jumuiya !== undefined) { updates.push(`cleaned_jumuiya = $${idx++}`); values.push(assign_jumuiya); }
+    if (name !== undefined) {
+      const parts = name.split(" ");
+      memUpdates.push(`first_name = $${idx++}`); values.push(parts[0] || "");
+      memUpdates.push(`last_name = $${idx++}`); values.push(parts.slice(1).join(" ") || parts[0] || "");
+      irUpdates.push(`cleaned_name = $${idx++}`); values.push(name);
+    }
+    if (reg_number !== undefined) { memUpdates.push(`member_id = $${idx++}`); values.push(reg_number); }
+    if (gender !== undefined) { memUpdates.push(`gender = $${idx++}`); values.push(gender); irUpdates.push(`cleaned_gender = $${idx++}`); values.push(gender); }
+    if (phone !== undefined) { memUpdates.push(`phone = $${idx++}`); values.push(phone); irUpdates.push(`cleaned_phone = $${idx++}`); values.push(phone); }
+    if (email !== undefined) { memUpdates.push(`email = $${idx++}`); values.push(email); irUpdates.push(`cleaned_email = $${idx++}`); values.push(email); }
 
-    if (!updates.length) return res.status(400).json({ error: "No fields to update" });
+    if (assign_jumuiya !== undefined) {
+      const nameGuess = assign_jumuiya.split("-").map(w => {
+        if (w.toLowerCase() === "st") return "St.";
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      }).join(" ");
+      const sgRes = await pool.query(`SELECT group_id FROM sub_groups WHERE LOWER(name) = LOWER($1)`, [nameGuess]);
+      if (sgRes.rows.length) {
+        memUpdates.push(`jumuiya_id = $${idx++}`); values.push(sgRes.rows[0].group_id);
+        irUpdates.push(`cleaned_jumuiya = $${idx++}`); values.push(nameGuess);
+      }
+    }
+
+    if (!memUpdates.length) return res.status(400).json({ error: "No fields to update" });
 
     values.push(id);
-    const result = await pool.query(
-      `UPDATE import_records SET ${updates.join(", ")} WHERE id = $${idx} RETURNING *`,
-      values
-    );
+    await pool.query(`UPDATE members SET ${memUpdates.join(", ")} WHERE member_id = $${idx}`, values);
 
-    res.json({ status: "success", data: result.rows[0] });
+    if (irUpdates.length > 0) {
+      const irVals = values.slice(0, -1);
+      irVals.push(id);
+      await pool.query(`UPDATE import_records SET ${irUpdates.join(", ")} WHERE cleaned_reg_number = $${irVals.length}`, irVals);
+    }
+
+    if (reg_number !== undefined && reg_number !== id) {
+      await pool.query(`UPDATE allocation_approvals SET member_id = $1 WHERE member_id = $2`, [reg_number, id]);
+      await pool.query(`UPDATE import_records SET cleaned_reg_number = $1 WHERE cleaned_reg_number = $2`, [reg_number, id]);
+    }
+
+    res.json({ status: "success", message: "Rejected member updated" });
   } catch (error) {
     logger.error("csaUpdateRejectedMember error:", error.message);
     res.status(500).json({ error: error.message });
@@ -2261,17 +2170,16 @@ export const csaDeleteRejectedMember = async (req, res) => {
     const { id } = req.params;
 
     const existing = await pool.query(
-      `SELECT ir.id FROM import_records ir
-       JOIN allocation_approvals aa ON aa.import_record_id = ir.id
-       WHERE ir.id = $1 AND aa.status = 'rejected'
+      `SELECT aa.member_id FROM allocation_approvals aa
+       WHERE aa.member_id = $1 AND aa.status = 'rejected'
          AND aa.distribution_batch_id IN (SELECT id FROM distribution_batches WHERE status = 'finalized')`,
       [id]
     );
     if (!existing.rows.length) return res.status(404).json({ error: "Rejected member not found" });
 
-    // Delete allocation_approval first, then import_record
-    await pool.query(`DELETE FROM allocation_approvals WHERE import_record_id = $1`, [id]);
-    await pool.query(`DELETE FROM import_records WHERE id = $1`, [id]);
+    await pool.query(`DELETE FROM allocation_approvals WHERE member_id = $1`, [id]);
+    await pool.query(`DELETE FROM import_records WHERE cleaned_reg_number = $1`, [id]);
+    await pool.query(`DELETE FROM members WHERE member_id = $1`, [id]);
 
     res.json({ status: "success", data: { message: "Member deleted permanently" } });
   } catch (error) {
@@ -2293,42 +2201,15 @@ export const lookupMemberByRegNumber = async (req, res) => {
 
     const s = search.trim();
     const result = await pool.query(
-      `SELECT member_id, first_name, last_name, gender, phone, email, year_of_study, course, jumuiya_id, jumuiya_name, jumuiya_slug FROM (
-        SELECT
-          m.member_id, m.first_name, m.last_name, m.gender, m.phone, m.email, m.year_of_study, m.course,
-          sg.group_id::text as jumuiya_id, sg.name as jumuiya_name,
-          LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug
-        FROM members m
-        LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-        WHERE m.member_id LIKE '%/' || $1 || '/%' OR m.member_id ILIKE $2
-        UNION ALL
-        SELECT
-          ir.cleaned_reg_number,
-          split_part(ir.cleaned_name, ' ', 1),
-          substr(ir.cleaned_name, strpos(ir.cleaned_name || ' ', ' ') + 1),
-          ir.cleaned_gender,
-          ir.cleaned_phone,
-          ir.cleaned_email,
-          NULL::text,
-          NULL::text,
-          CASE
-            WHEN mi.jumuiya_id IS NOT NULL AND mi.jumuiya_id != 'csa' THEN mi.jumuiya_id
-            ELSE sg.group_id::text
-          END as jumuiya_id,
-          COALESCE(sg.name, ir.cleaned_jumuiya) as jumuiya_name,
-          CASE
-            WHEN mi.jumuiya_id IS NOT NULL AND mi.jumuiya_id != 'csa' THEN mi.jumuiya_id
-            ELSE LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-'))
-          END as jumuiya_slug
-        FROM import_records ir
-        JOIN member_imports mi ON mi.id = ir.import_id
-        LEFT JOIN sub_groups sg ON sg.name = ir.cleaned_jumuiya OR sg.group_id::text = ir.cleaned_jumuiya
-        WHERE ir.status IN ('valid', 'warning')
-          AND (ir.migrated_to_associates IS NULL OR ir.migrated_to_associates = false)
-          AND (ir.cleaned_reg_number LIKE '%/' || $1 || '/%' OR ir.cleaned_reg_number ILIKE $2)
-      ) sub
-      ORDER BY member_id
-      LIMIT 10`,
+      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.phone, m.email,
+              m.year_of_study, m.course,
+              sg.group_id::text as jumuiya_id, sg.name as jumuiya_name,
+              LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug
+       FROM members m
+       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+       WHERE m.member_id LIKE '%/' || $1 || '/%' OR m.member_id ILIKE $2
+       ORDER BY m.member_id
+       LIMIT 10`,
       [s, `%${s}%`]
     );
 

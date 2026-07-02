@@ -10,6 +10,7 @@ import CustomersPanel from "./CustomerManager";
 import ReportsPanel from "./Reports";
 import SliderManager from "./SliderManager";
 import NotificationsPanel from "./NotificationsPanel";
+import HireSettingsSection from "./HireSettingsSection";
 
 const tabs = [
   { id: "notifications", label: "Notifications", icon: Bell },
@@ -59,6 +60,8 @@ export default function ProjectsManager() {
       {activeTab === "customers" && <CustomersPanel />}
       {activeTab === "sliders" && <SliderManager />}
       {activeTab === "reports" && <ReportsPanel />}
+
+      <HireSettingsSection />
     </div>
   );
 }

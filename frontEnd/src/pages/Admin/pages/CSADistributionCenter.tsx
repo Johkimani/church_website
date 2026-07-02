@@ -54,10 +54,8 @@ const KNOWN_HEADERS: Record<string, string> = {
   fullname: "name",
   names: "name",
   registrationnumber: "regNumber",
-  regnumber: "regNumber",
-  regno: "regNumber",
-  regnumber: "regNumber",
-  registration: "regNumber",
+    regno: "regNumber",
+    registration: "regNumber",
   gender: "gender",
   sex: "gender",
   phone: "phone",
@@ -100,6 +98,7 @@ export default function CSADistributionCenter() {
   const [mode, setMode] = useState<"manual" | "upload">("manual");
   const [members, setMembers] = useState<any[]>([{ ...emptyRow }]);
   const [memberErrors, setMemberErrors] = useState<Record<number, string[]>>({});
+  const [validated, setValidated] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -181,12 +180,13 @@ export default function CSADistributionCenter() {
     const updated = [...members];
     updated[index] = { ...updated[index], [field]: value };
     setMembers(updated);
+    setValidated(false);
   };
 
-  const addRow = () => setMembers([...members, { ...emptyRow }]);
+  const addRow = () => { setMembers([...members, { ...emptyRow }]); setValidated(false); };
 
   const removeRow = (index: number) => {
-    if (members.length > 1) setMembers(members.filter((_, i) => i !== index));
+    if (members.length > 1) { setMembers(members.filter((_, i) => i !== index)); setValidated(false); }
   };
 
   const filterEmptyRows = (rows: any[]) =>
@@ -226,6 +226,7 @@ export default function CSADistributionCenter() {
           if (parsed.length === 0) { setError("Excel file has no data rows"); return; }
           setMembers(parsed);
           setMemberErrors({});
+          setValidated(false);
         } catch (err: any) { setError(err?.message || "Failed to parse Excel file"); }
       };
       reader.readAsArrayBuffer(file);
@@ -237,6 +238,7 @@ export default function CSADistributionCenter() {
           if (parsed.length === 0) { setError("CSV has no data rows"); return; }
           setMembers(parsed);
           setMemberErrors({});
+          setValidated(false);
         } catch (err: any) { setError(err?.message || "Failed to parse CSV file"); }
       };
       reader.readAsText(file);
@@ -275,6 +277,8 @@ export default function CSADistributionCenter() {
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || "Validation failed");
+    } finally {
+      setValidated(true);
     }
   };
 
@@ -476,11 +480,11 @@ export default function CSADistributionCenter() {
         </div>
 
         <div className="flex gap-2 mb-4 flex-wrap items-center">
-          <button onClick={() => { setMode("manual"); setError(null); setMemberErrors({}); setImportResult(null); }}
+          <button onClick={() => { setMode("manual"); setError(null); setMemberErrors({}); setImportResult(null); setValidated(false); }}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${mode === "manual" ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"}`}>
             <Plus size={14} /> Manual Entry
           </button>
-          <button onClick={() => { setMode("upload"); setError(null); setMemberErrors({}); setImportResult(null); }}
+          <button onClick={() => { setMode("upload"); setError(null); setMemberErrors({}); setImportResult(null); setValidated(false); }}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${mode === "upload" ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"}`}>
             <Upload size={14} /> CSV Upload
           </button>
@@ -597,7 +601,7 @@ export default function CSADistributionCenter() {
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors">
             <CheckCircle size={14} /> Validate
           </button>
-          <button onClick={handleImport} disabled={importing || Object.keys(memberErrors).length > 0}
+          <button onClick={handleImport} disabled={importing || Object.keys(memberErrors).length > 0 || !validated}
             className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded-lg transition-colors">
             {importing ? "Importing..." : "Import to CSA"}
           </button>

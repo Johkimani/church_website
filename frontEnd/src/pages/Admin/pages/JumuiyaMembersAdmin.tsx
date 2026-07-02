@@ -66,16 +66,16 @@ const StatCardMemo = memo(StatCard);
 
 function SummaryBar({ stats }: { stats: Record<string, any> }) {
   const total = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.totalMembers || 0), 0);
-  const totalLegacy = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.legacy?.total || 0), 0);
-  const totalImported = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.imports?.total || 0), 0);
+  const totalJum = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.jum?.total || 0), 0);
+  const totalCSA = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.csa?.total || 0), 0);
   const totalMale = Object.values(stats).reduce((sum: number, s: any) => {
-    const m = s?.genderBreakdown?.find((g: any) => g.gender === "Male");
+    const m = s?.genderBreakdown?.find((g: any) => g.gender === "Male" || g.gender === "male");
     return sum + (m?.count || 0);
-  }, 0) + Object.values(stats).reduce((sum: number, s: any) => sum + (s?.legacy?.male_count || 0), 0);
+  }, 0);
   const totalFemale = Object.values(stats).reduce((sum: number, s: any) => {
-    const f = s?.genderBreakdown?.find((g: any) => g.gender === "Female");
+    const f = s?.genderBreakdown?.find((g: any) => g.gender === "Female" || g.gender === "female");
     return sum + (f?.count || 0);
-  }, 0) + Object.values(stats).reduce((sum: number, s: any) => sum + (s?.legacy?.female_count || 0), 0);
+  }, 0);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -84,12 +84,12 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
         <p className="text-xs text-slate-500 font-medium">Total Members</p>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <p className="text-3xl font-bold text-slate-800">{totalLegacy}</p>
-        <p className="text-xs text-slate-500 font-medium">Legacy</p>
+        <p className="text-3xl font-bold text-slate-800">{totalJum}</p>
+        <p className="text-xs text-slate-500 font-medium">Jum</p>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <p className="text-3xl font-bold text-slate-800">{totalImported}</p>
-        <p className="text-xs text-slate-500 font-medium">Imported</p>
+        <p className="text-3xl font-bold text-slate-800">{totalCSA}</p>
+        <p className="text-xs text-slate-500 font-medium">CSA</p>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <p className="text-3xl font-bold text-slate-800 flex items-center gap-2">
@@ -141,8 +141,8 @@ function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any;
   const s = stats;
   const totalMembers = s?.totalMembers || 0;
   const hasData = totalMembers > 0;
-  const maleTotal = (s?.legacy?.male_count || 0) + (s?.genderBreakdown?.find((g: any) => g.gender === "Male")?.count || 0);
-  const femaleTotal = (s?.legacy?.female_count || 0) + (s?.genderBreakdown?.find((g: any) => g.gender === "Female")?.count || 0);
+  const maleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Male" || g.gender === "male")?.count || 0);
+  const femaleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Female" || g.gender === "female")?.count || 0);
 
   return (
     <button
@@ -163,8 +163,8 @@ function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any;
           {hasData && (
             <p className="text-xs text-slate-400 mt-0.5">
               {s.groups?.length || 0} group{s.groups?.length !== 1 ? "s" : ""}
-              {s?.imports?.csaDistributed > 0 && (
-                <span className="ml-2 text-indigo-400">· {s.imports.csaDistributed} from CSA</span>
+              {s?.csa?.total > 0 && (
+                <span className="ml-2 text-indigo-400">· {s.csa.total} from CSA</span>
               )}
             </p>
           )}
@@ -179,21 +179,21 @@ function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any;
 
       {hasData ? (
         <div className="space-y-2.5">
-          {/* Legacy vs Imported bar */}
+          {/* Jum vs CSA bar */}
           <div className="flex gap-1 h-1.5 rounded-full overflow-hidden bg-slate-100">
-            {s?.legacy?.total > 0 && (
-              <div className="bg-indigo-400 h-full transition-all" style={{ width: `${(s.legacy.total / totalMembers) * 100}%` }} />
+            {s?.jum?.total > 0 && (
+              <div className="bg-indigo-400 h-full transition-all" style={{ width: `${(s.jum.total / totalMembers) * 100}%` }} />
             )}
-            {s?.imports?.total > 0 && (
-              <div className="bg-emerald-400 h-full transition-all" style={{ width: `${(s.imports.total / totalMembers) * 100}%` }} />
+            {s?.csa?.total > 0 && (
+              <div className="bg-cyan-400 h-full transition-all" style={{ width: `${(s.csa.total / totalMembers) * 100}%` }} />
             )}
           </div>
           <div className="flex items-center gap-3 text-[11px]">
             <span className="text-indigo-500 font-medium flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-400" /> {s?.legacy?.total || 0} legacy
+              <span className="w-2 h-2 rounded-full bg-indigo-400" /> {s?.jum?.total || 0} Jum
             </span>
-            <span className="text-emerald-500 font-medium flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" /> {s?.imports?.total || 0} imported
+            <span className="text-cyan-500 font-medium flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-cyan-400" /> {s?.csa?.total || 0} CSA
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -411,9 +411,9 @@ export default function JumuiyaMembersAdmin() {
 
       {globalTab === "admissions" && <CSADistributionCenter />}
 
-      {globalTab === "all-members" && <AllMembersTable />}
+      {globalTab === "all-members" && <AllMembersTable key={refreshKey} refreshKey={refreshKey} />}
 
-      {globalTab === "associates" && <AssociatesTable />}
+      {globalTab === "associates" && <AssociatesTable key={refreshKey} refreshKey={refreshKey} />}
 
       {globalTab === "jumuiyas" && (
         <div>
