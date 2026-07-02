@@ -17,7 +17,10 @@ export const Layout = () => {
     const {
         cart, isCartOpen, setIsCartOpen, removeFromCart, updateCartQuantity,
         customerName, setCustomerName, customerPhone, setCustomerPhone,
-        cartTotal, proceedToCheckout, toasts, isDarkMode, toggleDarkMode,
+        customerEmail, setCustomerEmail,
+        deliveryAddress, setDeliveryAddress,
+        collectionMethod, setCollectionMethod,
+        cartTotal, proceedToCheckout, proceedWithCash, toasts, isDarkMode, toggleDarkMode,
         apiMessages
     } = useApp();
 
@@ -59,7 +62,14 @@ export const Layout = () => {
                 setCustomerName={setCustomerName}
                 customerPhone={customerPhone}
                 setCustomerPhone={setCustomerPhone}
+                customerEmail={customerEmail}
+                setCustomerEmail={setCustomerEmail}
+                deliveryAddress={deliveryAddress}
+                setDeliveryAddress={setDeliveryAddress}
+                collectionMethod={collectionMethod}
+                setCollectionMethod={setCollectionMethod}
                 proceedToCheckout={proceedToCheckout}
+                proceedWithCash={proceedWithCash}
             />
 
             <main className="content">

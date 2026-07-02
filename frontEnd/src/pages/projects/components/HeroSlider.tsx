@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
+import apiService from '../../Landing/services/api';
 
 export interface SliderImg {
     id?: number | string;

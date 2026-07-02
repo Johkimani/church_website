@@ -1,88 +1,79 @@
-import { db, testDb } from "../Configs/dbConfig.js";// adjust if your db file is different
+import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
-// CREATE ORDER (called after payment success or cart checkout)
 export const createOrder = async (req, res) => {
   try {
     const {
-      user_id,
-      amount,
-      phone,
-      checkout_id,
-      mpesa_receipt,
-      items,
-      status
+      user_id, amount, phone, checkout_id, mpesa_receipt, items, status,
+      customer_name, customer_email, payment_method, collection_method, delivery_address,
     } = req.body;
 
     const itemsJson = items ? JSON.stringify(items) : null;
 
+    // Generate reference: CSA-000001 format
+    const seqResult = await db.query("SELECT nextval('orders_id_seq') as next_id");
+    const nextId = seqResult.rows[0].next_id;
+    const year = new Date().getFullYear();
+    const reference = `CSA-${year}-${String(nextId).padStart(4, "0")}`;
+
     const result = await db.query(
       `INSERT INTO orders
-      (
-        user_id,
-        amount,
-        phone,
-        checkout_id,
-        mpesa_receipt,
-        status,
-        items
-      )
-      VALUES
-      (
-        $1,
-        $2,
-        $3,
-        $4,
-        $5,
-        $6,
-        $7
-      )
-      RETURNING *`,
+       (user_id, amount, phone, checkout_id, mpesa_receipt, status, items,
+        order_reference, customer_name, customer_email, payment_method, collection_method, delivery_address)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       RETURNING *`,
       [
-        user_id || null,
-        amount,
-        phone || null,
-        checkout_id || null,
-        mpesa_receipt || null,
-        status || 'pending',
-        itemsJson
+        user_id || null, amount, phone || null, checkout_id || null,
+        mpesa_receipt || null, status || "pending", itemsJson,
+        reference, customer_name || null, customer_email || null,
+        payment_method || "mpesa", collection_method || "pickup",
+        delivery_address || null,
       ]
     );
 
-    logger.info("Order created successfully");
-
+    logger.info(`Order created: ${reference}`);
     res.status(201).json(result.rows[0]);
-
   } catch (error) {
     logger.error(error.message);
-
-    res.status(500).json({
-      error: error.message
-    });
+    res.status(500).json({ error: error.message });
   }
 };
-// GET ALL ORDERS (Admin)
+
 export const getOrders = async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT * FROM orders ORDER BY created_at DESC`
-    );
-
+    const result = await db.query(`SELECT * FROM orders ORDER BY created_at DESC`);
     res.json(result.rows);
   } catch (error) {
     logger.error(error.message);
     res.status(500).json({ error: error.message });
   }
 };
-// UPDATE ORDER STATUS (Admin approval)
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, payment_method, collection_method, delivery_address, customer_name } = req.body;
+
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (status !== undefined) { updates.push(`status = $${idx++}`); values.push(status); }
+    if (payment_method !== undefined) { updates.push(`payment_method = $${idx++}`); values.push(payment_method); }
+    if (collection_method !== undefined) { updates.push(`collection_method = $${idx++}`); values.push(collection_method); }
+    if (delivery_address !== undefined) { updates.push(`delivery_address = $${idx++}`); values.push(delivery_address); }
+    if (customer_name !== undefined) { updates.push(`customer_name = $${idx++}`); values.push(customer_name); }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
 
     const result = await db.query(
-      `UPDATE orders SET status = $1 WHERE id = $2 RETURNING *`,
-      [status, id]
+      `UPDATE orders SET ${updates.join(", ")} WHERE id = $${idx} RETURNING *`,
+      values
     );
 
     res.json(result.rows[0]);
