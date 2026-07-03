@@ -14,6 +14,7 @@ import GalleryPage from "./pages/Landing/components/page/GalleryPage";
 // Adaptive Discovery Paths (Lazy Loading for Performance)
 const Reset = lazy(() => import("./pages/Authorization/Reset"));
 const ResetPasswordPage = lazy(() => import("./pages/Authorization/ResetPasswordPage"));
+const FirstLoginSetup = lazy(() => import("./pages/Authorization/FirstLoginSetup"));
 const PublicView = lazy(() => import("./pages/officials/PublicView"));
 const OfficialProfile = lazy(() => import("./pages/officials/OfficialProfile"));
 const Layout = lazy(() => import("./pages/Devotions/components/Layout"));
@@ -33,6 +34,9 @@ const ProductDetailsPage = lazy(() => import("./pages/projects/pages/ProductDeta
 
 // New Admin Pages
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
+
+// Hire Status / Payment
+const HireStatus = lazy(() => import("./pages/HireStatus"));
 
 // Utility pages
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -79,6 +83,7 @@ const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
 const SacramentalsBannerManager = lazy(() => import("./pages/Admin/pages/SacramentalsBannerManager"));
 const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribution"));
+const JumuiyaMembersAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaMembersAdmin"));
 const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 
 // Sacramental / Community
@@ -114,6 +119,7 @@ const App: React.FC = () => {
           <Route index element={<Login />} />
           <Route path="reset" element={<Reset />} />
           <Route path="otp/:reg" element={<ResetPasswordPage />} />
+          <Route path="first-login-setup" element={<FirstLoginSetup />} />
         </Route>
 
         {/* Admin Routes */}
@@ -145,11 +151,14 @@ const App: React.FC = () => {
           <Route path="sacramentals-banners" element={<SacramentalsBannerManager />} />
           <Route path="projects" element={<ProjectsManager />} />
           <Route path="forms-distribution" element={<FormsDistribution />} />
+          <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
+          <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         {/* Order Confirmation (no layout) */}
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
+        <Route path="/hire-status" element={<HireStatus />} />
 
         {/* Public Routes with Page Layout */}
         <Route path="/" element={<Pageoulet />}>

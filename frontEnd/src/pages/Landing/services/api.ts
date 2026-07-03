@@ -174,6 +174,57 @@ class ApiService {
     return response.data;
   }
 
+  /** ── RBAC Role Management ──────────────────────────── */
+
+  /** Fetches all available roles (active) */
+  async getRolesList(): Promise<any[]> {
+    const response = await apiClient.get('/roles');
+    return response.data?.data || [];
+  }
+
+  /** Fetches role assignments with optional status filter */
+  async getRoleAssignments(status?: string): Promise<any[]> {
+    const params = status ? { status } : {};
+    const response = await apiClient.get('/assignments', { params });
+    return response.data?.data || [];
+  }
+
+  /** Assigns a role to a member (creates pending assignment) */
+  async assignRole(member_id: string, role_id: number): Promise<any> {
+    const response = await apiClient.post('/assignments', { member_id, role_id });
+    return response.data;
+  }
+
+  /** Approves a pending role assignment */
+  async approveAssignment(id: number): Promise<any> {
+    const response = await apiClient.patch(`/assignments/${id}/approve`);
+    return response.data;
+  }
+
+  /** Rejects a pending role assignment */
+  async rejectAssignment(id: number): Promise<any> {
+    const response = await apiClient.patch(`/assignments/${id}/reject`);
+    return response.data;
+  }
+
+  /** Revokes an approved role assignment (sets status to 'revoked') */
+  async revokeAssignment(id: number): Promise<any> {
+    const response = await apiClient.patch(`/assignments/${id}/revoke`);
+    return response.data;
+  }
+
+  /** Reactivates a revoked role assignment (sets status back to 'approved') */
+  async activateAssignment(id: number): Promise<any> {
+    const response = await apiClient.patch(`/assignments/${id}/activate`);
+    return response.data;
+  }
+
+  /** Permanently deletes a role assignment */
+  async deleteAssignment(id: number): Promise<any> {
+    const response = await apiClient.delete(`/assignments/${id}`);
+    return response.data;
+  }
+
   /**
    * Fetches all member roles.
    */
@@ -439,6 +490,28 @@ class ApiService {
       console.error('Error checking STK status:', error);
       throw error;
     }
+  }
+
+  // ── Category Cards (Home Page) ──
+
+  async getCategoryCards(): Promise<any[]> {
+    try {
+      const response = await apiClient.get('/category-cards');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching category cards:', error);
+      return [];
+    }
+  }
+
+  async upsertCategoryCard(payload: { category: string; image_url: string; label: string; tag?: string }): Promise<any> {
+    const response = await apiClient.post('/category-cards', payload);
+    return response.data;
+  }
+
+  async deleteCategoryCard(category: string): Promise<any> {
+    const response = await apiClient.delete(`/category-cards/${category}`);
+    return response.data;
   }
 
 }

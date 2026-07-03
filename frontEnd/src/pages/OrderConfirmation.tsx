@@ -1,28 +1,35 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2, Package, Home, ShoppingBag } from "lucide-react";
+import { CheckCircle2, Package, Home, ShoppingBag, Clock, MapPin, Truck } from "lucide-react";
 
 export default function OrderConfirmation() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [method, setMethod] = useState<"mpesa" | "cash">("mpesa");
 
   useEffect(() => {
     const id = searchParams.get("order_id");
+    const m = searchParams.get("method");
     if (id) setOrderId(id);
+    if (m === "cash") setMethod("cash");
   }, [searchParams]);
 
+  const isMpesa = method === "mpesa";
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-emerald-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-3xl shadow-2xl border border-emerald-100 overflow-hidden text-center">
-          {/* Success Header */}
-          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-10">
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden text-center">
+          {/* Header */}
+          <div className={`px-6 py-10 ${isMpesa ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-gradient-to-r from-amber-500 to-amber-600"}`}>
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-              <CheckCircle2 size={48} className="text-white" />
+              {isMpesa ? <CheckCircle2 size={48} className="text-white" /> : <Clock size={48} className="text-white" />}
             </div>
-            <h1 className="text-white text-2xl font-black">Payment Successful!</h1>
-            <p className="text-emerald-100 text-sm mt-1">Thank you for your order</p>
+            <h1 className="text-white text-2xl font-black">{isMpesa ? "Order Successful" : "Order Received"}</h1>
+            <p className="text-white/80 text-sm mt-1">
+              {isMpesa ? "Thank you for your payment" : "Thank you for your order"}
+            </p>
           </div>
 
           {/* Order Details */}
@@ -30,19 +37,34 @@ export default function OrderConfirmation() {
             {orderId && (
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Order Number</p>
-                <p className="text-2xl font-black text-slate-800 font-mono">#{orderId}</p>
+                <p className="text-2xl font-black text-slate-800 font-mono">{orderId}</p>
               </div>
             )}
 
-            <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
-              <p className="text-sm text-amber-800 font-semibold">
-                You will receive a confirmation via SMS and email shortly.
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Payment</span>
+                <span className={`font-bold ${isMpesa ? "text-emerald-600" : "text-amber-600"}`}>
+                  {isMpesa ? "Paid — M-Pesa" : "Cash on Pickup"}
+                </span>
+              </div>
+              {!isMpesa && (
+                <p className="text-xs text-amber-600">Please pay when collecting your order.</p>
+              )}
+            </div>
+
+            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+              <p className="text-sm text-blue-800 font-semibold flex items-center gap-2">
+                <MapPin size={16} /> Pick up at CSA Church Bookshop — KYU Campus
               </p>
+              <p className="text-xs text-blue-600 mt-1">Monday — Saturday, 8:00 AM – 5:00 PM</p>
             </div>
 
             <div className="space-y-2">
               <p className="text-sm text-slate-500">
-                Your order is now being processed. We'll notify you when it's ready for delivery or collection.
+                {isMpesa
+                  ? "Your order is now being processed. We'll notify you when it's ready for collection."
+                  : "We'll prepare your order. You'll be notified when it's ready for pickup."}
               </p>
             </div>
 
@@ -64,7 +86,6 @@ export default function OrderConfirmation() {
           </div>
         </div>
 
-        {/* Footer Note */}
         <p className="text-center text-xs text-slate-400 mt-6">
           CSA Kirinyaga Chapter &copy; {new Date().getFullYear()}
         </p>

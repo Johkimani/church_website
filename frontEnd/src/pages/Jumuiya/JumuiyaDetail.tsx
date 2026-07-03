@@ -17,7 +17,7 @@ import './JumuiyaDetail.css';
 import AdminPanelEmbed from './admin/AdminPanelEmbed';
 import { FaTimes } from 'react-icons/fa';
 
-type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'admin';
+type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'admin';
 
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
