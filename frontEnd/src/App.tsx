@@ -119,8 +119,11 @@ const App: React.FC = () => {
           <Route index element={<Login />} />
           <Route path="reset" element={<Reset />} />
           <Route path="otp/:reg" element={<ResetPasswordPage />} />
-          <Route path="first-login-setup" element={<FirstLoginSetup />} />
         </Route>
+
+        {/* First-login-setup must be outside PublicRoute — login() sets user mid-submit,
+            which makes PublicRoute redirect to "/" and trump the navigate() call. */}
+        <Route path="/login/first-login-setup" element={<FirstLoginSetup />} />
 
         {/* Admin Routes */}
         <Route

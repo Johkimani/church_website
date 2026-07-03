@@ -8,15 +8,16 @@ import { toast } from "react-hot-toast";
 export default function FirstLoginSetup() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { login } = useAuth();
 
-  const member_id = location.state?.member_id || user?.member_id || "";
-  const memberName = location.state?.name || user?.name || "";
-  const hasEmail = location.state?.hasEmail ?? !!user?.email;
+  const loginResponse = location.state?.loginResponse;
+  const member_id = loginResponse?.member_id || "";
+  const memberName = loginResponse?.name || "";
+  const hasEmail = loginResponse?.hasEmail ?? false;
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [email, setEmail] = useState(user?.email || "");
+  const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -39,13 +40,16 @@ export default function FirstLoginSetup() {
     try {
       await apiClient.post("/authentication/first-login-setup", {
         member_id,
-        currentPassword: user?.name ? member_id : undefined,
+        currentPassword: member_id,
         newPassword,
         email: hasEmail ? undefined : email.trim(),
       });
       toast.success("Password updated successfully");
+
+      login(loginResponse);
+
       setDone(true);
-      const role = user?.role;
+      const role = loginResponse?.role;
       const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
       if (hasRole) {
         const savedPath = sessionStorage.getItem('admin_last_path');

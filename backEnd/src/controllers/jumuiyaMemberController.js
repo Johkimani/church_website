@@ -406,8 +406,6 @@ export const updateImportStatus = async (req, res) => {
         `SELECT * FROM import_records WHERE import_id = $1 AND status IN ('valid', 'warning')`, [importId]
       );
 
-      const defaultPassword = await bcrypt.hash("password123", 10);
-
       for (const rec of recordsResult.rows) {
         const nameParts = (rec.cleaned_name || "").split(" ");
         const firstName = nameParts[0] || "";
@@ -422,6 +420,7 @@ export const updateImportStatus = async (req, res) => {
         );
         if (dupCheck.rows.length > 0) continue;
 
+        const defaultPassword = await bcrypt.hash(rec.cleaned_reg_number, 10);
         const genderValue = rec.cleaned_gender ? rec.cleaned_gender.toLowerCase() : null;
         const insertResult = await pool.query(
           `INSERT INTO members

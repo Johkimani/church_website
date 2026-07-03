@@ -48,7 +48,7 @@ const Reset: React.FC = () => {
       if (response.data.status === "success") {
         setMessage("OTP sent to your email!");
         setTimeout(() => {
-          navigate(`/otp/{${email}`);
+          navigate(`/otp/${email}`);
         }, 1500);
       } else {
         setError(response.data.message || "Failed to send OTP");
