@@ -83,7 +83,7 @@ const setupRoleSystem = async () => {
     `);
     await pool.query(`
       ALTER TABLE member_roles ADD CONSTRAINT member_roles_status_check
-      CHECK (status IN ('pending', 'approved', 'rejected'))
+      CHECK (status IN ('pending', 'approved', 'rejected', 'revoked'))
     `);
 
     // Unique active role per member per role per jumuiya

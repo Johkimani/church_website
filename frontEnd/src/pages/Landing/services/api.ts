@@ -207,8 +207,20 @@ class ApiService {
     return response.data;
   }
 
-  /** Removes a role assignment (approve/reject/pending) */
-  async removeAssignment(id: number): Promise<any> {
+  /** Revokes an approved role assignment (sets status to 'revoked') */
+  async revokeAssignment(id: number): Promise<any> {
+    const response = await apiClient.patch(`/assignments/${id}/revoke`);
+    return response.data;
+  }
+
+  /** Reactivates a revoked role assignment (sets status back to 'approved') */
+  async activateAssignment(id: number): Promise<any> {
+    const response = await apiClient.patch(`/assignments/${id}/activate`);
+    return response.data;
+  }
+
+  /** Permanently deletes a role assignment */
+  async deleteAssignment(id: number): Promise<any> {
     const response = await apiClient.delete(`/assignments/${id}`);
     return response.data;
   }

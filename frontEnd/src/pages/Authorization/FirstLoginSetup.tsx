@@ -45,8 +45,14 @@ export default function FirstLoginSetup() {
       });
       toast.success("Password updated successfully");
       setDone(true);
-      const savedPath = sessionStorage.getItem('admin_last_path');
-      setTimeout(() => navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin'), 1500);
+      const role = user?.role;
+      const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
+      if (hasRole) {
+        const savedPath = sessionStorage.getItem('admin_last_path');
+        setTimeout(() => navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin'), 1500);
+      } else {
+        setTimeout(() => navigate('/'), 1500);
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update password");
     } finally {
