@@ -29,12 +29,15 @@ export const Reset = async (req, res) => {
       }
     } else if (purpose === "password") {
       const userCheck = await pool.query(
-        `SELECT * FROM members WHERE email = $1`,
+        `SELECT member_id, email, email_verified FROM members WHERE email = $1`,
         [email],
       );
       if (userCheck.rows.length === 0) {
         logger.warn(`Password reset attempt for non-existent email: ${email}`);
         return res.status(404).send("User not found");
+      }
+      if (!userCheck.rows[0].email_verified) {
+        return res.status(403).json({ error: "Email not verified. Please verify your email before resetting your password." });
       }
     }
 

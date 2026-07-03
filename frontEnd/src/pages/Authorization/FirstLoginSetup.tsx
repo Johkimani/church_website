@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Eye, EyeOff, ChevronLeft, Shield, Mail, KeyRound, Loader2, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ChevronLeft, Shield, Mail, KeyRound, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { apiClient } from "../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast";
@@ -67,11 +67,19 @@ export default function FirstLoginSetup() {
   if (done) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8f7f4] px-6">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-sm">
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
           <h2 className="text-2xl font-black text-gray-950">All set!</h2>
+          {!hasEmail && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-amber-800 font-medium">
+                A verification email has been sent. Please check your inbox and verify your email to enable password recovery.
+              </p>
+            </div>
+          )}
           <p className="text-gray-500 font-medium">Redirecting to dashboard...</p>
         </div>
       </div>
