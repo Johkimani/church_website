@@ -184,6 +184,61 @@ export const rejectAssignment = async (req, res) => {
   }
 };
 
+export const revokeAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const assignment = await pool.query(
+      "SELECT id, status FROM member_roles WHERE id = $1",
+      [id]
+    );
+    if (assignment.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Assignment not found" });
+    }
+    if (assignment.rows[0].status !== "approved") {
+      return res.status(400).json({ success: false, message: `Cannot revoke — assignment is ${assignment.rows[0].status}` });
+    }
+
+    await pool.query(
+      "UPDATE member_roles SET status = 'revoked' WHERE id = $1",
+      [id]
+    );
+
+    res.json({ success: true, message: "Access revoked" });
+  } catch (error) {
+    logger.error("revokeAssignment error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to revoke assignment" });
+  }
+};
+
+export const activateAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const approvedBy = req.user?.member_id;
+
+    const assignment = await pool.query(
+      "SELECT id, status FROM member_roles WHERE id = $1",
+      [id]
+    );
+    if (assignment.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Assignment not found" });
+    }
+    if (assignment.rows[0].status !== "revoked") {
+      return res.status(400).json({ success: false, message: `Cannot activate — assignment is ${assignment.rows[0].status}` });
+    }
+
+    await pool.query(
+      `UPDATE member_roles SET status = 'approved', approved_by = $1, approved_at = NOW() WHERE id = $2`,
+      [approvedBy, id]
+    );
+
+    res.json({ success: true, message: "Role reactivated" });
+  } catch (error) {
+    logger.error("activateAssignment error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to activate assignment" });
+  }
+};
+
 export const removeAssignment = async (req, res) => {
   try {
     const { id } = req.params;

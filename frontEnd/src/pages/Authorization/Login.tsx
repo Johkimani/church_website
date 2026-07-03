@@ -29,8 +29,14 @@ const Login: React.FC = () => {
         if (response.data.forcePasswordChange) {
           navigate("first-login-setup", { state: { member_id: response.data.member_id, name: response.data.name, hasEmail: response.data.hasEmail } });
         } else {
-          const savedPath = sessionStorage.getItem('admin_last_path');
-          navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin');
+          const role = response.data.role;
+          const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
+          if (hasRole) {
+            const savedPath = sessionStorage.getItem('admin_last_path');
+            navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin');
+          } else {
+            navigate('/');
+          }
         }
         return;
       } else if (response.data.message === "User email not found") {
