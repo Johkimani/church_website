@@ -54,8 +54,9 @@ export const Login = async (req, res) => {
       });
     }
 
-    // Detect first login: password matches their reg number
+    // Detect first login: password matches their reg number, or missing email
     const isDefaultPassword = await bcrypt.compare(userReg, storedHash);
+    const forcePasswordChange = isDefaultPassword || !user.email;
 
     const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
     const refreshToken = generateRefreshtoken(user.member_id, user.roles);
@@ -79,7 +80,7 @@ export const Login = async (req, res) => {
       name: `${user.first_name} ${user.last_name}`.trim(),
       email: user.email,
       jumuiya_id: user.jumuiya_id,
-      forcePasswordChange: isDefaultPassword,
+      forcePasswordChange,
       hasEmail: !!user.email,
     });
   } catch (err) {

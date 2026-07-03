@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from './context/DataContext';
 import AboutTab from './components/AboutTab';
@@ -9,7 +9,8 @@ import RegistrationTab from './components/RegistrationTab';
 import ChannelsTab from './components/ChannelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog } from "react-icons/fa";
+import SettingsTab from './components/SettingsTab';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog, FaKey } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
@@ -17,7 +18,7 @@ import './JumuiyaDetail.css';
 import AdminPanelEmbed from './admin/AdminPanelEmbed';
 import { FaTimes } from 'react-icons/fa';
 
-type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'admin';
+type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'admin' | 'settings';
 
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -30,18 +31,9 @@ const JumuiyaDetail: React.FC = () => {
     const [hasNewNotif, setHasNewNotif] = useState(true); // Initial state for demo
     const isAdmin = user?.role === 'admin';
 
-    // The ID in the data is 'st-anthony', but the URL might be /jumuiya/st-anthony
-    // The previous getJumuiyaByName handled some normalization. Let's assume the URL param matches the ID for now, 
-    // or replicate the simple logic if needed. 
-    // DataContext's getJumuiyaById expects the exact ID.
-    // Let's stick to the previous logic of normalizing if needed, but the data IDs are 'st-anthony', 'st-augustine' etc.
-
-    // Helper to find by fuzzy name if needed, or just strict ID.
-    // The previous getJumuiyaByName did: jumuiyaList.find(j => j.id === name.toLowerCase().replace(/\s+/g, '-'));
-    // Let's implement that simple logic here using the list if we had it, or just pass the transformed name to getById
-
     const jumuiyaId = id ? id.toLowerCase().replace(/[^a-z0-9]/g, '-') : '';
     const jumuiya = getJumuiyaById(jumuiyaId);
+    const isMemberOfThisJumuiya = !!(user?.jumuiya_id && jumuiya?.group_id && user.jumuiya_id === jumuiya.group_id);
 
     // Fetch dynamic officials from backend
     const { officials: dynamicOfficials } = useJumuiyaOfficials({ category: jumuiya?.name });
@@ -131,12 +123,15 @@ const JumuiyaDetail: React.FC = () => {
     const tabs = [
         { id: 'about' as TabType, label: 'About', icon: <FaInfoCircle /> },
         { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
-        { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
-        { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
+        ...(isMemberOfThisJumuiya ? [
+          { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
+          { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
+        ] : []),
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
         ...(isAdmin ? [{ id: 'admin' as TabType, label: 'Admin', icon: <FaCog className="animate-spin-slow" /> }] : []),
+        ...(user ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
     ];
 
     const renderTabContent = () => {
@@ -160,12 +155,20 @@ const JumuiyaDetail: React.FC = () => {
                 return <ChannelsTab socialMedia={jumuiya.socialMedia || []} gallery={jumuiya.gallery} />;
             case 'tshirts':
                 return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={''} />;
+            case 'settings':
+                return <SettingsTab jumuiyaColor={detailColor} />;
             case 'admin':
                 return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:
                 return null;
         }
     };
+
+    useEffect(() => {
+      if (!isMemberOfThisJumuiya && (activeTab === 'members' || activeTab === 'registration')) {
+        setActiveTab('about');
+      }
+    }, [isMemberOfThisJumuiya]);
 
     const detailColor = jumuiya.color || '#2c3e50';
 

@@ -5,11 +5,11 @@ import { apiClient } from "../../api/axiosInstance";
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
-  const email = useParams().email || "";
+  const email = useParams().reg || "";
 
   const handleOTPComplete = async (otp: string) => {
     try {
-      const { data, status } = await apiClient.post(`/authentication/v1/otp/${email}`, { otp });
+      const { data, status } = await apiClient.post(`/authentication/otp/${email}`, { otp });
       
       if (status >= 200 && status < 300) {
         alert("OTP verified! You can reset your password.");

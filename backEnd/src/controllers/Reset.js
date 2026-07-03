@@ -64,9 +64,9 @@ export const Reset = async (req, res) => {
     );
 
     await sendMail(
-      email,
       "Reset OTP",
       `Your OTP is ${OTP}. It expires in 10 minutes.`,
+      email,
     );
 
     logger.info(`Password reset OTP sent to ${email} for user: ${userName}`);
@@ -85,7 +85,7 @@ export const OTPverification = async (req, res) => {
 
   const hashedInputOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
-  const client = await db.connect();
+  const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
