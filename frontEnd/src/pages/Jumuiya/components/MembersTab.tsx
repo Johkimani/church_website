@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { FaCheck, FaUsers, FaUserPlus } from "react-icons/fa";
-import { useNavigate } from 'react-router-dom';
+import { FaCheck, FaUsers } from "react-icons/fa";
 import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
@@ -13,7 +12,6 @@ interface MembersTabProps {
 
 const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor = 'var(--primary-color)' }) => {
     const [activeSubTab, setActiveSubTab] = useState<'registered' | 'all'>('registered');
-    const navigate = useNavigate();
     const { members, isLoading, error } = useJumuiyaMembers({ 
         jumuiya_id: jumuiyaId,
         type: activeSubTab 
@@ -57,30 +55,6 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                         <FaUsers /> <span className="tab-label">All Members</span>
                     </button>
                 </div>
-                
-                <button 
-                    onClick={() => navigate('/register-member')} 
-                    className="premium-action-btn"
-                    style={{ 
-                        background: 'linear-gradient(135deg, var(--jumuiya-color) 0%, color-mix(in srgb, var(--jumuiya-color), black 20%) 100%)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '12px',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        gap: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        width: window.innerWidth < 768 ? '100%' : 'auto'
-                    }}
-                >
-                    <FaUserPlus /> <span>New Member</span>
-                </button>
             </div>
 
             <div className="premium-table-wrap animate-fade" style={{ minHeight: '300px', maxHeight: '500px', overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: 'var(--rs)', position: 'relative' }}>

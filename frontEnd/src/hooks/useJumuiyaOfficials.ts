@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_JUMUIYA_BASE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
-import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../api/axiosInstance';
 import apiService from '../pages/Landing/services/api';
 
 export interface JumuiyaOfficial {
@@ -13,11 +13,11 @@ export interface JumuiyaOfficial {
   photo?: string;
   term_of_service?: string;
   status?: string;
+  reg_number?: string;
 }
 
 export function useJumuiyaOfficials(filters: { termId?: number | string; category?: string } = {}) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const { termId, category } = filters;
 
   const officialsQuery = useQuery({
@@ -40,18 +40,8 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
   const addMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await fetch(API_JUMUIYA_BASE, { 
-        method: 'POST', 
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${user?.accessToken}`
-        }
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.message || 'Failed to add Jumuiya official');
-      }
-      return res.json();
+      const res = await apiClient.post('/jumuiya-officials', formData);
+      return res.data;
     },
     onMutate: async (formData: FormData) => {
       await queryClient.cancelQueries({ queryKey: ['jumuiya-officials'] });
@@ -128,18 +118,8 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, formData }: { id: number; formData: FormData }) => {
-      const res = await fetch(`${API_JUMUIYA_BASE}/${id}`, { 
-        method: 'PUT', 
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${user?.accessToken}`
-        }
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.message || 'Failed to update Jumuiya official');
-      }
-      return res.json();
+      const res = await apiClient.put(`/jumuiya-officials/${id}`, formData);
+      return res.data;
     },
     onMutate: async ({ id, formData }: { id: number; formData: FormData }) => {
       await queryClient.cancelQueries({ queryKey: ['jumuiya-officials'] });
@@ -226,17 +206,8 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_JUMUIYA_BASE}/${id}`, { 
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user?.accessToken}`
-        }
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.message || 'Failed to delete Jumuiya official');
-      }
-      return res.json();
+      const res = await apiClient.delete(`/jumuiya-officials/${id}`);
+      return res.data;
     },
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: ['jumuiya-officials'] });

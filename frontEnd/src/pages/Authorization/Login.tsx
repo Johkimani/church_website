@@ -26,7 +26,18 @@ const Login: React.FC = () => {
       const response = await loginApi({ userReg: normalizedUserReg, password: normalizedPassword });
       if (response.data.status === "success") {
         login(response.data);
-        navigate("/admin");
+        if (response.data.forcePasswordChange) {
+          navigate("first-login-setup", { state: { member_id: response.data.member_id, name: response.data.name, hasEmail: response.data.hasEmail } });
+        } else {
+          const role = response.data.role;
+          const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
+          if (hasRole) {
+            const savedPath = sessionStorage.getItem('admin_last_path');
+            navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin');
+          } else {
+            navigate('/');
+          }
+        }
         return;
       } else if (response.data.message === "User email not found") {
         alert("User email not found. Please reset your password.");

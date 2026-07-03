@@ -3,7 +3,7 @@ import { useApp } from '../../../context/AppContext';
 import { HireModal } from '../components/HireModal';
 import { HeroSlider, useSliderImages } from '../components/HeroSlider';
 import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS } from './data';
-import { FaStar, FaCalendarCheck, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle } from 'react-icons/fa';
+import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle } from 'react-icons/fa';
 
 interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
@@ -126,19 +126,17 @@ const ProcessGuide: React.FC = () => (
 
 const InstrumentCard: React.FC<{
     instrument: any;
-    onBook: () => void;
-}> = ({ instrument, onBook }) => {
-    const [booking, setBooking] = React.useState(false);
+    onHire: (item: { id: number; name: string; category: string; price: number; quantity: number }) => void;
+}> = ({ instrument, onHire }) => {
+    const [qty, setQty] = React.useState(1);
     const image = instrument.image_url || instrument.img;
     const stock = instrument.stock != null ? Number(instrument.stock) : null;
     const inStock = stock == null || stock > 0;
     const price = Number(instrument.price) || 0;
 
-    const handleBook = () => {
-        if (!inStock) return;
-        setBooking(true);
-        onBook();
-        setTimeout(() => setBooking(false), 1300);
+    const handleHire = () => {
+        if (!inStock || qty < 1) return;
+        onHire({ id: instrument.id, name: instrument.name, category: 'instruments', price, quantity: qty });
     };
 
     return (
@@ -200,32 +198,44 @@ const InstrumentCard: React.FC<{
                     <p className="text-[10px] text-slate-400 mt-1">Hourly rates also available</p>
                 </div>
 
-                {/* CTA */}
-                <button
-                    onClick={(e) => { e.stopPropagation(); handleBook(); }}
-                    disabled={booking || !inStock}
-                    className={`w-full py-3.5 rounded-2xl font-black text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-                        booking
-                            ? 'bg-emerald-500 text-white scale-95'
-                            : inStock
+                {/* Quantity + Hire */}
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden">
+                        <button
+                            onClick={() => setQty(q => Math.max(1, q - 1))}
+                            className="w-9 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold transition-colors"
+                        >-</button>
+                        <input
+                            type="number"
+                            min={1}
+                            value={qty}
+                            onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-12 h-10 text-center text-sm font-bold border-x border-slate-200 focus:outline-none"
+                        />
+                        <button
+                            onClick={() => setQty(q => Math.min(stock || 999, q + 1))}
+                            className="w-9 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold transition-colors"
+                        >+</button>
+                    </div>
+                    <button
+                        onClick={handleHire}
+                        disabled={!inStock}
+                        className={`flex-1 h-10 rounded-2xl font-black text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                            inStock
                                 ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:shadow-xl active:scale-95'
                                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    }`}
-                >
-                    {booking ? (
-                        <><FaCheckCircle size={14} /> Requested!</>
-                    ) : (
-                        <><FaCalendarCheck size={14} /> Request Booking</>
-                    )}
-                </button>
+                        }`}
+                    >
+                        Hire
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 
 export const Instruments = () => {
-    const { products, isLoading } = useApp();
-    const [hireItem, setHireItem] = React.useState<{ id: number; name: string; category?: string; price?: number } | null>(null);
+    const { products, isLoading, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
     const { sliderImgs, sliderLoading, isAdmin, deleteSlide } = useSliderImages('instruments');
 
     const instruments = React.useMemo(() => {
@@ -235,7 +245,7 @@ export const Instruments = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-emerald-50/20 to-white">
 
-            {hireItem && <HireModal item={hireItem} onClose={() => setHireItem(null)} />}
+            {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} />}
 
             {/* Hero Slider */}
             <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
@@ -271,7 +281,10 @@ export const Instruments = () => {
                             <InstrumentCard
                                 key={inst.id || inst.name}
                                 instrument={inst}
-                                onBook={() => setHireItem({ id: inst.id, name: inst.name, category: 'instruments', price: Number(inst.price) || 0 })}
+                                onHire={(item) => {
+                                    addToHire(item);
+                                    setHireModalOpen(true);
+                                }}
                             />
                         ))}
                     </div>
@@ -314,6 +327,7 @@ export const Instruments = () => {
             <div className="text-center py-10 text-sm text-emerald-700 italic px-4">
                 "Praise Him with sounding cymbals; praise Him with loud clashing cymbals!" — Psalm 150:5
             </div>
+
         </div>
     );
 };

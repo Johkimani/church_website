@@ -11,9 +11,9 @@ import AdminPanel from "../pages/Landing/components/AdminPanel";
 const isAdminRole = (role: string | string[] | undefined): boolean => {
   if (!role) return false;
   if (Array.isArray(role)) {
-    return role.some((item) => typeof item === "string" && item.toLowerCase().includes("admin"));
+    return role.length > 0;
   }
-  return role.toLowerCase().includes("admin");
+  return typeof role === "string" && role.trim().length > 0;
 };
 
 const Headers = () => {
@@ -130,15 +130,6 @@ const Headers = () => {
                   Admin
                 </button>
               )}
-              {/* Developer Bypass: Allows opening Admin Panel without login in DEV mode */}
-              {import.meta.env.DEV && !isAdminRole(user?.role) && (
-                <button
-                  className="bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs border border-amber-200"
-                  onClick={() => navigate("/admin")}
-                >
-                  Dev Admin
-                </button>
-              )}
               <button
                 className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg font-semibold transition-colors text-xs"
                 onClick={handleLogout}
@@ -148,15 +139,6 @@ const Headers = () => {
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-4">
-               {/* Developer Bypass for Guests */}
-              {import.meta.env.DEV && (
-                <button
-                  className="bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg font-bold transition-colors text-xs border border-amber-200"
-                  onClick={() => navigate("/admin")}
-                >
-                  Dev Admin
-                </button>
-              )}
               <button
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full font-bold shadow-sm transition-all text-sm"
                 onClick={() => navigate("/login")}
@@ -270,14 +252,14 @@ const Headers = () => {
                           <p className="font-bold text-gray-900">{user.name}</p>
                        </div>
                     </div>
-                      <button
-                        className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold shadow-xl active:scale-[0.98] transition-all"
-                        onClick={() => { navigate("/admin"); setIsMobileMenuOpen(false); }}
-                      >
-                        Admin Dashboard
-                      </button>
-                    {/* {user.role.includes("admin") && (
-                    )} */}
+                      {isAdminRole(user?.role) && (
+                        <button
+                          className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold shadow-xl active:scale-[0.98] transition-all"
+                          onClick={() => { navigate("/admin"); setIsMobileMenuOpen(false); }}
+                        >
+                          Admin Dashboard
+                        </button>
+                      )}
                     <button
                       className="w-full bg-red-50 text-red-600 py-3.5 rounded-xl font-bold hover:bg-red-100 transition-all"
                       onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}

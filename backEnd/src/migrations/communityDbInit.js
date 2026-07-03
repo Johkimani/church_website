@@ -97,6 +97,20 @@ export const setupCommunityDatabase = async () => {
     `);
     logger.info("Table 'semester_activities' ready");
 
+    // ── Add missing columns for existing tables ─────────────────────
+    await db.query(`
+      ALTER TABLE weekly_activities
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true,
+        ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+    `);
+    logger.info("weekly_activities columns verified");
+
+    await db.query(`
+      ALTER TABLE semester_activities
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+    `);
+    logger.info("semester_activities columns verified");
+
     // Seed Weekly Activities if empty
     const weeklyCount = await db.query("SELECT COUNT(*) FROM weekly_activities");
     if (parseInt(weeklyCount.rows[0].count, 10) === 0) {
@@ -770,6 +784,16 @@ export const setupCommunityDatabase = async () => {
     `);
     logger.info("Table 'orders' ready");
 
+    // Ensure all orders columns exist
+    try {
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_reference VARCHAR(50)`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255)`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'mpesa'`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS collection_method VARCHAR(50) DEFAULT 'pickup'`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT`);
+    } catch (e) {}
+
     // Hire requests — for chairs and instruments (not a purchase)
     await db.query(`
       CREATE TABLE IF NOT EXISTS hire_requests (
@@ -782,9 +806,21 @@ export const setupCommunityDatabase = async () => {
         quantity INTEGER DEFAULT 1,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
+        event_date DATE,
+        pickup_date DATE,
+        return_date DATE,
         status VARCHAR(50) DEFAULT 'pending',
         notes TEXT,
         admin_notes TEXT,
+        total_cost NUMERIC(10,2) DEFAULT 0,
+        payment_status VARCHAR(50) DEFAULT 'pending',
+        payment_method VARCHAR(50),
+        mpesa_receipt VARCHAR(100),
+        mpesa_checkout_id VARCHAR(255),
+        payment_amount NUMERIC(10,2),
+        paid_at TIMESTAMP WITH TIME ZONE,
+        pickup_location VARCHAR(500),
+        pickup_time VARCHAR(100),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
@@ -798,6 +834,18 @@ export const setupCommunityDatabase = async () => {
       await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS item_category VARCHAR(100)`);
       await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1`);
       await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS total_cost NUMERIC(10,2) DEFAULT 0`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS event_date DATE`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS pickup_date DATE`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS return_date DATE`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'pending'`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS mpesa_receipt VARCHAR(100)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS mpesa_checkout_id VARCHAR(255)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS payment_amount NUMERIC(10,2)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP WITH TIME ZONE`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS pickup_location VARCHAR(500)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS pickup_time VARCHAR(100)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS hire_reference VARCHAR(50)`);
     } catch (e) {
       // Column may already exist, ignore
     }

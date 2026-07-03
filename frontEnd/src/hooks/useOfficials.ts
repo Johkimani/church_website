@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
-
-import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../api/axiosInstance';
 import apiService from '../pages/Landing/services/api';
 
 export interface Official {
@@ -16,11 +15,11 @@ export interface Official {
   status?: string;
   term_name?: string;
   term_year?: string;
+  reg_number?: string;
 }
 
 export function useOfficials() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const officialsQuery = useQuery({
     queryKey: ['officials'],
@@ -34,18 +33,8 @@ export function useOfficials() {
 
   const addOfficialMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await fetch(API_BASE, { 
-        method: 'POST', 
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${user?.accessToken}`
-        }
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.message || 'Failed to add official');
-      }
-      return res.json();
+      const res = await apiClient.post('/officials', formData);
+      return res.data;
     },
     onMutate: async (formData: FormData) => {
       await queryClient.cancelQueries({ queryKey: ['officials'] });
@@ -110,18 +99,8 @@ export function useOfficials() {
 
   const updateOfficialMutation = useMutation({
     mutationFn: async ({ id, formData }: { id: number; formData: FormData }) => {
-      const res = await fetch(`${API_BASE}/${id}`, { 
-        method: 'PUT', 
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${user?.accessToken}`
-        }
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.message || 'Failed to update official');
-      }
-      return res.json();
+      const res = await apiClient.put(`/officials/${id}`, formData);
+      return res.data;
     },
     onMutate: async ({ id, formData }: { id: number; formData: FormData }) => {
       await queryClient.cancelQueries({ queryKey: ['officials'] });
@@ -196,17 +175,8 @@ export function useOfficials() {
 
   const deleteOfficialMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`${API_BASE}/${id}`, { 
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user?.accessToken}`
-        }
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.message || 'Failed to delete official');
-      }
-      return res.json();
+      const res = await apiClient.delete(`/officials/${id}`);
+      return res.data;
     },
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: ['officials'] });
@@ -241,19 +211,8 @@ export function useOfficials() {
 
   const archiveOfficialsMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch(`${API_BASE}/archive`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.accessToken}`
-        },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.message || 'Failed to archive officials');
-      }
-      return res.json();
+      const res = await apiClient.post('/officials/archive', data);
+      return res.data;
     },
     onSuccess: () => {
       apiService.clearOfficialsCache();

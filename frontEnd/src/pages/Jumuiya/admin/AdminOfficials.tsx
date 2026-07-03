@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useJumuiyaOfficials } from '../../../hooks/useJumuiyaOfficials';
 import { FaTrash, FaEdit, FaPlus, FaCamera, FaUserTie, FaSearch, FaCheck, FaTimes } from 'react-icons/fa';
 import { resizeImage } from '../../../utils/imageOptimization';
+import { memberService } from '../../../api/jumuiyaMemberService';
 
 interface AdminOfficialsProps {
     selectedId?: string;
@@ -149,22 +150,103 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [lookupResults, setLookupResults] = useState<any[]>([]);
+    const [lookupLoading, setLookupLoading] = useState(false);
+    const [lookupError, setLookupError] = useState('');
+    const [showLookupDropdown, setShowLookupDropdown] = useState(false);
+    const [memberFound, setMemberFound] = useState(false);
+    const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const themeColor: string = (selectedJumuiya as any)?.color || '#6366f1';
-    // Patron saint image for the selected Jumuiya (used as default avatar)
     const patronSaint: string = SAINT_IMAGES[selectedJumuiya?.name || ''] || '';
+    const jumuiyaMismatch = Boolean(current.matchedJumuiyaSlug && current.matchedJumuiyaSlug !== selectedJumuiyaId);
+
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setShowLookupDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    const regLookup = useCallback(async (value: string) => {
+        if (value.trim().length < 2) {
+            setLookupResults([]);
+            setLookupError('');
+            setMemberFound(false);
+            setShowLookupDropdown(false);
+            return;
+        }
+        setLookupLoading(true);
+        setLookupError('');
+        try {
+            const res = await memberService.lookupMemberByRegNumber(value.trim());
+            const data = res.data || [];
+            setLookupResults(data);
+            if (data.length === 1) {
+                const m = data[0];
+                setCurrent((prev: any) => ({
+                    ...prev,
+                    name: `${m.first_name} ${m.last_name}`,
+                    phone: m.phone || prev.phone,
+                    jumuiyaName: m.jumuiya_name || prev.jumuiyaName || '',
+                    matchedJumuiyaSlug: m.jumuiya_slug || '',
+                    matchedJumuiyaName: m.jumuiya_name || '',
+                }));
+                setMemberFound(true);
+                setShowLookupDropdown(false);
+            } else if (data.length > 1) {
+                setShowLookupDropdown(true);
+                setMemberFound(false);
+            } else {
+                setLookupError('No member found with that registration number');
+                setMemberFound(false);
+                setShowLookupDropdown(false);
+            }
+        } catch {
+            setLookupError('Lookup failed');
+        } finally {
+            setLookupLoading(false);
+        }
+    }, []);
+
+    const handleRegNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setCurrent((prev: any) => ({ ...prev, regNumber: val, jumuiyaName: '', matchedJumuiyaSlug: '', matchedJumuiyaName: '' }));
+        setMemberFound(false);
+        if (lookupTimerRef.current) clearTimeout(lookupTimerRef.current);
+        lookupTimerRef.current = setTimeout(() => regLookup(val), 500);
+    };
+
+    const selectLookupResult = (m: any) => {
+        setCurrent((prev: any) => ({
+            ...prev,
+            name: `${m.first_name} ${m.last_name}`,
+            phone: m.phone || prev.phone,
+            regNumber: m.member_id,
+            jumuiyaName: m.jumuiya_name || prev.jumuiyaName || '',
+            matchedJumuiyaSlug: m.jumuiya_slug || '',
+            matchedJumuiyaName: m.jumuiya_name || '',
+        }));
+        setMemberFound(true);
+        setShowLookupDropdown(false);
+        setLookupResults([]);
+    };
 
     const openAdd = () => {
-        setCurrent({ category: selectedJumuiya?.name });
-        setPreviewUrl(null); setSelectedFile(null); setSaveSuccess(false); setIsEditing(true);
+        setCurrent({ category: selectedJumuiya?.name, jumuiyaName: '' });
+        setPreviewUrl(null); setSelectedFile(null); setSaveSuccess(false); setMemberFound(false); setLookupError(''); setIsEditing(true);
     };
     const openEdit = (o: any) => {
-        setCurrent({ ...o, phone: o.contact || o.phone || '' });
+        setCurrent({ ...o, phone: o.contact || o.phone || '', regNumber: o.reg_number || '', jumuiyaName: o.category || o.jumuiyaName || selectedJumuiya?.name || '' });
         const src = o.photo ? (o.photo.startsWith('http') ? o.photo : `/${o.photo}`) : null;
         setPreviewUrl(src);
-        setSelectedFile(null); setSaveSuccess(false); setIsEditing(true);
+        setSelectedFile(null); setSaveSuccess(false); setMemberFound(false); setIsEditing(true);
     };
-    const closeModal = () => { setIsEditing(false); setCurrent({}); setSelectedFile(null); setPreviewUrl(null); };
+    const closeModal = () => { setIsEditing(false); setCurrent({}); setSelectedFile(null); setPreviewUrl(null); setMemberFound(false); setLookupError(''); };
 
     const handleDelete = async (id: string) => {
         if (window.confirm('Remove this official from the Jumuiya?')) {
@@ -181,6 +263,10 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedJumuiya || !current.name) return;
+        if (jumuiyaMismatch) {
+            setLookupError(`This member belongs to ${current.matchedJumuiyaName || 'another Jumuiya'}, so they cannot be saved under ${selectedJumuiya?.name}.`);
+            return;
+        }
         try {
             const fd = new FormData();
             fd.append('name', current.name);
@@ -189,6 +275,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
             if (current.phone) fd.append('contact', current.phone);
             if (current.email) fd.append('email', current.email);
             if (current.term_of_service) fd.append('term_of_service', current.term_of_service);
+            if (current.regNumber?.trim()) fd.append('reg_number', current.regNumber.trim());
             if (selectedFile) {
                 const blob = await resizeImage(selectedFile, 800, 800);
                 fd.append('photo', blob, 'photo.jpg');
@@ -201,7 +288,6 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
         } catch (err) { console.error('Save failed:', err); }
     };
 
-    // Photo src for a card: personal photo → patron saint → generic icon
     const cardPhoto = (o: any) => {
         if (o.photo) return o.photo.startsWith('http') ? o.photo : `/${o.photo}`;
         return patronSaint || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(o.name)}`;
@@ -277,7 +363,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                 )}
             </div>
 
-            {/* ── Modal — rendered in a portal-style fixed overlay above everything ── */}
+            {/* ── Modal ── */}
             {isEditing && (
                 <div
                     onClick={closeModal}
@@ -286,7 +372,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                         background: 'rgba(15,23,42,0.7)',
                         backdropFilter: 'blur(6px)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 99999,   /* above all headers, sidebars, navbars */
+                        zIndex: 99999,
                         padding: '16px',
                         overflowY: 'auto',
                     }}
@@ -315,7 +401,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                         </div>
 
                         <form onSubmit={handleSave} style={{ padding: '22px 28px 28px' }}>
-                            {/* Photo Upload — default to patron saint image */}
+                            {/* Photo Upload */}
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
                                 <div style={{ position: 'relative' }}>
                                     <img
@@ -334,15 +420,82 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                             </p>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                {/* Registration Number Lookup */}
+                                <div ref={dropdownRef} style={{ position: 'relative' }}>
+                                    <Field label="Registration Number">
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                value={current.regNumber || ''}
+                                                onChange={handleRegNumberChange}
+                                                placeholder="e.g. 23412 (middle digits)"
+                                                style={{ ...inp(themeColor), paddingRight: '36px' }}
+                                                onFocus={e => e.target.style.borderColor = themeColor}
+                                                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                                            />
+                                            {lookupLoading && (
+                                                <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                                                    <div style={{ width: '16px', height: '16px', border: '2px solid #e2e8f0', borderTopColor: themeColor, borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div>
+                                                </div>
+                                            )}
+                                            {memberFound && (
+                                                <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#22c55e' }}>
+                                                    <FaCheck size={13} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Field>
+                                    {lookupError && <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#f43f5e', fontWeight: '600' }}>{lookupError}</p>}
+                                    {memberFound && (
+                                        <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#22c55e', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <FaCheck size={10} /> Member found — name, phone & jumuiya auto-filled
+                                        </p>
+                                    )}
+                                    {showLookupDropdown && lookupResults.length > 1 && (
+                                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.18)', zIndex: 301, maxHeight: '200px', overflowY: 'auto' }}>
+                                            {lookupResults.map((m: any, i: number) => (
+                                                <button key={i} type="button"
+                                                    onClick={() => selectLookupResult(m)}
+                                                    style={{ width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none', borderBottom: '1px solid #f1f5f9', background: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#f8fafc'}
+                                                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'white'}
+                                                >
+                                                    <div>
+                                                        <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.84rem', display: 'block' }}>{m.first_name} {m.last_name}</span>
+                                                        <span style={{ color: '#94a3b8', fontSize: '0.72rem' }}>{m.jumuiya_name || m.member_id}</span>
+                                                    </div>
+                                                    <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{m.member_id}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <Field label="Full Name" required>
                                     <input value={current.name || ''} required
                                         onChange={e => setCurrent({ ...current, name: e.target.value })}
-                                        placeholder="e.g. Maria Wanjiku Kamau"
+                                        placeholder="Auto-filled from member lookup"
                                         style={inp(themeColor)}
                                         onFocus={e => e.target.style.borderColor = themeColor}
                                         onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                                     />
                                 </Field>
+
+                                <Field label="Jumuiya" required>
+                                    <input
+                                        value={current.jumuiyaName || ''}
+                                        readOnly
+                                        placeholder="Auto-filled from member lookup"
+                                        style={{ ...inp(themeColor), background: '#f8fafc', cursor: 'not-allowed' }}
+                                    />
+                                </Field>
+
+                                {jumuiyaMismatch && (
+                                    <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ color: '#dc2626', fontSize: '0.82rem', fontWeight: '600' }}>
+                                            ⚠ This member belongs to <strong>{current.matchedJumuiyaName}</strong>, not {selectedJumuiya?.name}. Registering them here will assign them to the wrong Jumuiya.
+                                        </span>
+                                    </div>
+                                )}
 
                                 <Field label="Position" required>
                                     <PositionDropdown
@@ -389,7 +542,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                                     style={{ flex: 1, padding: '13px', border: '2px solid #e2e8f0', background: 'white', borderRadius: '14px', cursor: 'pointer', fontWeight: '700', color: '#64748b', fontSize: '0.875rem' }}>
                                     Cancel
                                 </button>
-                                <button type="submit" disabled={isAdding || isUpdating || saveSuccess}
+                                <button type="submit" disabled={isAdding || isUpdating || saveSuccess || jumuiyaMismatch}
                                     style={{ flex: 2, padding: '13px', border: 'none', borderRadius: '14px', cursor: 'pointer', fontWeight: '700', color: 'white', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: saveSuccess ? '#22c55e' : themeColor, transition: 'background 0.3s', opacity: (isAdding || isUpdating) ? 0.75 : 1 }}>
                                     {saveSuccess ? <><FaCheck size={13} /> Saved!</> : (isAdding || isUpdating) ? 'Saving…' : <><FaCheck size={13} /> Save Official</>}
                                 </button>

@@ -1,18 +1,21 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import {  LocalStorage } from '../utils';
+import { LocalStorage } from '../utils';
+import axios from 'axios';
+import { BASE_URL } from '../api/config';
 
-// Define the shape of User Data arriving from API and stored in localStorage
 interface UserData {
   accessToken: string;
   refreshToken: string;
   role: string | string[];
-  name: string; // Combined firstName and lastName as per backend change
+  name: string;
   email: string;
-  status: string; // e.g. "success"
+  status: string;
   jumuiya_id: string;
-  member_id?: string; // Member's unique ID (e.g. "CSA-001"), optional for backwards compat
-  year?: string;      // Academic year of the member, optional for backwards compat
+  member_id?: string;
+  year?: string;
+  forcePasswordChange?: boolean;
+  hasEmail?: boolean;
 }
 
 interface AuthContextType {
@@ -23,7 +26,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
 }
 
-// Create the context with defaults
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: () => {},
@@ -32,10 +34,8 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
 });
 
-// Create the provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
-  // Synchronously initialize state to prevent duplicate socket/API calls and loading lag
   const [user, setUser] = useState<UserData | null>(() => {
     const storedData = LocalStorage.get('userdata');
     if (storedData && storedData.status === 'success') {
@@ -44,18 +44,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return null;
   });
 
-  // Verify stored user session on mount and clean up if invalid
   useEffect(() => {
     const storedData = LocalStorage.get('userdata');
-    if (storedData && storedData.status !== 'success') {
-      LocalStorage.remove('userdata');
-      setUser(null);
-    }
+    if (!storedData || storedData.status !== 'success') return;
+
+    const tryRefresh = async () => {
+      const token = storedData.accessToken;
+      if (typeof token !== 'string' || token.split('.').length !== 3) {
+        LocalStorage.remove('userdata');
+        setUser(null);
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const isExpired = payload.exp * 1000 < Date.now();
+
+        if (!isExpired) return;
+
+        if (!storedData.refreshToken) {
+          LocalStorage.remove('userdata');
+          setUser(null);
+          return;
+        }
+
+        const { data } = await axios.post(`${BASE_URL}/authentication/refresh`, {
+          refreshToken: storedData.refreshToken,
+        });
+
+        const updated = {
+          ...storedData,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken || storedData.refreshToken,
+        };
+        setUser(updated);
+        LocalStorage.set('userdata', updated);
+      } catch {
+        LocalStorage.remove('userdata');
+        setUser(null);
+      }
+    };
+
+    tryRefresh();
   }, []);
 
   const login = (data: UserData) => {
-      setUser(data);
-      LocalStorage.set('userdata', data);
+    setUser(data);
+    LocalStorage.set('userdata', data);
   };
 
   const logout = () => {
@@ -65,12 +100,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = () => {};
 
-  // Compute isAuthenticated based on user status
   const isAuthenticated = !!user && user.status === 'success';
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getAllJumuiyaMembers,
+  getAllMembersAcrossJumuiyas,
   createJumuiyaMember,
   updateJumuiyaMember,
   deleteJumuiyaMember,
@@ -12,11 +13,19 @@ import {
   bulkRegisterWithPayment,
   getJumuiyaLookup
 } from '../controllers/jumuiyaMembersController.js';
+import {
+  getPendingMigrationMembers,
+  migrateToAssociates,
+  getAssociatesList,
+  exportAssociates,
+  undoMigration,
+} from '../controllers/associatesController.js';
 
 
 const router = express.Router();
 
 router.get('/', getAllJumuiyaMembers);
+router.get('/all', getAllMembersAcrossJumuiyas);
 router.get('/registered', getRegisteredJumuiyaMembers);
 router.get('/unregistered', getUnregisteredMembers);
 router.get('/lookup', getJumuiyaLookup);
@@ -27,5 +36,12 @@ router.post('/register-with-payment', registerWithPayment);
 router.put('/:id', updateJumuiyaMember);
 router.delete('/:id', deleteJumuiyaMember);
 router.delete('/unregister/:id', unregisterJumuiyaMember);
+
+// ── Associates (alumni) routes ──
+router.get('/associates/pending', getPendingMigrationMembers);
+router.post('/associates/migrate', migrateToAssociates);
+router.get('/associates/list', getAssociatesList);
+router.get('/associates/export', exportAssociates);
+router.post('/associates/undo', undoMigration);
 
 export default router;

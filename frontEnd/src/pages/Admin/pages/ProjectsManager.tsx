@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  ShoppingBag, Package, CalendarDays, Tag, UserCircle, BarChart3, Image, Bell
+  ShoppingBag, Package, CalendarDays, Tag, UserCircle, BarChart3, Image, Bell, LayoutGrid
 } from "lucide-react";
 import ProductsPanel from "./ProductsPanel";
 import OrdersPanel from "./ordersmanager";
@@ -9,7 +9,9 @@ import CategoriesPanel from "./CategoryManager";
 import CustomersPanel from "./CustomerManager";
 import ReportsPanel from "./Reports";
 import SliderManager from "./SliderManager";
+import CategoryCardManager from "./CategoryCardManager";
 import NotificationsPanel from "./NotificationsPanel";
+import HireSettingsSection from "./HireSettingsSection";
 
 const tabs = [
   { id: "notifications", label: "Notifications", icon: Bell },
@@ -18,6 +20,7 @@ const tabs = [
   { id: "hire",          label: "Hire Requests", icon: CalendarDays },
   { id: "categories",    label: "Categories",    icon: Tag },
   { id: "customers",     label: "Customers",     icon: UserCircle },
+  { id: "cards",         label: "Home Cards",    icon: LayoutGrid },
   { id: "sliders",       label: "Slider Images", icon: Image },
   { id: "reports",       label: "Reports",       icon: BarChart3 },
 ] as const;
@@ -57,8 +60,11 @@ export default function ProjectsManager() {
       {activeTab === "hire" && <HireRequestsPanel />}
       {activeTab === "categories" && <CategoriesPanel />}
       {activeTab === "customers" && <CustomersPanel />}
+      {activeTab === "cards" && <CategoryCardManager />}
       {activeTab === "sliders" && <SliderManager />}
       {activeTab === "reports" && <ReportsPanel />}
+
+      <HireSettingsSection />
     </div>
   );
 }

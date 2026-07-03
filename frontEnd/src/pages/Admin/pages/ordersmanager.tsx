@@ -1,38 +1,55 @@
 import { useEffect, useState } from "react";
+import { apiClient } from "../../../api/axiosInstance";
 import apiService from "../../Landing/services/api";
-import { Package, RefreshCcw, Loader2, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Package, RefreshCcw, Loader2, CheckCircle, Clock, XCircle, MessageCircle, DollarSign, Truck, MapPin, Ban, Archive, CookingPot, ShoppingBag } from "lucide-react";
 
-const STATUS_TABS = ["all", "paid", "pending", "failed"] as const;
+const STATUS_TABS = ["all", "pending", "paid", "preparing", "ready_for_pickup", "completed", "cancelled", "failed"] as const;
 type StatusTab = typeof STATUS_TABS[number];
 
-const statusStyle: Record<string, string> = {
-  paid:    "bg-emerald-100 text-emerald-700",
-  pending: "bg-amber-100 text-amber-700",
-  failed:  "bg-red-100 text-red-700",
+const statusLabels: Record<string, string> = {
+  pending: "Pending",
+  paid: "Paid",
+  preparing: "Preparing",
+  ready_for_pickup: "Ready for Pickup",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  failed: "Failed",
 };
 
-const StatusIcon = ({ status }: { status: string }) => {
-  if (status === "paid")    return <CheckCircle size={14} className="inline mr-1 text-emerald-600" />;
-  if (status === "failed")  return <XCircle    size={14} className="inline mr-1 text-red-500" />;
-  return <Clock size={14} className="inline mr-1 text-amber-500" />;
+const statusStyle: Record<string, string> = {
+  pending:         "bg-amber-100 text-amber-700",
+  paid:            "bg-emerald-100 text-emerald-700",
+  preparing:       "bg-blue-100 text-blue-700",
+  ready_for_pickup: "bg-indigo-100 text-indigo-700",
+  completed:       "bg-teal-100 text-teal-700",
+  cancelled:       "bg-slate-100 text-slate-600",
+  failed:          "bg-red-100 text-red-700",
 };
+
+function normalizePhone(raw: string): string {
+  let digits = (raw || "").replace(/[^0-9]/g, "");
+  if (digits.startsWith("00")) digits = digits.substring(2);
+  if (digits.startsWith("0") && digits.length >= 10) digits = "254" + digits.substring(1);
+  if (digits.startsWith("254") && digits.length >= 12) return digits;
+  return digits;
+}
 
 export default function OrdersManager() {
-  const [orders, setOrders]   = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab]         = useState<StatusTab>("all");
+  const [tab, setTab] = useState<StatusTab>("all");
   const [updating, setUpdating] = useState<number | null>(null);
 
   useEffect(() => {
     loadOrders();
-    const interval = setInterval(loadOrders, 15000); // Auto-refresh every 15s
+    const interval = setInterval(loadOrders, 15000);
     return () => clearInterval(interval);
   }, []);
 
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const data = await apiService.fetchTableData("orders");
+      const data = await apiService.fetchTableData("orders", true);
       setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load orders", error);
@@ -53,12 +70,47 @@ export default function OrdersManager() {
     }
   };
 
+  const markAsPaid = async (id: number) => {
+    setUpdating(id);
+    try {
+      await apiService.updateRecord("orders", id, { status: "paid", payment_method: "cash" });
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: "paid", payment_method: "cash" } : o));
+    } catch (error) {
+      console.error("Failed to mark as paid", error);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const sendWhatsApp = (order: any, message: string) => {
+    const phone = normalizePhone(order.phone || order.customer_phone || "");
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+    }
+  };
+
   const visible = tab === "all" ? orders : orders.filter(o => o.status === tab);
 
   const stats = {
-    paid:    orders.filter(o => o.status === "paid").length,
-    pending: orders.filter(o => o.status === "pending").length,
-    failed:  orders.filter(o => o.status === "failed").length,
+    pending:         orders.filter(o => o.status === "pending").length,
+    paid:            orders.filter(o => o.status === "paid").length,
+    preparing:       orders.filter(o => o.status === "preparing").length,
+    ready_for_pickup: orders.filter(o => o.status === "ready_for_pickup").length,
+    completed:       orders.filter(o => o.status === "completed").length,
+    cancelled:       orders.filter(o => o.status === "cancelled").length,
+    failed:          orders.filter(o => o.status === "failed").length,
+  };
+
+  const formatItems = (items: any): string => {
+    if (!items) return "—";
+    const parsed = typeof items === "string" ? JSON.parse(items) : items;
+    if (Array.isArray(parsed)) {
+      return parsed.map((i: any) => {
+        const product = i.item || i;
+        return `${product.name || "Item"} x${i.quantity || 1}`;
+      }).join(", ");
+    }
+    return String(items);
   };
 
   return (
@@ -71,9 +123,7 @@ export default function OrdersManager() {
           </h2>
           <p className="text-slate-500 text-sm mt-1">Track and manage all customer orders</p>
         </div>
-        <button
-          onClick={loadOrders}
-          disabled={loading}
+        <button onClick={loadOrders} disabled={loading}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
         >
           <RefreshCcw size={15} className={loading ? "animate-spin" : ""} /> Refresh
@@ -81,34 +131,41 @@ export default function OrdersManager() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {[
-          { label: "Paid Orders",    count: stats.paid,    colour: "bg-emerald-500" },
-          { label: "Pending Orders", count: stats.pending, colour: "bg-amber-500" },
-          { label: "Failed Orders",  count: stats.failed,  colour: "bg-red-500" },
+          { label: "Pending", key: "pending", colour: "bg-amber-500" },
+          { label: "Paid", key: "paid", colour: "bg-emerald-500" },
+          { label: "Preparing", key: "preparing", colour: "bg-blue-500" },
+          { label: "Ready", key: "ready_for_pickup", colour: "bg-indigo-500" },
+          { label: "Completed", key: "completed", colour: "bg-teal-500" },
+          { label: "Cancelled", key: "cancelled", colour: "bg-slate-500" },
+          { label: "Failed", key: "failed", colour: "bg-red-500" },
         ].map(card => (
-          <div key={card.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
-            <div className={`${card.colour} w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-lg`}>
-              {card.count}
+          <button key={card.key} onClick={() => setTab(card.key as StatusTab)}
+            className={`bg-white rounded-2xl border shadow-sm p-3 flex items-center gap-2 hover:shadow-md transition-all ${
+              tab === card.key ? "ring-2 ring-blue-400 border-blue-300" : "border-slate-200"
+            }`}
+          >
+            <div className={`${card.colour} w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs`}>
+              {stats[card.key as keyof typeof stats] ?? 0}
             </div>
-            <span className="text-slate-600 font-semibold text-sm">{card.label}</span>
-          </div>
+            <span className="text-slate-600 font-semibold text-[11px] leading-tight">{card.label}</span>
+          </button>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 pb-0">
+      {/* Status tabs */}
+      <div className="flex gap-1.5 flex-wrap border-b border-slate-200 pb-2">
         {STATUS_TABS.map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-bold rounded-t-lg capitalize transition-all ${
+          <button key={t} onClick={() => setTab(t)}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg capitalize transition-all ${
               tab === t
-                ? "bg-white border border-b-white border-slate-200 text-blue-700 -mb-px"
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-blue-600 text-white"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
             }`}
           >
-            {t} {t !== "all" && <span className="ml-1 text-xs opacity-70">({stats[t as keyof typeof stats] ?? 0})</span>}
+            {t === "all" ? "All" : statusLabels[t] || t}
+            {t !== "all" && <span className="ml-1 text-[10px] opacity-70">({(stats as any)[t] ?? 0})</span>}
           </button>
         ))}
       </div>
@@ -122,65 +179,117 @@ export default function OrdersManager() {
         ) : visible.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             <Package size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="font-semibold">No {tab === "all" ? "" : tab} orders found</p>
+            <p className="font-semibold">No {tab === "all" ? "" : statusLabels[tab] || tab} orders found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  {["#", "Amount", "Phone", "M-Pesa Receipt", "Status", "Date", "Actions"].map(h => (
-                    <th key={h} className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
+                  {["Order #", "Customer", "Phone", "Items", "Amount", "Payment", "Status", "Actions"].map(h => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {visible.map((o: any) => (
-                  <tr key={o.id} className={`transition-colors ${o.status === 'paid' ? 'bg-emerald-50/30 hover:bg-emerald-50' : 'hover:bg-slate-50'}`}>
-                    <td className="px-5 py-4 font-mono text-xs text-slate-400">#{o.id}</td>
-                    <td className="px-5 py-4 font-bold text-slate-800">KES {Number(o.amount || 0).toLocaleString()}</td>
-                    <td className="px-5 py-4 text-slate-600">{o.phone || "—"}</td>
-                    <td className="px-5 py-4 font-mono text-xs text-slate-500">{o.mpesa_receipt || "—"}</td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle[o.status] || "bg-slate-100 text-slate-600"}`}>
-                        <StatusIcon status={o.status} />
-                        {o.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-slate-500 text-xs whitespace-nowrap">
-                      {o.created_at ? new Date(o.created_at).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
+                {visible.map((o: any) => {
+                  const isCash = o.payment_method === "cash";
+                  const hasItems = o.items && JSON.parse(typeof o.items === "string" ? o.items : "[]").length > 0;
+                  return (
+                    <tr key={o.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                        {o.order_reference || `#${o.id}`}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">
+                        {o.customer_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 text-xs">{o.phone || "—"}</td>
+                      <td className="px-4 py-3 text-xs text-slate-600 max-w-[180px] truncate" title={formatItems(o.items)}>
+                        {formatItems(o.items)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-slate-800 text-xs whitespace-nowrap">
+                        KES {Number(o.amount || 0).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-bold ${
+                          isCash
+                            ? o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                            : o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                        }`}>
+                          {isCash ? <DollarSign size={10} /> : <ShoppingBag size={10} />}
+                          {isCash ? (o.status === "paid" ? "Paid (Cash)" : "Pending (Cash)") : (o.status === "paid" ? "M-Pesa" : "M-Pesa Pending")}
+                        </span>
+                        {o.mpesa_receipt && <p className="text-[10px] text-slate-400 mt-0.5">Receipt: {o.mpesa_receipt}</p>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${statusStyle[o.status] || "bg-slate-100 text-slate-600"}`}>
+                          {statusLabels[o.status] || o.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
                         {updating === o.id ? (
                           <Loader2 size={16} className="animate-spin text-blue-500" />
                         ) : (
-                          <select
-                            value={o.status}
-                            onChange={e => updateStatus(o.id, e.target.value)}
-                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="failed">Failed</option>
-                          </select>
+                          <div className="flex gap-1 flex-wrap">
+                            {o.status === "pending" && !isCash && (
+                              <span className="text-[10px] text-slate-400 italic">Awaiting M-Pesa</span>
+                            )}
+                            {o.status === "pending" && isCash && (
+                              <button onClick={() => markAsPaid(o.id)}
+                                className="flex items-center gap-1 px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-[10px] font-bold transition-colors">
+                                <DollarSign size={10} /> Mark as Paid
+                              </button>
+                            )}
+                            {o.status === "paid" && (
+                              <button onClick={() => updateStatus(o.id, "preparing")}
+                                className="flex items-center gap-1 px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-[10px] font-bold transition-colors">
+                                <CookingPot size={10} /> Prepare
+                              </button>
+                            )}
+                            {o.status === "preparing" && (
+                              <button onClick={() => updateStatus(o.id, "ready_for_pickup")}
+                                className="flex items-center gap-1 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg text-[10px] font-bold transition-colors">
+                                <Package size={10} /> Ready for Pickup
+                              </button>
+                            )}
+                            {o.status === "ready_for_pickup" && (
+                              <button onClick={() => updateStatus(o.id, "completed")}
+                                className="flex items-center gap-1 px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 rounded-lg text-[10px] font-bold transition-colors">
+                                <Archive size={10} /> Complete
+                              </button>
+                            )}
+                            {(o.status === "pending" || o.status === "paid" || o.status === "preparing") && (
+                              <button onClick={() => updateStatus(o.id, "cancelled")}
+                                className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold transition-colors">
+                                <Ban size={10} /> Cancel
+                              </button>
+                            )}
+                            {o.status === "completed" && (
+                              <span className="text-[10px] text-slate-400 italic">Done</span>
+                            )}
+                            {/* WhatsApp button for non-cancelled/non-completed orders */}
+                            {(o.status === "paid" || o.status === "preparing" || o.status === "ready_for_pickup") && (
+                              <button
+                                onClick={() => {
+                                  const msg = o.status === "ready_for_pickup"
+                                    ? `Hello ${o.customer_name || "Customer"},\n\nYour order ${o.order_reference || `#${o.id}`} is ready for pickup!\n\nPickup Location: CSA Church Bookshop\nOpening Hours: Mon–Sat, 8AM–5PM\n\nThank you for supporting CSA Kirinyaga.`
+                                    : o.status === "preparing"
+                                    ? `Hello ${o.customer_name || "Customer"},\n\nYour order ${o.order_reference || `#${o.id}`} is being prepared. We'll notify you when it's ready for pickup.\n\nThank you for your patience.`
+                                    : `Hello ${o.customer_name || "Customer"},\n\nYour payment of KES ${Number(o.amount).toLocaleString()} for order ${o.order_reference || `#${o.id}`} has been received.\n\nWe are now preparing your order.`;
+                                  sendWhatsApp(o, msg);
+                                }}
+                                className="p-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
+                                title="WhatsApp Customer"
+                              >
+                                <MessageCircle size={12} />
+                              </button>
+                            )}
+                          </div>
                         )}
-                        {o.status === 'paid' && o.phone && (
-                           <button
-                             title="Message Customer"
-                             onClick={() => {
-                               const msg = `Hello! We have received your payment of KES ${Number(o.amount).toLocaleString()} (Receipt: ${o.mpesa_receipt || 'N/A'}). Please let us know when you would like to collect your items.`;
-                               window.open(`https://wa.me/${o.phone.replace('+', '')}?text=${encodeURIComponent(msg)}`, '_blank');
-                             }}
-                             className="ml-2 p-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors"
-                           >
-                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -188,4 +297,4 @@ export default function OrdersManager() {
       </div>
     </div>
   );
-}
+}

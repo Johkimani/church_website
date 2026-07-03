@@ -48,16 +48,19 @@ export function EditOfficialModal({
     return stats;
   }, [allOfficials, mode, official]);
 
- useEffect(() => {
- if (official) {
- setName(official.name || '');
- setCategory(official.category || '');
- setPosition(official.position || '');
- setContact(official.contact || '');
- setTermOfService(official.term_of_service || '');
- setPhoto(null);
- }
- }, [official]);
+  const [regNumber, setRegNumber] = useState('');
+
+  useEffect(() => {
+  if (official) {
+  setName(official.name || '');
+  setCategory(official.category || '');
+  setPosition(official.position || '');
+  setContact(official.contact || '');
+  setTermOfService(official.term_of_service || '');
+  setRegNumber(official.reg_number || '');
+  setPhoto(null);
+  }
+  }, [official]);
 
  const availableJumuiyaRoles = React.useMemo(() => {
  if (mode !== 'jumuiya' || !category) return JUMUIYA_ROLES;
@@ -82,13 +85,14 @@ export function EditOfficialModal({
  if (!name || !category || !position) return;
 
  const fd = new FormData();
- fd.append('name', name);
- fd.append('category', category);
- fd.append('position', position);
- if (contact) fd.append('contact', contact);
- if (termOfService) fd.append('term_of_service', termOfService);
- 
- if (photo) {
+  fd.append('name', name);
+  fd.append('category', category);
+  fd.append('position', position);
+  if (contact) fd.append('contact', contact);
+  if (termOfService) fd.append('term_of_service', termOfService);
+  if (regNumber) fd.append('reg_number', regNumber);
+  
+  if (photo) {
  try {
  const optimizedPhotoBlob = await resizeImage(photo);
  fd.append('photo', optimizedPhotoBlob, 'photo.jpg');
@@ -121,15 +125,25 @@ export function EditOfficialModal({
  </div>
 
  <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
- <div className="space-y-1">
- <label className="text-xs font-bold text-gray-500 uppercase px-1">Full Name *</label>
- <input 
- value={name} 
- onChange={e => setName(e.target.value)} 
- className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
- required 
- />
- </div>
+  <div className="space-y-1">
+  <label className="text-xs font-bold text-gray-500 uppercase px-1">Registration Number</label>
+  <input 
+  value={regNumber} 
+  onChange={e => setRegNumber(e.target.value)} 
+  placeholder="e.g. 23412" 
+  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+  />
+  </div>
+
+  <div className="space-y-1">
+  <label className="text-xs font-bold text-gray-500 uppercase px-1">Full Name *</label>
+  <input 
+  value={name} 
+  onChange={e => setName(e.target.value)} 
+  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+  required 
+  />
+  </div>
 
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-1">
