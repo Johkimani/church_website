@@ -19,6 +19,7 @@ import { setupOfficialMemberLink } from "./migrations/officialMemberLink.js";
 import { consolidateMemberData } from "./migrations/memberDataConsolidation.js";
 import { repointForeignKeys } from "./migrations/repointForeignKeys.js";
 import { setupRoleSystem } from "./migrations/roleAccessControl.js";
+import { authAuditMigration } from "./migrations/authAuditMigration.js";
 import { startKeepAliveWorker } from "./services/keep-alive.js";
 import { startImportSyncWorker } from "./services/importSyncJob.js";
 
@@ -159,6 +160,7 @@ const initServer = async () => {
     await consolidateMemberData();
     await repointForeignKeys();
     await setupRoleSystem();
+    await authAuditMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

@@ -173,6 +173,9 @@ export default function UniversalAdmin() {
           allowedPrefixes.add("/admin/hire-requests");
           allowedPrefixes.add("/admin/projects");
           break;
+        case "INSTRUMENT_MANAGER":
+          allowedPrefixes.add("/admin/projects");
+          break;
         case "TREASURER":
           allowedPrefixes.add("/admin/donations");
           break;
