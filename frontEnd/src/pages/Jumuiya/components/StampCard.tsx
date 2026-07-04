@@ -112,19 +112,27 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
         try {
             const blob = await generatePDF();
             if (!blob) throw new Error('Could not generate PDF');
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64 = (reader.result as string).split(',')[1];
-                await memberService.sendStampCard({
-                    email: memberEmail,
-                    pdfBase64: base64,
-                    memberName: displayRecord.name || '',
-                    jumuiyaName: displayRecord.jumuiya_name || jumuiyaName,
-                });
-                setEmailSent(true);
-                setTimeout(() => setEmailSent(false), 4000);
-            };
-            reader.readAsDataURL(blob);
+
+            const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const dataUrl = reader.result as string;
+                    resolve(dataUrl.split(',')[1]);
+                };
+                reader.onerror = () => reject(new Error('Failed to read PDF data'));
+                reader.readAsDataURL(blob);
+            });
+
+            const res = await memberService.sendStampCard({
+                email: memberEmail,
+                pdfBase64: base64,
+                memberName: displayRecord.name || '',
+                jumuiyaName: displayRecord.jumuiya_name || jumuiyaName,
+            });
+
+            if (!res?.success) throw new Error(res?.error || 'Failed to send email');
+            setEmailSent(true);
+            setTimeout(() => setEmailSent(false), 4000);
         } catch (err: any) {
             alert(err?.message || 'Failed to send email');
         } finally {

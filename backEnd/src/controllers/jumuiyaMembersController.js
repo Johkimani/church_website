@@ -952,6 +952,11 @@ export const sendStampCard = async (req, res) => {
       return res.status(400).json({ success: false, error: "Email and PDF data are required" });
     }
 
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
+      logger.warn("Email not configured: MAIL_USER / MAIL_PASSWORD missing in .env");
+      return res.status(500).json({ success: false, error: "Email service is not configured. Please contact the admin." });
+    }
+
     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
 
     const mailOptions = {
