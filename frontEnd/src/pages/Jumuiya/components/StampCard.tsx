@@ -134,7 +134,8 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
             setEmailSent(true);
             setTimeout(() => setEmailSent(false), 4000);
         } catch (err: any) {
-            alert(err?.message || 'Failed to send email');
+            const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Failed to send email';
+            alert(msg);
         } finally {
             setSendingEmail(false);
         }
