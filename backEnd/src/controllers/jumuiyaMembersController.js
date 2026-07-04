@@ -1,6 +1,17 @@
 import { testDb as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { payAndWait } from "./stkPush/stkHelper.js";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
+
+const mailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASSWORD,
+  },
+});
 
 /**
  * Resolve a Jumuiya slug (e.g. "st-anthony") to a UUID from sub_groups.
@@ -66,6 +77,7 @@ async function fetchAllMembers(jumuiya_id) {
       m.member_id as id,
       m.first_name,
       m.last_name,
+      m.course,
       m.email,
       m.phone,
       m.gender,
@@ -104,6 +116,7 @@ async function fetchAllMembers(jumuiya_id) {
       member_id: row.id,
       first_name: row.first_name,
       last_name: row.last_name,
+      course: row.course,
       email: row.email,
       phone: row.phone,
       gender: row.gender,
@@ -214,7 +227,7 @@ export const updateJumuiyaMember = async (req, res) => {
     const { id } = req.params;
     const {
       member_id, first_name, last_name, year_of_study, email, jumuiya_id,
-      phone, gender,
+      phone, gender, course,
     } = req.body;
 
     const newMemberId = member_id && member_id.trim() ? member_id.trim() : null;
@@ -258,13 +271,14 @@ export const updateJumuiyaMember = async (req, res) => {
              email = COALESCE($4, email),
              phone = COALESCE($5, phone),
              gender = COALESCE($6, gender),
-             jumuiya_id = COALESCE($7, jumuiya_id)
-         WHERE member_id = $8`,
-        [first_name, last_name, year_of_study, email, phone, gender, jumuiyaUuid, effectiveId]
+             course = COALESCE($7, course),
+             jumuiya_id = COALESCE($8, jumuiya_id)
+         WHERE member_id = $9`,
+        [first_name, last_name, year_of_study, email, phone, gender, course, jumuiyaUuid, effectiveId]
       );
 
       // Sync import_records
-      const shouldSync = first_name || last_name || email || phone || gender || jumuiya_id;
+      const shouldSync = first_name || last_name || email || phone || gender || course || jumuiya_id;
       if (shouldSync || memberIdChanged) {
         const syncSets = [];
         const syncVals = [];
@@ -274,6 +288,7 @@ export const updateJumuiyaMember = async (req, res) => {
           syncSets.push(`cleaned_name = $${sp++}`); syncVals.push(syncName);
         }
         if (email !== undefined) { syncSets.push(`cleaned_email = $${sp++}`); syncVals.push(email); }
+        if (course !== undefined) { syncSets.push(`cleaned_course = $${sp++}`); syncVals.push(course); }
         if (phone !== undefined) { syncSets.push(`cleaned_phone = $${sp++}`); syncVals.push(phone); }
         if (gender !== undefined) { syncSets.push(`cleaned_gender = $${sp++}`); syncVals.push(gender); }
         syncSets.push(`cleaned_jumuiya = $${sp++}`); syncVals.push(jumuiyaName);
@@ -361,16 +376,17 @@ export const updateJumuiyaMember = async (req, res) => {
 
     // Also upsert into members table
     await pool.query(`
-      INSERT INTO members (member_id, first_name, last_name, email, phone, gender, jumuiya_id, source, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'jum', 'valid')
+      INSERT INTO members (member_id, first_name, last_name, email, phone, gender, course, jumuiya_id, source, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'jum', 'valid')
       ON CONFLICT (member_id) DO UPDATE SET
         first_name = COALESCE($2, members.first_name),
         last_name = COALESCE($3, members.last_name),
         email = COALESCE($4, members.email),
         phone = COALESCE($5, members.phone),
         gender = COALESCE($6, members.gender),
-        jumuiya_id = COALESCE($7, members.jumuiya_id)
-    `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, jumuiyaUuid]);
+        course = COALESCE($7, members.course),
+        jumuiya_id = COALESCE($8, members.jumuiya_id)
+    `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, course || null, jumuiyaUuid]);
 
     // Sync associates table
     {
@@ -406,6 +422,7 @@ export const updateJumuiyaMember = async (req, res) => {
         first_name: first_name || null,
         last_name: last_name || null,
         email: email || null,
+        course: course || null,
         phone: phone || null,
         gender: gender || null,
         jumuiya_name: jumuiyaName,
@@ -608,7 +625,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
 
 /**
  * GET /api/jumuiya-members/registered?jumuiya_id=st-anthony
- * Fetch members from the 'registered' table.
+ * Fetch ONLY registered members for a specific jumuiya.
  */
 export const getRegisteredJumuiyaMembers = async (req, res) => {
   try {
@@ -623,22 +640,23 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
         m.member_id as id,
         m.first_name,
         m.last_name,
-        m.email,
+        m.course,
         m.year_of_study as year,
         m.jumuiya_id,
         sg.name as jumuiya_name,
-        (r.member_id IS NOT NULL) as is_registered,
+        true as is_registered,
         m.source,
         m.status as import_status
-      FROM members m
-      LEFT JOIN registered r ON r.member_id = m.member_id
+      FROM registered r
+      JOIN members m ON r.member_id = m.member_id
       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-      WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+      WHERE r.status = 'active'
+        AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
     `;
 
     const queryParams = [];
     if (resolvedUuid) {
-      query += ` AND m.jumuiya_id = $1`;
+      query += ` AND r.jumuiya_id = $1`;
       queryParams.push(resolvedUuid);
     }
 
@@ -657,6 +675,115 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
   } catch (error) {
     logger.error("Error fetching registered members: " + error.message);
     res.status(500).json({ success: false, error: "Failed to fetch registered members" });
+  }
+};
+
+/**
+ * GET /api/jumuiya-members/registered/all
+ * Fetch all registered members across all Jumuiyas (for CSA Secretary).
+ * Only returns members with an active row in the registered table.
+ */
+export const getAllRegisteredMembers = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        r.id as registration_id,
+        r.serial_no,
+        r.registration_date,
+        m.member_id as id,
+        m.member_id as reg_number,
+        m.first_name,
+        m.last_name,
+        m.email,
+        m.course,
+        m.year_of_study as year,
+        m.jumuiya_id,
+        sg.name as jumuiya_name,
+        LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug,
+        m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
+        m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg
+      FROM registered r
+      JOIN members m ON r.member_id = m.member_id
+      LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+      WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+        AND r.status = 'active'
+      ORDER BY sg.name, m.first_name ASC
+    `);
+
+    const formatted = result.rows.map(row => ({
+      ...row,
+      name: `${row.first_name} ${row.last_name || ""}`.trim(),
+      semester_count: [row.sem_1_reg, row.sem_2_reg, row.sem_3_reg, row.sem_4_reg,
+                       row.sem_5_reg, row.sem_6_reg, row.sem_7_reg, row.sem_8_reg]
+                       .filter(Boolean).length,
+    }));
+
+    res.json({ success: true, data: formatted, total: formatted.length });
+  } catch (error) {
+    logger.error("Error fetching all registered members: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch all registered members" });
+  }
+};
+
+/**
+ * POST /api/jumuiya-members/registered/manual
+ * CSA Secretary manually registers a member (cash/direct registration).
+ * Sets jumuiya, semester flags, and creates the registered row.
+ */
+export const manualRegisterMember = async (req, res) => {
+  try {
+    const { member_id, jumuiya_id, semesters, serial_no } = req.body;
+
+    if (!member_id || !jumuiya_id) {
+      return res.status(400).json({ success: false, message: "member_id and jumuiya_id are required" });
+    }
+
+    await pool.query("BEGIN");
+
+    // 1. Verify member exists
+    const member = await pool.query("SELECT * FROM members WHERE member_id = $1", [member_id]);
+    if (member.rows.length === 0) {
+      await pool.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Member not found" });
+    }
+
+    // 2. Update members table — set jumuiya and semester flags
+    const semUpdates = [];
+    const semVals = [];
+    let idx = 2;
+    const SEM_COLS = ["sem_1_reg", "sem_2_reg", "sem_3_reg", "sem_4_reg",
+                      "sem_5_reg", "sem_6_reg", "sem_7_reg", "sem_8_reg"];
+    for (const col of SEM_COLS) {
+      const val = Array.isArray(semesters) ? semesters.includes(col) : false;
+      semUpdates.push(`${col} = $${idx++}`);
+      semVals.push(val);
+    }
+    semVals.push(member_id);
+    await pool.query(
+      `UPDATE members SET jumuiya_id = $1, ${semUpdates.join(", ")} WHERE member_id = $${idx}`,
+      [jumuiya_id, ...semVals]
+    );
+
+    // 3. Insert into registered (idempotent)
+    await pool.query(
+      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
+       VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
+       ON CONFLICT DO NOTHING`,
+      [member_id, jumuiya_id, serial_no || null]
+    );
+
+    await pool.query("COMMIT");
+
+    const row = member.rows[0];
+    res.status(200).json({
+      success: true,
+      message: `Member ${member_id} registered successfully`,
+      data: { id: row.member_id, name: `${row.first_name} ${row.last_name || ""}`.trim() },
+    });
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    logger.error("Error in manualRegisterMember: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to register member" });
   }
 };
 
@@ -811,5 +938,58 @@ export const getJumuiyaLookup = async (req, res) => {
   } catch (error) {
     logger.error("Error fetching jumuiya lookup: " + error.message);
     res.status(500).json({ success: false, error: "Failed to fetch jumuiya lookup" });
+  }
+};
+
+/**
+ * POST /api/jumuiya-members/send-stamp-card
+ * Emails a PDF stamp card to the member's email as an attachment.
+ */
+export const sendStampCard = async (req, res) => {
+  try {
+    const { email, pdfBase64, memberName, jumuiyaName } = req.body;
+    if (!email || !pdfBase64) {
+      return res.status(400).json({ success: false, error: "Email and PDF data are required" });
+    }
+
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: `Your Semester Stamp Card - ${jumuiyaName || 'Community'}`,
+      html: `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="color: #1e293b; margin: 0;">Your Semester Stamp Card</h2>
+            <p style="color: #64748b; font-size: 0.9rem;">${jumuiyaName || 'Community'} &middot; ${memberName || ''}</p>
+          </div>
+          <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+            Thank you for registering! Your semester stamp card is attached to this email.
+            Please keep it for your records. You will receive a new stamp after each semester registration.
+          </p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0 0 8px; color: #64748b; font-size: 0.85rem;"><strong>Member:</strong> ${memberName || '—'}</p>
+            <p style="margin: 0 0 8px; color: #64748b; font-size: 0.85rem;"><strong>Community:</strong> ${jumuiyaName || '—'}</p>
+            <p style="margin: 0; color: #64748b; font-size: 0.85rem;"><strong>Sent:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
+          <p style="color: #94a3b8; font-size: 0.8rem; text-align: center; margin-top: 32px;">
+            This is an automated message from the Campus Catholic Community registration system.
+          </p>
+        </div>
+      `,
+      attachments: [{
+        filename: `Stamp_Card_${memberName ? memberName.replace(/\s+/g, '_') : 'member'}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      }],
+    };
+
+    await mailTransporter.sendMail(mailOptions);
+    logger.info(`Stamp card emailed to ${email}`);
+    res.json({ success: true, message: "Stamp card sent to your email" });
+  } catch (error) {
+    logger.error("Error sending stamp card email: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to send stamp card email" });
   }
 };

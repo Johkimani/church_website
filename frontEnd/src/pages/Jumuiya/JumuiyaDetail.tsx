@@ -6,11 +6,12 @@ import OfficialsTab from './components/OfficialsTab';
 import MembersTab from './components/MembersTab';
 import ActivitiesTab from './components/ActivitiesTab';
 import RegistrationTab from './components/RegistrationTab';
+import StampCard from './components/StampCard';
 import ChannelsTab from './components/ChannelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
 import SettingsTab from './components/SettingsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog, FaKey } from "react-icons/fa";
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog, FaKey, FaStamp } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
@@ -126,6 +127,7 @@ const JumuiyaDetail: React.FC = () => {
         ...(isMemberOfThisJumuiya ? [
           { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
           { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
+          { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
         ] : []),
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
@@ -157,6 +159,8 @@ const JumuiyaDetail: React.FC = () => {
                 return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={''} />;
             case 'settings':
                 return <SettingsTab jumuiyaColor={detailColor} />;
+            case 'stampcard':
+                return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />;
             case 'admin':
                 return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:
@@ -165,7 +169,7 @@ const JumuiyaDetail: React.FC = () => {
     };
 
     useEffect(() => {
-      if (!isMemberOfThisJumuiya && (activeTab === 'members' || activeTab === 'registration')) {
+      if (!isMemberOfThisJumuiya && (activeTab === 'members' || activeTab === 'registration' || activeTab === 'stampcard')) {
         setActiveTab('about');
       }
     }, [isMemberOfThisJumuiya]);

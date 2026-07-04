@@ -8,10 +8,13 @@ import {
   getUnregisteredMembers,
   bulkJoinJumuiya,
   getRegisteredJumuiyaMembers,
+  getAllRegisteredMembers,
+  manualRegisterMember,
   unregisterJumuiyaMember,
   registerWithPayment,
   bulkRegisterWithPayment,
-  getJumuiyaLookup
+  getJumuiyaLookup,
+  sendStampCard,
 } from '../controllers/jumuiyaMembersController.js';
 import {
   getPendingMigrationMembers,
@@ -27,12 +30,15 @@ const router = express.Router();
 router.get('/', getAllJumuiyaMembers);
 router.get('/all', getAllMembersAcrossJumuiyas);
 router.get('/registered', getRegisteredJumuiyaMembers);
+router.get('/registered/all', getAllRegisteredMembers);
+router.post('/registered/manual', manualRegisterMember);
 router.get('/unregistered', getUnregisteredMembers);
 router.get('/lookup', getJumuiyaLookup);
 router.post('/', createJumuiyaMember);
 router.post('/bulk-join', bulkJoinJumuiya);
 router.post('/bulk-register-with-payment', bulkRegisterWithPayment);
 router.post('/register-with-payment', registerWithPayment);
+router.post('/send-stamp-card', sendStampCard);
 router.put('/:id', updateJumuiyaMember);
 router.delete('/:id', deleteJumuiyaMember);
 router.delete('/unregister/:id', unregisterJumuiyaMember);

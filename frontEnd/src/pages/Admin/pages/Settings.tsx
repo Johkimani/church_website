@@ -42,6 +42,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   project_manager: ['Sacramentals Banners', 'Products', 'Orders', 'Hire Requests', 'Project Management'],
   instrument_manager: ['Seats and Instruments'],
   os: ['Announcements Management', 'Weekly Activities', 'Semester Activities', 'Gallery Manager'],
+  csa_secretary: ['Registered Members (all Jumuiyas)'],
   jumuiya_chairperson: ['Members (scoped to their Jumuiya)'],
   jumuiya_os: ['Gallery (scoped to their Jumuiya)'],
   jumuiya_secretary: ['Members (scoped to their Jumuiya)'],

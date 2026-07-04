@@ -62,7 +62,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [sortAsc, setSortAsc] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportColumns, setExportColumns] = useState({
-    RegNo: true, Name: true, Gender: true, Email: true,
+    RegNo: true, Name: true, Gender: true, Course: true,
     Phone: true, Year: true, Jumuiya: true, Source: true,
   });
   const [genderFilter, setGenderFilter] = useState({ Male: true, Female: true });
@@ -101,7 +101,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           if (k === "RegNo") out.RegNo = row.member_id || row.id || "";
           else if (k === "Name") out.Name = row.name || "";
           else if (k === "Gender") out.Gender = row.gender === "male" || row.gender === "Male" ? "Male" : row.gender === "female" || row.gender === "Female" ? "Female" : row.gender || "";
-          else if (k === "Email") out.Email = row.email || "";
+          else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
           else if (k === "Year") out.Year = row.year || row.year_of_study || "";
           else if (k === "Jumuiya") out.Jumuiya = row.jumuiya_name || formatJumuiyaName(row.jumuiya_id);
@@ -174,7 +174,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       member_id: (m.member_id || m.id || "").toString(),
       first_name: m.first_name || nameParts[0] || "",
       last_name: m.last_name || nameParts.slice(1).join(" ") || "",
-      email: m.email || "",
+      course: m.course || "",
       phone: m.phone || "",
       gender: m.gender || "",
       year_of_study: m.year || "",
@@ -232,8 +232,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     let result = debouncedSearch
       ? members.filter(m =>
           (m.name || "").toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          (m.member_id || "").toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          (m.email || "").toLowerCase().includes(debouncedSearch.toLowerCase())
+          (m.course || "").toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          (m.member_id || "").toLowerCase().includes(debouncedSearch.toLowerCase())
         )
       : [...members];
     result.sort((a, b) => {
@@ -382,7 +382,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       {sortBy === "gender" ? (sortAsc ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-30" />}
                     </button>
                   </th>
-                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Email</th>
+                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Course</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Phone</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Year</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider w-28">Actions</th>
@@ -454,10 +454,10 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
+                          <input value={editForm.course} onChange={e => setEditForm(p => ({ ...p, course: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
-                          <span className="text-slate-500 text-xs">{m.email || "—"}</span>
+                          <span className="text-slate-500 text-xs">{m.course || "—"}</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">

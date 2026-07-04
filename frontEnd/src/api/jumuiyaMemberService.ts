@@ -132,6 +132,13 @@ export const memberService = {
   csaDeleteRejectedMember: (id: number) =>
     apiClient.delete(`/jumuiya-members/csa/rejected-members/${id}`).then(r => r.data),
 
+  // ── All Registered Members (across all jumuiyas, for CSA Secretary) ──
+  getAllRegisteredMembers: () =>
+    apiClient.get(`/jumuiya-members/registered/all`).then(r => r.data),
+
+  manualRegisterMember: (data: { member_id: string; jumuiya_id: string; semesters?: string[]; serial_no?: number }) =>
+    apiClient.post(`/jumuiya-members/registered/manual`, data).then(r => r.data),
+
   // ── All Members (across all jumuiyas) ──
   getAllMembersAcrossJumuiyas: () =>
     apiClient.get(`/jumuiya-members/all`).then(r => r.data),
@@ -168,4 +175,8 @@ export const memberService = {
 
   undoAssociateMigration: (memberId: string) =>
     apiClient.post(`/jumuiya-members/associates/undo`, { member_id: memberId }).then(r => r.data),
+
+  // ── Stamp Card ──
+  sendStampCard: (data: { email: string; pdfBase64: string; memberName: string; jumuiyaName: string }) =>
+    apiClient.post(`/jumuiya-members/send-stamp-card`, data).then(r => r.data),
 };

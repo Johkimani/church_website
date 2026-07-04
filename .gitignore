@@ -36,3 +36,6 @@ git_status_output.txt
 # Runtime / process files
 .runtime/
 *.pid
+
+# Scripts with credentials
+check_roles.mjs

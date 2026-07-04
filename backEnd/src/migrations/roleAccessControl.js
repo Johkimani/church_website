@@ -2,6 +2,7 @@ import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
 const ROLES = [
+  { name: "csa_secretary", description: "CSA Secretary — oversees all registered members across all Jumuiyas" },
   { name: "csa_chair", description: "Super Admin — full access across the entire platform" },
   { name: "jumuiya_coordinator", description: "Global Manager — adds/manages all officials and members across the system" },
   { name: "project_manager", description: "Manages CSA T-shirts and Sacramentals" },

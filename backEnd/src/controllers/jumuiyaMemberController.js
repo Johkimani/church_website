@@ -199,14 +199,14 @@ export const importMembers = async (req, res) => {
 
       const recordResult = await pool.query(
         `INSERT INTO import_records
-         (import_id, raw_name, raw_reg_number, raw_gender, raw_jumuiya, raw_phone, raw_email,
-          cleaned_name, cleaned_reg_number, cleaned_gender, cleaned_jumuiya, cleaned_phone, cleaned_email,
+         (import_id, raw_name, raw_reg_number, raw_gender, raw_course, raw_jumuiya, raw_phone, raw_email,
+          cleaned_name, cleaned_reg_number, cleaned_gender, cleaned_course, cleaned_jumuiya, cleaned_phone, cleaned_email,
           status, validation_errors, validation_warnings)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
         [
           importId,
-          validated.raw.name, validated.raw.regNumber, validated.raw.gender, validated.raw.jumuiya, validated.raw.phone, validated.raw.email,
-          validated.cleaned.name, validated.cleaned.regNumber, validated.cleaned.gender, validated.cleaned.jumuiya, validated.cleaned.phone, validated.cleaned.email,
+          validated.raw.name, validated.raw.regNumber, validated.raw.gender, validated.raw.course, validated.raw.jumuiya, validated.raw.phone, validated.raw.email,
+          validated.cleaned.name, validated.cleaned.regNumber, validated.cleaned.gender, validated.cleaned.course, validated.cleaned.jumuiya, validated.cleaned.phone, validated.cleaned.email,
           status, JSON.stringify(allErrors), JSON.stringify(validated.warnings),
         ]
       );
@@ -424,8 +424,8 @@ export const updateImportStatus = async (req, res) => {
         const genderValue = rec.cleaned_gender ? rec.cleaned_gender.toLowerCase() : null;
         const insertResult = await pool.query(
           `INSERT INTO members
-             (member_id, jumuiya_id, first_name, last_name, gender, email, phone, year_of_study, password, join_date, source, import_batch_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE, 'jum', $10)
+             (member_id, jumuiya_id, first_name, last_name, gender, email, phone, year_of_study, course, password, join_date, source, import_batch_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE, 'jum', $11)
            RETURNING member_id, first_name, last_name, gender, email, phone`,
           [
             rec.cleaned_reg_number,
@@ -436,6 +436,7 @@ export const updateImportStatus = async (req, res) => {
             rec.cleaned_email || null,
             rec.cleaned_phone || null,
             imp.academic_year || null,
+            rec.cleaned_course || null,
             defaultPassword,
             importId,
           ]
@@ -919,10 +920,11 @@ export const getMembers = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT member_id, first_name, last_name, gender, email, phone, year_of_study, join_date, source
-       FROM members
-       WHERE jumuiya_id = $1 AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
-       ORDER BY first_name`,
+      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.phone, m.year_of_study, m.join_date, m.source
+       FROM members m
+       INNER JOIN registered r ON r.member_id = m.member_id AND r.status = 'active'
+       WHERE m.jumuiya_id = $1 AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+       ORDER BY m.first_name`,
       [jumuiyaUUID]
     );
 
@@ -1091,14 +1093,14 @@ export const csaImportMembers = async (req, res) => {
 
       const recordResult = await pool.query(
         `INSERT INTO import_records
-         (import_id, raw_name, raw_reg_number, raw_gender, raw_jumuiya, raw_phone, raw_email,
-          cleaned_name, cleaned_reg_number, cleaned_gender, cleaned_jumuiya, cleaned_phone, cleaned_email,
+         (import_id, raw_name, raw_reg_number, raw_gender, raw_course, raw_jumuiya, raw_phone, raw_email,
+          cleaned_name, cleaned_reg_number, cleaned_gender, cleaned_course, cleaned_jumuiya, cleaned_phone, cleaned_email,
           status, validation_errors, validation_warnings)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
         [
           importId,
-          validated.raw.name, validated.raw.regNumber, validated.raw.gender, validated.raw.jumuiya, validated.raw.phone, validated.raw.email,
-          validated.cleaned.name, validated.cleaned.regNumber, validated.cleaned.gender, null, validated.cleaned.phone, validated.cleaned.email,
+          validated.raw.name, validated.raw.regNumber, validated.raw.gender, validated.raw.course, validated.raw.jumuiya, validated.raw.phone, validated.raw.email,
+          validated.cleaned.name, validated.cleaned.regNumber, validated.cleaned.gender, validated.cleaned.course, validated.cleaned.jumuiya, validated.cleaned.phone, validated.cleaned.email,
           status, JSON.stringify(allErrors), JSON.stringify(validated.warnings),
         ]
       );
@@ -2206,7 +2208,10 @@ export const lookupMemberByRegNumber = async (req, res) => {
               LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug
        FROM members m
        LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-       WHERE m.member_id LIKE '%/' || $1 || '/%' OR m.member_id ILIKE $2
+       WHERE m.member_id LIKE '%/' || $1 || '/%'
+          OR m.member_id ILIKE $2
+          OR m.first_name ILIKE $2
+          OR m.last_name ILIKE $2
        ORDER BY m.member_id
        LIMIT 10`,
       [s, `%${s}%`]
