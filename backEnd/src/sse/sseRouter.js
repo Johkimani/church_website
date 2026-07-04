@@ -1,8 +1,8 @@
-import { Router }  from "express";
-import jwt          from "jsonwebtoken";
-import { db }       from "../Configs/dbConfig.js";
+import { Router } from "express";
+import jwt from "jsonwebtoken";
+import { db } from "../Configs/dbConfig.js";
 import { addSSEClient, removeSSEClient } from "./sseManager.js";
-import logger       from "../logger/winston.js";
+import logger from "../logger/winston.js";
 
 const router = Router();
 
@@ -21,7 +21,6 @@ const router = Router();
  *   • Individual – targeted sendToUser() calls for badge count updates
  */
 router.get("/", async (req, res) => {
-
   // ── 1. Extract token (query param or Authorization header) ──────────────
   const token =
     req.query.token ||
@@ -42,15 +41,15 @@ router.get("/", async (req, res) => {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 
-  const memberId  = String(decoded.id);
+  const memberId = String(decoded.id);
   const jumuiyaId = String(decoded.jumuiya_id ?? "");
-  const role      = decoded.role;
+  const role = decoded.role;
 
   // ── 3. Confirm user exists in DB ──────────────────────────────────────────
   try {
     const { rows } = await db.query(
       "SELECT member_id FROM members WHERE member_id = $1 LIMIT 1",
-      [memberId]
+      [memberId],
     );
     if (rows.length === 0) {
       return res.status(401).json({ error: "User not found" });
@@ -61,13 +60,13 @@ router.get("/", async (req, res) => {
   }
 
   // ── 4. Set SSE response headers ──────────────────────────────────────────
-  res.setHeader("Content-Type",       "text/event-stream");
-  res.setHeader("Cache-Control",      "no-cache, no-transform");
-  res.setHeader("Connection",         "keep-alive");
-  res.setHeader("X-Accel-Buffering",  "no");   // prevent nginx from buffering the stream
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no"); // prevent nginx from buffering the stream
   // Allow the browser to receive the stream cross-origin
   if (req.headers.origin) {
-    res.setHeader("Access-Control-Allow-Origin",      req.headers.origin);
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
   }
   res.flushHeaders();
@@ -80,17 +79,18 @@ router.get("/", async (req, res) => {
 
   // ── 7. Send initial unread badge count ───────────────────────────────────
   try {
-    const isAdmin =
-      (Array.isArray(role) ? role : [role]).some(r =>
-        String(r).toLowerCase().includes("admin")
-      );
+    const isAdmin = (Array.isArray(role) ? role : [role]).some((r) =>
+      String(r).toLowerCase().includes("admin"),
+    );
 
     const { rows } = isAdmin
-      ? await db.query(`SELECT COUNT(*) FROM notifications WHERE is_read = false`)
+      ? await db.query(
+          `SELECT COUNT(*) FROM notifications WHERE is_read = false`,
+        )
       : await db.query(
           `SELECT COUNT(*) FROM notifications
            WHERE (posted_to = 'csa' OR posted_to = $1) AND is_read = false`,
-          [jumuiyaId]
+          [jumuiyaId],
         );
 
     const count = parseInt(rows[0].count, 10) || 0;
@@ -101,7 +101,9 @@ router.get("/", async (req, res) => {
 
   // ── 8. Keepalive comment every 25 s (prevents proxy timeouts) ────────────
   const pingInterval = setInterval(() => {
-    try { res.write(": ping\n\n"); } catch {}
+    try {
+      res.write(": ping\n\n");
+    } catch {}
   }, 25_000);
 
   // ── 9. Clean up on client disconnect ────────────────────────────────────
