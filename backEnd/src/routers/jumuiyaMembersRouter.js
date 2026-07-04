@@ -38,7 +38,7 @@ router.post('/', createJumuiyaMember);
 router.post('/bulk-join', bulkJoinJumuiya);
 router.post('/bulk-register-with-payment', bulkRegisterWithPayment);
 router.post('/register-with-payment', registerWithPayment);
-router.post('/send-stamp-card', sendStampCard);
+router.post('/send-stamp-card', express.json({ limit: '10mb' }), sendStampCard);
 router.put('/:id', updateJumuiyaMember);
 router.delete('/:id', deleteJumuiyaMember);
 router.delete('/unregister/:id', unregisterJumuiyaMember);
