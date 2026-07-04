@@ -995,6 +995,6 @@ export const sendStampCard = async (req, res) => {
     res.json({ success: true, message: "Stamp card sent to your email" });
   } catch (error) {
     logger.error("Error sending stamp card email: " + error.message);
-    res.status(500).json({ success: false, error: "Failed to send stamp card email" });
+    res.status(500).json({ success: false, error: error.message || "Failed to send stamp card email" });
   }
 };
