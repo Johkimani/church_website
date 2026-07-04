@@ -3,6 +3,7 @@ import logger from "../logger/winston.js";
 
 export const CSA_POSITION_TO_ROLE = {
   'Chairperson': 'csa_chair',
+  'Secretary': 'csa_secretary',
   'Jumuiya Coordinator': 'jumuiya_coordinator',
   'Organizing Secretary': 'os',
   'Project Manager': 'project_manager',

@@ -204,65 +204,64 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  
  <form onSubmit={handleSubmit} className="p-8">
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
- <div className="space-y-2">
- <label className="block text-sm font-semibold text-gray-700 ">Name *</label>
- <input 
- value={name} 
- onChange={e => setName(e.target.value)} 
- placeholder="Auto-filled from member lookup" 
- className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none" 
- required 
- />
- </div>
+                  <div className="space-y-2" ref={dropdownRef}>
+                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Search className="w-3.5 h-3.5 text-gray-400" />
+                      Registration Number <span className="text-xs font-normal text-gray-400">(type middle digits to auto-fill)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        value={regNumber}
+                        onChange={handleRegNumberChange}
+                        placeholder="e.g. 23412"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none"
+                      />
+                      {lookupLoading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      {memberFound && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                          <UserCheck className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                    {lookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{lookupError}</div>}
+                    {memberFound && (
+                      <div className="text-green-600 text-xs font-medium flex items-center gap-1">
+                        <Check className="w-3 h-3" />Member found — name & phone auto-filled
+                        <button type="button" onClick={clearMemberLink} className="ml-2 text-red-500 hover:text-red-700 underline text-[10px]">Clear</button>
+                      </div>
+                    )}
+                    {showLookupDropdown && lookupResults.length > 1 && (
+                      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                        {lookupResults.map((m: any, i: number) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => selectLookupResult(m)}
+                            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                          >
+                            <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
+                            <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
+                            {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-  {/* Registration Number Lookup */}
-  <div className="space-y-2" ref={dropdownRef}>
-    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-      <Search className="w-3.5 h-3.5 text-gray-400" />
-      Registration Number <span className="text-xs font-normal text-gray-400">(type middle digits to auto-fill)</span>
-    </label>
-    <div className="relative">
-      <input
-        value={regNumber}
-        onChange={handleRegNumberChange}
-        placeholder="e.g. 23412"
-        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none"
-      />
-      {lookupLoading && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
-      {memberFound && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
-          <UserCheck className="w-4 h-4" />
-        </div>
-      )}
-    </div>
-    {lookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{lookupError}</div>}
-    {memberFound && (
-      <div className="text-green-600 text-xs font-medium flex items-center gap-1">
-        <Check className="w-3 h-3" />Member found — name & phone auto-filled
-        <button type="button" onClick={clearMemberLink} className="ml-2 text-red-500 hover:text-red-700 underline text-[10px]">Clear</button>
-      </div>
-    )}
-    {showLookupDropdown && lookupResults.length > 1 && (
-      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-        {lookupResults.map((m: any, i: number) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => selectLookupResult(m)}
-            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
-          >
-            <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
-            <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
-            {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 ">Name *</label>
+                    <input 
+                      value={name} 
+                      onChange={e => setName(e.target.value)} 
+                      placeholder="Auto-filled from member lookup" 
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none" 
+                      required 
+                    />
+                  </div>
 
  <div className="space-y-2">
  <div className="flex justify-between items-center mb-1">

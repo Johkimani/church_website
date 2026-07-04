@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Image as ImageIcon,
   UserPlus,
+  ClipboardList,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -53,6 +54,7 @@ const menuItems = [
     ]
   },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
+  { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
   { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
@@ -181,6 +183,9 @@ export default function UniversalAdmin() {
           break;
         case "LITURGIST":
           allowedPrefixes.add("/admin/devotions");
+          break;
+        case "CSA_SECRETARY":
+          allowedPrefixes.add("/admin/registered-members");
           break;
         case "JUMUIYA_CHAIRPERSON":
         case "JUMUIYA_SECRETARY":

@@ -27,8 +27,8 @@ const SLUG_FROM_SHORT_NAME: Record<string, string> = {
   "St. Monica": "st-monica",
 };
 
-const TEMPLATE_HEADERS = ["Name", "RegistrationNumber", "Gender", "Phone", "Email"];
-const emptyRow = { name: "", regNumber: "", gender: "", jumuiya: "", phone: "", email: "" };
+const TEMPLATE_HEADERS = ["Name", "RegistrationNumber", "Gender", "Course", "Phone", "Email"];
+const emptyRow = { name: "", regNumber: "", gender: "", course: "", jumuiya: "", phone: "", email: "" };
 
 const parseCsvLine = (line: string): string[] => {
   const result: string[] = [];
@@ -58,6 +58,10 @@ const KNOWN_HEADERS: Record<string, string> = {
     registration: "regNumber",
   gender: "gender",
   sex: "gender",
+  course: "course",
+  program: "course",
+  degree: "course",
+  "programme": "course",
   phone: "phone",
   telephone: "phone",
   mobile: "phone",
@@ -80,6 +84,7 @@ const mapRow = (obj: Record<string, string>) => {
     name: row.name || "",
     regNumber: row.regNumber || "",
     gender: row.gender || "",
+    course: row.course || "",
     phone: row.phone || "",
     email: row.email || "",
   };
@@ -305,6 +310,7 @@ export default function CSADistributionCenter() {
             name: r.raw_name || "",
             regNumber: r.raw_reg_number || "",
             gender: r.raw_gender || "",
+            course: r.raw_course || "",
             jumuiya: r.raw_jumuiya || "",
             phone: r.raw_phone || "",
             email: r.raw_email || "",
@@ -534,7 +540,7 @@ export default function CSADistributionCenter() {
           <div className="border-2 border-dashed border-slate-200 rounded-xl p-5 text-center mb-4">
             <Upload size={24} className="text-slate-300 mx-auto mb-2" />
             <input type="file" accept=".csv,.txt,.xlsx,.xls" onChange={handleFileUpload} className="mb-2 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100" />
-            <p className="text-xs text-slate-400">Supports: CSV (.csv), Excel (.xlsx / .xls). Headers: Name, RegistrationNumber, Gender, Phone, Email</p>
+            <p className="text-xs text-slate-400">Supports: CSV (.csv), Excel (.xlsx / .xls). Headers: Name, RegistrationNumber, Gender, Course, Phone, Email</p>
           </div>
         )}
 
@@ -545,9 +551,10 @@ export default function CSADistributionCenter() {
               <thead className="sticky top-0 z-10">
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">#</th>
-                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Course</th>
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Phone</th>
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Email</th>
                   <th className="py-2.5 px-3"></th>
@@ -561,19 +568,23 @@ export default function CSADistributionCenter() {
                   <tr key={i} className={`border-b border-slate-100 hover:bg-slate-50 ${hasErr ? "bg-red-50" : ""}`}>
                     <td className="py-1.5 px-3 text-slate-400 text-xs">{i + 1}</td>
                     <td className="py-1.5 px-3">
+                      <input value={m.regNumber} onChange={(e) => { handleMemberChange(i, "regNumber", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }} placeholder="CS01/A/2024/01"
+                        className={`w-32 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${hasErr ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"}`} />
+                    </td>
+                    <td className="py-1.5 px-3">
                       <input value={m.name} onChange={(e) => { handleMemberChange(i, "name", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }} placeholder="Full name"
                         className={`w-36 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${hasErr ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"}`} />
                       {hasErr && <div className="text-[10px] text-red-500 mt-0.5 leading-tight">{errs.join("; ")}</div>}
-                    </td>
-                    <td className="py-1.5 px-3">
-                      <input value={m.regNumber} onChange={(e) => { handleMemberChange(i, "regNumber", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }} placeholder="CS01/A/2024/01"
-                        className={`w-32 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${hasErr ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"}`} />
                     </td>
                     <td className="py-1.5 px-3">
                       <select value={m.gender} onChange={(e) => { handleMemberChange(i, "gender", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }}
                         className={`w-24 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${hasErr ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"}`}>
                         <option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option>
                       </select>
+                    </td>
+                    <td className="py-1.5 px-3">
+                      <input value={m.course} onChange={(e) => { handleMemberChange(i, "course", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }} placeholder="e.g. Nursing"
+                        className={`w-28 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${hasErr ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"}`} />
                     </td>
                     <td className="py-1.5 px-3">
                       <input value={m.phone} onChange={(e) => { handleMemberChange(i, "phone", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }} placeholder="+254..."

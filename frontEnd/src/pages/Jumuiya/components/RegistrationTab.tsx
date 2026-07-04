@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
-import { FaUserPlus, FaUsers, FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle } from 'react-icons/fa';
+import { FaUserPlus, FaUsers, FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle, FaStamp } from 'react-icons/fa';
 import './TabsSystem.css';
 import ChoirJoinForm from '../choir/ChoirJoinForm';
 import DancersJoinForm from '../choir/DancersJoinForm';
 import CharismaticJoinForm from '../charismatic/CharismaticJoinForm';
+import StampCard from './StampCard';
 
 interface RegistrationTabProps {
     jumuiyaName: string;
@@ -25,6 +26,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
     const [bulkPhone, setBulkPhone] = useState('');
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [showStampCard, setShowStampCard] = useState(false);
 
     // Current user's membership record in this specific jumuiya
     const currentMember = useMemo(() => {
@@ -52,18 +54,38 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
         );
     };
 
+    if (showStampCard) {
+        return (
+            <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
+                <div className="tab-card glass-card animate-fade" style={{ padding: '32px', maxWidth: '700px', margin: '40px auto' }}>
+                    <StampCard
+                        jumuiyaId={jumuiyaId || ''}
+                        jumuiyaName={jumuiyaName}
+                        jumuiyaColor={jumuiyaColor}
+                        onClose={() => setShowStampCard(false)}
+                    />
+                </div>
+            </div>
+        );
+    }
+
     if (isSubmitted) {
         return (
             <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
                 <div className="tab-card glass-card animate-fade" style={{ padding: '64px 24px', textAlign: 'center', maxWidth: '600px', margin: '40px auto' }}>
                     <FaCheckCircle style={{ fontSize: '4rem', color: 'var(--jumuiya-color)', marginBottom: '24px' }} />
                     <h2 style={{ fontSize: '2rem', marginBottom: '16px' }}>Payment Request Sent!</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '1.1rem' }}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '1.1rem' }}>
                         A prompt has been sent to the specified M-Pesa number. Please enter your PIN to complete the registration.
                     </p>
-                    <button className="btn-premium primary" onClick={() => setIsSubmitted(false)}>
-                        Back to Registration
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <button className="btn-premium primary" onClick={() => setShowStampCard(true)}>
+                            <FaStamp style={{ marginRight: '8px' }} /> View Stamp Card
+                        </button>
+                        <button className="btn-premium" onClick={() => setIsSubmitted(false)}>
+                            Back to Registration
+                        </button>
+                    </div>
                 </div>
             </div>
         );
