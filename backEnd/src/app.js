@@ -34,8 +34,8 @@ app.use(compression());
 app.use(hpp());
 
 // app midlewares
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
 // create app using httserver so we can add a socket on top of the serve , unlike the http server

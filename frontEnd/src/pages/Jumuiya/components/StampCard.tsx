@@ -65,7 +65,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
         if (!cardRef.current) return null;
         try {
             const canvas = await html2canvas(cardRef.current, {
-                scale: 2,
+                scale: 1.5,
                 backgroundColor: '#ffffff',
                 useCORS: true,
                 logging: false,
