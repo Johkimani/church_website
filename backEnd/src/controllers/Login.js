@@ -1,8 +1,10 @@
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import jwt from "jsonwebtoken";
+import sendMail from "../Configs/emailConfig.js";
 dotenv.config();
 
 export const Login = async (req, res) => {
@@ -54,8 +56,9 @@ export const Login = async (req, res) => {
       });
     }
 
-    // Detect first login: password matches their reg number
+    // Detect first login: password matches their reg number, or missing email
     const isDefaultPassword = await bcrypt.compare(userReg, storedHash);
+    const forcePasswordChange = isDefaultPassword || !user.email;
 
     const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
     const refreshToken = generateRefreshtoken(user.member_id, user.roles);
@@ -79,7 +82,7 @@ export const Login = async (req, res) => {
       name: `${user.first_name} ${user.last_name}`.trim(),
       email: user.email,
       jumuiya_id: user.jumuiya_id,
-      forcePasswordChange: isDefaultPassword,
+      forcePasswordChange,
       hasEmail: !!user.email,
     });
   } catch (err) {
@@ -219,10 +222,23 @@ export const firstLoginSetup = async (req, res) => {
 
     // Update password and optionally email
     if (email && email.trim()) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await pool.query(
-        "UPDATE members SET password = $1, email = $2 WHERE member_id = $3",
-        [hashed, email.trim(), member_id]
+        `UPDATE members SET password = $1, email = $2, email_verified = FALSE,
+         email_verification_token = $4, email_verification_expires = $5 WHERE member_id = $3`,
+        [hashed, email.trim(), member_id, token, expires]
       );
+      try {
+        const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+        await sendMail(
+          "Verify your email — CSA Kirinyaga",
+          `Hi ${member_id},\n\nPlease verify your email by clicking the link below:\n${FRONTEND_URL}/verify-email?token=${token}&reg=${encodeURIComponent(member_id)}\n\nThis link expires in 24 hours.\n\n— CSA Kirinyaga Chapter`,
+          email.trim()
+        );
+      } catch (mailErr) {
+        logger.error("Failed to send verification email:", mailErr.message);
+      }
     } else {
       await pool.query(
         "UPDATE members SET password = $1 WHERE member_id = $2",
@@ -233,6 +249,41 @@ export const firstLoginSetup = async (req, res) => {
     res.json({ status: true, message: "Password updated successfully" });
   } catch (error) {
     logger.error("firstLoginSetup error:", error.message);
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token, reg } = req.body;
+
+    if (!token || !reg) {
+      return res.status(400).json({ status: false, message: "Token and registration number are required" });
+    }
+
+    const result = await pool.query(
+      `SELECT member_id, email_verification_token, email_verification_expires
+       FROM members WHERE member_id = $1 AND email_verification_token = $2`,
+      [reg, token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ status: false, message: "Invalid verification token" });
+    }
+
+    const member = result.rows[0];
+    if (new Date() > member.email_verification_expires) {
+      return res.status(400).json({ status: false, message: "Verification token has expired" });
+    }
+
+    await pool.query(
+      `UPDATE members SET email_verified = TRUE, email_verification_token = NULL, email_verification_expires = NULL WHERE member_id = $1`,
+      [reg]
+    );
+
+    res.json({ status: true, message: "Email verified successfully" });
+  } catch (error) {
+    logger.error("verifyEmail error:", error.message);
     res.status(500).json({ status: false, message: "Server error" });
   }
 };

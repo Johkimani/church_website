@@ -25,10 +25,10 @@ const Login: React.FC = () => {
       const normalizedPassword = password.trim();
       const response = await loginApi({ userReg: normalizedUserReg, password: normalizedPassword });
       if (response.data.status === "success") {
-        login(response.data);
         if (response.data.forcePasswordChange) {
-          navigate("first-login-setup", { state: { member_id: response.data.member_id, name: response.data.name, hasEmail: response.data.hasEmail } });
+          navigate("/login/first-login-setup", { state: { loginResponse: response.data } });
         } else {
+          login(response.data);
           const role = response.data.role;
           const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
           if (hasRole) {
