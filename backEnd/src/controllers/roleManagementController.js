@@ -102,8 +102,8 @@ export const assignRole = async (req, res) => {
     let result;
     if (existingPending.rows.length > 0) {
       result = await pool.query(
-        `UPDATE member_roles SET assigned_by = $1, created_at = NOW()
-         WHERE id = $2 RETURNING id`,
+        `UPDATE member_roles SET assigned_by = $1, created_at = NOW(), updated_at = NOW()
+          WHERE id = $2 RETURNING id`,
         [assignedBy, existingPending.rows[0].id]
       );
     } else {
@@ -146,7 +146,7 @@ export const approveAssignment = async (req, res) => {
     }
 
     await pool.query(
-      `UPDATE member_roles SET status = 'approved', approved_by = $1, approved_at = NOW() WHERE id = $2`,
+      `UPDATE member_roles SET status = 'approved', approved_by = $1, approved_at = NOW(), updated_at = NOW() WHERE id = $2`,
       [approvedBy, id]
     );
 
@@ -173,7 +173,7 @@ export const rejectAssignment = async (req, res) => {
     }
 
     await pool.query(
-      "UPDATE member_roles SET status = 'rejected' WHERE id = $1",
+      "UPDATE member_roles SET status = 'rejected', updated_at = NOW() WHERE id = $1",
       [id]
     );
 
@@ -200,7 +200,7 @@ export const revokeAssignment = async (req, res) => {
     }
 
     await pool.query(
-      "UPDATE member_roles SET status = 'revoked' WHERE id = $1",
+      "UPDATE member_roles SET status = 'revoked', updated_at = NOW() WHERE id = $1",
       [id]
     );
 
@@ -228,7 +228,7 @@ export const activateAssignment = async (req, res) => {
     }
 
     await pool.query(
-      `UPDATE member_roles SET status = 'approved', approved_by = $1, approved_at = NOW() WHERE id = $2`,
+      `UPDATE member_roles SET status = 'approved', approved_by = $1, approved_at = NOW(), updated_at = NOW() WHERE id = $2`,
       [approvedBy, id]
     );
 

@@ -15,6 +15,7 @@ import GalleryPage from "./pages/Landing/components/page/GalleryPage";
 const Reset = lazy(() => import("./pages/Authorization/Reset"));
 const ResetPasswordPage = lazy(() => import("./pages/Authorization/ResetPasswordPage"));
 const FirstLoginSetup = lazy(() => import("./pages/Authorization/FirstLoginSetup"));
+const VerifyEmail = lazy(() => import("./pages/Authorization/VerifyEmail"));
 const PublicView = lazy(() => import("./pages/officials/PublicView"));
 const OfficialProfile = lazy(() => import("./pages/officials/OfficialProfile"));
 const Layout = lazy(() => import("./pages/Devotions/components/Layout"));
@@ -119,8 +120,12 @@ const App: React.FC = () => {
           <Route index element={<Login />} />
           <Route path="reset" element={<Reset />} />
           <Route path="otp/:reg" element={<ResetPasswordPage />} />
-          <Route path="first-login-setup" element={<FirstLoginSetup />} />
         </Route>
+
+        {/* First-login-setup must be outside PublicRoute — login() sets user mid-submit,
+            which makes PublicRoute redirect to "/" and trump the navigate() call. */}
+        <Route path="/login/first-login-setup" element={<FirstLoginSetup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Admin Routes */}
         <Route
