@@ -179,4 +179,11 @@ export const memberService = {
   // ── Stamp Card ──
   sendStampCard: (data: { email: string; pdfBase64: string; memberName: string; jumuiyaName: string }) =>
     apiClient.post(`/jumuiya-members/send-stamp-card`, data).then(r => r.data),
+
+  // ── Registration with Payment ──
+  registerWithPayment: (data: { member_id: string; jumuiya_id: string; phoneNumber: string; amount: number }) =>
+    apiClient.post(`/jumuiya-members/register-with-payment`, data).then(r => r.data),
+
+  bulkRegisterWithPayment: (data: { member_ids: string[]; jumuiya_id: string; phoneNumber: string; amount: number }) =>
+    apiClient.post(`/jumuiya-members/bulk-register-with-payment`, data).then(r => r.data),
 };

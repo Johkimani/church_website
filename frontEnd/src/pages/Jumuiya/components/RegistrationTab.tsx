@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
-import { FaUserPlus, FaUsers, FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle, FaStamp } from 'react-icons/fa';
+import { memberService } from '../../../api/jumuiyaMemberService';
+import { FaUserPlus, FaUsers, FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle, FaStamp, FaSpinner } from 'react-icons/fa';
 import './TabsSystem.css';
 import ChoirJoinForm from '../choir/ChoirJoinForm';
 import DancersJoinForm from '../choir/DancersJoinForm';
@@ -27,25 +28,58 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showStampCard, setShowStampCard] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
-    // Current user's membership record in this specific jumuiya
     const currentMember = useMemo(() => {
         return members.find(m => m.id === user?.member_id && m.jumuiya_id === jumuiyaId);
     }, [members, user, jumuiyaId]);
 
-    // Members that have not yet registered this semester
     const unregisteredMembers = useMemo(() => {
         return members.filter(m => !m.is_registered);
     }, [members]);
 
-    const handleSelfSubmit = (e: React.FormEvent) => {
+    const handleSelfSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitted(true);
+        if (!user?.member_id || !jumuiyaId) return;
+        setIsProcessing(true);
+        setError('');
+        try {
+            const res = await memberService.registerWithPayment({
+                member_id: user.member_id,
+                jumuiya_id: jumuiyaId,
+                phoneNumber: selfPhone,
+                amount: REGISTRATION_FEE,
+            });
+            setSuccessMessage(res?.message || 'Registration complete!');
+            setIsSubmitted(true);
+        } catch (err: any) {
+            setError(err?.response?.data?.message || err?.message || 'Registration failed. Please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
-    const handleBulkSubmit = (e: React.FormEvent) => {
+    const handleBulkSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitted(true);
+        if (selectedMemberIds.length === 0 || !jumuiyaId) return;
+        setIsProcessing(true);
+        setError('');
+        try {
+            const res = await memberService.bulkRegisterWithPayment({
+                member_ids: selectedMemberIds,
+                jumuiya_id: jumuiyaId,
+                phoneNumber: bulkPhone,
+                amount: REGISTRATION_FEE * selectedMemberIds.length,
+            });
+            setSuccessMessage(res?.message || `${selectedMemberIds.length} member(s) registered!`);
+            setIsSubmitted(true);
+        } catch (err: any) {
+            setError(err?.response?.data?.message || err?.message || 'Registration failed. Please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const toggleMemberSelection = (id: string) => {
@@ -73,16 +107,19 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
         return (
             <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
                 <div className="tab-card glass-card animate-fade" style={{ padding: '64px 24px', textAlign: 'center', maxWidth: '600px', margin: '40px auto' }}>
-                    <FaCheckCircle style={{ fontSize: '4rem', color: 'var(--jumuiya-color)', marginBottom: '24px' }} />
-                    <h2 style={{ fontSize: '2rem', marginBottom: '16px' }}>Payment Request Sent!</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '1.1rem' }}>
-                        A prompt has been sent to the specified M-Pesa number. Please enter your PIN to complete the registration.
+                    <FaCheckCircle style={{ fontSize: '4rem', color: '#22c55e', marginBottom: '24px' }} />
+                    <h2 style={{ fontSize: '2rem', marginBottom: '16px' }}>Registration Successful!</h2>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '1.1rem' }}>
+                        {successMessage}
+                    </p>
+                    <p style={{ color: '#22c55e', marginBottom: '32px', fontSize: '0.9rem', fontWeight: 600 }}>
+                        A confirmation email has been sent to your registered email address.
                     </p>
                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         <button className="btn-premium primary" onClick={() => setShowStampCard(true)}>
                             <FaStamp style={{ marginRight: '8px' }} /> View Stamp Card
                         </button>
-                        <button className="btn-premium" onClick={() => setIsSubmitted(false)}>
+                        <button className="btn-premium" onClick={() => { setIsSubmitted(false); setSuccessMessage(''); }}>
                             Back to Registration
                         </button>
                     </div>
@@ -105,17 +142,27 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
             <div className="toggle-wrapper animate-fade">
                 <button
                     className={`toggle-item ${registrationType === 'self' ? 'active' : ''}`}
-                    onClick={() => setRegistrationType('self')}
+                    onClick={() => { setRegistrationType('self'); setError(''); }}
                 >
                     <FaUserPlus /> Self Registration
                 </button>
                 <button
                     className={`toggle-item ${registrationType === 'bulk' ? 'active' : ''}`}
-                    onClick={() => setRegistrationType('bulk')}
+                    onClick={() => { setRegistrationType('bulk'); setError(''); }}
                 >
                     <FaUsers /> Bulk Registration
                 </button>
             </div>
+
+            {error && (
+                <div style={{
+                    maxWidth: '800px', margin: '0 auto 20px', padding: '16px 20px',
+                    background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 'var(--rs)',
+                    color: '#dc2626', fontSize: '0.9rem', fontWeight: 500
+                }}>
+                    {error}
+                </div>
+            )}
 
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 {registrationType === 'self' ? (
@@ -125,6 +172,9 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                 <FaCheckCircle style={{ fontSize: '3rem', color: 'var(--success)', marginBottom: '16px' }} />
                                 <h3>You're all set!</h3>
                                 <p style={{ color: 'var(--text-secondary)' }}>You are already a registered member of {jumuiyaName}.</p>
+                                <button className="btn-premium" style={{ marginTop: '16px' }} onClick={() => setShowStampCard(true)}>
+                                    <FaStamp style={{ marginRight: '8px' }} /> View Stamp Card
+                                </button>
                             </div>
                         ) : (
                             (jumuiyaId === 'st-thomas-aquinas-choir' || jumuiyaId === 'choir') ? (
@@ -143,7 +193,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                 <div className="form-field-group">
                                     <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>MEMBER NAME</label>
                                     <div className="form-input-premium" style={{ background: 'var(--bg-soft)', color: 'var(--text-muted)', border: 'none' }}>
-                                        {currentMember?.name ?? user?.name ?? 'Member'} (Normalized Profile)
+                                        {currentMember?.name ?? user?.name ?? 'Member'}
                                     </div>
                                 </div>
 
@@ -159,6 +209,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                             onChange={(e) => setSelfPhone(e.target.value)}
                                             required
                                             placeholder="07XX XXX XXX"
+                                            disabled={isProcessing}
                                         />
                                     </div>
                                 </div>
@@ -171,8 +222,12 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--jumuiya-color)' }}>KES {REGISTRATION_FEE}</div>
                                 </div>
 
-                                <button type="submit" className="btn-premium primary" style={{ width: '100%', justifyContent: 'center' }}>
-                                    Pay & Complete Registration
+                                <button type="submit" className="btn-premium primary" style={{ width: '100%', justifyContent: 'center' }} disabled={isProcessing}>
+                                    {isProcessing ? (
+                                        <><FaSpinner className="animate-spin" style={{ marginRight: '8px' }} /> Please enter your M-Pesa PIN...</>
+                                    ) : (
+                                        'Pay & Complete Registration'
+                                    )}
                                 </button>
                                 </form>
                             )
@@ -198,16 +253,17 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                         unregisteredMembers.map(member => (
                                             <div
                                                 key={member.id}
-                                                onClick={() => toggleMemberSelection(String(member.id))}
+                                                onClick={() => !isProcessing && toggleMemberSelection(String(member.id))}
                                                 style={{
                                                     padding: '12px 16px',
                                                     borderBottom: '1px solid var(--border-light)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '12px',
-                                                    cursor: 'pointer',
+                                                    cursor: isProcessing ? 'not-allowed' : 'pointer',
                                                     background: selectedMemberIds.includes(String(member.id)) ? 'white' : 'transparent',
-                                                    transition: 'var(--t-fast)'
+                                                    transition: 'var(--t-fast)',
+                                                    opacity: isProcessing ? 0.6 : 1,
                                                 }}
                                             >
                                                 <div style={{
@@ -243,7 +299,7 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                         onChange={(e) => setBulkPhone(e.target.value)}
                                         required
                                         placeholder="07XX XXX XXX"
-                                        disabled={selectedMemberIds.length === 0}
+                                        disabled={selectedMemberIds.length === 0 || isProcessing}
                                     />
                                 </div>
                             </div>
@@ -262,9 +318,13 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
                                 type="submit"
                                 className="btn-premium primary"
                                 style={{ width: '100%', justifyContent: 'center' }}
-                                disabled={selectedMemberIds.length === 0}
+                                disabled={selectedMemberIds.length === 0 || isProcessing}
                             >
-                                Pay KES {selectedMemberIds.length * REGISTRATION_FEE} & Complete
+                                {isProcessing ? (
+                                    <><FaSpinner className="animate-spin" style={{ marginRight: '8px' }} /> Please enter your M-Pesa PIN...</>
+                                ) : (
+                                    `Pay KES ${selectedMemberIds.length * REGISTRATION_FEE} & Complete`
+                                )}
                             </button>
                         </form>
                     </div>

@@ -895,13 +895,51 @@ export const registerWithPayment = async (req, res) => {
     await pool.query('COMMIT');
 
     const row = updateResult.rows[0];
+    const memberName = `${row.first_name} ${row.last_name || ""}`.trim();
+    const jumuiyaName = row.jumuiya_name || 'your community';
+
+    // Send confirmation email (non-blocking)
+    if (row.email && process.env.MAIL_USER && process.env.MAIL_PASS) {
+      mailTransporter.sendMail({
+        from: process.env.MAIL_USER,
+        to: row.email,
+        subject: `Registration Confirmed — ${jumuiyaName}`,
+        html: `
+          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h2 style="color: #16a34a; margin: 0;">Registration Confirmed</h2>
+              <p style="color: #64748b; font-size: 0.9rem;">${jumuiyaName}</p>
+            </div>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Hi ${memberName},
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              Your registration to <strong>${jumuiyaName}</strong> has been confirmed and your payment of <strong>KES ${REGISTRATION_FEE}</strong> has been received.
+            </p>
+            <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
+              You can now view and download your Semester Stamp Card from the community page.
+            </p>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+              <p style="margin: 0 0 8px; color: #166534; font-size: 0.85rem;"><strong>Member:</strong> ${memberName}</p>
+              <p style="margin: 0 0 8px; color: #166534; font-size: 0.85rem;"><strong>Community:</strong> ${jumuiyaName}</p>
+              <p style="margin: 0 0 8px; color: #166534; font-size: 0.85rem;"><strong>Registration ID:</strong> ${row.member_id}</p>
+              <p style="margin: 0; color: #166534; font-size: 0.85rem;"><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+            <p style="color: #94a3b8; font-size: 0.8rem; text-align: center; margin-top: 32px;">
+              This is an automated message from the Campus Catholic Community registration system.
+            </p>
+          </div>
+        `,
+      }).catch(err => logger.error("Failed to send registration confirmation email: " + err.message));
+    }
+
     res.status(200).json({ 
       success: true, 
       message: "Payment successful and registration complete!",
       data: {
         ...row,
         id: row.member_id,
-        name: `${row.first_name} ${row.last_name || ""}`.trim()
+        name: memberName
       }
     });
 
