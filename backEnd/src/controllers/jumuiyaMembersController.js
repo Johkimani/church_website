@@ -14,7 +14,7 @@ const mailTransporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASSWORD,
+    pass: process.env.MAIL_PASS,
   },
 });
 
@@ -957,8 +957,8 @@ export const sendStampCard = async (req, res) => {
       return res.status(400).json({ success: false, error: "Email and PDF data are required" });
     }
 
-    if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
-      logger.warn("Email not configured: MAIL_USER / MAIL_PASSWORD missing in .env");
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      logger.warn("Email not configured: MAIL_USER / MAIL_PASS missing in .env");
       return res.status(500).json({ success: false, error: "Email service is not configured. Please contact the admin." });
     }
 
