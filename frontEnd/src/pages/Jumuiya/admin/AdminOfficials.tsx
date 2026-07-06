@@ -23,13 +23,13 @@ const JUMUIYA_POSITIONS = [
 
 // ── Patron saint image per Jumuiya name ───────────────────────────────────────
 const SAINT_IMAGES: Record<string, string> = {
-    'St. Anthony':      '/assets/images/Anthony.png',
-    'St. Augustine':    '/assets/images/Augustine.png',
-    'St. Catherine':    '/assets/images/Catherine.jpg',
-    'St. Dominic':      '/assets/images/Dominic.png',
-    'St. Elizabeth':    '/assets/images/Elizabeth.png',
-    'St. Maria Goretti':'/assets/images/MariaGoretti.png',
-    'St. Monica':       '/assets/images/Monica.png',
+    'St. Anthony':      '/images/Anthony.png',
+    'St. Augustine':    '/images/Augustine.png',
+    'St. Catherine':    '/images/Catherine.jpg',
+    'St. Dominic':      '/images/Dominic.png',
+    'St. Elizabeth':    '/images/Elizabeth.png',
+    'St. Maria Goretti':'/images/MariaGoretti.png',
+    'St. Monica':       '/images/Monica.png',
 };
 
 // ── Searchable Position Dropdown ─────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { jumuiyaList as initialJumuiyaList } from '../data/jumuiyaData';
 import { apiClient } from '../../../api/axiosInstance';
 
 // Increment this whenever the data structure changes to force a localStorage reset
-const DATA_VERSION = '5';
+const DATA_VERSION = '6';
 
 interface DataContextType {
     jumuiyaList: JumuiyaData[];
@@ -67,7 +67,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                                     description: found.description || item.description,
                                     about: found.about || item.about,
                                     color: found.color || item.color,
-                                    saintImage: found.saintImage || item.saintImage,
+                                    // Always prefer local saintImage — backend paths may be stale
+                                    saintImage: item.saintImage || found.saintImage,
                                     historyPdf: found.historyPdf || item.historyPdf,
                                     meetingSchedule: found.meetingSchedule || item.meetingSchedule,
                                     officials: found.officials && found.officials.length > 0 ? found.officials : item.officials,

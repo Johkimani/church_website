@@ -88,7 +88,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Anthony of Padua",
     description: "The breath of Charity widens the narrows heart of sinners",
     color: "#b00adab4",
-    saintImage: "/assets/images/Anthony.png",
+    saintImage: "/images/Augustine.png",
     historyPdf: "/assets/files/SAINT_ANTHONY.pdf",
     notifications: [
       {
@@ -196,7 +196,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Augustine of Hippo",
     description: "Seeking truth and wisdom in community, inspired by the life and teachings of St. Augustine of Hippo.",
     color: "#1d21edd6",
-    saintImage: "/assets/images/Augustine.png",
+    saintImage: "/images/Augustine.png",
     historyPdf: "/assets/files/SAINT_ANTHONY.pdf",
     notifications: [
       {
@@ -304,7 +304,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Catherine of Alexandria",
     description: "Don't be afraid to fail be afraid not to try.",
     color: "#fc1f5a88",
-    saintImage: "/assets/images/Catherine.jpg",
+    saintImage: "/images/Catherine.jpg",
     historyPdf: "/assets/files/SAINT_CATHERINE.pdf",
     notifications: [
       {
@@ -412,7 +412,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Dominic Jumuiya",
     description: "Following St. Dominic, we are committed to preaching the Gospel through study, prayer, and evangelization.",
     color: "#9ea1a0d1",
-    saintImage: "/assets/images/Dominic.png",
+    saintImage: "/images/Dominic.png",
     historyPdf: "/assets/files/SAINT_DOMINIC.pdf",
     notifications: [
       {
@@ -520,7 +520,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Elizabeth of Hungary",
     description: "Embodying the spirit of St. Elizabeth of Hungary, we serve the poor and vulnerable with joy and generosity.",
     color: "#136b1ac9",
-    saintImage: "/assets/images/Elizabeth.png",
+    saintImage: "/images/Elizabeth.png",
     historyPdf: "/assets/files/SAINT_ELIZABETH.pdf",
     notifications: [
       {
@@ -628,7 +628,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Maria Goretti Jumuiya",
     description: "Inspired by the purity and courage of St. Maria Goretti, we strive for holiness in all aspects of life.",
     color: "#27b8f6ff",
-    saintImage: "/assets/images/MariaGoretti.png",
+    saintImage: "/images/MariaGoretti.png",
     historyPdf: "/assets/files/SAINT_MARIA_GORETTI.pdf",
     notifications: [
       {
@@ -736,7 +736,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Monica Jumuiya",
     description: "Nothing is far from God.",
     color: "#f6080894",
-    saintImage: "/assets/images/Monica.png",
+    saintImage: "/images/Monica.png",
     historyPdf: "/assets/files/SAINT_MONICAH.pdf",
     notifications: [
       {
