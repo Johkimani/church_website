@@ -104,14 +104,14 @@ export const SACRAMENTALS_PRODUCTS: SacramentalProduct[] = [
         name: "Crystal Rosary – Blue",
         price: 250,
         desc: "Sparkling crystal beads with a silver-plated crucifix.",
-        img: "https://images.unsplash.com/photo-1584446549557-ca5e7baf3cc1?w=600&fit=crop",
+        img: "",
         category: "rosaries"
     },
     {
         name: "Pearl Rosary – White",
         price: 200,
         desc: "Elegant pearl finish, perfect gift for First Communion.",
-        img: "https://images.unsplash.com/photo-1609170846962-a8024f8e69d2?w=600&fit=crop",
+        img: "",
         category: "rosaries"
     },
 
@@ -120,21 +120,21 @@ export const SACRAMENTALS_PRODUCTS: SacramentalProduct[] = [
         name: "Prayer Book & Bible Set",
         price: 1200,
         desc: "Comprehensive guide for morning and evening prayers.",
-        img: "https://images.unsplash.com/photo-1438283173091-5dbf5c5a3206?w=600&fit=crop",
+        img: "",
         category: "bibles"
     },
     {
         name: "Holy Bible – Leather Bound",
         price: 1800,
         desc: "Premium leather-bound Bible with gold-edge pages.",
-        img: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&fit=crop",
+        img: "",
         category: "bibles"
     },
     {
         name: "Children's Illustrated Bible",
         price: 650,
         desc: "Colorful stories that bring Scripture alive for young readers.",
-        img: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&fit=crop",
+        img: "",
         category: "bibles"
     },
 
@@ -143,21 +143,21 @@ export const SACRAMENTALS_PRODUCTS: SacramentalProduct[] = [
         name: "St. Benedict Medal",
         price: 300,
         desc: "Wearable protection and blessing.",
-        img: "https://images.unsplash.com/photo-1627582531065-bcffbfbd65e5?w=600&fit=crop",
+        img: "",
         category: "chains"
     },
     {
         name: "Miraculous Medal Chain",
         price: 350,
         desc: "Silver-plated chain featuring the Miraculous Medal of Our Lady.",
-        img: "https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600&fit=crop",
+        img: "",
         category: "chains"
     },
     {
         name: "Gold Cross Pendant Chain",
         price: 500,
         desc: "Elegant gold-tone cross pendant on a sturdy chain.",
-        img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&fit=crop",
+        img: "",
         category: "chains"
     },
 
@@ -166,14 +166,14 @@ export const SACRAMENTALS_PRODUCTS: SacramentalProduct[] = [
         name: "Wall Crucifix",
         price: 700,
         desc: "Detailed resin and wood finish for your home altar.",
-        img: "https://images.unsplash.com/photo-1574016024951-404323afba98?w=600&fit=crop",
+        img: "",
         category: "crucifixes"
     },
     {
         name: "Standing Desk Crucifix",
         price: 450,
         desc: "Compact crucifix for office or bedside devotion.",
-        img: "https://images.unsplash.com/photo-1445445290350-18a3b86e0b5a?w=600&fit=crop",
+        img: "",
         category: "crucifixes"
     },
 
@@ -182,14 +182,14 @@ export const SACRAMENTALS_PRODUCTS: SacramentalProduct[] = [
         name: "Marian Statue (Our Lady)",
         price: 850,
         desc: "Delicate features painted with care.",
-        img: "https://images.unsplash.com/photo-1582294157833-287515dbe3ba?w=600&fit=crop",
+        img: "",
         category: "statues"
     },
     {
         name: "Sacred Heart of Jesus Statue",
         price: 950,
         desc: "Hand-painted, inspired by classic Catholic imagery.",
-        img: "https://images.unsplash.com/photo-1577083552431-6e5ea573543e?w=600&fit=crop",
+        img: "",
         category: "statues"
     },
 
@@ -198,21 +198,21 @@ export const SACRAMENTALS_PRODUCTS: SacramentalProduct[] = [
         name: "Beeswax Altar Candles",
         price: 450,
         desc: "Set of 2 pure beeswax candles, slow-burning.",
-        img: "https://images.unsplash.com/photo-1528695027588-ac0fb8a9b2b0?w=600&fit=crop",
+        img: "",
         category: "candles"
     },
     {
         name: "Scented Devotional Candles",
         price: 200,
         desc: "Lavender & frankincense blend to enhance prayer.",
-        img: "https://images.unsplash.com/photo-1602523961358-f9f03dd557db?w=600&fit=crop",
+        img: "",
         category: "candles"
     },
     {
         name: "Holy Water Font",
         price: 380,
         desc: "Ceramic wall-mount font for home blessing.",
-        img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&fit=crop",
+        img: "",
         category: "candles"
     }
 ];

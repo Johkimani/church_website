@@ -514,6 +514,23 @@ class ApiService {
     return response.data;
   }
 
+  // ── Testimonials ──
+
+  async getTestimonials(): Promise<any[]> {
+    const response = await apiClient.get('/testimonials');
+    return response.data;
+  }
+
+  async createTestimonial(payload: { name: string; role?: string; text: string; rating?: number }): Promise<any> {
+    const response = await apiClient.post('/testimonials', payload);
+    return response.data;
+  }
+
+  async deleteTestimonial(id: number | string): Promise<any> {
+    const response = await apiClient.delete(`/testimonials/${id}`);
+    return response.data;
+  }
+
 }
 
 export default new ApiService();

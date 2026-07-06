@@ -42,17 +42,6 @@ const menuItems = [
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
-  {
-    id: "sacramental-section",
-    name: "Sacramentals section",
-    icon: Database,
-    subItems: [
-      { id: 'sacramentals-banners', name: 'Sacramentals Banners', path: '/admin/sacramentals-banners' },
-      { id: "products", name: "Products", path: "/admin/products" },
-      { id: "orders", name: "Orders", path: "/admin/orders" },
-      { id: "hire", name: "Hire Requests", path: "/admin/hire-requests" }
-    ]
-  },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
@@ -67,7 +56,7 @@ export default function UniversalAdmin() {
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [openMenus, setOpenMenus] = useState<string[]>(['activities', 'sacramental-section']);
+  const [openMenus, setOpenMenus] = useState<string[]>(['activities']);
 
   const toggleMenu = (id: string) => {
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);

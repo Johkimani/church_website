@@ -4,6 +4,7 @@ import { HireModal } from '../components/HireModal';
 import { HeroSlider, useSliderImages } from '../components/HeroSlider';
 import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS } from './data';
 import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle } from 'react-icons/fa';
+import TestimonialsSection from '../components/TestimonialsSection';
 
 interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
@@ -72,35 +73,7 @@ const TrustStrip: React.FC = () => {
     );
 };
 
-const TestimonialsSection: React.FC = () => {
-    const testimonials = [
-        { id: 1, name: 'David Mwangi', role: 'Worship Leader', text: 'The speakers and microphones we rented were crystal clear. Setup was included and the sound quality was outstanding!', rating: 5 },
-        { id: 2, name: 'Sarah Njeri', role: 'Choir Director', text: 'We rented the piano for our concert. Beautiful sound, well-maintained, and delivered right on time. Highly recommend!', rating: 5 },
-        { id: 3, name: 'James Kariuki', role: 'Event Coordinator', text: 'Professional-grade equipment at affordable prices. The organ was perfect for our Easter service. Will rent again!', rating: 4 },
-    ];
-    return (
-        <div className="py-10 sm:py-14 px-4">
-            <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-10">
-                <span className="inline-block text-[10px] sm:text-xs font-black text-emerald-600 bg-emerald-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">What Our Customers Say</span>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-800">Trusted by Worship Teams</h2>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
-                {testimonials.map(t => (
-                    <div key={t.id} className="bg-white rounded-2xl p-5 sm:p-6 shadow hover:shadow-lg transition-all duration-300 border border-emerald-50 hover:-translate-y-1 text-center">
-                        <div className="flex justify-center gap-0.5 mb-3">
-                            {Array.from({ length: t.rating }).map((_, i) => <FaStar key={i} size={12} className="text-amber-400" />)}
-                        </div>
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4 italic">"{t.text}"</p>
-                        <div>
-                            <p className="font-bold text-slate-800 text-sm">{t.name}</p>
-                            <p className="text-xs text-slate-400">{t.role}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
+
 
 const ProcessGuide: React.FC = () => (
     <div className="py-12 sm:py-16 px-4">

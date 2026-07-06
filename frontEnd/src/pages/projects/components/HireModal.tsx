@@ -5,6 +5,7 @@ import { useApp } from "../../../context/AppContext";
 
 interface HireModalProps {
   onClose: () => void;
+  showEventDate?: boolean;
 }
 
 interface AvailabilityResult {
@@ -18,7 +19,7 @@ interface AvailabilityResult {
   daily_rate?: number;
 }
 
-export const HireModal = ({ onClose }: HireModalProps) => {
+export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => {
   const { hireItems, clearHire } = useApp();
   const today = new Date().toISOString().split("T")[0];
 
@@ -100,7 +101,13 @@ export const HireModal = ({ onClose }: HireModalProps) => {
   const allAvailable = availability ? availability.every(a => a.can_fulfill) : true;
   const anyChecked = availability !== null;
 
-  const totalCost = hireItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const pickupDate = new Date(form.pickup_date);
+  const returnDate = new Date(form.return_date);
+  const rentalDays = form.pickup_date && form.return_date
+    ? Math.max(1, Math.ceil((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24)))
+    : 1;
+
+  const totalCost = hireItems.reduce((sum, item) => sum + item.price * item.quantity * rentalDays, 0);
 
   const getIcon = (category?: string) => {
     switch ((category || "").toLowerCase()) {
@@ -221,12 +228,15 @@ export const HireModal = ({ onClose }: HireModalProps) => {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-slate-500">x{item.quantity}</span>
-                    <span className="font-bold text-slate-800">KES {(item.price * item.quantity).toLocaleString()}</span>
+                    <span className="text-slate-400 text-xs">KES {Number(item.price).toLocaleString()}/day</span>
+                    <span className="font-bold text-slate-800">KES {(item.price * item.quantity * rentalDays).toLocaleString()}</span>
                   </div>
                 </div>
               ))}
               <div className="border-t border-slate-200 pt-2 mt-2 flex justify-between text-sm">
-                <span className="font-black text-slate-700">Total Estimated Cost</span>
+                <span className="font-black text-slate-700">
+                  Total for {rentalDays} day{rentalDays > 1 ? 's' : ''}
+                </span>
                 <span className="font-black text-blue-600">KES {totalCost.toLocaleString()}</span>
               </div>
             </div>
@@ -254,11 +264,13 @@ export const HireModal = ({ onClose }: HireModalProps) => {
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Hire Details</p>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Event Date *</label>
-                  <input name="event_date" type="date" value={form.event_date} onChange={handleChange} min={today} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-                </div>
-                <div>
+                {showEventDate && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Event Date *</label>
+                    <input name="event_date" type="date" value={form.event_date} onChange={handleChange} min={today} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                  </div>
+                )}
+                <div className={showEventDate ? '' : 'col-span-2'}>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Pickup Date *</label>
                   <input name="pickup_date" type="date" value={form.pickup_date} onChange={handleChange} min={today} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
                 </div>
@@ -314,24 +326,53 @@ export const HireModal = ({ onClose }: HireModalProps) => {
               <textarea name="notes" value={form.notes} onChange={handleChange} placeholder="E.g., Need the chairs arranged before 8 AM." rows={2} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none" />
             </div>
 
-            {/* Agree to Terms */}
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" name="agree" checked={form.agree} onChange={handleChange} className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-xs text-slate-500 leading-relaxed">
-                I agree that the items will be picked up from and returned to KYU campus. I understand late returns may incur additional charges.
-              </span>
-            </label>
+            {/* Terms & Conditions */}
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+              <p className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                <AlertTriangle size={12} /> Terms & Conditions
+              </p>
+              <ul className="text-xs text-amber-700 space-y-1.5 leading-relaxed">
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5">•</span>
+                  <span>Items must be picked up from and returned to <strong>KYU campus</strong> on the agreed dates.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5">•</span>
+                  <span>You are <strong>fully responsible</strong> for any damage, loss, or theft during the hire period. Repair or replacement costs will be charged.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5">•</span>
+                  <span>Late returns beyond the agreed return date will incur <strong>additional daily charges</strong>.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5">•</span>
+                  <span>Items must be returned in <strong>the same clean condition</strong> as received.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5">•</span>
+                  <span>Full payment is due <strong>before pickup</strong> unless other arrangements are approved.</span>
+                </li>
+              </ul>
+              <label className="flex items-start gap-3 cursor-pointer pt-1">
+                <input type="checkbox" name="agree" checked={form.agree} onChange={handleChange} className="mt-0.5 w-4 h-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500" />
+                <span className="text-xs text-amber-800 font-semibold">
+                  I have read and agree to the terms above
+                </span>
+              </label>
+            </div>
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading || checkingAvail || (!allAvailable && anyChecked)}
+              disabled={loading || checkingAvail || !form.agree || (!allAvailable && anyChecked)}
               className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:cursor-not-allowed"
             >
               {loading ? (
                 <><Loader2 size={18} className="animate-spin" /> Submitting...</>
               ) : checkingAvail ? (
                 <><Loader2 size={18} className="animate-spin" /> Checking availability...</>
+              ) : !form.agree ? (
+                "Agree to terms to continue"
               ) : !allAvailable && anyChecked ? (
                 "Some items unavailable — adjust dates"
               ) : (
@@ -340,7 +381,7 @@ export const HireModal = ({ onClose }: HireModalProps) => {
             </button>
 
             <p className="text-[10px] text-slate-400 text-center">
-              Total estimated cost: KES {totalCost.toLocaleString()}. Payment will be arranged after approval.
+              Total for {rentalDays} day{rentalDays > 1 ? 's' : ''}: KES {totalCost.toLocaleString()}. Payment will be arranged after approval.
             </p>
           </form>
         )}

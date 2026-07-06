@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  ShoppingBag, Package, CalendarDays, Tag, UserCircle, BarChart3, Image, Bell, LayoutGrid
+  ShoppingBag, Package, Tag, UserCircle, BarChart3, Image, Bell, LayoutGrid, MessageCircle, ShoppingCart, CalendarDays
 } from "lucide-react";
 import ProductsPanel from "./ProductsPanel";
 import OrdersPanel from "./ordersmanager";
@@ -12,29 +12,67 @@ import SliderManager from "./SliderManager";
 import CategoryCardManager from "./CategoryCardManager";
 import NotificationsPanel from "./NotificationsPanel";
 import HireSettingsSection from "./HireSettingsSection";
+import TestimonialManager from "./TestimonialManager";
 
-const tabs = [
+const sections = [
+  { id: 'purchase', label: 'Purchase (Sacramentals & T-Shirts)', icon: ShoppingCart },
+  { id: 'hire',     label: 'Hire (Chairs & Instruments)',       icon: CalendarDays },
+] as const;
+
+const purchaseTabs = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "products",      label: "Products",      icon: ShoppingBag },
   { id: "orders",        label: "Orders",        icon: Package },
-  { id: "hire",          label: "Hire Requests", icon: CalendarDays },
   { id: "categories",    label: "Categories",    icon: Tag },
   { id: "customers",     label: "Customers",     icon: UserCircle },
   { id: "cards",         label: "Home Cards",    icon: LayoutGrid },
   { id: "sliders",       label: "Slider Images", icon: Image },
+  { id: "testimonials",  label: "Testimonials",  icon: MessageCircle },
   { id: "reports",       label: "Reports",       icon: BarChart3 },
 ] as const;
 
-type TabId = typeof tabs[number]["id"];
+const hireTabs = [
+  { id: "hire-requests", label: "Hire Requests", icon: CalendarDays },
+] as const;
+
+type SectionId = typeof sections[number]["id"];
 
 export default function ProjectsManager() {
-  const [activeTab, setActiveTab] = useState<TabId>("notifications");
+  const [activeSection, setActiveSection] = useState<SectionId>('purchase');
+  const [activeTab, setActiveTab] = useState("notifications");
+  const currentTabs = activeSection === 'purchase' ? purchaseTabs : hireTabs;
+
+  const handleSectionChange = (sectionId: SectionId) => {
+    setActiveSection(sectionId);
+    setActiveTab(sectionId === 'purchase' ? 'notifications' : 'hire-requests');
+  };
 
   return (
-    <div>
+    <div className="space-y-4">
+      {/* Section Switcher */}
+      <div className="flex gap-2">
+        {sections.map(section => {
+          const isActive = activeSection === section.id;
+          return (
+            <button
+              key={section.id}
+              onClick={() => handleSectionChange(section.id)}
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+                isActive
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+              }`}
+            >
+              <section.icon size={18} />
+              {section.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Tab Bar */}
-      <div className="flex flex-wrap gap-1 mb-6 border-b border-slate-200 pb-2">
-        {tabs.map((tab) => {
+      <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2">
+        {currentTabs.map(tab => {
           const isActive = activeTab === tab.id;
           return (
             <button
@@ -54,17 +92,25 @@ export default function ProjectsManager() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "notifications" && <NotificationsPanel />}
-      {activeTab === "products" && <ProductsPanel />}
-      {activeTab === "orders" && <OrdersPanel />}
-      {activeTab === "hire" && <HireRequestsPanel />}
-      {activeTab === "categories" && <CategoriesPanel />}
-      {activeTab === "customers" && <CustomersPanel />}
-      {activeTab === "cards" && <CategoryCardManager />}
-      {activeTab === "sliders" && <SliderManager />}
-      {activeTab === "reports" && <ReportsPanel />}
+      {activeSection === 'purchase' && (
+        <>
+          {activeTab === "notifications" && <NotificationsPanel />}
+          {activeTab === "products" && <ProductsPanel />}
+          {activeTab === "orders" && <OrdersPanel />}
+          {activeTab === "categories" && <CategoriesPanel />}
+          {activeTab === "customers" && <CustomersPanel />}
+          {activeTab === "cards" && <CategoryCardManager />}
+          {activeTab === "sliders" && <SliderManager />}
+          {activeTab === "testimonials" && <TestimonialManager />}
+          {activeTab === "reports" && <ReportsPanel />}
+        </>
+      )}
 
-      <HireSettingsSection />
+      {activeSection === 'hire' && (
+        <>
+          {activeTab === "hire-requests" && <><HireRequestsPanel /><HireSettingsSection /></>}
+        </>
+      )}
     </div>
   );
 }
