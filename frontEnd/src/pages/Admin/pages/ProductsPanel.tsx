@@ -208,60 +208,51 @@ const ProductsPanel = () => {
       {loading ? (
         <div className="admin-card-section text-center text-slate-500">Loading products...</div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {filteredProducts.length === 0 ? (
-            <div className="admin-card-section text-center text-slate-500">
+            <div className="col-span-full text-center py-12 text-slate-400 text-sm font-medium">
               No products found for the selected category.
             </div>
           ) : (
             filteredProducts.map((product) => (
-              <div key={product.id} className="admin-panel-card">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-xl font-semibold text-slate-900">{product.name}</h2>
-                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-blue-700">
-                        {product.category || 'General'}
-                      </span>
-                      {product.is_hireable && (
-                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-700">
-                          Hireable
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-slate-600">{product.description || 'No description available.'}</p>
-                    <div className="grid gap-2 sm:grid-cols-3 text-sm text-slate-700">
-                      <div>
-                        <span className="font-semibold">Price:</span> KES {Number(product.price || 0).toLocaleString()}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Stock:</span> {product.stock ?? 'N/A'}
-                      </div>
-                      <div>
-                        <span className="font-semibold">ID:</span> {product.id}
-                      </div>
-                    </div>
-                  </div>
-
-                  {product.image_url && (
+              <div key={product.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow group">
+                {/* Image */}
+                <div className="aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden">
+                  {product.image_url ? (
                     <img
                       src={getSafeImageUrl(product.image_url)}
                       alt={product.name}
-                      className="h-28 w-28 rounded-[28px] object-cover border border-slate-200 shadow-sm flex-shrink-0"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs font-medium">
+                      No image
+                    </div>
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button onClick={() => openProductForm(product)} className="admin-btn-primary">
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deleteProduct(product.id as string | number)}
-                    className="admin-btn-outline bg-rose-600 border-rose-600 text-white hover:bg-rose-700 hover:border-rose-700"
-                  >
-                    Delete
-                  </button>
+                {/* Info */}
+                <div className="p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-1">
+                    <h3 className="text-sm font-bold text-slate-800 leading-tight line-clamp-2 flex-1">{product.name}</h3>
+                    <span className="shrink-0 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{product.category || 'General'}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{product.description || '—'}</p>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-black text-slate-800">KES {Number(product.price || 0).toLocaleString()}</span>
+                    <span className="text-slate-400">Stock: {product.stock ?? '—'}</span>
+                  </div>
+                  <div className="flex gap-1.5 pt-1">
+                    <button onClick={() => openProductForm(product)} className="flex-1 py-1.5 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteProduct(product.id as string | number)}
+                      className="flex-1 py-1.5 text-[11px] font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))

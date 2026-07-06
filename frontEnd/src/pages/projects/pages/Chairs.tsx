@@ -4,6 +4,7 @@ import { HireModal } from '../components/HireModal';
 import { HeroSlider, useSliderImages } from '../components/HeroSlider';
 import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS } from './data';
 import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle, FaChair } from 'react-icons/fa';
+import TestimonialsSection from '../components/TestimonialsSection';
 
 interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
@@ -72,35 +73,7 @@ const TrustStrip: React.FC = () => {
     );
 };
 
-const TestimonialsSection: React.FC = () => {
-    const testimonials = [
-        { id: 1, name: 'John Kamau', role: 'Event Organizer', text: 'Rented 200 chairs for a wedding reception. They were clean, sturdy, and exactly what we needed. The booking process was smooth!', rating: 5 },
-        { id: 2, name: 'Mary Wambui', role: 'Parish Coordinator', text: 'We use these chairs for every church gathering. Great quality and very reasonable pricing. Highly recommend!', rating: 5 },
-        { id: 3, name: 'Peter Njoroge', role: 'Community Leader', text: 'Excellent service. The chairs arrived on time and in perfect condition. Will definitely rent again.', rating: 4 },
-    ];
-    return (
-        <div className="py-10 sm:py-14 px-4">
-            <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-10">
-                <span className="inline-block text-[10px] sm:text-xs font-black text-amber-600 bg-amber-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">What Our Customers Say</span>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-800">Trusted by Event Organizers</h2>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
-                {testimonials.map(t => (
-                    <div key={t.id} className="bg-white rounded-2xl p-5 sm:p-6 shadow hover:shadow-lg transition-all duration-300 border border-amber-50 hover:-translate-y-1 text-center">
-                        <div className="flex justify-center gap-0.5 mb-3">
-                            {Array.from({ length: t.rating }).map((_, i) => <FaStar key={i} size={12} className="text-amber-400" />)}
-                        </div>
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4 italic">"{t.text}"</p>
-                        <div>
-                            <p className="font-bold text-slate-800 text-sm">{t.name}</p>
-                            <p className="text-xs text-slate-400">{t.role}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
+
 
 const ProcessGuide: React.FC = () => (
     <div className="py-12 sm:py-16 px-4">
@@ -149,7 +122,7 @@ export const Chairs = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-amber-50/20 to-white">
 
-            {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} />}
+            {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} showEventDate={false} />}
 
             {/* Hero Slider */}
             <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
@@ -247,33 +220,40 @@ export const Chairs = () => {
                                 </div>
 
                                 {/* Quantity + Hire Button */}
-                                <div className="flex items-center gap-3">
-                                    <div className="flex-1">
-                                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Quantity</label>
-                                        <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden">
-                                            <button
-                                                onClick={() => setChairQty(q => Math.max(1, q - 10))}
-                                                className="w-10 h-11 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors"
-                                            >-</button>
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                value={chairQty}
-                                                onChange={e => setChairQty(Math.max(1, parseInt(e.target.value) || 1))}
-                                                className="flex-1 h-11 text-center text-sm font-bold border-x border-slate-200 focus:outline-none"
-                                            />
-                                            <button
-                                                onClick={() => setChairQty(q => Math.min(999, q + 10))}
-                                                className="w-10 h-11 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors"
-                                            >+</button>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                                        Number of chairs needed
+                                    </label>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <div className="flex items-center border border-slate-300 rounded-xl overflow-hidden focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-200 transition-all">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setChairQty(q => Math.max(1, q - 10))}
+                                                    className="w-11 h-12 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors"
+                                                >-</button>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    value={chairQty}
+                                                    onChange={e => setChairQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                                    placeholder="e.g. 50"
+                                                    className="flex-1 h-12 text-center text-base font-bold text-slate-800 border-x border-slate-200 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setChairQty(q => Math.min(999, q + 10))}
+                                                    className="w-11 h-12 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-lg transition-colors"
+                                                >+</button>
+                                            </div>
                                         </div>
+                                        <button
+                                            onClick={handleHire}
+                                            className="h-12 px-8 rounded-xl font-black text-base bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200 hover:shadow-xl active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
+                                        >
+                                            Hire
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={handleHire}
-                                        className="flex-1 h-11 rounded-2xl font-black text-sm bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200 hover:shadow-xl active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
-                                    >
-                                        Hire
-                                    </button>
                                 </div>
                                 <p className="text-[10px] text-slate-400 text-center">Pickup at KYU campus. No delivery.</p>
                             </div>
@@ -283,7 +263,7 @@ export const Chairs = () => {
             </section>
 
             {/* Testimonials */}
-            <TestimonialsSection />
+            <TestimonialsSection variant="blue" />
 
             {/* Process Guide */}
             <ProcessGuide />

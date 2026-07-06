@@ -3,7 +3,7 @@ import { useApp } from '../../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import {
     TRUST_BADGES, RENTAL_PROCESS_STEPS,
-    SLIDE_IMAGES, SACRAMENTAL_CATEGORIES, SACRAMENTALS_PRODUCTS
+    SACRAMENTAL_CATEGORIES, SACRAMENTALS_PRODUCTS
 } from '../pages/data';
 import type { SacramentalCategory } from '../pages/data';
 import {
@@ -12,6 +12,7 @@ import {
     FaGlobeAfrica, FaBoxOpen, FaCheckCircle
 } from 'react-icons/fa';
 import apiService from '../../Landing/services/api';
+import TestimonialsSection from '../components/TestimonialsSection';
 
 /* ───────────────────────────────────────────────
    SACRAMENTAL SUBCATEGORIES that exist in the DB
@@ -346,64 +347,6 @@ const ProcessGuide: React.FC = () => (
     </div>
 );
 
-/* ───────────────────────────────────────────────
-   TESTIMONIALS SECTION
-─────────────────────────────────────────────── */
-const TESTIMONIALS = [
-    {
-        id: 1,
-        name: 'Grace Wanjiku',
-        role: 'Parishioner',
-        text: 'The communion set I ordered was beautiful and arrived quickly. Thank you for making it easy to get quality sacramentals!',
-        rating: 5,
-    },
-    {
-        id: 2,
-        name: 'Peter Mwangi',
-        role: 'Church Administrator',
-        text: 'We ordered baptismal candles for our Easter service. The quality was excellent and the process was smooth.',
-        rating: 5,
-    },
-    {
-        id: 3,
-        name: 'Mary Njeri',
-        role: 'Mother of Bride',
-        text: 'The wedding candles were exactly what we needed. Highly recommend their services!',
-        rating: 4,
-    },
-];
-
-const TestimonialsSection: React.FC = () => (
-    <div className="py-10 sm:py-14 px-4">
-        <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-10">
-            <span className="inline-block text-[10px] sm:text-xs font-black text-blue-600 bg-blue-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">
-                What Our Customers Say
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-800">Trusted by Our Community</h2>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
-            {TESTIMONIALS.map(t => (
-                <div
-                    key={t.id}
-                    className="bg-white rounded-2xl p-5 sm:p-6 shadow hover:shadow-lg transition-all duration-300 border border-blue-50 hover:-translate-y-1 text-center"
-                >
-                    <div className="flex justify-center gap-0.5 mb-3">
-                        {Array.from({ length: t.rating }).map((_, i) => (
-                            <FaStar key={i} size={12} className="text-amber-400" />
-                        ))}
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4 italic">
-                        "{t.text}"
-                    </p>
-                    <div>
-                        <p className="font-bold text-slate-800 text-sm">{t.name}</p>
-                        <p className="text-xs text-slate-400">{t.role}</p>
-                    </div>
-                </div>
-            ))}
-        </div>
-    </div>
-);
 
 /* ───────────────────────────────────────────────
    SKELETON LOADER
@@ -424,11 +367,27 @@ const SkeletonCard = () => (
    MAIN SACRAMENTALS PAGE
 ─────────────────────────────────────────────── */
 export const Sacramentals = () => {
-    const { products, addToCart, sacCategory, setSacCategory, setIsCartOpen, isAdmin, isLoading } = useApp();
+    const { products: dbProducts, addToCart, sacCategory, setSacCategory, setIsCartOpen, isAdmin, isLoading } = useApp();
     const navigate = useNavigate();
     const [search, setSearch] = React.useState('');
+    const [debouncedSearch, setDebouncedSearch] = React.useState('');
+    const [sortBy, setSortBy] = React.useState<'none' | 'price-asc' | 'price-desc' | 'name'>('none');
+    const productsRef = React.useRef<HTMLDivElement>(null);
     const [sliderImgs, setSliderImgs] = React.useState<SliderImg[]>([]);
     const [sliderLoading, setSliderLoading] = React.useState(true);
+
+    // Debounce search (300ms)
+    React.useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    // Auto-scroll to products when filtering
+    React.useEffect(() => {
+        if ((debouncedSearch || sacCategory !== 'all' || sortBy !== 'none') && productsRef.current) {
+            productsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [debouncedSearch, sacCategory, sortBy]);
 
     /* ── Load admin-uploaded slider images from API ── */
     React.useEffect(() => {
@@ -445,11 +404,10 @@ export const Sacramentals = () => {
                         message: d.message,
                     })));
                 } else {
-                    // Fallback to built-in images
-                    setSliderImgs(SLIDE_IMAGES);
+                    setSliderImgs([]);
                 }
             })
-            .catch(() => { if (mounted) setSliderImgs(SLIDE_IMAGES); })
+            .catch(() => { if (mounted) setSliderImgs([]); })
             .finally(() => { if (mounted) setSliderLoading(false); });
         return () => { mounted = false; };
     }, []);
@@ -461,29 +419,44 @@ export const Sacramentals = () => {
         setSliderImgs(prev => prev.filter(img => img.id !== id));
     };
 
-    /* ── Filter products: sacramentals = all sub-cats + explicit "sacramentals" ── */
+    /* ── Merge DB products + static fallback ── */
     const sourceProducts = React.useMemo(() => {
-        const dbFiltered = products.filter(p =>
-            SACRAMENTAL_SUBCATS.has((p.category || '').toLowerCase())
-        );
-        if (dbFiltered.length > 0) {
-            return dbFiltered.map(p => ({
-                ...p,
-                subcategory: p.category,
-            }));
-        }
-        // Fallback: static data
-        return SACRAMENTALS_PRODUCTS.map((p, i) => ({
+        const staticProds = SACRAMENTALS_PRODUCTS.map((p, i) => ({
             id: `static-${i}`,
             name: p.name,
             price: p.price,
             description: p.desc,
             image_url: p.img,
-            subcategory: p.category,
-            category: p.category,
+            subcategory: (p.category || 'rosaries').toLowerCase(),
+            category: (p.category || 'rosaries').toLowerCase(),
             stock: 50,
         }));
-    }, [products]);
+
+        const dbProds = (dbProducts || [])
+            .filter(p => {
+                const cat = (p.category || '').toLowerCase();
+                return cat === 'sacramentals' || SACRAMENTAL_SUBCATS.has(cat) || SACRAMENTAL_SUBCATS.has(p.subcategory?.toLowerCase());
+            })
+            .map(p => ({
+                id: p.id || `db-${p.name}`,
+                name: p.name,
+                price: Number(p.price) || 0,
+                description: p.description || p.desc || '',
+                image_url: p.image_url || p.img || '',
+                subcategory: (p.subcategory || p.category || 'sacramentals').toLowerCase(),
+                category: (p.category || 'sacramentals').toLowerCase(),
+                stock: p.stock ?? 50,
+            }));
+
+        // Deduplicate by name, DB wins over static
+        const seen = new Set<string>();
+        return [...dbProds, ...staticProds].filter(p => {
+            const key = p.name.toLowerCase().trim();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, [dbProducts]);
 
     /* ── Category counts ── */
     const categoryCounts = React.useMemo(() => {
@@ -496,18 +469,25 @@ export const Sacramentals = () => {
         return c;
     }, [sourceProducts]);
 
-    /* ── Final filtered list ── */
+    /* ── Final filtered + sorted list ── */
     const filtered = React.useMemo(() => {
-        return sourceProducts.filter(p => {
-            const sub = (p.subcategory || p.category || '').toLowerCase();
+        let result = sourceProducts.filter(p => {
+            const sub = p.subcategory || p.category || '';
             const matchCat = sacCategory === 'all' || sub === sacCategory;
-            const term = search.toLowerCase();
+            const term = debouncedSearch.toLowerCase();
             const matchSearch = !term
                 || (p.name || '').toLowerCase().includes(term)
-                || (p.description || p.desc || '').toLowerCase().includes(term);
+                || (p.description || '').toLowerCase().includes(term);
             return matchCat && matchSearch;
         });
-    }, [sourceProducts, sacCategory, search]);
+
+        // Sort
+        if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price);
+        else if (sortBy === 'price-desc') result.sort((a, b) => b.price - a.price);
+        else if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
+
+        return result;
+    }, [sourceProducts, sacCategory, debouncedSearch, sortBy]);
 
     /* ── Add to cart ── */
     const handleAddToCart = (product: typeof sourceProducts[0]) => {
@@ -518,7 +498,7 @@ export const Sacramentals = () => {
         });
     };
 
-    const hasFilters = sacCategory !== 'all' || search.trim();
+    const hasFilters = sacCategory !== 'all' || debouncedSearch.trim() || sortBy !== 'none';
     const activeCategoryLabel = SACRAMENTAL_CATEGORIES.find(c => c.id === sacCategory)?.label || '';
 
     return (
@@ -561,23 +541,35 @@ export const Sacramentals = () => {
             {/* ── SEARCH + FILTER PANEL ── */}
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
                 <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-blue-50 p-3 sm:p-4 space-y-3">
-                    {/* Search */}
-                    <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs sm:text-sm" />
-                        <input
-                            id="sacramentals-search"
-                            type="text"
-                            placeholder="Search items…"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="w-full pl-9 pr-9 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition font-semibold text-slate-700 placeholder:text-slate-400"
-                        />
-                        {search && (
-                            <button
-                                onClick={() => setSearch('')}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg text-lg leading-none transition-colors"
-                            >×</button>
-                        )}
+                    {/* Search + Sort row */}
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs sm:text-sm" />
+                            <input
+                                id="sacramentals-search"
+                                type="text"
+                                placeholder="Search by name or description…"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="w-full pl-9 pr-9 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition font-semibold text-slate-700 placeholder:text-slate-400"
+                            />
+                            {search && (
+                                <button
+                                    onClick={() => setSearch('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg text-lg leading-none transition-colors"
+                                >×</button>
+                            )}
+                        </div>
+                        <select
+                            value={sortBy}
+                            onChange={e => setSortBy(e.target.value as typeof sortBy)}
+                            className="px-3 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
+                        >
+                            <option value="none">Sort</option>
+                            <option value="price-asc">Price: Low → High</option>
+                            <option value="price-desc">Price: High → Low</option>
+                            <option value="name">Name: A → Z</option>
+                        </select>
                     </div>
 
                     {/* Category Filters */}
@@ -593,7 +585,7 @@ export const Sacramentals = () => {
             </div>
 
             {/* ── PRODUCT SECTION ── */}
-            <section id="sacramentals" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 sm:pb-10">
+            <section ref={productsRef} id="sacramentals" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 sm:pb-10">
 
                 {/* Results bar */}
                 <div className="flex items-center justify-between mb-3 sm:mb-4 px-1">
@@ -607,7 +599,7 @@ export const Sacramentals = () => {
                     </p>
                     {hasFilters && !isLoading && (
                         <button
-                            onClick={() => { setSacCategory('all'); setSearch(''); }}
+                            onClick={() => { setSacCategory('all'); setSearch(''); setDebouncedSearch(''); setSortBy('none'); }}
                             className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline transition"
                         >
                             Clear all
@@ -637,10 +629,13 @@ export const Sacramentals = () => {
                         </div>
                         <p className="text-slate-700 font-black text-base sm:text-lg mb-1">No items found</p>
                         <p className="text-slate-400 text-xs sm:text-sm max-w-xs">
-                            Try adjusting your search or selecting a different category.
+                            {debouncedSearch
+                                ? `No results for "${debouncedSearch}"`
+                                : 'Try adjusting your search or selecting a different category.'
+                            }
                         </p>
                         <button
-                            onClick={() => { setSacCategory('all'); setSearch(''); }}
+                            onClick={() => { setSacCategory('all'); setSearch(''); setDebouncedSearch(''); setSortBy('none'); }}
                             className="mt-4 sm:mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
                         >
                             Show All Items
@@ -660,7 +655,7 @@ export const Sacramentals = () => {
             </div>
 
             {/* ── TESTIMONIALS ── */}
-            <TestimonialsSection />
+            <TestimonialsSection variant="blue" />
 
             {/* ── PROCESS GUIDE ── */}
             <ProcessGuide />

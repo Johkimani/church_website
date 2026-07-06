@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { HeroSlider, useSliderImages } from '../components/HeroSlider';
 import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS, TSHIRT_PRODUCTS } from './data';
 import { FaStar, FaCheckCircle, FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
+import TestimonialsSection from '../components/TestimonialsSection';
 
 const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
@@ -76,35 +77,7 @@ const TrustStrip: React.FC = () => {
     );
 };
 
-const TestimonialsSection: React.FC = () => {
-    const testimonials = [
-        { id: 1, name: 'Faith Wanjiku', role: 'KYU Student', text: 'The CSA polo shirt is amazing quality! I wear it to every campus event. The fabric is comfortable and the branding looks sharp.', rating: 5 },
-        { id: 2, name: 'Brian Muturi', role: 'CSA Member', text: 'Ordered shirts for the entire committee. Great fit, excellent material, and the price was very reasonable. Highly recommended!', rating: 5 },
-        { id: 3, name: 'Alice Njeri', role: 'Parishioner', text: 'Love the KYU CSA branding! It really brings the community together. Quick pickup too.', rating: 4 },
-    ];
-    return (
-        <div className="py-10 sm:py-14 px-4">
-            <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-10">
-                <span className="inline-block text-[10px] sm:text-xs font-black text-blue-600 bg-blue-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">What Our Customers Say</span>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-800">Loved by KYU Students</h2>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
-                {testimonials.map(t => (
-                    <div key={t.id} className="bg-white rounded-2xl p-5 sm:p-6 shadow hover:shadow-lg transition-all duration-300 border border-blue-50 hover:-translate-y-1 text-center">
-                        <div className="flex justify-center gap-0.5 mb-3">
-                            {Array.from({ length: t.rating }).map((_, i) => <FaStar key={i} size={12} className="text-amber-400" />)}
-                        </div>
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4 italic">"{t.text}"</p>
-                        <div>
-                            <p className="font-bold text-slate-800 text-sm">{t.name}</p>
-                            <p className="text-xs text-slate-400">{t.role}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
+
 
 const ProcessGuide: React.FC = () => (
     <div className="py-12 sm:py-16 px-4">
@@ -300,7 +273,7 @@ export const Tshirts = () => {
             </section>
 
             {/* Testimonials */}
-            <TestimonialsSection />
+            <TestimonialsSection variant="blue" />
 
             {/* Process Guide */}
             <ProcessGuide />

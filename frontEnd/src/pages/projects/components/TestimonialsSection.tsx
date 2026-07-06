@@ -1,0 +1,83 @@
+import { useState, useEffect } from 'react';
+import { FaStar } from 'react-icons/fa';
+import apiService from '../../Landing/services/api';
+
+interface Testimonial {
+  id: number;
+  name: string;
+  role: string;
+  text: string;
+  rating: number;
+  created_at: string;
+}
+
+interface Props {
+  variant?: 'blue' | 'emerald';
+  title?: string;
+}
+
+const THEMES = {
+  blue: {
+    badge: 'text-blue-600 bg-blue-100',
+    border: 'border-blue-50',
+  },
+  emerald: {
+    badge: 'text-emerald-600 bg-emerald-100',
+    border: 'border-emerald-50',
+  },
+};
+
+export default function TestimonialsSection({ variant = 'blue', title = 'Trusted by Our Community' }: Props) {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const theme = THEMES[variant];
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    apiService.getTestimonials()
+      .then(data => { if (mounted) setTestimonials(Array.isArray(data) ? data : []); })
+      .catch(() => { if (mounted) setTestimonials([]); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  if (!loading && testimonials.length === 0) return null;
+
+  return (
+    <div className="py-10 sm:py-14 px-4">
+      <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-10">
+        <span className={`inline-block text-[10px] sm:text-xs font-black ${theme.badge} px-4 py-1.5 rounded-full uppercase tracking-widest mb-3`}>
+          What Our Customers Say
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-800">{title}</h2>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
+        {loading
+          ? [1,2,3].map(i => (
+              <div key={i} className="bg-white rounded-2xl p-5 sm:p-6 shadow animate-pulse">
+                <div className="h-3 bg-slate-200 rounded w-1/3 mx-auto mb-3" />
+                <div className="h-4 bg-slate-200 rounded w-full mb-2" />
+                <div className="h-4 bg-slate-200 rounded w-5/6 mx-auto mb-4" />
+                <div className="h-3 bg-slate-200 rounded w-1/4 mx-auto" />
+              </div>
+            ))
+          : testimonials.map(t => (
+              <div key={t.id} className={`bg-white rounded-2xl p-5 sm:p-6 shadow hover:shadow-lg transition-all duration-300 border ${theme.border} hover:-translate-y-1 text-center`}>
+                <div className="flex justify-center gap-0.5 mb-3">
+                  {Array.from({ length: t.rating }).map((_, i) => (
+                    <FaStar key={i} size={12} className="text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4 italic">"{t.text}"</p>
+                <div>
+                  <p className="font-bold text-slate-800 text-sm">{t.name}</p>
+                  {t.role && <p className="text-xs text-slate-400">{t.role}</p>}
+                </div>
+              </div>
+            ))
+        }
+      </div>
+    </div>
+  );
+}
