@@ -1,10 +1,13 @@
 import React from 'react';
 import { useApp } from '../../../context/AppContext';
+import { motion } from 'framer-motion';
 import { HireModal } from '../components/HireModal';
 import { HeroSlider, useSliderImages } from '../components/HeroSlider';
 import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS } from './data';
 import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle, FaChair } from 'react-icons/fa';
 import TestimonialsSection from '../components/TestimonialsSection';
+import ProjectHero from '../components/ProjectHero';
+import ProjectPageHeader from '../components/ProjectPageHeader';
 
 interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
@@ -120,39 +123,39 @@ export const Chairs = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-amber-50/20 to-white">
+        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
             {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} showEventDate={false} />}
 
-            {/* Hero Slider */}
-            <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                {sliderLoading ? (
-                    <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                ) : (
-                    <HeroSliderComponent images={sliderImgs} isAdmin={isAdmin} onDelete={deleteSlide} />
-                )}
-            </div>
+            {/* ══════════ HERO ── Dark Premium Grid Design ══════════ */}
+            <ProjectHero>
+                <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+                    {sliderLoading ? (
+                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-800 animate-pulse" />
+                    ) : (
+                        <HeroSliderComponent images={sliderImgs} isAdmin={isAdmin} onDelete={deleteSlide} />
+                    )}
+                </div>
 
-            {/* Page Header */}
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-2 text-center">
-                <span className="inline-block px-3 sm:px-5 py-1.5 text-[10px] sm:text-xs font-black text-amber-700 bg-amber-100 rounded-full uppercase tracking-widest mb-3">Event Rentals</span>
-                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-800 leading-tight">
-                    Premium{' '}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-500">Event Chairs</span>
-                </h1>
-                <p className="mt-2 sm:mt-3 text-slate-500 max-w-lg mx-auto text-xs sm:text-sm">
-                    Durable, clean plastic chairs for weddings, celebrations, and community gatherings — pickup at KYU campus.
-                </p>
-            </div>
+                <ProjectPageHeader
+                    badge="Event Rentals"
+                    title={<>Premium{' '}<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">Event Chairs</span></>}
+                    subtitle="Durable, clean plastic chairs for weddings, celebrations, and community gatherings — pickup at KYU campus."
+                >
+                    <div className="mt-6">
+                        <TrustStrip />
+                    </div>
+                </ProjectPageHeader>
+            </ProjectHero>
 
-            {/* Trust Strip */}
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
-                <TrustStrip />
-            </div>
-
-            {/* ── SHOWCASE SECTION ── */}
-            <section id="chairs" className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 pb-10 sm:pb-16">
-
+            {/* ══════════ SHOWCASE SECTION ══════════ */}
+            <motion.section
+                id="chairs"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20 pb-10 sm:pb-16"
+            >
                 {/* Main showcase card */}
                 <div className="bg-white rounded-3xl shadow-xl border border-amber-50 overflow-hidden">
                     <div className="grid md:grid-cols-2 gap-0">
@@ -260,7 +263,7 @@ export const Chairs = () => {
                         </div>
                     </div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* Testimonials */}
             <TestimonialsSection variant="blue" />
