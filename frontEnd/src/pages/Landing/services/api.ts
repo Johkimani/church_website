@@ -6,6 +6,20 @@ import { apiClient } from "../../../api/axiosInstance";
  * It handles fetching, creating, and deleting records for various tables.
  */
 class ApiService {
+  private cacheGet<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promise<T> {
+    const cacheKey = `csa_cache_${key}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < ttlMs) return data;
+      }
+    } catch { /* ignore corrupt cache */ }
+    return fetcher().then(data => {
+      try { localStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() })); } catch { /* quota */ }
+      return data;
+    });
+  }
   /**
    * Fetches data from a specified table.
    * @param tableName - The name of the table to fetch data from.
@@ -296,27 +310,36 @@ class ApiService {
   }
 
   async getSacramentalsSliderImages(section: string = 'sacramentals'): Promise<any[]> {
-    try {
-      const response = await apiClient.get(`/slider-images?section=${encodeURIComponent(section)}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching sacramentals slider images:', error);
-      return [];
-    }
+    return this.cacheGet(`slider_${section}`, 300_000, async () => {
+      try {
+        const response = await apiClient.get(`/slider-images?section=${encodeURIComponent(section)}`);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching sacramentals slider images:', error);
+        return [];
+      }
+    });
+  }
+
+  private clearSliderCache() {
+    Object.keys(localStorage).forEach(k => { if (k.startsWith('csa_cache_slider_')) localStorage.removeItem(k); });
   }
 
   async createSacramentalsSliderImage(payload: Record<string, any>): Promise<any> {
     const response = await apiClient.post('/slider-images', payload);
+    this.clearSliderCache();
     return response.data;
   }
 
   async updateSacramentalsSliderImage(id: string | number, payload: Record<string, any>): Promise<any> {
     const response = await apiClient.patch(`/slider-images/${id}`, payload);
+    this.clearSliderCache();
     return response.data;
   }
 
   async deleteSacramentalsSliderImage(id: string | number): Promise<any> {
     const response = await apiClient.delete(`/slider-images/${id}`);
+    this.clearSliderCache();
     return response.data;
   }
 
@@ -495,39 +518,66 @@ class ApiService {
   // ── Category Cards (Home Page) ──
 
   async getCategoryCards(): Promise<any[]> {
-    try {
-      const response = await apiClient.get('/category-cards');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching category cards:', error);
-      return [];
-    }
+    return this.cacheGet('category_cards', 300_000, async () => {
+      try {
+        const response = await apiClient.get('/category-cards');
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching category cards:', error);
+        return [];
+      }
+    });
   }
 
   async upsertCategoryCard(payload: { category: string; image_url: string; label: string; tag?: string }): Promise<any> {
     const response = await apiClient.post('/category-cards', payload);
+    localStorage.removeItem('csa_cache_category_cards');
     return response.data;
   }
 
   async deleteCategoryCard(category: string): Promise<any> {
     const response = await apiClient.delete(`/category-cards/${category}`);
+    localStorage.removeItem('csa_cache_category_cards');
     return response.data;
   }
 
   // ── Testimonials ──
 
-  async getTestimonials(): Promise<any[]> {
-    const response = await apiClient.get('/testimonials');
+  async getTestimonials(approvedOnly = false): Promise<any[]> {
+    const cacheKey = approvedOnly ? 'testimonials_approved' : 'testimonials_all';
+    return this.cacheGet(cacheKey, 120_000, async () => {
+      const params = approvedOnly ? { approved: 'true' } : {};
+      const response = await apiClient.get('/testimonials', { params });
+      return response.data;
+    });
+  }
+
+  private clearTestimonialsCache() {
+    localStorage.removeItem('csa_cache_testimonials_approved');
+    localStorage.removeItem('csa_cache_testimonials_all');
+  }
+
+  async createTestimonial(payload: { name: string; role?: string; text: string; rating?: number; approved?: boolean }): Promise<any> {
+    const response = await apiClient.post('/testimonials', payload);
+    this.clearTestimonialsCache();
     return response.data;
   }
 
-  async createTestimonial(payload: { name: string; role?: string; text: string; rating?: number }): Promise<any> {
+  async submitTestimonial(payload: { name: string; role?: string; text: string; rating?: number }): Promise<any> {
     const response = await apiClient.post('/testimonials', payload);
+    this.clearTestimonialsCache();
+    return response.data;
+  }
+
+  async approveTestimonial(id: number | string): Promise<any> {
+    const response = await apiClient.patch(`/testimonials/${id}/approve`);
+    this.clearTestimonialsCache();
     return response.data;
   }
 
   async deleteTestimonial(id: number | string): Promise<any> {
     const response = await apiClient.delete(`/testimonials/${id}`);
+    this.clearTestimonialsCache();
     return response.data;
   }
 

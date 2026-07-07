@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
     TRUST_BADGES, RENTAL_PROCESS_STEPS,
     SACRAMENTAL_CATEGORIES, SACRAMENTALS_PRODUCTS
@@ -13,6 +14,8 @@ import {
 } from 'react-icons/fa';
 import apiService from '../../Landing/services/api';
 import TestimonialsSection from '../components/TestimonialsSection';
+import ProjectHero from '../components/ProjectHero';
+import ProjectPageHeader from '../components/ProjectPageHeader';
 
 /* ───────────────────────────────────────────────
    SACRAMENTAL SUBCATEGORIES that exist in the DB
@@ -502,45 +505,41 @@ export const Sacramentals = () => {
     const activeCategoryLabel = SACRAMENTAL_CATEGORIES.find(c => c.id === sacCategory)?.label || '';
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
+        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
-            {/* ── HERO SLIDER ── */}
-            <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                {sliderLoading ? (
-                    <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                ) : (
-                    <HeroSlider
-                        images={sliderImgs}
-                        isAdmin={isAdmin}
-                        onDelete={handleDeleteSliderImage}
-                    />
-                )}
-            </div>
+            {/* ══════════ HERO ── Dark Premium Grid Design ══════════ */}
+            <ProjectHero>
+                <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+                    {sliderLoading ? (
+                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-800 animate-pulse" />
+                    ) : (
+                        <HeroSlider
+                            images={sliderImgs}
+                            isAdmin={isAdmin}
+                            onDelete={handleDeleteSliderImage}
+                        />
+                    )}
+                </div>
 
-            {/* ── PAGE HEADER ── */}
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-2 text-center">
-                <span className="inline-block px-3 sm:px-5 py-1.5 text-[10px] sm:text-xs font-black text-blue-700 bg-blue-100 rounded-full uppercase tracking-widest mb-3">
-                    ✦ Holy Items ✦
-                </span>
-                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-800 leading-tight">
-                    Sacramentals &amp;{' '}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
-                        Devotionals
-                    </span>
-                </h1>
-                <p className="mt-2 sm:mt-3 text-slate-500 max-w-md mx-auto text-xs sm:text-sm">
-                    Sacred items handpicked to aid your spiritual journey and daily devotion.
-                </p>
-            </div>
+                <ProjectPageHeader
+                    badge="✦ Holy Items ✦"
+                    title={<>Sacramentals &amp;{' '}<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Devotionals</span></>}
+                    subtitle="Sacred items handpicked to aid your spiritual journey and daily devotion."
+                >
+                    <div className="mt-6">
+                        <TrustStrip />
+                    </div>
+                </ProjectPageHeader>
+            </ProjectHero>
 
-            {/* ── TRUST STRIP ── */}
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
-                <TrustStrip />
-            </div>
-
-            {/* ── SEARCH + FILTER PANEL ── */}
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
-                <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-blue-50 p-3 sm:p-4 space-y-3">
+            {/* ══════════ SEARCH + FILTER PANEL ══════════ */}
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-blue-50 p-3 sm:p-4 space-y-3"
+                >
                     {/* Search + Sort row */}
                     <div className="flex gap-2">
                         <div className="relative flex-1">
@@ -581,12 +580,18 @@ export const Sacramentals = () => {
                             counts={categoryCounts}
                         />
                     </div>
-                </div>
+                </motion.div>
             </div>
 
-            {/* ── PRODUCT SECTION ── */}
-            <section ref={productsRef} id="sacramentals" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 sm:pb-10">
-
+            {/* ══════════ PRODUCT SECTION ══════════ */}
+            <motion.section
+                ref={productsRef}
+                id="sacramentals"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 sm:pb-10"
+            >
                 {/* Results bar */}
                 <div className="flex items-center justify-between mb-3 sm:mb-4 px-1">
                     <p className="text-xs sm:text-sm text-slate-500 font-semibold">
@@ -642,7 +647,7 @@ export const Sacramentals = () => {
                         </button>
                     </div>
                 )}
-            </section>
+            </motion.section>
 
             {/* ── VIEW CART LINK ── */}
             <div className="flex justify-center pb-4 px-4">

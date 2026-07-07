@@ -1,10 +1,13 @@
 import React from 'react';
 import { useApp } from '../../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { HeroSlider, useSliderImages } from '../components/HeroSlider';
 import { SLIDE_IMAGES, TRUST_BADGES, RENTAL_PROCESS_STEPS, TSHIRT_PRODUCTS } from './data';
 import { FaStar, FaCheckCircle, FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
 import TestimonialsSection from '../components/TestimonialsSection';
+import ProjectHero from '../components/ProjectHero';
+import ProjectPageHeader from '../components/ProjectPageHeader';
 
 const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
@@ -130,36 +133,37 @@ export const Tshirts = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
+        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
-            {/* Hero Slider */}
-            <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                {sliderLoading ? (
-                    <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                ) : (
-                    <HeroSliderComponent images={sliderImgs} isAdmin={sliderIsAdmin} onDelete={deleteSlide} />
-                )}
-            </div>
+            {/* ══════════ HERO ── Dark Premium Grid Design ══════════ */}
+            <ProjectHero>
+                <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+                    {sliderLoading ? (
+                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-800 animate-pulse" />
+                    ) : (
+                        <HeroSliderComponent images={sliderImgs} isAdmin={sliderIsAdmin} onDelete={deleteSlide} />
+                    )}
+                </div>
 
-            {/* Page Header */}
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-2 text-center">
-                <span className="inline-block px-3 sm:px-5 py-1.5 text-[10px] sm:text-xs font-black text-blue-700 bg-blue-100 rounded-full uppercase tracking-widest mb-3">KYU CSA Apparel</span>
-                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-800 leading-tight">
-                    Official{' '}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">CSA T-Shirt</span>
-                </h1>
-                <p className="mt-2 sm:mt-3 text-slate-500 max-w-lg mx-auto text-xs sm:text-sm">
-                    The official KYU Catholic Student Association polo shirt — pure grey with a smart black collar. Wear your faith and community pride.
-                </p>
-            </div>
+                <ProjectPageHeader
+                    badge="KYU CSA Apparel"
+                    title={<>Official{' '}<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">CSA T-Shirt</span></>}
+                    subtitle="The official KYU Catholic Student Association polo shirt — pure grey with a smart black collar. Wear your faith and community pride."
+                >
+                    <div className="mt-6">
+                        <TrustStrip />
+                    </div>
+                </ProjectPageHeader>
+            </ProjectHero>
 
-            {/* Trust Strip */}
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
-                <TrustStrip />
-            </div>
-
-            {/* ── SHOWCASE CARD ── */}
-            <section id="tshirts" className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 pb-10 sm:pb-16">
+            {/* ══════════ SHOWCASE CARD ══════════ */}
+            <motion.section
+                id="tshirts"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20 pb-10 sm:pb-16"
+            >
                 <div className="bg-white rounded-3xl shadow-xl border border-blue-50 overflow-hidden">
                     <div className="grid md:grid-cols-2 gap-0">
 
@@ -270,7 +274,7 @@ export const Tshirts = () => {
                         </div>
                     </div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* Testimonials */}
             <TestimonialsSection variant="blue" />
