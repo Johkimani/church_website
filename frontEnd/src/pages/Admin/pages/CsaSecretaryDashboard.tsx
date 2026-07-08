@@ -1,17 +1,18 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2 } from "lucide-react";
+import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2, BarChart3, List } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
+import AnalyticsDashboard from "./AnalyticsDashboard";
 
 const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony of Padua", color: "#b00ada" },
-  { id: "st-augustine", name: "St. Augustine of Hippo", color: "#1d21ed" },
-  { id: "st-catherine", name: "St. Catherine of Alexandria", color: "#fc1f5a" },
-  { id: "st-dominic", name: "St. Dominic", color: "#9ea1a0" },
-  { id: "st-elizabeth", name: "St. Elizabeth of Hungary", color: "#136b1a" },
-  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#27b8f6" },
-  { id: "st-monica", name: "St. Monica", color: "#f60808" },
+  { id: "st-anthony", name: "St. Anthony of Padua", color: "#8b5cf6" },
+  { id: "st-augustine", name: "St. Augustine of Hippo", color: "#3b82f6" },
+  { id: "st-catherine", name: "St. Catherine of Alexandria", color: "#800000" },
+  { id: "st-dominic", name: "St. Dominic", color: "#979695" },
+  { id: "st-elizabeth", name: "St. Elizabeth of Hungary", color: "#07a414" },
+  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#0ea5e9" },
+  { id: "st-monica", name: "St. Monica", color: "#ef4444" },
 ];
 
 const SEMESTERS = [
@@ -53,6 +54,23 @@ function getYearSemLabel(m: any): string {
   return "—";
 }
 
+function getMemberCurrentSemCol(m: any): string | null {
+  const yos = parseInt(m.year_of_study);
+  if (!yos || yos < 1 || yos > 4) return null;
+  const month = new Date().getMonth();
+  const isSecondSem = month >= 5;
+  const semIndex = (yos - 1) * 2 + (isSecondSem ? 2 : 1);
+  return `sem_${semIndex}_reg`;
+}
+
+function getMemberCurrentYearSem(m: any): string {
+  const yos = parseInt(m.year_of_study);
+  if (!yos || yos < 1 || yos > 4) return "—";
+  const month = new Date().getMonth();
+  const isSecondSem = month >= 5;
+  return `${yos}.${isSecondSem ? 2 : 1}`;
+}
+
 export default function CsaSecretaryDashboard() {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +89,7 @@ export default function CsaSecretaryDashboard() {
   const [regSemesters, setRegSemesters] = useState<string[]>([]);
   const [regSerialNo, setRegSerialNo] = useState("");
   const [regSubmitting, setRegSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"members" | "analytics">("members");
 
   const EXPORT_COLUMNS = [
     { key: "serial_no", label: "Serial No" },
@@ -91,7 +110,7 @@ export default function CsaSecretaryDashboard() {
   ];
 
   const filterSemDbCol = useMemo(() => {
-    if (filterSemester === "all") return null;
+    if (filterSemester === "all" || filterSemester === "current") return null;
     return SEMESTERS.find(s => s.label === filterSemester)?.dbCol ?? null;
   }, [filterSemester]);
 
@@ -255,6 +274,34 @@ export default function CsaSecretaryDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setActiveTab("members")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "members"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <List size={16} /> Members
+        </button>
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "analytics"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <BarChart3 size={16} /> Reports & Analytics
+        </button>
+      </div>
+
+      {activeTab === "analytics" ? (
+        <AnalyticsDashboard />
+      ) : (
+        <>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-3 text-white">
@@ -300,6 +347,8 @@ export default function CsaSecretaryDashboard() {
           className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         >
           <option value="all">All Semesters</option>
+          <option value="current">Current Semester</option>
+          <option disabled>──────────────</option>
           {SEMESTERS.map(s => (
             <option key={s.label} value={s.label}>{s.label}</option>
           ))}
@@ -554,6 +603,8 @@ export default function CsaSecretaryDashboard() {
             )}
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

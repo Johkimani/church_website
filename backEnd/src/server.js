@@ -22,6 +22,7 @@ import { setupRoleSystem } from "./migrations/roleAccessControl.js";
 import { authAuditMigration } from "./migrations/authAuditMigration.js";
 import { registeredSerialNoMigration } from "./migrations/registeredSerialNo.js";
 import { importRecordsCourseMigration } from "./migrations/importRecordsCourse.js";
+import { backfillSemRegMigration } from "./migrations/backfillSemReg.js";
 import { startKeepAliveWorker } from "./services/keep-alive.js";
 import { startImportSyncWorker } from "./services/importSyncJob.js";
 
@@ -165,6 +166,7 @@ const initServer = async () => {
     await authAuditMigration();
     await registeredSerialNoMigration();
     await importRecordsCourseMigration();
+    await backfillSemRegMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

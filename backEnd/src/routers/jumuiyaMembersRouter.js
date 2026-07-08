@@ -15,6 +15,10 @@ import {
   bulkRegisterWithPayment,
   getJumuiyaLookup,
   sendStampCard,
+  getAnalytics,
+  getPayments,
+  updatePaymentStatus,
+  getCohortAnalytics,
 } from '../controllers/jumuiyaMembersController.js';
 import {
   getPendingMigrationMembers,
@@ -31,6 +35,10 @@ router.get('/', getAllJumuiyaMembers);
 router.get('/all', getAllMembersAcrossJumuiyas);
 router.get('/registered', getRegisteredJumuiyaMembers);
 router.get('/registered/all', getAllRegisteredMembers);
+router.get('/analytics', getAnalytics);
+router.get('/analytics/cohorts', getCohortAnalytics);
+router.get('/payments', getPayments);
+router.patch('/payments/:id/status', updatePaymentStatus);
 router.post('/registered/manual', manualRegisterMember);
 router.get('/unregistered', getUnregisteredMembers);
 router.get('/lookup', getJumuiyaLookup);

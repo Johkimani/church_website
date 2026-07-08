@@ -186,4 +186,17 @@ export const memberService = {
 
   bulkRegisterWithPayment: (data: { member_ids: string[]; jumuiya_id: string; phoneNumber: string; amount: number }) =>
     apiClient.post(`/jumuiya-members/bulk-register-with-payment`, data).then(r => r.data),
+
+  // ── Analytics ──
+  getAnalytics: () =>
+    apiClient.get(`/jumuiya-members/analytics`).then(r => r.data),
+
+  getCohortAnalytics: () =>
+    apiClient.get(`/jumuiya-members/analytics/cohorts`).then(r => r.data),
+
+  getPayments: (params?: { status?: string }) =>
+    apiClient.get(`/jumuiya-members/payments`, { params }).then(r => r.data),
+
+  updatePaymentStatus: (id: number, data: { status: string; mpesa_receipt?: string }) =>
+    apiClient.patch(`/jumuiya-members/payments/${id}/status`, data).then(r => r.data),
 };
