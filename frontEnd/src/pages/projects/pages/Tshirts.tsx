@@ -8,6 +8,7 @@ import { FaStar, FaCheckCircle, FaChevronLeft, FaChevronRight, FaTrash } from 'r
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
+import ProjectBackground from '../components/ProjectBackground';
 
 const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
@@ -133,7 +134,7 @@ export const Tshirts = () => {
     };
 
     return (
-        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
+        <div className="w-full min-h-screen pb-20 text-slate-800 font-sans bg-gradient-to-b from-slate-50 via-amber-50/10 to-white">
 
             {/* ══════════ HERO ── Dark Premium Grid Design ══════════ */}
             <ProjectHero>
@@ -156,6 +157,7 @@ export const Tshirts = () => {
                 </ProjectPageHeader>
             </ProjectHero>
 
+            <ProjectBackground>
             {/* ══════════ SHOWCASE CARD ══════════ */}
             <motion.section
                 id="tshirts"
@@ -281,6 +283,7 @@ export const Tshirts = () => {
 
             {/* Process Guide */}
             <ProcessGuide />
+            </ProjectBackground>
         </div>
     );
 };
