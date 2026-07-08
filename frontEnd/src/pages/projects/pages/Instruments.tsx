@@ -8,6 +8,7 @@ import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle } from 'r
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
+import ProjectBackground from '../components/ProjectBackground';
 
 interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
@@ -219,7 +220,7 @@ export const Instruments = () => {
     }, [products]);
 
     return (
-        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
+        <div className="w-full min-h-screen pb-20 text-slate-800 font-sans bg-gradient-to-b from-slate-50 via-indigo-50/10 to-white">
 
             {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} />}
 
@@ -244,6 +245,7 @@ export const Instruments = () => {
                 </ProjectPageHeader>
             </ProjectHero>
 
+            <ProjectBackground>
             {/* ══════════ INSTRUMENTS SHOWCASE ══════════ */}
             <motion.section
                 id="instruments"
@@ -304,7 +306,7 @@ export const Instruments = () => {
             <div className="text-center py-10 text-sm text-emerald-700 italic px-4">
                 "Praise Him with sounding cymbals; praise Him with loud clashing cymbals!" — Psalm 150:5
             </div>
-
+            </ProjectBackground>
         </div>
     );
 };

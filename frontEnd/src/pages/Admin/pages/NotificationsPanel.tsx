@@ -36,9 +36,9 @@ const NotificationsPanel = () => {
   const buildNotifications = useCallback(async () => {
     try {
       const [orders, hireRequests, products] = await Promise.all([
-        apiService.fetchTableData("orders", true).catch(() => []),
-        apiService.fetchTableData("hire_requests", true).catch(() => []),
-        apiService.fetchTableData("products", true).catch(() => []),
+        apiService.fetchTableData("orders", false).catch(() => []),
+        apiService.fetchTableData("hire_requests", false).catch(() => []),
+        apiService.fetchTableData("products", false).catch(() => []),
       ]);
 
       const notifs: Notification[] = [];

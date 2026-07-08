@@ -32,7 +32,13 @@ const purchaseTabs = [
 ] as const;
 
 const hireTabs = [
-  { id: "hire-requests", label: "Hire Requests", icon: CalendarDays },
+  { id: "hire-products",  label: "Products",      icon: ShoppingBag },
+  { id: "hire-requests",  label: "Hire Requests",  icon: CalendarDays },
+  { id: "hire-settings",  label: "Hire Settings",  icon: BarChart3 },
+  { id: "hire-cards",     label: "Home Cards",    icon: LayoutGrid },
+  { id: "hire-sliders",   label: "Slider Images", icon: Image },
+  { id: "hire-customers", label: "Customers",     icon: UserCircle },
+  { id: "hire-testimonials", label: "Testimonials", icon: MessageCircle },
 ] as const;
 
 type SectionId = typeof sections[number]["id"];
@@ -44,7 +50,7 @@ export default function ProjectsManager() {
 
   const handleSectionChange = (sectionId: SectionId) => {
     setActiveSection(sectionId);
-    setActiveTab(sectionId === 'purchase' ? 'notifications' : 'hire-requests');
+    setActiveTab(sectionId === 'purchase' ? 'notifications' : 'hire-products');
   };
 
   return (
@@ -95,7 +101,7 @@ export default function ProjectsManager() {
       {activeSection === 'purchase' && (
         <>
           {activeTab === "notifications" && <NotificationsPanel />}
-          {activeTab === "products" && <ProductsPanel />}
+          {activeTab === "products" && <ProductsPanel categoryFilter={['sacramentals', 'tshirts']} />}
           {activeTab === "orders" && <OrdersPanel />}
           {activeTab === "categories" && <CategoriesPanel />}
           {activeTab === "customers" && <CustomersPanel />}
@@ -108,7 +114,13 @@ export default function ProjectsManager() {
 
       {activeSection === 'hire' && (
         <>
-          {activeTab === "hire-requests" && <><HireRequestsPanel /><HireSettingsSection /></>}
+          {activeTab === "hire-products" && <ProductsPanel categoryFilter={['chairs', 'instruments']} />}
+          {activeTab === "hire-requests" && <HireRequestsPanel />}
+          {activeTab === "hire-settings" && <HireSettingsSection />}
+          {activeTab === "hire-cards" && <CategoryCardManager />}
+          {activeTab === "hire-sliders" && <SliderManager />}
+          {activeTab === "hire-customers" && <CustomersPanel />}
+          {activeTab === "hire-testimonials" && <TestimonialManager />}
         </>
       )}
     </div>
