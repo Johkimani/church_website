@@ -35,10 +35,12 @@ const hireTabs = [
   { id: "hire-products",  label: "Products",      icon: ShoppingBag },
   { id: "hire-requests",  label: "Hire Requests",  icon: CalendarDays },
   { id: "hire-settings",  label: "Hire Settings",  icon: BarChart3 },
+  { id: "hire-categories", label: "Categories",    icon: Tag },
   { id: "hire-cards",     label: "Home Cards",    icon: LayoutGrid },
   { id: "hire-sliders",   label: "Slider Images", icon: Image },
   { id: "hire-customers", label: "Customers",     icon: UserCircle },
   { id: "hire-testimonials", label: "Testimonials", icon: MessageCircle },
+  { id: "hire-reports",     label: "Reports",       icon: BarChart3 },
 ] as const;
 
 type SectionId = typeof sections[number]["id"];
@@ -103,12 +105,12 @@ export default function ProjectsManager() {
           {activeTab === "notifications" && <NotificationsPanel />}
           {activeTab === "products" && <ProductsPanel categoryFilter={['sacramentals', 'tshirts']} />}
           {activeTab === "orders" && <OrdersPanel />}
-          {activeTab === "categories" && <CategoriesPanel />}
+          {activeTab === "categories" && <CategoriesPanel typeFilter="sale" />}
           {activeTab === "customers" && <CustomersPanel />}
           {activeTab === "cards" && <CategoryCardManager />}
           {activeTab === "sliders" && <SliderManager />}
           {activeTab === "testimonials" && <TestimonialManager />}
-          {activeTab === "reports" && <ReportsPanel />}
+          {activeTab === "reports" && <ReportsPanel typeFilter="sale" />}
         </>
       )}
 
@@ -117,10 +119,12 @@ export default function ProjectsManager() {
           {activeTab === "hire-products" && <ProductsPanel categoryFilter={['chairs', 'instruments']} />}
           {activeTab === "hire-requests" && <HireRequestsPanel />}
           {activeTab === "hire-settings" && <HireSettingsSection />}
+          {activeTab === "hire-categories" && <CategoriesPanel typeFilter="hire" />}
           {activeTab === "hire-cards" && <CategoryCardManager />}
           {activeTab === "hire-sliders" && <SliderManager />}
           {activeTab === "hire-customers" && <CustomersPanel />}
           {activeTab === "hire-testimonials" && <TestimonialManager />}
+          {activeTab === "hire-reports" && <ReportsPanel typeFilter="hire" />}
         </>
       )}
     </div>

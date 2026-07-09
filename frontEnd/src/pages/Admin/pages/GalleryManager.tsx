@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../../Landing/services/api';
-// Extract only the domain from the versioned API URI for image assets
+import { uploadFile } from '../../../api/axiosInstance';
 import { UPLOAD_BASE } from '../../../api/config';
 import { 
   Image as ImageIcon, 
@@ -29,6 +29,7 @@ export default function GalleryManager() {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     loadImages();
@@ -94,26 +95,33 @@ export default function GalleryManager() {
   };
 
   const handleUpload = async () => {
+    if (selectedFiles.length === 0) return;
     setUploadStatus('uploading');
+    setUploadProgress(0);
     try {
-      // For now, we upload one by one using a simple loop or a bulk endpoint if available
+      let completed = 0;
       for (const file of selectedFiles) {
-        // We'd typically use a FormData based upload here
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('title', file.name);
-        
-        await apiService.createRecord('gallery', { title: file.name, image_url: URL.createObjectURL(file) });
+        const response = await uploadFile(file, {
+          onProgress: (pct) => setUploadProgress(Math.round((completed + pct / 100) / selectedFiles.length * 100)),
+        });
+        const result = response.data;
+        const imageUrl = result?.data?.url || result?.url || result?.secure_url;
+        if (imageUrl) {
+          await apiService.createRecord('gallery', { title: file.name, image_url: imageUrl });
+        }
+        completed++;
+        setUploadProgress(Math.round((completed / selectedFiles.length) * 100));
       }
-      
       apiService.clearCache('gallery');
       await loadImages();
       setSelectedFiles([]);
       setUploadStatus('success');
+      setUploadProgress(100);
       setTimeout(() => setUploadStatus('idle'), 3000);
     } catch (err) {
       alert('Upload failed');
       setUploadStatus('idle');
+      setUploadProgress(0);
     }
   };
 
@@ -200,6 +208,11 @@ export default function GalleryManager() {
                     </div>
                   ))}
                 </div>
+                {uploadStatus === 'uploading' && uploadProgress > 0 && (
+                  <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                )}
                 <button 
                   onClick={handleUpload}
                   disabled={uploadStatus === 'uploading'}
@@ -212,7 +225,7 @@ export default function GalleryManager() {
                   {uploadStatus === 'uploading' ? (
                     <>
                       <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                      Uploading...
+                      {uploadProgress > 0 ? `${uploadProgress}%` : 'Uploading...'}
                     </>
                   ) : uploadStatus === 'success' ? (
                     <>
