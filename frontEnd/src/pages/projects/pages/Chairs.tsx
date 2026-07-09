@@ -8,7 +8,6 @@ import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle, FaChair 
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
-import ProjectBackground from '../components/ProjectBackground';
 
 interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
 
@@ -124,7 +123,7 @@ export const Chairs = () => {
     };
 
     return (
-        <div className="w-full min-h-screen pb-20 text-slate-800 font-sans bg-gradient-to-b from-slate-50 via-sky-50/10 to-white">
+        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
             {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} showEventDate={false} />}
 
@@ -149,7 +148,6 @@ export const Chairs = () => {
                 </ProjectPageHeader>
             </ProjectHero>
 
-            <ProjectBackground>
             {/* ══════════ SHOWCASE SECTION ══════════ */}
             <motion.section
                 id="chairs"
@@ -277,7 +275,7 @@ export const Chairs = () => {
             <div className="text-center py-10 text-sm text-amber-700 italic px-4">
                 "Let all things be done decently and in order." — 1 Corinthians 14:40
             </div>
-            </ProjectBackground>
+
         </div>
     );
 };

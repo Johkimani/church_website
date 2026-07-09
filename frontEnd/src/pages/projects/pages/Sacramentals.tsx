@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     TRUST_BADGES, RENTAL_PROCESS_STEPS,
-    SACRAMENTAL_CATEGORIES
+    SACRAMENTAL_CATEGORIES, SACRAMENTALS_PRODUCTS
 } from '../pages/data';
 import type { SacramentalCategory } from '../pages/data';
 import {
@@ -16,7 +16,6 @@ import apiService from '../../Landing/services/api';
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
-import ProjectBackground from '../components/ProjectBackground';
 
 /* ───────────────────────────────────────────────
    SACRAMENTAL SUBCATEGORIES that exist in the DB
@@ -423,9 +422,20 @@ export const Sacramentals = () => {
         setSliderImgs(prev => prev.filter(img => img.id !== id));
     };
 
-    /* ── Products from admin panel only ── */
+    /* ── Merge DB products + static fallback ── */
     const sourceProducts = React.useMemo(() => {
-        return (dbProducts || [])
+        const staticProds = SACRAMENTALS_PRODUCTS.map((p, i) => ({
+            id: `static-${i}`,
+            name: p.name,
+            price: p.price,
+            description: p.desc,
+            image_url: p.img,
+            subcategory: (p.category || 'rosaries').toLowerCase(),
+            category: (p.category || 'rosaries').toLowerCase(),
+            stock: 50,
+        }));
+
+        const dbProds = (dbProducts || [])
             .filter(p => {
                 const cat = (p.category || '').toLowerCase();
                 return cat === 'sacramentals' || SACRAMENTAL_SUBCATS.has(cat) || SACRAMENTAL_SUBCATS.has(p.subcategory?.toLowerCase());
@@ -440,6 +450,15 @@ export const Sacramentals = () => {
                 category: (p.category || 'sacramentals').toLowerCase(),
                 stock: p.stock ?? 50,
             }));
+
+        // Deduplicate by name, DB wins over static
+        const seen = new Set<string>();
+        return [...dbProds, ...staticProds].filter(p => {
+            const key = p.name.toLowerCase().trim();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
     }, [dbProducts]);
 
     /* ── Category counts ── */
@@ -486,7 +505,7 @@ export const Sacramentals = () => {
     const activeCategoryLabel = SACRAMENTAL_CATEGORIES.find(c => c.id === sacCategory)?.label || '';
 
     return (
-        <div className="w-full min-h-screen pb-20 text-slate-800 font-sans bg-gradient-to-b from-slate-50 via-blue-50/10 to-white">
+        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
             {/* ══════════ HERO ── Dark Premium Grid Design ══════════ */}
             <ProjectHero>
@@ -513,7 +532,6 @@ export const Sacramentals = () => {
                 </ProjectPageHeader>
             </ProjectHero>
 
-            <ProjectBackground>
             {/* ══════════ SEARCH + FILTER PANEL ══════════ */}
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20">
                 <motion.div
@@ -646,7 +664,6 @@ export const Sacramentals = () => {
 
             {/* ── PROCESS GUIDE ── */}
             <ProcessGuide />
-            </ProjectBackground>
         </div>
     );
 };
