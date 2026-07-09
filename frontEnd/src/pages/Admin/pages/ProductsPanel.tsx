@@ -103,13 +103,29 @@ const ProductsPanel = () => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleImageUpload = (file: File | null) => {
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (file: File | null) => {
     if (!file) {
       setForm((prev) => ({ ...prev, imageFile: null, imagePreview: '' }));
       return;
     }
     const previewUrl = URL.createObjectURL(file);
     setForm((prev) => ({ ...prev, imageFile: file, imagePreview: previewUrl }));
+    if (!file.type.startsWith('image/')) return;
+    setUploadingImage(true);
+    try {
+      const response = await uploadFile(file);
+      const result = response.data?.data || response.data;
+      const url = result?.secure_url || result?.url || result?.path || result?.image_url || '';
+      if (url) {
+        setForm((prev) => ({ ...prev, image_url: url, imageFile: null }));
+      }
+    } catch {
+      // preview remains, upload will retry on save
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSaveProduct = async () => {
@@ -348,7 +364,9 @@ const ProductsPanel = () => {
                     accept="image/*"
                     onChange={(e) => handleImageUpload(e.target.files?.[0] ?? null)}
                     className="block w-full text-sm text-slate-600"
+                    disabled={uploadingImage}
                   />
+                  {uploadingImage && <p className="text-xs text-blue-600 font-medium mt-1">Uploading image...</p>}
                   {(form.imagePreview || form.image_url) ? (
                     <img
                       src={form.imagePreview?.startsWith('blob:') ? form.imagePreview : getSafeImageUrl(form.imagePreview || form.image_url)}
@@ -375,7 +393,7 @@ const ProductsPanel = () => {
               <button
                 type="button"
                 onClick={handleSaveProduct}
-                disabled={saving}
+                disabled={saving || uploadingImage}
                 className="admin-btn-primary disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
                 {saving ? (isEditing ? 'Saving changes...' : 'Saving product...') : (isEditing ? 'Update product' : 'Create product')}
