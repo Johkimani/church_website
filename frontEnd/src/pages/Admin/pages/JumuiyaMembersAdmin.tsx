@@ -24,11 +24,11 @@ function setCachedStats(data: Record<string, any>) { statsCache = { data, ts: Da
 function clearCache() { statsCache = null; }
 
 const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony of Padua", color: "#8b5cf6", initials: "SA" },
-  { id: "st-augustine", name: "St. Augustine of Hippo", color: "#3b82f6", initials: "AU" },
-  { id: "st-catherine", name: "St. Catherine of Alexandria", color: "#800000", initials: "CA" },
-  { id: "st-dominic", name: "St. Dominic", color: "#979695", initials: "DO" },
-  { id: "st-elizabeth", name: "St. Elizabeth of Hungary", color: "#07a414", initials: "EL" },
+  { id: "st-anthony", name: "St. Anthony", color: "#8b5cf6", initials: "SA" },
+  { id: "st-augustine", name: "St. Augustine", color: "#3b82f6", initials: "AU" },
+  { id: "st-catherine", name: "St. Catherine", color: "#800000", initials: "CA" },
+  { id: "st-dominic", name: "St. Dominic", color: "#979695ff", initials: "DO" },
+  { id: "st-elizabeth", name: "St. Elizabeth", color: "#07a414d1", initials: "EL" },
   { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#0ea5e9", initials: "MG" },
   { id: "st-monica", name: "St. Monica", color: "#ef4444", initials: "MO" },
 ];

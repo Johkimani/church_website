@@ -21,25 +21,20 @@ type ProductForm = Omit<Product, 'id' | 'created_at'> & {
   imagePreview?: string;
 };
 
-const defaultForm = (category?: string): ProductForm => ({
+const defaultForm: ProductForm = {
   name: '',
   description: '',
-  category: category || 'sacramentals',
+  category: 'sacramentals',
   price: 0,
   stock: 50,
   image_url: '',
   is_hireable: false,
   imageFile: null,
   imagePreview: '',
-});
+};
 
-interface Props { categoryFilter?: string[] }
-
-const ProductsPanel = ({ categoryFilter }: Props = {}) => {
+const ProductsPanel = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
-
-  const allCategories = ['sacramentals', 'tshirts', 'chairs', 'instruments'];
-  const activeCategories = categoryFilter || allCategories;
 
   const { data: products = [], loading, refetch: loadProducts, setData: setProducts } = useCachedData<Product[]>(
     'csa_cache_products_manager',
@@ -58,12 +53,12 @@ const ProductsPanel = ({ categoryFilter }: Props = {}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProductId, setCurrentProductId] = useState<string | number | null>(null);
-  const [form, setForm] = useState<ProductForm>(defaultForm(activeCategories[0]));
+  const [form, setForm] = useState<ProductForm>(defaultForm);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const categories = ['all', ...activeCategories];
-  const productCategories = activeCategories;
+  const categories = ['all', 'sacramentals', 'tshirts', 'chairs', 'instruments'];
+  const productCategories = ['sacramentals', 'tshirts', 'chairs', 'instruments'];
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === 'all') return products;
@@ -90,7 +85,7 @@ const ProductsPanel = ({ categoryFilter }: Props = {}) => {
     } else {
       setIsEditing(false);
       setCurrentProductId(null);
-      setForm(defaultForm(activeCategories[0]));
+      setForm(defaultForm);
     }
     setErrorMessage('');
     setIsModalOpen(true);
@@ -99,7 +94,7 @@ const ProductsPanel = ({ categoryFilter }: Props = {}) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setErrorMessage('');
-    setForm(defaultForm(activeCategories[0]));
+    setForm(defaultForm);
     setCurrentProductId(null);
     setIsEditing(false);
   };

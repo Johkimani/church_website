@@ -19,6 +19,8 @@ import {
   getPayments,
   updatePaymentStatus,
   getCohortAnalytics,
+  getJumuiyaProgression,
+  getYearlyContribution,
 } from '../controllers/jumuiyaMembersController.js';
 import {
   getPendingMigrationMembers,
@@ -37,6 +39,8 @@ router.get('/registered', getRegisteredJumuiyaMembers);
 router.get('/registered/all', getAllRegisteredMembers);
 router.get('/analytics', getAnalytics);
 router.get('/analytics/cohorts', getCohortAnalytics);
+router.get('/analytics/jumuiya-progression', getJumuiyaProgression);
+router.get('/analytics/yearly-contribution', getYearlyContribution);
 router.get('/payments', getPayments);
 router.patch('/payments/:id/status', updatePaymentStatus);
 router.post('/registered/manual', manualRegisterMember);

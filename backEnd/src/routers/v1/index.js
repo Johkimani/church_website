@@ -27,7 +27,6 @@ import jumuiyaMemberRouter from "./jumuiyaMemberRouter.js";
 import settingsRouter from "./settingsRoutes.js";
 import { roleManagementRouter } from "./roleManagementRouter.js";
 import categoryCardsRouter from "./categoryCardsRoutes.js";
-import testimonialsRouter from "./testimonialsRoutes.js";
 import hireAvailabilityRouter from "./hireAvailability.js";
 import hireSubmitRouter from "./hireSubmit.js";
 import hireStatusRouter from "./hireStatus.js";
@@ -101,9 +100,6 @@ router.use("/hire", hireSubmitRouter);
 
 // Hire status management & payment
 router.use("/hire", hireStatusRouter);
-
-// Testimonials (public read, admin write)
-router.use("/", testimonialsRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

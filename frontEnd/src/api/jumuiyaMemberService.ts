@@ -136,7 +136,7 @@ export const memberService = {
   getAllRegisteredMembers: () =>
     apiClient.get(`/jumuiya-members/registered/all`).then(r => r.data),
 
-  manualRegisterMember: (data: { member_id: string; jumuiya_id: string; semesters?: string[]; serial_no?: number }) =>
+  manualRegisterMember: (data: { member_id: string; jumuiya_id: string; semesters?: string[]; serial_no?: number; amount?: number }) =>
     apiClient.post(`/jumuiya-members/registered/manual`, data).then(r => r.data),
 
   // ── All Members (across all jumuiyas) ──
@@ -193,6 +193,12 @@ export const memberService = {
 
   getCohortAnalytics: () =>
     apiClient.get(`/jumuiya-members/analytics/cohorts`).then(r => r.data),
+
+  getJumuiyaProgression: (params?: { from?: number; to?: number }) =>
+    apiClient.get(`/jumuiya-members/analytics/jumuiya-progression`, { params }).then(r => r.data),
+
+  getYearlyContribution: (params?: { year?: number }) =>
+    apiClient.get(`/jumuiya-members/analytics/yearly-contribution`, { params }).then(r => r.data),
 
   getPayments: (params?: { status?: string }) =>
     apiClient.get(`/jumuiya-members/payments`, { params }).then(r => r.data),

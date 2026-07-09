@@ -5,21 +5,23 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
 import {
-  TrendingUp, Users, Church, GraduationCap, CreditCard,
+  TrendingUp, Users, Church, GraduationCap, CreditCard, Smartphone, Wallet,
   RefreshCw, Calendar, ArrowUpRight, CheckCircle2, Clock, XCircle,
   X, ChevronDown, Loader2, ExternalLink, Eye, EyeOff,
-  Layers, GitCompare, Activity
+  Layers, GitCompare, Activity, Trophy
 } from "lucide-react";
 import toast from "react-hot-toast";
 import CohortProgressionTab from "./CohortProgressionTab";
 import CrossComparisonTab from "./CrossComparisonTab";
+import JumuiyaProgressionTab from "./JumuiyaProgressionTab";
+import YearlyContributionTab from "./YearlyContributionTab";
 
 const JUMUIYA_COLORS: Record<string, string> = {
-  "St. Anthony of Padua": "#8b5cf6",
-  "St. Augustine of Hippo": "#3b82f6",
-  "St. Catherine of Alexandria": "#800000",
-  "St. Dominic": "#979695",
-  "St. Elizabeth of Hungary": "#07a414",
+  "St. Anthony": "#8b5cf6",
+  "St. Augustine": "#3b82f6",
+  "St. Catherine": "#800000",
+  "St. Dominic": "#979695ff",
+  "St. Elizabeth": "#07a414d1",
   "St. Maria Goretti": "#0ea5e9",
   "St. Monica": "#ef4444",
 };
@@ -60,7 +62,7 @@ export default function AnalyticsDashboard() {
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [demoMode, setDemoMode] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "cross">("overview");
+  const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "cross" | "jumuiya" | "yearly">("overview");
 
   const fetchData = async () => {
     setLoading(true);
@@ -89,11 +91,11 @@ export default function AnalyticsDashboard() {
       { month: "2026-05", count: 41 }, { month: "2026-06", count: 87 },
     ],
     jumuiyaComparison: [
-      { jumuiya_name: "St. Anthony of Padua", jumuiya_color: "#8b5cf6", count: 102 },
-      { jumuiya_name: "St. Augustine of Hippo", jumuiya_color: "#3b82f6", count: 98 },
-      { jumuiya_name: "St. Catherine of Alexandria", jumuiya_color: "#800000", count: 95 },
-      { jumuiya_name: "St. Dominic", jumuiya_color: "#979695", count: 87 },
-      { jumuiya_name: "St. Elizabeth of Hungary", jumuiya_color: "#07a414", count: 91 },
+      { jumuiya_name: "St. Anthony", jumuiya_color: "#8b5cf6", count: 102 },
+      { jumuiya_name: "St. Augustine", jumuiya_color: "#3b82f6", count: 98 },
+      { jumuiya_name: "St. Catherine", jumuiya_color: "#800000", count: 95 },
+      { jumuiya_name: "St. Dominic", jumuiya_color: "#979695ff", count: 87 },
+      { jumuiya_name: "St. Elizabeth", jumuiya_color: "#07a414d1", count: 91 },
       { jumuiya_name: "St. Maria Goretti", jumuiya_color: "#0ea5e9", count: 99 },
       { jumuiya_name: "St. Monica", jumuiya_color: "#ef4444", count: 75 },
     ],
@@ -114,14 +116,14 @@ export default function AnalyticsDashboard() {
     ],
     recentRegistrations: [
       { first_name: "Faith", last_name: "Wanjiku", jumuiya_name: "St. Maria Goretti", registration_date: "2026-06-28", serial_no: 99 },
-      { first_name: "Brian", last_name: "Ochieng", jumuiya_name: "St. Anthony of Padua", registration_date: "2026-06-27", serial_no: 102 },
+      { first_name: "Brian", last_name: "Ochieng", jumuiya_name: "St. Anthony", registration_date: "2026-06-27", serial_no: 102 },
       { first_name: "Grace", last_name: "Muthoni", jumuiya_name: "St. Monica", registration_date: "2026-06-27", serial_no: 75 },
-      { first_name: "Kevin", last_name: "Kiprop", jumuiya_name: "St. Elizabeth of Hungary", registration_date: "2026-06-26", serial_no: 91 },
-      { first_name: "Mercy", last_name: "Akinyi", jumuiya_name: "St. Catherine of Alexandria", registration_date: "2026-06-25", serial_no: 95 },
-      { first_name: "Daniel", last_name: "Mutua", jumuiya_name: "St. Augustine of Hippo", registration_date: "2026-06-24", serial_no: 98 },
+      { first_name: "Kevin", last_name: "Kiprop", jumuiya_name: "St. Elizabeth", registration_date: "2026-06-26", serial_no: 91 },
+      { first_name: "Mercy", last_name: "Akinyi", jumuiya_name: "St. Catherine", registration_date: "2026-06-25", serial_no: 95 },
+      { first_name: "Daniel", last_name: "Mutua", jumuiya_name: "St. Augustine", registration_date: "2026-06-24", serial_no: 98 },
       { first_name: "Esther", last_name: "Njeri", jumuiya_name: "St. Dominic", registration_date: "2026-06-23", serial_no: 87 },
     ],
-    paymentSummary: { total_transactions: 647, total_amount: 32350, successful: 589, pending: 34, failed: 24 },
+    paymentSummary: { total_transactions: 647, total_amount: 32350, successful: 589, pending: 34, failed: 24, mpesa_success_amount: 28350, manual_success_amount: 4000 },
   };
 
   const displayData = demoMode ? MOCK_DATA : data;
@@ -237,7 +239,27 @@ export default function AnalyticsDashboard() {
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          <GitCompare size={16} /> Cross-Comparison
+          <GitCompare size={16} /> Years Comparison
+        </button>
+        <button
+          onClick={() => setActiveSubTab("jumuiya")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+            activeSubTab === "jumuiya"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Church size={16} /> Jumuiya Progression
+        </button>
+        <button
+          onClick={() => setActiveSubTab("yearly")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+            activeSubTab === "yearly"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Trophy size={16} /> Yearly Contribution
         </button>
       </div>
 
@@ -245,10 +267,14 @@ export default function AnalyticsDashboard() {
         <CohortProgressionTab />
       ) : activeSubTab === "cross" ? (
         <CrossComparisonTab />
+      ) : activeSubTab === "jumuiya" ? (
+        <JumuiyaProgressionTab />
+      ) : activeSubTab === "yearly" ? (
+        <YearlyContributionTab />
       ) : (
       <>
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
             <Users size={18} className="text-blue-200" />
@@ -270,10 +296,24 @@ export default function AnalyticsDashboard() {
           </div>
           <p className="text-3xl font-bold text-emerald-600">{overview.registrationRate}%</p>
         </div>
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Smartphone size={16} className="text-emerald-200" />
+            <span className="text-[11px] text-emerald-200 font-medium">M-Pesa</span>
+          </div>
+          <p className="text-2xl font-bold">KES {Number(paymentSummary.mpesa_success_amount || 0).toLocaleString()}</p>
+        </div>
+        <div className="bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Wallet size={16} className="text-yellow-200" />
+            <span className="text-[11px] text-yellow-200 font-medium">Manual (Cash)</span>
+          </div>
+          <p className="text-2xl font-bold">KES {Number(paymentSummary.manual_success_amount || 0).toLocaleString()}</p>
+        </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <CreditCard size={18} className="text-amber-500" />
-            <span className="text-[11px] text-slate-500 font-medium">Total Payments</span>
+            <span className="text-[11px] text-slate-500 font-medium">Grand Total</span>
           </div>
           <p className="text-3xl font-bold text-slate-800">KES {Number(paymentSummary.total_amount || 0).toLocaleString()}</p>
           <p className="text-[10px] text-slate-400 mt-0.5">{paymentSummary.total_transactions || 0} transactions</p>

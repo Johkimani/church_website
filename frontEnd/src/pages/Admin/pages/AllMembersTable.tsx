@@ -4,11 +4,11 @@ import { Users, Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, Refre
 import * as XLSX from "xlsx";
 
 const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony of Padua" },
-  { id: "st-augustine", name: "St. Augustine of Hippo" },
-  { id: "st-catherine", name: "St. Catherine of Alexandria" },
+  { id: "st-anthony", name: "St. Anthony" },
+  { id: "st-augustine", name: "St. Augustine" },
+  { id: "st-catherine", name: "St. Catherine" },
   { id: "st-dominic", name: "St. Dominic" },
-  { id: "st-elizabeth", name: "St. Elizabeth of Hungary" },
+  { id: "st-elizabeth", name: "St. Elizabeth" },
   { id: "st-maria-goretti", name: "St. Maria Goretti" },
   { id: "st-monica", name: "St. Monica" },
 ];
@@ -72,11 +72,11 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   const itemsPerPage = 25;
 
   const jumuiyaOrder: Record<string, number> = {
-    "St. Anthony": 0, "St. Anthony of Padua": 0,
-    "St. Augustine": 1, "St. Augustine of Hippo": 1,
-    "St. Catherine": 2, "St. Catherine of Alexandria": 2,
+    "St. Anthony": 0,
+    "St. Augustine": 1,
+    "St. Catherine": 2,
     "St. Dominic": 3,
-    "St. Elizabeth": 4, "St. Elizabeth of Hungary": 4,
+    "St. Elizabeth": 4,
     "St. Maria Goretti": 5,
     "St. Monica": 6,
   };
