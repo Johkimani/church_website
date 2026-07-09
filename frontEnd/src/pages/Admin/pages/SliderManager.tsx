@@ -31,6 +31,7 @@ export default function SliderManager() {
   const [newSlide, setNewSlide] = useState({ image_url: '', title: '', message: '' });
   const [inputMode, setInputMode] = useState<'url' | 'file'>('url');
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,8 +56,11 @@ export default function SliderManager() {
       return;
     }
     setUploadingFile(true);
+    setUploadProgress(0);
     try {
-      const response = await uploadFile(file);
+      const response = await uploadFile(file, {
+        onProgress: setUploadProgress,
+      });
       const result = response.data;
       const imageUrl = result?.data?.url || result?.url;
       if (imageUrl) {
@@ -69,6 +73,7 @@ export default function SliderManager() {
       toast.error('Failed to upload image');
     } finally {
       setUploadingFile(false);
+      setUploadProgress(0);
     }
   };
 
@@ -270,7 +275,14 @@ export default function SliderManager() {
               {uploadingFile ? (
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 size={32} className="text-blue-500 animate-spin" />
-                  <p className="text-sm text-slate-600 font-medium">Uploading image...</p>
+                  <p className="text-sm text-slate-600 font-medium">
+                    {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Compressing & uploading...'}
+                  </p>
+                  {uploadProgress > 0 && (
+                    <div className="w-48 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3">

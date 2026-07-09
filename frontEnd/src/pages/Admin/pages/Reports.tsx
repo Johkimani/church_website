@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import apiService from "../../Landing/services/api";
-import { BarChart3, RefreshCcw, Loader2, Download, TrendingUp, DollarSign, ShoppingCart } from "lucide-react";
+import { BarChart3, RefreshCcw, Loader2, Download, TrendingUp, DollarSign, ShoppingCart, CalendarDays } from "lucide-react";
 
-export default function Reports() {
-  const [data, setData] = useState<any>({ orders: [], products: [], members: [] });
+interface Props { typeFilter: "sale" | "hire" }
+
+export default function Reports({ typeFilter }: Props) {
+  const [data, setData] = useState<any>({ orders: [], hireRequests: [], products: [], members: [] });
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"today" | "week" | "month" | "year">("month");
 
@@ -12,13 +14,15 @@ export default function Reports() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [orders, products, members] = await Promise.all([
-        apiService.fetchTableData("orders", true),
-        apiService.fetchTableData("products", true),
-        apiService.fetchTableData("members", true),
+      const [orders, hireRequests, products, members] = await Promise.all([
+        apiService.fetchTableData("orders", false),
+        apiService.fetchTableData("hire_requests", false),
+        apiService.fetchTableData("products", false),
+        apiService.fetchTableData("members", false),
       ]);
       setData({
         orders: Array.isArray(orders) ? orders : [],
+        hireRequests: Array.isArray(hireRequests) ? hireRequests : [],
         products: Array.isArray(products) ? products : [],
         members: Array.isArray(members) ? members : [],
       });
@@ -33,40 +37,69 @@ export default function Reports() {
   else if (period === "month") periodStart.setMonth(now.getMonth() - 1);
   else periodStart.setFullYear(now.getFullYear() - 1);
 
-  const filteredOrders = data.orders.filter((o: any) => {
+  const saleCategories = ["sacramentals", "tshirts"];
+  const hireCategories = ["chairs", "instruments"];
+
+  const sectionProducts = data.products.filter((p: any) =>
+    typeFilter === "sale"
+      ? saleCategories.includes(p.category)
+      : hireCategories.includes(p.category)
+  );
+
+  const saleOrders = data.orders.filter((o: any) => {
     if (!o.created_at) return false;
-    return new Date(o.created_at) >= periodStart;
+    if (new Date(o.created_at) < periodStart) return false;
+    let items: any[] = [];
+    try { items = typeof o.items === "string" ? JSON.parse(o.items) : o.items || []; } catch { items = []; }
+    return items.some((i: any) => saleCategories.includes(i.category || i.item_category));
   });
 
-  const paidOrders = filteredOrders.filter((o: any) => o.status === "paid");
+  const hireRequests = data.hireRequests.filter((h: any) => {
+    if (!h.created_at) return false;
+    return new Date(h.created_at) >= periodStart;
+  });
+
+  const paidOrders = saleOrders.filter((o: any) => o.status === "paid" || o.payment_status === "paid");
   const totalRevenue = paidOrders.reduce((sum: number, o: any) => sum + Number(o.amount || 0), 0);
-  const totalOrders = filteredOrders.length;
+
+  const paidHire = hireRequests.filter((h: any) => h.status === "paid" || h.payment_status === "paid");
+  const totalHireRevenue = paidHire.reduce((sum: number, h: any) => sum + Number(h.total_cost || 0), 0);
 
   const exportCSV = () => {
-    const headers = ["ID", "Amount", "Phone", "Status", "Date", "Receipt"];
-    const rows = data.orders.map((o: any) => [o.id, o.amount, o.phone, o.status, o.created_at, o.mpesa_receipt]);
-    const csv = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const isSale = typeFilter === "sale";
+    const headers = isSale
+      ? ["ID", "Reference", "Amount", "Phone", "Status", "Date", "Receipt"]
+      : ["ID", "Reference", "Customer", "Phone", "Items", "Total", "Status", "Date"];
+    const rows = isSale
+      ? saleOrders.map((o: any) => [o.id, o.order_reference || "", o.amount, o.phone, o.status, o.created_at, o.mpesa_receipt || ""])
+      : hireRequests.map((h: any) => [h.id, h.hire_reference || "", h.customer_name, h.phone_number, h.item_name || "", h.total_cost, h.status, h.created_at]);
+    const csv = [headers.join(","), ...rows.map((r: any) => r.map((v: any) => `"${String(v || "").replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sales-report-${period}-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `${isSale ? "sales" : "hire"}-report-${period}-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const topProducts = data.products
+  const topProducts = sectionProducts
     .sort((a: any, b: any) => (b.stock || 0) - (a.stock || 0))
     .slice(0, 5);
+
+  const isSale = typeFilter === "sale";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-            <BarChart3 size={22} className="text-blue-600" /> Reports & Analytics
+            <BarChart3 size={22} className={isSale ? "text-blue-600" : "text-purple-600"} />
+            {isSale ? "Sales Reports & Analytics" : "Hire Reports & Analytics"}
           </h2>
-          <p className="text-slate-500 text-sm mt-1">Sales performance and business insights</p>
+          <p className="text-slate-500 text-sm mt-1">
+            {isSale ? "Sacramentals & T-Shirts sales performance" : "Chairs & Instruments hire performance"}
+          </p>
         </div>
         <div className="flex gap-3">
           <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md">
@@ -89,19 +122,19 @@ export default function Reports() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { label: "Total Revenue", value: `KES ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "bg-emerald-500" },
-          { label: "Total Orders", value: String(totalOrders), icon: ShoppingCart, color: "bg-blue-500" },
-          { label: "Paid Orders", value: String(paidOrders.length), icon: TrendingUp, color: "bg-purple-500" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
-            <div className={`${s.color} w-12 h-12 rounded-xl flex items-center justify-center text-white`}><s.icon size={24} /></div>
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{s.label}</p>
-              <p className="text-xl font-black text-slate-800 mt-0.5">{s.value}</p>
-            </div>
-          </div>
-        ))}
+        {isSale ? (
+          <>
+            <StatCard label="Total Revenue" value={`KES ${totalRevenue.toLocaleString()}`} icon={DollarSign} color="bg-emerald-500" />
+            <StatCard label="Sale Orders" value={String(saleOrders.length)} icon={ShoppingCart} color="bg-blue-500" />
+            <StatCard label="Paid Orders" value={String(paidOrders.length)} icon={TrendingUp} color="bg-purple-500" />
+          </>
+        ) : (
+          <>
+            <StatCard label="Hire Revenue" value={`KES ${totalHireRevenue.toLocaleString()}`} icon={DollarSign} color="bg-emerald-500" />
+            <StatCard label="Total Requests" value={String(hireRequests.length)} icon={CalendarDays} color="bg-blue-500" />
+            <StatCard label="Paid / Approved" value={String(paidHire.length)} icon={TrendingUp} color="bg-purple-500" />
+          </>
+        )}
       </div>
 
       {/* Tables */}
@@ -111,32 +144,42 @@ export default function Reports() {
         </div>
       ) : (
         <div className="grid xl:grid-cols-2 gap-6">
-          {/* Recent Orders */}
+          {/* Recent Orders / Hire Requests */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800">Recent Orders</h3>
+              <h3 className="font-bold text-slate-800">{isSale ? "Recent Sale Orders" : "Recent Hire Requests"}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    {["#", "Amount", "Phone", "Status"].map(h => (
-                      <th key={h} className="text-left px-4 py-2.5 text-xs font-bold text-slate-500 uppercase">{h}</th>
-                    ))}
+                    {isSale
+                      ? ["#", "Amount", "Phone", "Status"].map(h => <th key={h} className="text-left px-4 py-2.5 text-xs font-bold text-slate-500 uppercase">{h}</th>)
+                      : ["Ref", "Customer", "Items", "Status"].map(h => <th key={h} className="text-left px-4 py-2.5 text-xs font-bold text-slate-500 uppercase">{h}</th>)
+                    }
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredOrders.slice(0, 10).map((o: any) => (
-                    <tr key={o.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-400">#{o.id}</td>
-                      <td className="px-4 py-2.5 font-bold text-slate-800">KES {Number(o.amount || 0).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{o.phone || "—"}</td>
-                      <td className="px-4 py-2.5">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${o.status === "paid" ? "bg-emerald-100 text-emerald-700" : o.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>{o.status}</span>
-                      </td>
+                  {(isSale ? saleOrders : hireRequests).slice(0, 10).map((r: any) => (
+                    <tr key={r.id} className="hover:bg-slate-50">
+                      {isSale ? (
+                        <>
+                          <td className="px-4 py-2.5 font-mono text-xs text-slate-400">#{r.id}</td>
+                          <td className="px-4 py-2.5 font-bold text-slate-800">KES {Number(r.amount || 0).toLocaleString()}</td>
+                          <td className="px-4 py-2.5 text-slate-600">{r.phone || "—"}</td>
+                          <td className="px-4 py-2.5"><StatusBadge status={r.status} /></td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-4 py-2.5 font-mono text-xs text-slate-400">{r.hire_reference || `#${r.id}`}</td>
+                          <td className="px-4 py-2.5 font-semibold text-slate-800">{r.customer_name || "—"}</td>
+                          <td className="px-4 py-2.5 text-slate-600">{r.item_name || "—"}</td>
+                          <td className="px-4 py-2.5"><StatusBadge status={r.status} /></td>
+                        </>
+                      )}
                     </tr>
                   ))}
-                  {filteredOrders.length === 0 && <tr><td colSpan={4} className="text-center py-8 text-slate-400">No orders in this period</td></tr>}
+                  {(isSale ? saleOrders : hireRequests).length === 0 && <tr><td colSpan={4} className="text-center py-8 text-slate-400">No records in this period</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -145,7 +188,7 @@ export default function Reports() {
           {/* Top Products */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800">Top Products by Stock</h3>
+              <h3 className="font-bold text-slate-800">{isSale ? "Top Sale Products" : "Top Hire Products"}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -175,5 +218,33 @@ export default function Reports() {
         </div>
       )}
     </div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon, color }: { label: string; value: string; icon: any; color: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
+      <div className={`${color} w-12 h-12 rounded-xl flex items-center justify-center text-white`}><Icon size={24} /></div>
+      <div>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
+        <p className="text-xl font-black text-slate-800 mt-0.5">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colorMap: Record<string, string> = {
+    paid: "bg-emerald-100 text-emerald-700",
+    completed: "bg-emerald-100 text-emerald-700",
+    pending: "bg-amber-100 text-amber-700",
+    approved: "bg-blue-100 text-blue-700",
+    cancelled: "bg-red-100 text-red-700",
+    rejected: "bg-red-100 text-red-700",
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${colorMap[status] || "bg-slate-100 text-slate-600"}`}>
+      {status}
+    </span>
   );
 }
