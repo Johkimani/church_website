@@ -16,6 +16,7 @@ export default function CategoryCardManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [inputMode, setInputMode] = useState<'url' | 'file'>('url');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeCategoryRef = useRef<string | null>(null);
@@ -48,9 +49,12 @@ export default function CategoryCardManager() {
       return;
     }
     setUploading(category);
+    setUploadProgress(p => ({ ...p, [category]: 0 }));
     activeCategoryRef.current = category;
     try {
-      const response = await uploadFile(file);
+      const response = await uploadFile(file, {
+        onProgress: (pct) => setUploadProgress(prev => ({ ...prev, [category]: pct })),
+      });
       const result = response.data;
       const imageUrl = result?.data?.url || result?.url;
       if (imageUrl) {
@@ -191,7 +195,14 @@ export default function CategoryCardManager() {
                       {uploading === card.category ? (
                         <div className="flex flex-col items-center gap-2">
                           <Loader2 size={24} className="text-blue-500 animate-spin" />
-                          <p className="text-xs text-slate-600 font-medium">Uploading...</p>
+                          <p className="text-xs text-slate-600 font-medium">
+                            {uploadProgress[card.category] > 0 ? `${uploadProgress[card.category]}%` : 'Compressing...'}
+                          </p>
+                          {uploadProgress[card.category] > 0 && (
+                            <div className="w-24 h-1 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress[card.category]}%` }} />
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
