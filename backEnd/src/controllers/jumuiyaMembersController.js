@@ -604,7 +604,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
     // We use the first member_id as the user_id for the mpesa_request record
     const paymentResult = await payAndWait(member_ids[0], phoneNumber, amount);
 
-    if (paymentResult.status !== "success") {
+    if (paymentResult.status !== "success" && paymentResult.status !== "paid") {
       return res.status(402).json({ 
         success: false, 
         message: paymentResult.message || "Payment failed or timed out. Please try again." 
@@ -633,7 +633,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
          WHERE member_id = ANY($3)
        )
        UPDATE members m
-       SET jumuiya_id = $1,
+       SET jumuiya_id = $1, migrated_to_associates = NULL,
            year_of_study = COALESCE(norm.norm_yos, m.year_of_study),
            sem_1_reg = CASE WHEN norm.norm_yos = '1' AND $2 = 0 THEN true ELSE m.sem_1_reg END,
            sem_2_reg = CASE WHEN norm.norm_yos = '1' AND $2 = 1 THEN true ELSE m.sem_2_reg END,
@@ -735,6 +735,8 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
  */
 export const getAllRegisteredMembers = async (req, res) => {
   try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
     const result = await pool.query(`
       SELECT
         r.id as registration_id,
@@ -760,6 +762,10 @@ export const getAllRegisteredMembers = async (req, res) => {
       ORDER BY sg.name, m.first_name ASC
     `);
 
+    const allIds = result.rows.map(r => r.id);
+    const kimRow = allIds.find(id => id && id.includes('PA106/G/19920'));
+    logger.info(`getAllRegisteredMembers: totalRows=${result.rows.length}, kimFound=${!!kimRow}, allIds=${JSON.stringify(allIds)}`);
+
     const formatted = result.rows.map(row => ({
       ...row,
       name: `${row.first_name} ${row.last_name || ""}`.trim(),
@@ -782,7 +788,9 @@ export const getAllRegisteredMembers = async (req, res) => {
  */
 export const manualRegisterMember = async (req, res) => {
   try {
-    const { member_id, jumuiya_id, semesters, serial_no } = req.body;
+    const { member_id, jumuiya_id, semesters, serial_no, amount } = req.body;
+
+    logger.info(`manualRegisterMember called: member_id=${member_id}, jumuiya_id=${jumuiya_id}, amount=${amount}, semesters=${JSON.stringify(semesters)}`);
 
     if (!member_id || !jumuiya_id) {
       return res.status(400).json({ success: false, message: "member_id and jumuiya_id are required" });
@@ -797,7 +805,7 @@ export const manualRegisterMember = async (req, res) => {
       return res.status(404).json({ success: false, message: "Member not found" });
     }
 
-    // 2. Update members table — set jumuiya and semester flags
+    // 2. Update members table — set jumuiya, semester flags, and un-migrate if needed
     const semUpdates = [];
     const semVals = [];
     let idx = 2;
@@ -810,7 +818,7 @@ export const manualRegisterMember = async (req, res) => {
     }
     semVals.push(member_id);
     await pool.query(
-      `UPDATE members SET jumuiya_id = $1, ${semUpdates.join(", ")} WHERE member_id = $${idx}`,
+      `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL, ${semUpdates.join(", ")} WHERE member_id = $${idx}`,
       [jumuiya_id, ...semVals]
     );
 
@@ -823,6 +831,34 @@ export const manualRegisterMember = async (req, res) => {
     );
 
     await pool.query("COMMIT");
+
+    // Debug: verify the registered row exists
+    const regDebug = await pool.query(
+      "SELECT r.id, r.member_id, r.jumuiya_id, r.status, r.serial_no FROM registered r WHERE r.member_id = $1",
+      [member_id]
+    );
+    logger.info(`DEBUG registered rows for ${member_id}: count=${regDebug.rows.length}, rows=${JSON.stringify(regDebug.rows)}`);
+    const memberDebug = await pool.query(
+      "SELECT member_id, jumuiya_id, migrated_to_associates FROM members WHERE member_id = $1",
+      [member_id]
+    );
+    logger.info(`DEBUG members row for ${member_id}: ${JSON.stringify(memberDebug.rows[0] || null)}`);
+
+    // Record cash payment outside transaction (best-effort, non-blocking)
+    logger.info(`Cash payment check: amount=${amount}, truthy=${!!amount}`);
+    if (amount) {
+      try {
+        const cashCheckoutId = `CASH-${member_id}-${Date.now()}`;
+        const payResult = await pool.query(
+          `INSERT INTO mpesa_request (user_id, checkout_id, amount, status, mpesa_receipt, created_at)
+           VALUES ($1, $2, $3, 'success', 'CASH', CURRENT_TIMESTAMP)`,
+          [member_id, cashCheckoutId, amount]
+        );
+        logger.info(`Cash payment recorded: ${JSON.stringify(payResult.rows[0])}`);
+      } catch (payErr) {
+        logger.warn("Failed to record cash payment: " + payErr.message);
+      }
+    }
 
     const row = member.rows[0];
     res.status(200).json({
@@ -897,7 +933,7 @@ export const registerWithPayment = async (req, res) => {
     // 1. Trigger STK Push and wait for result
     const paymentResult = await payAndWait(member_id, phoneNumber, amount);
 
-    if (paymentResult.status !== "success") {
+    if (paymentResult.status !== "success" && paymentResult.status !== "paid") {
       return res.status(402).json({ 
         success: false, 
         message: paymentResult.message || "Payment failed or timed out. Please try again." 
@@ -928,7 +964,7 @@ export const registerWithPayment = async (req, res) => {
     // Update members table — also normalize year_of_study if needed
     const yosUpdate = normalizedYos ? `, year_of_study = '${normalizedYos}'` : '';
     await pool.query(
-      `UPDATE members SET jumuiya_id = $1${yosUpdate}${semCol ? `, ${semCol} = true` : ''} WHERE member_id = $2`,
+      `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL${yosUpdate}${semCol ? `, ${semCol} = true` : ''} WHERE member_id = $2`,
       [jumuiya_id, member_id]
     );
 
@@ -976,7 +1012,7 @@ export const registerWithPayment = async (req, res) => {
               Hi ${memberName},
             </p>
             <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
-              Your registration to <strong>${jumuiyaName}</strong> has been confirmed and your payment of <strong>KES ${REGISTRATION_FEE}</strong> has been received.
+              Your registration to <strong>${jumuiyaName}</strong> has been confirmed and your payment of <strong>KES ${amount}</strong> has been received.
             </p>
             <p style="color: #475569; font-size: 0.95rem; line-height: 1.6;">
               You can now view and download your Semester Stamp Card from the community page.
@@ -1249,14 +1285,16 @@ export const getAnalytics = async (req, res) => {
         LIMIT 10
       `),
 
-      // 10. Payment summary (from mpesa_request for registration-related payments)
+      // 10. Payment summary broken down by source (MPesa vs Manual)
       pool.query(`
         SELECT
           COUNT(*)::int as total_transactions,
           COALESCE(SUM(amount), 0)::numeric as total_amount,
-          SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END)::int as successful,
+          SUM(CASE WHEN status IN ('success', 'paid') THEN 1 ELSE 0 END)::int as successful,
           SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)::int as pending,
-          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END)::int as failed
+          SUM(CASE WHEN status IN ('failed', 'cancelled') THEN 1 ELSE 0 END)::int as failed,
+          COALESCE(SUM(amount) FILTER (WHERE (mpesa_receipt IS NULL OR mpesa_receipt != 'CASH') AND status IN ('success', 'paid')), 0)::numeric as mpesa_success_amount,
+          COALESCE(SUM(amount) FILTER (WHERE mpesa_receipt = 'CASH' AND status = 'success'), 0)::numeric as manual_success_amount
         FROM mpesa_request
       `),
     ]);
@@ -1294,7 +1332,7 @@ export const getPayments = async (req, res) => {
     const { status } = req.query;
     let query = `
       SELECT
-        p.id, p.phone, p.amount, p.status, p.mpesa_receipt, p.user_id,
+        p.id, p.phone, p.amount, p.status, p.mpesa_receipt, p.user_id, p.payment_source,
         p.created_at, p.updated_at,
         m.first_name, m.last_name, m.member_id as reg_number, m.email,
         sg.name as jumuiya_name
@@ -1304,8 +1342,12 @@ export const getPayments = async (req, res) => {
     `;
     const params = [];
     if (status) {
-      query += ` WHERE p.status = $1`;
-      params.push(status);
+      if (status === 'success') {
+        query += ` WHERE p.status IN ('success', 'paid')`;
+      } else {
+        query += ` WHERE p.status = $1`;
+        params.push(status);
+      }
     }
     query += ` ORDER BY p.created_at DESC LIMIT 100`;
 
@@ -1426,5 +1468,170 @@ export const getCohortAnalytics = async (req, res) => {
   } catch (error) {
     logger.error("Error fetching cohort analytics: " + error.message);
     res.status(500).json({ success: false, error: "Failed to fetch cohort analytics" });
+  }
+};
+
+export const getJumuiyaProgression = async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const fromYear = parseInt(req.query.from) || (currentYear - 3);
+    const toYear = parseInt(req.query.to) || currentYear;
+
+    // Compute admission year from year_of_study: currentYear - year_of_study + 1
+    const admissionYearExpr = `(${currentYear} - CAST(m.year_of_study AS integer) + 1)`;
+
+    const result = await pool.query(`
+      SELECT
+        sg.name AS jumuiya_name,
+        LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) AS jumuiya_slug,
+        sg.color AS jumuiya_color,
+        COUNT(DISTINCT m.member_id)::int AS total_members,
+        ${SEMESTER_COLS.map((col, i) => `COUNT(DISTINCT CASE WHEN m.${col} = true THEN m.member_id END)::int AS ${col}`).join(',\n        ')}
+      FROM members m
+      JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+      WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+        AND m.year_of_study ~ '^[1-4]$'
+        AND ${admissionYearExpr} BETWEEN $1 AND $2
+      GROUP BY sg.name, sg.slug, sg.color
+      ORDER BY sg.name ASC
+    `, [fromYear, toYear]);
+
+    const jumuiyas = result.rows.map(row => {
+      const semesters = SEMESTER_COLS.map((col, i) => ({
+        sem: SEMESTER_LABELS[i],
+        count: row[col] || 0,
+        pct: row.total_members > 0 ? Math.round(((row[col] || 0) / row.total_members) * 100) : 0,
+      }));
+
+      return {
+        jumuiyaName: row.jumuiya_name,
+        jumuiyaSlug: row.jumuiya_slug,
+        jumuiyaColor: row.jumuiya_color || "#6b7280",
+        total: row.total_members,
+        semesters,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        jumuiyas,
+        semesterLabels: SEMESTER_LABELS,
+        yearRange: { from: fromYear, to: toYear },
+      },
+    });
+  } catch (error) {
+    logger.error("Error fetching jumuiya progression: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch jumuiya progression" });
+  }
+};
+
+export const getYearlyContribution = async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const targetYear = parseInt(req.query.year) || currentYear;
+
+    // Admission year = currentYear - CAST(year_of_study AS integer) + 1
+    // For target year T, a member is active if admissionYear BETWEEN (T - 3) AND T
+
+    // Per-jumuiya: registered members for the target year
+    const regResult = await pool.query(`
+      SELECT
+        sg.name AS jumuiya_name,
+        LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) AS jumuiya_slug,
+        sg.color AS jumuiya_color,
+        COUNT(DISTINCT m.member_id)::int AS registered_count
+      FROM sub_groups sg
+      LEFT JOIN members m ON m.jumuiya_id = sg.group_id
+        AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+        AND m.year_of_study ~ '^[1-4]$'
+        AND CASE $1 - ${currentYear} + CAST(m.year_of_study AS integer) - 1
+          WHEN 0 THEN (m.sem_1_reg = true OR m.sem_2_reg = true)
+          WHEN 1 THEN (m.sem_3_reg = true OR m.sem_4_reg = true)
+          WHEN 2 THEN (m.sem_5_reg = true OR m.sem_6_reg = true)
+          WHEN 3 THEN (m.sem_7_reg = true OR m.sem_8_reg = true)
+          ELSE false
+        END = true
+      WHERE sg.slug IN
+        ('st-anthony','st-augustine','st-catherine','st-dominic','st-elizabeth','st-maria-goretti','st-monica')
+      GROUP BY sg.name, sg.slug, sg.color
+      ORDER BY registered_count DESC
+    `, [targetYear]);
+
+    // Per-jumuiya: total active members (registered or not) for the target year
+    const totalResult = await pool.query(`
+      SELECT
+        sg.slug AS jumuiya_slug,
+        COUNT(DISTINCT m.member_id)::int AS total_members
+      FROM sub_groups sg
+      LEFT JOIN members m ON m.jumuiya_id = sg.group_id
+        AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+        AND m.year_of_study ~ '^[1-4]$'
+        AND ${currentYear} - CAST(m.year_of_study AS integer) + 1 BETWEEN ($1 - 3) AND $1
+      WHERE sg.slug IN
+        ('st-anthony','st-augustine','st-catherine','st-dominic','st-elizabeth','st-maria-goretti','st-monica')
+      GROUP BY sg.slug
+    `, [targetYear]);
+
+    const totalMap = {};
+    totalResult.rows.forEach(r => { totalMap[r.jumuiya_slug] = r.total_members; });
+
+    const jumuiyas = regResult.rows.map(row => ({
+      jumuiyaName: row.jumuiya_name,
+      jumuiyaSlug: row.jumuiya_slug,
+      jumuiyaColor: row.jumuiya_color || "#6b7280",
+      registeredCount: row.registered_count,
+      totalMembers: totalMap[row.jumuiya_slug] || 0,
+    }));
+
+    const totalRegistered = jumuiyas.reduce((sum, j) => sum + j.registeredCount, 0);
+    const totalMembers = jumuiyas.reduce((sum, j) => sum + j.totalMembers, 0);
+    const top = jumuiyas.length > 0 ? jumuiyas[0] : null;
+
+    // Per-year: registered + total for top years
+    const yearsResult = await pool.query(`
+      SELECT
+        y.year,
+        COUNT(DISTINCT m.member_id) FILTER (WHERE
+          CASE y.year - ${currentYear} + CAST(m.year_of_study AS integer) - 1
+            WHEN 0 THEN (m.sem_1_reg = true OR m.sem_2_reg = true)
+            WHEN 1 THEN (m.sem_3_reg = true OR m.sem_4_reg = true)
+            WHEN 2 THEN (m.sem_5_reg = true OR m.sem_6_reg = true)
+            WHEN 3 THEN (m.sem_7_reg = true OR m.sem_8_reg = true)
+            ELSE false
+          END = true
+        )::int AS registered,
+        COUNT(DISTINCT m.member_id)::int AS total
+      FROM (VALUES ($1::int), ($2::int), ($3::int), ($4::int)) AS y(year)
+      LEFT JOIN members m ON
+        (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+        AND m.year_of_study ~ '^[1-4]$'
+        AND m.jumuiya_id IN (SELECT group_id FROM sub_groups WHERE slug IN
+          ('st-anthony','st-augustine','st-catherine','st-dominic','st-elizabeth','st-maria-goretti','st-monica'))
+        AND ${currentYear} - CAST(m.year_of_study AS integer) + 1 BETWEEN (y.year - 3) AND y.year
+      GROUP BY y.year
+      ORDER BY registered DESC
+    `, [currentYear - 3, currentYear - 2, currentYear - 1, currentYear]);
+
+    const topYears = yearsResult.rows.slice(0, 3).map(r => ({
+      year: r.year,
+      registered: r.registered,
+      total: r.total,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        year: targetYear,
+        totalRegistered,
+        totalMembers,
+        topContributor: top,
+        jumuiyas,
+        topYears,
+      },
+    });
+  } catch (error) {
+    logger.error("Error fetching yearly contribution: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch yearly contribution" });
   }
 };

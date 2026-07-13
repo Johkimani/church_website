@@ -3,7 +3,7 @@ import { memberService } from "../../../api/jumuiyaMemberService";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
-import { GitCompare, RefreshCw, ChevronDown } from "lucide-react";
+import { GitCompare, RefreshCw, ChevronDown, Calendar } from "lucide-react";
 
 const YEAR_COLORS: Record<number, string> = {
   1: "#22c55e",
@@ -33,11 +33,16 @@ function getCohortColor(c: any): string {
   return YEAR_COLORS[c.yearLevel] ?? "#6366f1";
 }
 
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 15 }, (_, i) => currentYear - 14 + i);
+
 export default function CrossComparisonTab() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedSem, setSelectedSem] = useState("1.1");
+  const [fromYear, setFromYear] = useState(currentYear - 3);
+  const [toYear, setToYear] = useState(currentYear);
 
   const fetchData = async () => {
     setLoading(true);
@@ -76,7 +81,9 @@ export default function CrossComparisonTab() {
   if (!data || !data.cohorts) return null;
 
   const { cohorts } = data;
-  const sorted = [...cohorts].sort((a: any, b: any) => a.yearLevel - b.yearLevel);
+  const sorted = [...cohorts]
+    .filter((c: any) => c.admissionYear >= fromYear && c.admissionYear <= toYear)
+    .sort((a: any, b: any) => a.yearLevel - b.yearLevel);
 
   const selectedSemData = sorted.map((c: any) => {
     const semData = c.semesters.find((s: any) => s.sem === selectedSem);
@@ -106,6 +113,46 @@ export default function CrossComparisonTab() {
 
   return (
     <div className="space-y-6">
+      {/* Year Range Filter */}
+      <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl border border-slate-200 p-3">
+        <Calendar size={16} className="text-slate-400" />
+        <span className="text-sm font-semibold text-slate-700">Admission Year</span>
+        <select
+          value={fromYear}
+          onChange={e => setFromYear(parseInt(e.target.value))}
+          className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        >
+          {YEAR_OPTIONS.filter(y => y <= toYear).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+        <span className="text-sm text-slate-400">to</span>
+        <select
+          value={toYear}
+          onChange={e => setToYear(parseInt(e.target.value))}
+          className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        >
+          {YEAR_OPTIONS.filter(y => y >= fromYear).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+        {(fromYear !== currentYear - 3 || toYear !== currentYear) && (
+          <button
+            onClick={() => { setFromYear(currentYear - 3); setToYear(currentYear); }}
+            className="px-3 py-1.5 text-xs font-semibold text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-48 bg-white rounded-xl border border-slate-200">
+          <GitCompare size={32} className="text-slate-300 mb-2" />
+          <p className="text-sm text-slate-500">No cohorts found for the selected year range</p>
+        </div>
+      ) : (
+      <>
       <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -212,6 +259,8 @@ export default function CrossComparisonTab() {
           })}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

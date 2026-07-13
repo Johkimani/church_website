@@ -5,50 +5,6 @@ import { HeroSlider } from '../components/HeroSlider';
 import { ArrowUpRight, Loader2, ShoppingBag, Shirt, ArmchairIcon, Guitar, BookHeart } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { useProjectsData } from '../context/ProjectsProvider';
-import ProjectHero from '../components/ProjectHero';
-import ProjectBackground from '../components/ProjectBackground';
-
-const DEFAULT_IMAGES: Record<string, string> = {
-  sacramentals: 'https://images.unsplash.com/photo-1584446549557-ca5e7baf3cc1?w=800&fit=crop',
-  tshirts: 'https://images.unsplash.com/photo-1594938298603-c8148f4c3c0c?w=800&fit=crop',
-  chairs: 'https://images.unsplash.com/photo-1549615555-5dc63920dcbc?w=800&fit=crop',
-  instruments: 'https://images.unsplash.com/photo-1545128485-c400e7702796?w=800&fit=crop',
-};
-
-interface CardTheme {
-  card: string;
-  border: string;
-  glow: string;
-  btnBg: string;
-  btnHover: string;
-  btnText: string;
-  titleHover: string;
-  badge: string;
-  badgeBorder: string;
-}
-
-const THEMES: Record<string, CardTheme> = {
-  sacramentals: {
-    card: 'bg-blue-50/60', border: 'border-blue-200/50', glow: 'rgba(59,130,246,0.07)',
-    btnBg: 'bg-blue-100', btnHover: 'bg-blue-600', btnText: 'text-blue-700', titleHover: 'group-hover:text-blue-400',
-    badge: 'bg-blue-100/80', badgeBorder: 'border-blue-200/50',
-  },
-  tshirts: {
-    card: 'bg-amber-50/60', border: 'border-amber-200/50', glow: 'rgba(217,119,6,0.07)',
-    btnBg: 'bg-amber-100', btnHover: 'bg-amber-600', btnText: 'text-amber-700', titleHover: 'group-hover:text-amber-400',
-    badge: 'bg-amber-100/80', badgeBorder: 'border-amber-200/50',
-  },
-  chairs: {
-    card: 'bg-sky-50/60', border: 'border-sky-200/50', glow: 'rgba(14,165,233,0.07)',
-    btnBg: 'bg-sky-100', btnHover: 'bg-sky-600', btnText: 'text-sky-700', titleHover: 'group-hover:text-sky-400',
-    badge: 'bg-sky-100/80', badgeBorder: 'border-sky-200/50',
-  },
-  instruments: {
-    card: 'bg-indigo-50/60', border: 'border-indigo-200/50', glow: 'rgba(99,102,241,0.07)',
-    btnBg: 'bg-indigo-100', btnHover: 'bg-indigo-600', btnText: 'text-indigo-700', titleHover: 'group-hover:text-indigo-400',
-    badge: 'bg-indigo-100/80', badgeBorder: 'border-indigo-200/50',
-  },
-};
 
 const CATEGORIES = [
   { id: 'sacramentals', label: 'Sacramentals', path: '/sacramentals', tag: '15 items', icon: <ShoppingBag size={18} />, desc: 'Sacred items for your spiritual journey and daily devotion.' },
@@ -125,31 +81,21 @@ export const Home = () => {
     }
   }, [ctx.sliderImages, ctx.categoryCards]);
 
-  const getImg = (id: string) => cardImages[id] || DEFAULT_IMAGES[id] || '';
+  const getImg = (id: string) => cardImages[id] || '';
   const getTag = (id: string) => cardTags[id] || CATEGORIES.find(c => c.id === id)?.tag || '';
 
   return (
-    <div className="w-full min-h-screen pb-24 text-slate-800 font-sans bg-gradient-to-b from-slate-50 via-blue-50/10 to-white">
-    <style>{`
-      .card-shadow {
-        box-shadow:
-          0 1px 2px rgba(0,0,0,0.03),
-          0 4px 8px rgba(0,0,0,0.03),
-          0 12px 24px rgba(0,0,0,0.04),
-          0 24px 48px rgba(0,0,0,0.05);
-      }
-      .card-shadow-hover {
-        box-shadow:
-          0 2px 4px rgba(0,0,0,0.04),
-          0 8px 16px rgba(0,0,0,0.04),
-          0 16px 32px rgba(0,0,0,0.06),
-          0 32px 64px rgba(0,0,0,0.08),
-          0 48px 96px rgba(0,0,0,0.05);
-      }
-    `}</style>
+    <div className="w-full bg-slate-50 min-h-screen pb-24 text-slate-800 font-sans">
 
       {/* ══════════ Hero Header ─ Dark Premium Grid Design ══════════ */}
-      <ProjectHero>
+      <div className="bg-slate-950 text-white relative overflow-hidden shadow-2xl">
+        {/* Glow Effects */}
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
+
+        {/* Subtle grid texture overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+
         <div className="relative z-10 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
           {sliderLoading ? (
             <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-800 animate-pulse" />
@@ -212,10 +158,8 @@ export const Home = () => {
             </NavLink>
           </motion.div>
         </div>
-      </ProjectHero>
+      </div>
 
-      {/* ══════════ Content Area ══════════ */}
-      <ProjectBackground>
       {/* ══════════ Category Cards Grid (overlapping hero) ══════════ */}
       <div id="categories" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-10 relative z-20">
         <motion.div className="text-center mb-8 sm:mb-10">
@@ -234,54 +178,46 @@ export const Home = () => {
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="flex flex-wrap justify-center gap-8 sm:gap-10"
+            className="flex flex-wrap justify-center gap-6"
           >
-            {CATEGORIES.slice(0, 3).map(cat => {
-              const t = THEMES[cat.id];
-              return (
-              <motion.div key={cat.id} variants={cardVariants} className="relative w-full max-w-[360px] sm:w-[calc(50%-2.5rem)] lg:w-[calc(33.333%-2.5rem)]">
+            {CATEGORIES.slice(0, 3).map(cat => (
+              <motion.div key={cat.id} variants={cardVariants} className="w-full max-w-[360px] sm:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)]">
                 <NavLink
                   to={cat.path}
-                  className={`group relative flex flex-col h-full w-full ${t.card} rounded-[22px] border ${t.border} card-shadow transition-all duration-[400ms] ease-out hover:-translate-y-3 hover:scale-[1.02] hover:card-shadow-hover`}
+                  className="group relative flex flex-col h-full w-full bg-white rounded-[2.5rem] border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 ease-out overflow-hidden hover:-translate-y-3"
                 >
-                  <div
-                  className="absolute -inset-4 rounded-[28px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out -z-10"
-                  style={{ background: `radial-gradient(ellipse at center, ${t.glow}, transparent 70%)` }}
-                />
-                  <div className="absolute inset-x-[12%] bottom-0 h-8 rounded-full blur-xl -translate-y-3 transition-all duration-[400ms] bg-black/[0.04] group-hover:translate-y-1 group-hover:bg-black/[0.08] group-hover:blur-2xl pointer-events-none" />
-                  <div className="h-56 relative overflow-hidden rounded-t-[22px] shrink-0">
+                  <div className="h-56 relative overflow-hidden shrink-0">
                     <img
                       src={getImg(cat.id)}
                       alt={cat.label}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-                    <span className={`absolute top-4 left-4 ${t.badge} backdrop-blur-md border ${t.badgeBorder} text-slate-800 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full`}>
+                    <span className="absolute top-4 left-4 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
                       {getTag(cat.id)}
                     </span>
                     <div className="absolute top-4 right-4 w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg text-white">
                       {cat.icon}
                     </div>
                     <div className="absolute bottom-4 left-6 right-6">
-                      <h3 className={`text-xl font-black text-white leading-tight tracking-tight ${t.titleHover} transition-colors`}>
+                      <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors">
                         {cat.label}
                       </h3>
                     </div>
                   </div>
-                  <div className="p-6 flex flex-col flex-grow rounded-b-[22px]">
+                  <div className="p-6 flex flex-col flex-grow">
                     <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">
                       {cat.desc}
                     </p>
-                    <div className={`mt-auto pt-4 border-t ${t.border} flex items-center justify-end ${t.btnText} transition-colors`}>
-                      <div className={`w-8 h-8 rounded-full ${t.btnBg} ${t.btnHover} group-hover:text-white transition-all duration-300 flex items-center justify-center ${t.btnText}`}>
+                    <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-end text-blue-600 group-hover:text-blue-700 transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-blue-50 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 flex items-center justify-center text-blue-600">
                         <ArrowUpRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
                   </div>
                 </NavLink>
               </motion.div>
-              );
-            })}
+            ))}
           </motion.div>
         )}
 
@@ -291,55 +227,47 @@ export const Home = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45, type: 'spring', stiffness: 70, damping: 15 }}
-            className="mt-10 flex justify-center"
+            className="mt-6 flex justify-center"
           >
             <div className="w-full max-w-[360px]">
-              {(() => { const cat = CATEGORIES[3]; const t = THEMES[cat.id]; return (
               <NavLink
-                to={cat.path}
-                className={`group relative flex flex-col h-full w-full ${t.card} rounded-[22px] border ${t.border} card-shadow transition-all duration-[400ms] ease-out hover:-translate-y-3 hover:scale-[1.02] hover:card-shadow-hover`}
+                to={CATEGORIES[3].path}
+                className="group relative flex flex-col h-full w-full bg-white rounded-[2.5rem] border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 ease-out overflow-hidden hover:-translate-y-3"
               >
-                <div
-                  className="absolute -inset-4 rounded-[28px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out -z-10"
-                  style={{ background: `radial-gradient(ellipse at center, ${t.glow}, transparent 70%)` }}
-                />
-                <div className="absolute inset-x-[12%] bottom-0 h-8 rounded-full blur-xl -translate-y-3 transition-all duration-[400ms] bg-black/[0.04] group-hover:translate-y-1 group-hover:bg-black/[0.08] group-hover:blur-2xl pointer-events-none" />
-                <div className="h-56 relative overflow-hidden rounded-t-[22px] shrink-0">
+                <div className="h-56 relative overflow-hidden shrink-0">
                   <img
-                    src={getImg(cat.id)}
-                    alt={cat.label}
+                    src={getImg(CATEGORIES[3].id)}
+                    alt={CATEGORIES[3].label}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-                  <span className={`absolute top-4 left-4 ${t.badge} backdrop-blur-md border ${t.badgeBorder} text-slate-800 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full`}>
-                    {getTag(cat.id)}
+                  <span className="absolute top-4 left-4 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
+                    {getTag(CATEGORIES[3].id)}
                   </span>
                   <div className="absolute top-4 right-4 w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg text-white">
-                    {cat.icon}
+                    {CATEGORIES[3].icon}
                   </div>
                   <div className="absolute bottom-4 left-6 right-6">
-                    <h3 className={`text-xl font-black text-white leading-tight tracking-tight ${t.titleHover} transition-colors`}>
-                      {cat.label}
+                    <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors">
+                      {CATEGORIES[3].label}
                     </h3>
                   </div>
                 </div>
-                <div className="p-6 flex flex-col flex-grow rounded-b-[22px]">
+                <div className="p-6 flex flex-col flex-grow">
                   <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">
-                    {cat.desc}
+                    {CATEGORIES[3].desc}
                   </p>
-                  <div className={`mt-auto pt-4 border-t ${t.border} flex items-center justify-end ${t.btnText} transition-colors`}>
-                    <div className={`w-8 h-8 rounded-full ${t.btnBg} ${t.btnHover} group-hover:text-white transition-all duration-300 flex items-center justify-center ${t.btnText}`}>
+                  <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-end text-blue-600 group-hover:text-blue-700 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 flex items-center justify-center text-blue-600">
                       <ArrowUpRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </div>
               </NavLink>
-              ); })()}
             </div>
           </motion.div>
         )}
       </div>
-      </ProjectBackground>
 
       <FaithFooter />
 
