@@ -52,7 +52,7 @@ const GallerySection: React.FC = () => {
   const { data: galleryData, loading } = useCachedData<GalleryResponse>(
     'csa_cache_public_gallery',
     async () => {
-      const { data } = await apiClient.get<GalleryResponse>('/gallery');
+      const { data } = await apiClient.get<GalleryResponse>('/hub-gallery');
       return data;
     },
     { items: [], theme: 'default', userContext: null }
