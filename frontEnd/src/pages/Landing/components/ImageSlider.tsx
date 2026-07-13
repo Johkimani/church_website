@@ -102,7 +102,7 @@ function ImageSlider() {
     apiService.getGallery()
       .then((data: GalleryItem[]) => {
         const sorted = data
-          .filter(item => item.image_url)
+          .filter(item => item.image_url && item.category === 'Hero Slider')
           .sort((a, b) => new Date(b.event_date ?? 0).getTime() - new Date(a.event_date ?? 0).getTime())
         setDbSlides(sorted)
       })
