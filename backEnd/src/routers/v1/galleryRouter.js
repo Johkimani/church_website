@@ -10,15 +10,15 @@ const router = Router();
 router.get("/gallery/teaser", getGalleryTeaser);
 
 // Full gallery (Optional token for Jumuiya-based filtering)
-router.get("/gallery", optionalVerifyToken, getGallery); 
+router.get("/hub-gallery", optionalVerifyToken, getGallery); 
 
 // Social interactions
-router.post("/gallery/comment", verifyToken, addComment);
-router.post("/gallery/reaction", verifyToken, addReaction);
+router.post("/hub-gallery/comment", verifyToken, addComment);
+router.post("/hub-gallery/reaction", verifyToken, addReaction);
 
 // Generic and specific upload/fetch
 router.get("/choir/gallery", getGallery); // Still public for now, but will follow getGallery logic
 router.post("/choir/gallery", verifyToken, uploadMiddleware, uploadToGallery);
-router.post("/gallery/upload", verifyToken, uploadMiddleware, uploadToGallery);
+router.post("/hub-gallery/upload", verifyToken, uploadMiddleware, uploadToGallery);
 
 export default router;
