@@ -2,21 +2,16 @@ import React from 'react';
 import { useApp } from '../../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-    TRUST_BADGES, RENTAL_PROCESS_STEPS,
-    SACRAMENTAL_CATEGORIES
-} from '../pages/data';
+import { SACRAMENTAL_CATEGORIES } from '../pages/data';
 import type { SacramentalCategory } from '../pages/data';
 import {
     FaSearch, FaStar, FaShoppingCart, FaFilter,
-    FaChevronLeft, FaChevronRight, FaTrash, FaShieldAlt,
-    FaGlobeAfrica, FaBoxOpen, FaCheckCircle
+    FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle
 } from 'react-icons/fa';
 import apiService from '../../Landing/services/api';
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
-import ProjectBackground from '../components/ProjectBackground';
 
 /* ───────────────────────────────────────────────
    SACRAMENTAL SUBCATEGORIES that exist in the DB
@@ -136,26 +131,7 @@ const HeroSlider: React.FC<{
 /* ───────────────────────────────────────────────
    TRUST STRIP
 ─────────────────────────────────────────────── */
-const TRUST_ICONS: Record<string, React.ReactNode> = {
-    '✨': <FaStar className="text-amber-400" />,
-    '🛡️': <FaShieldAlt className="text-blue-500" />,
-    '🌍': <FaGlobeAfrica className="text-emerald-500" />,
-    '📦': <FaBoxOpen className="text-indigo-400" />,
-};
-
-const TrustStrip: React.FC = () => {
-    const badges = TRUST_BADGES['sacramentals'] || [];
-    return (
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 py-4">
-            {badges.map((b, i) => (
-                <div key={i} className="flex items-center gap-2 bg-white border border-blue-100 px-3 sm:px-4 py-2 rounded-xl shadow-sm text-xs sm:text-sm font-semibold text-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all">
-                    {b.icon && <span className="text-base">{TRUST_ICONS[b.icon] || b.icon}</span>}
-                    {b.text}
-                </div>
-            ))}
-        </div>
-    );
-};
+const TrustStrip: React.FC = () => null;
 
 /* ───────────────────────────────────────────────
    CATEGORY FILTER BAR
@@ -318,38 +294,7 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
    PROCESS GUIDE
 ─────────────────────────────────────────────── */
 
-const ProcessGuide: React.FC = () => (
-    <div className="py-12 sm:py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center mb-8 sm:mb-10">
-            <span className="inline-block text-[10px] sm:text-xs font-black text-blue-600 bg-blue-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">
-                Simple Process
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-800">How to Order</h2>
-            <p className="text-slate-500 mt-2 text-sm max-w-sm mx-auto">
-                Getting your sacred items is quick and easy.
-            </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3 max-w-4xl mx-auto">
-            {RENTAL_PROCESS_STEPS.map((step, i) => (
-                <div
-                    key={step.step}
-                    className="relative bg-white rounded-2xl p-5 sm:p-6 text-center shadow hover:shadow-lg transition-all duration-300 border border-blue-50 hover:-translate-y-1 group"
-                >
-                    {i < RENTAL_PROCESS_STEPS.length - 1 && (
-                        <div className="hidden sm:block absolute top-10 -right-3 w-6 h-0.5 bg-blue-200 z-10" />
-                    )}
-                    <div className="flex items-center justify-center mb-4 mx-auto w-fit relative">
-                        <div className="w-14 sm:w-16 h-14 sm:h-16 flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl text-2xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                            {step.step}
-                        </div>
-                    </div>
-                    <h3 className="text-sm sm:text-base font-black text-slate-800 mb-1">{step.title}</h3>
-                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{step.desc}</p>
-                </div>
-            ))}
-        </div>
-    </div>
-);
+const ProcessGuide: React.FC = () => null;
 
 
 /* ───────────────────────────────────────────────
@@ -423,7 +368,7 @@ export const Sacramentals = () => {
         setSliderImgs(prev => prev.filter(img => img.id !== id));
     };
 
-    /* ── Products from admin panel only ── */
+    /* ── Filter DB products ── */
     const sourceProducts = React.useMemo(() => {
         return (dbProducts || [])
             .filter(p => {
@@ -486,7 +431,7 @@ export const Sacramentals = () => {
     const activeCategoryLabel = SACRAMENTAL_CATEGORIES.find(c => c.id === sacCategory)?.label || '';
 
     return (
-        <div className="w-full min-h-screen pb-20 text-slate-800 font-sans bg-gradient-to-b from-slate-50 via-blue-50/10 to-white">
+        <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
             {/* ══════════ HERO ── Dark Premium Grid Design ══════════ */}
             <ProjectHero>
@@ -507,13 +452,9 @@ export const Sacramentals = () => {
                     title={<>Sacramentals &amp;{' '}<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Devotionals</span></>}
                     subtitle="Sacred items handpicked to aid your spiritual journey and daily devotion."
                 >
-                    <div className="mt-6">
-                        <TrustStrip />
-                    </div>
                 </ProjectPageHeader>
             </ProjectHero>
 
-            <ProjectBackground>
             {/* ══════════ SEARCH + FILTER PANEL ══════════ */}
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20">
                 <motion.div
@@ -644,9 +585,6 @@ export const Sacramentals = () => {
             {/* ── TESTIMONIALS ── */}
             <TestimonialsSection variant="blue" />
 
-            {/* ── PROCESS GUIDE ── */}
-            <ProcessGuide />
-            </ProjectBackground>
         </div>
     );
 };
@@ -674,19 +612,7 @@ export const CategoryHero: React.FC<{
 
 export const TrustBar: React.FC<{
     category: 'sacramentals' | 'tshirts' | 'chairs' | 'instruments' | 'other';
-}> = ({ category }) => {
-    const badges = TRUST_BADGES[category];
-    if (!badges) return null;
-    return (
-        <div className="flex flex-wrap gap-3 justify-center py-3">
-            {badges.map((b, i) => (
-                <div key={i} className="flex items-center gap-2 bg-white border border-blue-100 px-3 py-2 rounded-xl shadow-sm text-sm font-semibold text-slate-700">
-                    <span>{b.icon}</span>{b.text}
-                </div>
-            ))}
-        </div>
-    );
-};
+}> = () => null;
 
 
 
