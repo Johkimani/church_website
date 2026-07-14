@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Star, Plus, Trash2, Loader2, MessageCircle } from 'lucide-react';
+import { Star, Plus, Trash2, Loader2, MessageCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { toast } from 'react-hot-toast';
 
@@ -9,15 +9,20 @@ interface Testimonial {
   role: string;
   text: string;
   rating: number;
+  reference: string;
+  approved: boolean;
   created_at: string;
 }
+
+type Filter = 'all' | 'pending' | 'approved';
 
 export default function TestimonialManager() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', role: '', text: '', rating: 5 });
+  const [filter, setFilter] = useState<Filter>('pending');
+  const [form, setForm] = useState({ name: '', role: '', text: '', rating: 5, reference: '' });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,15 +47,25 @@ export default function TestimonialManager() {
     }
     setSaving(true);
     try {
-      await apiService.createTestimonial(form);
-      toast.success('Testimonial added!');
-      setForm({ name: '', role: '', text: '', rating: 5 });
+      await apiService.createTestimonial({ ...form, approved: true });
+      toast.success('Testimonial added and approved!');
+      setForm({ name: '', role: '', text: '', rating: 5, reference: '' });
       setShowForm(false);
       load();
     } catch {
       toast.error('Failed to save testimonial');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleApprove = async (t: Testimonial) => {
+    try {
+      await apiService.approveTestimonial(t.id);
+      toast.success('Testimonial approved');
+      setTestimonials(prev => prev.map(x => x.id === t.id ? { ...x, approved: true } : x));
+    } catch {
+      toast.error('Failed to approve');
     }
   };
 
@@ -65,6 +80,11 @@ export default function TestimonialManager() {
     }
   };
 
+  const pending = testimonials.filter(t => !t.approved);
+  const approved = testimonials.filter(t => t.approved);
+
+  const filteredList = filter === 'all' ? testimonials : filter === 'pending' ? pending : approved;
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
@@ -74,7 +94,7 @@ export default function TestimonialManager() {
             Testimonials
           </h1>
           <p className="text-slate-500 font-medium mt-1">
-            Customer feedback shown on the sacramentals page.
+            Review and approve customer testimonials. Only approved ones appear on public pages.
           </p>
         </div>
         <button
@@ -111,6 +131,16 @@ export default function TestimonialManager() {
             </div>
           </div>
           <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5">Order/Hire Reference (optional)</label>
+            <input
+              type="text"
+              value={form.reference}
+              onChange={e => setForm(p => ({ ...p, reference: e.target.value }))}
+              placeholder="CSA-2026-0001"
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </div>
+          <div>
             <label className="block text-xs font-bold text-slate-600 mb-1.5">Testimonial *</label>
             <textarea
               value={form.text}
@@ -140,43 +170,92 @@ export default function TestimonialManager() {
             disabled={saving}
             className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-xl transition-colors flex items-center gap-2 text-sm disabled:cursor-not-allowed"
           >
-            {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save Testimonial'}
+            {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save & Publish'}
           </button>
         </form>
       )}
+
+      {/* Filter tabs */}
+      <div className="flex gap-2">
+        {(['pending', 'approved', 'all'] as Filter[]).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+              filter === f
+                ? 'bg-blue-600 text-white shadow'
+                : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300'
+            }`}
+          >
+            {f === 'pending' && <Clock size={14} className="inline mr-1.5" />}
+            {f === 'approved' && <CheckCircle size={14} className="inline mr-1.5" />}
+            {f === 'all' && <MessageCircle size={14} className="inline mr-1.5" />}
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === 'pending' && pending.length > 0 && (
+              <span className="ml-1.5 bg-amber-400 text-white text-[10px] px-1.5 py-0.5 rounded-full">{pending.length}</span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {/* List */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 size={24} className="animate-spin text-blue-600" />
         </div>
-      ) : testimonials.length === 0 ? (
+      ) : filteredList.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <MessageCircle size={48} className="mx-auto mb-3 opacity-40" />
-          <p className="font-bold text-slate-500">No testimonials yet</p>
-          <p className="text-sm">Add your first customer feedback above.</p>
+          <p className="font-bold text-slate-500">
+            {filter === 'pending' ? 'No pending testimonials' : filter === 'approved' ? 'No approved testimonials' : 'No testimonials yet'}
+          </p>
+          <p className="text-sm">
+            {filter === 'pending' ? 'Customer submissions will appear here.' : 'Add your first customer feedback above.'}
+          </p>
         </div>
       ) : (
         <div className="grid gap-4">
-          {testimonials.map(t => (
-            <div key={t.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-start gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1 mb-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} size={12} className={i < t.rating ? 'text-amber-400' : 'text-slate-200'} fill={i < t.rating ? 'currentColor' : 'none'} />
-                  ))}
+          {filteredList.map(t => (
+            <div key={t.id} className={`bg-white rounded-2xl p-5 shadow-sm border transition-all ${
+              !t.approved ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200'
+            }`}>
+              <div className="flex items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  {!t.approved && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full mb-2 uppercase tracking-wider">
+                      <Clock size={10} /> Pending Review
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1 mb-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={12} className={i < t.rating ? 'text-amber-400' : 'text-slate-200'} fill={i < t.rating ? 'currentColor' : 'none'} />
+                    ))}
+                  </div>
+                  <p className="text-sm text-slate-700 leading-relaxed mb-2 italic">"{t.text}"</p>
+                  <p className="font-bold text-slate-800 text-sm">{t.name}</p>
+                  {t.role && <p className="text-xs text-slate-400">{t.role}</p>}
+                  {t.reference && <p className="text-[11px] text-slate-500 font-mono mt-0.5">Ref: {t.reference}</p>}
+                  <p className="text-[10px] text-slate-300 mt-1">{new Date(t.created_at).toLocaleDateString()}</p>
                 </div>
-                <p className="text-sm text-slate-700 leading-relaxed mb-2 italic">"{t.text}"</p>
-                <p className="font-bold text-slate-800 text-sm">{t.name}</p>
-                {t.role && <p className="text-xs text-slate-400">{t.role}</p>}
-                <p className="text-[10px] text-slate-300 mt-1">{new Date(t.created_at).toLocaleDateString()}</p>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {!t.approved && (
+                    <button
+                      onClick={() => handleApprove(t)}
+                      className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all"
+                      title="Approve"
+                    >
+                      <CheckCircle size={18} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(t)}
+                    className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => handleDelete(t)}
-                className="flex-shrink-0 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-              >
-                <Trash2 size={16} />
-              </button>
             </div>
           ))}
         </div>

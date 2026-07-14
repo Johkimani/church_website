@@ -764,6 +764,10 @@ export const setupCommunityDatabase = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Add payment_source column (cash vs mpesa) for secretary manual registration
+    try {
+      await db.query(`ALTER TABLE mpesa_request ADD COLUMN IF NOT EXISTS payment_source VARCHAR(20) DEFAULT 'mpesa'`);
+    } catch (_) { /* column may already exist */ }
     logger.info("Table 'mpesa_request' ready");
 
     // Orders — created after successful payment

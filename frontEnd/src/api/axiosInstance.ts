@@ -160,11 +160,26 @@ export const updateNotificationEventApi = (
 ) => apiClient.patch(`/notifications/${id}`, payload);
 
 
-export const uploadFile = (files: File[] | File) => {
+export const uploadFile = async (
+  files: File[] | File,
+  options?: { onProgress?: (percent: number) => void; compress?: boolean }
+) => {
+  const normalized = normalizeFiles(files);
+  const processed = options?.compress !== false
+    ? await Promise.all(normalized.map(async (f) => {
+        if (f.size < 200 * 1024 || !f.type.startsWith('image/')) return f;
+        const { resizeImage } = await import('../utils/imageOptimization');
+        const blob = await resizeImage(f, 1200, 1200);
+        return new File([blob], f.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+      }))
+    : normalized;
   const formData = new FormData();
-  normalizeFiles(files).forEach((file) => formData.append("files", file));
+  processed.forEach((file) => formData.append("files", file));
   return apiClient.post("/files", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress: options?.onProgress
+      ? (e) => { if (e.total) options.onProgress!(Math.round((e.loaded / e.total) * 100)); }
+      : undefined,
   });
 };
 

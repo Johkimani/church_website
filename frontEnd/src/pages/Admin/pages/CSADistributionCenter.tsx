@@ -7,13 +7,13 @@ import {
 import * as XLSX from "xlsx";
 
 const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony of Padua", color: "#b00ada" },
-  { id: "st-augustine", name: "St. Augustine of Hippo", color: "#1d21ed" },
-  { id: "st-catherine", name: "St. Catherine of Alexandria", color: "#fc1f5a" },
-  { id: "st-dominic", name: "St. Dominic", color: "#9ea1a0" },
-  { id: "st-elizabeth", name: "St. Elizabeth of Hungary", color: "#136b1a" },
-  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#27b8f6" },
-  { id: "st-monica", name: "St. Monica", color: "#f60808" },
+  { id: "st-anthony", name: "St. Anthony", color: "#8b5cf6" },
+  { id: "st-augustine", name: "St. Augustine", color: "#3b82f6" },
+  { id: "st-catherine", name: "St. Catherine", color: "#800000" },
+  { id: "st-dominic", name: "St. Dominic", color: "#979695ff" },
+  { id: "st-elizabeth", name: "St. Elizabeth", color: "#07a414d1" },
+  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#0ea5e9" },
+  { id: "st-monica", name: "St. Monica", color: "#ef4444" },
 ];
 
 // Short-name mapping used in allocation_approvals.target_jumuiya
