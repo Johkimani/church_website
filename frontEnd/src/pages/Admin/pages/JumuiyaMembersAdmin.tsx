@@ -24,13 +24,13 @@ function setCachedStats(data: Record<string, any>) { statsCache = { data, ts: Da
 function clearCache() { statsCache = null; }
 
 const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony of Padua", color: "#b00ada", initials: "SA" },
-  { id: "st-augustine", name: "St. Augustine of Hippo", color: "#1d21ed", initials: "AU" },
-  { id: "st-catherine", name: "St. Catherine of Alexandria", color: "#fc1f5a", initials: "CA" },
-  { id: "st-dominic", name: "St. Dominic", color: "#9ea1a0", initials: "DO" },
-  { id: "st-elizabeth", name: "St. Elizabeth of Hungary", color: "#136b1a", initials: "EL" },
-  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#27b8f6", initials: "MG" },
-  { id: "st-monica", name: "St. Monica", color: "#f60808", initials: "MO" },
+  { id: "st-anthony", name: "St. Anthony", color: "#8b5cf6", initials: "SA" },
+  { id: "st-augustine", name: "St. Augustine", color: "#3b82f6", initials: "AU" },
+  { id: "st-catherine", name: "St. Catherine", color: "#800000", initials: "CA" },
+  { id: "st-dominic", name: "St. Dominic", color: "#979695ff", initials: "DO" },
+  { id: "st-elizabeth", name: "St. Elizabeth", color: "#07a414d1", initials: "EL" },
+  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#0ea5e9", initials: "MG" },
+  { id: "st-monica", name: "St. Monica", color: "#ef4444", initials: "MO" },
 ];
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";

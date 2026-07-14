@@ -10,6 +10,7 @@ import Pageoulet from "./assets/Layouts/Pageoulet";
 import Authorisation from "./assets/Layouts/Authorisation";
 import Login from "./pages/Authorization/Login";
 import GalleryPage from "./pages/Landing/components/page/GalleryPage";
+import { ProjectsProvider } from "./pages/projects/context/ProjectsProvider";
 
 // Adaptive Discovery Paths (Lazy Loading for Performance)
 const Reset = lazy(() => import("./pages/Authorization/Reset"));
@@ -176,22 +177,16 @@ const App: React.FC = () => {
 
           {/* Standalone Landing Pages */}
           <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
-          <Route path="projects" element={<ProtectedRoute><ProjectsHome /></ProtectedRoute>} />
-          <Route
-  path="sacramentals"
-  element={
-    <ProtectedRoute>
-      <SacramentalsPage />
-    </ProtectedRoute>
-  }
-/>
-          <Route path="t-shirts" element={<ProtectedRoute><TshirtsPage /></ProtectedRoute>} />
-          <Route path="chairs" element={<ProtectedRoute><ChairsPage /></ProtectedRoute>} />
-          <Route path="instruments" element={<ProtectedRoute><InstrumentsPage /></ProtectedRoute>} />
-          <Route path="other-projects" element={<ProtectedRoute><OtherProjectsPage /></ProtectedRoute>} />
-          <Route path="activities" element={<ProtectedRoute><ActivitiesPage /></ProtectedRoute>} />
-          <Route path="product/:id" element={<ProtectedRoute><ProductDetailsPage /></ProtectedRoute>} />
-          
+          <Route element={<ProtectedRoute><ProjectsProvider><Outlet /></ProjectsProvider></ProtectedRoute>}>
+            <Route path="projects" element={<ProjectsHome />} />
+            <Route path="sacramentals" element={<SacramentalsPage />} />
+            <Route path="t-shirts" element={<TshirtsPage />} />
+            <Route path="chairs" element={<ChairsPage />} />
+            <Route path="instruments" element={<InstrumentsPage />} />
+            <Route path="other-projects" element={<OtherProjectsPage />} />
+            <Route path="activities" element={<ActivitiesPage />} />
+            <Route path="product/:id" element={<ProductDetailsPage />} />
+          </Route>
           {/* show notification to all */}
           <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
           {/* Devotions (Protected) */}

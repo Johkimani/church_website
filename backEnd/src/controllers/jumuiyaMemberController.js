@@ -2204,6 +2204,8 @@ export const lookupMemberByRegNumber = async (req, res) => {
     const result = await pool.query(
       `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.phone, m.email,
               m.year_of_study, m.course,
+              m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
+              m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg,
               sg.group_id::text as jumuiya_id, sg.name as jumuiya_name,
               LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug
        FROM members m

@@ -136,7 +136,7 @@ export const memberService = {
   getAllRegisteredMembers: () =>
     apiClient.get(`/jumuiya-members/registered/all`).then(r => r.data),
 
-  manualRegisterMember: (data: { member_id: string; jumuiya_id: string; semesters?: string[]; serial_no?: number }) =>
+  manualRegisterMember: (data: { member_id: string; jumuiya_id: string; semesters?: string[]; serial_no?: number; amount?: number }) =>
     apiClient.post(`/jumuiya-members/registered/manual`, data).then(r => r.data),
 
   // ── All Members (across all jumuiyas) ──
@@ -186,4 +186,23 @@ export const memberService = {
 
   bulkRegisterWithPayment: (data: { member_ids: string[]; jumuiya_id: string; phoneNumber: string; amount: number }) =>
     apiClient.post(`/jumuiya-members/bulk-register-with-payment`, data).then(r => r.data),
+
+  // ── Analytics ──
+  getAnalytics: () =>
+    apiClient.get(`/jumuiya-members/analytics`).then(r => r.data),
+
+  getCohortAnalytics: () =>
+    apiClient.get(`/jumuiya-members/analytics/cohorts`).then(r => r.data),
+
+  getJumuiyaProgression: (params?: { from?: number; to?: number }) =>
+    apiClient.get(`/jumuiya-members/analytics/jumuiya-progression`, { params }).then(r => r.data),
+
+  getYearlyContribution: (params?: { year?: number }) =>
+    apiClient.get(`/jumuiya-members/analytics/yearly-contribution`, { params }).then(r => r.data),
+
+  getPayments: (params?: { status?: string }) =>
+    apiClient.get(`/jumuiya-members/payments`, { params }).then(r => r.data),
+
+  updatePaymentStatus: (id: number, data: { status: string; mpesa_receipt?: string }) =>
+    apiClient.patch(`/jumuiya-members/payments/${id}/status`, data).then(r => r.data),
 };

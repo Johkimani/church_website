@@ -1,17 +1,18 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2 } from "lucide-react";
+import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2, BarChart3, List } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
+import AnalyticsDashboard from "./AnalyticsDashboard";
 
 const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony of Padua", color: "#b00ada" },
-  { id: "st-augustine", name: "St. Augustine of Hippo", color: "#1d21ed" },
-  { id: "st-catherine", name: "St. Catherine of Alexandria", color: "#fc1f5a" },
-  { id: "st-dominic", name: "St. Dominic", color: "#9ea1a0" },
-  { id: "st-elizabeth", name: "St. Elizabeth of Hungary", color: "#136b1a" },
-  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#27b8f6" },
-  { id: "st-monica", name: "St. Monica", color: "#f60808" },
+  { id: "st-anthony", name: "St. Anthony", color: "#8b5cf6" },
+  { id: "st-augustine", name: "St. Augustine", color: "#3b82f6" },
+  { id: "st-catherine", name: "St. Catherine", color: "#800000" },
+  { id: "st-dominic", name: "St. Dominic", color: "#979695ff" },
+  { id: "st-elizabeth", name: "St. Elizabeth", color: "#07a414d1" },
+  { id: "st-maria-goretti", name: "St. Maria Goretti", color: "#0ea5e9" },
+  { id: "st-monica", name: "St. Monica", color: "#ef4444" },
 ];
 
 const SEMESTERS = [
@@ -53,6 +54,23 @@ function getYearSemLabel(m: any): string {
   return "—";
 }
 
+function getMemberCurrentSemCol(m: any): string | null {
+  const yos = parseInt(m.year_of_study);
+  if (!yos || yos < 1 || yos > 4) return null;
+  const month = new Date().getMonth();
+  const isSecondSem = month >= 5;
+  const semIndex = (yos - 1) * 2 + (isSecondSem ? 2 : 1);
+  return `sem_${semIndex}_reg`;
+}
+
+function getMemberCurrentYearSem(m: any): string {
+  const yos = parseInt(m.year_of_study);
+  if (!yos || yos < 1 || yos > 4) return "—";
+  const month = new Date().getMonth();
+  const isSecondSem = month >= 5;
+  return `${yos}.${isSecondSem ? 2 : 1}`;
+}
+
 export default function CsaSecretaryDashboard() {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +88,9 @@ export default function CsaSecretaryDashboard() {
   const [regJumuiya, setRegJumuiya] = useState("");
   const [regSemesters, setRegSemesters] = useState<string[]>([]);
   const [regSerialNo, setRegSerialNo] = useState("");
+  const [regAmount, setRegAmount] = useState("");
   const [regSubmitting, setRegSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"members" | "analytics">("members");
 
   const EXPORT_COLUMNS = [
     { key: "serial_no", label: "Serial No" },
@@ -91,7 +111,7 @@ export default function CsaSecretaryDashboard() {
   ];
 
   const filterSemDbCol = useMemo(() => {
-    if (filterSemester === "all") return null;
+    if (filterSemester === "all" || filterSemester === "current") return null;
     return SEMESTERS.find(s => s.label === filterSemester)?.dbCol ?? null;
   }, [filterSemester]);
 
@@ -126,8 +146,8 @@ export default function CsaSecretaryDashboard() {
   const jumuiyaCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     members.forEach(m => {
-      const name = m.jumuiya_name || "Unknown";
-      counts[name] = (counts[name] || 0) + 1;
+      const slug = m.jumuiya_slug || "unknown";
+      counts[slug] = (counts[slug] || 0) + 1;
     });
     return counts;
   }, [members]);
@@ -137,7 +157,12 @@ export default function CsaSecretaryDashboard() {
     if (filterJumuiya !== "all") {
       result = result.filter(m => (m.jumuiya_slug || m.jumuiya_id) === filterJumuiya);
     }
-    if (filterSemester !== "all") {
+    if (filterSemester === "current") {
+      result = result.filter(m => {
+        const col = getMemberCurrentSemCol(m);
+        return col && (m[col] === true || m[col] === "true" || m[col] === 1 || m[col] === "1");
+      });
+    } else if (filterSemester !== "all") {
       const sem = SEMESTERS.find(s => s.label === filterSemester);
       if (sem) result = result.filter(m => m[sem.dbCol] === true || m[sem.dbCol] === "true" || m[sem.dbCol] === 1 || m[sem.dbCol] === "1");
     }
@@ -220,11 +245,13 @@ export default function CsaSecretaryDashboard() {
     if (!selectedMember || !regJumuiya) return;
     setRegSubmitting(true);
     try {
+      const newSemCount = regSemesters.filter(s => !selectedMember[s]).length;
       await memberService.manualRegisterMember({
         member_id: selectedMember.member_id,
         jumuiya_id: regJumuiya,
         semesters: regSemesters,
         serial_no: regSerialNo ? parseInt(regSerialNo) : undefined,
+        amount: newSemCount * 50,
       });
       toast.success(`${selectedMember.first_name} registered successfully`);
       setShowRegister(false);
@@ -243,7 +270,70 @@ export default function CsaSecretaryDashboard() {
     setRegJumuiya("");
     setRegSemesters([]);
     setRegSerialNo("");
+    setRegAmount("");
   };
+
+  // Auto-calculate display amount based on selected semesters (50 KES each)
+  useEffect(() => {
+    const uniqCount = selectedMember
+      ? regSemesters.filter(s => !selectedMember[s]).length
+      : 0;
+    setRegAmount(String(uniqCount * 50));
+  }, [regSemesters, selectedMember]);
+
+  const shouldGroup = filterSemester !== "all";
+
+  const currentYear = new Date().getFullYear();
+
+  const groupedData = useMemo(() => {
+    if (!shouldGroup) return [];
+    const groups: Record<string, any[]> = {};
+    filtered.forEach(m => {
+      const yos = m.year_of_study;
+      if (yos && parseInt(yos) >= 1 && parseInt(yos) <= 4) {
+        if (!groups[yos]) groups[yos] = [];
+        groups[yos].push(m);
+      }
+    });
+    return Object.entries(groups)
+      .sort(([a], [b]) => parseInt(a) - parseInt(b))
+      .map(([yos, members]) => ({
+        yearLevel: parseInt(yos),
+        admissionYear: currentYear - parseInt(yos) + 1,
+        members,
+      }));
+  }, [filtered, shouldGroup]);
+
+  const renderRow = (m: any, i: number) => (
+    <tr key={m.registration_id || `r${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+      <td className="px-4 py-3 text-xs font-mono text-slate-500">{m.serial_no ?? `S${m.registration_id}`}</td>
+      <td className="px-4 py-3 font-medium text-slate-800">{`${m.first_name || ""} ${m.last_name || ""}`.trim()}</td>
+      <td className="px-4 py-3">
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+          style={{
+            backgroundColor: getJumuiyaColor(m.jumuiya_slug || m.jumuiya_id) + "18",
+            color: getJumuiyaColor(m.jumuiya_slug || m.jumuiya_id),
+          }}
+        >
+          <Church size={12} />
+          {m.jumuiya_name || "—"}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-slate-600 text-sm">{m.course || "—"}</td>
+      <td className="px-4 py-3">
+        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+          {getYearSemLabel(m)}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-slate-500 text-xs">
+        <div className="flex items-center gap-1.5">
+          <Calendar size={12} className="text-slate-400" />
+          {formatDate(m.registration_date)}
+        </div>
+      </td>
+    </tr>
+  );
 
   if (loading) {
     return (
@@ -255,6 +345,34 @@ export default function CsaSecretaryDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setActiveTab("members")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "members"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <List size={16} /> Members
+        </button>
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "analytics"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <BarChart3 size={16} /> Reports & Analytics
+        </button>
+      </div>
+
+      {activeTab === "analytics" ? (
+        <AnalyticsDashboard />
+      ) : (
+        <>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-3 text-white">
@@ -262,11 +380,11 @@ export default function CsaSecretaryDashboard() {
           <p className="text-[10px] text-blue-100 font-medium mt-0.5">Total</p>
         </div>
         {JUMUIYAS.map(j => {
-          const count = jumuiyaCounts[j.name] || 0;
+          const count = jumuiyaCounts[j.id] || 0;
           return (
             <div key={j.id} className="bg-white rounded-xl border border-slate-200 p-3 text-center">
               <p className="text-xl font-bold" style={{ color: j.color }}>{count}</p>
-              <p className="text-[10px] text-slate-500 font-medium truncate">{j.name.split("St. ")[1] || j.name}</p>
+              <p className="text-[10px] text-slate-500 font-medium truncate">{j.name.replace("St. ", "")}</p>
             </div>
           );
         })}
@@ -300,6 +418,8 @@ export default function CsaSecretaryDashboard() {
           className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         >
           <option value="all">All Semesters</option>
+          <option value="current">Current Semester</option>
+          <option disabled>──────────────</option>
           {SEMESTERS.map(s => (
             <option key={s.label} value={s.label}>{s.label}</option>
           ))}
@@ -361,37 +481,24 @@ export default function CsaSecretaryDashboard() {
                     No registered members found
                   </td>
                 </tr>
-              ) : (
-                filtered.map((m, i) => (
-                  <tr key={m.registration_id || i} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 text-xs font-mono text-slate-500">{m.serial_no ?? `S${m.registration_id}`}</td>
-                    <td className="px-4 py-3 font-medium text-slate-800">{`${m.first_name || ""} ${m.last_name || ""}`.trim()}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                        style={{
-                          backgroundColor: getJumuiyaColor(m.jumuiya_id) + "18",
-                          color: getJumuiyaColor(m.jumuiya_id),
-                        }}
-                      >
-                        <Church size={12} />
-                        {m.jumuiya_name || "—"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 text-sm">{m.course || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                        {getYearSemLabel(m)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar size={12} className="text-slate-400" />
-                        {formatDate(m.registration_date)}
-                      </div>
-                    </td>
-                  </tr>
+              ) : shouldGroup ? (
+                groupedData.map(group => (
+                  <Fragment key={group.yearLevel}>
+                    <tr className="bg-indigo-50/60 border-b border-indigo-100">
+                      <td colSpan={6} className="px-4 py-2.5">
+                        <span className="inline-flex items-center gap-2">
+                          <GraduationCap size={15} className="text-indigo-500" />
+                          <span className="font-semibold text-sm text-slate-700">Year {group.yearLevel}</span>
+                          <span className="text-xs text-slate-400">(admitted {group.admissionYear})</span>
+                          <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">{group.members.length}</span>
+                        </span>
+                      </td>
+                    </tr>
+                    {group.members.map((m, i) => renderRow(m, i))}
+                  </Fragment>
                 ))
+              ) : (
+                filtered.map((m, i) => renderRow(m, i))
               )}
             </tbody>
           </table>
@@ -466,6 +573,8 @@ export default function CsaSecretaryDashboard() {
                         onClick={() => {
                           setSelectedMember(m);
                           setRegJumuiya(m.jumuiya_id || "");
+                          const alreadyRegd = SEMESTERS.filter(s => m[s.dbCol] === true).map(s => s.dbCol);
+                          setRegSemesters(alreadyRegd);
                         }}
                         className="w-full text-left px-4 py-3 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
                       >
@@ -503,27 +612,37 @@ export default function CsaSecretaryDashboard() {
                   </>
                 )}
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Registered Semesters</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Semesters to Register</label>
                 <div className="grid grid-cols-4 gap-2 mb-4">
-                  {SEMESTERS.map(s => (
-                    <label
-                      key={s.label}
-                      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm cursor-pointer transition-colors ${
-                        regSemesters.includes(s.dbCol)
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={regSemesters.includes(s.dbCol)}
-                        onChange={() => toggleSem(s.dbCol)}
-                        className="sr-only"
-                      />
-                      {s.label}
-                    </label>
-                  ))}
+                  {SEMESTERS.map(s => {
+                    const isExisting = selectedMember?.[s.dbCol] === true;
+                    return (
+                      <label
+                        key={s.label}
+                        className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm transition-colors ${
+                          regSemesters.includes(s.dbCol)
+                            ? isExisting
+                              ? "bg-green-100 text-green-700 border-green-300 cursor-default"
+                              : "bg-blue-600 text-white border-blue-600 cursor-pointer"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 cursor-pointer"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={regSemesters.includes(s.dbCol)}
+                          onChange={() => toggleSem(s.dbCol)}
+                          disabled={isExisting}
+                          className="sr-only"
+                        />
+                        {s.label}
+                        {isExisting && <Check size={12} className="text-green-600" />}
+                      </label>
+                    );
+                  })}
                 </div>
+                <p className="text-[10px] text-slate-400 mb-4 -mt-3">
+                  Green = already registered. Check only the semesters you want to register now.
+                </p>
 
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Serial No (from physical card)</label>
                 <input
@@ -532,6 +651,14 @@ export default function CsaSecretaryDashboard() {
                   onChange={e => setRegSerialNo(e.target.value)}
                   placeholder="Leave blank to auto-assign"
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Amount Paid (KES)</label>
+                <input
+                  type="text"
+                  value={`KES ${regAmount}`}
+                  readOnly
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm mb-4 bg-slate-50 text-slate-700 font-semibold"
                 />
 
                 <div className="flex gap-3">
@@ -554,6 +681,8 @@ export default function CsaSecretaryDashboard() {
             )}
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
