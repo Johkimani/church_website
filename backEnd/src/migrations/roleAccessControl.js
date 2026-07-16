@@ -15,7 +15,9 @@ const ROLES = [
   { name: "choir_chairperson", description: "Full admin access for all choir-related roles and features" },
   { name: "choir_secretary", description: "Handles choir Registrations and Announcements" },
   { name: "choir_project_coordinator", description: "Manages the Choir Gallery" },
-  { name: "sub_group_chair", description: "Full admin access for a sub-group (St. Francis, Charismatic, Dance)" },
+  { name: "st_francis_chair", description: "Manages St. Francis sub-group" },
+  { name: "charismatic_chair", description: "Manages Charismatic sub-group" },
+  { name: "dance_chair", description: "Manages Dance sub-group" },
   { name: "liturgist", description: "Manages Quizzes and Prayers" },
   { name: "treasurer", description: "Manages Donation Monitor" },
 ];
@@ -101,11 +103,11 @@ const setupRoleSystem = async () => {
     // 2. Remove deprecated roles (delete member_roles first to respect FK)
     await pool.query(`
       DELETE FROM member_roles WHERE role_id IN (
-        SELECT role_id FROM roles WHERE role_name IN ('supreme_admin', 'admin')
+        SELECT role_id FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')
       )
     `);
-    await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin')`);
-    logger.info("Removed deprecated roles: supreme_admin, admin");
+    await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')`);
+    logger.info("Removed deprecated roles: supreme_admin, admin, sub_group_chair");
 
     // 3. Seed roles
     for (const role of ROLES) {
