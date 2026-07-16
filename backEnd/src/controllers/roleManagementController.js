@@ -1,7 +1,14 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
-const ADMIN_ROLES = ["supreme_admin", "admin", "csa_chair", "csa_secretary"];
+const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
+
+// CSA executive roles — a member can only hold ONE of these at any time
+const CSA_EXECUTIVE_ROLES = [
+  "csa_chair", "csa_vice_chair", "csa_secretary",
+  "project_manager", "instrument_manager", "os",
+  "treasurer", "liturgist",
+];
 
 const rejectIfNotAdmin = (req, res) => {
   const userRoles = req.user?.role;
@@ -90,8 +97,26 @@ export const assignRole = async (req, res) => {
       return res.status(404).json({ success: false, message: "Role not found" });
     }
 
-    // If jumuiya-scoped role and no jumuiya_id provided, derive from member
     const roleName = role.rows[0].role_name;
+
+    // Enforce one CSA executive role per member
+    if (CSA_EXECUTIVE_ROLES.includes(roleName)) {
+      const existing = await pool.query(
+        `SELECT r.role_name FROM member_roles mr
+         JOIN roles r ON mr.role_id = r.role_id
+         WHERE mr.member_id = $1 AND mr.status IN ('approved', 'pending')
+           AND r.role_name = ANY($2)`,
+        [member_id, CSA_EXECUTIVE_ROLES]
+      );
+      if (existing.rows.length > 0 && existing.rows[0].role_name !== roleName) {
+        return res.status(409).json({
+          success: false,
+          message: `Member already holds the "${existing.rows[0].role_name}" CSA executive role. A member can only hold one CSA executive role at a time.`
+        });
+      }
+    }
+
+    // If jumuiya-scoped role and no jumuiya_id provided, derive from member
     const effectiveJumuiyaId = jumuiya_id || (roleName.includes("jumuiya") ? member.rows[0].jumuiya_id : null);
 
     // Check if there's already an approved assignment for this member+role+scope
@@ -117,26 +142,30 @@ export const assignRole = async (req, res) => {
       [member_id, role_id, effectiveJumuiyaId]
     );
 
+    // csa_chair is auto-approved for immediate access
+    const status = roleName === "csa_chair" ? "approved" : "pending";
+
     let result;
     if (existingPending.rows.length > 0) {
       result = await pool.query(
-        `UPDATE member_roles SET assigned_by = $1, created_at = NOW(), updated_at = NOW()
-          WHERE id = $2 RETURNING id`,
-        [assignedBy, existingPending.rows[0].id]
+        `UPDATE member_roles SET assigned_by = $1, status = $2, created_at = NOW(), updated_at = NOW()
+          WHERE id = $3 RETURNING id`,
+        [assignedBy, status, existingPending.rows[0].id]
       );
     } else {
       result = await pool.query(
         `INSERT INTO member_roles (member_id, role_id, assigned_by, jumuiya_id, status)
-         VALUES ($1, $2, $3, $4, 'pending')
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING id`,
-        [member_id, role_id, assignedBy, effectiveJumuiyaId]
+        [member_id, role_id, assignedBy, effectiveJumuiyaId, status]
       );
     }
 
+    const msg = status === "approved" ? "Role assigned and active." : "Role assigned. Pending approval.";
     res.status(201).json({
       success: true,
-      data: { id: result.rows[0].id, status: "pending" },
-      message: "Role assigned. Pending approval."
+      data: { id: result.rows[0].id, status },
+      message: msg
     });
   } catch (error) {
     logger.error("assignRole error:", error.message);
@@ -162,6 +191,30 @@ export const approveAssignment = async (req, res) => {
     }
     if (assignment.rows[0].status !== "pending") {
       return res.status(400).json({ success: false, message: `Assignment is already ${assignment.rows[0].status}` });
+    }
+
+    // Enforce one CSA executive role per member on approval
+    const roleRow = await pool.query(
+      `SELECT mr.member_id, r.role_name FROM member_roles mr
+       JOIN roles r ON mr.role_id = r.role_id
+       WHERE mr.id = $1`,
+      [id]
+    );
+    if (roleRow.rows.length > 0 && CSA_EXECUTIVE_ROLES.includes(roleRow.rows[0].role_name)) {
+      const { member_id, role_name } = roleRow.rows[0];
+      const conflict = await pool.query(
+        `SELECT r.role_name FROM member_roles mr
+         JOIN roles r ON mr.role_id = r.role_id
+         WHERE mr.member_id = $1 AND mr.status = 'approved'
+           AND r.role_name = ANY($2) AND r.role_name != $3`,
+        [member_id, CSA_EXECUTIVE_ROLES, role_name]
+      );
+      if (conflict.rows.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot approve — member already holds the "${conflict.rows[0].role_name}" CSA executive role. A member can only hold one CSA executive role at a time.`
+        });
+      }
     }
 
     await pool.query(
@@ -247,6 +300,30 @@ export const activateAssignment = async (req, res) => {
     }
     if (assignment.rows[0].status !== "revoked") {
       return res.status(400).json({ success: false, message: `Cannot activate — assignment is ${assignment.rows[0].status}` });
+    }
+
+    // Enforce one CSA executive role per member on reactivation
+    const roleRow = await pool.query(
+      `SELECT mr.member_id, r.role_name FROM member_roles mr
+       JOIN roles r ON mr.role_id = r.role_id
+       WHERE mr.id = $1`,
+      [id]
+    );
+    if (roleRow.rows.length > 0 && CSA_EXECUTIVE_ROLES.includes(roleRow.rows[0].role_name)) {
+      const { member_id, role_name } = roleRow.rows[0];
+      const conflict = await pool.query(
+        `SELECT r.role_name FROM member_roles mr
+         JOIN roles r ON mr.role_id = r.role_id
+         WHERE mr.member_id = $1 AND mr.status = 'approved'
+           AND r.role_name = ANY($2) AND r.role_name != $3`,
+        [member_id, CSA_EXECUTIVE_ROLES, role_name]
+      );
+      if (conflict.rows.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot reactivate — member already holds the "${conflict.rows[0].role_name}" CSA executive role. A member can only hold one CSA executive role at a time.`
+        });
+      }
     }
 
     await pool.query(

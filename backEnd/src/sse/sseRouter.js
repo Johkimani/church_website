@@ -80,7 +80,7 @@ router.get("/", async (req, res) => {
   // ── 7. Send initial unread badge count ───────────────────────────────────
   try {
     const isAdmin = (Array.isArray(role) ? role : [role]).some((r) =>
-      String(r).toLowerCase().includes("admin"),
+      ["csa_chair", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim()),
     );
 
     const { rows } = isAdmin
