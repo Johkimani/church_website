@@ -55,26 +55,6 @@ class ApiService {
   } catch (error) {
     console.warn(`Error fetching ${tableName}:`, error);
 
-    // ONLY fallback for gallery
-    if (tableName === "gallery") {
-      return [
-        {
-          id: 101,
-          name: "Sacred Choir",
-          image_url:
-            "https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200",
-          description: "Lead through music.",
-        },
-        {
-          id: 102,
-          name: "Youth Ministry",
-          image_url:
-            "https://images.unsplash.com/photo-1523050853063-bd80e2904760?auto=format&fit=crop&w=1200",
-          description: "The future of our faith.",
-        },
-      ];
-    }
-
     return [];
   }
 }

@@ -36,7 +36,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 }) => {
     const [receiptInput, setReceiptInput] = React.useState('');
     if (!isOpen) return null;
-    const displayPhone = cashPhone || '254112051739';
+    const displayPhone = cashPhone || '';
     const isValidPhone = /^\d{10}$/.test(customerPhone.replace(/\s/g, ''));
     const detailsFilled = customerName.trim().length > 0 && isValidPhone;
     const canProceed = detailsFilled && (collectionMethod !== "delivery" || deliveryAddress.trim().length > 0);
@@ -221,7 +221,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             {detailsFilled && !canProceed && collectionMethod === "delivery" && (
                                 <p className="text-center text-[10px] text-amber-600 font-medium">Enter your delivery address</p>
                             )}
-                            <a
+                            {displayPhone && <a
                                 href={`https://wa.me/${displayPhone.replace(/\D/g, '')}?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20an%20order.`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 hover:bg-emerald-100 transition-all group"
@@ -231,7 +231,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                     <p className="font-semibold text-emerald-800">Chat with us on WhatsApp</p>
                                     <p className="text-emerald-500 font-bold mt-0.5 group-hover:underline">{displayPhone}</p>
                                 </div>
-                            </a>
+                            </a>}
                         </div>
                     </div>
                 )}
