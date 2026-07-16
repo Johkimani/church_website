@@ -10,6 +10,7 @@ const CSA_EXECUTIVE_ROLES = [
 
 export const CSA_POSITION_TO_ROLE = {
   'Chairperson': 'csa_chair',
+  'Vice Chairperson': 'csa_vice_chair',
   'Secretary': 'csa_secretary',
   'Jumuiya Coordinator': 'jumuiya_coordinator',
   'Organizing Secretary': 'os',
@@ -19,6 +20,7 @@ export const CSA_POSITION_TO_ROLE = {
   'Assistant Instrument Manager': 'instrument_manager',
   'Liturgist': 'liturgist',
   'Assistant Liturgist': 'liturgist',
+  'Treasurer': 'treasurer',
   'Choir Chairperson': 'choir_chairperson',
 };
 
