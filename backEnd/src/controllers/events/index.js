@@ -226,7 +226,7 @@ export const getNotification = async (req, res) => {
   try {
     const isAdmin =
       (Array.isArray(userRole) ? userRole : [userRole]).some(r =>
-        String(r).toLowerCase().includes("admin")
+        ["csa_chair", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim())
       );
 
     const baseQuery = `

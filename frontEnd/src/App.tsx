@@ -41,9 +41,9 @@ const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const HireStatus = lazy(() => import("./pages/HireStatus"));
 
 // Utility pages
-const NotFound = lazy(() => import("./pages/NotFound"));
-const Privacy = lazy(() => import("./pages/Privacy"));
-const Terms = lazy(() => import("./pages/Terms"));
+const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Privacy = lazy(() => import("./pages/Privacy.tsx"));
+const Terms = lazy(() => import("./pages/Terms.tsx"));
 
 // Devotions
 const Dashboard = lazy(() => import("./pages/Devotions/pages/Dashboard"));
