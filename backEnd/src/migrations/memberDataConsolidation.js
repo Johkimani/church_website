@@ -110,10 +110,6 @@ const consolidateMemberData = async () => {
       WHERE password IS NOT NULL
         AND password !~ '^\\$2[abxy]\\$'
     `);
-      SELECT member_id, password FROM members
-      WHERE password IS NOT NULL
-        AND password !~ '^\\$2[abxy]\\$'
-    `);
     for (const row of plaintextPasswords.rows) {
       const hashed = await bcrypt.hash(row.password, 10);
       await pool.query(`UPDATE members SET password = $1 WHERE member_id = $2`, [hashed, row.member_id]);
