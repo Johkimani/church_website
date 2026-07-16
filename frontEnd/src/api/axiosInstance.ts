@@ -129,14 +129,18 @@ export const fetchDailyQuestions = (limit: number = 10) =>
 
 export const fetchJumuiyaComparisonData = () => apiClient.get("/csa/jumuiya-comparison");
 
+// Published stats (admin-controlled snapshots)
+export const publishStats = () => apiClient.post("/publish-stats");
+export const fetchPublishedComparison = () => apiClient.get("/published/comparison");
+export const fetchPublishedMemberProgress = () => apiClient.get("/published/member-progress");
+export const fetchPublishedJumuiyaDashboard = (jumuiyaId: string) =>
+  apiClient.get(`/published/jumuiya-dashboard/${jumuiyaId}`);
+
 export const fetchGalleryTeaser = () => apiClient.get("/gallery/teaser");
 
 export const memberProgressData = () => apiClient.get("/member/progress");
 
 export const memberSummaryData = () => apiClient.get("/member/summary");
-
-export const individualJumuiAttemptsData = (jumuiyaId: number) =>
-  apiClient.get(`/attempts/jumuiya/${jumuiyaId}`);
 
 export const fetchNotifications = () => apiClient.get("/notifications");
 
@@ -192,17 +196,17 @@ export const deleteOneOrMoreFiles = (publicIds: string | string[]) => {
 
 export const fetchTable = (table: string, params: Record<string, any> = {}) => {
   const qs = new URLSearchParams(params as Record<string, string>).toString();
-  return apiClient.get(`/api/${table}${qs ? `?${qs}` : ""}`);
+  return apiClient.get(`/${table}${qs ? `?${qs}` : ""}`);
 };
 
 export const createTableRecord = (table: string, payload: Record<string, any>) =>
-  apiClient.post(`/api/${table}`, payload);
+  apiClient.post(`/${table}`, payload);
 
 export const updateTableRecord = (table: string, id: string | number, payload: Record<string, any>) =>
-  apiClient.patch(`/api/${table}/${id}`, payload);
+  apiClient.patch(`/${table}/${id}`, payload);
 
 export const deleteTableRecord = (table: string, id: string | number) =>
-  apiClient.delete(`/api/${table}/${id}`);
+  apiClient.delete(`/${table}/${id}`);
 
 export const loginApi = (data: { userReg: string; password: string }) =>
   apiClient.post("/authentication/login", data);
