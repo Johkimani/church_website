@@ -46,15 +46,7 @@ export const Login = async (req, res) => {
     const user = result.rows[0];
 
     const storedHash = typeof user.password === 'string' ? user.password.trim() : user.password;
-
-    // Support legacy plaintext passwords not yet hashed by memberDataConsolidation
-    const isBcrypt = storedHash.startsWith('$2b$') || storedHash.startsWith('$2a$') || storedHash.startsWith('$2y$');
-    let match = false;
-    if (isBcrypt) {
-      match = await bcrypt.compare(password, storedHash);
-    } else if (storedHash) {
-      match = password === storedHash || password.toUpperCase() === storedHash;
-    }
+    const match = await bcrypt.compare(password, storedHash);
 
     if (!match) {
       logger.error(`Invalid username or password for '${userReg}'`);
@@ -65,12 +57,7 @@ export const Login = async (req, res) => {
     }
 
     // Detect first login: password matches their reg number, or missing email
-    let isDefaultPassword = false;
-    if (isBcrypt) {
-      isDefaultPassword = await bcrypt.compare(userReg, storedHash);
-    } else if (storedHash) {
-      isDefaultPassword = userReg === storedHash;
-    }
+    const isDefaultPassword = await bcrypt.compare(userReg, storedHash);
     const forcePasswordChange = isDefaultPassword || !user.email;
 
     const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
@@ -226,13 +213,7 @@ export const firstLoginSetup = async (req, res) => {
     }
 
     const storedHash = typeof member.rows[0].password === 'string' ? member.rows[0].password.trim() : member.rows[0].password;
-    const isBcrypt = storedHash.startsWith('$2b$') || storedHash.startsWith('$2a$') || storedHash.startsWith('$2y$');
-    let valid = false;
-    if (isBcrypt) {
-      valid = await bcrypt.compare(currentPassword, storedHash);
-    } else if (storedHash) {
-      valid = currentPassword === storedHash;
-    }
+    const valid = await bcrypt.compare(currentPassword, storedHash);
     if (!valid) {
       return res.status(401).json({ status: false, message: "Current password is incorrect" });
     }
