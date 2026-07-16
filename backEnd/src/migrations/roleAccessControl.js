@@ -97,7 +97,11 @@ const setupRoleSystem = async () => {
       WHERE status = 'approved'
     `);
 
-    // 2. Seed roles
+    // 2. Remove deprecated roles
+    await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin')`);
+    logger.info("Removed deprecated roles: supreme_admin, admin");
+
+    // 3. Seed roles
     for (const role of ROLES) {
       const existing = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [role.name]);
       if (existing.rows.length === 0) {
