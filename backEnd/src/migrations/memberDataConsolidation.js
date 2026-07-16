@@ -1,5 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import bcrypt from "bcrypt";
 
 const consolidateMemberData = async () => {
   try {
@@ -102,6 +103,25 @@ const consolidateMemberData = async () => {
         AND NOT EXISTS (SELECT 1 FROM members m2 WHERE m2.email = dedup.cleaned_email AND m2.member_id != m.member_id)
     `);
     logger.info(`Set ${emailResult.rowCount} emails on members table`);
+
+    // 6. Hash any plaintext passwords that may have been imported as raw text
+    const plaintextPasswords = await pool.query(`
+      SELECT member_id, password FROM members
+      WHERE password IS NOT NULL
+        AND password !~ '^\\$2[abxy]\\$'
+    `);
+      SELECT member_id, password FROM members
+      WHERE password IS NOT NULL
+        AND password !~ '^\\$2[abxy]\\$'
+    `);
+    for (const row of plaintextPasswords.rows) {
+      const hashed = await bcrypt.hash(row.password, 10);
+      await pool.query(`UPDATE members SET password = $1 WHERE member_id = $2`, [hashed, row.member_id]);
+      logger.info(`Hashed plaintext password for ${row.member_id}`);
+    }
+    if (plaintextPasswords.rows.length > 0) {
+      logger.info(`Hashed ${plaintextPasswords.rows.length} plaintext passwords`);
+    }
 
     logger.info("Member data consolidation complete");
   } catch (error) {
