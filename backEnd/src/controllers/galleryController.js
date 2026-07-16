@@ -30,7 +30,11 @@ export const getGallery = async (req, res) => {
         let params = [];
 
         // Access Control Logic
-        if (user && user.role !== 'Admin') {
+        const roles = user?.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
+        const isGlobalViewer = roles.some((r) =>
+          ["csa_chair", "os", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim())
+        );
+        if (user && !isGlobalViewer) {
             // Member sees their Jumuiya + General photos
             query += ' AND (module_id = $1 OR module_id = $2)';
             params.push('general');
@@ -40,7 +44,7 @@ export const getGallery = async (req, res) => {
             query += ' AND module_id = $1';
             params.push('general');
         }
-        // If Admin, no extra filters (sees everything)
+        // If global viewer (csa_chair, os, jumuiya_coordinator), no extra filters (sees everything)
 
         query += ' ORDER BY upload_date DESC';
         
