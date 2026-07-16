@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Package, Home, ShoppingBag, Clock, MapPin, Truck, MessageCircle, Phone } from "lucide-react";
+import RatingModal from "./projects/components/RatingModal";
 
 export default function OrderConfirmation() {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ export default function OrderConfirmation() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [method, setMethod] = useState<"mpesa" | "cash">("mpesa");
   const [contactPhone, setContactPhone] = useState("");
+  const [showRating, setShowRating] = useState(false);
 
   useEffect(() => {
     const id = searchParams.get("order_id");
@@ -25,6 +27,9 @@ export default function OrderConfirmation() {
         }).catch(() => {});
       });
     }
+    // Show rating modal after a short delay
+    const timer = setTimeout(() => setShowRating(true), 1500);
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
   const isMpesa = method === "mpesa";
@@ -119,6 +124,15 @@ export default function OrderConfirmation() {
           CSA Kirinyaga Chapter &copy; {new Date().getFullYear()}
         </p>
       </div>
+
+      {showRating && (
+        <RatingModal
+          orderRef={orderId || '—'}
+          customerName=""
+          onClose={() => setShowRating(false)}
+          onSubmitted={() => setShowRating(false)}
+        />
+      )}
     </div>
   );
 }

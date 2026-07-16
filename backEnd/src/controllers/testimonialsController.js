@@ -10,6 +10,7 @@ const ensureTable = async () => {
       text TEXT NOT NULL,
       rating INTEGER DEFAULT 5,
       reference VARCHAR(100) DEFAULT '',
+      type VARCHAR(20) DEFAULT '',
       approved BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )
@@ -19,6 +20,7 @@ const ensureTable = async () => {
   try {
     await pool.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT FALSE`);
     await pool.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS reference VARCHAR(100) DEFAULT ''`);
+    await pool.query(`ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT ''`);
   } catch { /* ignore */ }
 };
 
@@ -47,11 +49,47 @@ export const createTestimonial = async (req, res) => {
     if (!name || !text) {
       return res.status(400).json({ error: "name and text are required" });
     }
-    // When admin creates via admin panel, auto-approve
+
+    // If a reference is provided, validate it exists in orders or hire_requests
+    let type = (req.body.type || '').toLowerCase();
+    if (reference) {
+      // Check for duplicate reference
+      const dupCheck = await pool.query("SELECT id FROM testimonials WHERE reference = $1", [reference]);
+      if (dupCheck.rows.length > 0) {
+        return res.status(409).json({ error: "A testimonial with this reference already exists" });
+      }
+
+      // Determine type from reference prefix if not provided
+      if (!type) {
+        if (reference.startsWith('CSA-')) type = 'purchase';
+        else if (reference.startsWith('HIR-')) type = 'hire';
+      }
+
+      // Validate reference exists in the appropriate table
+      if (!['purchase', 'hire'].includes(type)) {
+        // Try to determine by checking both tables
+        const orderCheck = await pool.query("SELECT id FROM orders WHERE order_reference = $1 OR checkout_id = $1 OR CAST(id AS TEXT) = $1 LIMIT 1", [reference]);
+        const hireCheck = await pool.query("SELECT id FROM hire_requests WHERE hire_reference = $1 OR CAST(id AS TEXT) = $1 LIMIT 1", [reference]);
+        if (orderCheck.rows.length > 0) type = 'purchase';
+        else if (hireCheck.rows.length > 0) type = 'hire';
+        else return res.status(400).json({ error: "Reference not found in orders or hire requests" });
+      } else if (type === 'purchase') {
+        const orderCheck = await pool.query("SELECT id FROM orders WHERE order_reference = $1 OR checkout_id = $1 OR CAST(id AS TEXT) = $1 LIMIT 1", [reference]);
+        if (orderCheck.rows.length === 0) {
+          return res.status(400).json({ error: "Order reference not found" });
+        }
+      } else if (type === 'hire') {
+        const hireCheck = await pool.query("SELECT id FROM hire_requests WHERE hire_reference = $1 OR CAST(id AS TEXT) = $1 LIMIT 1", [reference]);
+        if (hireCheck.rows.length === 0) {
+          return res.status(400).json({ error: "Hire request reference not found" });
+        }
+      }
+    }
+
     const approved = req.body.approved === true;
     const { rows } = await pool.query(
-      `INSERT INTO testimonials (name, role, text, rating, approved, reference) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name, role || '', text, rating ?? 5, approved, reference || '']
+      `INSERT INTO testimonials (name, role, text, rating, approved, reference, type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name, role || '', text, rating ?? 5, approved, reference || '', type]
     );
     return res.json(rows[0]);
   } catch (error) {

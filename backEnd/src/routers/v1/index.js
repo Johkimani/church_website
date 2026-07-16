@@ -20,6 +20,7 @@ import jumuiyaDataRouter from "../jumuiyaDataRouter.js"
 
 
 import ordersRouter from "./orders.router.js";
+import testimonialsRouter from "./testimonialsRoutes.js";
 import stkPushRouter from "./stkPush.route.js";
 const router = Router()
 import paymentRouter from "./payment.router.js";
@@ -92,6 +93,12 @@ router.use("/jumuiya-data", jumuiyaDataRouter);
 // Role management
 router.use("/", roleManagementRouter);
 
+// Setup
+router.post("/setup/admin", async (req, res) => {
+  const { setupAdmin } = await import("../../controllers/setupController.js");
+  return setupAdmin(req, res);
+});
+
 // Hire availability checking
 router.use("/hire", hireAvailabilityRouter);
 
@@ -100,6 +107,9 @@ router.use("/hire", hireSubmitRouter);
 
 // Hire status management & payment
 router.use("/hire", hireStatusRouter);
+
+// Testimonials (dedicated routes for rating+reference validation)
+router.use("/", testimonialsRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
