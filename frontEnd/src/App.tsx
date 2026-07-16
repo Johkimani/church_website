@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import ErrorBoundary from "./components/ErrorBoundary";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
 import { Home } from "./pages/Landing/components/page/Home";
@@ -43,6 +42,8 @@ const HireStatus = lazy(() => import("./pages/HireStatus"));
 
 // Utility pages
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 
 // Devotions
 const Dashboard = lazy(() => import("./pages/Devotions/pages/Dashboard"));
@@ -52,6 +53,8 @@ const Liturgy = lazy(() => import("./pages/Devotions/pages/Liturgy"));
 const Rosary = lazy(() => import("./pages/Devotions/pages/Rosary"));
 const Challenge = lazy(() => import("./pages/Devotions/pages/Challenge"));
 const Appadmin = lazy(() => import("./pages/Devotions/Adminpage/App"));
+const JumuiComparison = lazy(() => import("./pages/Devotions/csaComparison/CsaComparison"));
+const MemberDashboard = lazy(() => import("./pages/Devotions/individualStatus/IndividualProgress"));
 
 // Officials
 const AdminPanel = lazy(() => import("./pages/officials/AdminPanel"));
@@ -63,7 +66,6 @@ const JumuiyaDetail = lazy(() => import("./pages/Jumuiya/JumuiyaDetail"));
 
 // Admin
 const AdminDashboard = lazy(() => import("./pages/Admin/pages/AdminDashboard"));
-const RecordsExplorer = lazy(() => import("./pages/Admin/pages/RecordsExplorer"));
 const ProjectsManager = lazy(() =>
   import("./pages/Admin/pages/ProjectsManager")
 );
@@ -83,12 +85,16 @@ const AnnouncementsAdmin = lazy(() =>
 );
 const CommunityDetailEditor = lazy(() => import("./pages/Admin/pages/CommunityDetailEditor"));
 const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions"));
+const SuggestionBin = lazy(() => import("./pages/Admin/pages/SuggestionBin"));
+const UnmaskApproval = lazy(() => import("./pages/Admin/pages/UnmaskApproval"));
+const DeletionApproval = lazy(() => import("./pages/Admin/pages/DeletionApproval"));
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
 const SacramentalsBannerManager = lazy(() => import("./pages/Admin/pages/SacramentalsBannerManager"));
-const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribution"));
 const JumuiyaMembersAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaMembersAdmin"));
 const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 const CsaSecretaryDashboard = lazy(() => import("./pages/Admin/pages/CsaSecretaryDashboard"));
+const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
+const AdminBookings = lazy(() => import("./pages/Admin/pages/AdminBookings"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -135,9 +141,7 @@ const App: React.FC = () => {
           path="/admin"
           element={
             <ProtectedRoute>
-              <ErrorBoundary>
-                <UniversalAdmin />
-              </ErrorBoundary>
+              <UniversalAdmin />
             </ProtectedRoute>
           }
         >
@@ -147,24 +151,27 @@ const App: React.FC = () => {
           <Route path="announcements" element={<AnnouncementsAdmin />} />
           <Route path="officials" element={<AdminPanel />} />
           <Route path="devotions" element={<Appadmin />} />
-          <Route path="records" element={<RecordsExplorer />} />
           <Route path="donations" element={<DonationMonitor />} />
           <Route path="community-management" element={<CommunityManager />} />
           <Route path="community-management/:categoryId" element={<CommunityDetailEditor />} />
           <Route path="suggestions" element={<AdminSuggestions />} />
+          <Route path="suggestion-bin" element={<SuggestionBin />} />
           <Route path="gallery" element={<GalleryManager />} />
           <Route path="sacramentals-banners" element={<SacramentalsBannerManager />} />
-          <Route path="projects" element={<ErrorBoundary><ProjectsManager /></ErrorBoundary>} />
-          <Route path="forms-distribution" element={<FormsDistribution />} />
+          <Route path="projects" element={<ProjectsManager />} />
           <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
           <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
           <Route path="registered-members" element={<CsaSecretaryDashboard />} />
+          <Route path="activity-log" element={<ActivityLog />} />
+          <Route path="bookings" element={<AdminBookings />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
-        {/* Order Confirmation & Hire Status */}
-        <Route path="/order-confirmation" element={<ErrorBoundary><OrderConfirmation /></ErrorBoundary>} />
-        <Route path="/hire-status" element={<ErrorBoundary><HireStatus /></ErrorBoundary>} />
+        {/* Order Confirmation (no layout) */}
+        <Route path="/order-confirmation" element={<OrderConfirmation />} />
+        <Route path="/hire-status" element={<HireStatus />} />
+        <Route path="/suggestions/unmask/:token" element={<UnmaskApproval />} />
+        <Route path="/officials/deletion-approval/:token" element={<DeletionApproval />} />
 
         {/* Public Routes with Page Layout */}
         <Route path="/" element={<Pageoulet />}>
@@ -176,14 +183,14 @@ const App: React.FC = () => {
           {/* Standalone Landing Pages */}
           <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
           <Route element={<ProtectedRoute><ProjectsProvider><Outlet /></ProjectsProvider></ProtectedRoute>}>
-            <Route path="projects" element={<ErrorBoundary><ProjectsHome /></ErrorBoundary>} />
-            <Route path="sacramentals" element={<ErrorBoundary><SacramentalsPage /></ErrorBoundary>} />
-            <Route path="t-shirts" element={<ErrorBoundary><TshirtsPage /></ErrorBoundary>} />
-            <Route path="chairs" element={<ErrorBoundary><ChairsPage /></ErrorBoundary>} />
-            <Route path="instruments" element={<ErrorBoundary><InstrumentsPage /></ErrorBoundary>} />
-            <Route path="other-projects" element={<ErrorBoundary><OtherProjectsPage /></ErrorBoundary>} />
-            <Route path="activities" element={<ErrorBoundary><ActivitiesPage /></ErrorBoundary>} />
-            <Route path="product/:id" element={<ErrorBoundary><ProductDetailsPage /></ErrorBoundary>} />
+            <Route path="projects" element={<ProjectsHome />} />
+            <Route path="sacramentals" element={<SacramentalsPage />} />
+            <Route path="t-shirts" element={<TshirtsPage />} />
+            <Route path="chairs" element={<ChairsPage />} />
+            <Route path="instruments" element={<InstrumentsPage />} />
+            <Route path="other-projects" element={<OtherProjectsPage />} />
+            <Route path="activities" element={<ActivitiesPage />} />
+            <Route path="product/:id" element={<ProductDetailsPage />} />
           </Route>
           {/* show notification to all */}
           <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
@@ -202,6 +209,8 @@ const App: React.FC = () => {
             <Route path="liturgy" element={<Liturgy />} />
             <Route path="rosary" element={<Rosary />} />
             <Route path="challenge" element={<Challenge />} />
+            <Route path="comparison" element={<JumuiComparison />} />
+            <Route path="progress" element={<MemberDashboard />} />
           </Route>
 
           {/* Jumuiya (Public with persistent provider wrapper to optimize load speed) */}
@@ -215,6 +224,10 @@ const App: React.FC = () => {
             <Route path="community" element={<Community />} />
             <Route path="community/:moduleId" element={<CommunityDetail />} />
           </Route>
+
+          {/* Legal Pages */}
+          <Route path="privacy" element={<Privacy />} />
+          <Route path="terms" element={<Terms />} />
 
           {/* 404 - Catch-all for unmatched routes */}
           <Route path="/*" element={<NotFound />} />
