@@ -184,8 +184,20 @@ export default function UniversalAdmin() {
         case "CHOIR_CHAIRPERSON":
         case "CHOIR_SECRETARY":
         case "CHOIR_PROJECT_COORDINATOR":
-        case "SUB_GROUP_CHAIR":
           allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/choir");
+          break;
+        case "ST_FRANCIS_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/st-francis");
+          break;
+        case "CHARISMATIC_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/charismatic");
+          break;
+        case "DANCE_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/dance");
           break;
       }
     });
