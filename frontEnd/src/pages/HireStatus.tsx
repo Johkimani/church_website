@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../api/axiosInstance";
 import { Search, Loader2, CheckCircle2, XCircle, CalendarDays, Armchair, Music, Smartphone, DollarSign, Copy, Check } from "lucide-react";
+import RatingModal from "./projects/components/RatingModal";
 
 interface HireGroup {
   reference: string;
@@ -13,6 +15,9 @@ interface HireGroup {
   mpesa_receipt: string | null;
   paid_at: string | null;
   items: any[];
+  pickup_location: string;
+  pickup_instructions: string;
+  admin_phone: string;
   total_cost: number;
   event_date: string;
   pickup_date: string;
@@ -43,7 +48,8 @@ const statusColors: Record<string, string> = {
 };
 
 export default function HireStatus() {
-  const [reference, setReference] = useState("");
+  const [searchParams] = useSearchParams();
+  const [reference, setReference] = useState(searchParams.get("ref") || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<HireGroup | null>(null);
@@ -52,18 +58,23 @@ export default function HireStatus() {
   const [payMethod, setPayMethod] = useState<"mpesa" | "cash" | null>(null);
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState<{ success: boolean; message: string; receipt?: string } | null>(null);
+  const [showRating, setShowRating] = useState(false);
 
-  const lookup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reference.trim()) return;
+  // Auto-search if ref query param is present
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) lookupRef(ref);
+  }, []);
+
+  const lookupRef = async (ref: string) => {
+    if (!ref.trim()) return;
     setLoading(true);
     setError("");
     setData(null);
     setPayMethod(null);
     setPayResult(null);
-
     try {
-      const res = await apiClient.get(`/hire/group/${reference.trim()}`);
+      const res = await apiClient.get(`/hire/group/${ref.trim()}`);
       const group = res.data;
       setData({
         reference: group.reference,
@@ -75,6 +86,9 @@ export default function HireStatus() {
         payment_method: group.payment_method,
         mpesa_receipt: group.mpesa_receipt,
         paid_at: group.paid_at,
+        pickup_location: group.pickup_location || '',
+        pickup_instructions: group.pickup_instructions || '',
+        admin_phone: group.admin_phone || '',
         items: group.items,
         total_cost: group.items.reduce((sum: number, i: any) => sum + Number(i.total_cost || 0), 0),
         event_date: group.items[0]?.event_date || "",
@@ -87,6 +101,11 @@ export default function HireStatus() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const lookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await lookupRef(reference);
   };
 
   const payWithMpesa = async () => {
@@ -112,11 +131,12 @@ export default function HireStatus() {
               receipt: s.mpesa_receipt || s.mpesa_receipt_from_provider,
             });
             setData(prev => prev ? { ...prev, payment_status: "paid", mpesa_receipt: s.mpesa_receipt || s.mpesa_receipt_from_provider, paid_at: new Date().toISOString(), status: "paid" } : prev);
+            setTimeout(() => setShowRating(true), 1500);
           } else if (s.mpesa_status === "failed") {
             clearInterval(interval);
             setPayResult({ success: false, message: "Payment failed. Please try again." });
           }
-        } catch { }
+        } catch { toast.error('Failed to check payment status'); }
       }, 3000);
       setTimeout(() => clearInterval(interval), 120000);
     } catch (err: any) {
@@ -351,9 +371,10 @@ export default function HireStatus() {
                 <h3 className="text-xl font-black text-center">Payment Confirmed</h3>
                 <p className="text-white/80 text-sm text-center mt-2">Thank you! Please collect your items from:</p>
                 <div className="bg-white/10 backdrop-blur rounded-xl p-4 mt-4 space-y-2 text-sm">
-                  <p className="font-bold">CSA Church Store — KYU Campus</p>
+                  <p className="font-bold">{data.pickup_location || "CSA Church Store"}</p>
                   {data.pickup_date && <p>Pickup Date: {new Date(data.pickup_date).toLocaleDateString()}</p>}
-                  <p className="text-white/70 text-xs mt-2">For assistance call 0712 XXX XXX</p>
+                  {data.pickup_instructions && <p className="text-white/70 text-xs mt-1">{data.pickup_instructions}</p>}
+                  {data.admin_phone && <p className="text-white/80 text-xs mt-2">Call for assistance: {data.admin_phone}</p>}
                 </div>
                 <p className="text-xs text-white/60 text-center mt-4">Reference: {data.reference}</p>
               </div>
@@ -361,6 +382,15 @@ export default function HireStatus() {
           </div>
         )}
       </div>
+
+      {showRating && data && (
+        <RatingModal
+          orderRef={data.reference}
+          customerName={data.customer_name}
+          onClose={() => setShowRating(false)}
+          onSubmitted={() => setShowRating(false)}
+        />
+      )}
     </div>
   );
 }

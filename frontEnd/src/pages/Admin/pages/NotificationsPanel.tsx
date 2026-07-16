@@ -185,7 +185,7 @@ const NotificationsPanel = () => {
           </div>
           <div>
             <h3 className="text-sm font-black text-slate-800">Notifications</h3>
-            <p className="text-[10px] text-slate-400 font-medium">
+            <p className="text-[10px] text-slate-700 font-medium">
               Real-time alerts for orders, bookings, payments, and stock.
             </p>
           </div>
@@ -194,7 +194,7 @@ const NotificationsPanel = () => {
           <button
             onClick={buildNotifications}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 hover:bg-slate-50 transition-all disabled:opacity-50"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
             Refresh
@@ -232,7 +232,7 @@ const NotificationsPanel = () => {
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               filter === type
                 ? "bg-blue-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-slate-100 text-slate-800 hover:bg-slate-200"
             }`}
           >
             {type === "all" ? "All" : type === "order" ? "Orders" : type === "hire" ? "Bookings" : type === "stock" ? "Stock" : "Payments"}
@@ -243,12 +243,12 @@ const NotificationsPanel = () => {
       {/* Notification List */}
       {loading ? (
         <div className="flex items-center justify-center py-10 bg-slate-50 rounded-xl border border-slate-200">
-          <span className="text-xs font-medium text-slate-500">Loading notifications...</span>
+          <span className="text-xs font-medium text-slate-700">Loading notifications...</span>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
           <CheckCircle size={28} className="text-emerald-300 mb-2" />
-          <p className="text-xs font-semibold text-slate-500">All clear — no notifications right now.</p>
+          <p className="text-xs font-semibold text-slate-700">All clear — no notifications right now.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -265,23 +265,23 @@ const NotificationsPanel = () => {
                 }`}
               >
                 <div className="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Icon size={14} className={notif.read ? "text-slate-400" : "text-slate-700"} />
+                  <Icon size={14} className={notif.read ? "text-slate-700" : "text-slate-700"} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h3 className={`font-bold text-xs ${notif.read ? "text-slate-600" : "text-slate-900"}`}>
+                    <h3 className={`font-bold text-xs ${notif.read ? "text-slate-800" : "text-slate-900"}`}>
                       {notif.title}
                     </h3>
                     {!notif.read && (
                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0" />
                     )}
                   </div>
-                  <p className={`text-xs mt-0.5 ${notif.read ? "text-slate-400" : "text-slate-600"}`}>
+                  <p className={`text-xs mt-0.5 ${notif.read ? "text-slate-700" : "text-slate-800"}`}>
                     {notif.message}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Clock size={10} className="text-slate-400" />
-                    <span className="text-[10px] text-slate-400">
+                    <Clock size={10} className="text-slate-700" />
+                    <span className="text-[10px] text-slate-700">
                       {new Date(notif.timestamp).toLocaleString()}
                     </span>
                   </div>
@@ -293,7 +293,7 @@ const NotificationsPanel = () => {
       )}
 
       {/* Last refreshed */}
-      <p className="text-center text-[10px] text-slate-400">
+      <p className="text-center text-[10px] text-slate-700">
         Last refreshed: {lastRefresh.toLocaleTimeString()} • Auto-refreshes every 30 seconds
       </p>
     </div>

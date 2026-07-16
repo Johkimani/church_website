@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import logger from "../logger/winston.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,7 +22,7 @@ export class BackendDataService {
                 const content = fs.readFileSync(filePath, 'utf8').trim();
                 // Guard: never return empty string or truly empty file as data
                 if (!content || content === '[]' || content === '{}') {
-                    console.warn(`[BackendData] ${filename} is empty – using defaults.`);
+                    logger.warn(`[BackendData] ${filename} is empty – using defaults.`);
                     return defaults;
                 }
                 const parsed = JSON.parse(content);
@@ -31,7 +32,7 @@ export class BackendDataService {
                 }
                 return parsed;
             } catch (e) {
-                console.error(`[BackendData] Error loading ${filename}:`, e.message);
+                logger.error(`[BackendData] Error loading ${filename}: ${e.message}`);
                 return defaults;
             }
         }

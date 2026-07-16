@@ -797,6 +797,8 @@ export const setupCommunityDatabase = async () => {
       await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'mpesa'`);
       await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS collection_method VARCHAR(50) DEFAULT 'pickup'`);
       await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone VARCHAR(20)`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS items JSONB`);
     } catch (e) {}
 
     // Hire requests — for chairs and instruments (not a purchase)
@@ -851,6 +853,7 @@ export const setupCommunityDatabase = async () => {
       await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS pickup_location VARCHAR(500)`);
       await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS pickup_time VARCHAR(100)`);
       await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS hire_reference VARCHAR(50)`);
+      await db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP`);
     } catch (e) {
       // Column may already exist, ignore
     }

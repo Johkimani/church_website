@@ -4,6 +4,7 @@ import {
   Cross, Shirt, Armchair, Music, ChevronRight, ChevronLeft, Clock, Activity, LogOut, LayoutDashboard,
   HelpCircle, X, Menu
 } from "lucide-react";
+import { toast } from 'react-hot-toast';
 import { apiClient } from "../../../api/axiosInstance";
 import ProductsPanel from "./ProductsPanel";
 import OrdersPanel from "./ordersmanager";
@@ -72,6 +73,7 @@ export default function ProjectsManager() {
   const [pendingCount, setPendingCount] = useState(0);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [stats, setStats] = useState({ products: 0, orders: 0, customers: 0, categories: 0 });
+  const [testimonialStats, setTestimonialStats] = useState({ pending: 0, total: 0, avgRating: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [navLoading, setNavLoading] = useState(false);
   const currentNav = activeSection === 'purchase' ? purchaseNav : hireNav;
@@ -79,24 +81,32 @@ export default function ProjectsManager() {
   const fetchData = async (section: SectionId) => {
     try {
       const isHire = section === 'hire';
-      const [ordersRes, productsRes, categoriesRes] = await Promise.all([
+      const [ordersRes, productsRes, categoriesRes, testimonialsRes] = await Promise.all([
         apiClient.get('/orders' + (isHire ? '?type=hire' : '')),
         apiClient.get('/products'),
         apiClient.get('/categories'),
+        apiClient.get('/testimonials'),
       ]);
       const orders = Array.isArray(ordersRes.data) ? ordersRes.data : (ordersRes.data?.data || []);
       const products = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
       const categories = Array.isArray(categoriesRes.data) ? categoriesRes.data : (categoriesRes.data?.data || []);
+      const testimonials = Array.isArray(testimonialsRes.data) ? testimonialsRes.data : (testimonialsRes.data?.data || []);
       setPendingCount(orders.filter((o: any) => (o.status || '').toLowerCase() === 'pending').length);
       setRecentOrders(orders.slice(0, 8));
-      const uniquePhones = new Set(orders.map((o: any) => o.phone || o.customer_phone).filter(Boolean));
+      const uniquePhones = new Set(orders.map((o: any) => o.phone || o.customer_phone || o.phone_number).filter(Boolean));
       setStats({
         orders: orders.length,
         products: products.filter((p: any) => isHire ? ['chairs', 'instruments'].includes(p.category) : ['sacramentals', 'tshirts'].includes(p.category)).length,
         customers: uniquePhones.size,
         categories: categories.filter((c: any) => c.type === (isHire ? 'hire' : 'sale')).length,
       });
-    } catch { /* ignore */ }
+      const approved = testimonials.filter((t: any) => t.approved);
+      setTestimonialStats({
+        pending: testimonials.filter((t: any) => !t.approved).length,
+        total: testimonials.length,
+        avgRating: approved.length > 0 ? Math.round(approved.reduce((s: number, t: any) => s + (t.rating || 0), 0) / approved.length * 10) / 10 : 0,
+      });
+    } catch { toast.error('Failed to load dashboard data'); }
   };
 
   const handleNavChange = (id: string) => {
@@ -126,7 +136,7 @@ export default function ProjectsManager() {
       case 'pending': return 'bg-amber-100 text-amber-700';
       case 'paid': case 'completed': return 'bg-emerald-100 text-emerald-700';
       case 'cancelled': return 'bg-rose-100 text-rose-600';
-      default: return 'bg-slate-100 text-slate-600';
+      default: return 'bg-slate-100 text-slate-800';
     }
   };
 
@@ -142,7 +152,7 @@ export default function ProjectsManager() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-black text-slate-800">Projects Manager</h2>
-            <p className="text-slate-500 text-sm mt-0.5">Manage church products, categories, orders, and content.</p>
+            <p className="text-slate-800 text-sm mt-0.5">Manage church products, categories, orders, and content.</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -161,18 +171,18 @@ export default function ProjectsManager() {
                     </div>
                     <div className="text-left">
                       <h3 className="text-lg font-black text-slate-800 group-hover:text-blue-600 transition-colors">{section.label}</h3>
-                      <p className="text-xs text-slate-400 font-medium">{section.tagline}</p>
+                      <p className="text-xs text-slate-800 font-medium">{section.tagline}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     {details.subcategories.map(sub => {
                       const cls: Record<string, string> = { blue: 'bg-blue-100 text-blue-600', amber: 'bg-amber-100 text-amber-600', sky: 'bg-sky-100 text-sky-600', indigo: 'bg-indigo-100 text-indigo-600' };
-                      return <span key={sub.name} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${cls[sub.color] || 'bg-slate-100 text-slate-600'}`}><sub.icon size={14} /> {sub.name}</span>;
+                      return <span key={sub.name} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${cls[sub.color] || 'bg-slate-100 text-slate-800'}`}><sub.icon size={14} /> {sub.name}</span>;
                     })}
                   </div>
                 </div>
                 <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Open Dashboard</span>
+                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Open Dashboard</span>
                   <span className="flex items-center gap-1 text-xs font-bold text-blue-600 group-hover:gap-2 transition-all">Enter <ChevronRight size={14} /></span>
                 </div>
               </button>
@@ -192,15 +202,16 @@ export default function ProjectsManager() {
       { label: 'Pending', value: pendingCount, icon: Clock, color: 'bg-amber-500' },
       { label: 'Customers', value: stats.customers, icon: UserCircle, color: 'bg-purple-500' },
       { label: 'Categories', value: stats.categories, icon: Tag, color: 'bg-sky-500' },
+      { label: 'Avg Rating', value: testimonialStats.avgRating > 0 ? `${testimonialStats.avgRating}★` : '—', icon: MessageCircle, color: 'bg-rose-500' },
     ];
 
     return (
       <div className="space-y-5">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {statsData.map(stat => (
             <div key={stat.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md transition-all">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</span>
+                <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">{stat.label}</span>
                 <div className={`${stat.color} w-7 h-7 rounded-lg flex items-center justify-center text-white`}><stat.icon size={13} /></div>
               </div>
               <p className="text-2xl font-black text-slate-800">{stat.value}</p>
@@ -218,19 +229,19 @@ export default function ProjectsManager() {
             </div>
             <div className="divide-y divide-slate-100">
               {recentOrders.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">No orders yet</div>
+                <div className="p-6 text-center text-xs text-slate-800">No orders yet</div>
               ) : (
                 recentOrders.slice(0, 5).map((order: any, i: number) => (
                   <div key={order.id || i} className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                     <div className="min-w-0 flex-1 flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-[10px]">#{i + 1}</div>
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-800 font-bold text-[10px]">#{i + 1}</div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-700 truncate">{order.customer_name || 'Customer'}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{order.phone || order.customer_phone || '—'}</p>
+                        <p className="text-xs font-bold text-slate-800 truncate">{order.customer_name || 'Customer'}</p>
+                        <p className="text-[10px] text-slate-800 truncate">{order.phone || order.customer_phone || order.phone_number || '—'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs font-bold text-slate-700">KES {(Number(order.amount || 0)).toLocaleString()}</span>
+                      <span className="text-xs font-bold text-slate-800">KES {(Number(order.amount || order.total_cost || 0)).toLocaleString()}</span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusColor(order.status || order.payment_status)}`}>
                         {order.status || order.payment_status || '—'}
                       </span>
@@ -248,8 +259,8 @@ export default function ProjectsManager() {
             <div className="grid grid-cols-2 gap-2">
               {currentNav.filter(n => n.id !== 'dashboard').slice(0, 6).map(action => (
                 <button key={action.id} onClick={() => handleNavChange(action.id)} className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
-                  <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-500 group-hover:text-blue-600 transition-colors"><action.icon size={14} /></div>
-                  <span className="text-[10px] font-bold text-slate-500 group-hover:text-blue-600 transition-colors text-center leading-tight">{action.label}</span>
+                  <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-800 group-hover:text-blue-600 transition-colors"><action.icon size={14} /></div>
+                  <span className="text-[10px] font-bold text-slate-800 group-hover:text-blue-600 transition-colors text-center leading-tight">{action.label}</span>
                 </button>
               ))}
             </div>
@@ -297,7 +308,7 @@ export default function ProjectsManager() {
       <aside className={`fixed lg:sticky top-0 lg:top-0 z-30 h-full lg:h-auto bg-white border-r border-slate-200 shadow-sm transition-all duration-300 flex flex-col ${sidebarOpen ? 'w-56 left-0' : 'w-0 -left-full lg:w-14 lg:left-0 overflow-hidden'}`}>
         {/* Sidebar Header */}
         <div className="px-4 py-4 border-b border-slate-100">
-          <button onClick={() => setActiveSection(null)} className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors mb-3">
+          <button onClick={() => setActiveSection(null)} className="flex items-center gap-2 text-xs font-bold text-slate-800 hover:text-slate-800 transition-colors mb-3">
             <ChevronLeft size={14} /> Back
           </button>
           <div className="flex items-center gap-2.5">
@@ -306,7 +317,7 @@ export default function ProjectsManager() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-black text-slate-800 truncate">{activeSection === 'purchase' ? 'Purchase' : 'Hire'}</p>
-              <p className="text-[10px] text-slate-400 truncate">{activeSection === 'purchase' ? 'Sacramentals & T-Shirts' : 'Chairs & Instruments'}</p>
+              <p className="text-[10px] text-slate-800 truncate">{activeSection === 'purchase' ? 'Sacramentals & T-Shirts' : 'Chairs & Instruments'}</p>
             </div>
           </div>
         </div>
@@ -316,6 +327,7 @@ export default function ProjectsManager() {
           {currentNav.map(item => {
             const isActive = activeNav === item.id;
             const isOrders = item.id === 'orders' || item.id === 'hire-orders';
+            const isTestimonials = item.id === 'testimonials' || item.id === 'hire-testimonials';
             return (
               <button
                 key={item.id}
@@ -323,13 +335,16 @@ export default function ProjectsManager() {
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-left ${
                   isActive
                     ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50 border border-transparent'
+                    : 'text-slate-800 hover:text-slate-800 hover:bg-slate-50 border border-transparent'
                 }`}
               >
                 <item.icon size={15} className="shrink-0" />
                 <span className="truncate flex-1">{item.label}</span>
                 {isOrders && pendingCount > 0 && (
                   <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center shrink-0">{pendingCount > 9 ? '9+' : pendingCount}</span>
+                )}
+                {isTestimonials && testimonialStats.pending > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[8px] font-black flex items-center justify-center shrink-0">{testimonialStats.pending > 9 ? '9+' : testimonialStats.pending}</span>
                 )}
               </button>
             );
@@ -338,7 +353,7 @@ export default function ProjectsManager() {
 
         {/* Sidebar Footer */}
         <div className="px-3 py-3 border-t border-slate-100">
-          <button onClick={() => { setActiveSection(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
+          <button onClick={() => { setActiveSection(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-800 hover:text-rose-500 hover:bg-rose-50 transition-all">
             <LogOut size={14} /> Back to Sections
           </button>
         </div>
@@ -346,7 +361,7 @@ export default function ProjectsManager() {
 
       {/* Toggle button (collapsed state) */}
       {!sidebarOpen && (
-        <button onClick={() => setSidebarOpen(true)} className="fixed lg:sticky top-20 lg:top-0 z-10 left-0 lg:left-0 w-10 h-10 bg-white border border-slate-200 rounded-r-xl shadow-sm flex items-center justify-center text-slate-400 hover:text-blue-600 transition-colors">
+        <button onClick={() => setSidebarOpen(true)} className="fixed lg:sticky top-20 lg:top-0 z-10 left-0 lg:left-0 w-10 h-10 bg-white border border-slate-200 rounded-r-xl shadow-sm flex items-center justify-center text-slate-800 hover:text-blue-600 transition-colors">
           <Menu size={16} />
         </button>
       )}
@@ -356,13 +371,13 @@ export default function ProjectsManager() {
         {/* Top bar on mobile */}
         <div className="lg:hidden flex items-center gap-3 mb-4">
           {!sidebarOpen && (
-            <button onClick={() => setSidebarOpen(true)} className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500">
+            <button onClick={() => setSidebarOpen(true)} className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800">
               <Menu size={15} />
             </button>
           )}
           <div>
             <p className="text-sm font-bold text-slate-800">{activeSection === 'purchase' ? 'Purchase' : 'Hire'} Dashboard</p>
-            <p className="text-[10px] text-slate-400">{activeSection === 'purchase' ? 'Sacramentals & T-Shirts' : 'Chairs & Instruments'}</p>
+            <p className="text-[10px] text-slate-800">{activeSection === 'purchase' ? 'Sacramentals & T-Shirts' : 'Chairs & Instruments'}</p>
           </div>
         </div>
 
@@ -371,7 +386,7 @@ export default function ProjectsManager() {
             <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-2xl">
               <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
                 <div className="w-4 h-4 border-2 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-                <span className="text-xs font-medium text-slate-500">Loading...</span>
+                <span className="text-xs font-medium text-slate-800">Loading...</span>
               </div>
             </div>
           )}

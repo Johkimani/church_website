@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import apiService from "../../Landing/services/api";
+import { toast } from 'react-hot-toast';
 import { Plus, Pencil, Trash2, RefreshCcw, X, Loader2, Tag, FolderOpen } from "lucide-react";
 import PanelHeader from "../components/PanelHeader";
 import EmptyState from "../components/EmptyState";
@@ -22,7 +23,7 @@ export default function CategoryManager(props: Props) {
     try {
       const data = await apiService.fetchTableData("categories", false);
       setCategories(Array.isArray(data) ? data : []);
-    } catch { setCategories([]); }
+    } catch { toast.error('Failed to load categories'); setCategories([]); }
     finally { setLoading(false); }
   };
 
@@ -87,7 +88,7 @@ export default function CategoryManager(props: Props) {
       {loading ? (
         <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-slate-200">
           <Loader2 size={16} className="animate-spin text-blue-600 mr-2" />
-          <span className="text-xs font-medium text-slate-500">Loading categories...</span>
+          <span className="text-xs font-medium text-slate-700">Loading categories...</span>
         </div>
       ) : display.length === 0 ? (
         <EmptyState icon={FolderOpen} title="No categories yet" subtitle={`Add your first ${typeFilter === 'hire' ? 'hire' : 'sale'} category.`} action={
@@ -106,7 +107,7 @@ export default function CategoryManager(props: Props) {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-800 text-xs">{cat.name || cat.label}</h3>
-                    <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${typeColors[cat.type] || 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${typeColors[cat.type] || 'bg-slate-100 text-slate-800'}`}>
                       {cat.type === 'hire' ? 'Hire' : 'Sale'}
                     </span>
                   </div>
@@ -131,19 +132,19 @@ export default function CategoryManager(props: Props) {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-800 text-sm">{editing ? "Edit Category" : `Add ${typeFilter === 'hire' ? 'Hire' : 'Sale'} Category`}</h3>
-                  <p className="text-[10px] text-slate-400">{editing ? "Update details" : "Create a new category"}</p>
+                  <p className="text-[10px] text-slate-700">{editing ? "Update details" : "Create a new category"}</p>
                 </div>
               </div>
-              <button onClick={() => setShowForm(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"><X size={14} /></button>
+              <button onClick={() => setShowForm(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-800 hover:bg-slate-100 transition-all"><X size={14} /></button>
             </div>
             <div className="p-4 space-y-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category Name</label>
+                <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Category Name</label>
                 <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder={typeFilter === 'hire' ? 'e.g. Chairs' : 'e.g. Candles'} className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10" />
               </div>
               {!typeFilter && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Type</label>
+                  <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Type</label>
                   <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10">
                     <option value="sale">Buy / Sale</option>
                     <option value="hire">Hire</option>
@@ -152,7 +153,7 @@ export default function CategoryManager(props: Props) {
               )}
             </div>
             <div className="flex items-center justify-end gap-2 px-4 py-3 bg-slate-50 border-t border-slate-100">
-              <button onClick={() => setShowForm(false)} className="px-3.5 py-1.5 border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-100 transition-all text-xs">Cancel</button>
+              <button onClick={() => setShowForm(false)} className="px-3.5 py-1.5 border border-slate-200 text-slate-800 font-bold rounded-lg hover:bg-slate-100 transition-all text-xs">Cancel</button>
               <button onClick={handleSave} disabled={saving || !form.name.trim()} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-lg transition-all text-xs flex items-center gap-1.5 shadow-sm shadow-blue-200">
                 {saving ? <><Loader2 size={11} className="animate-spin" /> Saving...</> : editing ? "Update" : "Create"}
               </button>

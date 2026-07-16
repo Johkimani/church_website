@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
 import { Home } from "./pages/Landing/components/page/Home";
@@ -134,7 +135,9 @@ const App: React.FC = () => {
           path="/admin"
           element={
             <ProtectedRoute>
-              <UniversalAdmin />
+              <ErrorBoundary>
+                <UniversalAdmin />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         >
@@ -151,7 +154,7 @@ const App: React.FC = () => {
           <Route path="suggestions" element={<AdminSuggestions />} />
           <Route path="gallery" element={<GalleryManager />} />
           <Route path="sacramentals-banners" element={<SacramentalsBannerManager />} />
-          <Route path="projects" element={<ProjectsManager />} />
+          <Route path="projects" element={<ErrorBoundary><ProjectsManager /></ErrorBoundary>} />
           <Route path="forms-distribution" element={<FormsDistribution />} />
           <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
           <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
@@ -159,9 +162,9 @@ const App: React.FC = () => {
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
-        {/* Order Confirmation (no layout) */}
-        <Route path="/order-confirmation" element={<OrderConfirmation />} />
-        <Route path="/hire-status" element={<HireStatus />} />
+        {/* Order Confirmation & Hire Status */}
+        <Route path="/order-confirmation" element={<ErrorBoundary><OrderConfirmation /></ErrorBoundary>} />
+        <Route path="/hire-status" element={<ErrorBoundary><HireStatus /></ErrorBoundary>} />
 
         {/* Public Routes with Page Layout */}
         <Route path="/" element={<Pageoulet />}>
@@ -173,14 +176,14 @@ const App: React.FC = () => {
           {/* Standalone Landing Pages */}
           <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
           <Route element={<ProtectedRoute><ProjectsProvider><Outlet /></ProjectsProvider></ProtectedRoute>}>
-            <Route path="projects" element={<ProjectsHome />} />
-            <Route path="sacramentals" element={<SacramentalsPage />} />
-            <Route path="t-shirts" element={<TshirtsPage />} />
-            <Route path="chairs" element={<ChairsPage />} />
-            <Route path="instruments" element={<InstrumentsPage />} />
-            <Route path="other-projects" element={<OtherProjectsPage />} />
-            <Route path="activities" element={<ActivitiesPage />} />
-            <Route path="product/:id" element={<ProductDetailsPage />} />
+            <Route path="projects" element={<ErrorBoundary><ProjectsHome /></ErrorBoundary>} />
+            <Route path="sacramentals" element={<ErrorBoundary><SacramentalsPage /></ErrorBoundary>} />
+            <Route path="t-shirts" element={<ErrorBoundary><TshirtsPage /></ErrorBoundary>} />
+            <Route path="chairs" element={<ErrorBoundary><ChairsPage /></ErrorBoundary>} />
+            <Route path="instruments" element={<ErrorBoundary><InstrumentsPage /></ErrorBoundary>} />
+            <Route path="other-projects" element={<ErrorBoundary><OtherProjectsPage /></ErrorBoundary>} />
+            <Route path="activities" element={<ErrorBoundary><ActivitiesPage /></ErrorBoundary>} />
+            <Route path="product/:id" element={<ErrorBoundary><ProductDetailsPage /></ErrorBoundary>} />
           </Route>
           {/* show notification to all */}
           <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />

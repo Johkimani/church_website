@@ -68,18 +68,18 @@ export default function CustomerManager() {
                   <span className="shrink-0 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">{c.count} order{c.count !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <Phone size={10} className="text-slate-400 shrink-0" />
-                  <span className="text-[11px] font-medium text-slate-600">{c.phone}</span>
+                  <Phone size={10} className="text-slate-700 shrink-0" />
+                  <span className="text-[11px] font-medium text-slate-800">{c.phone}</span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {c.items.slice(0, 3).map((item: string, i: number) => (
-                    <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 border border-slate-100 rounded-md text-[9px] font-semibold text-slate-600">
+                    <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 border border-slate-100 rounded-md text-[9px] font-semibold text-slate-800">
                       <Package size={8} />
                       {item}
                     </span>
                   ))}
                   {c.items.length > 3 && (
-                    <span className="text-[9px] font-bold text-slate-400 px-1.5 py-0.5">+{c.items.length - 3} more</span>
+                    <span className="text-[9px] font-bold text-slate-700 px-1.5 py-0.5">+{c.items.length - 3} more</span>
                   )}
                 </div>
               </div>
