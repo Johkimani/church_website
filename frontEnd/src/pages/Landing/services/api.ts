@@ -563,12 +563,6 @@ class ApiService {
     return response.data;
   }
 
-  async submitTestimonial(payload: { name: string; role?: string; text: string; rating?: number }): Promise<any> {
-    const response = await apiClient.post('/testimonials', payload);
-    this.clearTestimonialsCache();
-    return response.data;
-  }
-
   async approveTestimonial(id: number | string): Promise<any> {
     const response = await apiClient.patch(`/testimonials/${id}/approve`);
     this.clearTestimonialsCache();

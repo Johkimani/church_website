@@ -185,7 +185,7 @@ export default function GalleryManager() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-black text-slate-800 tracking-tight">Gallery Manager</h2>
-          <p className="text-slate-500 text-xs mt-0.5">Manage public photos and visual media for the church website.</p>
+          <p className="text-slate-700 text-xs mt-0.5">Manage public photos and visual media for the church website.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold border border-blue-100">
@@ -229,8 +229,8 @@ export default function GalleryManager() {
                   <Plus size={24} />
                 </div>
                 <p className="text-slate-700 font-bold text-xs mb-0.5">Drop photos here</p>
-                <p className="text-slate-400 text-[11px]">or click to browse your files</p>
-                <div className="mt-3 flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                <p className="text-slate-700 text-[11px]">or click to browse your files</p>
+                <div className="mt-3 flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 rounded-full text-[9px] font-bold text-slate-700 uppercase tracking-widest">
                   Max 10 files • JPG, PNG, GIF
                 </div>
               </div>
@@ -239,7 +239,7 @@ export default function GalleryManager() {
             {/* Selected Files Preview & Settings */}
             {selectedFiles.length > 0 && (
               <div className="mt-4 space-y-2 animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                <div className="flex items-center justify-between text-[10px] font-black text-slate-700 uppercase tracking-widest px-1">
                   <span>Selected ({selectedFiles.length})</span>
                   <button onClick={() => setSelectedFiles([])} className="text-rose-500 hover:text-rose-600">Clear All</button>
                 </div>
@@ -251,11 +251,11 @@ export default function GalleryManager() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-bold text-slate-800 truncate">{file.name}</p>
-                        <p className="text-[9px] text-slate-500">{(file.size / 1024).toFixed(0)} KB</p>
+                        <p className="text-[9px] text-slate-700">{(file.size / 1024).toFixed(0)} KB</p>
                       </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); removeSelectedFile(i); }}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-1.5 text-slate-700 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
                       >
                         <X size={12} />
                       </button>
@@ -272,7 +272,7 @@ export default function GalleryManager() {
                   disabled={uploadStatus === 'uploading'}
                   className={`w-full py-3 rounded-xl font-black text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
                     uploadStatus === 'uploading'
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      ? 'bg-slate-100 text-slate-700 cursor-not-allowed'
                       : 'bg-blue-600 text-white shadow-md shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5'
                   }`}
                 >
@@ -337,7 +337,7 @@ export default function GalleryManager() {
             {loading ? (
               <div className="flex-1 flex flex-col items-center justify-center animate-pulse">
                 <Loader2 size={32} className="text-slate-200 animate-spin mb-3" />
-                <p className="text-slate-400 font-bold text-xs">Synchronizing with server...</p>
+                <p className="text-slate-700 font-bold text-xs">Synchronizing with server...</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
@@ -377,7 +377,7 @@ export default function GalleryManager() {
                 {images.length === 0 && (
                   <div className="col-span-full border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-200 py-10">
                      <ImageIcon size={40} className="mb-3 opacity-20" />
-                     <p className="text-slate-400 font-bold text-xs">No images in your gallery yet.</p>
+                     <p className="text-slate-700 font-bold text-xs">No images in your gallery yet.</p>
                   </div>
                 )}
               </div>
