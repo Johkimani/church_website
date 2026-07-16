@@ -97,7 +97,12 @@ const setupRoleSystem = async () => {
       WHERE status = 'approved'
     `);
 
-    // 2. Remove deprecated roles
+    // 2. Remove deprecated roles (delete member_roles first to respect FK)
+    await pool.query(`
+      DELETE FROM member_roles WHERE role_id IN (
+        SELECT role_id FROM roles WHERE role_name IN ('supreme_admin', 'admin')
+      )
+    `);
     await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin')`);
     logger.info("Removed deprecated roles: supreme_admin, admin");
 
