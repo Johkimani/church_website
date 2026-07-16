@@ -6,6 +6,8 @@ import { uploadFile } from "../../../api/axiosInstance";
 import { ShoppingBag, Plus, Pencil, Trash2, X, Loader2, MessageCircle, Save } from "lucide-react";
 import PanelHeader from "../components/PanelHeader";
 import EmptyState from "../components/EmptyState";
+import Skeleton from "../../../components/Skeleton";
+import { toast } from 'react-hot-toast';
 
 type Product = {
   id?: string | number;
@@ -40,6 +42,7 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
         const data = response.data;
         return Array.isArray(data) ? data : [];
       } catch {
+        toast.error('Failed to load products');
         return [];
       }
     },
@@ -151,6 +154,7 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
         setForm((prev) => ({ ...prev, image_url: url, imageFile: null }));
       }
     } catch {
+      toast.error('Failed to upload image');
     } finally {
       setUploadingImage(false);
     }
@@ -265,16 +269,22 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
 
       <div className="flex flex-wrap gap-1.5">
         {['all', ...activeCategories].map((category) => (
-          <button key={category} type="button" onClick={() => setSelectedCategory(category)} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${selectedCategory === category ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600'}`}>
+          <button key={category} type="button" onClick={() => setSelectedCategory(category)} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${selectedCategory === category ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : 'bg-white text-slate-700 border border-slate-200 hover:border-blue-300 hover:text-blue-600'}`}>
             {category === 'all' ? 'All' : category.charAt(0).toUpperCase() + category.slice(1)}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-slate-200">
-          <Loader2 size={18} className="animate-spin text-blue-600 mr-2" />
-          <span className="text-xs font-medium text-slate-500">Loading products...</span>
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+              <Skeleton className="h-32 w-full rounded-lg" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-8 w-full rounded-lg" />
+            </div>
+          ))}
         </div>
       ) : filteredProducts.length === 0 ? (
         <EmptyState icon={ShoppingBag} title="No products found" subtitle={selectedCategory !== 'all' ? `No products in "${selectedCategory}".` : 'Add your first product.'} action={
@@ -291,18 +301,18 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
                   <img src={getSafeImageUrl(product.image_url)} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <ShoppingBag size={22} className="text-slate-300" />
+                    <ShoppingBag size={22} className="text-slate-700" />
                   </div>
                 )}
                 <div className="absolute top-1.5 right-1.5">
-                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${categoryColors[product.category as string] || 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${categoryColors[product.category as string] || 'bg-slate-100 text-slate-800'}`}>
                     {product.category || 'General'}
                   </span>
                 </div>
               </div>
               <div className="p-3 space-y-1.5">
                 <h3 className="text-xs font-bold text-slate-800 leading-tight line-clamp-2">{product.name}</h3>
-                <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">{product.description || 'No description'}</p>
+                <p className="text-[10px] text-slate-700 line-clamp-2 leading-relaxed">{product.description || 'No description'}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-black text-slate-800">KES {Number(product.price || 0).toLocaleString()}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${(product.stock ?? 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'}`}>
@@ -333,10 +343,10 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-slate-800">{isEditing ? 'Edit Product' : 'New Product'}</h2>
-                  <p className="text-[10px] text-slate-400">Fill in the details</p>
+                  <p className="text-[10px] text-slate-700">Fill in the details</p>
                 </div>
               </div>
-              <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
+              <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-800 hover:bg-slate-100 transition-all">
                 <X size={14} />
               </button>
             </div>
@@ -344,11 +354,11 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
             <div className="p-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Name</label>
+                  <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Name</label>
                   <input value={form.name} onChange={(e) => handleFormChange('name', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10" placeholder="Product name" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category</label>
+                  <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Category</label>
                   <select value={form.category} onChange={(e) => handleFormChange('category', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10">
                     {activeCategories.map((cat) => (
                       <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
@@ -356,15 +366,15 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Price (KES)</label>
+                  <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Price (KES)</label>
                   <input type="number" value={form.price} onChange={(e) => handleFormChange('price', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10" placeholder="0" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Stock</label>
+                  <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Stock</label>
                   <input type="number" value={form.stock} onChange={(e) => handleFormChange('stock', e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10" placeholder="50" />
                 </div>
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description</label>
+                  <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Description</label>
                   <textarea value={form.description} onChange={(e) => handleFormChange('description', e.target.value)} rows={2} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none" placeholder="Short description" />
                 </div>
               </div>
@@ -375,16 +385,16 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image</label>
+                <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Image</label>
                 <div className="flex flex-col gap-2">
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files?.[0] ?? null)} className="block w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" disabled={uploadingImage} />
+                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files?.[0] ?? null)} className="block w-full text-xs text-slate-800 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" disabled={uploadingImage} />
                   {uploadingImage && <p className="text-[10px] text-blue-600 font-medium flex items-center gap-1.5"><Loader2 size={10} className="animate-spin" /> Uploading...</p>}
                   {(form.imagePreview || form.image_url) ? (
                     <div className="relative rounded-xl overflow-hidden border border-slate-200">
                       <img src={form.imagePreview?.startsWith('blob:') ? form.imagePreview : getSafeImageUrl(form.imagePreview || form.image_url)} alt="Preview" className="h-28 w-full object-cover" />
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-24 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-[11px] text-slate-400">
+                    <div className="flex items-center justify-center h-24 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-[11px] text-slate-700">
                       No image
                     </div>
                   )}
@@ -399,7 +409,7 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
             )}
 
             <div className="flex items-center justify-end gap-2 px-5 py-3 bg-slate-50 border-t border-slate-100">
-              <button type="button" onClick={closeModal} className="px-3.5 py-1.5 border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-100 transition-all text-xs">Cancel</button>
+              <button type="button" onClick={closeModal} className="px-3.5 py-1.5 border border-slate-200 text-slate-800 font-bold rounded-lg hover:bg-slate-100 transition-all text-xs">Cancel</button>
               <button type="button" onClick={handleSaveProduct} disabled={saving || uploadingImage} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-lg transition-all text-xs flex items-center gap-1.5 shadow-sm shadow-blue-200">
                 {saving ? <><Loader2 size={11} className="animate-spin" /> {isEditing ? 'Saving...' : 'Creating...'}</> : isEditing ? 'Update' : 'Create'}
               </button>
