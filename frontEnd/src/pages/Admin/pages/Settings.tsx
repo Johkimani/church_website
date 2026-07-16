@@ -50,7 +50,9 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   choir_chairperson: ['Community Management (Choir)'],
   choir_secretary: ['Community Management (Choir)'],
   choir_project_coordinator: ['Community Management (Choir Gallery)'],
-  sub_group_chair: ['Community Management (Sub-group)'],
+  st_francis_chair: ['Community Management (St. Francis)'],
+  charismatic_chair: ['Community Management (Charismatic)'],
+  dance_chair: ['Community Management (Dance)'],
   liturgist: ['Devotions & AI'],
   treasurer: ['Donation Monitor'],
 };
