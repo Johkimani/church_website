@@ -29,6 +29,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
       const all = Array.isArray(data) ? data : [];
       setCards(sectionFilter ? all.filter((c: any) => sectionFilter.includes(c.category)) : all);
     } catch {
+      toast.error('Failed to load cards');
       setCards([]);
     } finally {
       setLoading(false);
@@ -106,7 +107,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
           <LayoutGrid className="w-5 h-5 text-blue-600" />
           Home Page Cards
         </h1>
-        <p className="text-slate-500 font-medium mt-0.5 text-xs">
+        <p className="text-slate-700 font-medium mt-0.5 text-xs">
           Manage the category card images displayed on the home page.
         </p>
       </div>
@@ -118,7 +119,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
             inputMode === 'url'
               ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-              : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:border-slate-200'
+              : 'bg-slate-50 text-slate-700 border-2 border-transparent hover:border-slate-200'
           }`}
         >
           <LinkIcon size={12} /> Paste URL
@@ -128,7 +129,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
             inputMode === 'file'
               ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-              : 'bg-slate-50 text-slate-500 border-2 border-transparent hover:border-slate-200'
+              : 'bg-slate-50 text-slate-700 border-2 border-transparent hover:border-slate-200'
           }`}
         >
           <FileImage size={12} /> Upload from PC
@@ -140,9 +141,9 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
           <Loader2 size={18} className="animate-spin text-blue-600" />
         </div>
       ) : cards.length === 0 && !showNewCard ? (
-        <div className="text-center py-10 text-slate-400">
+        <div className="text-center py-10 text-slate-700">
           <LayoutGrid size={32} className="mx-auto mb-2 opacity-30" />
-          <p className="font-semibold text-slate-500 text-xs">No home cards yet</p>
+          <p className="font-semibold text-slate-700 text-xs">No home cards yet</p>
           <p className="text-[11px] mt-1">Add your first card to appear on the home page.</p>
           <button onClick={() => setShowNewCard(true)} className="mt-3 px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all inline-flex items-center gap-1.5">
             <Plus size={14} /> New Card
@@ -202,7 +203,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
                     onError={(e) => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                  <div className="w-full h-full flex items-center justify-center text-slate-700">
                     <LayoutGrid size={36} />
                   </div>
                 )}
@@ -216,7 +217,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
               {/* Edit Form */}
               <div className="p-3 space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
                     {inputMode === 'url' ? 'Image URL *' : 'Upload Image'}
                   </label>
 
@@ -238,7 +239,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
                       {uploading === card.category ? (
                         <div className="flex flex-col items-center gap-1.5">
                           <Loader2 size={18} className="text-blue-500 animate-spin" />
-                          <p className="text-xs text-slate-600 font-medium">
+                          <p className="text-xs text-slate-800 font-medium">
                             {uploadProgress[card.category] > 0 ? `${uploadProgress[card.category]}%` : 'Compressing...'}
                           </p>
                           {uploadProgress[card.category] > 0 && (
@@ -249,8 +250,8 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <Upload size={18} className="text-slate-400" />
-                          <p className="text-[11px] text-slate-500">Click or drag image here</p>
+                          <Upload size={18} className="text-slate-700" />
+                          <p className="text-[11px] text-slate-700">Click or drag image here</p>
                         </div>
                       )}
                     </div>
@@ -259,7 +260,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">Label</label>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">Label</label>
                     <input
                       type="text"
                       value={card.label}
@@ -268,7 +269,7 @@ export default function CategoryCardManager({ sectionFilter }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">Tag</label>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">Tag</label>
                     <input
                       type="text"
                       value={card.tag}

@@ -171,7 +171,7 @@ export default function SliderManager({ sectionFilter }: Props) {
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-bold text-xs transition-all ${
               activeSection === sec.id
                 ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-                : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                : 'bg-white text-slate-800 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
             }`}
           >
             <span>{sec.icon}</span>
@@ -190,10 +190,10 @@ export default function SliderManager({ sectionFilter }: Props) {
         </h2>
 
         <div className="flex gap-1.5">
-          <button onClick={() => setInputMode('url')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${inputMode === 'url' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-slate-50 text-slate-500 border border-transparent hover:border-slate-200'}`}>
+          <button onClick={() => setInputMode('url')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${inputMode === 'url' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-slate-50 text-slate-700 border border-transparent hover:border-slate-200'}`}>
             <LinkIcon size={11} /> Paste URL
           </button>
-          <button onClick={() => setInputMode('file')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${inputMode === 'file' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-slate-50 text-slate-500 border border-transparent hover:border-slate-200'}`}>
+          <button onClick={() => setInputMode('file')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${inputMode === 'file' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-slate-50 text-slate-700 border border-transparent hover:border-slate-200'}`}>
             <FileImage size={11} /> Upload
           </button>
         </div>
@@ -201,15 +201,15 @@ export default function SliderManager({ sectionFilter }: Props) {
         {inputMode === 'url' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div className="md:col-span-3 space-y-1">
-              <label className="text-[10px] font-bold text-slate-500">Image URL *</label>
+              <label className="text-[10px] font-bold text-slate-700">Image URL *</label>
               <input type="url" value={newSlide.image_url} onChange={e => setNewSlide(p => ({ ...p, image_url: e.target.value }))} placeholder="https://example.com/image.jpg" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500">Title</label>
+              <label className="text-[10px] font-bold text-slate-700">Title</label>
               <input type="text" value={newSlide.title} onChange={e => setNewSlide(p => ({ ...p, title: e.target.value }))} placeholder="e.g. New Collection" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
             </div>
             <div className="md:col-span-2 space-y-1">
-              <label className="text-[10px] font-bold text-slate-500">Message</label>
+              <label className="text-[10px] font-bold text-slate-700">Message</label>
               <input type="text" value={newSlide.message} onChange={e => setNewSlide(p => ({ ...p, message: e.target.value }))} placeholder="e.g. Explore our latest arrivals" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function SliderManager({ sectionFilter }: Props) {
               {uploadingFile ? (
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 size={20} className="text-blue-500 animate-spin" />
-                  <p className="text-xs text-slate-600 font-medium">{uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Compressing & uploading...'}</p>
+                  <p className="text-xs text-slate-800 font-medium">{uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Compressing & uploading...'}</p>
                   {uploadProgress > 0 && (
                     <div className="w-32 h-1 bg-slate-200 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
@@ -230,20 +230,20 @@ export default function SliderManager({ sectionFilter }: Props) {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <Upload size={22} className="text-slate-400" />
+                  <Upload size={22} className="text-slate-700" />
                   <p className="text-xs font-bold text-slate-700">Click or drag & drop</p>
-                  <p className="text-[10px] text-slate-400">JPG, PNG, WebP</p>
+                  <p className="text-[10px] text-slate-700">JPG, PNG, WebP</p>
                 </div>
               )}
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500">Title</label>
+                <label className="text-[10px] font-bold text-slate-700">Title</label>
                 <input type="text" value={newSlide.title} onChange={e => setNewSlide(p => ({ ...p, title: e.target.value }))} placeholder="e.g. New Collection" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500">Message</label>
+                <label className="text-[10px] font-bold text-slate-700">Message</label>
                 <input type="text" value={newSlide.message} onChange={e => setNewSlide(p => ({ ...p, message: e.target.value }))} placeholder="e.g. Explore our latest" className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
               </div>
             </div>
@@ -269,26 +269,26 @@ export default function SliderManager({ sectionFilter }: Props) {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
           <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <Eye size={14} className="text-blue-600" /> Current Slides — {activeSectionLabel} <span className="text-xs font-normal text-slate-400">({slides.length})</span>
+            <Eye size={14} className="text-blue-600" /> Current Slides — {activeSectionLabel} <span className="text-xs font-normal text-slate-700">({slides.length})</span>
           </h2>
         </div>
 
         {loading ? (
           <div className="p-8 text-center">
             <div className="w-6 h-6 border-3 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto" />
-            <p className="text-slate-500 mt-2 text-xs">Loading slides...</p>
+            <p className="text-slate-700 mt-2 text-xs">Loading slides...</p>
           </div>
         ) : slides.length === 0 ? (
           <div className="p-8 text-center">
-            <Image size={28} className="text-slate-300 mx-auto mb-2" />
-            <p className="text-xs text-slate-500 font-medium">No slider images for {activeSectionLabel}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Add one above.</p>
+            <Image size={28} className="text-slate-700 mx-auto mb-2" />
+            <p className="text-xs text-slate-700 font-medium">No slider images for {activeSectionLabel}</p>
+            <p className="text-[10px] text-slate-700 mt-0.5">Add one above.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
             {slides.map((slide, idx) => (
               <div key={slide.id} className="flex items-center gap-3 p-3 hover:bg-slate-50/50 transition-colors group">
-                <div className="text-slate-300 group-hover:text-slate-500 cursor-grab"><GripVertical size={14} /></div>
+                <div className="text-slate-700 group-hover:text-slate-700 cursor-grab"><GripVertical size={14} /></div>
                 <div className="w-20 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
                   <img src={slide.url || slide.image_url} alt={slide.title || `Slide ${idx + 1}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="48"><rect fill="%23e2e8f0" width="80" height="48"/><text x="40" y="28" text-anchor="middle" fill="%2394a3b8" font-size="10">No Image</text></svg>'; }} />
                 </div>
@@ -301,20 +301,20 @@ export default function SliderManager({ sectionFilter }: Props) {
                 ) : (
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-slate-800 text-xs truncate">{slide.title || '(No title)'}</p>
-                    <p className="text-[10px] text-slate-500 truncate">{slide.message || '(No message)'}</p>
+                    <p className="text-[10px] text-slate-700 truncate">{slide.message || '(No message)'}</p>
                   </div>
                 )}
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md flex-shrink-0">#{idx + 1}</span>
+                <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-md flex-shrink-0">#{idx + 1}</span>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   {editingId === slide.id ? (
                     <>
                       <button onClick={() => handleSave(slide.id)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Save"><Save size={12} /></button>
-                      <button onClick={() => setEditingId(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-all" title="Cancel"><X size={12} /></button>
+                      <button onClick={() => setEditingId(null)} className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition-all" title="Cancel"><X size={12} /></button>
                     </>
                   ) : (
                     <>
-                      <button onClick={() => startEdit(slide)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit"><Edit2 size={12} /></button>
-                      <button onClick={() => handleDelete(slide.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Delete"><Trash2 size={12} /></button>
+                      <button onClick={() => startEdit(slide)} className="p-1.5 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit"><Edit2 size={12} /></button>
+                      <button onClick={() => handleDelete(slide.id)} className="p-1.5 text-slate-700 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Delete"><Trash2 size={12} /></button>
                     </>
                   )}
                 </div>
