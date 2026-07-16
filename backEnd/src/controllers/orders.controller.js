@@ -41,6 +41,15 @@ export const createOrder = async (req, res) => {
 
 export const getOrders = async (req, res) => {
   try {
+    const { type } = req.query;
+
+    if (type === "hire") {
+      const result = await db.query(
+        `SELECT * FROM hire_requests ORDER BY created_at DESC`
+      );
+      return res.json(result.rows);
+    }
+
     const result = await db.query(`SELECT * FROM orders ORDER BY created_at DESC`);
     res.json(result.rows);
   } catch (error) {

@@ -35,6 +35,7 @@ const allowedTables = [
   "orders",
   "hire_requests",
   "product_categories",
+  "testimonials",
 ];
 
 // Middleware to validate table name

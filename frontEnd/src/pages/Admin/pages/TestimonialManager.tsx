@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Star, Plus, Trash2, Loader2, MessageCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Star, Trash2, Loader2, MessageCircle, CheckCircle, Clock } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { toast } from 'react-hot-toast';
+import Skeleton from '../../../components/Skeleton';
 
 interface Testimonial {
   id: number;
@@ -10,6 +11,7 @@ interface Testimonial {
   text: string;
   rating: number;
   reference: string;
+  type: string;
   approved: boolean;
   created_at: string;
 }
@@ -19,10 +21,7 @@ type Filter = 'all' | 'pending' | 'approved';
 export default function TestimonialManager() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState<Filter>('pending');
-  const [form, setForm] = useState({ name: '', role: '', text: '', rating: 5, reference: '' });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,26 +37,6 @@ export default function TestimonialManager() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.text.trim()) {
-      toast.error('Name and testimonial text are required');
-      return;
-    }
-    setSaving(true);
-    try {
-      await apiService.createTestimonial({ ...form, approved: true });
-      toast.success('Testimonial added and approved!');
-      setForm({ name: '', role: '', text: '', rating: 5, reference: '' });
-      setShowForm(false);
-      load();
-    } catch {
-      toast.error('Failed to save testimonial');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleApprove = async (t: Testimonial) => {
     try {
@@ -87,93 +66,15 @@ export default function TestimonialManager() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-blue-600" />
-            Testimonials
-          </h1>
-          <p className="text-slate-500 font-medium mt-0.5 text-xs">
-            Review and approve customer testimonials. Only approved ones appear on public pages.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-xs"
-        >
-          <Plus size={16} /> {showForm ? 'Cancel' : 'Add Testimonial'}
-        </button>
+      <div>
+        <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          <MessageCircle className="w-5 h-5 text-blue-600" />
+          Testimonials
+        </h1>
+        <p className="text-slate-700 font-medium mt-0.5 text-xs">
+          Customer ratings appear here after payment. Approve the ones you want shown publicly.
+        </p>
       </div>
-
-      {/* Add form */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">Name *</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="Grace Wanjiku"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Role</label>
-              <input
-                type="text"
-                value={form.role}
-                onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
-                placeholder="Parishioner"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">Order/Hire Reference (optional)</label>
-            <input
-              type="text"
-              value={form.reference}
-              onChange={e => setForm(p => ({ ...p, reference: e.target.value }))}
-              placeholder="CSA-2026-0001"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">Testimonial *</label>
-            <textarea
-              value={form.text}
-              onChange={e => setForm(p => ({ ...p, text: e.target.value }))}
-              placeholder="The communion set I ordered was beautiful..."
-              rows={2}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">Rating</label>
-            <div className="flex gap-1">
-              {[1,2,3,4,5].map(s => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setForm(p => ({ ...p, rating: s }))}
-                  className={`p-1 rounded-lg transition-all ${s <= form.rating ? 'text-amber-400 scale-110' : 'text-slate-200'}`}
-                >
-                  <Star size={16} fill={s <= form.rating ? 'currentColor' : 'none'} />
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-lg transition-colors flex items-center gap-1.5 text-xs disabled:cursor-not-allowed"
-          >
-            {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save & Publish'}
-          </button>
-        </form>
-      )}
 
       {/* Filter tabs */}
       <div className="flex gap-1.5">
@@ -184,7 +85,7 @@ export default function TestimonialManager() {
             className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
               filter === f
                 ? 'bg-blue-600 text-white shadow'
-                : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300'
+                : 'bg-white text-slate-700 border border-slate-200 hover:border-blue-300'
             }`}
           >
             {f === 'pending' && <Clock size={12} className="inline mr-1" />}
@@ -200,17 +101,29 @@ export default function TestimonialManager() {
 
       {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 size={18} className="animate-spin text-blue-600" />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-3/4" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+                <Skeleton className="h-7 w-7 rounded-lg shrink-0" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredList.length === 0 ? (
-        <div className="text-center py-10 text-slate-400">
+        <div className="text-center py-10 text-slate-700">
           <MessageCircle size={32} className="mx-auto mb-2 opacity-40" />
-          <p className="font-bold text-slate-500">
+          <p className="font-bold text-slate-700">
             {filter === 'pending' ? 'No pending testimonials' : filter === 'approved' ? 'No approved testimonials' : 'No testimonials yet'}
           </p>
           <p className="text-sm">
-            {filter === 'pending' ? 'Customer submissions will appear here.' : 'Add your first customer feedback above.'}
+            {filter === 'pending' ? 'Customer ratings will appear here after payment.' : 'Approved testimonials will appear here.'}
           </p>
         </div>
       ) : (
@@ -233,9 +146,18 @@ export default function TestimonialManager() {
                   </div>
                   <p className="text-xs text-slate-700 mb-1 italic">"{t.text}"</p>
                   <p className="font-bold text-slate-800 text-xs">{t.name}</p>
-                  {t.role && <p className="text-[11px] text-slate-400">{t.role}</p>}
-                  {t.reference && <p className="text-[10px] text-slate-500 font-mono">Ref: {t.reference}</p>}
-                  <p className="text-[9px] text-slate-300">{new Date(t.created_at).toLocaleDateString()}</p>
+                  {t.role && <p className="text-[11px] text-slate-700">{t.role}</p>}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {t.type && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
+                        t.type === 'purchase' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {t.type === 'purchase' ? 'Purchase' : 'Hire'}
+                      </span>
+                    )}
+                    {t.reference && <span className="text-[10px] text-slate-700 font-mono">Ref: {t.reference}</span>}
+                  </div>
+                  <p className="text-[9px] text-slate-700">{new Date(t.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {!t.approved && (
@@ -249,7 +171,7 @@ export default function TestimonialManager() {
                   )}
                   <button
                     onClick={() => handleDelete(t)}
-                    className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                    className="p-1.5 text-slate-700 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                     title="Delete"
                   >
                     <Trash2 size={13} />

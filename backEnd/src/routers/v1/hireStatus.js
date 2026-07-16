@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { db as pool } from "../../Configs/dbConfig.js";
 import logger from "../../logger/winston.js";
+import { sendEmail } from "../../Configs/emailConfig.js";
+import { sendSms } from "../../services/smsService.js";
 
 const router = Router();
 
@@ -15,6 +17,14 @@ router.get("/group/:reference", async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Hire request not found" });
     }
+
+    // Fetch pickup settings for SMS/display
+    const settingsRes = await pool.query(
+      `SELECT key, value FROM system_settings WHERE key IN ('hire_pickup_location', 'hire_pickup_instructions', 'hire_admin_phone')`
+    );
+    const settings = {};
+    settingsRes.rows.forEach(r => { settings[r.key] = r.value; });
+
     res.json({
       reference,
       items: result.rows,
@@ -23,6 +33,9 @@ router.get("/group/:reference", async (req, res) => {
       email: result.rows[0].email,
       status: result.rows[0].status,
       payment_status: result.rows[0].payment_status,
+      pickup_location: settings.hire_pickup_location || '',
+      pickup_instructions: settings.hire_pickup_instructions || '',
+      admin_phone: settings.hire_admin_phone || '',
     });
   } catch (error) {
     logger.error(`Hire group fetch error: ${error.message}`);
@@ -41,6 +54,16 @@ router.patch("/group/:reference", async (req, res) => {
 
   const client = await pool.connect();
   try {
+    // Get current status before updating
+    const { rows: before } = await client.query(
+      "SELECT status, customer_name, email, phone_number FROM hire_requests WHERE hire_reference = $1 LIMIT 1",
+      [reference]
+    );
+    const prevStatus = before.length > 0 ? before[0].status : null;
+    const customerName = before.length > 0 ? before[0].customer_name : '';
+    const customerEmail = before.length > 0 ? before[0].email : null;
+    const customerPhone = before.length > 0 ? before[0].phone_number : '';
+
     await client.query("BEGIN");
 
     const updates = [];
@@ -78,6 +101,28 @@ router.patch("/group/:reference", async (req, res) => {
       return res.status(404).json({ error: "No hire requests found with this reference" });
     }
 
+    // Send SMS notification on approve/reject
+    if (customerPhone && status && prevStatus !== status) {
+      try {
+        const phone = customerPhone.replace(/[^0-9]/g, '');
+        const normalizedPhone = phone.startsWith('0') ? '254' + phone.slice(1) : phone.startsWith('254') ? phone : '254' + phone;
+
+        if (status === 'approved') {
+          const total = result.rows.reduce((sum, r) => sum + Number(r.total_cost || 0), 0);
+          const msg = `Hire Approved! Ref: ${reference}. Cost: KES ${total.toLocaleString()}. Pickup: ${result.rows[0].pickup_date ? new Date(result.rows[0].pickup_date).toLocaleDateString() : 'TBA'}. Proceed with payment at the CSA office or via M-Pesa. - CSA Church`;
+          await sendSms(msg, normalizedPhone);
+          logger.info(`[SMS] Approval sent to ${normalizedPhone} for ${reference}`);
+        } else if (status === 'rejected') {
+          const reason = admin_notes ? ` Reason: ${admin_notes}` : '';
+          const msg = `Hire Request ${reference} has been REJECTED.${reason} Contact us for more info. - CSA Church`;
+          await sendSms(msg, normalizedPhone);
+          logger.info(`[SMS] Rejection sent to ${normalizedPhone} for ${reference}`);
+        }
+      } catch (smsErr) {
+        logger.warn(`[SMS] Failed to send for ${reference}: ${smsErr.message}`);
+      }
+    }
+
     res.json({
       reference,
       updated_count: result.rows.length,
@@ -102,14 +147,14 @@ router.post("/pay/:reference", async (req, res) => {
   }
 
   try {
-    // Get all items in this group
+    // Get all items in this group (pending or approved)
     const itemsResult = await pool.query(
-      `SELECT * FROM hire_requests WHERE hire_reference = $1 AND status = 'approved'`,
+      `SELECT * FROM hire_requests WHERE hire_reference = $1 AND status IN ('pending', 'approved')`,
       [reference]
     );
 
     if (itemsResult.rows.length === 0) {
-      return res.status(404).json({ error: "No approved hire requests found with this reference" });
+      return res.status(404).json({ error: "No hire requests found with this reference" });
     }
 
     // Calculate total
@@ -204,6 +249,92 @@ router.get("/payment-status/:reference", async (req, res) => {
     });
   } catch (error) {
     logger.error(`Payment status check error: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST pay with cash for a hire group (immediate payment choice)
+router.post("/pay-cash/:reference", async (req, res) => {
+  const { reference } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE hire_requests SET 
+        status = 'pending', 
+        payment_status = 'pending',
+        payment_method = 'cash',
+        updated_at = CURRENT_TIMESTAMP
+       WHERE hire_reference = $1
+       RETURNING id, hire_reference, status, payment_status, payment_method`,
+      [reference]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No hire requests found with this reference" });
+    }
+
+    logger.info(`Cash payment selected for hire: ${reference}`);
+    res.json({ reference, payment_status: 'pending', payment_method: 'cash', message: 'Cash payment noted. We will contact you for pickup and payment.' });
+  } catch (error) {
+    logger.error(`Hire cash payment error: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST manually confirm M-Pesa payment for a hire request (fallback when callback fails)
+router.post("/confirm-payment/:reference", async (req, res) => {
+  const { reference } = req.params;
+  const { mpesa_receipt } = req.body;
+
+  if (!mpesa_receipt) {
+    return res.status(400).json({ error: "M-Pesa receipt number is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE hire_requests SET
+        status = 'paid',
+        payment_status = 'paid',
+        payment_method = 'mpesa',
+        mpesa_receipt = $1,
+        paid_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+       WHERE hire_reference = $2 AND payment_status = 'pending'
+       RETURNING id, hire_reference, status, payment_status, payment_method, mpesa_receipt, paid_at, customer_name, phone_number, item_name, quantity`,
+      [mpesa_receipt, reference]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No pending hire request found with this reference" });
+    }
+
+    logger.info(`Manual M-Pesa confirmation for hire: ${reference}, Receipt: ${mpesa_receipt}`);
+
+    // Send SMS confirmation
+    const hire = result.rows[0];
+    try {
+      const settingsRes = await pool.query(
+        `SELECT key, value FROM system_settings WHERE key IN ('hire_admin_phone', 'hire_pickup_location', 'hire_pickup_instructions')`
+      );
+      const settings = {};
+      settingsRes.rows.forEach(r => { settings[r.key] = r.value; });
+      const adminPhone = settings.hire_admin_phone || '0712345678';
+      const pickupLocation = settings.hire_pickup_location || 'the church premises';
+      const pickupInstructions = settings.hire_pickup_instructions || 'We will contact you with the exact pickup time. Call the admin for any inquiries.';
+      const message = `Payment of KES confirmed for ${hire.item_name} × ${hire.quantity} (Ref: ${hire.hire_reference}). Pickup location: ${pickupLocation}. ${pickupInstructions} Admin contact: ${adminPhone}`;
+      await sendSms(message, hire.phone_number);
+    } catch (smsErr) {
+      logger.error(`Failed to send hire confirmation SMS: ${smsErr.message}`);
+    }
+    res.json({
+      reference,
+      payment_status: 'paid',
+      payment_method: 'mpesa',
+      mpesa_receipt,
+      message: 'Payment confirmed successfully!',
+    });
+  } catch (error) {
+    logger.error(`Hire confirm payment error: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
