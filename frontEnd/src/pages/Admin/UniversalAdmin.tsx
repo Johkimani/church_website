@@ -132,9 +132,7 @@ export default function UniversalAdmin() {
     ? [user.role]
     : [];
   const normalized = userRoles.map((r) => String(r).toUpperCase().trim());
-  const isSuperAdmin = normalized.some(
-    (r) => r === "CSA_CHAIR" || r.includes("ADMIN") || r.includes("SUPREME")
-  );
+  const isSuperAdmin = normalized.some((r) => r === "CSA_CHAIR");
 
   const checkAccess = (path: string): boolean => {
     if (isSuperAdmin) return true;
