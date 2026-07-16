@@ -18,9 +18,7 @@ export default function OrderConfirmation() {
     if (id) setOrderId(id);
     if (m === "cash") setMethod("cash");
     if (phone) { setContactPhone(phone); return; }
-    // Fallback: try fetching setting, else use fallback number
     if (m === "cash") {
-      setContactPhone('254112051739');
       import("../api/axiosInstance").then(({ apiClient }) => {
         apiClient.get('/settings').then(res => {
           if (res.data?.cash_phone) setContactPhone(res.data.cash_phone);
