@@ -168,6 +168,9 @@ export default function UniversalAdmin() {
         case "TREASURER":
           allowedPrefixes.add("/admin/donations");
           break;
+        case "CSA_VICE_CHAIR":
+          allowedPrefixes.add("/admin/suggestions");
+          break;
         case "LITURGIST":
           allowedPrefixes.add("/admin/devotions");
           break;
