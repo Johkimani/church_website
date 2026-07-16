@@ -31,6 +31,7 @@ import categoryCardsRouter from "./categoryCardsRoutes.js";
 import hireAvailabilityRouter from "./hireAvailability.js";
 import hireSubmitRouter from "./hireSubmit.js";
 import hireStatusRouter from "./hireStatus.js";
+import statsPublishRoutes from "./statsPublishRoutes.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -48,24 +49,11 @@ router.use("/", galleryRouter); // handles /choir/gallery
 router.use("/community-view", communityViewRouter);
 router.use("/orders", ordersRouter);
 
-// ======================================
-// TEMP DEVELOPMENT COMMENT
-// ADMIN AUTH DISABLED TEMPORARILY
-// RE-ENABLE BEFORE PRODUCTION
-// ======================================
-// router.use("/questions", verifyToken, QuestionsRoutes);
-router.use("/questions", QuestionsRoutes);
-
-// router.use("/files", verifyToken, uploadMedia);
-router.use("/files", uploadMedia);
-
+router.use("/questions", verifyToken, QuestionsRoutes);
+router.use("/files", verifyToken, uploadMedia);
 router.use("/notifications", verifyToken, notificationRoutes);
-
-// router.use("/csa", verifyToken, JumuiComparisonRoutes);
-router.use("/csa", JumuiComparisonRoutes);
-
-// router.use("/distribution", verifyToken, formsDistributionRouter);
-router.use("/distribution", formsDistributionRouter);
+router.use("/csa", verifyToken, JumuiComparisonRoutes);
+router.use("/distribution", verifyToken, formsDistributionRouter);
 
 // Slider and config endpoints for frontend banners
 router.use("/", sliderRoutes);
@@ -110,6 +98,9 @@ router.use("/hire", hireStatusRouter);
 
 // Testimonials (dedicated routes for rating+reference validation)
 router.use("/", testimonialsRouter);
+
+// Stats publish (admin trigger + user-facing published endpoints)
+router.use("/", statsPublishRoutes);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
