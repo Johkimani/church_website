@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useApp } from "../context/AppContext";
 import { FaBell, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
-// Assuming AdminPanel is needed, linking to its original location
 import AdminPanel from "../pages/Landing/components/AdminPanel";
 
 const isAdminRole = (role: string | string[] | undefined): boolean => {
   if (!role) return false;
-  if (Array.isArray(role)) {
-    return role.length > 0;
-  }
+  if (Array.isArray(role)) return role.length > 0;
   return typeof role === "string" && role.trim().length > 0;
 };
 
@@ -21,12 +18,13 @@ const Headers = () => {
   const { unreadCount } = useNotifications();
   const { cart, cartItemsCount, setIsCartOpen } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showAdmin, setShowAdmin] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [animateBadge, setAnimateBadge] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  // Trigger animation when unread count increases
   useEffect(() => {
     if (unreadCount > 0) {
       setAnimateBadge(true);
@@ -35,7 +33,6 @@ const Headers = () => {
     }
   }, [unreadCount]);
 
-  // Trigger animation when cart items count changes
   useEffect(() => {
     if (cart.length > 0) {
       setAnimateCart(true);
@@ -44,243 +41,335 @@ const Headers = () => {
     }
   }, [cart.length]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  // Merge public + auth-only routes based on login state
   const navLinks = [
     ...publicNavLinks,
     ...(user ? authNavLinks : []),
   ];
 
+  const isActive = (path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <>
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
 
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 px-[8%] py-3 flex justify-between items-center">
-        {/* Logo Section */}
+      <nav
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
+            : "bg-white/95 backdrop-blur-sm"
+        } px-[6%] lg:px-[8%] py-0 flex justify-between items-center h-16 lg:h-20`}
+      >
+        {/* Logo */}
         <div
-          className="text-2xl font-bold text-blue-700 tracking-tight cursor-pointer"
+          className="flex items-center gap-2 cursor-pointer group"
           onClick={() => navigate("/")}
         >
-          CSA Kirinyaga
-        </div>
-
-        {/* Desktop Navigation Links */}
-        <ul className="hidden md:flex items-center space-x-6">
-          {navLinks.map((link) => (
-            <li key={link.path}>
-              {link.path.includes("#") ? (
-                <a
-                  href={link.path}
-                  className="text-gray-600 hover:text-blue-600 font-medium transition-colors text-sm whitespace-nowrap"
-                >
-                  {link.name}
-                </a>
-              ) : (
-                <Link
-                  to={link.path}
-                  className="text-gray-600 hover:text-blue-600 font-medium transition-colors text-sm whitespace-nowrap"
-                >
-                  {link.name}
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex items-center space-x-4">
-          <div 
-            className="relative cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors"
-            onClick={() => navigate("/Notification")}
-            title="Notifications"
-          >
-            <FaBell className={`text-xl ${unreadCount > 0 ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
-            <span className={`absolute -top-1 -right-1 bg-red-500 shadow-red-200 text-white text-[9px] font-black px-1 rounded-full border-[1.5px] border-white shadow-sm flex items-center justify-center min-w-[18px] h-[18px] ${animateBadge ? 'animate-bounce' : ''} transition-colors`}>
-              {unreadCount}
+          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-200 group-hover:shadow-lg group-hover:shadow-blue-300 transition-shadow">
+            <span className="text-white font-black text-sm lg:text-base">C</span>
+          </div>
+          <div className="hidden sm:block">
+            <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight">
+              CSA Kirinyaga
             </span>
           </div>
+        </div>
 
-          {/* Shopping Cart */}
-          <div 
-            className="relative cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors group"
+        {/* Desktop Nav */}
+        <ul className="hidden md:flex items-center gap-1">
+          {navLinks.map((link) => {
+            const active = isActive(link.path);
+            return (
+              <li key={link.path}>
+                {link.path.includes("#") ? (
+                  <a
+                    href={link.path}
+                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      active
+                        ? "text-blue-700 bg-blue-50"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
+                  >
+                    {link.name}
+                    {active && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-blue-600 rounded-full" />
+                    )}
+                  </a>
+                ) : (
+                  <Link
+                    to={link.path}
+                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      active
+                        ? "text-blue-700 bg-blue-50"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
+                  >
+                    {link.name}
+                    {active && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-blue-600 rounded-full" />
+                    )}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Right side */}
+        <div className="flex items-center gap-2 lg:gap-3">
+          {/* Notifications */}
+          <button
+            onClick={() => navigate("/Notification")}
+            className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+            title="Notifications"
+          >
+            <FaBell className="text-lg" />
+            {unreadCount > 0 && (
+              <span
+                className={`absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-white min-w-[18px] h-[18px] flex items-center justify-center ${
+                  animateBadge ? "animate-bounce" : ""
+                }`}
+              >
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Cart */}
+          <button
+            className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
             onClick={() => setIsCartOpen(true)}
             title="Shopping Cart"
           >
-            <FaShoppingCart className={`text-xl ${cart.length > 0 ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+            <FaShoppingCart className="text-lg" />
             {cart.length > 0 && (
-              <span className={`absolute -top-1 -right-1 bg-blue-600 shadow-blue-200 text-white text-[9px] font-black px-1 rounded-full border-[1.5px] border-white shadow-sm flex items-center justify-center min-w-[18px] h-[18px] ${animateCart ? 'animate-bounce' : ''} transition-colors`}>
+              <span
+                className={`absolute -top-0.5 -right-0.5 bg-blue-600 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-white min-w-[18px] h-[18px] flex items-center justify-center ${
+                  animateCart ? "animate-bounce" : ""
+                }`}
+              >
                 {cartItemsCount}
               </span>
             )}
-          </div>
+          </button>
 
+          {/* Auth */}
           {user ? (
-            <div className="hidden md:flex items-center space-x-4">
-              <span className="text-sm font-semibold text-gray-700">
-                Hi, {user?.name}
+            <div className="hidden md:flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200">
+              <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                {user.name?.charAt(0) || "U"}
+              </div>
+              <span className="text-sm font-semibold text-slate-700 hidden lg:block truncate max-w-[100px]">
+                {user.name}
               </span>
               {isAdminRole(user?.role) && (
                 <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors text-xs"
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all"
                   onClick={() => navigate("/admin")}
                 >
                   Admin
                 </button>
               )}
               <button
-                className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg font-semibold transition-colors text-xs"
+                className="text-slate-500 hover:text-red-600 px-2 py-1.5 rounded-lg font-semibold text-xs hover:bg-red-50 transition-all"
                 onClick={handleLogout}
               >
-                Log Out
+                Logout
               </button>
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200">
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full font-bold shadow-sm transition-all text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
                 onClick={() => navigate("/login")}
               >
-                Log In
+                Sign In
               </button>
             </div>
           )}
 
-          {/* Mobile Menu Toggle Button */}
+          {/* Mobile toggle */}
           <button
-            className="md:hidden text-gray-600 hover:text-blue-600 transition-colors"
+            className="md:hidden p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
             </svg>
           </button>
         </div>
       </nav>
 
-      {/* Mobile Menu Drawer */}
-      <div 
+      {/* Mobile Drawer */}
+      <div
         className={`fixed inset-0 z-[100] md:hidden transition-all duration-500 overflow-hidden ${
           isMobileMenuOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
-        {/* Backdrop / Overlay */}
-        <div 
-          className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ${
+        <div
+          className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ${
             isMobileMenuOpen ? "opacity-100" : "opacity-0"
           }`}
           onClick={() => setIsMobileMenuOpen(false)}
         />
 
-        {/* Drawer Content */}
-        <div 
-          className={`absolute top-0 right-0 w-[80%] max-w-[320px] h-full bg-white shadow-2xl transition-transform duration-500 transform ease-out ${
+        <div
+          className={`absolute top-0 right-0 w-[75%] max-w-[300px] h-full bg-white shadow-2xl transition-transform duration-400 ease-out ${
             isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          {/* Drawer Header */}
-          <div className="flex justify-between items-center p-6 border-b border-gray-50 bg-gray-50/30">
-            <span className="text-xl font-bold text-blue-700">Menu</span>
-            <button 
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+                <span className="text-white font-black text-xs">C</span>
+              </div>
+              <span className="font-black text-slate-900 text-sm">CSA Kirinyaga</span>
+            </div>
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 hover:bg-white rounded-full transition-colors text-gray-500 shadow-sm border border-gray-100"
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          <div className="overflow-y-auto h-[calc(100%-80px)] custom-scrollbar">
-            <ul className="p-6 space-y-1">
-              {navLinks.map((link, idx) => (
-                <li 
-                  key={link.path} 
-                  className="transform transition-all duration-300"
-                  style={{ 
-                    transitionDelay: `${idx * 50}ms`,
-                    transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(20px)',
-                    opacity: isMobileMenuOpen ? 1 : 0
-                  }}
-                >
-                  {link.path.includes("#") ? (
-                    <a
-                      href={link.path}
-                      className="flex items-center group py-3.5 px-4 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-bold transition-all"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-200 group-hover:bg-blue-500 transition-all mr-3"></span>
-                      {link.name}
-                    </a>
-                  ) : (
-                    <Link
-                      to={link.path}
-                      className="flex items-center group py-3.5 px-4 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-bold transition-all"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-200 group-hover:bg-blue-500 transition-all mr-3"></span>
-                      {link.name}
-                    </Link>
-                  )}
-                </li>
-              ))}
-              
-              <li className="pt-6 mt-6 border-t border-gray-100 flex flex-col gap-4">
-                <button
-                  className="flex items-center justify-between w-full py-3.5 px-4 rounded-xl text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-bold transition-all bg-gray-50/50"
-                  onClick={() => { navigate("/Notification"); setIsMobileMenuOpen(false); }}
-                >
-                  <div className="flex items-center">
-                    <span className="w-1.5 h-1.5 rounded-full mr-3 bg-red-500"></span>
-                    Notifications
+          {/* Links */}
+          <div className="overflow-y-auto h-[calc(100%-64px)] pb-8">
+            <nav className="p-4 space-y-0.5">
+              {navLinks.map((link, idx) => {
+                const active = isActive(link.path);
+                return (
+                  <div
+                    key={link.path}
+                    style={{
+                      transitionDelay: `${idx * 40}ms`,
+                    }}
+                  >
+                    {link.path.includes("#") ? (
+                      <a
+                        href={link.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                          active
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full transition-all ${
+                            active ? "bg-blue-600" : "bg-slate-300"
+                          }`}
+                        />
+                        {link.name}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                          active
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full transition-all ${
+                            active ? "bg-blue-600" : "bg-slate-300"
+                          }`}
+                        />
+                        {link.name}
+                      </Link>
+                    )}
                   </div>
-                  <span className={`bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md font-black ${unreadCount > 0 ? 'pulse-animation' : ''}`}>
+                );
+              })}
+            </nav>
+
+            {/* Bottom section */}
+            <div className="px-4 pt-4 border-t border-slate-100 mx-4 space-y-3">
+              <button
+                onClick={() => {
+                  navigate("/Notification");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <FaBell className="text-sm text-slate-500" />
+                  <span className="font-semibold text-sm text-slate-700">Notifications</span>
+                </div>
+                {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
                     {unreadCount}
                   </span>
-                </button>
-
-                {user ? (
-                  <div className="space-y-4 px-2">
-                    <div className="flex items-center gap-3 py-2">
-                       <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-black">
-                          {user.name.charAt(0)}
-                       </div>
-                       <div className="text-sm">
-                          <p className="text-gray-400 font-medium">Signed in as</p>
-                          <p className="font-bold text-gray-900">{user.name}</p>
-                       </div>
-                    </div>
-                      {isAdminRole(user?.role) && (
-                        <button
-                          className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold shadow-xl active:scale-[0.98] transition-all"
-                          onClick={() => { navigate("/admin"); setIsMobileMenuOpen(false); }}
-                        >
-                          Admin Dashboard
-                        </button>
-                      )}
-                    <button
-                      className="w-full bg-red-50 text-red-600 py-3.5 rounded-xl font-bold hover:bg-red-100 transition-all"
-                      onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    className="w-full bg-blue-600 text-white py-4 rounded-xl font-black shadow-xl shadow-blue-200 active:scale-[0.98] transition-all mt-4"
-                    onClick={() => { navigate("/login"); setIsMobileMenuOpen(false); }}
-                  >
-                    Get Started / Log In
-                  </button>
                 )}
-              </li>
-            </ul>
-            
-            {/* Minimal Footer inside Menu */}
-            <div className="p-6 pt-0 text-center">
-               <p className="text-[10px] text-gray-300 uppercase tracking-widest font-black italic">CSA Kirinyaga • 2026</p>
+              </button>
+
+              {user ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                      {user.name?.charAt(0) || "U"}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-slate-900">{user.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {Array.isArray(user.role) ? user.role.join(", ") : user.role || "Member"}
+                      </p>
+                    </div>
+                  </div>
+                  {isAdminRole(user?.role) && (
+                    <button
+                      className="w-full bg-slate-900 text-white py-3 rounded-xl font-semibold text-sm hover:bg-slate-800 transition-all active:scale-[0.98]"
+                      onClick={() => {
+                        navigate("/admin");
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      Admin Dashboard
+                    </button>
+                  )}
+                  <button
+                    className="w-full text-red-600 py-3 rounded-xl font-semibold text-sm hover:bg-red-50 transition-all"
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-all active:scale-[0.98] shadow-lg shadow-blue-200"
+                  onClick={() => {
+                    navigate("/login");
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  Sign In
+                </button>
+              )}
+
+              <p className="text-center text-[10px] text-slate-300 uppercase tracking-widest font-semibold pt-2">
+                CSA Kirinyaga &bull; 2026
+              </p>
             </div>
           </div>
         </div>
