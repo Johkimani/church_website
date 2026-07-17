@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import RegistrationDashboard from "./RegistrationDashboard";
 import MemberImportForm from "./MemberImportForm";
-import ValidationReview from "./ValidationReview";
+import MemberReview from "./MemberReview";
 import OrganizationPanel from "./OrganizationPanel";
 import MembersList from "./MembersList";
 import { FaTachometerAlt, FaUpload, FaCheckCircle, FaLayerGroup, FaUsers } from "react-icons/fa";
@@ -35,7 +35,7 @@ const MemberManagementPage: React.FC = () => {
       case "import":
         return <MemberImportForm jumuiyaId={jumuiyaId} />;
       case "review":
-        return <ValidationReview jumuiyaId={jumuiyaId} />;
+        return <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />;
       case "organize":
         return <OrganizationPanel jumuiyaId={jumuiyaId} />;
       case "members":
