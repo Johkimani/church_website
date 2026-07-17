@@ -1,15 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { Camera, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Camera, ArrowRight, Expand } from 'lucide-react';
 import { fetchGalleryTeaser } from '../../../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { UPLOAD_BASE } from '../../../../api/config';
 
 interface GalleryItem {
   id: number;
   image_url: string;
   description: string;
   event_name: string;
+  category?: string;
+  created_at?: string;
 }
+
+const rotations = [-2, 3, -1.5, 2.5, -3, 1.8];
+const offsets = [
+  { x: 0, y: 0 },
+  { x: 8, y: 12 },
+  { x: -6, y: 4 },
+  { x: 4, y: -8 },
+  { x: -4, y: 6 },
+  { x: 10, y: -4 },
+];
 
 const GalleryTeaser: React.FC = () => {
   const [items, setItems] = useState<GalleryItem[]>([]);
@@ -20,7 +33,6 @@ const GalleryTeaser: React.FC = () => {
     const loadTeaser = async () => {
       try {
         const { data } = await fetchGalleryTeaser();
-        // Handle various response formats
         const galleryItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
         setItems(galleryItems);
       } catch (error) {
@@ -33,176 +45,177 @@ const GalleryTeaser: React.FC = () => {
     loadTeaser();
   }, []);
 
-  if (loading) return null; // Or a subtle shimmer
+  if (loading || items.length === 0) return null;
 
-  const avatarUrl = "https://files.vecteezy.com/system/resource/files/25217923/Kids037_copy.png?response-content-disposition=attachment%3Bfilename%3Dvecteezy_happy-child-with-bag-cute-boy-cartoon-character-3d-rendering_25217923.png&Expires=1775893357&Signature=lwkShtjlLznZ-RpkIzAO3kt5HPUvh60tj2k3Gk6dUxsPx3hJQbejbF057ga1MiQHtlqSQJsRR9lxpgJgCTct2sdCwzopAA4D7sYdeAjESfffOUZobd69EA5IfdXoI7zuB4VWmGIiKtta6MX~qOpE5Eb6UnLzlNQFUIOrM5Al3DF~SutdErckWUe-wj-Sw9r0hDVNG7-Ytx8RsoqtPKHCh2CiakHE7rnkFOF3nnaGaX2KfLuNoG9xop1LNfwQiBKZfbIKlM5ppnfIa~XcMba1g-~hrvxC2x4u9mrjT1riMerMoFK43k~Hi3M7caLc-rCtaAtR4gI8bmqMxk5-Q6HXIg__&Key-Pair-Id=K3714PYOSHV3HB";
+  const resolveSrc = (url: string) =>
+    url?.startsWith('http') ? url : `${UPLOAD_BASE}${url}`;
+
+  const displayItems = items.slice(0, 6);
 
   return (
     <section className="py-24 md:py-32 bg-white relative overflow-hidden" id="gallery">
-      {/* Precision Background Accent */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_10%_20%,rgba(0,0,0,0.01)_0%,transparent_100%)] pointer-events-none"></div>
+      {/* Warm paper-like background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,#faf8f5,white_70%)] pointer-events-none" />
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-amber-50/30 rounded-full blur-[200px] pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
-          <div className="max-w-2xl text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 text-slate-400 text-[10px] font-black tracking-[0.3em] uppercase mb-8 mx-auto md:mx-0">
-              <Camera size={12} className="text-primary/40" />
-              Living Memories
-            </div>
-            <h2 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 tracking-tighter leading-tight">
-              Capturing Our <span className="text-primary/80 font-serif italic">Journey</span>
-            </h2>
-            <p className="text-slate-500 font-medium text-lg leading-relaxed">
-              Every smile and celebration preserved in our communal memory. 
-              View the full story of our faith in action.
-            </p>
+        {/* Header */}
+        <motion.div
+          className="text-center max-w-3xl mx-auto mb-20"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={{
+            hidden: { opacity: 0, y: 40 },
+            visible: {
+              opacity: 1,
+              y: 0,
+              transition: { duration: 0.7, ease: [0.23, 1, 0.32, 1] },
+            },
+          }}
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50/60 text-amber-600 text-[10px] font-black tracking-[0.3em] uppercase mb-8">
+            <Camera size={12} className="text-amber-400" />
+            Living Memories
           </div>
-          
-          <button 
-            onClick={() => navigate('/gallery')}
-            className="group flex items-center gap-4 bg-slate-900 text-white px-10 py-5 rounded-full font-black text-xs tracking-widest uppercase transition-all duration-500 hover:bg-primary hover:shadow-[0_20px_40px_-10px_rgba(var(--primary-rgb),0.3)] mx-auto md:mx-0"
-          >
-            Access Full Gallery
-            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tighter leading-tight">
+            Our{' '}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-500 font-serif italic">
+              Storyboard
+            </span>
+          </h2>
+          <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-xl mx-auto">
+            Every moment pinned like a cherished photograph on the wall of our
+            community memory.
+          </p>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-24 relative mt-40 md:mt-0">
-          {/* Playful Floating Avatar - GPU Accelerated High Performance */}
-          <motion.div 
-            className="absolute hidden lg:block left-[44%] top-1/2 -translate-y-1/2 z-20 pointer-events-none will-change-transform"
-            animate={{ 
-              y: [0, -15, 0],
-              rotate: [0, 3, 0]
-            }}
-            transition={{ 
-              duration: 4, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-          >
-            <img 
-              src={avatarUrl} 
-              alt="Happy Community"
-              className="w-56 h-auto drop-shadow-[0_30px_50px_rgba(0,0,0,0.12)] selection:bg-transparent"
-            />
-            
-            {/* Joy to Love Bloom Animation (Desktop) */}
-            {[1, 2, 3].map((i) => (
-              <motion.span
-                key={`em-d-${i}`}
-                className="absolute top-0 left-1/2 text-2xl"
-                initial={{ opacity: 0, scale: 0, x: -12, y: 0 }}
-                whileInView={{ 
-                  opacity: [0, 1, 1, 0],
-                  scale: [0, 1.2, 1],
-                  x: i === 1 ? -60 : i === 2 ? 0 : 60,
-                  y: i === 1 ? -80 : i === 2 ? -120 : -80,
-                }}
-                viewport={{ once: false, amount: 0.5 }}
-                transition={{ 
-                  duration: 3, 
-                  repeat: Infinity, 
-                  delay: i * 0.4,
-                  repeatDelay: 2
-                }}
-              >
-                {i === 2 ? '❤️' : '😄'}
-              </motion.span>
-            ))}
-          </motion.div>
+        {/* Scrapbook Grid */}
+        <div className="relative max-w-6xl mx-auto px-4 md:px-8">
+          {/* Tape strip decoration */}
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-24 h-8 bg-amber-200/40 rounded-sm -rotate-2 border border-amber-200/30 pointer-events-none" />
+          <div className="absolute -bottom-4 right-12 w-16 h-6 bg-amber-200/30 rounded-sm rotate-3 border border-amber-200/20 pointer-events-none" />
 
-          {/* Mobile Avatar - Centered in the new space between header and pushed cards */}
-          <motion.div 
-            className="absolute lg:hidden right-1/2 translate-x-1/2 -top-24 w-32 h-32 z-20 pointer-events-none will-change-transform"
-            initial={{ y: 20 }}
-            animate={{ 
-              y: [10, -10, 10],
-              rotate: [0, 5, 0]
-            }}
-            transition={{ 
-              duration: 3, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-          >
-            <img 
-              src={avatarUrl} 
-              alt="Happy Community"
-              className="w-full h-auto drop-shadow-2xl"
-            />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {displayItems.map((item, index) => {
+              const isFeatured = index === 0;
+              const isWide = index === 3;
+              const rotation = rotations[index % rotations.length];
+              const offset = offsets[index % offsets.length];
 
-            {/* Joy to Love Bloom Animation (Mobile) */}
-            {[1, 2, 3].map((i) => (
-              <motion.span
-                key={`em-m-${i}`}
-                className="absolute top-0 left-1/2 text-2xl"
-                initial={{ opacity: 0, scale: 0, x: -10, y: 0 }}
-                whileInView={{ 
-                  opacity: [0, 1, 1, 0],
-                  scale: [0, 1.2, 1],
-                  x: i === 1 ? -50 : i === 2 ? 0 : 50,
-                  y: i === 1 ? -60 : i === 2 ? -100 : -60,
-                }}
-                viewport={{ once: false, amount: 0.5 }}
-                transition={{ 
-                  duration: 2.5, 
-                  repeat: Infinity, 
-                  delay: i * 0.3,
-                  repeatDelay: 1.5,
-                  ease: "circOut"
-                }}
-              >
-                {i === 2 ? '❤️' : '😄'}
-              </motion.span>
-            ))}
-          </motion.div>
+              return (
+                <motion.div
+                  key={item.id}
+                  className={`group relative cursor-pointer select-none ${
+                    isFeatured
+                      ? 'col-span-2 row-span-2'
+                      : isWide
+                      ? 'col-span-2'
+                      : ''
+                  }`}
+                  initial={{ opacity: 0, y: 40, rotate: rotation * 0.5 }}
+                  whileInView={{
+                    opacity: 1,
+                    y: 0,
+                    rotate: rotation,
+                    x: offset.x,
+                  }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{
+                    duration: 0.8,
+                    delay: index * 0.1,
+                    ease: [0.23, 1, 0.32, 1],
+                  }}
+                  onClick={() => navigate('/gallery')}
+                  whileHover={{
+                    rotate: 0,
+                    scale: 1.03,
+                    y: -8,
+                    transition: { duration: 0.4, ease: [0.23, 1, 0.32, 1] },
+                  }}
+                >
+                  {/* Polaroid card */}
+                  <div
+                    className="relative bg-white rounded-[2px] shadow-[0_8px_30px_-8px_rgba(0,0,0,0.12),0_1px_4px_-1px_rgba(0,0,0,0.06)] overflow-hidden"
+                    style={{
+                      padding: isFeatured ? '8px' : '6px',
+                      paddingBottom: isFeatured ? '48px' : '36px',
+                    }}
+                  >
+                    {/* Photo area */}
+                    <div
+                      className={`relative overflow-hidden ${
+                        isFeatured ? 'rounded-[1px]' : 'rounded-[1px]'
+                      }`}
+                      style={{ minHeight: isFeatured ? '320px' : '160px' }}
+                    >
+                      <img
+                        src={resolveSrc(item.image_url)}
+                        alt={item.event_name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2000ms] ease-out group-hover:scale-110"
+                        draggable={false}
+                      />
 
-          {items && Array.isArray(items) && items.map((item, index) => (
-            <div 
+                      {/* Subtle overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-              key={item.id}
-              onClick={() => navigate('/gallery')}
-              className={`group relative p-3 bg-white border border-slate-100 rounded-[3rem] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] hover:shadow-[0_60px_100px_-20px_rgba(0,0,0,0.08)] cursor-pointer ${
-                index === 1 ? 'md:translate-y-16' : ''
-              }`}
-            >
-              <div className="relative aspect-[4/3] md:aspect-[16/10] rounded-[2.5rem] overflow-hidden">
-                {/* Image */}
-                <img 
-                  src={item.image_url} 
-                  alt={item.event_name}
-                  className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110"
-                />
-                
-                {/* Overlay Gradient: Deep Blend */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-40 group-hover:opacity-60 transition-opacity duration-700"></div>
+                      {/* Info on hover */}
+                      <div className="absolute inset-x-0 bottom-0 p-4 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                        <h3 className="text-white font-black text-sm md:text-base tracking-tight leading-tight">
+                          {item.event_name}
+                        </h3>
+                        {item.category && (
+                          <span className="text-white/60 text-[9px] font-bold tracking-widest uppercase mt-1 block">
+                            {item.category}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Content */}
-                <div className="absolute inset-0 p-8 md:p-10 flex flex-col justify-end translate-y-4 group-hover:translate-y-0 transition-all duration-700">
-                  <div className="flex items-center gap-3 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="w-8 h-px bg-white/40"></div>
-                    <span className="text-white/60 text-[9px] font-black tracking-widest uppercase">Parish Spotlight</span>
+                    {/* Polaroid "caption" area */}
+                    <div className="flex items-center justify-between mt-2 px-1">
+                      <span className="text-[10px] md:text-xs font-bold text-slate-600 truncate leading-tight tracking-tight">
+                        {item.event_name}
+                      </span>
+                      <Expand
+                        size={isFeatured ? 14 : 11}
+                        className="text-slate-300 group-hover:text-slate-500 transition-colors shrink-0 ml-2"
+                      />
+                    </div>
+
+                    {/* Pin shadow effect on top edge */}
+                    <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-slate-200/50 shadow-[0_2px_4px_rgba(0,0,0,0.06)] pointer-events-none" />
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">
-                    {item.event_name}
-                  </h3>
-                  <p className="text-white/70 font-medium text-sm leading-relaxed line-clamp-2 max-w-sm">
-                     {item.description}
-                  </p>
-                </div>
+                </motion.div>
+              );
+            })}
+          </div>
 
-                {/* Precision Border Overlay */}
-                <div className="absolute inset-0 border border-white/10 rounded-[2.5rem] pointer-events-none"></div>
-              </div>
-
-              {/* Hover Indicator: Centered Play/View Look */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-50 group-hover:scale-100 border border-white/20">
-                <ImageIcon size={24} className="text-white" />
-              </div>
-            </div>
-          ))}
+          {/* Decorative scattered tape pieces */}
+          <div className="absolute -top-2 left-[15%] w-14 h-3 bg-amber-200/30 -rotate-6 rounded-sm border border-amber-200/20 pointer-events-none hidden md:block" />
+          <div className="absolute top-[40%] -right-3 w-12 h-3 bg-amber-200/25 rotate-12 rounded-sm border border-amber-200/15 pointer-events-none hidden md:block" />
+          <div className="absolute bottom-[20%] -left-4 w-10 h-2.5 bg-amber-200/30 -rotate-12 rounded-sm border border-amber-200/20 pointer-events-none hidden md:block" />
         </div>
+
+        {/* CTA */}
+        <motion.div
+          className="mt-16 md:mt-24 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <button
+            onClick={() => navigate('/gallery')}
+            className="group inline-flex items-center gap-4 bg-slate-900 text-white px-10 py-5 rounded-full font-black text-xs tracking-widest uppercase transition-all duration-500 hover:bg-primary hover:shadow-[0_20px_40px_-10px_rgba(var(--primary-rgb),0.3)]"
+          >
+            Browse Full Gallery
+            <ArrowRight
+              size={14}
+              className="group-hover:translate-x-1 transition-transform"
+            />
+          </button>
+        </motion.div>
       </div>
     </section>
   );
