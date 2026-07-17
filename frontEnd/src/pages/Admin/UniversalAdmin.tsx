@@ -170,6 +170,7 @@ export default function UniversalAdmin() {
           break;
         case "CSA_VICE_CHAIR":
           allowedPrefixes.add("/admin/suggestions");
+          allowedPrefixes.add("/admin/suggestion-bin");
           break;
         case "LITURGIST":
           allowedPrefixes.add("/admin/devotions");

@@ -32,6 +32,7 @@ import hireAvailabilityRouter from "./hireAvailability.js";
 import hireSubmitRouter from "./hireSubmit.js";
 import hireStatusRouter from "./hireStatus.js";
 import statsPublishRoutes from "./statsPublishRoutes.js";
+import suggestionRouter from "./suggestionRouter.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -101,6 +102,9 @@ router.use("/", testimonialsRouter);
 
 // Stats publish (admin trigger + user-facing published endpoints)
 router.use("/", statsPublishRoutes);
+
+// Suggestion-specific routes (bin, unmask, soft-delete)
+router.use("/suggestions", suggestionRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
