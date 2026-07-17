@@ -100,7 +100,14 @@ const setupRoleSystem = async () => {
       WHERE status = 'approved'
     `);
 
-    // 2. Remove deprecated roles (delete member_roles first to respect FK)
+    // 2. Add flagged_inactive column to members table
+    await pool.query(`
+      ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS flagged_inactive BOOLEAN DEFAULT FALSE
+    `);
+    logger.info("Ensured flagged_inactive column on members table");
+
+    // 3. Remove deprecated roles (delete member_roles first to respect FK)
     await pool.query(`
       DELETE FROM member_roles WHERE role_id IN (
         SELECT role_id FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')
@@ -109,7 +116,7 @@ const setupRoleSystem = async () => {
     await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')`);
     logger.info("Removed deprecated roles: supreme_admin, admin, sub_group_chair");
 
-    // 3. Seed roles
+    // 4. Seed roles
     for (const role of ROLES) {
       const existing = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [role.name]);
       if (existing.rows.length === 0) {
