@@ -107,6 +107,17 @@ const setupRoleSystem = async () => {
     `);
     logger.info("Ensured flagged_inactive column on members table");
 
+    // 2b. Add soft-delete & unmask columns to suggestions table
+    await pool.query(`
+      ALTER TABLE suggestions
+      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending',
+      ADD COLUMN IF NOT EXISTS unmask_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS unmask_requested_at TIMESTAMP
+    `);
+    logger.info("Ensured suggestion bin/unmask columns on suggestions table");
+
     // 3. Remove deprecated roles (delete member_roles first to respect FK)
     await pool.query(`
       DELETE FROM member_roles WHERE role_id IN (
