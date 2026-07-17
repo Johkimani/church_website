@@ -382,7 +382,7 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {active.map((a) => (
+            {filtered.map((a) => (
               <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
@@ -447,7 +447,7 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
   );
 }
 
-function RevokedRolesPanel() {
+function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
   const [revoked, setRevoked] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -496,9 +496,11 @@ function RevokedRolesPanel() {
     }
   };
 
+  const filteredRevoked = revoked.filter((a) => roleBelongsToTab(a.role_name, activeTab));
+
   if (loading) return null;
 
-  if (revoked.length === 0) return null;
+  if (filteredRevoked.length === 0) return null;
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -511,7 +513,7 @@ function RevokedRolesPanel() {
             <AlertTriangle className="w-5 h-5 text-rose-500" />
             Revoked Role Assignments
             <span className="ml-2 px-2.5 py-0.5 bg-rose-100 text-rose-800 text-xs font-bold rounded-full">
-              {revoked.length}
+              {filteredRevoked.length}
             </span>
           </h2>
           <svg
@@ -539,7 +541,7 @@ function RevokedRolesPanel() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {revoked.map((a) => (
+              {filteredRevoked.map((a) => (
                 <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
