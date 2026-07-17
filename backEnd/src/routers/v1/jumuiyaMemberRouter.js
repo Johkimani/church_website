@@ -13,6 +13,7 @@ import {
   csaGetApprovalStatus, csaGetActiveBatches, csaFinalizeDistribution, csaGetJumuiyaMemberList,
   csaGetRejectedMembers, csaUpdateRejectedMember, csaDeleteRejectedMember,
   lookupMemberByRegNumber,
+  updateMember, flagMember,
 } from "../../controllers/jumuiyaMemberController.js";
 
 const router = Router();
@@ -85,5 +86,9 @@ router.get("/:jumuiya_id/export/assignments", exportAssignments);
 
 // Member lookup (by reg number)
 router.get("/lookup/reg-number/:search", lookupMemberByRegNumber);
+
+// Update & flag a single member
+router.put("/:member_id", updateMember);
+router.patch("/:member_id/flag", flagMember);
 
 export default router;
