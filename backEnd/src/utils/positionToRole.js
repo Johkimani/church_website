@@ -1,8 +1,16 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
+// CSA executive roles — a member can only hold ONE of these at a time
+const CSA_EXECUTIVE_ROLES = [
+  "csa_chair", "csa_vice_chair", "csa_secretary",
+  "project_manager", "instrument_manager", "os",
+  "treasurer", "liturgist",
+];
+
 export const CSA_POSITION_TO_ROLE = {
   'Chairperson': 'csa_chair',
+  'Vice Chairperson': 'csa_vice_chair',
   'Secretary': 'csa_secretary',
   'Jumuiya Coordinator': 'jumuiya_coordinator',
   'Organizing Secretary': 'os',
@@ -12,6 +20,7 @@ export const CSA_POSITION_TO_ROLE = {
   'Assistant Instrument Manager': 'instrument_manager',
   'Liturgist': 'liturgist',
   'Assistant Liturgist': 'liturgist',
+  'Treasurer': 'treasurer',
   'Choir Chairperson': 'choir_chairperson',
 };
 
@@ -70,6 +79,23 @@ export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, 
     }
   }
 
+  // Enforce one CSA executive role per member
+  if (CSA_EXECUTIVE_ROLES.includes(roleName)) {
+    const existing = await pool.query(
+      `SELECT r.role_name FROM member_roles mr
+       JOIN roles r ON mr.role_id = r.role_id
+       WHERE mr.member_id = $1 AND mr.status IN ('approved', 'pending')
+         AND r.role_name = ANY($2) AND r.role_name != $3`,
+      [member.member_id, CSA_EXECUTIVE_ROLES, roleName]
+    );
+    if (existing.rows.length > 0) {
+      return { status: 'conflict', message: `Member already holds the "${existing.rows[0].role_name}" CSA executive role. Cannot assign "${roleName}".` };
+    }
+  }
+
+  // csa_chair is auto-approved for immediate access
+  const status = roleName === 'csa_chair' ? 'approved' : 'pending';
+
   const existingApproved = await pool.query(
     `SELECT id FROM member_roles
      WHERE member_id = $1 AND role_id = $2
@@ -94,20 +120,21 @@ export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, 
   let result;
   if (existingPending.rows.length > 0) {
     result = await pool.query(
-      `UPDATE member_roles SET assigned_by = $1, created_at = NOW()
-       WHERE id = $2 RETURNING id, status`,
-      [assignedBy, existingPending.rows[0].id]
+      `UPDATE member_roles SET assigned_by = $1, status = $2, created_at = NOW()
+       WHERE id = $3 RETURNING id, status`,
+      [assignedBy, status, existingPending.rows[0].id]
     );
   } else {
     result = await pool.query(
       `INSERT INTO member_roles (member_id, role_id, assigned_by, jumuiya_id, status)
-       VALUES ($1, $2, $3, $4, 'pending')
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, status`,
-      [member.member_id, roleId, assignedBy, effectiveJumuiyaId]
+      [member.member_id, roleId, assignedBy, effectiveJumuiyaId, status]
     );
   }
 
-  return { id: result.rows[0].id, status: result.rows[0].status, message: 'Role assigned. Pending approval.' };
+  const msg = status === 'approved' ? 'Role assigned and active.' : 'Role assigned. Pending approval.';
+  return { id: result.rows[0].id, status: result.rows[0].status, message: msg };
 };
 
 export const removeRoleForOfficial = async (regNumber, position, isJumuiya) => {

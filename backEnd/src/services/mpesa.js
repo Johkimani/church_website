@@ -1,4 +1,5 @@
 import axios from "axios";
+import logger from "../logger/winston.js";
 
 export class MpesaService {
   static get consumerKey() {
@@ -22,7 +23,6 @@ export class MpesaService {
     const auth = Buffer.from(
       `${this.consumerKey}:${this.consumerSecret}`,
     ).toString("base64");
-    console.log(auth);
     try {
       const response = await axios.get(
         `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
@@ -32,7 +32,7 @@ export class MpesaService {
       );
       return response.data.access_token;
     } catch (error) {
-      console.error("Error fetching M-Pesa access token:", error);
+      logger.error("Error fetching M-Pesa access token: " + (error.message || error));
       throw new Error("Could not authenticate with Safaricom");
     }
   }
@@ -47,10 +47,14 @@ export class MpesaService {
       `${this.shortCode}${this.passKey}${timestamp}`,
     ).toString("base64");
 
-    // Transform 07... or 254... to 254...
-    let formattedPhone = phoneNumber.replace(/\+/g, "");
+    // Transform to 254XXXXXXXXX (12 digits)
+    let formattedPhone = phoneNumber.replace(/[^0-9]/g, "");
     if (formattedPhone.startsWith("0")) {
       formattedPhone = "254" + formattedPhone.slice(1);
+    }
+    // Handle "2540XXXXXXXX" (13 digits with extra 0 after 254)
+    if (formattedPhone.startsWith("2540")) {
+      formattedPhone = "254" + formattedPhone.slice(4);
     }
 
     const data = {
@@ -77,10 +81,7 @@ export class MpesaService {
       );
       return response.data;
     } catch (error) {
-      console.error(
-        "M-Pesa STK Push error:",
-        error.response?.data || error.message,
-      );
+      logger.error("M-Pesa STK Push error: " + JSON.stringify(error.response?.data || error.message));
       throw new Error("Failed to initiate M-Pesa payment");
     }
   }

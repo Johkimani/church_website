@@ -132,9 +132,7 @@ export default function UniversalAdmin() {
     ? [user.role]
     : [];
   const normalized = userRoles.map((r) => String(r).toUpperCase().trim());
-  const isSuperAdmin = normalized.some(
-    (r) => r === "CSA_CHAIR" || r.includes("ADMIN") || r.includes("SUPREME")
-  );
+  const isSuperAdmin = normalized.some((r) => r === "CSA_CHAIR");
 
   const checkAccess = (path: string): boolean => {
     if (isSuperAdmin) return true;
@@ -170,6 +168,10 @@ export default function UniversalAdmin() {
         case "TREASURER":
           allowedPrefixes.add("/admin/donations");
           break;
+        case "CSA_VICE_CHAIR":
+          allowedPrefixes.add("/admin/suggestions");
+          allowedPrefixes.add("/admin/suggestion-bin");
+          break;
         case "LITURGIST":
           allowedPrefixes.add("/admin/devotions");
           break;
@@ -183,8 +185,20 @@ export default function UniversalAdmin() {
         case "CHOIR_CHAIRPERSON":
         case "CHOIR_SECRETARY":
         case "CHOIR_PROJECT_COORDINATOR":
-        case "SUB_GROUP_CHAIR":
           allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/choir");
+          break;
+        case "ST_FRANCIS_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/st-francis");
+          break;
+        case "CHARISMATIC_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/charismatic");
+          break;
+        case "DANCE_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/dance");
           break;
       }
     });

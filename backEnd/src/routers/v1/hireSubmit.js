@@ -27,12 +27,17 @@ router.post("/submit", async (req, res) => {
     const nextId = seqResult.rows[0].next_id;
     const reference = `HIR-${year}-${String(nextId).padStart(5, "0")}`;
 
+    // Calculate rental days from pickup to return
+    const pickup = new Date(pickup_date);
+    const ret = new Date(return_date);
+    const rentalDays = Math.max(1, Math.ceil((ret.getTime() - pickup.getTime()) / (1000 * 60 * 60 * 24)));
+
     const insertedItems = [];
 
     for (const item of items) {
       const { item_name, item_category, quantity, price } = item;
       const qty = parseInt(quantity) || 1;
-      const cost = qty * (parseFloat(price) || 0);
+      const cost = qty * (parseFloat(price) || 0) * rentalDays;
 
       const result = await client.query(
         `INSERT INTO hire_requests (

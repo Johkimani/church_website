@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { apiClient } from "../../../api/axiosInstance";
 import apiService from "../../Landing/services/api";
 import { CalendarDays, RefreshCcw, Loader2, CheckCircle, XCircle, RotateCcw, MessageCircle, X, MapPin, Clock3, Copy, Check, ChevronDown, ChevronRight, DollarSign, Smartphone, Ban, PackageCheck, Archive } from "lucide-react";
+import Skeleton from "../../../components/Skeleton";
+import { toast } from "react-hot-toast";
 
 const STATUS_TABS = [
   "all", "pending", "approved", "paid", "ready_for_pickup",
@@ -16,7 +18,7 @@ const statusStyle: Record<string, string> = {
   ready_for_pickup: "bg-indigo-100 text-indigo-700",
   collected:        "bg-purple-100 text-purple-700",
   returned:         "bg-teal-100 text-teal-700",
-  cancelled:        "bg-slate-100 text-slate-600",
+  cancelled:        "bg-slate-100 text-slate-800",
   rejected:         "bg-red-100 text-red-700",
 };
 
@@ -89,8 +91,8 @@ export default function HireRequestsManager() {
     try {
       const data = await apiService.fetchTableData("hire_requests", true);
       setRequests(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to load hire requests", error);
+    } catch {
+      toast.error("Failed to load hire requests");
     } finally {
       setLoading(false);
     }
@@ -227,8 +229,8 @@ export default function HireRequestsManager() {
       }
 
       setActionModal(p => ({ ...p, sentConfirm: true }));
-    } catch (error) {
-      console.error("Failed to update", error);
+    } catch {
+      toast.error("Failed to update");
     } finally {
       setUpdating(null);
     }
@@ -264,6 +266,7 @@ export default function HireRequestsManager() {
           alert("Payment failed. Please try again.");
         }
       } catch {
+        toast.error('Failed to check payment status');
         clearInterval(interval);
       }
     }, 3000);
@@ -295,24 +298,24 @@ export default function HireRequestsManager() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-4 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-            <CalendarDays size={22} className="text-blue-600" /> Hire Requests
+          <h2 className="text-lg font-black text-slate-800 flex items-center gap-1.5">
+            <CalendarDays size={18} className="text-blue-600" /> Hire Requests
           </h2>
-          <p className="text-slate-500 text-sm mt-1">Manage chair and instrument hire requests</p>
+          <p className="text-slate-700 text-xs mt-0.5">Manage chair and instrument hire requests</p>
         </div>
         <button onClick={loadRequests} disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
         >
-          <RefreshCcw size={15} className={loading ? "animate-spin" : ""} /> Refresh
+          <RefreshCcw size={12} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {[
           { label: "Pending", key: "pending", colour: "bg-amber-500" },
           { label: "Approved", key: "approved", colour: "bg-blue-500" },
@@ -321,29 +324,29 @@ export default function HireRequestsManager() {
           { label: "Returned", key: "returned", colour: "bg-teal-500" },
         ].map(c => (
           <button key={c.key} onClick={() => setTab(c.key as HireTab)}
-            className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 hover:shadow-md transition-all ${
+            className={`bg-white rounded-xl border shadow-sm p-3 flex items-center gap-2 hover:shadow-md transition-all ${
               tab === c.key ? "ring-2 ring-blue-400 border-blue-300" : "border-slate-200"
             }`}
           >
-            <div className={`${c.colour} w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm`}>
+            <div className={`${c.colour} w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs`}>
               {counts[c.key] ?? 0}
             </div>
             <div className="text-left">
-              <span className="text-slate-600 font-semibold text-xs leading-tight block">{c.label}</span>
-              <span className="text-[10px] text-slate-400">{tab === c.key ? "active" : ""}</span>
+              <span className="text-slate-800 font-semibold text-[11px] leading-tight block">{c.label}</span>
+              <span className="text-[9px] text-slate-700">{tab === c.key ? "active" : ""}</span>
             </div>
           </button>
         ))}
       </div>
 
       {/* Quick status counts */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1">
         {STATUS_TABS.filter(t => t !== "all").map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all capitalize ${
+            className={`px-2 py-1 text-[10px] font-bold rounded-full transition-all capitalize ${
               tab === t
                 ? "bg-blue-600 text-white"
-                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
             {statusLabels[t] || t} ({counts[t] ?? 0})
@@ -352,15 +355,23 @@ export default function HireRequestsManager() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400">
-            <Loader2 size={32} className="animate-spin mr-3" /> Loading requests...
+          <div className="divide-y divide-slate-100">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3">
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-3 w-16 ml-auto" />
+              </div>
+            ))}
           </div>
         ) : visible.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="font-semibold">No {tab === "all" ? "" : statusLabels[tab] || tab} hire requests</p>
+          <div className="text-center py-10 text-slate-700">
+            <CalendarDays size={28} className="mx-auto mb-2 opacity-30" />
+            <p className="font-semibold text-xs">No {tab === "all" ? "" : statusLabels[tab] || tab} hire requests</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -374,7 +385,7 @@ export default function HireRequestsManager() {
                   <div className="flex items-center px-4 py-3 gap-3 cursor-pointer" onClick={() => setExpandedRef(isExpanded ? null : group.reference)}>
                     <div className="flex-1 min-w-0 grid grid-cols-12 gap-2 items-center text-sm">
                       <div className="col-span-2 font-semibold text-slate-800 truncate">{group.customer_name}</div>
-                      <div className="col-span-2 text-slate-500 text-xs truncate">{group.phone_number}</div>
+                      <div className="col-span-2 text-slate-700 text-xs truncate">{group.phone_number}</div>
                       <div className="col-span-2">
                         <span className="text-xs font-bold text-slate-700">Ref: {group.reference}</span>
                       </div>
@@ -382,7 +393,7 @@ export default function HireRequestsManager() {
                         <span className="text-xs font-bold text-slate-700">KES {group.total_cost.toLocaleString()}</span>
                       </div>
                       <div className="col-span-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${statusStyle[group.status] || "bg-slate-100 text-slate-600"}`}>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${statusStyle[group.status] || "bg-slate-100 text-slate-800"}`}>
                           {statusLabels[group.status] || group.status}
                         </span>
                         {group.payment_status === "paid" && (
@@ -453,12 +464,12 @@ export default function HireRequestsManager() {
                               </div>
                             )}
                             {(group.status === "returned" || group.status === "rejected" || group.status === "cancelled") && (
-                              <span className="text-[10px] text-slate-400 italic" onClick={e => e.stopPropagation()}>Done</span>
+                              <span className="text-[10px] text-slate-700 italic" onClick={e => e.stopPropagation()}>Done</span>
                             )}
                           </>
                         )}
                         <button onClick={(e) => { e.stopPropagation(); setExpandedRef(isExpanded ? null : group.reference); }}
-                          className="p-1 text-slate-400 hover:text-slate-600">
+                          className="p-1 text-slate-700 hover:text-slate-800">
                           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         </button>
                       </div>
@@ -467,38 +478,34 @@ export default function HireRequestsManager() {
 
                   {/* Expanded item details */}
                   {isExpanded && (
-                    <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 space-y-3">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                    <div className="bg-slate-50 border-t border-slate-100 px-4 py-3 space-y-2">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[11px]">
                         <div>
-                          <span className="text-slate-400 block">Customer</span>
+                          <span className="text-slate-700 block">Customer</span>
                           <span className="font-semibold text-slate-800">{group.customer_name}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Phone</span>
+                          <span className="text-slate-700 block">Phone</span>
                           <span className="font-semibold text-slate-800">{group.phone_number}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Email</span>
-                          <span className="font-semibold text-slate-800">{group.email || "—"}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Reference</span>
+                          <span className="text-slate-700 block">Reference</span>
                           <span className="font-semibold text-blue-600">{group.reference}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Event Date</span>
+                          <span className="text-slate-700 block">Event Date</span>
                           <span className="font-semibold text-slate-800">{group.event_date ? new Date(group.event_date).toLocaleDateString() : "—"}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Pickup Date</span>
+                          <span className="text-slate-700 block">Pickup Date</span>
                           <span className="font-semibold text-slate-800">{group.pickup_date ? new Date(group.pickup_date).toLocaleDateString() : "—"}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Return Date</span>
+                          <span className="text-slate-700 block">Return Date</span>
                           <span className="font-semibold text-slate-800">{group.return_date ? new Date(group.return_date).toLocaleDateString() : "—"}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Total Cost</span>
+                          <span className="text-slate-700 block">Total Cost</span>
                           <span className="font-semibold text-emerald-700">KES {group.total_cost.toLocaleString()}</span>
                         </div>
                       </div>
@@ -508,18 +515,18 @@ export default function HireRequestsManager() {
                         <table className="w-full text-xs">
                           <thead className="bg-slate-100">
                             <tr>
-                              <th className="text-left px-3 py-2 font-bold text-slate-500 uppercase">Item</th>
-                              <th className="text-left px-3 py-2 font-bold text-slate-500 uppercase">Category</th>
-                              <th className="text-center px-3 py-2 font-bold text-slate-500 uppercase">Qty</th>
-                              <th className="text-right px-3 py-2 font-bold text-slate-500 uppercase">Cost</th>
+                              <th className="text-left px-3 py-2 font-bold text-slate-700 uppercase">Item</th>
+                              <th className="text-left px-3 py-2 font-bold text-slate-700 uppercase">Category</th>
+                              <th className="text-center px-3 py-2 font-bold text-slate-700 uppercase">Qty</th>
+                              <th className="text-right px-3 py-2 font-bold text-slate-700 uppercase">Cost</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {group.items.map((item: any) => (
                               <tr key={item.id}>
                                 <td className="px-3 py-2 font-semibold text-slate-700">{item.item_name}</td>
-                                <td className="px-3 py-2 text-slate-500 capitalize">{item.item_category || "—"}</td>
-                                <td className="px-3 py-2 text-center text-slate-600">{item.quantity}</td>
+                                <td className="px-3 py-2 text-slate-700 capitalize">{item.item_category || "—"}</td>
+                                <td className="px-3 py-2 text-center text-slate-800">{item.quantity}</td>
                                 <td className="px-3 py-2 text-right font-semibold text-slate-700">KES {Number(item.total_cost || 0).toLocaleString()}</td>
                               </tr>
                             ))}
@@ -529,21 +536,21 @@ export default function HireRequestsManager() {
 
                       {/* Payment info */}
                       {group.payment_method && (
-                        <div className="flex gap-4 text-xs">
-                          <span className="text-slate-400">Payment:</span>
+                        <div className="flex gap-3 text-[10px]">
+                          <span className="text-slate-700">Payment:</span>
                           <span className="font-semibold text-slate-700 capitalize">{group.payment_method}</span>
                           {group.mpesa_receipt && (
-                            <><span className="text-slate-400">Receipt:</span><span className="font-semibold text-slate-700">{group.mpesa_receipt}</span></>
+                            <><span className="text-slate-700">Receipt:</span><span className="font-semibold text-slate-700">{group.mpesa_receipt}</span></>
                           )}
                           {group.paid_at && (
-                            <><span className="text-slate-400">Paid at:</span><span className="font-semibold text-slate-700">{new Date(group.paid_at).toLocaleString()}</span></>
+                            <><span className="text-slate-700">Paid at:</span><span className="font-semibold text-slate-700">{new Date(group.paid_at).toLocaleString()}</span></>
                           )}
                         </div>
                       )}
 
                       {/* Notes */}
-                      {group.notes && <p className="text-xs text-slate-500"><span className="text-slate-400">Notes:</span> {group.notes}</p>}
-                      {group.admin_notes && <p className="text-xs text-amber-600"><span className="text-slate-400">Admin:</span> {group.admin_notes}</p>}
+                      {group.notes && <p className="text-xs text-slate-700"><span className="text-slate-700">Notes:</span> {group.notes}</p>}
+                      {group.admin_notes && <p className="text-xs text-amber-600"><span className="text-slate-700">Admin:</span> {group.admin_notes}</p>}
                     </div>
                   )}
                 </div>
@@ -556,8 +563,8 @@ export default function HireRequestsManager() {
       {/* Action Modal */}
       {actionModal.open && actionModal.type && actionModal.group && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className={`px-6 py-5 flex items-center justify-between ${
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className={`px-4 py-3 flex items-center justify-between ${
               actionModal.type === "approve" ? "bg-gradient-to-r from-emerald-500 to-emerald-600" :
               actionModal.type === "reject" || actionModal.type === "cancel" ? "bg-gradient-to-r from-red-500 to-red-600" :
               actionModal.type === "mark-paid" ? "bg-gradient-to-r from-emerald-500 to-teal-500" :
@@ -566,7 +573,7 @@ export default function HireRequestsManager() {
               "bg-gradient-to-r from-blue-500 to-blue-600"
             }`}>
               <div>
-                <h2 className="text-white font-black text-lg">
+                <h2 className="text-white font-black text-sm">
                   {actionModal.sentConfirm ? "Done!" : {
                     approve: "Approve Request",
                     reject: "Reject Request",
@@ -577,86 +584,86 @@ export default function HireRequestsManager() {
                     mpesa: "Process M-Pesa Payment",
                   }[actionModal.type] || "Action"}
                 </h2>
-                <p className="text-white/70 text-sm mt-0.5">{actionModal.group.customer_name} — {actionModal.group.reference}</p>
+                <p className="text-white/70 text-xs mt-0.5">{actionModal.group.customer_name} — {actionModal.group.reference}</p>
               </div>
-              <button onClick={closeActionModal} className="w-10 h-10 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all">
-                <X size={20} />
+              <button onClick={closeActionModal} className="w-8 h-8 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all">
+                <X size={16} />
               </button>
             </div>
 
             {actionModal.sentConfirm ? (
-              <div className="p-6 text-center space-y-5">
-                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                  <Check size={32} className="text-emerald-600" />
+              <div className="p-4 text-center space-y-3">
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                  <Check size={24} className="text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="text-slate-800 font-black text-lg">Status Updated!</h3>
-                  <p className="text-slate-500 text-sm mt-1">WhatsApp has been opened with the notification message.</p>
+                  <h3 className="text-slate-800 font-black text-sm">Status Updated!</h3>
+                  <p className="text-slate-700 text-xs mt-1">WhatsApp has been opened with the notification message.</p>
                 </div>
-                <button onClick={copyMessage} className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm flex items-center justify-center gap-2">
-                  <Copy size={14} /> Copy Message
+                <button onClick={copyMessage} className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs flex items-center justify-center gap-1.5">
+                  <Copy size={12} /> Copy Message
                 </button>
-                <button onClick={closeActionModal} className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-sm">
+                <button onClick={closeActionModal} className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-xs">
                   Done
                 </button>
               </div>
             ) : (
               <>
-                <div className="p-6 space-y-4">
-                  <div className="bg-slate-50 rounded-xl p-4 space-y-1">
-                    <p className="text-xs text-slate-500"><strong>Phone:</strong> {actionModal.group.phone_number}</p>
-                    <p className="text-xs text-slate-500"><strong>Items:</strong></p>
-                    <ul className="text-xs text-slate-600 list-disc list-inside">
+                <div className="p-4 space-y-3">
+                  <div className="bg-slate-50 rounded-xl p-3 space-y-1">
+                    <p className="text-[11px] text-slate-700"><strong>Phone:</strong> {actionModal.group.phone_number}</p>
+                    <p className="text-[11px] text-slate-700"><strong>Items:</strong></p>
+                    <ul className="text-[11px] text-slate-800 list-disc list-inside">
                       {actionModal.group.items.map((i: any, idx: number) => (
                         <li key={idx}>{i.item_name} x{i.quantity} — KES {Number(i.total_cost || 0).toLocaleString()}</li>
                       ))}
                     </ul>
-                    <p className="text-xs text-slate-500 mt-1"><strong>Total:</strong> KES {actionModal.group.total_cost.toLocaleString()}</p>
+                    <p className="text-[11px] text-slate-700 mt-0.5"><strong>Total:</strong> KES {actionModal.group.total_cost.toLocaleString()}</p>
                   </div>
 
                   {(actionModal.type === "approve") && (
                     <>
                       <div>
-                        <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 mb-1.5"><MapPin size={12} /> Pickup Location *</label>
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800 mb-1"><MapPin size={10} /> Pickup Location *</label>
                         <input type="text" value={actionModal.pickupLocation} onChange={e => setActionModal(p => ({ ...p, pickupLocation: e.target.value }))}
                           placeholder="e.g. KYU Main Campus, CSA Office"
-                          className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 transition" />
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400 transition" />
                       </div>
                       <div>
-                        <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 mb-1.5"><Clock3 size={12} /> Pickup Time</label>
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800 mb-1"><Clock3 size={10} /> Pickup Time</label>
                         <input type="text" value={actionModal.pickupTime} onChange={e => setActionModal(p => ({ ...p, pickupTime: e.target.value }))}
                           placeholder="e.g. Monday 9AM - 12PM"
-                          className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 transition" />
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400 transition" />
                       </div>
                     </>
                   )}
 
                   {(actionModal.type === "reject") && (
                     <div>
-                      <label className="text-xs font-bold text-slate-600 mb-1.5 block">Rejection Reason *</label>
+                      <label className="text-xs font-bold text-slate-800 mb-1 block">Rejection Reason *</label>
                       <textarea value={actionModal.rejectReason} onChange={e => setActionModal(p => ({ ...p, rejectReason: e.target.value }))}
-                        placeholder="Why is this request being rejected?" rows={3}
-                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 transition resize-none" />
+                        placeholder="Why is this request being rejected?" rows={2}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-red-400 transition resize-none" />
                     </div>
                   )}
 
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <MessageCircle size={10} /> WhatsApp will open with a notification after saving
+                  <p className="text-[9px] text-slate-700 flex items-center gap-1">
+                    <MessageCircle size={8} /> WhatsApp will open with a notification after saving
                   </p>
                 </div>
 
-                <div className="px-6 pb-6 flex gap-3">
-                  <button onClick={closeActionModal} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm">
+                <div className="px-4 pb-4 flex gap-2">
+                  <button onClick={closeActionModal} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors text-xs">
                     Cancel
                   </button>
                   <button
                     onClick={confirmAction}
                     disabled={updating !== null || (actionModal.type === "approve" && !actionModal.pickupLocation.trim()) || (actionModal.type === "reject" && !actionModal.rejectReason.trim())}
-                    className={`flex-1 py-3 font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-white ${
+                    className={`flex-1 py-2 font-bold rounded-lg transition-colors text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed text-white ${
                       actionModal.type === "reject" || actionModal.type === "cancel" ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"
                     }`}
                   >
-                    {updating !== null ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><MessageCircle size={16} /> Confirm & Notify</>}
+                    {updating !== null ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><MessageCircle size={14} /> Confirm & Notify</>}
                   </button>
                 </div>
               </>
