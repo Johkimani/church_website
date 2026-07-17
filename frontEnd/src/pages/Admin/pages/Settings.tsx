@@ -57,12 +57,35 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   treasurer: ['Donation Monitor'],
 };
 
+const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist'];
+const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_os', 'jumuiya_secretary'];
+const SUBGROUP_ROLES = ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator', 'st_francis_chair', 'charismatic_chair', 'dance_chair'];
+
+type TabKey = 'csa' | 'jumuiya' | 'subgroup';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'csa', label: 'CSA' },
+  { key: 'jumuiya', label: 'Jumuiya' },
+  { key: 'subgroup', label: 'Sub Groups' },
+];
+
 const getPagesForRole = (roleName: string): string[] => {
   const key = roleName.replace(/\s+/g, '_').toLowerCase();
   return ROLE_PAGES_MAP[key] || [`Role: ${roleName}`];
 };
 
+const roleBelongsToTab = (roleName: string, tab: TabKey): boolean => {
+  const name = roleName.toLowerCase();
+  switch (tab) {
+    case 'csa': return CSA_ROLES.includes(name);
+    case 'jumuiya': return JUMUIYA_ROLES.includes(name);
+    case 'subgroup': return SUBGROUP_ROLES.includes(name);
+  }
+};
+
 export default function Settings() {
+  const [activeTab, setActiveTab] = useState<TabKey>('csa');
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -77,14 +100,31 @@ export default function Settings() {
         </div>
       </div>
 
-      <ApprovalsPanel />
-      <ActiveRolesPanel />
-      <RevokedRolesPanel />
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              activeTab === tab.key
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <ApprovalsPanel activeTab={activeTab} />
+      <ActiveRolesPanel activeTab={activeTab} />
+      <RevokedRolesPanel activeTab={activeTab} />
     </div>
   );
 }
 
-function ApprovalsPanel() {
+function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -145,6 +185,8 @@ function ApprovalsPanel() {
     }
   };
 
+  const filtered = assignments.filter((a) => roleBelongsToTab(a.role_name, activeTab));
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
@@ -154,7 +196,7 @@ function ApprovalsPanel() {
     );
   }
 
-  if (assignments.length === 0) {
+  if (filtered.length === 0) {
     return (
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-12 text-center">
         <div className="flex flex-col items-center gap-4">
@@ -162,7 +204,7 @@ function ApprovalsPanel() {
             <CheckCircle className="w-10 h-10 text-emerald-500" />
           </div>
           <h3 className="text-xl font-bold text-slate-900">All caught up!</h3>
-          <p className="text-slate-500">No pending role assignments need your approval.</p>
+          <p className="text-slate-500">No pending {activeTab} role assignments need your approval.</p>
         </div>
       </div>
     );
@@ -175,7 +217,7 @@ function ApprovalsPanel() {
           <Clock className="w-5 h-5 text-amber-500" />
           Pending Approvals
           <span className="ml-2 px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
-            {assignments.length}
+            {filtered.length}
           </span>
         </h2>
       </div>
@@ -193,7 +235,7 @@ function ApprovalsPanel() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {assignments.map((a) => (
+            {filtered.map((a) => (
               <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
@@ -268,7 +310,7 @@ function ApprovalsPanel() {
   );
 }
 
-function ActiveRolesPanel() {
+function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
   const [active, setActive] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -302,11 +344,13 @@ function ActiveRolesPanel() {
     }
   };
 
+  const filtered = active.filter((a) => roleBelongsToTab(a.role_name, activeTab));
+
   if (loading) {
     return null;
   }
 
-  if (active.length === 0) {
+  if (filtered.length === 0) {
     return null;
   }
 
