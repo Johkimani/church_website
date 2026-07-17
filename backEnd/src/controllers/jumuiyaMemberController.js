@@ -920,9 +920,9 @@ export const getMembers = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.phone, m.year_of_study, m.join_date, m.source
+      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.email, m.phone, m.year_of_study, m.join_date, m.source
        FROM members m
-       INNER JOIN registered r ON r.member_id = m.member_id AND r.status = 'active'
+       LEFT JOIN registered r ON r.member_id = m.member_id AND r.status = 'active'
        WHERE m.jumuiya_id = $1 AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
        ORDER BY m.first_name`,
       [jumuiyaUUID]
