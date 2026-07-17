@@ -146,6 +146,9 @@ export const memberService = {
   updateMember: (id: string, data: any) =>
     apiClient.put(`/jumuiya-members/${encodeURIComponent(id)}`, data).then(r => r.data),
 
+  flagMember: (id: string, flagged: boolean) =>
+    apiClient.patch(`/jumuiya-members/${encodeURIComponent(id)}/flag`, { flagged }).then(r => r.data),
+
   deleteMember: (id: string) =>
     apiClient.delete(`/jumuiya-members/${encodeURIComponent(id)}`).then(r => r.data),
 

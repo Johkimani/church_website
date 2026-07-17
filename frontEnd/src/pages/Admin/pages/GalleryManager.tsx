@@ -223,7 +223,7 @@ export default function GalleryManager() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-black text-slate-800 tracking-tight">Gallery Manager</h2>
           <p className="text-slate-500 text-sm mt-1">Manage public photos, hero slider, and visual media.</p>
@@ -236,11 +236,11 @@ export default function GalleryManager() {
       </div>
 
       {/* Upload Zone */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-1 space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Upload size={18} className="text-blue-600" />
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-1 space-y-4">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5">
+              <Upload size={14} className="text-blue-600" />
               Upload New Media
             </h3>
 
@@ -270,6 +270,9 @@ export default function GalleryManager() {
                 </div>
                 <p className="text-slate-700 font-bold mb-1">Drop photos here</p>
                 <p className="text-slate-400 text-xs">or click to browse</p>
+                <div className="mt-3 flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  Max 10 files &bull; JPG, PNG, GIF
+                </div>
               </div>
             </div>
 
@@ -293,24 +296,25 @@ export default function GalleryManager() {
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                   {selectedFiles.map((file, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                      <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 overflow-hidden shrink-0">
+                    <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100 group">
+                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 overflow-hidden shrink-0">
                         <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-slate-800 truncate">{file.name}</p>
+                        <p className="text-[9px] text-slate-500">{(file.size / 1024).toFixed(0)} KB</p>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); removeSelectedFile(i); }}
-                        className="p-2 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-1.5 text-slate-700 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
                       >
-                        <X size={14} />
+                        <X size={12} />
                       </button>
                     </div>
                   ))}
                 </div>
                 {uploadStatus === 'uploading' && uploadProgress > 0 && (
-                  <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                   </div>
                 )}
@@ -370,8 +374,8 @@ export default function GalleryManager() {
 
             {loading ? (
               <div className="flex-1 flex flex-col items-center justify-center animate-pulse">
-                <Loader2 size={48} className="text-slate-200 animate-spin mb-4" />
-                <p className="text-slate-400 font-bold">Synchronizing with server...</p>
+                <Loader2 size={32} className="text-slate-200 animate-spin mb-3" />
+                <p className="text-slate-700 font-bold text-xs">Synchronizing with server...</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
@@ -417,6 +421,9 @@ export default function GalleryManager() {
                               {image.description}
                             </p>
                           )}
+                          <p className="text-slate-400 text-[9px] uppercase tracking-widest font-black mt-1">
+                            {image.category || 'Church Event'} &bull; {image.created_at ? new Date(image.created_at).toLocaleDateString() : 'Recent'}
+                          </p>
                         </div>
                       </div>
                     </div>

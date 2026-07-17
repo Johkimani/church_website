@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { apiClient } from "../../../api/axiosInstance";
 import apiService from "../../Landing/services/api";
 import { Package, RefreshCcw, Loader2, CheckCircle, Clock, XCircle, MessageCircle, DollarSign, Truck, MapPin, Ban, Archive, CookingPot, ShoppingBag } from "lucide-react";
+import Skeleton from "../../../components/Skeleton";
+import { toast } from "react-hot-toast";
 
 const STATUS_TABS = ["all", "pending", "paid", "preparing", "ready_for_pickup", "completed", "cancelled", "failed"] as const;
 type StatusTab = typeof STATUS_TABS[number];
@@ -22,7 +24,7 @@ const statusStyle: Record<string, string> = {
   preparing:       "bg-blue-100 text-blue-700",
   ready_for_pickup: "bg-indigo-100 text-indigo-700",
   completed:       "bg-teal-100 text-teal-700",
-  cancelled:       "bg-slate-100 text-slate-600",
+  cancelled:       "bg-slate-100 text-slate-800",
   failed:          "bg-red-100 text-red-700",
 };
 
@@ -51,8 +53,8 @@ export default function OrdersManager() {
     try {
       const data = await apiService.fetchTableData("orders", true);
       setOrders(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to load orders", error);
+    } catch {
+      toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
@@ -63,8 +65,9 @@ export default function OrdersManager() {
     try {
       await apiService.updateRecord("orders", id, { status });
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
-    } catch (error) {
-      console.error("Failed to update order status", error);
+      toast.success(`Order #${id} updated to ${status}`);
+    } catch {
+      toast.error("Failed to update order");
     } finally {
       setUpdating(null);
     }
@@ -75,8 +78,9 @@ export default function OrdersManager() {
     try {
       await apiService.updateRecord("orders", id, { status: "paid", payment_method: "cash" });
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: "paid", payment_method: "cash" } : o));
-    } catch (error) {
-      console.error("Failed to mark as paid", error);
+      toast.success(`Order #${id} marked as paid`);
+    } catch {
+      toast.error("Failed to mark as paid");
     } finally {
       setUpdating(null);
     }
@@ -114,24 +118,24 @@ export default function OrdersManager() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-4 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-            <Package size={22} className="text-blue-600" /> Orders Management
+          <h2 className="text-lg font-black text-slate-800 flex items-center gap-1.5">
+            <Package size={18} className="text-blue-600" /> Orders Management
           </h2>
-          <p className="text-slate-500 text-sm mt-1">Track and manage all customer orders</p>
+          <p className="text-slate-700 text-xs mt-0.5">Track and manage all customer orders</p>
         </div>
         <button onClick={loadOrders} disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
         >
-          <RefreshCcw size={15} className={loading ? "animate-spin" : ""} /> Refresh
+          <RefreshCcw size={12} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
         {[
           { label: "Pending", key: "pending", colour: "bg-amber-500" },
           { label: "Paid", key: "paid", colour: "bg-emerald-500" },
@@ -142,44 +146,55 @@ export default function OrdersManager() {
           { label: "Failed", key: "failed", colour: "bg-red-500" },
         ].map(card => (
           <button key={card.key} onClick={() => setTab(card.key as StatusTab)}
-            className={`bg-white rounded-2xl border shadow-sm p-3 flex items-center gap-2 hover:shadow-md transition-all ${
+            className={`bg-white rounded-xl border shadow-sm p-2 flex items-center gap-1.5 hover:shadow-md transition-all ${
               tab === card.key ? "ring-2 ring-blue-400 border-blue-300" : "border-slate-200"
             }`}
           >
-            <div className={`${card.colour} w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs`}>
+            <div className={`${card.colour} w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-[10px]`}>
               {stats[card.key as keyof typeof stats] ?? 0}
             </div>
-            <span className="text-slate-600 font-semibold text-[11px] leading-tight">{card.label}</span>
+            <span className="text-slate-800 font-semibold text-[10px] leading-tight">{card.label}</span>
           </button>
         ))}
       </div>
 
       {/* Status tabs */}
-      <div className="flex gap-1.5 flex-wrap border-b border-slate-200 pb-2">
+      <div className="flex gap-1 flex-wrap border-b border-slate-200 pb-1.5">
         {STATUS_TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg capitalize transition-all ${
+            className={`px-2 py-1 text-[10px] font-bold rounded-lg capitalize transition-all ${
               tab === t
                 ? "bg-blue-600 text-white"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                : "text-slate-700 hover:text-slate-800 hover:bg-slate-100"
             }`}
           >
             {t === "all" ? "All" : statusLabels[t] || t}
-            {t !== "all" && <span className="ml-1 text-[10px] opacity-70">({(stats as any)[t] ?? 0})</span>}
+            {t !== "all" && <span className="ml-1 text-[9px] opacity-70">({(stats as any)[t] ?? 0})</span>}
           </button>
         ))}
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400">
-            <Loader2 size={32} className="animate-spin mr-3" /> Loading orders...
+          <div className="p-4 space-y-2">
+            <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={i} className={`h-3 ${i === 0 ? 'w-24' : i === 4 ? 'w-20' : 'w-16'}`} />
+              ))}
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                {Array.from({ length: 7 }).map((_, j) => (
+                  <Skeleton key={j} className={`h-3 ${j === 0 ? 'w-24' : j === 4 ? 'w-20' : 'w-16'}`} />
+                ))}
+              </div>
+            ))}
           </div>
         ) : visible.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <Package size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="font-semibold">No {tab === "all" ? "" : statusLabels[tab] || tab} orders found</p>
+          <div className="text-center py-10 text-slate-700">
+            <Package size={28} className="mx-auto mb-2 opacity-30" />
+            <p className="font-semibold text-xs">No {tab === "all" ? "" : statusLabels[tab] || tab} orders found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -187,7 +202,7 @@ export default function OrdersManager() {
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   {["Order #", "Customer", "Phone", "Items", "Amount", "Payment", "Status", "Actions"].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="text-left px-4 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -197,14 +212,14 @@ export default function OrdersManager() {
                   const hasItems = o.items && JSON.parse(typeof o.items === "string" ? o.items : "[]").length > 0;
                   return (
                     <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-700">
                         {o.order_reference || `#${o.id}`}
                       </td>
                       <td className="px-4 py-3 font-semibold text-slate-800">
                         {o.customer_name || "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">{o.phone || "—"}</td>
-                      <td className="px-4 py-3 text-xs text-slate-600 max-w-[180px] truncate" title={formatItems(o.items)}>
+                      <td className="px-4 py-3 text-slate-800 text-xs">{o.phone || "—"}</td>
+                      <td className="px-4 py-3 text-xs text-slate-800 max-w-[180px] truncate" title={formatItems(o.items)}>
                         {formatItems(o.items)}
                       </td>
                       <td className="px-4 py-3 font-bold text-slate-800 text-xs whitespace-nowrap">
@@ -214,15 +229,15 @@ export default function OrdersManager() {
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-bold ${
                           isCash
                             ? o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                            : o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                            : o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-800"
                         }`}>
                           {isCash ? <DollarSign size={10} /> : <ShoppingBag size={10} />}
                           {isCash ? (o.status === "paid" ? "Paid (Cash)" : "Pending (Cash)") : (o.status === "paid" ? "M-Pesa" : "M-Pesa Pending")}
                         </span>
-                        {o.mpesa_receipt && <p className="text-[10px] text-slate-400 mt-0.5">Receipt: {o.mpesa_receipt}</p>}
+                        {o.mpesa_receipt && <p className="text-[10px] text-slate-700 mt-0.5">Receipt: {o.mpesa_receipt}</p>}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${statusStyle[o.status] || "bg-slate-100 text-slate-600"}`}>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${statusStyle[o.status] || "bg-slate-100 text-slate-800"}`}>
                           {statusLabels[o.status] || o.status}
                         </span>
                       </td>
@@ -232,7 +247,22 @@ export default function OrdersManager() {
                         ) : (
                           <div className="flex gap-1 flex-wrap">
                             {o.status === "pending" && !isCash && (
-                              <span className="text-[10px] text-slate-400 italic">Awaiting M-Pesa</span>
+                              <button
+                                onClick={() => {
+                                  const receipt = prompt("Enter M-Pesa receipt number (e.g. QLS123456):");
+                                  if (receipt && receipt.trim()) {
+                                    apiService.updateRecord("orders", o.id, { status: "paid", mpesa_receipt: receipt.trim(), payment_method: "mpesa" })
+                                      .then(() => {
+                                        setOrders(prev => prev.map(ord => ord.id === o.id ? { ...ord, status: "paid", mpesa_receipt: receipt.trim(), payment_method: "mpesa" } : ord));
+                                        alert("Order marked as paid with receipt: " + receipt.trim());
+                                      })
+                                      .catch(() => alert("Failed to update order"));
+                                  }
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-[10px] font-bold transition-colors"
+                              >
+                                <CheckCircle size={10} /> Confirm M-Pesa
+                              </button>
                             )}
                             {o.status === "pending" && isCash && (
                               <button onClick={() => markAsPaid(o.id)}
@@ -260,12 +290,12 @@ export default function OrdersManager() {
                             )}
                             {(o.status === "pending" || o.status === "paid" || o.status === "preparing") && (
                               <button onClick={() => updateStatus(o.id, "cancelled")}
-                                className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold transition-colors">
+                                className="flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[10px] font-bold transition-colors">
                                 <Ban size={10} /> Cancel
                               </button>
                             )}
                             {o.status === "completed" && (
-                              <span className="text-[10px] text-slate-400 italic">Done</span>
+                              <span className="text-[10px] text-slate-700 italic">Done</span>
                             )}
                             {/* WhatsApp button for non-cancelled/non-completed orders */}
                             {(o.status === "paid" || o.status === "preparing" || o.status === "ready_for_pickup") && (
