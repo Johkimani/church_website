@@ -17,63 +17,19 @@ const SLIDE_DURATION_MS = 12000   // How long each slide stays visible
 const ANIM_LOCK_MS = 300    // Execution lock time for transition
 const MIN_SWIPE_PX = 50      // Minimum px to register as a swipe
 
-const DEFAULT_SLIDES: GalleryItem[] = [
-  {
-    id: 1,
-    title: "St Thomas Aquinas\n CSA Kirinyaga",
-    description: "To one who has faith, no explanation is necessary. To one without faith, no explanation is possible.",
-    image_url: "https://images.unsplash.com/photo-1548625361-ec853715d0dd?auto=format&fit=crop&w=1000&q=60",
-    category: "welcome",
-    event_date: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    title: "Vibrant Community\nFaith & Action",
-    description: "Experience the thriving energy of our youth movements. Deepening spiritual connections through active service and genuine fellowship.",
-    image_url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1000&q=60",
-    category: "community",
-    event_date: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    title: "Sunday Mass\nDivine Worship",
-    description: "Gather with us every Sunday for the breaking of the bread. A solemn, beautiful encounter with grace and community reflection.",
-    image_url: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1000&q=60",
-    category: "worship",
-    event_date: new Date().toISOString(),
-  },
-  {
-    id: 5,
-    title: "Choir & Music\nVoices of Angels",
-    description: "Join our incredibly talented choir members. Uplifting the congregation through powerful Gospel harmonies and traditional hymnals.",
-    image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=60",
-    category: "choir",
-    event_date: new Date().toISOString(),
-  },
-  {
-    id: 6,
-    title: "Retreats & Prayers\nSpiritual Renewal",
-    description: "Step away from the noise of the world. Our silent retreats offer the perfect environment for reflection, prayer, and deep spiritual growth.",
-    image_url: "https://images.unsplash.com/photo-1437603568260-1950d3ca6eab?auto=format&fit=crop&w=1000&q=60",
-    category: "prayer",
-    event_date: new Date().toISOString(),
-  },
-]
+const DEFAULT_SLIDES: GalleryItem[] = []
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function enrichSlides(dbSlides: GalleryItem[]): GalleryItem[] {
-  return dbSlides.map((slide, i) => ({
+  return dbSlides.map((slide) => ({
     ...slide,
-    title: slide.title?.length > 3 ? slide.title : DEFAULT_SLIDES[i % DEFAULT_SLIDES.length].title,
-    description: slide.description ? slide.description : DEFAULT_SLIDES[i % DEFAULT_SLIDES.length].description,
+    title: slide.title?.length > 3 ? slide.title : 'CSA Kirinyaga',
+    description: slide.description ? slide.description : '',
   }))
 }
 
-/** Guarantee at least 6 slides so navigation is always meaningful */
 function buildDisplaySlides(dbSlides: GalleryItem[]): GalleryItem[] {
-  const enriched = enrichSlides(dbSlides)
-  if (enriched.length >= 6) return enriched
-  return [...enriched, ...DEFAULT_SLIDES.slice(enriched.length)]
+  return enrichSlides(dbSlides)
 }
 
 /** Fire-and-forget browser image pre-fetch */
@@ -102,7 +58,7 @@ function ImageSlider() {
     apiService.getGallery()
       .then((data: GalleryItem[]) => {
         const sorted = data
-          .filter(item => item.image_url)
+          .filter(item => item.image_url && item.category === 'Hero Slider')
           .sort((a, b) => new Date(b.event_date ?? 0).getTime() - new Date(a.event_date ?? 0).getTime())
         setDbSlides(sorted)
       })
@@ -158,6 +114,23 @@ function ImageSlider() {
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  if (total === 0) {
+    return (
+      <section className="relative h-[60vh] md:h-[85vh] min-h-[450px] overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex items-center justify-center">
+        <div className="text-center px-6">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.062 12.348a1 1 0 010-.696 10.75 10.75 0 0119.876 0 1 1 0 010 .696 10.75 10.75 0 01-19.876 0z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </div>
+          <h1 className="text-3xl md:text-5xl font-black text-white/80 tracking-tight mb-3">St. Thomas Aquinas CSA</h1>
+          <p className="text-white/30 text-base md:text-lg font-medium">Kirinyaga University</p>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section
       className="relative h-[60vh] md:h-[85vh] min-h-[450px] overflow-hidden bg-black group"

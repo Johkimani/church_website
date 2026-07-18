@@ -286,7 +286,14 @@ class ApiService {
    * Fetches all gallery items.
    */
   async getGallery(): Promise<any[]> {
-    return this.fetchTableData('gallery');
+    return this.cacheGet('gallery_all', 120_000, async () => {
+      try {
+        const { data } = await apiClient.get('/hub-gallery');
+        return data?.items || [];
+      } catch {
+        return [];
+      }
+    });
   }
 
   async getSacramentalsSliderImages(section: string = 'sacramentals'): Promise<any[]> {
