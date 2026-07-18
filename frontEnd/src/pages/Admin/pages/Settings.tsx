@@ -53,13 +53,14 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   st_francis_chair: ['Community Management (St. Francis)'],
   charismatic_chair: ['Community Management (Charismatic)'],
   dance_chair: ['Community Management (Dance)'],
+  mentorship_chair: ['Community Management (Mentorship)'],
   liturgist: ['Devotions & AI'],
   treasurer: ['Donation Monitor'],
 };
 
 const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist'];
 const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_os', 'jumuiya_secretary'];
-const SUBGROUP_ROLES = ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator', 'st_francis_chair', 'charismatic_chair', 'dance_chair'];
+const SUBGROUP_ROLES = ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator', 'st_francis_chair', 'charismatic_chair', 'dance_chair', 'mentorship_chair'];
 
 type TabKey = 'csa' | 'jumuiya' | 'subgroup';
 

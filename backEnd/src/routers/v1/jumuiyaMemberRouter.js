@@ -87,8 +87,7 @@ router.get("/:jumuiya_id/export/assignments", exportAssignments);
 // Member lookup (by reg number)
 router.get("/lookup/reg-number/:search", lookupMemberByRegNumber);
 
-// Update & flag a single member
-router.put("/:member_id", updateMember);
+// Flag a single member (update handled by jumuiyaMembersRouter at routers/jumuiyaMembersRouter.js)
 router.patch("/:member_id/flag", flagMember);
 
 export default router;
