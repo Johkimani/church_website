@@ -114,9 +114,18 @@ const setupRoleSystem = async () => {
       ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(255),
       ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending',
       ADD COLUMN IF NOT EXISTS unmask_token VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS unmask_requested_at TIMESTAMP
+      ADD COLUMN IF NOT EXISTS unmask_requested_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS user_id VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS reply TEXT,
+      ADD COLUMN IF NOT EXISTS replied_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS replied_by VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'general',
+      ADD COLUMN IF NOT EXISTS chair_unmask_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS liturgist_unmask_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS chair_approved BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS liturgist_approved BOOLEAN DEFAULT FALSE
     `);
-    logger.info("Ensured suggestion bin/unmask columns on suggestions table");
+    logger.info("Ensured suggestion bin/unmask/reply/category columns on suggestions table");
 
     // 3. Remove deprecated roles (delete member_roles first to respect FK)
     await pool.query(`

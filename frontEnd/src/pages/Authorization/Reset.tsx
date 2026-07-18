@@ -39,23 +39,24 @@ const Reset: React.FC = () => {
     try {
       setLoading(true);
       let response;
-      if (purpose === "setting email") {
-        response = await resetEmailApi({ email, password, purpose });
+      if (purpose === "setting email" || purpose === "email") {
+        response = await resetEmailApi({ email, password, purpose: "email" });
       } else {
-        response = await resetPasswordApi({ email, password, purpose });
+        response = await resetPasswordApi({ email, password, purpose: "password" });
       }
 
       if (response.data.status === "success") {
         setMessage("OTP sent to your email!");
         setTimeout(() => {
-          navigate(`/otp/${email}`);
+          navigate(`../otp/${email}`);
         }, 1500);
       } else {
-        setError(response.data.message || "Failed to send OTP");
+        setError(response.data.error || response.data.message || "Failed to send OTP");
       }
     } catch (err: unknown) {
       const axiosError = err as AxiosError;
-      setError((axiosError.response?.data as ErrorResponse)?.message || "Failed to send OTP. Please try again.");
+      const data = axiosError.response?.data as any;
+      setError(data?.error || data?.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
