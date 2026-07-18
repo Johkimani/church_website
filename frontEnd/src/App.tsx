@@ -170,7 +170,7 @@ const App: React.FC = () => {
         {/* Order Confirmation (no layout) */}
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
         <Route path="/hire-status" element={<HireStatus />} />
-        <Route path="/suggestions/unmask/:token" element={<UnmaskApproval />} />
+        <Route path="/suggestions/unmask/:role/:token" element={<UnmaskApproval />} />
         <Route path="/officials/deletion-approval/:token" element={<DeletionApproval />} />
 
         {/* Public Routes with Page Layout */}

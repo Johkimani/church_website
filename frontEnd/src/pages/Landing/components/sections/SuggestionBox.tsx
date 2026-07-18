@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, Heart, Star } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, Heart, Star, EyeOff } from 'lucide-react';
 import apiService from '../../services/api';
+import { useAuth } from '../../../../context/AuthContext';
 
 const SuggestionBox: React.FC = () => {
+  const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: user?.name || '',
+    email: user?.email || '',
     suggestion: ''
   });
+  const [anonymous, setAnonymous] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -22,13 +25,16 @@ const SuggestionBox: React.FC = () => {
       suggestion: formData.suggestion.trim()
     };
     
-    if (formData.name.trim()) submissionData.name = formData.name.trim();
-    if (formData.email.trim()) submissionData.email = formData.email.trim();
+    if (!anonymous) {
+      if (formData.name.trim()) submissionData.name = formData.name.trim();
+      if (formData.email.trim()) submissionData.email = formData.email.trim();
+    }
+    if (user?.member_id) submissionData.user_id = user.member_id;
 
     try {
       await apiService.createRecord('suggestions', submissionData);
       setStatus('success');
-      setFormData({ name: '', email: '', suggestion: '' });
+      setFormData({ name: user?.name || '', email: user?.email || '', suggestion: '' });
       
       setTimeout(() => {
         setStatus('idle');
@@ -42,6 +48,10 @@ const SuggestionBox: React.FC = () => {
       setTimeout(() => setStatus('idle'), 5000);
     }
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <section className="pt-4 md:pt-6 pb-20 bg-slate-50 relative overflow-hidden" id="suggestions">
@@ -115,10 +125,12 @@ const SuggestionBox: React.FC = () => {
                           type="text"
                           id="name"
                           placeholder="Your name"
-                          className="w-full px-5 py-3.5 rounded-xl bg-white border-2 border-slate-200 focus:border-primary/40 outline-none transition-all duration-300 placeholder:text-slate-400 font-bold text-slate-900 text-sm focus:shadow-sm"
-                          value={formData.name}
+                          className={`w-full px-5 py-3.5 rounded-xl bg-white border-2 outline-none transition-all duration-300 placeholder:text-slate-400 font-bold text-sm focus:shadow-sm ${
+                            anonymous ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed' : 'border-slate-200 focus:border-primary/40 text-slate-900'
+                          }`}
+                          value={anonymous ? '' : formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          disabled={status === 'submitting'}
+                          disabled={status === 'submitting' || !!user?.name || anonymous}
                         />
                       </div>
                       <div className="space-y-2">
@@ -130,14 +142,36 @@ const SuggestionBox: React.FC = () => {
                           type="email"
                           id="email"
                           placeholder="your@email.com"
-                          className="w-full px-5 py-3.5 rounded-xl bg-white border-2 border-slate-200 focus:border-primary/40 outline-none transition-all duration-300 placeholder:text-slate-400 font-bold text-slate-900 text-sm focus:shadow-sm"
-                          value={formData.email}
+                          className={`w-full px-5 py-3.5 rounded-xl bg-white border-2 outline-none transition-all duration-300 placeholder:text-slate-400 font-bold text-sm focus:shadow-sm ${
+                            anonymous ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed' : 'border-slate-200 focus:border-primary/40 text-slate-900'
+                          }`}
+                          value={anonymous ? '' : formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          disabled={status === 'submitting'}
+                          disabled={status === 'submitting' || !!user?.email || anonymous}
                         />
                       </div>
                     </div>
                     
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 tracking-wider ml-1">
+                        <EyeOff size={12} className="text-slate-400" />
+                        SUBMIT ANONYMOUSLY
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setAnonymous(!anonymous)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          anonymous ? 'bg-primary' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            anonymous ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
                     <div className="space-y-2">
                       <label htmlFor="suggestion" className="flex items-center gap-2 text-[10px] font-black text-slate-500 tracking-wider ml-1">
                         <MessageSquare size={12} className="text-primary" />

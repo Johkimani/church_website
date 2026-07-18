@@ -22,7 +22,7 @@ export default function Privacy() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 py-24 px-6 sm:px-12 lg:px-24">
+    <div className="min-h-screen bg-slate-50/50 py-24 px-6 sm:px-12 lg:px-24 relative">
       {/* Top Accent Line */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600" />
 
