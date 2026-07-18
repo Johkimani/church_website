@@ -1,28 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../api/axiosInstance';
-import { Loader2, Shield, CheckCircle, XCircle, MessageSquare, Calendar } from 'lucide-react';
+import { Loader2, Shield, CheckCircle, XCircle, MessageSquare, Calendar, User } from 'lucide-react';
 
 export default function UnmaskApproval() {
-  const { token } = useParams<{ token: string }>();
+  const { role, token } = useParams<{ role: string; token: string }>();
   const navigate = useNavigate();
   const [request, setRequest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [message, setMessage] = useState('');
+  const [resultData, setResultData] = useState<any>(null);
 
   useEffect(() => {
-    if (!token) return;
-    apiClient.get(`/suggestions/unmask/${token}`)
+    if (!token || !role) return;
+    apiClient.get(`/suggestions/unmask/${role}/${token}`)
       .then(res => { setRequest(res.data.data); setLoading(false); })
       .catch(err => { setError(err.response?.data?.message || 'Invalid or expired link'); setLoading(false); });
-  }, [token]);
+  }, [token, role]);
 
   const handleRespond = async (action: 'approve' | 'reject') => {
     setSubmitting(true);
     try {
-      await apiClient.post(`/suggestions/unmask/${token}/respond`, { action });
+      const res = await apiClient.post(`/suggestions/unmask/${role}/${token}/respond`, { action });
+      setMessage(res.data.message || 'Response recorded');
+      setResultData(res.data.data || null);
       setDone(true);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to submit response');
@@ -30,6 +34,12 @@ export default function UnmaskApproval() {
       setSubmitting(false);
     }
   };
+
+  const roleLabel = role === 'chair' ? 'CSA Chair' : 'CSA Liturgist';
+  const otherApproved = role === 'chair'
+    ? request?.liturgist_approved
+    : request?.chair_approved;
+  const isFullyUnmasked = request?.chair_approved && request?.liturgist_approved;
 
   if (loading) {
     return (
@@ -54,11 +64,25 @@ export default function UnmaskApproval() {
   if (done) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center">
-          <CheckCircle size={48} className="text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Response Recorded</h2>
-          <p className="text-slate-500 mb-6">Your response has been submitted. Thank you.</p>
-          <button onClick={() => navigate('/')} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-colors">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full">
+          <div className="text-center">
+            <CheckCircle size={48} className="text-emerald-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Response Recorded</h2>
+            <p className="text-slate-500 mb-6">{message}</p>
+          </div>
+          {(resultData?.member_first_name || request?.member_first_name) && (
+            <div className="bg-slate-50 rounded-2xl p-5 mb-6">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Submitter Info</h3>
+              <div className="space-y-2">
+                <p className="text-slate-800 font-bold">{(resultData || request).member_first_name} {(resultData || request).member_last_name}</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Year {(resultData || request).member_year_of_study}</span>
+                  <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{(resultData || request).member_jumuiya || 'No jumuiya'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <button onClick={() => navigate('/')} className="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-colors">
             Go to Home
           </button>
         </div>
@@ -76,12 +100,12 @@ export default function UnmaskApproval() {
           <div>
             <h2 className="text-xl font-black text-slate-800">Unmask Request</h2>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              {request?.role === 'chair' ? 'CSA Chair Review' : 'CSA Liturgist Review'}
+              {roleLabel} Review
             </p>
           </div>
         </div>
 
-        <div className="bg-slate-50 rounded-2xl p-6 mb-8">
+        <div className="bg-slate-50 rounded-2xl p-6 mb-6">
           <p className="text-slate-800 text-base font-medium leading-relaxed italic mb-4">
             "{request?.suggestion}"
           </p>
@@ -91,8 +115,27 @@ export default function UnmaskApproval() {
           </div>
         </div>
 
+        {isFullyUnmasked && request?.member_first_name ? (
+          <div className="mb-6 bg-emerald-50 rounded-2xl p-5 border border-emerald-200">
+            <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <CheckCircle size={14} /> Submitter Identity (Unmasked)
+            </h3>
+            <p className="text-slate-800 font-bold mb-1">{request.member_first_name} {request.member_last_name}</p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Year {request.member_year_of_study}</span>
+              <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{request.member_jumuiya || 'No jumuiya'}</span>
+            </div>
+          </div>
+        ) : otherApproved && (
+          <div className="mb-6 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-700 text-sm font-bold">
+            <CheckCircle size={18} />
+            {role === 'chair' ? 'CSA Liturgist' : 'CSA Chair'} has already approved. Your approval will complete the unmask.
+          </div>
+        )}
+
         <p className="text-slate-600 text-sm mb-6">
-          The CSA Vice Chair has requested to view the identity of the person who submitted this anonymous suggestion. Do you approve?
+          The CSA Vice Chair has requested to view the identity of the person who submitted this anonymous suggestion.
+          Both CSA Chair and CSA Liturgist must approve for the identity to be revealed.
         </p>
 
         <div className="flex gap-3">
