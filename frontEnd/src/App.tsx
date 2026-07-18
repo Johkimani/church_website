@@ -95,6 +95,7 @@ const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 const CsaSecretaryDashboard = lazy(() => import("./pages/Admin/pages/CsaSecretaryDashboard"));
 const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
 const AdminBookings = lazy(() => import("./pages/Admin/pages/AdminBookings"));
+const MyBookings = lazy(() => import("./pages/MyBookings"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -182,6 +183,7 @@ const App: React.FC = () => {
 
           {/* Standalone Landing Pages */}
           <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
+          <Route path="my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route element={<ProtectedRoute><ProjectsProvider><Outlet /></ProjectsProvider></ProtectedRoute>}>
             <Route path="projects" element={<ProjectsHome />} />
             <Route path="sacramentals" element={<SacramentalsPage />} />
