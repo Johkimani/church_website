@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import activitiesService from "../../../api/activitiesServices";
+import { bookingService } from "../../../api/activitiesServices";
 import { RefreshCw, Download, Search } from "lucide-react";
 
 interface Booking {
@@ -29,7 +29,7 @@ export default function AdminBookings() {
     setLoading(true);
     setError(null);
     try {
-      const data = await activitiesService.getAllBookings();
+      const data = await bookingService.getBookings();
       setBookings(data || []);
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Failed to load bookings";
@@ -41,7 +41,7 @@ export default function AdminBookings() {
 
   async function handleExport() {
     try {
-      const blob = await activitiesService.exportBookingsCSV();
+      const blob = await bookingService.exportBookingsCSV();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
