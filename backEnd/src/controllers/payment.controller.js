@@ -87,6 +87,29 @@ export const mpesaCallback = async (req, res) => {
         [mpesaReceipt, CheckoutRequestID]
       );
 
+      // ── Activity booking payments (lipa mdogo mdogo) ──
+      const payResult = await db.query(
+        `UPDATE activity_payments SET status = 'paid', mpesa_receipt = $1
+         WHERE checkout_id = $2 AND status = 'pending'
+         RETURNING booking_id, amount`,
+        [mpesaReceipt, CheckoutRequestID]
+      );
+      if (payResult.rows.length > 0) {
+        const { booking_id, amount: paidAmt } = payResult.rows[0];
+        await db.query(
+          `UPDATE activity_bookings
+           SET paid_amount = paid_amount + $1,
+               status = CASE
+                 WHEN paid_amount + $1 >= fare THEN 'paid'
+                 ELSE 'partial'
+               END,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $2`,
+          [paidAmt, booking_id]
+        );
+        logger.info(`Activity payment applied: booking_id=${booking_id}, amount=${paidAmt}`);
+      }
+
       logger.info(`✅ Payment callback processed: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`);
 
     } else {
@@ -105,6 +128,12 @@ export const mpesaCallback = async (req, res) => {
       await db.query(
         `UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP
           WHERE checkout_id = $1 AND status = 'pending'`,
+        [CheckoutRequestID]
+      );
+
+      await db.query(
+        `UPDATE activity_payments SET status = 'failed'
+         WHERE checkout_id = $1 AND status = 'pending'`,
         [CheckoutRequestID]
       );
 

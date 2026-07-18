@@ -34,10 +34,35 @@ import {
   deactivateSemesterActivity,
 } from "../../controllers/activitiesController.js";
 
+import {
+  getBookings,
+  exportBookingsCSV,
+} from "../../controllers/activityBookingController.js";
+
 const router = Router();
 
 // Permission resources/actions (standard lowercase convention)
-const permission = (action, resource) => authorize(action, resource);
+const permission = (action, resource) => {
+  // Map custom actions and resources to standard db enums
+  let mappedAction = action;
+  if (["activate", "deactivate", "reorder"].includes(action)) {
+    mappedAction = "update";
+  } else if (action === "read") {
+    mappedAction = "view";
+  }
+
+  let mappedResource = resource;
+  if ([
+    "weekly_activities",
+    "semester_activities",
+    "novena_schedules",
+    "novena_override_activities"
+  ].includes(resource)) {
+    mappedResource = "events";
+  }
+
+  return authorize(mappedAction, mappedResource);
+};
 const requireAdmin = (action, resource) => [verifyToken, permission(action, resource)];
 
 // ── Weekly (admin) ───────────────────────────────
@@ -138,6 +163,10 @@ router.post(
   ...requireAdmin('reorder', 'novena_override_activities'),
   reorderNovenaOverrides
 );
+
+// ── Bookings (admin) ────────────────────────────────
+router.get("/bookings", verifyToken, getBookings);
+router.get("/bookings/export", verifyToken, exportBookingsCSV);
 
 export default router;
 

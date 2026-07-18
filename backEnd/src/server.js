@@ -27,6 +27,7 @@ import { startKeepAliveWorker } from "./services/keep-alive.js";
 import { startImportSyncWorker } from "./services/importSyncJob.js";
 import questionsMigration from "./migrations/questionsMigration.js";
 import publishStatsMigration from "./migrations/publishStatsMigration.js";
+import activityBookingMigration from "./migrations/activityBookingMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -171,6 +172,7 @@ const initServer = async () => {
     await backfillSemRegMigration();
     await questionsMigration();
     await publishStatsMigration();
+    await activityBookingMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

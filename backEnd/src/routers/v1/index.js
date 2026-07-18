@@ -14,7 +14,6 @@ import activitiesPublicRouter from "./activitiesPublicRouter.js";
 import activitiesAdminRouter from "./activitiesAdminRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
-import formsDistributionRouter from "./FormsDistributionRouter.js"
 import jumuiyaMembersRouter from "../jumuiyaMembersRouter.js"
 import jumuiyaDataRouter from "../jumuiyaDataRouter.js"
 
@@ -54,8 +53,6 @@ router.use("/questions", verifyToken, QuestionsRoutes);
 router.use("/files", verifyToken, uploadMedia);
 router.use("/notifications", verifyToken, notificationRoutes);
 router.use("/csa", verifyToken, JumuiComparisonRoutes);
-router.use("/distribution", verifyToken, formsDistributionRouter);
-
 // Slider and config endpoints for frontend banners
 router.use("/", sliderRoutes);
 
