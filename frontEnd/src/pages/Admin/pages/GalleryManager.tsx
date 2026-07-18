@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import apiService from '../../Landing/services/api';
+import { apiClient, uploadFile } from '../../../api/axiosInstance';
 import { UPLOAD_BASE } from '../../../api/config';
 import { 
   Image as ImageIcon, 
@@ -14,13 +14,14 @@ import {
 } from 'lucide-react';
 
 interface GalleryImage {
-  id: string | number;
+  id: number;
   image_url: string;
-  title: string;
-  category?: string;
+  event_name: string;
+  module_id?: string;
   description?: string;
-  created_at?: string;
-  event_date?: string;
+  upload_date?: string;
+  is_spotlight?: boolean;
+  moderation_status?: string;
 }
 
 export default function GalleryManager() {
@@ -29,12 +30,11 @@ export default function GalleryManager() {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
-  
-  // New States for dynamic management
-  const [activeTab, setActiveTab] = useState<string>('All');
-  const [uploadCategory, setUploadCategory] = useState<string>('Gallery Grid');
-  
-  // Edit State
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const modules = ['general', 'Hero Slider', 'Gallery Grid', 'Teaser'];
+  const [uploadModule, setUploadModule] = useState(modules[0]);
+  const [activeTab, setActiveTab] = useState('All');
   const [editItem, setEditItem] = useState<GalleryImage | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
@@ -47,10 +47,12 @@ export default function GalleryManager() {
   const loadImages = async () => {
     setLoading(true);
     try {
-      const data = await apiService.getGallery();
-      setImages(Array.isArray(data) ? data : []);
+      const { data } = await apiClient.get('/hub-gallery');
+      const items = data?.items || [];
+      setImages(items);
     } catch (err) {
       console.error('Failed to load gallery:', err);
+      setImages([]);
     } finally {
       setLoading(false);
     }
@@ -68,13 +70,11 @@ export default function GalleryManager() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-    
     const newFiles = Array.from(files);
     if (newFiles.length + selectedFiles.length > 10) {
       alert("Maximum 10 photos can be uploaded at once.");
       return;
     }
-    
     setSelectedFiles(prev => [...prev, ...newFiles]);
   };
 
@@ -91,15 +91,13 @@ export default function GalleryManager() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleDeleteImage = async (id: string | number) => {
-    if (window.confirm('Are you sure you want to remove this photo from the gallery?')) {
-      try {
-        await apiService.deleteRecord('gallery', id);
-        apiService.clearCache('gallery');
-        setImages(prev => prev.filter(img => img.id !== id));
-      } catch (err) {
-        alert('Failed to delete image');
-      }
+  const handleDeleteImage = async (id: number) => {
+    if (!window.confirm('Are you sure you want to remove this photo from the gallery?')) return;
+    try {
+      await apiClient.delete(`/hub-gallery/${id}`);
+      setImages(prev => prev.filter(img => img.id !== id));
+    } catch (err) {
+      alert('Failed to delete image');
     }
   };
 
@@ -113,21 +111,22 @@ export default function GalleryManager() {
       const { uploadFile } = await import('../../../api/axiosInstance');
       
       for (const file of selectedFiles) {
-        let finalImageUrl = '';
-        
-        // Attempt real multipart upload to Cloudinary via backend
-        const uploadRes = await uploadFile(file);
-        const responseData = uploadRes.data?.data || uploadRes.data;
-        
-        // Extract URL from standard response shapes sent by backend mediaController
-        if (Array.isArray(responseData) && responseData[0]?.url) {
-          finalImageUrl = responseData[0].url;
-        } else if (responseData?.url) {
-          finalImageUrl = responseData.url;
-        } else if (typeof responseData === 'string') {
-          finalImageUrl = responseData;
-        } else if (responseData?.data?.url) {
-          finalImageUrl = responseData.data.url;
+        const response = await uploadFile(file, {
+          onProgress: (pct) => setUploadProgress(Math.round((completed + pct / 100) / selectedFiles.length * 100)),
+        });
+        const result = response.data;
+        const imageUrl = result?.data?.url || result?.url || result?.secure_url;
+        if (imageUrl) {
+          const formData = new FormData();
+          const blob = await fetch(imageUrl).then(r => r.blob());
+          const f = new File([blob], file.name, { type: blob.type });
+          formData.append('files', f);
+          formData.append('eventName', file.name.replace(/\.[^.]+$/, ''));
+          formData.append('description', '');
+          formData.append('moduleId', uploadModule);
+          await apiClient.post('/hub-gallery/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
         }
 
         if (!finalImageUrl) {
@@ -142,7 +141,6 @@ export default function GalleryManager() {
           event_date: new Date().toISOString()
         });
       }
-      apiService.clearCache('gallery');
       await loadImages();
       setSelectedFiles([]);
       setUploadStatus('success');
@@ -159,13 +157,11 @@ export default function GalleryManager() {
     if (!editItem) return;
     setEditSaving(true);
     try {
-      await apiService.updateRecord('gallery', editItem.id, {
-        title: editItem.title,
-        category: editItem.category,
+      await apiClient.patch(`/hub-gallery/${editItem.id}`, {
+        event_name: editItem.event_name,
         description: editItem.description,
-        event_date: editItem.event_date
+        module_id: editItem.module_id,
       });
-      apiService.clearCache('gallery');
       setImages(prev => prev.map(img => img.id === editItem.id ? editItem : img));
       setEditItem(null);
     } catch (err) {
@@ -175,12 +171,76 @@ export default function GalleryManager() {
     }
   };
 
-  const filteredImages = activeTab === 'All' 
-    ? images 
-    : images.filter(img => img.category === activeTab);
+  const filteredImages = activeTab === 'All'
+    ? images
+    : images.filter(img => (img.module_id || 'general') === activeTab);
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+      {/* Edit Modal Overlay */}
+      {editItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-black text-lg text-slate-800">Edit Photo Details</h3>
+              <button onClick={() => setEditItem(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Section</label>
+                <select
+                  value={editItem.module_id || ''}
+                  onChange={e => setEditItem({ ...editItem, module_id: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="">Select Section...</option>
+                  {modules.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Event Name</label>
+                <input
+                  type="text"
+                  value={editItem.event_name || ''}
+                  onChange={e => setEditItem({ ...editItem, event_name: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="E.g. Sunday Mass"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Description</label>
+                <textarea
+                  value={editItem.description || ''}
+                  onChange={e => setEditItem({ ...editItem, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                  placeholder="Description text..."
+                />
+              </div>
+            </div>
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <button
+                onClick={() => setEditItem(null)}
+                className="px-6 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                disabled={editSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={editSaving}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-200"
+              >
+                {editSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                {editSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
@@ -238,8 +298,19 @@ export default function GalleryManager() {
 
             {/* Selected Files Preview & Settings */}
             {selectedFiles.length > 0 && (
-              <div className="mt-4 space-y-2 animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-center justify-between text-[10px] font-black text-slate-700 uppercase tracking-widest px-1">
+              <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 border-t border-slate-100 pt-6">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Upload To Section</label>
+                  <select
+                    value={uploadModule}
+                    onChange={e => setUploadModule(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    {modules.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-black text-slate-400 uppercase tracking-widest px-1">
                   <span>Selected ({selectedFiles.length})</span>
                   <button onClick={() => setSelectedFiles([])} className="text-rose-500 hover:text-rose-600">Clear All</button>
                 </div>
@@ -293,39 +364,26 @@ export default function GalleryManager() {
               </div>
             )}
           </div>
-
-          <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl flex gap-2 text-amber-800">
-            <AlertCircle size={16} className="shrink-0" />
-            <div className="text-[11px] font-medium leading-relaxed">
-              <p className="font-bold mb-0.5">Usage Tips:</p>
-              <ul className="list-disc ml-4 space-y-0.5">
-                <li>Optimize images before upload for faster loading.</li>
-                <li>High-resolution landscape photos work best for the hero section.</li>
-                <li>Ensure you have the rights to the photos you publish.</li>
-              </ul>
-            </div>
-          </div>
         </div>
 
         {/* Gallery Grid */}
         <div className="xl:col-span-2">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm min-h-[400px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                  <ImageIcon size={14} className="text-indigo-600" />
-                  Live Gallery Grid
-                </h3>
-                
-                {/* Tabs */}
-                <div className="flex p-1 bg-slate-100 rounded-xl self-start sm:self-auto overflow-x-auto">
-                  {['All', ...categories].map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                        activeTab === tab 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm min-h-[600px] flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <ImageIcon size={18} className="text-indigo-600" />
+                Live Grid
+              </h3>
+
+              {/* Tabs */}
+              <div className="flex p-1 bg-slate-100 rounded-xl self-start sm:self-auto overflow-x-auto">
+                {['All', ...modules].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
                       }`}
                     >
                       {tab}
@@ -340,34 +398,53 @@ export default function GalleryManager() {
                 <p className="text-slate-700 font-bold text-xs">Synchronizing with server...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
-                {images.map((image) => (
-                  <div key={image.id} className="group relative bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 aspect-square">
-                    <img 
-                      src={image.image_url?.startsWith('http') ? image.image_url : `${UPLOAD_BASE}${image.image_url}`} 
-                      alt={image.title} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    
-                    {/* Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <div className="absolute top-2 right-2 flex gap-1.5">
-                        <button className="p-1.5 bg-white/20 hover:bg-white text-white hover:text-slate-900 rounded-lg backdrop-blur-md transition-all">
-                          <Maximize2 size={12} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteImage(image.id)}
-                          className="p-1.5 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-all"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                      
-                      <div className="absolute bottom-2 left-2 right-2">
-                        <p className="text-white font-bold text-[11px] truncate">{image.title}</p>
-                        <p className="text-slate-300 text-[9px] uppercase tracking-widest font-black">
-                          {image.category || 'Church Event'} • {image.created_at ? new Date(image.created_at).toLocaleDateString() : 'Recent'}
-                        </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
+                {filteredImages.map((image) => (
+                  <div key={image.id} className="group relative bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 aspect-square flex flex-col">
+                    <div className="relative flex-1 overflow-hidden">
+                      <img
+                        src={image.image_url?.startsWith('http') ? image.image_url : `${UPLOAD_BASE}${image.image_url}`}
+                        alt={image.event_name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+
+                      {/* Badge */}
+                      {image.module_id && (
+                        <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[10px] uppercase tracking-widest font-black text-white">
+                          {image.module_id}
+                        </div>
+                      )}
+
+                      {/* Overlay actions */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <div className="absolute top-3 right-3 flex gap-2">
+                          <button
+                            onClick={() => setEditItem(image)}
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all shadow-lg"
+                            title="Edit Details"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteImage(image.id)}
+                            className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-all shadow-lg"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <p className="text-white font-bold text-xs truncate mb-1">{image.event_name}</p>
+                          {image.description && (
+                            <p className="text-slate-300 text-[10px] leading-snug line-clamp-2">
+                              {image.description}
+                            </p>
+                          )}
+                          <p className="text-slate-400 text-[9px] uppercase tracking-widest font-black mt-1">
+                            {image.module_id || 'Church Event'} &bull; {image.upload_date ? new Date(image.upload_date).toLocaleDateString() : 'Recent'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
