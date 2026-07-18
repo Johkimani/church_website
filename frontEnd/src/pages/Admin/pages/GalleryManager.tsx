@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiClient, uploadFile } from '../../../api/axiosInstance';
+import { apiClient } from '../../../api/axiosInstance';
 import { UPLOAD_BASE } from '../../../api/config';
 import {
   Image as ImageIcon,
@@ -107,24 +107,21 @@ export default function GalleryManager() {
     try {
       let completed = 0;
       for (const file of selectedFiles) {
-        const response = await uploadFile(file, {
-          onProgress: (pct) => setUploadProgress(Math.round((completed + pct / 100) / selectedFiles.length * 100)),
-        });
-        const result = response.data;
-        const imageUrl = result?.data?.url || result?.url || result?.secure_url;
-        if (imageUrl) {
-          const formData = new FormData();
-          const blob = await fetch(imageUrl).then(r => r.blob());
-          const f = new File([blob], file.name, { type: blob.type });
-          formData.append('files', f);
-          formData.append('eventName', file.name.replace(/\.[^.]+$/, ''));
-          formData.append('description', '');
-          formData.append('moduleId', 'general');
-          formData.append('category', uploadCategory);
-          await apiClient.post('/hub-gallery/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+        const formData = new FormData();
+        let uploadFile = file;
+        if (file.size >= 200 * 1024 && file.type.startsWith('image/')) {
+          const { resizeImage } = await import('../../../utils/imageOptimization');
+          const blob = await resizeImage(file, 1200, 1200);
+          uploadFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
         }
+        formData.append('files', uploadFile);
+        formData.append('eventName', file.name.replace(/\.[^.]+$/, ''));
+        formData.append('description', '');
+        formData.append('moduleId', 'general');
+        formData.append('category', uploadCategory);
+        await apiClient.post('/hub-gallery/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
         completed++;
         setUploadProgress(Math.round((completed / selectedFiles.length) * 100));
       }
