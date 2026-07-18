@@ -3,10 +3,13 @@
 // same loading/error states, same card design system (white bg, slate text, blue accents)
 import { useState, useEffect } from "react";
 import { useCachedData } from "../../../../../hooks/useCachedData";
-import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, Zap } from "lucide-react";
+import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, Zap, X, Smartphone, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import apiService from "../../../services/api";
 import toast from "react-hot-toast";
 import useCountdown from "../../../../../hooks/useCountdown";
+import { useAuth } from "../../../../../context/AuthContext";
+import { bookingService } from "../../../../../api/activitiesServices";
+import { useNavigate } from "react-router-dom";
 
 // ── Activity icons — matches repo's emoji/icon style ──────────────
 const ACTIVITY_ICONS = {
@@ -64,8 +67,8 @@ const getWeeklyActivityImage = (activity) => {
 };
 
 // ── Weekly Activity Card ───────────────────────────────────────────
-// ── Weekly Activity Card ───────────────────────────────────────────
-function WeeklyCard({ activity }) {
+function WeeklyCard({ activity, onBook }) {
+  const { user } = useAuth();
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
   const icon = ACTIVITY_ICONS[activity.activity] || "✝";
 
@@ -156,13 +159,27 @@ function WeeklyCard({ activity }) {
         <p className="flex items-center gap-2">
           <MapPin size={12} className="text-primary/60" />{activity.venue}
         </p>
+        {activity.fare && Number(activity.fare) > 0 && (
+          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
+            <span className="font-bold text-emerald-600">KES {Number(activity.fare).toLocaleString()}</span>
+            {user ? (
+              <button onClick={(e) => { e.stopPropagation(); onBook(activity, 'weekly'); }}
+                className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
+                Book Now
+              </button>
+            ) : (
+              <span className="text-[9px] text-slate-400 italic">Login to book</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // ── Semester Event Card ────────────────────────────────────────────
-function SemesterCard({ event }) {
+function SemesterCard({ event, onBook }) {
+  const { user } = useAuth();
   const dt = new Date(event.date_time);
   const isPast = dt < new Date();
 
@@ -213,6 +230,150 @@ function SemesterCard({ event }) {
           <MapPin size={12} className="text-primary/60" />
           {event.venue}
         </p>
+        {event.fare && Number(event.fare) > 0 && (
+          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
+            <span className="font-bold text-emerald-600">KES {Number(event.fare).toLocaleString()}</span>
+            {user ? (
+              <button onClick={(e) => { e.stopPropagation(); onBook(event, 'semester'); }}
+                className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
+                Book Now
+              </button>
+            ) : (
+              <span className="text-[9px] text-slate-400 italic">Login to book</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Booking Modal ──────────────────────────────────────────────────
+function BookingModal({ activity, activityType, onClose }) {
+  const [step, setStep] = useState("book"); // book | paying | success | error
+  const [phone, setPhone] = useState("");
+  const [amount, setAmount] = useState("");
+  const [bookingId, setBookingId] = useState(null);
+  const [checkoutId, setCheckoutId] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const fare = Number(activity?.fare || 0);
+
+  async function handleBook() {
+    setProcessing(true);
+    setMessage("");
+    try {
+      const result = await bookingService.book(activity.id, activityType);
+      setBookingId(result.id);
+      setStep("paying");
+      toast.success("Booking created! Enter amount to pay.");
+    } catch (err) {
+      setMessage(err?.response?.data?.error || err?.message || "Booking failed");
+      setStep("error");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handlePay() {
+    if (!phone || !amount) return;
+    setProcessing(true);
+    setMessage("");
+    try {
+      const result = await bookingService.pay(bookingId, parseInt(amount), phone.startsWith("254") ? phone : `254${phone}`);
+      setCheckoutId(result.checkoutId);
+      setStep("success");
+      toast.success("STK Push sent! Check your phone.");
+    } catch (err) {
+      setMessage(err?.response?.data?.error || err?.message || "Payment failed");
+      setStep("error");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={onClose}>
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50" />
+        <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center relative z-10">
+          <div>
+            <h2 className="text-xl font-black text-gray-900">{activity?.activity || activity?.title || "Paid Activity"}</h2>
+            <p className="text-xs text-blue-600 font-bold mt-1 uppercase tracking-widest">KES {fare.toLocaleString()}</p>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all"><X size={20} /></button>
+        </div>
+        <div className="p-8 relative z-10">
+          {step === "book" && (
+            <div className="space-y-6">
+              <p className="text-sm text-slate-600">Confirm your booking for <strong>{activity?.activity || activity?.title}</strong>.</p>
+              {message && <div className="text-sm text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100">{message}</div>}
+              <button onClick={handleBook} disabled={processing}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2">
+                {processing ? <Loader2 className="animate-spin" /> : null}
+                {processing ? "Booking..." : "Confirm Booking"}
+              </button>
+            </div>
+          )}
+          {step === "paying" && (
+            <div className="space-y-6">
+              <p className="text-sm text-slate-600">Pay via M-Pesa. You can pay the full fare or a partial amount (lipa mdogo mdogo).</p>
+              {message && <div className="text-sm text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100">{message}</div>}
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">Amount (KES)</label>
+                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                  min="1" max={fare}
+                  className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-lg font-bold text-gray-900" />
+                <p className="text-[10px] text-slate-400 mt-1 ml-1">Enter any amount between 1 and {fare.toLocaleString()} (you can pay later)</p>
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">M-Pesa Number</label>
+                <div className="relative">
+                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                  <input type="text" value={phone} onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.startsWith('254')) val = val.substring(3);
+                    else if (val.startsWith('0')) val = val.substring(1);
+                    if (val.length <= 9) setPhone(val);
+                  }}
+                    placeholder="712345678"
+                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-gray-900 font-bold" />
+                </div>
+              </div>
+              <button onClick={handlePay} disabled={processing || !amount || !phone}
+                className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2">
+                {processing ? <Loader2 className="animate-spin" /> : <Smartphone size={20} />}
+                {processing ? "Sending STK Push..." : `Pay KES ${Number(amount || 0).toLocaleString()}`}
+              </button>
+            </div>
+          )}
+          {step === "success" && (
+            <div className="text-center py-4 space-y-4">
+              <div className="mx-auto w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                <CheckCircle2 size={40} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-gray-900">STK Push Sent</h3>
+                <p className="text-slate-500 mt-2">Please check your phone and enter your M-Pesa PIN to complete payment.</p>
+              </div>
+              <button onClick={onClose} className="w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-black hover:bg-gray-200 transition-all">Done</button>
+            </div>
+          )}
+          {step === "error" && (
+            <div className="text-center py-4 space-y-4">
+              <div className="mx-auto w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><AlertCircle size={40} /></div>
+              <div>
+                <h3 className="text-2xl font-black text-gray-900">Error</h3>
+                <p className="text-slate-500 mt-2">{message || "Something went wrong. Please try again."}</p>
+              </div>
+              <button onClick={() => { setStep("book"); setMessage(""); }} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all">Try Again</button>
+            </div>
+          )}
+        </div>
+        <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 italic text-[10px] text-gray-400 text-center uppercase tracking-widest font-bold">
+          Secure Payment • Powered by M-Pesa Daraja
+        </div>
       </div>
     </div>
   );
@@ -220,6 +381,9 @@ function SemesterCard({ event }) {
 
 // ── Main Section ───────────────────────────────────────────────────
 const ActivitiesSection = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [bookingTarget, setBookingTarget] = useState(null); // { activity, type }
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
     'csa_cache_public_activities',
     async () => {
@@ -284,6 +448,12 @@ const ActivitiesSection = () => {
               <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">Every Week</p>
               <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Weekly Schedule</h3>
             </div>
+            {user && (
+              <button onClick={() => navigate("/my-bookings")}
+                className="text-[10px] font-black text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-full uppercase tracking-wider transition-all">
+                My Bookings
+              </button>
+            )}
           </div>
 
           {weekly.length === 0 ? (
@@ -294,7 +464,7 @@ const ActivitiesSection = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {weekly.map((a) => (
-                <WeeklyCard key={a.id} activity={a} />
+                <WeeklyCard key={a.id} activity={a} onBook={(act, type) => setBookingTarget({ activity: act, type })} />
               ))}
             </div>
           )}
@@ -317,12 +487,20 @@ const ActivitiesSection = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {semester.map((e) => (
-                <SemesterCard key={e.id} event={e} />
+                <SemesterCard key={e.id} event={e} onBook={(act, type) => setBookingTarget({ activity: act, type })} />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {bookingTarget && (
+        <BookingModal
+          activity={bookingTarget.activity}
+          activityType={bookingTarget.type}
+          onClose={() => setBookingTarget(null)}
+        />
+      )}
     </div>
   );
 };

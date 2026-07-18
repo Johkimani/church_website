@@ -208,9 +208,7 @@ const OfficialProfile: React.FC = () => {
                                 </span>
                             </div>
                             <h1 className="text-3xl sm:text-6xl font-black mb-2 drop-shadow-lg leading-tight">{official.name}</h1>
-                            <p className="text-lg sm:text-2xl font-medium text-white/90 flex items-center justify-center md:justify-start gap-3 italic">
-                                {official.position} <span className="not-italic opacity-50">/</span> {category}
-                            </p>
+                            <p className="text-lg sm:text-2xl font-bold text-white/90 flex items-center justify-center md:justify-start gap-3 italic">{official.position}</p>
                         </div>
                     </div>
                 </div>
@@ -229,10 +227,9 @@ const OfficialProfile: React.FC = () => {
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 border-b-4 border-current pb-1" style={{ borderColor: `${color}40`, color: '#1e293b'}}>About the Role</h3>
                             </div>
-                            <div className="relative p-8 rounded-3xl bg-gray-50 border border-gray-100 italic text-gray-600 text-lg leading-relaxed shadow-inner">
-                                <FaQuoteLeft className="absolute top-6 left-6 text-gray-200 text-4xl -z-0" />
-                                <p className="relative z-10">{posInfo.description}</p>
-                            </div>
+                            <div class="p-8 rounded-3xl bg-gray-50 border border-gray-100 italic text-gray-600 text-lg leading-relaxed shadow-inner">
+    <p className="relative z-10">{posInfo.description}</p>
+</div>
                         </section>
 
                         {/* Responsibilities */}
@@ -313,9 +310,7 @@ const OfficialProfile: React.FC = () => {
                                     </span>
                                 ))}
                             </div>
-                            <p className="mt-8 text-xs text-white/40 font-medium">
-                                These qualities are essential for maintaining the integrity and mission of the CSA {official.position} role.
-                            </p>
+<p className="mt-8 text-sm text-white/70 font-medium">These qualities are essential for upholding the mission and integrity of this role within the CSA.</p>
                         </div>
                     </div>
                 </div>

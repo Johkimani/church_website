@@ -18,6 +18,7 @@ const ROLES = [
   { name: "st_francis_chair", description: "Manages St. Francis sub-group" },
   { name: "charismatic_chair", description: "Manages Charismatic sub-group" },
   { name: "dance_chair", description: "Manages Dance sub-group" },
+  { name: "mentorship_chair", description: "Manages Mentorship sub-group" },
   { name: "liturgist", description: "Manages Quizzes and Prayers" },
   { name: "treasurer", description: "Manages Donation Monitor" },
 ];

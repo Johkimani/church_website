@@ -34,7 +34,8 @@ const menuItems = [
     icon: LayoutGrid, 
     subItems: [
       { id: 'weekly-activities', name: 'Weekly Activities', path: '/admin/weekly-activities' },
-      { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' }
+      { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' },
+      { id: 'bookings', name: 'Bookings', path: '/admin/bookings' }
     ]
   },
   { id: 'announcements', name: 'Announcements Management', icon: Bell, path: '/admin/announcements' },
@@ -47,9 +48,7 @@ const menuItems = [
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
-  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
-  { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' }
 ];
 
@@ -153,6 +152,7 @@ export default function UniversalAdmin() {
           allowedPrefixes.add("/admin/announcements");
           allowedPrefixes.add("/admin/weekly-activities");
           allowedPrefixes.add("/admin/semester-activities");
+          allowedPrefixes.add("/admin/bookings");
           allowedPrefixes.add("/admin/gallery");
           break;
         case "JUMUIYA_OS":
@@ -201,6 +201,10 @@ export default function UniversalAdmin() {
         case "DANCE_CHAIR":
           allowedPrefixes.add("/admin/community-management");
           allowedPrefixes.add("/admin/community-management/dance");
+          break;
+        case "MENTORSHIP_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/mentorship");
           break;
       }
     });

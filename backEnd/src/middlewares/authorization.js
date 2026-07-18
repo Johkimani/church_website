@@ -5,14 +5,6 @@ export const authorize = (action, resource) => {
   return async (req, res, next) => {
     const { member_id: memberId, jumuiya_id: jumuiyaId, role } = req.user;
 
-    // Bypass check for admin roles
-    const normalisedRoles = (Array.isArray(role) ? role : [role]).map((r) =>
-      String(r).toLowerCase().trim()
-    );
-    if (normalisedRoles.some((r) => r === "csa_chair" || r === "jumuiya_coordinator")) {
-      return next();
-    }
-
     const permissions = await getMemberPermissions(testDb, memberId, jumuiyaId);
 
     if (!permissions.length) {
