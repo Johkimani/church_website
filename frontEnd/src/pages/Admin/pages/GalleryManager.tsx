@@ -18,6 +18,7 @@ interface GalleryImage {
   image_url: string;
   event_name: string;
   module_id?: string;
+  category?: string;
   description?: string;
   upload_date?: string;
   is_spotlight?: boolean;
@@ -32,8 +33,8 @@ export default function GalleryManager() {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const modules = ['general', 'Hero Slider', 'Gallery Grid', 'Teaser'];
-  const [uploadModule, setUploadModule] = useState(modules[0]);
+  const categories = ['general', 'Hero Slider', 'gallery-grid', 'teaser'];
+  const [uploadCategory, setUploadCategory] = useState(categories[0]);
   const [activeTab, setActiveTab] = useState('All');
   const [editItem, setEditItem] = useState<GalleryImage | null>(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -118,7 +119,8 @@ export default function GalleryManager() {
           formData.append('files', f);
           formData.append('eventName', file.name.replace(/\.[^.]+$/, ''));
           formData.append('description', '');
-          formData.append('moduleId', uploadModule);
+          formData.append('moduleId', 'general');
+          formData.append('category', uploadCategory);
           await apiClient.post('/hub-gallery/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
@@ -146,6 +148,7 @@ export default function GalleryManager() {
         event_name: editItem.event_name,
         description: editItem.description,
         module_id: editItem.module_id,
+        category: editItem.category,
       });
       setImages(prev => prev.map(img => img.id === editItem.id ? editItem : img));
       setEditItem(null);
@@ -158,7 +161,7 @@ export default function GalleryManager() {
 
   const filteredImages = activeTab === 'All'
     ? images
-    : images.filter(img => (img.module_id || 'general') === activeTab);
+    : images.filter(img => (img.category || 'general') === activeTab);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
@@ -176,12 +179,12 @@ export default function GalleryManager() {
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Section</label>
                 <select
-                  value={editItem.module_id || ''}
-                  onChange={e => setEditItem({ ...editItem, module_id: e.target.value })}
+                  value={editItem.category || ''}
+                  onChange={e => setEditItem({ ...editItem, category: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
                   <option value="">Select Section...</option>
-                  {modules.map(m => <option key={m} value={m}>{m}</option>)}
+                  {categories.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
               <div>
@@ -286,11 +289,11 @@ export default function GalleryManager() {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Upload To Section</label>
                   <select
-                    value={uploadModule}
-                    onChange={e => setUploadModule(e.target.value)}
+                    value={uploadCategory}
+                    onChange={e => setUploadCategory(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
-                    {modules.map(m => <option key={m} value={m}>{m}</option>)}
+                    {categories.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
 
@@ -360,7 +363,7 @@ export default function GalleryManager() {
 
               {/* Tabs */}
               <div className="flex p-1 bg-slate-100 rounded-xl self-start sm:self-auto overflow-x-auto">
-                {['All', ...modules].map(tab => (
+                {['All', ...categories].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -392,9 +395,9 @@ export default function GalleryManager() {
                       />
 
                       {/* Badge */}
-                      {image.module_id && (
+                      {image.category && (
                         <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[10px] uppercase tracking-widest font-black text-white">
-                          {image.module_id}
+                          {image.category}
                         </div>
                       )}
 
@@ -425,7 +428,7 @@ export default function GalleryManager() {
                             </p>
                           )}
                           <p className="text-slate-400 text-[9px] uppercase tracking-widest font-black mt-1">
-                            {image.module_id || 'Church Event'} &bull; {image.upload_date ? new Date(image.upload_date).toLocaleDateString() : 'Recent'}
+                            {image.category || 'Church Event'} &bull; {image.upload_date ? new Date(image.upload_date).toLocaleDateString() : 'Recent'}
                           </p>
                         </div>
                       </div>
