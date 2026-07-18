@@ -88,6 +88,7 @@ const FormsDistribution = lazy(() => import("./pages/Jumuiya/admin/FormsDistribu
 const JumuiyaMembersAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaMembersAdmin"));
 const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 const CsaSecretaryDashboard = lazy(() => import("./pages/Admin/pages/CsaSecretaryDashboard"));
+const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -161,6 +162,7 @@ const App: React.FC = () => {
           <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
           <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
           <Route path="registered-members" element={<CsaSecretaryDashboard />} />
+          <Route path="secretary-dashboard" element={<SecretaryDashboard />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 
