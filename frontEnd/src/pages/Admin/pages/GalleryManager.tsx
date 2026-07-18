@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import apiService from '../../Landing/services/api';
-import { uploadFile } from '../../../api/axiosInstance';
+import { apiClient, uploadFile } from '../../../api/axiosInstance';
 import { UPLOAD_BASE } from '../../../api/config';
 import {
   Image as ImageIcon,
@@ -15,13 +14,14 @@ import {
 } from 'lucide-react';
 
 interface GalleryImage {
-  id: string | number;
+  id: number;
   image_url: string;
-  title: string;
-  category?: string;
+  event_name: string;
+  module_id?: string;
   description?: string;
-  created_at?: string;
-  event_date?: string;
+  upload_date?: string;
+  is_spotlight?: boolean;
+  moderation_status?: string;
 }
 
 export default function GalleryManager() {
@@ -32,8 +32,8 @@ export default function GalleryManager() {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const categories = ['Hero Slider', 'Gallery Grid', 'Teaser'];
-  const [uploadCategory, setUploadCategory] = useState(categories[0]);
+  const modules = ['general', 'Hero Slider', 'Gallery Grid', 'Teaser'];
+  const [uploadModule, setUploadModule] = useState(modules[0]);
   const [activeTab, setActiveTab] = useState('All');
   const [editItem, setEditItem] = useState<GalleryImage | null>(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -45,10 +45,12 @@ export default function GalleryManager() {
   const loadImages = async () => {
     setLoading(true);
     try {
-      const data = await apiService.getGallery();
-      setImages(Array.isArray(data) ? data : []);
+      const { data } = await apiClient.get('/hub-gallery');
+      const items = data?.items || [];
+      setImages(items);
     } catch (err) {
       console.error('Failed to load gallery:', err);
+      setImages([]);
     } finally {
       setLoading(false);
     }
@@ -66,13 +68,11 @@ export default function GalleryManager() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-
     const newFiles = Array.from(files);
     if (newFiles.length + selectedFiles.length > 10) {
       alert("Maximum 10 photos can be uploaded at once.");
       return;
     }
-
     setSelectedFiles(prev => [...prev, ...newFiles]);
   };
 
@@ -89,15 +89,13 @@ export default function GalleryManager() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleDeleteImage = async (id: string | number) => {
-    if (window.confirm('Are you sure you want to remove this photo from the gallery?')) {
-      try {
-        await apiService.deleteRecord('gallery', id);
-        apiService.clearCache('gallery');
-        setImages(prev => prev.filter(img => img.id !== id));
-      } catch (err) {
-        alert('Failed to delete image');
-      }
+  const handleDeleteImage = async (id: number) => {
+    if (!window.confirm('Are you sure you want to remove this photo from the gallery?')) return;
+    try {
+      await apiClient.delete(`/hub-gallery/${id}`);
+      setImages(prev => prev.filter(img => img.id !== id));
+    } catch (err) {
+      alert('Failed to delete image');
     }
   };
 
@@ -114,12 +112,20 @@ export default function GalleryManager() {
         const result = response.data;
         const imageUrl = result?.data?.url || result?.url || result?.secure_url;
         if (imageUrl) {
-          await apiService.createRecord('gallery', { title: file.name, image_url: imageUrl });
+          const formData = new FormData();
+          const blob = await fetch(imageUrl).then(r => r.blob());
+          const f = new File([blob], file.name, { type: blob.type });
+          formData.append('files', f);
+          formData.append('eventName', file.name.replace(/\.[^.]+$/, ''));
+          formData.append('description', '');
+          formData.append('moduleId', uploadModule);
+          await apiClient.post('/hub-gallery/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
         }
         completed++;
         setUploadProgress(Math.round((completed / selectedFiles.length) * 100));
       }
-      apiService.clearCache('gallery');
       await loadImages();
       setSelectedFiles([]);
       setUploadStatus('success');
@@ -136,13 +142,11 @@ export default function GalleryManager() {
     if (!editItem) return;
     setEditSaving(true);
     try {
-      await apiService.updateRecord('gallery', editItem.id, {
-        title: editItem.title,
-        category: editItem.category,
+      await apiClient.patch(`/hub-gallery/${editItem.id}`, {
+        event_name: editItem.event_name,
         description: editItem.description,
-        event_date: editItem.event_date
+        module_id: editItem.module_id,
       });
-      apiService.clearCache('gallery');
       setImages(prev => prev.map(img => img.id === editItem.id ? editItem : img));
       setEditItem(null);
     } catch (err) {
@@ -154,7 +158,7 @@ export default function GalleryManager() {
 
   const filteredImages = activeTab === 'All'
     ? images
-    : images.filter(img => img.category === activeTab);
+    : images.filter(img => (img.module_id || 'general') === activeTab);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
@@ -170,34 +174,34 @@ export default function GalleryManager() {
             </div>
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Category Section</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Section</label>
                 <select
-                  value={editItem.category || ''}
-                  onChange={e => setEditItem({ ...editItem, category: e.target.value })}
+                  value={editItem.module_id || ''}
+                  onChange={e => setEditItem({ ...editItem, module_id: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
-                  <option value="">Select Category...</option>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="">Select Section...</option>
+                  {modules.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Title / Headline</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Event Name</label>
                 <input
                   type="text"
-                  value={editItem.title || ''}
-                  onChange={e => setEditItem({ ...editItem, title: e.target.value })}
+                  value={editItem.event_name || ''}
+                  onChange={e => setEditItem({ ...editItem, event_name: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="E.g. Sunday Mass"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Description Overlay</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Description</label>
                 <textarea
                   value={editItem.description || ''}
                   onChange={e => setEditItem({ ...editItem, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                  placeholder="Description text shown on the scroller..."
+                  placeholder="Description text..."
                 />
               </div>
             </div>
@@ -282,11 +286,11 @@ export default function GalleryManager() {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Upload To Section</label>
                   <select
-                    value={uploadCategory}
-                    onChange={e => setUploadCategory(e.target.value)}
+                    value={uploadModule}
+                    onChange={e => setUploadModule(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    {modules.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
 
@@ -338,16 +342,15 @@ export default function GalleryManager() {
                     </>
                   ) : (
                     'Start Upload'
-                  )
-                  }
-                </button >
-              </div >
+                  )}
+                </button>
+              </div>
             )}
-          </div >
-        </div >
+          </div>
+        </div>
 
         {/* Gallery Grid */}
-        < div className="xl:col-span-2" >
+        <div className="xl:col-span-2">
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm min-h-[600px] flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -357,7 +360,7 @@ export default function GalleryManager() {
 
               {/* Tabs */}
               <div className="flex p-1 bg-slate-100 rounded-xl self-start sm:self-auto overflow-x-auto">
-                {['All', ...categories].map(tab => (
+                {['All', ...modules].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -383,15 +386,15 @@ export default function GalleryManager() {
                   <div key={image.id} className="group relative bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 aspect-square flex flex-col">
                     <div className="relative flex-1 overflow-hidden">
                       <img
-                        src={image.image_url?.startsWith('http') || image.image_url?.startsWith('blob') ? image.image_url : `${UPLOAD_BASE}${image.image_url}`}
-                        alt={image.title}
+                        src={image.image_url?.startsWith('http') ? image.image_url : `${UPLOAD_BASE}${image.image_url}`}
+                        alt={image.event_name}
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
 
                       {/* Badge */}
-                      {image.category && (
+                      {image.module_id && (
                         <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[10px] uppercase tracking-widest font-black text-white">
-                          {image.category}
+                          {image.module_id}
                         </div>
                       )}
 
@@ -415,14 +418,14 @@ export default function GalleryManager() {
                         </div>
 
                         <div className="absolute bottom-4 left-4 right-4">
-                          <p className="text-white font-bold text-xs truncate mb-1">{image.title}</p>
+                          <p className="text-white font-bold text-xs truncate mb-1">{image.event_name}</p>
                           {image.description && (
                             <p className="text-slate-300 text-[10px] leading-snug line-clamp-2">
                               {image.description}
                             </p>
                           )}
                           <p className="text-slate-400 text-[9px] uppercase tracking-widest font-black mt-1">
-                            {image.category || 'Church Event'} &bull; {image.created_at ? new Date(image.created_at).toLocaleDateString() : 'Recent'}
+                            {image.module_id || 'Church Event'} &bull; {image.upload_date ? new Date(image.upload_date).toLocaleDateString() : 'Recent'}
                           </p>
                         </div>
                       </div>
@@ -440,8 +443,8 @@ export default function GalleryManager() {
               </div>
             )}
           </div>
-        </div >
-      </div >
-    </div >
+        </div>
+      </div>
+    </div>
   );
 }
