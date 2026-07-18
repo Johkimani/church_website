@@ -15,7 +15,7 @@ import {
   Image as ImageIcon,
   UserPlus,
   ClipboardList,
-  Home,
+  Trash2,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -42,6 +42,7 @@ const menuItems = [
   { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations' },
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
+  { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
@@ -171,7 +172,6 @@ export default function UniversalAdmin() {
           break;
         case "CSA_VICE_CHAIR":
           allowedPrefixes.add("/admin/suggestions");
-          allowedPrefixes.add("/admin/suggestion-bin");
           break;
         case "LITURGIST":
           allowedPrefixes.add("/admin/devotions");
@@ -332,21 +332,12 @@ export default function UniversalAdmin() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="admin-panel-header">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
-            >
-              <Menu size={24} />
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-200 transition duration-200"
-              title="Back to Home"
-            >
-              <Home size={24} />
-            </button>
-          </div>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
+          >
+            <Menu size={24} />
+          </button>
 
           <div className="flex-1 hidden md:flex md:items-center md:justify-center">
             <div className="relative max-w-lg text-center">

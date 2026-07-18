@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import OTPInput from "./OTPInput";
 import { ChevronLeft } from "lucide-react";
@@ -6,20 +7,45 @@ import { apiClient } from "../../api/axiosInstance";
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
   const email = useParams().reg || "";
+  const [countdown, setCountdown] = useState<number>(0);
+  const [resending, setResending] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  const handleResend = async () => {
+    if (countdown > 0) return;
+    try {
+      setResending(true);
+      await apiClient.post(`/authentication/resend-otp/${email}`);
+      alert("A new OTP has been sent to your email.");
+      setCountdown(60); // 60 seconds cooldown
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.error || "Failed to resend OTP. Please try again.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleOTPComplete = async (otp: string) => {
     try {
       const { data, status } = await apiClient.post(`/authentication/otp/${email}`, { otp });
       
       if (status >= 200 && status < 300) {
-        alert("OTP verified! You can reset your password.");
+        alert("OTP verified! You can now login with your new password.");
         navigate("/login", { replace: true });
       } else {
-        alert(data.message || "Invalid OTP");
+        alert(data.error || data.message || "Invalid OTP");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Verification failed. Please try again.");
+      const data = err.response?.data;
+      alert(data?.error || data?.message || "Verification failed. Please try again.");
     }
   };
 
@@ -86,6 +112,25 @@ const ResetPasswordPage = () => {
           {/* OTP Component */}
           <div className="flex justify-center lg:justify-start w-full mb-6 mt-4">
             <OTPInput length={6} onComplete={handleOTPComplete} />
+          </div>
+
+          {/* Resend OTP */}
+          <div className="text-center lg:text-left mt-6">
+            <p className="text-sm text-gray-500 font-medium">
+              Didn't receive the code?{" "}
+              {countdown > 0 ? (
+                <span className="text-gray-400 font-bold">Resend in {countdown}s</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="text-black hover:text-amber-500 font-black underline transition-colors disabled:opacity-50"
+                >
+                  {resending ? "Resending..." : "Resend OTP"}
+                </button>
+              )}
+            </p>
           </div>
 
         </div>
