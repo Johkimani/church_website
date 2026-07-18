@@ -15,6 +15,7 @@ import {
   Image as ImageIcon,
   UserPlus,
   ClipboardList,
+  Shield,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -42,6 +43,7 @@ const menuItems = [
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
+  { id: 'secretary-dashboard', name: 'My Jumuiya Dashboard', icon: Shield, path: '/admin/secretary-dashboard' },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
   { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
@@ -178,6 +180,7 @@ export default function UniversalAdmin() {
           break;
         case "JUMUIYA_CHAIRPERSON":
         case "JUMUIYA_SECRETARY":
+          allowedPrefixes.add("/admin/secretary-dashboard");
           allowedPrefixes.add("/admin/jumuiya-members");
           break;
         case "CHOIR_CHAIRPERSON":
@@ -197,6 +200,17 @@ export default function UniversalAdmin() {
   };
 
   const hasAccess = checkAccess(location.pathname);
+
+  // ── Redirect secretaries to their dashboard by default ──
+  const isSecretaryRole = normalized.some(
+    (r) => r === "JUMUIYA_SECRETARY" || r === "JUMUIYA_CHAIRPERSON"
+  );
+  useEffect(() => {
+    if (isSecretaryRole && location.pathname === "/admin") {
+      navigate("/admin/secretary-dashboard", { replace: true });
+    }
+  }, [isSecretaryRole, location.pathname, navigate]);
+
   const allowedMenuItems = menuItems.filter((item) => {
     if (item.path) return checkAccess(item.path);
     if (item.subItems) return item.subItems.some((child) => checkAccess(child.path));
