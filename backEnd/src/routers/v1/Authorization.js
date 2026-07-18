@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Login, refreshAccessToken, firstLoginSetup, verifyEmail } from "../../controllers/Login.js";
-import { OTPverification, Reset } from "../../controllers/Reset.js";
+import { OTPverification, Reset, ResendOTP } from "../../controllers/Reset.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import {
   stkCalls,
@@ -40,6 +40,7 @@ route.post("/verify-email", verifyEmail);
 route.post("/reset", Reset);
 route.post("/reset-email", verifyToken, Reset);
 route.post("/otp/:regNo", OTPverification);
+route.post("/resend-otp/:regNo", ResendOTP);
 // route.post("/log-out", verifyToken, logOut);
 route.post("/refresh", refreshAccessToken);
 route.post("/stk-push", verifyToken, stkCalls);

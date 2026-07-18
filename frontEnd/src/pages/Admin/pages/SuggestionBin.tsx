@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Trash2, Trash, Loader2, CheckCircle, MessageSquare, XCircle } from 'lucide-react';
+import { Trash2, Trash, Loader2, CheckCircle, MessageSquare, XCircle, Shield } from 'lucide-react';
 import { apiClient } from '../../../api/axiosInstance';
+import { useAuth } from '../../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 export default function SuggestionBin() {
+  const { user } = useAuth();
+  const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
+  const isChair = userRoles.some((r: string) => r === 'csa_chair');
+
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | 'all' | null>(null);
@@ -68,14 +73,14 @@ export default function SuggestionBin() {
             Suggestion Bin
           </h2>
           <p className="text-slate-500 font-medium mt-1 uppercase tracking-wider text-xs">
-            Suggestions soft-deleted by VC. Permanently delete or restore from here.
+            Suggestions soft-deleted by VC. Only the CSA Chair can permanently delete.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <span className="px-3 py-1.5 bg-orange-100 text-orange-800 text-sm font-bold rounded-xl">
             {items.length} item{items.length !== 1 ? 's' : ''}
           </span>
-          {items.length > 0 && (
+          {items.length > 0 && isChair && (
             <button onClick={handleClearAll} disabled={actionLoading === 'all'}
               className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5"
             >
@@ -120,12 +125,19 @@ export default function SuggestionBin() {
                       </span>
                     )}
                   </div>
-                  <button onClick={() => handleClearOne(item.id)} disabled={actionLoading === item.id}
-                    className="shrink-0 px-4 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {actionLoading === item.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    Delete
-                  </button>
+                  {isChair ? (
+                    <button onClick={() => handleClearOne(item.id)} disabled={actionLoading === item.id}
+                      className="shrink-0 px-4 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {actionLoading === item.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      Delete
+                    </button>
+                  ) : (
+                    <span className="shrink-0 px-4 py-2.5 bg-slate-50 text-slate-400 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-200">
+                      <Shield size={14} />
+                      Chair only
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
