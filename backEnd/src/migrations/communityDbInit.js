@@ -114,9 +114,11 @@ export const setupCommunityDatabase = async () => {
         upload_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
+      ALTER TABLE hub_gallery ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'general';
+
       CREATE TABLE IF NOT EXISTS enrollments (
         id SERIAL PRIMARY KEY,
-        class_id VARCHAR(50) NOT NULL,
+        module_id VARCHAR(50),
         full_name VARCHAR(100) NOT NULL,
         voice_type VARCHAR(50),
         music_level VARCHAR(50),
