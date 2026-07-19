@@ -1,5 +1,5 @@
 import { testDb } from "../Configs/dbConfig.js";
-import { getMemberPermissions } from "../repository/repository.js";
+import { getMemberPermissions, getRolePermissions } from "../repository/repository.js";
 
 export const authorize = (action, resource) => {
   return async (req, res, next) => {
@@ -8,9 +8,21 @@ export const authorize = (action, resource) => {
     const permissions = await getMemberPermissions(testDb, memberId, jumuiyaId);
 
     if (!permissions.length) {
-      return res
-        .status(403)
-        .json({ message: "Access denied: no role in this jumuia" });
+      const rolePerms = await getRolePermissions(testDb, role);
+      if (!rolePerms.length) {
+        return res
+          .status(403)
+          .json({ message: "Access denied: no role or permissions found" });
+      }
+      const isAuthorized = rolePerms.some(
+        (perm) => perm.action === action && perm.resource === resource,
+      );
+      if (!isAuthorized) {
+        return res
+          .status(403)
+          .json({ message: "Access denied: no permission for this resource" });
+      }
+      return next();
     }
 
     const isAuthorized = permissions.some(
