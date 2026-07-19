@@ -4,6 +4,13 @@ import {
   getSemesterActivities,
   getEffectiveWeeklySchedule,
 } from "../../controllers/activitiesController.js";
+import {
+  bookActivity,
+  payBooking,
+  getMyBookings,
+  getPaidActivities,
+} from "../../controllers/activityBookingController.js";
+import verifyToken from "../../middlewares/Tokens.js";
 
 const router = Router();
 
@@ -11,8 +18,14 @@ const router = Router();
 // Public read-only endpoints
 // ─────────────────────────────
 
-router.get("/schedule", getEffectiveWeeklySchedule); // ⭐ ADD THIS (IMPORTANT)
+router.get("/schedule", getEffectiveWeeklySchedule);
 router.get("/weekly", getWeeklyActivities);
 router.get("/semester", getSemesterActivities);
+
+// ── Paid activities & bookings (require auth) ─────────
+router.get("/paid", getPaidActivities);
+router.post("/book", verifyToken, bookActivity);
+router.post("/pay", verifyToken, payBooking);
+router.get("/my-bookings", verifyToken, getMyBookings);
 
 export default router;

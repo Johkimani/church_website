@@ -36,19 +36,11 @@ type ActiveTab = "csa" | "jumuiya";
 
 // ─── Role helpers ─────────────────────────────────────────────────────────────
 
-/**
- * Determine which OS role the current user holds.
- * The role strings come from the DB `roles.role_name` column.
- *
- * Known values seen in codebase: "CSA_LEADER", "admin" / "ADMIN".
- * Jumuiya equivalent: "JUMUIYA_LEADER" (assumed; adjust if different).
- */
 const detectCapabilities = (roles: string[]) => {
-  const normalised = roles.map((r) => String(r).toUpperCase());
-  const isAdmin        = normalised.some((r) => r.includes("ADMIN"));
-  const isCSAOs        = isAdmin || normalised.some((r) => r.includes("CSA_LEADER") || r.includes("CSA_OS"));
-  const isJumuiyaOs   = isAdmin || normalised.some((r) => r.includes("JUMUIYA_LEADER") || r.includes("JUMUIYA_OS"));
-  return { isAdmin, isCSAOs, isJumuiyaOs };
+  const normalised = roles.map((r) => String(r).toLowerCase().trim());
+  const isCSAOs    = normalised.some((r) => r === "os" || r === "csa_chair");
+  const isJumuiyaOs = normalised.some((r) => r === "jumuiya_os" || r === "os" || r === "csa_chair");
+  return { isCSAOs, isJumuiyaOs };
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -143,7 +135,7 @@ export default function AnnouncementsAdmin() {
   const { user } = useAuth();
 
   const roles = useMemo(() => (Array.isArray(user?.role) ? user.role : []), [user?.role]);
-  const { isAdmin, isCSAOs, isJumuiyaOs } = useMemo(() => detectCapabilities(roles), [roles]);
+  const { isCSAOs, isJumuiyaOs } = useMemo(() => detectCapabilities(roles), [roles]);
 
   // Access gate — need at least one OS role
   const canAccessPage = isCSAOs || isJumuiyaOs;
@@ -263,9 +255,7 @@ export default function AnnouncementsAdmin() {
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Announcements Management</h2>
           <p className="text-slate-500 font-medium mt-1 text-sm">
-            {isAdmin
-              ? "You have full control over all notification channels."
-              : isCSAOs && isJumuiyaOs
+            {isCSAOs && isJumuiyaOs
               ? "You manage both the CSA and Jumuiya notification channels."
               : isCSAOs
               ? "You manage the CSA notification channel."

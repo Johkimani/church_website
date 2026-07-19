@@ -15,6 +15,8 @@ import {
   Image as ImageIcon,
   UserPlus,
   ClipboardList,
+  Trash2,
+  Home,
   Shield,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
@@ -33,7 +35,8 @@ const menuItems = [
     icon: LayoutGrid, 
     subItems: [
       { id: 'weekly-activities', name: 'Weekly Activities', path: '/admin/weekly-activities' },
-      { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' }
+      { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' },
+      { id: 'bookings', name: 'Bookings', path: '/admin/bookings' }
     ]
   },
   { id: 'announcements', name: 'Announcements Management', icon: Bell, path: '/admin/announcements' },
@@ -42,13 +45,12 @@ const menuItems = [
   { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations' },
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
+  { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
   { id: 'secretary-dashboard', name: 'My Jumuiya Dashboard', icon: Shield, path: '/admin/secretary-dashboard' },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
-  { id: 'forms-distribution', name: 'Forms Distribution', icon: MessageSquare, path: '/admin/forms-distribution' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
-  { id: 'records', name: 'Records Explorer', icon: Database, path: '/admin/records' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' }
 ];
 
@@ -134,9 +136,7 @@ export default function UniversalAdmin() {
     ? [user.role]
     : [];
   const normalized = userRoles.map((r) => String(r).toUpperCase().trim());
-  const isSuperAdmin = normalized.some(
-    (r) => r === "CSA_CHAIR" || r.includes("ADMIN") || r.includes("SUPREME")
-  );
+  const isSuperAdmin = normalized.some((r) => r === "CSA_CHAIR");
 
   const checkAccess = (path: string): boolean => {
     if (isSuperAdmin) return true;
@@ -154,6 +154,7 @@ export default function UniversalAdmin() {
           allowedPrefixes.add("/admin/announcements");
           allowedPrefixes.add("/admin/weekly-activities");
           allowedPrefixes.add("/admin/semester-activities");
+          allowedPrefixes.add("/admin/bookings");
           allowedPrefixes.add("/admin/gallery");
           break;
         case "JUMUIYA_OS":
@@ -172,6 +173,9 @@ export default function UniversalAdmin() {
         case "TREASURER":
           allowedPrefixes.add("/admin/donations");
           break;
+        case "CSA_VICE_CHAIR":
+          allowedPrefixes.add("/admin/suggestions");
+          break;
         case "LITURGIST":
           allowedPrefixes.add("/admin/devotions");
           break;
@@ -186,8 +190,24 @@ export default function UniversalAdmin() {
         case "CHOIR_CHAIRPERSON":
         case "CHOIR_SECRETARY":
         case "CHOIR_PROJECT_COORDINATOR":
-        case "SUB_GROUP_CHAIR":
           allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/choir");
+          break;
+        case "ST_FRANCIS_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/st-francis");
+          break;
+        case "CHARISMATIC_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/charismatic");
+          break;
+        case "DANCE_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/dance");
+          break;
+        case "MENTORSHIP_CHAIR":
+          allowedPrefixes.add("/admin/community-management");
+          allowedPrefixes.add("/admin/community-management/mentorship");
           break;
       }
     });
@@ -331,12 +351,21 @@ export default function UniversalAdmin() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="admin-panel-header">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
-          >
-            <Menu size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
+            >
+              <Menu size={24} />
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-200 transition duration-200"
+              title="Back to Home"
+            >
+              <Home size={24} />
+            </button>
+          </div>
 
           <div className="flex-1 hidden md:flex md:items-center md:justify-center">
             <div className="relative max-w-lg text-center">

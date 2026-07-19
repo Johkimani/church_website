@@ -4,6 +4,7 @@ import logger from "../logger/winston.js";
 const ROLES = [
   { name: "csa_secretary", description: "CSA Secretary — oversees all registered members across all Jumuiyas" },
   { name: "csa_chair", description: "Super Admin — full access across the entire platform" },
+  { name: "csa_vice_chair", description: "Vice Chair — manages the Suggestion Box" },
   { name: "jumuiya_coordinator", description: "Global Manager — adds/manages all officials and members across the system" },
   { name: "project_manager", description: "Manages CSA T-shirts and Sacramentals" },
   { name: "instrument_manager", description: "Manages Seats and Instruments" },
@@ -14,7 +15,10 @@ const ROLES = [
   { name: "choir_chairperson", description: "Full admin access for all choir-related roles and features" },
   { name: "choir_secretary", description: "Handles choir Registrations and Announcements" },
   { name: "choir_project_coordinator", description: "Manages the Choir Gallery" },
-  { name: "sub_group_chair", description: "Full admin access for a sub-group (St. Francis, Charismatic, Dance)" },
+  { name: "st_francis_chair", description: "Manages St. Francis sub-group" },
+  { name: "charismatic_chair", description: "Manages Charismatic sub-group" },
+  { name: "dance_chair", description: "Manages Dance sub-group" },
+  { name: "mentorship_chair", description: "Manages Mentorship sub-group" },
   { name: "liturgist", description: "Manages Quizzes and Prayers" },
   { name: "treasurer", description: "Manages Donation Monitor" },
 ];
@@ -97,7 +101,43 @@ const setupRoleSystem = async () => {
       WHERE status = 'approved'
     `);
 
-    // 2. Seed roles
+    // 2. Add flagged_inactive column to members table
+    await pool.query(`
+      ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS flagged_inactive BOOLEAN DEFAULT FALSE
+    `);
+    logger.info("Ensured flagged_inactive column on members table");
+
+    // 2b. Add soft-delete & unmask columns to suggestions table
+    await pool.query(`
+      ALTER TABLE suggestions
+      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending',
+      ADD COLUMN IF NOT EXISTS unmask_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS unmask_requested_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS user_id VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS reply TEXT,
+      ADD COLUMN IF NOT EXISTS replied_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS replied_by VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'general',
+      ADD COLUMN IF NOT EXISTS chair_unmask_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS liturgist_unmask_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS chair_approved BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS liturgist_approved BOOLEAN DEFAULT FALSE
+    `);
+    logger.info("Ensured suggestion bin/unmask/reply/category columns on suggestions table");
+
+    // 3. Remove deprecated roles (delete member_roles first to respect FK)
+    await pool.query(`
+      DELETE FROM member_roles WHERE role_id IN (
+        SELECT role_id FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')
+      )
+    `);
+    await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')`);
+    logger.info("Removed deprecated roles: supreme_admin, admin, sub_group_chair");
+
+    // 4. Seed roles
     for (const role of ROLES) {
       const existing = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [role.name]);
       if (existing.rows.length === 0) {

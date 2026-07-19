@@ -72,6 +72,7 @@ const sseEmit = (postedTo, eventName, payload) => {
  * Admin creates a new notification → saved to DB → broadcast via SSE immediately.
  */
 export const createNotification = async (req, res) => {
+  console.log("[createNotification] Request body:", req.body);
   const { title, message, images, status } = req.body;
   const posted_to = req.body.posted_to || req.body.posted_To;
   const member_id = req.user?.member_id;
@@ -226,7 +227,7 @@ export const getNotification = async (req, res) => {
   try {
     const isAdmin =
       (Array.isArray(userRole) ? userRole : [userRole]).some(r =>
-        String(r).toLowerCase().includes("admin")
+        ["csa_chair", "jumuiya_coordinator", "os"].includes(String(r).toLowerCase().trim())
       );
 
     const baseQuery = `

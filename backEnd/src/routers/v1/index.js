@@ -14,12 +14,12 @@ import activitiesPublicRouter from "./activitiesPublicRouter.js";
 import activitiesAdminRouter from "./activitiesAdminRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
-import formsDistributionRouter from "./FormsDistributionRouter.js"
 import jumuiyaMembersRouter from "../jumuiyaMembersRouter.js"
 import jumuiyaDataRouter from "../jumuiyaDataRouter.js"
 
 
 import ordersRouter from "./orders.router.js";
+import testimonialsRouter from "./testimonialsRoutes.js";
 import stkPushRouter from "./stkPush.route.js";
 const router = Router()
 import paymentRouter from "./payment.router.js";
@@ -30,6 +30,8 @@ import categoryCardsRouter from "./categoryCardsRoutes.js";
 import hireAvailabilityRouter from "./hireAvailability.js";
 import hireSubmitRouter from "./hireSubmit.js";
 import hireStatusRouter from "./hireStatus.js";
+import statsPublishRoutes from "./statsPublishRoutes.js";
+import suggestionRouter from "./suggestionRouter.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -47,25 +49,10 @@ router.use("/", galleryRouter); // handles /choir/gallery
 router.use("/community-view", communityViewRouter);
 router.use("/orders", ordersRouter);
 
-// ======================================
-// TEMP DEVELOPMENT COMMENT
-// ADMIN AUTH DISABLED TEMPORARILY
-// RE-ENABLE BEFORE PRODUCTION
-// ======================================
-// router.use("/questions", verifyToken, QuestionsRoutes);
-router.use("/questions", QuestionsRoutes);
-
-// router.use("/files", verifyToken, uploadMedia);
-router.use("/files", uploadMedia);
-
+router.use("/questions", verifyToken, QuestionsRoutes);
+router.use("/files", verifyToken, uploadMedia);
 router.use("/notifications", verifyToken, notificationRoutes);
-
-// router.use("/csa", verifyToken, JumuiComparisonRoutes);
-router.use("/csa", JumuiComparisonRoutes);
-
-// router.use("/distribution", verifyToken, formsDistributionRouter);
-router.use("/distribution", formsDistributionRouter);
-
+router.use("/csa", verifyToken, JumuiComparisonRoutes);
 // Slider and config endpoints for frontend banners
 router.use("/", sliderRoutes);
 
@@ -92,6 +79,12 @@ router.use("/jumuiya-data", jumuiyaDataRouter);
 // Role management
 router.use("/", roleManagementRouter);
 
+// Setup
+router.post("/setup/admin", async (req, res) => {
+  const { setupAdmin } = await import("../../controllers/setupController.js");
+  return setupAdmin(req, res);
+});
+
 // Hire availability checking
 router.use("/hire", hireAvailabilityRouter);
 
@@ -100,6 +93,15 @@ router.use("/hire", hireSubmitRouter);
 
 // Hire status management & payment
 router.use("/hire", hireStatusRouter);
+
+// Testimonials (dedicated routes for rating+reference validation)
+router.use("/", testimonialsRouter);
+
+// Stats publish (admin trigger + user-facing published endpoints)
+router.use("/", statsPublishRoutes);
+
+// Suggestion-specific routes (bin, unmask, soft-delete)
+router.use("/suggestions", suggestionRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

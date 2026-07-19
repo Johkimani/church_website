@@ -1,5 +1,6 @@
 import { db } from "../../Configs/dbConfig.js";
 import logger from "../../logger/winston.js";
+import { sendSms } from "../../services/smsService.js";
 
 /**
  * SAFARICOM STK PUSH CALLBACK
@@ -70,6 +71,39 @@ export const handleCallback = async (req, res) => {
         [mpesaReceipt, CheckoutRequestID],
       );
 
+      // 3. Update hire requests that were waiting on this checkout_id
+      const hireUpdate = await db.query(
+        `UPDATE hire_requests
+            SET status = 'paid', payment_status = 'paid', payment_method = 'mpesa',
+                mpesa_receipt = $1, paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          WHERE mpesa_checkout_id = $2 AND payment_status = 'pending'
+          RETURNING hire_reference, customer_name, phone_number, item_name, quantity`,
+        [mpesaReceipt, CheckoutRequestID],
+      );
+
+      // 4. Send SMS confirmation for hire requests
+      if (hireUpdate.rows.length > 0) {
+        const hire = hireUpdate.rows[0];
+        try {
+          const settingsRes = await db.query(
+            `SELECT key, value FROM system_settings WHERE key IN ('hire_admin_phone', 'hire_pickup_location', 'hire_pickup_instructions')`
+          );
+          const settings = {};
+          settingsRes.rows.forEach(r => { settings[r.key] = r.value; });
+
+          const adminPhone = settings.hire_admin_phone || '0712345678';
+          const pickupLocation = settings.hire_pickup_location || 'the church premises';
+          const pickupInstructions = settings.hire_pickup_instructions || 'We will contact you with the exact pickup time. Call the admin for any inquiries.';
+
+          const message = `Payment of KES confirmed for ${hire.item_name} × ${hire.quantity} (Ref: ${hire.hire_reference}). Pickup location: ${pickupLocation}. ${pickupInstructions} Admin contact: ${adminPhone}`;
+
+          await sendSms(message, hire.phone_number);
+          logger.info(`SMS confirmation sent to ${hire.phone_number} for hire ${hire.hire_reference}`);
+        } catch (smsErr) {
+          logger.error(`Failed to send hire confirmation SMS: ${smsErr.message}`);
+        }
+      }
+
       logger.info(
         `✅ Payment recorded: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`,
       );
@@ -91,6 +125,14 @@ export const handleCallback = async (req, res) => {
       await db.query(
         `UPDATE orders SET status = 'failed', updated_at = CURRENT_TIMESTAMP
           WHERE checkout_id = $1 AND status = 'pending'`,
+        [CheckoutRequestID],
+      );
+
+      // Also mark any pending hire request as failed
+      await db.query(
+        `UPDATE hire_requests
+            SET payment_status = 'failed', updated_at = CURRENT_TIMESTAMP
+          WHERE mpesa_checkout_id = $1 AND payment_status = 'pending'`,
         [CheckoutRequestID],
       );
 
@@ -158,6 +200,11 @@ export const initiateSTK = async (userId, phoneNumber, amount) => {
   const callbackUrl =
     process.env.CALLBACK_URL || "https://example.com/api/v1/stkPush/callback";
   const response = await MpesaService.stkPush(phoneNumber, amount, callbackUrl);
+
+  if (!response || !response.CheckoutRequestID) {
+    logger.error("STK Push failed — no CheckoutRequestID in response:", JSON.stringify(response));
+    throw new Error(response?.errorMessage || response?.ResponseDescription || "M-Pesa did not return a checkout ID");
+  }
 
   const checkoutId = response.CheckoutRequestID;
   const merchantRequestId = response.MerchantRequestID;
