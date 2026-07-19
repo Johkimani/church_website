@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { toast } from 'react-hot-toast';
 import apiService from '../../Landing/services/api';
 
 interface ProjectsContextType {
@@ -42,7 +43,7 @@ export const ProjectsProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (Array.isArray(testData)) { setTestimonials(testData); localStorage.setItem(LS_KEYS.testimonials, JSON.stringify(testData)); }
       if (Array.isArray(cardData)) { setCategoryCards(cardData); localStorage.setItem(LS_KEYS.categoryCards, JSON.stringify(cardData)); }
       if (Array.isArray(sliderData)) { setSliderImages(sliderData); localStorage.setItem(LS_KEYS.sliderImages, JSON.stringify(sliderData)); }
-    } catch { /* ignore */ } finally {
+    } catch { toast.error('Failed to load projects data'); } finally {
       setLoading(false);
     }
   }, []);

@@ -4,7 +4,7 @@ import { Users, ArrowLeft, Church, CheckCircle, AlertTriangle, RefreshCw, UserPl
 import { memberService } from "../../../api/jumuiyaMemberService";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
-import ValidationReview from "../../Jumuiya/admin/ValidationReview";
+import MemberReview from "../../Jumuiya/admin/MemberReview";
 import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import MembersList from "../../Jumuiya/admin/MembersList";
 import CSADistributionCenter from "./CSADistributionCenter";
@@ -129,7 +129,7 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
 
       {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
       {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
-      {activeTab === "review" && <ValidationReview jumuiyaId={jumuiyaId} />}
+      {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "organize" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
       {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}

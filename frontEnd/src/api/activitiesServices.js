@@ -91,3 +91,32 @@ const activitiesService = {
 };
 
 export default activitiesService;
+
+// ── Bookings (admin + public) ─────────────────────────
+export const bookingService = {
+  getPaidActivities: async () => {
+    const res = await apiClient.get("/activities/paid");
+    return res.data.data || [];
+  },
+  book: async (activityId, activityType) => {
+    const res = await apiClient.post("/activities/book", { activity_id: activityId, activity_type: activityType });
+    return res.data.data;
+  },
+  pay: async (bookingId, amount, phone) => {
+    const res = await apiClient.post("/activities/pay", { booking_id: bookingId, amount, phoneNumber: phone });
+    return res.data;
+  },
+  myBookings: async () => {
+    const res = await apiClient.get("/activities/my-bookings");
+    return res.data.data || [];
+  },
+  // admin
+  getBookings: async () => {
+    const res = await apiClient.get("/admin/activities/bookings");
+    return res.data.data || [];
+  },
+  exportBookingsCSV: async () => {
+    const res = await apiClient.get("/admin/activities/bookings/export", { responseType: "blob" });
+    return res.data;
+  },
+};

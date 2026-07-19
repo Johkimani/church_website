@@ -739,7 +739,8 @@ export const getStatistics = async (req, res) => {
             `SELECT COUNT(*)::int as total,
                     COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
                     COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
-             FROM members WHERE jumuiya_id = $1 AND source = 'jum'`,
+             FROM members WHERE jumuiya_id = $1 AND source = 'jum'
+               AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
           )
         : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
@@ -749,7 +750,8 @@ export const getStatistics = async (req, res) => {
             `SELECT COUNT(*)::int as total,
                     COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
                     COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
-             FROM members WHERE jumuiya_id = $1 AND source = 'csa'`,
+             FROM members WHERE jumuiya_id = $1 AND source = 'csa'
+               AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
           )
         : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
@@ -758,6 +760,7 @@ export const getStatistics = async (req, res) => {
         ? pool.query(
             `SELECT LOWER(gender) as gender, COUNT(*)::int as count
              FROM members WHERE jumuiya_id = $1 AND source IN ('jum', 'csa')
+               AND (flagged_inactive IS NULL OR flagged_inactive = false)
              GROUP BY LOWER(gender)`,
             [jumuiyaUUID]
           )
@@ -827,7 +830,8 @@ export const getBatchStatistics = async (req, res) => {
                                COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
                                COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'jum'
-                        AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`, [uuid])
+                        AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
+                        AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
           : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
 
         uuid
@@ -835,7 +839,8 @@ export const getBatchStatistics = async (req, res) => {
                                COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
                                COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'csa'
-                        AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`, [uuid])
+                        AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
+                        AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
           : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
 
         pool.query(`SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
@@ -920,9 +925,9 @@ export const getMembers = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.phone, m.year_of_study, m.join_date, m.source
+      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.email, m.phone, m.year_of_study, m.join_date, m.source, m.flagged_inactive
        FROM members m
-       INNER JOIN registered r ON r.member_id = m.member_id AND r.status = 'active'
+       LEFT JOIN registered r ON r.member_id = m.member_id AND r.status = 'active'
        WHERE m.jumuiya_id = $1 AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
        ORDER BY m.first_name`,
       [jumuiyaUUID]
@@ -938,6 +943,7 @@ export const getMembers = async (req, res) => {
       year_of_study: r.year_of_study || deriveYearFromReg(r.member_id),
       join_date: r.join_date || null,
       source: r.source,
+      flagged_inactive: r.flagged_inactive || false,
     }));
 
     const seen = new Set();
@@ -1191,7 +1197,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
                 SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
-         WHERE m.jumuiya_id = sg.group_id`,
+         WHERE m.jumuiya_id = sg.group_id
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
         [name]
       );
 
@@ -1202,7 +1209,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
-         WHERE m.jumuiya_id = sg.group_id AND m.source = 'csa' ${yearFilter}`,
+         WHERE m.jumuiya_id = sg.group_id AND m.source = 'csa' ${yearFilter}
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
         [name]
       );
 
@@ -1312,7 +1320,8 @@ export const csaDistributePreview = async (req, res) => {
         `SELECT COUNT(*)::int as total,
                 SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
                 SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id`,
+         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
         [name]
       );
       jumuiyaRows.push({
@@ -1416,7 +1425,8 @@ export const csaDistributeMembers = async (req, res) => {
         `SELECT COUNT(*)::int as total,
                 SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
                 SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id`,
+         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
         [name]
       );
       jumuiyaRows.push({
@@ -2223,5 +2233,74 @@ export const lookupMemberByRegNumber = async (req, res) => {
   } catch (error) {
     logger.error("lookupMemberByRegNumber error:", error.message);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * PUT /api/v1/jumuiya-members/:member_id
+ * Update a single member's fields.
+ */
+export const updateMember = async (req, res) => {
+  try {
+    const { member_id } = req.params;
+    const allowed = ["first_name", "last_name", "gender", "course", "phone", "year_of_study"];
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) {
+        updates.push(`${field} = $${idx++}`);
+        values.push(req.body[field]);
+      }
+    }
+
+    if (!updates.length) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+
+    values.push(member_id);
+    const result = await pool.query(
+      `UPDATE members SET ${updates.join(", ")} WHERE member_id = $${idx} RETURNING member_id, first_name, last_name, gender, course, phone, year_of_study`,
+      values
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Member not found" });
+    }
+
+    res.json({ status: "success", data: result.rows[0] });
+  } catch (error) {
+    logger.error("updateMember error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * PATCH /api/v1/jumuiya-members/:member_id/flag
+ * Toggle the flagged_inactive status of a member.
+ */
+export const flagMember = async (req, res) => {
+  try {
+    const { member_id } = req.params;
+    const { flagged } = req.body;
+
+    if (typeof flagged !== "boolean") {
+      return res.status(400).json({ error: "flagged must be a boolean" });
+    }
+
+    const result = await pool.query(
+      `UPDATE members SET flagged_inactive = $1 WHERE member_id = $2 RETURNING member_id, flagged_inactive`,
+      [flagged, member_id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Member not found" });
+    }
+
+    res.json({ status: "success", data: result.rows[0] });
+  } catch (error) {
+    logger.error("flagMember error:", error.message);
+    res.status(500).json({ error: error.message });
   }
 };

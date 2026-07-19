@@ -26,11 +26,16 @@ export const getGallery = async (req, res) => {
             (${anniversaryCondition}) as is_anniversary
             FROM hub_gallery 
             WHERE moderation_status = 'Approved'
+            AND (category = 'general' OR category IS NULL)
         `;
         let params = [];
 
         // Access Control Logic
-        if (user && user.role !== 'Admin') {
+        const roles = user?.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
+        const isGlobalViewer = roles.some((r) =>
+          ["csa_chair", "os", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim())
+        );
+        if (user && !isGlobalViewer) {
             // Member sees their Jumuiya + General photos
             query += ' AND (module_id = $1 OR module_id = $2)';
             params.push('general');
@@ -40,7 +45,7 @@ export const getGallery = async (req, res) => {
             query += ' AND module_id = $1';
             params.push('general');
         }
-        // If Admin, no extra filters (sees everything)
+        // If global viewer (csa_chair, os, jumuiya_coordinator), no extra filters (sees everything)
 
         query += ' ORDER BY upload_date DESC';
         
@@ -73,9 +78,10 @@ export const getGalleryTeaser = async (_req, res) => {
     try {
         const query = `
             SELECT * FROM hub_gallery 
-            WHERE is_spotlight = TRUE AND moderation_status = 'Approved' 
+            WHERE (is_spotlight = TRUE OR category = 'teaser')
+            AND moderation_status = 'Approved' 
             ORDER BY upload_date DESC 
-            LIMIT 2
+            LIMIT 6
         `;
         const result = await pool.query(query);
         res.json(result.rows);
@@ -85,19 +91,60 @@ export const getGalleryTeaser = async (_req, res) => {
     }
 };
 
+export const deleteGalleryItem = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query(
+            "DELETE FROM hub_gallery WHERE id = $1 RETURNING *",
+            [id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Gallery item not found" });
+        }
+        res.json({ message: "Deleted successfully", item: result.rows[0] });
+    } catch (error) {
+        logger.error(`[GalleryController] Delete error: ${error.message}`);
+        res.status(500).json({ error: "Failed to delete gallery item" });
+    }
+};
+
+export const updateGalleryItem = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { event_name, description, module_id, category } = req.body;
+        const query = `
+            UPDATE hub_gallery
+            SET event_name = COALESCE($1, event_name),
+                description = COALESCE($2, description),
+                module_id = COALESCE($3, module_id),
+                category = COALESCE($4, category)
+            WHERE id = $5
+            RETURNING *
+        `;
+        const result = await pool.query(query, [event_name, description, module_id, category, id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Gallery item not found" });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        logger.error(`[GalleryController] Update error: ${error.message}`);
+        res.status(500).json({ error: "Failed to update gallery item" });
+    }
+};
+
 export const uploadToGallery = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-        const { eventName, description, moduleId, publicId } = req.body;
+        const { eventName, description, moduleId, publicId, category } = req.body;
         const imageUrl = req.file.path; // Cloudinary URL from multer-storage-cloudinary
 
         const query = `
-            INSERT INTO hub_gallery (module_id, image_url, description, event_name, public_id)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO hub_gallery (module_id, image_url, description, event_name, public_id, category)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `;
-        const values = [moduleId || 'general', imageUrl, description || '', eventName || 'Untitled Event', publicId || ''];
+        const values = [moduleId || 'general', imageUrl, description || '', eventName || 'Untitled Event', publicId || '', category || 'general'];
 
         const result = await pool.query(query, values);
         res.status(201).json(result.rows[0]);

@@ -1,24 +1,23 @@
-import { MailtrapClient } from "mailtrap";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
 
-// if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
-//   throw new Error("Email credentials are missing in .env");
-// }
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
 
 const transporter = nodemailer.createTransport({
-  // host: "smtp.gmail.com",
-  // port: 587,
-  // secure: false,
   service: "gmail",
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASSWORD,
   },
+  tls: {
+    rejectUnauthorized: false,
+  },
 });
 
-export const sendEmail = async (subject, text, to) => {
+const sendEmail = async (subject, text, to) => {
   const mailOptions = {
     from: process.env.MAIL_USER,
     to,
@@ -35,41 +34,6 @@ export const sendEmail = async (subject, text, to) => {
     throw error;
   }
 };
-import path from "path";
-import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
-
-const TOKEN = process.env.MAILTRAP_TOKEN;
-
-const client = new MailtrapClient({
-  token: TOKEN,
-});
-
-const sender = {
-  email: "hello@demomailtrap.co",
-  name: "Mailtrap Test",
-};
-
-// const sendEmail = async (subject, text, recipient) => {
-//   const recipients = [
-//     {
-//       email: recipient,
-//     },
-//   ];
-
-//   try {
-//     await client.send({
-//       from: sender,
-//       to: recipients,
-//       subject,
-//       text,
-//       category: "test ",
-//     });
-//   } catch (error) {
-//     console.error("Error sending email:", error.message);
-//   }
-// };
-
+export { sendEmail };
 export default sendEmail;

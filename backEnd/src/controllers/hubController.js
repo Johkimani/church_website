@@ -1,27 +1,5 @@
 import { BackendDataService } from '../services/backend-data.js';
 
-// ─── Hardcoded fallback data (shown if JSON files are empty/missing) ───────────
-const FALLBACKS = {
-    dancers: {
-        officials: [
-            { id: '1', name: 'Chair', role: 'Chairperson', email: '', phoneNumber: '', photoUrl: '' }
-        ],
-        activities: [
-            { id: '1', title: 'Kerugoya Parish Visit', description: 'Visiting Kerugoya Parish on 15th', date: '2025-02-10', location: 'Kutus', status: 'Upcoming' }
-        ]
-    },
-    charismatic: {
-        officials: [],
-        activities: []
-    },
-    'st-francis': {
-        officials: [
-            { id: '1', name: 'Chairperson', role: 'Chair', email: '', phoneNumber: '', photoUrl: '' }
-        ],
-        activities: []
-    }
-};
-
 const modulesMeta = [
     {
         id: 'choir',
@@ -111,15 +89,13 @@ export const getModule = (req, res) => {
         });
     }
 
-    const fallback = FALLBACKS[meta.id] || {};
-
-    // Clone meta and load dynamic data — fallback defaults ensure content never disappears
+    // Clone meta and load dynamic data
     const moduleInfo = {
         ...meta,
-        officials:     BackendDataService.load(`${meta.id}_officials.json`,     fallback.officials     || []),
-        activities:    BackendDataService.load(`${meta.id}_activities.json`,    fallback.activities    || []),
-        announcements: BackendDataService.load(`${meta.id}_announcements.json`, fallback.announcements || []),
-        gallery:       BackendDataService.load(`${meta.id}_gallery.json`,       fallback.gallery       || [])
+        officials:     BackendDataService.load(`${meta.id}_officials.json`,     []),
+        activities:    BackendDataService.load(`${meta.id}_activities.json`,    []),
+        announcements: BackendDataService.load(`${meta.id}_announcements.json`, []),
+        gallery:       BackendDataService.load(`${meta.id}_gallery.json`,       [])
     };
 
     // Special case for choir
