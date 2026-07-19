@@ -2,211 +2,195 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCommunityData } from './context/CommunityDataContext';
 import { motion } from 'framer-motion';
-import { 
-  ArrowRight, 
-  Music, 
-  Users, 
-  Compass, 
-  Flame, 
-  HeartHandshake 
+import {
+  ArrowRight,
+  Music,
+  Users,
+  Compass,
+  Flame,
+  HeartHandshake,
+  BookOpen,
 } from 'lucide-react';
 
-// Theme configuration for each community module to create visual excellence
-interface MinistryTheme {
-  image: string;
-  tag: string;
-  icon: React.ReactNode;
-}
-
-const MINISTRY_THEMES: Record<string, MinistryTheme> = {
-  choir: {
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600",
-    tag: "Praise & Worship",
-    icon: <Music className="w-5 h-5 text-white" />
-  },
-  dancers: {
-    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600",
-    tag: "Liturgical Movement",
-    icon: <Compass className="w-5 h-5 text-white" />
-  },
-  charismatic: {
-    image: "https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=600",
-    tag: "Prayer & Healing",
-    icon: <Flame className="w-5 h-5 text-white" />
-  },
-  "st-francis": {
-    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600",
-    tag: "Simplicity & Charity",
-    icon: <HeartHandshake className="w-5 h-5 text-white" />
-  },
-  youth: {
-    image: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600",
-    tag: "Mentorship & Guidance",
-    icon: <Users className="w-5 h-5 text-white" />
-  }
+// Icon mapping per module (intentional, not generic stock)
+const ICON_MAP: Record<string, React.ReactNode> = {
+  choir: <Music className="w-5 h-5" />,
+  dancers: <Compass className="w-5 h-5" />,
+  charismatic: <Flame className="w-5 h-5" />,
+  'st-francis': <HeartHandshake className="w-5 h-5" />,
+  youth: <Users className="w-5 h-5" />,
+  mentorship: <BookOpen className="w-5 h-5" />,
 };
 
-const DEFAULT_THEME: MinistryTheme = {
-  image: "https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600",
-  tag: "Parish Ministry",
-  icon: <Users className="w-5 h-5 text-white" />
-};
+const DEFAULT_ICON = <Users className="w-5 h-5" />;
 
-// Framer motion animation variants
+// Framer motion variants
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1
-    }
-  }
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
 } as const;
 
 const cardVariants = {
-  hidden: { y: 40, opacity: 0 },
-  show: { 
-    y: 0, 
-    opacity: 1, 
-    transition: { 
-      type: "spring" as const, 
-      stiffness: 70, 
-      damping: 15 
-    } 
-  }
+  hidden: { y: 30, opacity: 0 },
+  show: {
+    y: 0,
+    opacity: 1,
+    transition: { type: 'spring' as const, stiffness: 80, damping: 16 },
+  },
 } as const;
 
 const Community: React.FC = () => {
   const navigate = useNavigate();
   const { modules, isLoading } = useCommunityData();
 
-  // Only keep the 5 main ministries
   const allowedIds = ['choir', 'dancers', 'st-francis', 'charismatic', 'youth', 'mentorship'];
-  const activeModules = modules.filter(mod => allowedIds.includes(mod.id));
+  const activeModules = modules.filter((mod) => allowedIds.includes(mod.id));
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
-        <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 font-bold tracking-wide">Loading ministries...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-stone-50">
+        <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4" />
+        <p className="text-stone-500 font-semibold tracking-wide">Loading ministries...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen pb-24 text-slate-800 font-sans">
-      
-      {/* ══════════ Hero Header Section (Premium Dark Grid Design) ══════════ */}
-      <div className="bg-slate-950 text-white py-24 px-6 md:px-12 relative overflow-hidden shadow-2xl">
-        {/* Glow Effects */}
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
-        
-        {/* Subtle grid texture overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+    <div className="w-full bg-stone-50 min-h-screen pb-28 text-stone-800 font-sans">
+      {/* ══════════ Header ══════════ */}
+      <div className="relative bg-gradient-to-b from-stone-900 to-stone-800 text-white pt-24 pb-20 px-6 md:px-12 overflow-hidden">
+        {/* Soft warm accent */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -left-24 w-96 h-96 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
 
-        <div className="max-w-6xl mx-auto text-center relative z-10">
-          <motion.span 
-            initial={{ opacity: 0, y: -10 }}
+        <div className="max-w-6xl mx-auto relative z-10">
+          <motion.span
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-xs md:text-sm font-black uppercase tracking-[0.32em] text-blue-400 bg-blue-500/10 px-5 py-2.5 rounded-full border border-blue-500/20 mb-6 inline-block"
+            transition={{ duration: 0.5 }}
+            className="text-xs font-bold uppercase tracking-[0.28em] text-amber-300/90 bg-amber-400/10 px-4 py-2 rounded-full border border-amber-400/20 inline-block"
           >
             CSA Groups & Communities
           </motion.span>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 15 }}
+
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl md:text-6xl font-black mb-6 tracking-tight leading-none"
+            transition={{ duration: 0.5, delay: 0.08 }}
+            className="text-4xl md:text-5xl font-extrabold mt-5 mb-4 tracking-tight"
           >
-            Vibrant Ministries
+            Our Ministries
           </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
+
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-base md:text-lg text-slate-400 max-w-2xl mx-auto font-medium leading-relaxed"
+            transition={{ duration: 0.5, delay: 0.16 }}
+            className="text-stone-300 max-w-2xl text-base leading-relaxed"
           >
-            Discover and connect with our dedicated parish ministries. Grow in faith, share your unique gifts, and find your spiritual family.
+            Find your place in the parish family. Each ministry is a community of faith,
+            service, and friendship — explore one and get involved.
           </motion.p>
         </div>
       </div>
 
-      {/* ══════════ Ministries Cards Grid ══════════ */}
-      <div className="max-w-6xl mx-auto px-6 md:px-12 -mt-10 relative z-20">
-        <motion.div 
+      {/* ══════════ Cards Grid ══════════ */}
+      <div className="max-w-6xl mx-auto px-6 md:px-12 -mt-12 relative z-20">
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="flex flex-wrap justify-center gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7"
         >
           {activeModules.map((mod) => {
-            const theme = MINISTRY_THEMES[mod.id] || DEFAULT_THEME;
+            const accent = mod.color || '#b45309';
+            const icon = ICON_MAP[mod.id] || DEFAULT_ICON;
+            const image = mod.saint_image_url || mod.image_url;
 
             return (
-              <motion.div
+              <motion.article
                 key={mod.id}
                 variants={cardVariants}
                 onClick={() => navigate(`/community/${mod.id}`)}
-                className="group relative flex flex-col h-full w-full max-w-[360px] md:w-[calc(50%-2rem)] lg:w-[calc(33.333%-2rem)] bg-white rounded-[2.5rem] border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 ease-out overflow-hidden cursor-pointer hover:-translate-y-3"
+                className="group relative flex flex-col bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all duration-400 ease-out overflow-hidden cursor-pointer hover:-translate-y-1.5"
               >
-                {/* Image & Gradient Header */}
-                <div className="h-56 relative overflow-hidden shrink-0">
-                  {/* Image with zoom on card hover */}
-                  <img 
-                    src={theme.image} 
-                    alt={mod.title} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" 
-                  />
-                  
-                  {/* Shadow Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                {/* Image / fallback */}
+                <div className="h-48 relative overflow-hidden shrink-0">
+                  {image ? (
+                    <img
+                      src={image}
+                      alt={mod.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{
+                        background: `linear-gradient(135deg, ${accent}26, ${accent}0d)`,
+                      }}
+                    >
+                      <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                        style={{ backgroundColor: accent }}
+                      >
+                        {icon}
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Badge */}
-                  <span className="absolute top-4 left-4 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
-                    {theme.tag}
-                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-900/70 via-stone-900/10 to-transparent" />
 
-                  {/* Floating Icon Bubble */}
-                  <div className="absolute top-4 right-4 w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg">
-                    {theme.icon}
+                  {/* Icon chip */}
+                  <div
+                    className="absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {icon}
                   </div>
 
-                  {/* Ministry Title */}
-                  <div className="absolute bottom-4 left-6 right-6">
-                    <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors">
+                  <div className="absolute bottom-3 left-5 right-5">
+                    <h3 className="text-lg font-bold text-white leading-snug drop-shadow">
                       {mod.title}
                     </h3>
                   </div>
                 </div>
 
-                {/* Card Body */}
-                <div className="p-6 flex flex-col flex-grow">
-                  <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                {/* Body */}
+                <div className="p-5 flex flex-col flex-grow">
+                  <p className="text-stone-500 text-sm leading-relaxed mb-5 flex-grow">
                     {mod.description}
                   </p>
 
-                  {/* Action Link Footer */}
-                  <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-end text-blue-600 group-hover:text-blue-700 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-blue-50 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 flex items-center justify-center text-blue-600">
-                      <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                  <div
+                    className="mt-auto flex items-center justify-between pt-4 border-t border-stone-100"
+                  >
+                    <span
+                      className="text-xs font-semibold uppercase tracking-wide"
+                      style={{ color: accent }}
+                    >
+                      {mod.scheduleLabel || 'Ministry'}
+                    </span>
+                    <span
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-white transition-transform duration-300 group-hover:translate-x-1"
+                      style={{ backgroundColor: accent }}
+                    >
+                      <ArrowRight size={15} />
+                    </span>
                   </div>
                 </div>
-              </motion.div>
+              </motion.article>
             );
           })}
         </motion.div>
 
         {activeModules.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-dashed border-gray-300">
-            <i className="fas fa-folder-open text-gray-300 text-6xl mb-4"></i>
-            <h3 className="text-2xl font-bold text-gray-500 mb-2">No ministries found</h3>
-            <p className="text-gray-400">We couldn't find any active ministry modules at the moment.</p>
+          <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-dashed border-stone-300">
+            <h3 className="text-xl font-bold text-stone-500 mb-2">No ministries found</h3>
+            <p className="text-stone-400">We couldn't find any active ministry modules at the moment.</p>
           </div>
         )}
       </div>
