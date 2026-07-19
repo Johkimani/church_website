@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { FaStar } from 'react-icons/fa';
-import { Loader2 } from 'lucide-react';
+import InlineLoader from '../../../assets/Layouts/InlineLoader';
 import apiService from '../../Landing/services/api';
 import { useProjectsData } from '../context/ProjectsProvider';
 
@@ -57,14 +57,11 @@ export default function TestimonialsSection({ variant = 'blue', title = 'Trusted
 
       <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
         {loading
-          ? [1,2,3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-5 sm:p-6 shadow animate-pulse">
-                <div className="h-3 bg-slate-200 rounded w-1/3 mx-auto mb-3" />
-                <div className="h-4 bg-slate-200 rounded w-full mb-2" />
-                <div className="h-4 bg-slate-200 rounded w-5/6 mx-auto mb-4" />
-                <div className="h-3 bg-slate-200 rounded w-1/4 mx-auto" />
+          ? (
+              <div className="col-span-full py-8">
+                <InlineLoader message="Loading testimonials" size="medium" />
               </div>
-            ))
+            )
           : testimonials.map(t => (
               <div key={t.id} className={`bg-white rounded-2xl p-5 sm:p-6 shadow hover:shadow-lg transition-all duration-300 border ${theme.border} hover:-translate-y-1 text-center`}>
                 <div className="flex justify-center gap-0.5 mb-3">
