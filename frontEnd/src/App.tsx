@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import PageLoader from "./assets/Layouts/PageLoader";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
 import { Home } from "./pages/Landing/components/page/Home";
@@ -104,13 +105,7 @@ const CommunityDetail = lazy(() => import("./pages/sacramental/CommunityDetail")
 const NotificationPage = lazy(() => import("./pages/Devotions/pages/NotificationPage"));
 
 // Fallback component
-const FallBack: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-slate-50">
-    <div className="text-xl font-medium text-slate-600 animate-pulse">
-      🍷 Please wait ...
-    </div>
-  </div>
-);
+const FallBack: React.FC = () => <PageLoader message="Loading..." fullScreen />;
 
 
 const App: React.FC = () => {

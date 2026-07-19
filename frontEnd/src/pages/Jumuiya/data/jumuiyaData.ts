@@ -88,7 +88,7 @@ export const jumuiyaList: JumuiyaData[] = [
     fullName: "St. Anthony of Padua",
     description: "The breath of Charity widens the narrows heart of sinners",
     color: "#b00adab4",
-    saintImage: "/images/Augustine.png",
+    saintImage: "/images/Anthony.png",
     historyPdf: "/assets/files/SAINT_ANTHONY.pdf",
     notifications: [
       {
