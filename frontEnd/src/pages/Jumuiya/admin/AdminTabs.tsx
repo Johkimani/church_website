@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaDatabase } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaDatabase, FaBell } from 'react-icons/fa';
 import './Admin.css';
 
 const tabs = [
+    { path: '/admin/notifications', label: 'Notifications', icon: <FaBell /> },
     { path: '/admin/about', label: 'About', icon: <FaInfoCircle /> },
     { path: '/admin/officials', label: 'Officials', icon: <FaUserTie /> },
     { path: '/admin/members', label: 'Members', icon: <FaUsers /> },

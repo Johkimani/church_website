@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaSignOutAlt, FaBars, FaTimes } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaSignOutAlt, FaBars, FaTimes, FaBell } from 'react-icons/fa';
 import './Admin.css';
 
 import AdminTabs from './AdminTabs';
@@ -18,6 +18,7 @@ const AdminLayout: React.FC = () => {
     };
 
     const navItems = [
+        { path: '/admin/notifications', label: 'Notifications', icon: <FaBell /> },
         { path: '/admin/about', label: 'About', icon: <FaInfoCircle /> },
         { path: '/admin/officials', label: 'Officials', icon: <FaUserTie /> },
         { path: '/admin/members', label: 'Members', icon: <FaUsers /> },
