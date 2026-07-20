@@ -24,6 +24,7 @@ import apiService from '../Landing/services/api';
 import { useEffect, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
+import { Home } from '../projects/pages/Home';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
