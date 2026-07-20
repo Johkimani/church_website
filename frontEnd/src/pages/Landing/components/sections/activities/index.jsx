@@ -67,11 +67,7 @@ const getWeeklyActivityImage = (activity) => {
 };
 
 // ── Weekly Activity Card ───────────────────────────────────────────
-<<<<<<< HEAD
-function WeeklyCard({ activity, onBook }) {
-=======
 function WeeklyCard({ activity, onBook, bookingState }) {
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
   const { user } = useAuth();
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
   const icon = ACTIVITY_ICONS[activity.activity] || "✝";
@@ -163,18 +159,7 @@ function WeeklyCard({ activity, onBook, bookingState }) {
         {activity.fare && Number(activity.fare) > 0 && (
           <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
             <span className="font-bold text-emerald-600">KES {Number(activity.fare).toLocaleString()}</span>
-<<<<<<< HEAD
-            {user ? (
-              <button onClick={(e) => { e.stopPropagation(); onBook(activity, 'weekly'); }}
-                className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
-                Book Now
-              </button>
-            ) : (
-              <span className="text-[9px] text-slate-400 italic">Login to book</span>
-            )}
-=======
             {renderBookButton()}
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           </div>
         )}
       </div>
@@ -183,11 +168,7 @@ function WeeklyCard({ activity, onBook, bookingState }) {
 }
 
 // ── Semester Event Card ────────────────────────────────────────────
-<<<<<<< HEAD
-function SemesterCard({ event, onBook }) {
-=======
 function SemesterCard({ event, onBook, bookingState }) {
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
   const { user } = useAuth();
   const dt = new Date(event.date_time);
   const isPast = dt < new Date();
@@ -264,18 +245,7 @@ function SemesterCard({ event, onBook, bookingState }) {
         {event.fare && Number(event.fare) > 0 && (
           <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
             <span className="font-bold text-emerald-600">KES {Number(event.fare).toLocaleString()}</span>
-<<<<<<< HEAD
-            {user ? (
-              <button onClick={(e) => { e.stopPropagation(); onBook(event, 'semester'); }}
-                className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
-                Book Now
-              </button>
-            ) : (
-              <span className="text-[9px] text-slate-400 italic">Login to book</span>
-            )}
-=======
             {renderBookButton()}
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           </div>
         )}
       </div>
@@ -284,18 +254,6 @@ function SemesterCard({ event, onBook, bookingState }) {
 }
 
 // ── Booking Modal ──────────────────────────────────────────────────
-<<<<<<< HEAD
-function BookingModal({ activity, activityType, onClose }) {
-  const [step, setStep] = useState("book"); // book | paying | success | error
-  const [phone, setPhone] = useState("");
-  const [amount, setAmount] = useState("");
-  const [bookingId, setBookingId] = useState(null);
-  const [checkoutId, setCheckoutId] = useState(null);
-  const [processing, setProcessing] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const fare = Number(activity?.fare || 0);
-=======
 function BookingModal({ activity, activityType, onClose, existingBooking, onPaymentComplete }) {
   const [step, setStep] = useState(existingBooking?.id ? "paying" : "book");
   const [phone, setPhone] = useState("");
@@ -346,7 +304,6 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
     };
     pollRef.current = setInterval(poll, 3000);
   }
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 
   async function handleBook() {
     setProcessing(true);
@@ -357,10 +314,6 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
       setStep("paying");
       toast.success("Booking created! Enter amount to pay.");
     } catch (err) {
-<<<<<<< HEAD
-      setMessage(err?.response?.data?.error || err?.message || "Booking failed");
-      setStep("error");
-=======
       const errMsg = err?.response?.data?.error || "";
       if (err.response?.status === 409) {
         setBookingId(err.response.data.booking_id);
@@ -370,7 +323,6 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
         setMessage(errMsg || err?.message || "Booking failed");
         setStep("error");
       }
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
     } finally {
       setProcessing(false);
     }
@@ -385,10 +337,7 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
       setCheckoutId(result.checkoutId);
       setStep("success");
       toast.success("STK Push sent! Check your phone.");
-<<<<<<< HEAD
-=======
       pollPaymentStatus(result.checkoutId, bookingId);
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
     } catch (err) {
       setMessage(err?.response?.data?.error || err?.message || "Payment failed");
       setStep("error");
@@ -422,9 +371,6 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
           )}
           {step === "paying" && (
             <div className="space-y-6">
-<<<<<<< HEAD
-              <p className="text-sm text-slate-600">Pay via M-Pesa. You can pay the full fare or a partial amount (lipa mdogo mdogo).</p>
-=======
               <p className="text-sm text-slate-600">
                 {existingBooking?.id ? (
                   <>You have already paid <strong>KES {paidSoFar.toLocaleString()}</strong> of <strong>KES {fare.toLocaleString()}</strong>. Pay the remaining <strong>KES {remaining.toLocaleString()}</strong> via M-Pesa.</>
@@ -432,20 +378,13 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
                   <>Pay via M-Pesa. You can pay the full fare or a partial amount (lipa mdogo mdogo).</>
                 )}
               </p>
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
               {message && <div className="text-sm text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100">{message}</div>}
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">Amount (KES)</label>
                 <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-<<<<<<< HEAD
-                  min="1" max={fare}
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-lg font-bold text-gray-900" />
-                <p className="text-[10px] text-slate-400 mt-1 ml-1">Enter any amount between 1 and {fare.toLocaleString()} (you can pay later)</p>
-=======
                   min="1" max={remaining}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-lg font-bold text-gray-900" />
                 <p className="text-[10px] text-slate-400 mt-1 ml-1">Enter any amount between 1 and {remaining.toLocaleString()} (you can pay later)</p>
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">M-Pesa Number</label>
@@ -471,15 +410,6 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
           {step === "success" && (
             <div className="text-center py-4 space-y-4">
               <div className="mx-auto w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-<<<<<<< HEAD
-                <CheckCircle2 size={40} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-black text-gray-900">STK Push Sent</h3>
-                <p className="text-slate-500 mt-2">Please check your phone and enter your M-Pesa PIN to complete payment.</p>
-              </div>
-              <button onClick={onClose} className="w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-black hover:bg-gray-200 transition-all">Done</button>
-=======
                 <Loader2 size={40} className="animate-spin" />
               </div>
               <div>
@@ -499,7 +429,6 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
                 <p className="text-slate-500 mt-2">Your payment has been confirmed. Thank you!</p>
               </div>
               <button onClick={onClose} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all">Done</button>
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
             </div>
           )}
           {step === "error" && (
@@ -525,12 +454,8 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
 const ActivitiesSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-<<<<<<< HEAD
-  const [bookingTarget, setBookingTarget] = useState(null); // { activity, type }
-=======
   const [bookingTarget, setBookingTarget] = useState(null); // { activity, type, existingBooking }
   const [userBookings, setUserBookings] = useState([]);
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
     'csa_cache_public_activities',
     async () => {
@@ -633,16 +558,12 @@ const ActivitiesSection = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {weekly.map((a) => (
-<<<<<<< HEAD
-                <WeeklyCard key={a.id} activity={a} onBook={(act, type) => setBookingTarget({ activity: act, type })} />
-=======
                 <WeeklyCard
                   key={a.id}
                   activity={a}
                   bookingState={bookingMap[`weekly:${a.id}`]}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
               ))}
             </div>
           )}
@@ -665,16 +586,12 @@ const ActivitiesSection = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {semester.map((e) => (
-<<<<<<< HEAD
-                <SemesterCard key={e.id} event={e} onBook={(act, type) => setBookingTarget({ activity: act, type })} />
-=======
                 <SemesterCard
                   key={e.id}
                   event={e}
                   bookingState={bookingMap[`semester:${e.id}`]}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
               ))}
             </div>
           )}
@@ -685,13 +602,9 @@ const ActivitiesSection = () => {
         <BookingModal
           activity={bookingTarget.activity}
           activityType={bookingTarget.type}
-<<<<<<< HEAD
-          onClose={() => setBookingTarget(null)}
-=======
           existingBooking={bookingTarget.existingBooking}
           onPaymentComplete={(id) => refreshBookings()}
           onClose={() => { setBookingTarget(null); loadActivities(); refreshBookings(); }}
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
         />
       )}
     </div>

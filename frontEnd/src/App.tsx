@@ -97,10 +97,7 @@ const CsaSecretaryDashboard = lazy(() => import("./pages/Admin/pages/CsaSecretar
 const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
 const AdminBookings = lazy(() => import("./pages/Admin/pages/AdminBookings"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
-<<<<<<< HEAD
-=======
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -162,10 +159,7 @@ const App: React.FC = () => {
           <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
           <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
           <Route path="registered-members" element={<CsaSecretaryDashboard />} />
-<<<<<<< HEAD
-=======
           <Route path="secretary-dashboard" element={<SecretaryDashboard />} />
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           <Route path="activity-log" element={<ActivityLog />} />
           <Route path="bookings" element={<AdminBookings />} />
           <Route path="settings" element={<SettingsPage />} />
