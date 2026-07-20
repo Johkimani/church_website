@@ -188,3 +188,25 @@ export const getPaidActivities = async (req, res) => {
     res.status(500).json({ error: "Failed to load activities" });
   }
 };
+
+// ─── Check payment status for a checkout ─────────────────────────────────────────
+export const checkPaymentStatus = async (req, res) => {
+  const { checkoutId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT ap.status, ap.mpesa_receipt, ab.fare, ab.paid_amount, ab.status as booking_status,
+              ab.id as booking_id
+       FROM activity_payments ap
+       JOIN activity_bookings ab ON ap.booking_id = ab.id
+       WHERE ap.checkout_id = $1`,
+      [checkoutId]
+    );
+    if (result.rows.length === 0) {
+      return res.json({ success: true, data: { status: "pending" } });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    logger.error("checkPaymentStatus error:", err.message);
+    res.status(500).json({ error: "Failed to check payment status" });
+  }
+};

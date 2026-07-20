@@ -119,4 +119,11 @@ export const bookingService = {
     const res = await apiClient.get("/admin/activities/bookings/export", { responseType: "blob" });
     return res.data;
   },
+<<<<<<< HEAD
+=======
+  checkPaymentStatus: async (checkoutId) => {
+    const res = await apiClient.get(`/activities/payment-status/${checkoutId}`);
+    return res.data.data;
+  },
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 };

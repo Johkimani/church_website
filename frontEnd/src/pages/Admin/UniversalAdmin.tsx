@@ -16,6 +16,11 @@ import {
   UserPlus,
   ClipboardList,
   Trash2,
+<<<<<<< HEAD
+=======
+  Home,
+  Shield,
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -46,6 +51,7 @@ const menuItems = [
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
+  { id: 'secretary-dashboard', name: 'My Jumuiya Dashboard', icon: Shield, path: '/admin/secretary-dashboard' },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
@@ -138,7 +144,7 @@ export default function UniversalAdmin() {
 
   const checkAccess = (path: string): boolean => {
     if (isSuperAdmin) return true;
-    if (path === "/admin" || path === "/admin/") return normalized.length > 0;
+    if (path === "/admin" || path === "/admin/") return normalized.includes("CSA_CHAIR");
 
     const allowedPrefixes = new Set<string>();
 
@@ -182,6 +188,7 @@ export default function UniversalAdmin() {
           break;
         case "JUMUIYA_CHAIRPERSON":
         case "JUMUIYA_SECRETARY":
+          allowedPrefixes.add("/admin/secretary-dashboard");
           allowedPrefixes.add("/admin/jumuiya-members");
           break;
         case "CHOIR_CHAIRPERSON":
@@ -217,11 +224,22 @@ export default function UniversalAdmin() {
   };
 
   const hasAccess = checkAccess(location.pathname);
+
   const allowedMenuItems = menuItems.filter((item) => {
     if (item.path) return checkAccess(item.path);
     if (item.subItems) return item.subItems.some((child) => checkAccess(child.path));
     return false;
   });
+
+  // ── Redirect non-chair users away from dashboard to their first allowed page ──
+  useEffect(() => {
+    if (location.pathname !== "/admin" && location.pathname !== "/admin/") return;
+    if (normalized.includes("CSA_CHAIR")) return;
+    const fallback = allowedMenuItems.find((i) => i.path && i.path !== "/admin");
+    if (fallback?.path) {
+      navigate(fallback.path, { replace: true });
+    }
+  }, [location.pathname, normalized, allowedMenuItems, navigate]);
 
   const handleLogout = () => {
     logout();

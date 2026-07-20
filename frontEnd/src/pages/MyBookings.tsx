@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+<<<<<<< HEAD
+=======
+import PageLoader from "../assets/Layouts/PageLoader";
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 import { bookingService } from "../api/activitiesServices";
 import { RefreshCw, Clock, MapPin, Calendar, ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -68,7 +72,13 @@ export default function MyBookings() {
         )}
 
         {loading ? (
+<<<<<<< HEAD
           <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-400 text-sm">Loading...</div>
+=======
+          <div className="bg-white rounded-xl border border-slate-200 p-10">
+            <PageLoader message="Loading your bookings" size="medium" />
+          </div>
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
         ) : bookings.length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
             <Calendar size={40} className="text-slate-200 mx-auto mb-3" />
