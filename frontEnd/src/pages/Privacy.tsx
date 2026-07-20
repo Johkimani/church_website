@@ -60,13 +60,6 @@ export default function Privacy() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-<<<<<<< HEAD
-          <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-6">
-            <Shield className="w-3.5 h-3.5" />
-            Privacy Policy
-          </div>
-=======
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none mb-6">
             Privacy Policy
           </h1>
@@ -302,29 +295,17 @@ export default function Privacy() {
               <SectionHeading icon={Users} title="9. Children's Privacy" color="bg-rose-50 text-rose-600" />
               <div className="text-slate-600 space-y-4 text-sm sm:text-base leading-relaxed font-medium">
                 <p>
-<<<<<<< HEAD
-                  The Platform is not directed at children under the age of 13. We do not knowingly collect
-                  personal information from children under 13.
-                </p>
-                <p>
-                  Where a minor (under 18) is a member of the CSA — such as a Form 1 student — we require
-=======
                   The Platform is not directed at children under the age of 18. We do not knowingly collect
                   personal information from children under 18.
                 </p>
                 <p>
                   Where a minor (under 18) is a member of the CSA — such as a First Year student — we require
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
                   that a parent or guardian provide consent for the creation of the account and the associated
                   data processing. Parents or legal guardians may review, update, or request deletion of
                   their child's personal data by contacting us directly.
                 </p>
                 <p>
-<<<<<<< HEAD
-                  If you believe a child under the age of 13 has provided personal data to us without parental
-=======
                   If you believe a child under the age of 18 has provided personal data to us without parental
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
                   consent, please contact us immediately so we can investigate and take appropriate action.
                 </p>
               </div>

@@ -16,11 +16,8 @@ import {
   UserPlus,
   ClipboardList,
   Trash2,
-<<<<<<< HEAD
-=======
   Home,
   Shield,
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -29,7 +26,6 @@ import apiService from '../Landing/services/api';
 import { useEffect, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
-import { Home } from '../projects/pages/Home';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
