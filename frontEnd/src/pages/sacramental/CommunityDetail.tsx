@@ -1009,47 +1009,57 @@ const CommunityDetail: React.FC = () => {
                                 )}
                                 
                                 {/* Photo Gallery Header with Photo Count */}
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-stone-100 pb-5 mb-6">
                                     <div>
-                                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Photo Gallery</h2>
-                                        <p className="text-slate-500 font-semibold text-xs mt-1">Capturing our memorable moments and celebrations</p>
+                                        <h2 className="font-serif text-2xl md:text-3xl font-bold text-stone-900 tracking-tight">Photo Gallery</h2>
+                                        <p className="text-stone-500 font-semibold text-xs mt-1">Moments from our life together</p>
                                     </div>
                                     {moduleData.gallery && moduleData.gallery.length > 0 && (
-                                        <span className="px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 font-black text-xs uppercase tracking-wider shrink-0 w-fit">
+                                        <span className="px-4 py-2 bg-amber-50 text-amber-700 rounded-sm border border-amber-200 font-black text-xs uppercase tracking-wider shrink-0 w-fit">
                                             {moduleData.gallery.length} {moduleData.gallery.length === 1 ? 'Photo' : 'Photos'}
                                         </span>
                                     )}
                                 </div>
 
-                                {/* Scrollable Gallery Container with Fixed Responsive Height */}
-                                <div 
+                                {/* Scrollable scrapbook gallery */}
+                                <div
                                     className="pr-3 gallery-scrollbar"
                                     style={{ height: '650px', maxHeight: '75vh', overflowY: 'scroll' }}
                                 >
                                     {moduleData.gallery && moduleData.gallery.length > 0 ? (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 pb-4">
-                                            {moduleData.gallery.map((img: any) => (
-                                                <div 
-                                                    key={img.id} 
-                                                    onClick={() => setActivePhoto(img)}
-                                                    className="group relative rounded-sm overflow-hidden aspect-[4/3] shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-out cursor-zoom-in border border-slate-100 bg-slate-50"
-                                                >
-                                                    <img 
-                                                        src={img.url || img.imageUrl || img.image_url} 
-                                                        alt={img.caption || img.eventName} 
-                                                        loading="lazy"
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" 
-                                                    />
-                                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                        <p className="text-white font-bold text-sm leading-snug">{img.caption || img.eventName}</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 pb-4">
+                                            {moduleData.gallery.map((img: any, i: number) => {
+                                                const rotation = [-2, 1.5, -1, 2, -1.5, 1.8][i % 6];
+                                                return (
+                                                    <div
+                                                        key={img.id}
+                                                        onClick={() => setActivePhoto(img)}
+                                                        className="group relative cursor-zoom-in select-none"
+                                                        style={{ transform: `rotate(${rotation}deg)` }}
+                                                    >
+                                                        {/* tape */}
+                                                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 bg-amber-200/50 border border-amber-200/30 rotate-1 z-10 pointer-events-none" />
+                                                        <div className="bg-white rounded-[2px] shadow-[0_8px_30px_-10px_rgba(60,40,20,0.25)] overflow-hidden" style={{ padding: '6px', paddingBottom: '34px' }}>
+                                                            <div className="relative overflow-hidden rounded-[1px] aspect-[4/3] bg-stone-100">
+                                                                <img
+                                                                    src={img.url || img.imageUrl || img.image_url}
+                                                                    alt={img.caption || img.eventName}
+                                                                    loading="lazy"
+                                                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
+                                                                />
+                                                            </div>
+                                                            <div className="mt-1.5 px-1 truncate text-[10px] font-bold text-stone-600 leading-tight">
+                                                                {img.caption || img.eventName}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-center text-slate-400">
+                                        <div className="flex flex-col items-center justify-center h-full text-center text-stone-400">
                                             <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                                            <p className="font-semibold text-sm">Photos will appear here soon.</p>
+                                            <p className="font-serif italic text-sm">No photos pinned up yet.</p>
                                         </div>
                                     )}
                                 </div>
@@ -1264,34 +1274,33 @@ const CommunityDetail: React.FC = () => {
 
             {/* Gallery Lightbox Modal */}
             {activePhoto && (
-                <div 
-                    className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in cursor-zoom-out"
+                <div
+                    className="fixed inset-0 z-[9999] bg-stone-900/70 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in cursor-zoom-out"
                     onClick={() => setActivePhoto(null)}
                 >
                     {/* Close button */}
-                    <button 
-                        onClick={() => setActivePhoto(null)} 
-                        className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-110"
+                    <button
+                        onClick={() => setActivePhoto(null)}
+                        className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/80 hover:bg-white text-stone-800 flex items-center justify-center transition-all cursor-pointer hover:scale-110 shadow-lg"
                     >
                         <X size={24} />
                     </button>
 
-                    {/* Image container */}
-                    <div 
-                        className="relative max-w-5xl max-h-[80vh] flex flex-col items-center justify-center cursor-default"
+                    {/* Polaroid frame */}
+                    <div
+                        className="relative bg-white p-3 pb-12 rounded-[2px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] max-w-3xl w-full cursor-default"
                         onClick={e => e.stopPropagation()}
                     >
-                        <img 
-                            src={activePhoto.url || activePhoto.imageUrl || activePhoto.image_url} 
-                            alt={activePhoto.caption || activePhoto.eventName} 
-                            className="max-w-full max-h-[70vh] object-contain rounded-2xl shadow-2xl border border-white/10 animate-scale-in" 
+                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-amber-200/50 border border-amber-200/30 -rotate-2 pointer-events-none" />
+                        <img
+                            src={activePhoto.url || activePhoto.imageUrl || activePhoto.image_url}
+                            alt={activePhoto.caption || activePhoto.eventName}
+                            className="w-full max-h-[68vh] object-contain rounded-[1px] bg-stone-100 animate-scale-in"
                         />
-                        
-                        {/* Caption info panel */}
-                        <div className="mt-5 text-center text-white max-w-xl px-4">
-                            <h3 className="text-xl font-black tracking-tight">{activePhoto.caption || activePhoto.eventName}</h3>
+                        <div className="mt-3 text-center px-2">
+                            <h3 className="font-serif text-lg font-bold text-stone-800 tracking-tight">{activePhoto.caption || activePhoto.eventName}</h3>
                             {activePhoto.description && (
-                                <p className="text-slate-300 text-sm mt-2 font-medium leading-relaxed">{activePhoto.description}</p>
+                                <p className="text-stone-500 text-sm mt-1 font-medium leading-relaxed">{activePhoto.description}</p>
                             )}
                         </div>
                     </div>
