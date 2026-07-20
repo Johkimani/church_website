@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaBell, FaChild } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaImages, FaBell, FaChild, FaUserGraduate } from 'react-icons/fa';
 import type { JumuiyaData } from '../data/jumuiyaData';
 import AdminNotifications from './AdminNotifications';
 import AdminAbout from './AdminAbout';
@@ -7,6 +7,7 @@ import AdminOfficials from './AdminOfficials';
 import AdminMembers from './AdminMembers';
 import AdminActivities from './AdminActivities';
 import AdminGallery from './AdminGallery';
+import AdminRegisteredMembers from './AdminRegisteredMembers';
 import ChoirAdminPanel from '../choir/ChoirAdminPanel';
 import DancersAdminPanel from '../choir/DancersAdminPanel';
 import CharismaticAdminPanel from '../charismatic/CharismaticAdminPanel';
@@ -15,7 +16,7 @@ interface AdminPanelEmbedProps {
     jumuiya: JumuiyaData;
 }
 
-type AdminTab = 'notifications' | 'about' | 'officials' | 'members' | 'activities' | 'gallery' | 'choir' | 'dancers' | 'charismatic';
+type AdminTab = 'notifications' | 'about' | 'officials' | 'members' | 'registered' | 'activities' | 'gallery' | 'choir' | 'dancers' | 'charismatic';
 
 const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
     const [activeTab, setActiveTab] = useState<AdminTab>('notifications');
@@ -25,6 +26,7 @@ const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
         { id: 'about' as AdminTab, label: 'About', icon: <FaInfoCircle /> },
         { id: 'officials' as AdminTab, label: 'Officials', icon: <FaUserTie /> },
         { id: 'members' as AdminTab, label: 'Members', icon: <FaUsers /> },
+        { id: 'registered' as AdminTab, label: 'Registered', icon: <FaUserGraduate /> },
         { id: 'activities' as AdminTab, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'gallery' as AdminTab, label: 'Gallery', icon: <FaImages /> },
     ];
@@ -53,6 +55,8 @@ const AdminPanelEmbed: React.FC<AdminPanelEmbedProps> = ({ jumuiya }) => {
                 return <AdminActivities selectedId={jumuiya.id} />;
             case 'gallery':
                 return <AdminGallery selectedId={jumuiya.id} />;
+            case 'registered':
+                return <AdminRegisteredMembers jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color || '#6366f1'} />;
             case 'choir':
                 return <ChoirAdminPanel />;
             case 'dancers':

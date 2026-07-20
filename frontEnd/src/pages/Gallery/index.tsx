@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import PageLoader from '../../assets/Layouts/PageLoader';
 import apiService from '../../pages/Landing/services/api';
 import { FaArrowLeft, FaCheckCircle, FaSearch } from 'react-icons/fa';
 
@@ -63,7 +64,7 @@ const GalleryPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-500 font-medium animate-pulse">Loading photos...</div>
+        <PageLoader message="Loading photos" fullScreen />
       </div>
     );
   }

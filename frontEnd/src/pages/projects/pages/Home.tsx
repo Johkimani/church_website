@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HeroSlider } from '../components/HeroSlider';
-import { ArrowUpRight, Loader2, ShoppingBag, Shirt, ArmchairIcon, Guitar, BookHeart } from 'lucide-react';
+import { ArrowUpRight, ShoppingBag, Shirt, ArmchairIcon, Guitar, BookHeart } from 'lucide-react';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 import apiService from '../../Landing/services/api';
 import { useProjectsData } from '../context/ProjectsProvider';
 
@@ -171,7 +172,7 @@ export const Home = () => {
 
         {cardsLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 size={24} className="animate-spin text-blue-500" />
+            <PageLoader message="Loading categories..." />
           </div>
         ) : (
           <motion.div
