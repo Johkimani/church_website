@@ -1,7 +1,7 @@
 // src/pages/Landing/components/sections/activities/index.jsx
 // Mirrors repo's ActivitiesSection structure: loadActivities, groupedActivities,
 // same loading/error states, same card design system (white bg, slate text, blue accents)
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCachedData } from "../../../../../hooks/useCachedData";
 import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, Zap, X, Smartphone, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import apiService from "../../../services/api";
@@ -67,7 +67,7 @@ const getWeeklyActivityImage = (activity) => {
 };
 
 // ── Weekly Activity Card ───────────────────────────────────────────
-function WeeklyCard({ activity, onBook }) {
+function WeeklyCard({ activity, onBook, bookingState }) {
   const { user } = useAuth();
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
   const icon = ACTIVITY_ICONS[activity.activity] || "✝";
@@ -77,59 +77,56 @@ function WeeklyCard({ activity, onBook }) {
 
   const getNextWeeklyOccurrence = () => {
     const dayToIndex = {
-      Sunday: 0,
-      Monday: 1,
-      Tuesday: 2,
-      Wednesday: 3,
-      Thursday: 4,
-      Friday: 5,
-      Saturday: 6,
+      Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
     };
-
     const targetDayIndex = dayToIndex[(activity.day || "").trim()];
     if (targetDayIndex === undefined) return null;
-
     const timeStr = String(activity.time || "").trim();
     const now = new Date();
-
-    let hours = 0;
-    let minutes = 0;
-
+    let hours = 0; let minutes = 0;
     const m24 = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-    if (m24) {
-      hours = Number(m24[1]);
-      minutes = Number(m24[2]);
-    } else {
+    if (m24) { hours = Number(m24[1]); minutes = Number(m24[2]); } else {
       const m12 = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (m12) {
-        hours = Number(m12[1]);
-        minutes = Number(m12[2]);
-        const ampm = m12[3].toUpperCase();
-        if (ampm === "PM" && hours < 12) hours += 12;
-        if (ampm === "AM" && hours === 12) hours = 0;
-      }
+      if (m12) { hours = Number(m12[1]); minutes = Number(m12[2]); const ampm = m12[3].toUpperCase(); if (ampm === "PM" && hours < 12) hours += 12; if (ampm === "AM" && hours === 12) hours = 0; }
     }
-
     const daysUntil = (targetDayIndex - now.getDay() + 7) % 7;
     const target = new Date(now);
     target.setDate(now.getDate() + daysUntil);
     target.setHours(hours, minutes, 0, 0);
-
-    if (target <= now) {
-      target.setDate(target.getDate() + 7);
-    }
-
+    if (target <= now) target.setDate(target.getDate() + 7);
     return target;
   };
 
   const nextOccurrence = getNextWeeklyOccurrence();
   const { isValid, days, hours, minutes, seconds } = useCountdown(nextOccurrence ?? null);
+  const timerText = !isValid ? "Starts soon" : days > 0 ? `Starts in ${days}d ${hours}h ${minutes}m` : `Starts in ${hours}h ${minutes}m ${seconds}s`;
 
-  const timerText = !isValid
-    ? "Starts soon"
-    : days > 0
-      ? `Starts in ${days}d ${hours}h ${minutes}m`
-      : `Starts in ${hours}h ${minutes}m ${seconds}s`;
+  const renderBookButton = () => {
+    if (!user) return <span className="text-[9px] text-slate-400 italic">Login to book</span>;
+    if (bookingState?.id) {
+      const paid = Number(bookingState.paid_amount || 0);
+      const fare = Number(bookingState.fare || activity.fare || 0);
+      if (paid >= fare) {
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full tracking-wider">
+            <CheckCircle2 size={12} /> Paid
+          </span>
+        );
+      }
+      return (
+        <button onClick={(e) => { e.stopPropagation(); onBook(activity, 'weekly', bookingState); }}
+          className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all shadow-sm">
+          Pay Now
+        </button>
+      );
+    }
+    return (
+      <button onClick={(e) => { e.stopPropagation(); onBook(activity, 'weekly'); }}
+        className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
+        Book Now
+      </button>
+    );
+  };
 
   return (
     <div
@@ -162,14 +159,7 @@ function WeeklyCard({ activity, onBook }) {
         {activity.fare && Number(activity.fare) > 0 && (
           <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
             <span className="font-bold text-emerald-600">KES {Number(activity.fare).toLocaleString()}</span>
-            {user ? (
-              <button onClick={(e) => { e.stopPropagation(); onBook(activity, 'weekly'); }}
-                className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
-                Book Now
-              </button>
-            ) : (
-              <span className="text-[9px] text-slate-400 italic">Login to book</span>
-            )}
+            {renderBookButton()}
           </div>
         )}
       </div>
@@ -178,18 +168,40 @@ function WeeklyCard({ activity, onBook }) {
 }
 
 // ── Semester Event Card ────────────────────────────────────────────
-function SemesterCard({ event, onBook }) {
+function SemesterCard({ event, onBook, bookingState }) {
   const { user } = useAuth();
   const dt = new Date(event.date_time);
   const isPast = dt < new Date();
 
   const { isValid, days, hours, minutes, seconds } = useCountdown(event.date_time ?? null);
+  const timerText = !isValid ? "No date set" : days > 0 ? `Starts in ${days}d ${hours}h ${minutes}m` : `Starts in ${hours}h ${minutes}m ${seconds}s`;
 
-  const timerText = !isValid
-    ? "No date set"
-    : days > 0
-      ? `Starts in ${days}d ${hours}h ${minutes}m`
-      : `Starts in ${hours}h ${minutes}m ${seconds}s`;
+  const renderBookButton = () => {
+    if (!user) return <span className="text-[9px] text-slate-400 italic">Login to book</span>;
+    if (bookingState?.id) {
+      const paid = Number(bookingState.paid_amount || 0);
+      const fare = Number(bookingState.fare || event.fare || 0);
+      if (paid >= fare) {
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full tracking-wider">
+            <CheckCircle2 size={12} /> Paid
+          </span>
+        );
+      }
+      return (
+        <button onClick={(e) => { e.stopPropagation(); onBook(event, 'semester', bookingState); }}
+          className="text-[10px] font-black bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all shadow-sm">
+          Pay Now
+        </button>
+      );
+    }
+    return (
+      <button onClick={(e) => { e.stopPropagation(); onBook(event, 'semester'); }}
+        className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
+        Book Now
+      </button>
+    );
+  };
 
   return (
     <div
@@ -233,14 +245,7 @@ function SemesterCard({ event, onBook }) {
         {event.fare && Number(event.fare) > 0 && (
           <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
             <span className="font-bold text-emerald-600">KES {Number(event.fare).toLocaleString()}</span>
-            {user ? (
-              <button onClick={(e) => { e.stopPropagation(); onBook(event, 'semester'); }}
-                className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full uppercase tracking-wider transition-all">
-                Book Now
-              </button>
-            ) : (
-              <span className="text-[9px] text-slate-400 italic">Login to book</span>
-            )}
+            {renderBookButton()}
           </div>
         )}
       </div>
@@ -249,16 +254,56 @@ function SemesterCard({ event, onBook }) {
 }
 
 // ── Booking Modal ──────────────────────────────────────────────────
-function BookingModal({ activity, activityType, onClose }) {
-  const [step, setStep] = useState("book"); // book | paying | success | error
+function BookingModal({ activity, activityType, onClose, existingBooking, onPaymentComplete }) {
+  const [step, setStep] = useState(existingBooking?.id ? "paying" : "book");
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
-  const [bookingId, setBookingId] = useState(null);
+  const [bookingId, setBookingId] = useState(existingBooking?.id || null);
   const [checkoutId, setCheckoutId] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState("");
+  const pollRef = useRef(null);
 
   const fare = Number(activity?.fare || 0);
+  const paidSoFar = Number(existingBooking?.paid_amount || 0);
+  const remaining = fare - paidSoFar;
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  async function pollPaymentStatus(cId, bookingIdVal) {
+    const maxAttempts = 20;
+    let attempts = 0;
+    const poll = async () => {
+      attempts++;
+      try {
+        const status = await bookingService.checkPaymentStatus(cId);
+        if (status.status === "paid") {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+          setStep("payment_complete");
+          if (onPaymentComplete) onPaymentComplete(bookingIdVal);
+        } else if (status.status === "failed") {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+          setMessage("Payment failed. Please try again.");
+          setStep("error");
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      } catch {
+        if (attempts >= maxAttempts) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }
+    };
+    pollRef.current = setInterval(poll, 3000);
+  }
 
   async function handleBook() {
     setProcessing(true);
@@ -269,8 +314,15 @@ function BookingModal({ activity, activityType, onClose }) {
       setStep("paying");
       toast.success("Booking created! Enter amount to pay.");
     } catch (err) {
-      setMessage(err?.response?.data?.error || err?.message || "Booking failed");
-      setStep("error");
+      const errMsg = err?.response?.data?.error || "";
+      if (err.response?.status === 409) {
+        setBookingId(err.response.data.booking_id);
+        setStep("paying");
+        toast.success("You already have a booking. Continue with payment.");
+      } else {
+        setMessage(errMsg || err?.message || "Booking failed");
+        setStep("error");
+      }
     } finally {
       setProcessing(false);
     }
@@ -285,6 +337,7 @@ function BookingModal({ activity, activityType, onClose }) {
       setCheckoutId(result.checkoutId);
       setStep("success");
       toast.success("STK Push sent! Check your phone.");
+      pollPaymentStatus(result.checkoutId, bookingId);
     } catch (err) {
       setMessage(err?.response?.data?.error || err?.message || "Payment failed");
       setStep("error");
@@ -318,14 +371,20 @@ function BookingModal({ activity, activityType, onClose }) {
           )}
           {step === "paying" && (
             <div className="space-y-6">
-              <p className="text-sm text-slate-600">Pay via M-Pesa. You can pay the full fare or a partial amount (lipa mdogo mdogo).</p>
+              <p className="text-sm text-slate-600">
+                {existingBooking?.id ? (
+                  <>You have already paid <strong>KES {paidSoFar.toLocaleString()}</strong> of <strong>KES {fare.toLocaleString()}</strong>. Pay the remaining <strong>KES {remaining.toLocaleString()}</strong> via M-Pesa.</>
+                ) : (
+                  <>Pay via M-Pesa. You can pay the full fare or a partial amount (lipa mdogo mdogo).</>
+                )}
+              </p>
               {message && <div className="text-sm text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100">{message}</div>}
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">Amount (KES)</label>
                 <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-                  min="1" max={fare}
+                  min="1" max={remaining}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-lg font-bold text-gray-900" />
-                <p className="text-[10px] text-slate-400 mt-1 ml-1">Enter any amount between 1 and {fare.toLocaleString()} (you can pay later)</p>
+                <p className="text-[10px] text-slate-400 mt-1 ml-1">Enter any amount between 1 and {remaining.toLocaleString()} (you can pay later)</p>
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">M-Pesa Number</label>
@@ -351,13 +410,25 @@ function BookingModal({ activity, activityType, onClose }) {
           {step === "success" && (
             <div className="text-center py-4 space-y-4">
               <div className="mx-auto w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                <CheckCircle2 size={40} />
+                <Loader2 size={40} className="animate-spin" />
               </div>
               <div>
                 <h3 className="text-2xl font-black text-gray-900">STK Push Sent</h3>
-                <p className="text-slate-500 mt-2">Please check your phone and enter your M-Pesa PIN to complete payment.</p>
+                <p className="text-slate-500 mt-2">Please check your phone and enter your M-Pesa PIN to complete payment. Waiting for confirmation...</p>
               </div>
-              <button onClick={onClose} className="w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-black hover:bg-gray-200 transition-all">Done</button>
+              <button onClick={onClose} className="w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-black hover:bg-gray-200 transition-all">Close</button>
+            </div>
+          )}
+          {step === "payment_complete" && (
+            <div className="text-center py-4 space-y-4">
+              <div className="mx-auto w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                <CheckCircle2 size={40} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-gray-900">Payment Successful</h3>
+                <p className="text-slate-500 mt-2">Your payment has been confirmed. Thank you!</p>
+              </div>
+              <button onClick={onClose} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all">Done</button>
             </div>
           )}
           {step === "error" && (
@@ -383,7 +454,8 @@ function BookingModal({ activity, activityType, onClose }) {
 const ActivitiesSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [bookingTarget, setBookingTarget] = useState(null); // { activity, type }
+  const [bookingTarget, setBookingTarget] = useState(null); // { activity, type, existingBooking }
+  const [userBookings, setUserBookings] = useState([]);
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
     'csa_cache_public_activities',
     async () => {
@@ -398,6 +470,28 @@ const ActivitiesSection = () => {
 
   const weekly = activitiesData.weekly || [];
   const semester = activitiesData.semester || [];
+
+  useEffect(() => {
+    refreshBookings();
+  }, [user]);
+
+  async function refreshBookings() {
+    if (user) {
+      try {
+        const data = await bookingService.myBookings();
+        setUserBookings(data || []);
+      } catch (_) {}
+    } else {
+      setUserBookings([]);
+    }
+  }
+
+  const bookingMap = {};
+  userBookings.forEach((b) => {
+    if (b.status !== "cancelled") {
+      bookingMap[`${b.activity_type}:${b.activity_id}`] = b;
+    }
+  });
 
   if (loading) {
     return (
@@ -464,7 +558,12 @@ const ActivitiesSection = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {weekly.map((a) => (
-                <WeeklyCard key={a.id} activity={a} onBook={(act, type) => setBookingTarget({ activity: act, type })} />
+                <WeeklyCard
+                  key={a.id}
+                  activity={a}
+                  bookingState={bookingMap[`weekly:${a.id}`]}
+                  onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
+                />
               ))}
             </div>
           )}
@@ -487,7 +586,12 @@ const ActivitiesSection = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {semester.map((e) => (
-                <SemesterCard key={e.id} event={e} onBook={(act, type) => setBookingTarget({ activity: act, type })} />
+                <SemesterCard
+                  key={e.id}
+                  event={e}
+                  bookingState={bookingMap[`semester:${e.id}`]}
+                  onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
+                />
               ))}
             </div>
           )}
@@ -498,7 +602,9 @@ const ActivitiesSection = () => {
         <BookingModal
           activity={bookingTarget.activity}
           activityType={bookingTarget.type}
-          onClose={() => setBookingTarget(null)}
+          existingBooking={bookingTarget.existingBooking}
+          onPaymentComplete={(id) => refreshBookings()}
+          onClose={() => { setBookingTarget(null); loadActivities(); refreshBookings(); }}
         />
       )}
     </div>
