@@ -140,7 +140,7 @@ export default function UniversalAdmin() {
 
   const checkAccess = (path: string): boolean => {
     if (isSuperAdmin) return true;
-    if (path === "/admin" || path === "/admin/") return normalized.length > 0;
+    if (path === "/admin" || path === "/admin/") return normalized.includes("CSA_CHAIR");
 
     const allowedPrefixes = new Set<string>();
 
@@ -221,21 +221,21 @@ export default function UniversalAdmin() {
 
   const hasAccess = checkAccess(location.pathname);
 
-  // ── Redirect secretaries to their dashboard by default ──
-  const isSecretaryRole = normalized.some(
-    (r) => r === "JUMUIYA_SECRETARY" || r === "JUMUIYA_CHAIRPERSON"
-  );
-  useEffect(() => {
-    if (isSecretaryRole && location.pathname === "/admin") {
-      navigate("/admin/secretary-dashboard", { replace: true });
-    }
-  }, [isSecretaryRole, location.pathname, navigate]);
-
   const allowedMenuItems = menuItems.filter((item) => {
     if (item.path) return checkAccess(item.path);
     if (item.subItems) return item.subItems.some((child) => checkAccess(child.path));
     return false;
   });
+
+  // ── Redirect non-chair users away from dashboard to their first allowed page ──
+  useEffect(() => {
+    if (location.pathname !== "/admin" && location.pathname !== "/admin/") return;
+    if (normalized.includes("CSA_CHAIR")) return;
+    const fallback = allowedMenuItems.find((i) => i.path && i.path !== "/admin");
+    if (fallback?.path) {
+      navigate(fallback.path, { replace: true });
+    }
+  }, [location.pathname, normalized, allowedMenuItems, navigate]);
 
   const handleLogout = () => {
     logout();

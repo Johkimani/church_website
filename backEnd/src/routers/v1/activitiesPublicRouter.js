@@ -9,6 +9,7 @@ import {
   payBooking,
   getMyBookings,
   getPaidActivities,
+  checkPaymentStatus,
 } from "../../controllers/activityBookingController.js";
 import verifyToken from "../../middlewares/Tokens.js";
 
@@ -27,5 +28,6 @@ router.get("/paid", getPaidActivities);
 router.post("/book", verifyToken, bookActivity);
 router.post("/pay", verifyToken, payBooking);
 router.get("/my-bookings", verifyToken, getMyBookings);
+router.get("/payment-status/:checkoutId", verifyToken, checkPaymentStatus);
 
 export default router;
