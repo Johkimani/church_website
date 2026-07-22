@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../api/axiosInstance';
 import { UPLOAD_BASE } from '../../../api/config';
+<<<<<<< HEAD
+import { 
+  Image as ImageIcon, 
+  Upload, 
+  Trash2, 
+  X, 
+  Plus, 
+  CheckCircle2, 
+=======
 import {
   Image as ImageIcon,
   Upload,
@@ -8,6 +17,7 @@ import {
   X,
   Plus,
   CheckCircle2,
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
   Loader2,
   Edit2,
   Save
@@ -39,6 +49,11 @@ export default function GalleryManager() {
   const [editItem, setEditItem] = useState<GalleryImage | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
+<<<<<<< HEAD
+  const categories = ['Hero Slider', 'Gallery Grid', 'Teaser'];
+
+=======
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
   useEffect(() => {
     loadImages();
   }, []);
@@ -105,7 +120,10 @@ export default function GalleryManager() {
     setUploadStatus('uploading');
     setUploadProgress(0);
     try {
-      let completed = 0;
+      // We will attempt to use the real file upload endpoint if available
+      // Must dynamically import to avoid top-level issues if not all components have it
+      const { uploadFile } = await import('../../../api/axiosInstance');
+      
       for (const file of selectedFiles) {
         const formData = new FormData();
         let uploadFile = file;
@@ -223,6 +241,20 @@ export default function GalleryManager() {
               </button>
             </div>
           </div>
+<<<<<<< HEAD
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-black text-slate-800 tracking-tight">Gallery Manager</h2>
+          <p className="text-slate-700 text-xs mt-0.5">Manage public photos and visual media for the church website.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold border border-blue-100">
+            {images.length} Photos in Gallery
+=======
         </div>
       )}
 
@@ -235,6 +267,7 @@ export default function GalleryManager() {
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border border-blue-100">
             {images.length} Photos total
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           </div>
         </div>
       </div>
@@ -267,6 +300,17 @@ export default function GalleryManager() {
                 onChange={(e) => handleFiles(e.target.files)}
                 accept="image/*"
               />
+<<<<<<< HEAD
+              
+              <div className="py-8 flex flex-col items-center justify-center text-center px-4">
+                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Plus size={24} />
+                </div>
+                <p className="text-slate-700 font-bold text-xs mb-0.5">Drop photos here</p>
+                <p className="text-slate-700 text-[11px]">or click to browse your files</p>
+                <div className="mt-3 flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 rounded-full text-[9px] font-bold text-slate-700 uppercase tracking-widest">
+                  Max 10 files • JPG, PNG, GIF
+=======
 
               <div className="py-12 flex flex-col items-center justify-center text-center px-4">
                 <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -276,6 +320,7 @@ export default function GalleryManager() {
                 <p className="text-slate-400 text-xs">or click to browse</p>
                 <div className="mt-3 flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-widest">
                   Max 10 files &bull; JPG, PNG, GIF
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
                 </div>
               </div>
             </div>
@@ -298,15 +343,24 @@ export default function GalleryManager() {
                   <span>Selected ({selectedFiles.length})</span>
                   <button onClick={() => setSelectedFiles([])} className="text-rose-500 hover:text-rose-600">Clear All</button>
                 </div>
+<<<<<<< HEAD
+                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-2 custom-scrollbar">
+=======
                 <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
                   {selectedFiles.map((file, i) => (
                     <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100 group">
                       <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 overflow-hidden shrink-0">
                         <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
                       </div>
                       <div className="flex-1 min-w-0">
+<<<<<<< HEAD
+                        <p className="text-[11px] font-bold text-slate-800 truncate">{file.name}</p>
+                        <p className="text-[9px] text-slate-700">{(file.size / 1024).toFixed(0)} KB</p>
+=======
                         <p className="text-xs font-bold text-slate-800 truncate">{file.name}</p>
                         <p className="text-[9px] text-slate-500">{(file.size / 1024).toFixed(0)} KB</p>
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); removeSelectedFile(i); }}
@@ -325,15 +379,23 @@ export default function GalleryManager() {
                 <button
                   onClick={handleUpload}
                   disabled={uploadStatus === 'uploading'}
+<<<<<<< HEAD
+                  className={`w-full py-3 rounded-xl font-black text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 ${
+                    uploadStatus === 'uploading'
+                      ? 'bg-slate-100 text-slate-700 cursor-not-allowed'
+                      : 'bg-blue-600 text-white shadow-md shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5'
+                  }`}
+=======
                   className={`w-full py-4 rounded-xl font-black text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-2 ${uploadStatus === 'uploading'
                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                     : 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5'
                     }`}
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
                 >
                   {uploadStatus === 'uploading' ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                      {uploadProgress > 0 ? `${uploadProgress}%` : 'Uploading...'}
+                      <Loader2 size={18} className="animate-spin" />
+                      Uploading...
                     </>
                   ) : uploadStatus === 'success' ? (
                     <>
@@ -368,11 +430,19 @@ export default function GalleryManager() {
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
                       }`}
+<<<<<<< HEAD
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+=======
                   >
                     {tab}
                   </button>
                 ))}
               </div>
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
             </div>
 
             {loading ? (
@@ -434,10 +504,17 @@ export default function GalleryManager() {
                 ))}
 
                 {/* Empty States Placeholder */}
+<<<<<<< HEAD
+                {images.length === 0 && (
+                  <div className="col-span-full border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-200 py-10">
+                     <ImageIcon size={40} className="mb-3 opacity-20" />
+                     <p className="text-slate-700 font-bold text-xs">No images in your gallery yet.</p>
+=======
                 {filteredImages.length === 0 && (
                   <div className="col-span-full border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-300 py-20">
                     <ImageIcon size={48} className="mb-4 opacity-50" />
                     <p className="text-slate-400 font-bold">No images found for {activeTab}.</p>
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
                   </div>
                 )}
               </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Users, ArrowLeft, Church, CheckCircle, AlertTriangle, RefreshCw, UserPlus, BarChart3, Upload, Search, GitMerge, ClipboardList, ThumbsDown, Edit2, Save, Trash2, GraduationCap } from "lucide-react";
+import { Users, ArrowLeft, Church, CheckCircle, AlertTriangle, RefreshCw, UserPlus, BarChart3, Upload, Search, GitMerge, ClipboardList, ThumbsDown, Edit2, Save, Trash2, GraduationCap, Image, Bell, BookOpen, UserCheck, Calendar, ListChecks, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
@@ -9,8 +9,16 @@ import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import MembersList from "../../Jumuiya/admin/MembersList";
 import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
+import AdminGallery from "../../Jumuiya/admin/AdminGallery";
+import AdminNotifications from "../../Jumuiya/admin/AdminNotifications";
+import AdminAbout from "../../Jumuiya/admin/AdminAbout";
+import AdminOfficials from "../../Jumuiya/admin/AdminOfficials";
+import AdminActivities from "../../Jumuiya/admin/AdminActivities";
+import AdminRegisteredMembers from "../../Jumuiya/admin/AdminRegisteredMembers";
+import DistributionResults from "../../Jumuiya/admin/DistributionResults";
 import AllMembersTable from "./AllMembersTable";
 import AssociatesTable from "./AssociatesTable";
+import JumuiyaQuickManager from "./JumuiyaQuickManager";
 
 // Improved cache with longer TTL (60s) and memory efficiency
 let statsCache: { data: Record<string, any>; ts: number } | null = null;
@@ -35,15 +43,15 @@ const JUMUIYAS = [
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";
 
-type SubTab = "dashboard" | "import" | "review" | "organize" | "results" | "allocations";
+type SubTab = "members" | "officials" | "gallery" | "notifications" | "activities" | "about";
 
-const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode }> = {
-  dashboard: { label: "Dashboard", icon: <BarChart3 size={16} /> },
-  import: { label: "Import", icon: <Upload size={16} /> },
-  review: { label: "Review", icon: <CheckCircle size={16} /> },
-  organize: { label: "Organize", icon: <GitMerge size={16} /> },
-  results: { label: "All Members", icon: <UserPlus size={16} /> },
-  allocations: { label: "New Allocations", icon: <ClipboardList size={16} /> },
+const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; description: string }> = {
+  members: { label: "Members", icon: <Users size={16} />, description: "Manage members — list, dashboard, import, review, groups, registered & distributions" },
+  officials: { label: "Officials", icon: <UserCheck size={16} />, description: "Manage chairperson, secretary, treasurer and other officials" },
+  gallery: { label: "Gallery", icon: <Image size={16} />, description: "Upload and manage photo albums" },
+  notifications: { label: "Notifications", icon: <Bell size={16} />, description: "Create and send community announcements" },
+  activities: { label: "Activities", icon: <Calendar size={16} />, description: "Update meeting schedule and manage events" },
+  about: { label: "About", icon: <BookOpen size={16} />, description: "Edit description and saint biography" },
 };
 
 function StatCard({ label, value, icon, bg, color }: { label: string; value: string | number; icon: React.ReactNode; bg: string; color: string }) {
@@ -106,33 +114,106 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
 const SummaryBarMemo = memo(SummaryBar);
 
 const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor }) => {
-  const [activeTab, setActiveTab] = useState<SubTab>("dashboard");
+  const [activeTab, setActiveTab] = useState<SubTab>("members");
+  const [membersSubTab, setMembersSubTab] = useState<"list" | "dashboard" | "import" | "review" | "groups" | "registered" | "distributions">("list");
+
+  const currentMeta = subTabMeta[activeTab];
 
   return (
     <div>
-      <div className="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
-        {(Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]).map(([id, meta]) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px ${
-              activeTab === id
-                ? "border-indigo-500 text-indigo-600"
-                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            {meta.icon}
-            {meta.label}
-          </button>
-        ))}
+      {/* Main Tabs */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-2 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          {(Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]).map(([id, meta]) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => { setActiveTab(id); if (id === "members") setMembersSubTab("list"); }}
+                className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  isActive
+                    ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                  isActive ? "bg-indigo-500 text-white" : "bg-slate-100 text-slate-400"
+                }`}>
+                  {meta.icon}
+                </div>
+                <span>{meta.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+<<<<<<< HEAD
       {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
       {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
       {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "organize" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
       {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
+=======
+      {/* Description */}
+      <div className="flex items-center gap-3 mb-5 px-1">
+        <div className="w-1 h-6 rounded-full bg-indigo-500" />
+        <p className="text-sm text-slate-500">{currentMeta.description}</p>
+      </div>
+
+      {/* Members Tab */}
+      {activeTab === "members" && (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-5">
+            {[
+              { id: "list" as const, label: "All Members", icon: <Users size={14} /> },
+              { id: "dashboard" as const, label: "Dashboard", icon: <BarChart3 size={14} /> },
+              { id: "import" as const, label: "Import", icon: <Upload size={14} /> },
+              { id: "review" as const, label: "Review", icon: <CheckCircle size={14} /> },
+              { id: "groups" as const, label: "Groups", icon: <GitMerge size={14} /> },
+              { id: "registered" as const, label: "Registered", icon: <ListChecks size={14} /> },
+              { id: "distributions" as const, label: "Distributions", icon: <PieChart size={14} /> },
+            ].map(({ id, label, icon }) => (
+              <button
+                key={id}
+                onClick={() => setMembersSubTab(id)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  membersSubTab === id
+                    ? "bg-indigo-100 text-indigo-700"
+                    : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                {icon}
+                {label}
+              </button>
+            ))}
+          </div>
+          {membersSubTab === "list" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
+          {membersSubTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
+          {membersSubTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
+          {membersSubTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
+          {membersSubTab === "groups" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
+          {membersSubTab === "registered" && <AdminRegisteredMembers jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
+          {membersSubTab === "distributions" && <DistributionResults jumuiyaId={jumuiyaId} />}
+        </div>
+      )}
+
+      {/* Officials Tab */}
+      {activeTab === "officials" && <AdminOfficials selectedId={jumuiyaId} />}
+
+      {/* Gallery Tab */}
+      {activeTab === "gallery" && <AdminGallery selectedId={jumuiyaId} />}
+
+      {/* Notifications Tab */}
+      {activeTab === "notifications" && <AdminNotifications selectedId={jumuiyaId} />}
+
+      {/* Activities Tab */}
+      {activeTab === "activities" && <AdminActivities selectedId={jumuiyaId} />}
+
+      {/* About Tab */}
+      {activeTab === "about" && <AdminAbout selectedId={jumuiyaId} />}
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
     </div>
   );
 };
@@ -225,7 +306,13 @@ export default function JumuiyaMembersAdmin() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [rejectedMembers, setRejectedMembers] = useState<any[]>([]);
   const [editingRejected, setEditingRejected] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    reg_number: string;
+    gender: string;
+    phone: string;
+    email: string;
+  }>({ name: "", reg_number: "", gender: "", phone: "", email: "" });
   const [assigning, setAssigning] = useState<number | null>(null);
 
   // Debounce search input (300ms delay)
@@ -345,7 +432,7 @@ export default function JumuiyaMembersAdmin() {
           </div>
         </div>
 
-        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+        <JumuiyaQuickManager jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
       </div>
     );
   }

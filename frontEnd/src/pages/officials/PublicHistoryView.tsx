@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PageLoader from '../../assets/Layouts/PageLoader';
 import { 
   ChevronLeft, Calendar, Award as AwardIcon, Image as ImageIcon, 
   Filter, GraduationCap
@@ -116,9 +117,8 @@ export default function PublicHistoryView() {
 
         {/* Content Section */}
         {isLoading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-4">
-             <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-             <p className="text-gray-500 font-bold animate-pulse">Retrieving historical records...</p>
+          <div className="py-24">
+            <PageLoader message="Retrieving historical records" />
           </div>
         ) : history.length === 0 ? (
           <div className="py-24 bg-white rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center px-6">

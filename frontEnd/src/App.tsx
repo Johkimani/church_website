@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import PageLoader from "./assets/Layouts/PageLoader";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
 import { Home } from "./pages/Landing/components/page/Home";
@@ -96,6 +97,10 @@ const CsaSecretaryDashboard = lazy(() => import("./pages/Admin/pages/CsaSecretar
 const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
 const AdminBookings = lazy(() => import("./pages/Admin/pages/AdminBookings"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
+<<<<<<< HEAD
+=======
+const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -104,13 +109,7 @@ const CommunityDetail = lazy(() => import("./pages/sacramental/CommunityDetail")
 const NotificationPage = lazy(() => import("./pages/Devotions/pages/NotificationPage"));
 
 // Fallback component
-const FallBack: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-slate-50">
-    <div className="text-xl font-medium text-slate-600 animate-pulse">
-      🍷 Please wait ...
-    </div>
-  </div>
-);
+const FallBack: React.FC = () => <PageLoader message="Loading..." fullScreen />;
 
 
 const App: React.FC = () => {
@@ -163,6 +162,10 @@ const App: React.FC = () => {
           <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
           <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
           <Route path="registered-members" element={<CsaSecretaryDashboard />} />
+<<<<<<< HEAD
+=======
+          <Route path="secretary-dashboard" element={<SecretaryDashboard />} />
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           <Route path="activity-log" element={<ActivityLog />} />
           <Route path="bookings" element={<AdminBookings />} />
           <Route path="settings" element={<SettingsPage />} />

@@ -81,7 +81,29 @@ export const handleCallback = async (req, res) => {
         [mpesaReceipt, CheckoutRequestID],
       );
 
-      // 4. Send SMS confirmation for hire requests
+      // 4. Update activity payments (lipa mdogo mdogo) for bookings
+      const paymentUpdate = await db.query(
+        `UPDATE activity_payments
+            SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE checkout_id = $2 AND status = 'pending'
+          RETURNING booking_id, amount`,
+        [mpesaReceipt, CheckoutRequestID],
+      );
+
+      if (paymentUpdate.rows.length > 0) {
+        for (const pay of paymentUpdate.rows) {
+          await db.query(
+            `UPDATE activity_bookings
+                SET paid_amount = paid_amount + $1,
+                    status = CASE WHEN paid_amount + $1 >= fare THEN 'paid' ELSE 'partial' END,
+                    updated_at = CURRENT_TIMESTAMP
+              WHERE id = $2`,
+            [pay.amount, pay.booking_id],
+          );
+        }
+      }
+
+      // 5. Send SMS confirmation for hire requests
       if (hireUpdate.rows.length > 0) {
         const hire = hireUpdate.rows[0];
         try {

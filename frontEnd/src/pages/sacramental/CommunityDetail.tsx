@@ -30,45 +30,21 @@ import {
   X
 } from 'lucide-react';
 
-interface MinistryTheme {
-  image: string;
-  tag: string;
+interface MinistryMood {
+  accent: string;
+  kicker: string;
   icon: React.ReactNode;
 }
 
-const MINISTRY_THEMES: Record<string, MinistryTheme> = {
-  choir: {
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=1200",
-    tag: "Praise & Worship",
-    icon: <Music className="w-8 h-8 md:w-10 md:h-10 text-white" />
-  },
-  dancers: {
-    image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=1200",
-    tag: "Liturgical Movement",
-    icon: <Compass className="w-8 h-8 md:w-10 md:h-10 text-white" />
-  },
-  charismatic: {
-    image: "https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=1200",
-    tag: "Prayer & Healing",
-    icon: <Flame className="w-8 h-8 md:w-10 md:h-10 text-white" />
-  },
-  "st-francis": {
-    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1200",
-    tag: "Simplicity & Charity",
-    icon: <HeartHandshake className="w-8 h-8 md:w-10 md:h-10 text-white" />
-  },
-  youth: {
-    image: "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=1200",
-    tag: "Mentorship & Career",
-    icon: <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
-  }
+const MINISTRY_MOOD: Record<string, MinistryMood> = {
+  choir: { accent: '#7c2d12', kicker: 'Voices raised in praise', icon: <Music className="w-7 h-7 text-white" /> },
+  dancers: { accent: '#9a3412', kicker: 'Liturgical movement', icon: <Compass className="w-7 h-7 text-white" /> },
+  charismatic: { accent: '#b45309', kicker: 'Prayer & healing', icon: <Flame className="w-7 h-7 text-white" /> },
+  'st-francis': { accent: '#92400e', kicker: 'Simplicity & charity', icon: <HeartHandshake className="w-7 h-7 text-white" /> },
+  youth: { accent: '#a16207', kicker: 'Mentorship & guidance', icon: <Users className="w-7 h-7 text-white" /> },
 };
 
-const DEFAULT_THEME: MinistryTheme = {
-  image: "https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=1200",
-  tag: "Parish Ministry",
-  icon: <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
-};
+const DEFAULT_MOOD: MinistryMood = { accent: '#7c2d12', kicker: 'Parish ministry', icon: <Users className="w-7 h-7 text-white" /> };
 
 const tabIcons: Record<string, React.ReactNode> = {
   about: <Info size={16} />,
@@ -426,91 +402,92 @@ const CommunityDetail: React.FC = () => {
 
     if (isLoading && !contextFallback) {
         return (
-            <div className="w-full bg-slate-50 min-h-[80vh] flex items-center justify-center">
-                <div className="animate-spin text-blue-600"><i className="fas fa-circle-notch text-4xl"></i></div>
+            <div className="w-full bg-[#faf8f5] min-h-[80vh] flex items-center justify-center">
+                <div className="animate-spin text-amber-800"><i className="fas fa-circle-notch text-4xl"></i></div>
             </div>
         );
     }
 
     if (!moduleData) {
         return (
-            <div className="w-full bg-gray-50 flex items-center justify-center min-h-[60vh]">
-                <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-gray-100 max-w-md">
-                    <i className="fas fa-exclamation-triangle text-4xl text-orange-400 mb-4"></i>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Ministry Not Found</h2>
-                    <p className="text-gray-500 mb-6">We could not find the community ministry you are looking for.</p>
-                    <button onClick={() => navigate('/community')} className="px-6 py-2 bg-blue-600 text-white rounded-full font-medium">Back to Community</button>
+            <div className="w-full bg-[#faf8f5] flex items-center justify-center min-h-[60vh]">
+                <div className="text-center p-8 bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] border border-stone-200/70 max-w-md">
+                    <i className="fas fa-exclamation-triangle text-4xl text-amber-500 mb-4"></i>
+                    <h2 className="text-xl font-bold text-stone-800 mb-2">Ministry Not Found</h2>
+                    <p className="text-stone-500 mb-6">We could not find the community ministry you are looking for.</p>
+                    <button onClick={() => navigate('/community')} className="px-6 py-2 bg-stone-900 text-white rounded-full font-medium">Back to Community</button>
                 </div>
             </div>
         );
     }
 
-    const theme = MINISTRY_THEMES[moduleId || ''] || DEFAULT_THEME;
+    const mood = MINISTRY_MOOD[moduleId || ''] || DEFAULT_MOOD;
+    const heroImage = moduleData?.saint_image_url || moduleData?.image_url;
 
     return (
-        <div className="w-full bg-slate-50 min-h-screen pb-24 animate-fade-in font-sans text-slate-800">
-            {/* ══════════ Detail Hero Header (Premium Parallax Image Backdrop) ══════════ */}
-            <div className="w-full py-28 px-6 md:px-12 relative overflow-hidden bg-slate-950 shadow-2xl">
-                {/* Image Backdrop with overlay */}
-                <div className="absolute inset-0 z-0">
-                    <img 
-                        src={theme.image} 
-                        alt={moduleData.title} 
-                        className="w-full h-full object-cover object-center filter saturate-50 brightness-[0.35] opacity-50" 
-                    />
-                </div>
-                
-                {/* Ambient Glows */}
-                <div className="absolute top-[-30%] left-[-10%] w-[65%] h-[70%] rounded-full bg-blue-500/10 blur-[130px] z-0 pointer-events-none" />
-                <div className="absolute bottom-[-30%] right-[-10%] w-[65%] h-[70%] rounded-full bg-indigo-500/10 blur-[130px] z-0 pointer-events-none" />
-                
-                {/* Grid Overlay */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent z-0" />
+        <div className="w-full bg-[#faf8f5] min-h-screen pb-24 animate-fade-in font-sans text-stone-800">
+            {/* hand-torn parish strip */}
+            <div className="h-2 bg-[repeating-linear-gradient(135deg,#7c2d12_0_14px,#9a3412_14px_28px)] opacity-90" />
 
-                <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row items-center gap-8">
-                    {/* Glowing glass icon container */}
-                    <div className="w-24 h-24 md:w-28 md:h-28 bg-white/5 backdrop-blur-md rounded-[2rem] flex items-center justify-center shadow-2xl border border-white/15 text-white shrink-0">
-                        {theme.icon}
+            {/* ══════════ Editorial Hero ══════════ */}
+            <div className="w-full relative overflow-hidden">
+                {heroImage && (
+                    <div className="absolute inset-0 z-0">
+                        <img
+                            src={heroImage}
+                            alt={moduleData.title}
+                            className="w-full h-full object-cover brightness-[0.5] saturate-50"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f5] via-stone-900/40 to-transparent" />
                     </div>
+                )}
 
-                    <div className="text-center md:text-left text-white flex-grow">
-                        <Link 
-                            to="/community" 
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-wider transition-all backdrop-blur-md mb-6 hover:-translate-x-1 duration-300"
+                <div className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-28 relative z-10">
+                    <Link
+                        to="/community"
+                        className="inline-flex items-center gap-1.5 text-stone-200 hover:text-white text-xs font-bold uppercase tracking-[0.22em] mb-6 transition-colors"
+                    >
+                        <ChevronLeft size={14} /> All ministries
+                    </Link>
+
+                    <div className="flex flex-col md:flex-row items-start gap-6">
+                        <div
+                            className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+                            style={{ backgroundColor: mood.accent }}
                         >
-                            <ChevronLeft size={14} /> Back to Communities
-                        </Link>
-                        
-                        <div className="mb-3">
-                            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-400 bg-blue-500/10 px-3.5 py-1.5 rounded-full border border-blue-500/20 inline-block">
-                                {theme.tag}
-                            </span>
+                            {mood.icon}
                         </div>
-                        
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 tracking-tight leading-none drop-shadow-md">
-                            {moduleData.title}
-                        </h1>
-                        
-                        <p className="text-base md:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed drop-shadow-sm">
-                            {moduleData.description}
-                        </p>
+
+                        <div className="text-white">
+                            <span
+                                className="text-[11px] font-bold uppercase tracking-[0.24em] inline-block mb-3"
+                                style={{ color: '#fcd34d' }}
+                            >
+                                {mood.kicker}
+                            </span>
+                            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
+                                {moduleData.title}
+                            </h1>
+                            <p className="mt-4 text-stone-200 max-w-2xl text-base md:text-lg leading-relaxed">
+                                {moduleData.description}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* ══════════ Page Container ══════════ */}
-            <div className="max-w-6xl mx-auto px-6 md:px-12 -mt-10 relative z-20">
-                {/* Premium Glassmorphic Tabs */}
-                <div className="bg-white/80 backdrop-blur-md rounded-[2rem] shadow-xl border border-slate-100/60 p-2 mb-8 flex flex-wrap gap-2 justify-center md:justify-start">
+            <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-20">
+                {/* Tab bar */}
+                <div className="bg-white/70 backdrop-blur-sm border border-stone-200/70 rounded-sm shadow-[0_10px_40px_-24px_rgba(60,40,20,0.3)] p-1.5 mb-8 flex flex-wrap gap-1.5 justify-center md:justify-start sticky top-2">
                     {availableTabs.map(tab => (
                         <button 
                             key={tab.id} 
                             onClick={() => setActiveTab(tab.id)}
-                            className={`px-5 py-3 rounded-2xl font-black flex items-center gap-2.5 transition-all text-xs uppercase tracking-wider cursor-pointer ${
+                            className={`px-4 py-2.5 rounded-sm font-bold flex items-center gap-2 transition-all text-[13px] cursor-pointer ${
                                 activeTab === tab.id
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                    ? 'bg-stone-900 text-white shadow'
+                                    : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700'
                             }`}
                         >
                             {tabIcons[tab.id] || <Info size={14} />}
@@ -592,7 +569,7 @@ const CommunityDetail: React.FC = () => {
                                         <ul className="space-y-4">
                                             {moduleData.agenda.map((item, i) => (
                                                 <li key={i} className="flex items-start gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                                                    <span className="w-8 h-8 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+                                                    <span className="w-8 h-8 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
                                                         {i + 1}
                                                     </span>
                                                     <span className="text-slate-700 font-semibold text-sm leading-relaxed pt-0.5">{item}</span>
@@ -603,7 +580,7 @@ const CommunityDetail: React.FC = () => {
                                 )}
 
                                 {/* Registration CTA */}
-                                <div className="p-8 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border border-blue-100 rounded-[2rem] shadow-inner relative overflow-hidden">
+                                <div className="p-8 bg-amber-50/40 border border-amber-200/70 rounded-sm shadow-inner relative overflow-hidden">
                                     <div className="relative z-10">
                                         <h3 className="text-2xl font-black text-slate-900 mb-2">
                                             {selectedClassId ? 'Class Enrollment' : 'Ready to Join?'}
@@ -619,12 +596,13 @@ const CommunityDetail: React.FC = () => {
                                         </p>
 
                                         {!showRegistration ? (
-                                            <button 
-                                                onClick={() => setShowRegistration(true)} 
-                                                className="inline-flex items-center gap-2.5 px-8 py-4 bg-blue-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-[1.02] transition-all cursor-pointer"
-                                            >
-                                                <FileText size={16} /> Join this Ministry
-                                            </button>
+                                                <button 
+                                                    onClick={() => setShowRegistration(true)} 
+                                                    className="inline-flex items-center gap-2.5 px-8 py-4 text-white font-black text-xs uppercase tracking-wider rounded-sm shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+                                                    style={{ backgroundColor: mood.accent }}
+                                                >
+                                                    <FileText size={16} /> Join this Ministry
+                                                </button>
                                         ) : (
                                             <form onSubmit={handleRegisterSubmit} className="space-y-5 bg-white p-6 rounded-2xl shadow-lg border border-blue-100 relative">
                                                 {enrollMutation.isPending && (
@@ -758,7 +736,8 @@ const CommunityDetail: React.FC = () => {
                                                 
                                                 <button 
                                                     type="submit" 
-                                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
+                                                    className="w-full py-4 text-white font-black text-xs uppercase tracking-wider rounded-sm shadow-lg transition-all cursor-pointer"
+                                                    style={{ backgroundColor: mood.accent }}
                                                 >
                                                     Submit Application
                                                 </button>
@@ -771,11 +750,11 @@ const CommunityDetail: React.FC = () => {
 
                         {/* CLASSES TAB (Choir-specific) */}
                         {activeTab === 'classes' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-8 border border-stone-200/70 animate-fade-in">
                                 <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">Music Classes</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {moduleData.musicClasses?.map(mc => (
-                                        <div key={mc.id} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl hover:border-blue-200 hover:shadow-md transition duration-300 flex flex-col h-full">
+                                        <div key={mc.id} className="p-6 bg-slate-50 border border-slate-100 rounded-sm hover:border-blue-200 hover:shadow-md transition duration-300 flex flex-col h-full">
                                             <div className="flex justify-between items-start mb-3">
                                                 <h3 className="text-lg font-bold text-slate-800 tracking-tight">{mc.title}</h3>
                                                 <span className="text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg shrink-0">{mc.skillLevel}</span>
@@ -793,12 +772,13 @@ const CommunityDetail: React.FC = () => {
                                                 </div>
                                             </div>
                                             
-                                            <button 
-                                                onClick={() => openClassEnrollment(mc.id)} 
-                                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer"
-                                            >
-                                                Join Class
-                                            </button>
+                                                <button 
+                                                    onClick={() => openClassEnrollment(mc.id)} 
+                                                    className="w-full py-3 text-white rounded-sm font-black text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                                                    style={{ backgroundColor: mood.accent }}
+                                                >
+                                                    Join Class
+                                                </button>
                                         </div>
                                     ))}
                                 </div>
@@ -807,13 +787,13 @@ const CommunityDetail: React.FC = () => {
 
                         {/* SCHEDULES TAB */}
                         {activeTab === 'schedules' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-8 border border-stone-200/70 animate-fade-in">
                                 <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
                                     {moduleData.scheduleLabel || 'Schedules'}
                                 </h2>
                                 <div className="space-y-4">
                                     {moduleData.practiceSchedules?.map(ps => (
-                                        <div key={ps.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:border-blue-100 hover:shadow-md transition-all duration-300 gap-4">
+                                        <div key={ps.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-white border border-slate-100 rounded-sm shadow-sm hover:border-blue-100 hover:shadow-md transition-all duration-300 gap-4">
                                             <div className="flex items-start gap-4">
                                                 <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
                                                     <MapPin size={18} />
@@ -834,7 +814,7 @@ const CommunityDetail: React.FC = () => {
 
                         {/* ANNOUNCEMENTS TAB */}
                         {activeTab === 'announcements' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-8 border border-stone-200/70 animate-fade-in relative">
                                 {isError && (
                                     <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                                         <AlertTriangle size={14} /> Offline Mode
@@ -866,7 +846,7 @@ const CommunityDetail: React.FC = () => {
 
                         {/* OFFICIALS TAB */}
                         {activeTab === 'officials' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-8 border border-stone-200/70 animate-fade-in relative">
                                 {isError && (
                                     <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                                         <AlertTriangle size={14} /> Offline Mode
@@ -876,7 +856,7 @@ const CommunityDetail: React.FC = () => {
                                 {moduleData.officials && moduleData.officials.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {moduleData.officials.map((official: any) => (
-                                            <div key={official.id} className="flex items-center gap-4 p-5 border border-slate-100 rounded-3xl hover:shadow-lg transition bg-slate-50/50 hover:bg-white group duration-300">
+                                            <div key={official.id} className="flex items-center gap-4 p-5 border border-slate-100 rounded-sm hover:shadow-lg transition bg-slate-50/50 hover:bg-white group duration-300">
                                                 {official.photo_url || official.photoUrl ? (
                                                     <img 
                                                         src={official.photo_url || official.photoUrl} 
@@ -918,14 +898,14 @@ const CommunityDetail: React.FC = () => {
 
                         {/* MEMBERS TAB */}
                         {activeTab === 'members' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-8 border border-stone-200/70 animate-fade-in relative">
                                 <h2 className="text-2xl md:text-3xl font-black text-slate-800 mb-6 border-b border-slate-100 pb-5 tracking-tight">
                                     Registered Members ({enrollmentsData?.length || 0})
                                 </h2>
                                 {enrollmentsData && enrollmentsData.length > 0 ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {enrollmentsData.map((member: any) => (
-                                            <div key={member.id} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50 hover:bg-white hover:shadow-lg transition group duration-300">
+                                            <div key={member.id} className="p-6 border border-slate-100 rounded-sm bg-slate-50/50 hover:bg-white hover:shadow-lg transition group duration-300">
                                                 <div className="flex items-start gap-4">
                                                     <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-lg shrink-0">
                                                         {(member.fullName || member.full_name || '?').charAt(0)?.toUpperCase()}
@@ -979,7 +959,7 @@ const CommunityDetail: React.FC = () => {
 
                         {/* ACTIVITIES TAB */}
                         {activeTab === 'activities' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-8 border border-stone-200/70 animate-fade-in relative">
                                 {isError && (
                                     <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                                         <AlertTriangle size={14} /> Offline Mode
@@ -989,7 +969,7 @@ const CommunityDetail: React.FC = () => {
                                 {moduleData.activities && moduleData.activities.length > 0 ? (
                                     <div className="space-y-4">
                                         {moduleData.activities.map((activity: any) => (
-                                            <div key={activity.id} className="flex flex-col md:flex-row p-6 border border-slate-100 rounded-3xl bg-white shadow-sm hover:border-blue-100 hover:shadow-md transition-all duration-300">
+                                            <div key={activity.id} className="flex flex-col md:flex-row p-6 border border-slate-100 rounded-sm bg-white shadow-sm hover:border-blue-100 hover:shadow-md transition-all duration-300">
                                                 <div className="md:w-44 mb-4 md:mb-0 md:border-r border-slate-100 md:pr-6 flex flex-col justify-center">
                                                     <span className={`text-[10px] font-black uppercase tracking-widest block mb-1.5 w-fit px-2.5 py-1 rounded ${
                                                         activity.status === 'Upcoming' 
@@ -1021,7 +1001,7 @@ const CommunityDetail: React.FC = () => {
 
                         {/* GALLERY TAB */}
                         {activeTab === 'gallery' && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 border border-slate-100 animate-fade-in relative flex flex-col">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-8 border border-stone-200/70 animate-fade-in relative flex flex-col">
                                 {isError && (
                                     <div className="absolute top-6 right-6 bg-amber-50 border border-amber-200 text-amber-700 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                                         <AlertTriangle size={14} /> Offline Mode
@@ -1029,47 +1009,57 @@ const CommunityDetail: React.FC = () => {
                                 )}
                                 
                                 {/* Photo Gallery Header with Photo Count */}
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-stone-100 pb-5 mb-6">
                                     <div>
-                                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Photo Gallery</h2>
-                                        <p className="text-slate-500 font-semibold text-xs mt-1">Capturing our memorable moments and celebrations</p>
+                                        <h2 className="font-serif text-2xl md:text-3xl font-bold text-stone-900 tracking-tight">Photo Gallery</h2>
+                                        <p className="text-stone-500 font-semibold text-xs mt-1">Moments from our life together</p>
                                     </div>
                                     {moduleData.gallery && moduleData.gallery.length > 0 && (
-                                        <span className="px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 font-black text-xs uppercase tracking-wider shrink-0 w-fit">
+                                        <span className="px-4 py-2 bg-amber-50 text-amber-700 rounded-sm border border-amber-200 font-black text-xs uppercase tracking-wider shrink-0 w-fit">
                                             {moduleData.gallery.length} {moduleData.gallery.length === 1 ? 'Photo' : 'Photos'}
                                         </span>
                                     )}
                                 </div>
 
-                                {/* Scrollable Gallery Container with Fixed Responsive Height */}
-                                <div 
+                                {/* Scrollable scrapbook gallery */}
+                                <div
                                     className="pr-3 gallery-scrollbar"
                                     style={{ height: '650px', maxHeight: '75vh', overflowY: 'scroll' }}
                                 >
                                     {moduleData.gallery && moduleData.gallery.length > 0 ? (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 pb-4">
-                                            {moduleData.gallery.map((img: any) => (
-                                                <div 
-                                                    key={img.id} 
-                                                    onClick={() => setActivePhoto(img)}
-                                                    className="group relative rounded-3xl overflow-hidden aspect-[4/3] shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-out cursor-zoom-in border border-slate-100 bg-slate-50"
-                                                >
-                                                    <img 
-                                                        src={img.url || img.imageUrl || img.image_url} 
-                                                        alt={img.caption || img.eventName} 
-                                                        loading="lazy"
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" 
-                                                    />
-                                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                        <p className="text-white font-bold text-sm leading-snug">{img.caption || img.eventName}</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 pb-4">
+                                            {moduleData.gallery.map((img: any, i: number) => {
+                                                const rotation = [-2, 1.5, -1, 2, -1.5, 1.8][i % 6];
+                                                return (
+                                                    <div
+                                                        key={img.id}
+                                                        onClick={() => setActivePhoto(img)}
+                                                        className="group relative cursor-zoom-in select-none"
+                                                        style={{ transform: `rotate(${rotation}deg)` }}
+                                                    >
+                                                        {/* tape */}
+                                                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 bg-amber-200/50 border border-amber-200/30 rotate-1 z-10 pointer-events-none" />
+                                                        <div className="bg-white rounded-[2px] shadow-[0_8px_30px_-10px_rgba(60,40,20,0.25)] overflow-hidden" style={{ padding: '6px', paddingBottom: '34px' }}>
+                                                            <div className="relative overflow-hidden rounded-[1px] aspect-[4/3] bg-stone-100">
+                                                                <img
+                                                                    src={img.url || img.imageUrl || img.image_url}
+                                                                    alt={img.caption || img.eventName}
+                                                                    loading="lazy"
+                                                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
+                                                                />
+                                                            </div>
+                                                            <div className="mt-1.5 px-1 truncate text-[10px] font-bold text-stone-600 leading-tight">
+                                                                {img.caption || img.eventName}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-center text-slate-400">
+                                        <div className="flex flex-col items-center justify-center h-full text-center text-stone-400">
                                             <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                                            <p className="font-semibold text-sm">Photos will appear here soon.</p>
+                                            <p className="font-serif italic text-sm">No photos pinned up yet.</p>
                                         </div>
                                     )}
                                 </div>
@@ -1082,7 +1072,7 @@ const CommunityDetail: React.FC = () => {
 
                         {/* Practice Countdown - Choir only */}
                         {isChoir && moduleData.practiceSchedules && moduleData.practiceSchedules.length > 0 && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-6 border border-slate-100">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-6 border border-stone-200/70">
                                 <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-3">
                                     <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl"><Clock className="w-5 h-5" /></div>
                                     <h3 className="text-lg font-black text-indigo-950">Next Practice</h3>
@@ -1092,7 +1082,7 @@ const CommunityDetail: React.FC = () => {
                         )}
 
                         {/* Meeting / Training Schedule (sidebar) */}
-                        <div className="bg-white rounded-[2.5rem] shadow-xl p-6 border border-slate-100 relative overflow-hidden">
+                        <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-6 border border-stone-200/70 relative overflow-hidden">
                             <div className="absolute -right-6 -top-6 text-slate-50 opacity-30 scale-150 pointer-events-none">
                                 <Clock className="w-32 h-32 text-slate-100" />
                             </div>
@@ -1112,7 +1102,7 @@ const CommunityDetail: React.FC = () => {
 
                         {/* Financial Information */}
                         {moduleData.fees && (moduleData.fees.registration || moduleData.fees.uniform) && (
-                            <div className="bg-white rounded-[2.5rem] shadow-xl p-6 border border-slate-100 relative overflow-hidden">
+                            <div className="bg-white rounded-sm shadow-[0_10px_40px_-22px_rgba(60,40,20,0.25)] p-6 border border-stone-200/70 relative overflow-hidden">
                                 <div className="absolute -right-4 -top-4 text-slate-50 opacity-30 scale-125 pointer-events-none">
                                     <Coins className="w-28 h-28 text-slate-100" />
                                 </div>
@@ -1171,22 +1161,18 @@ const CommunityDetail: React.FC = () => {
                         )}
 
                         {/* Contact CTA */}
-                        <div className="bg-gradient-to-br from-indigo-950 via-slate-950 to-indigo-900 rounded-[2.5rem] p-8 text-white text-center shadow-xl border border-slate-900 relative overflow-hidden">
-                            {/* Glow Effects */}
-                            <div className="absolute top-[-25%] left-[-25%] w-[65%] h-[65%] rounded-full bg-blue-500/5 blur-[55px] pointer-events-none" />
-                            <div className="absolute bottom-[-25%] right-[-25%] w-[65%] h-[65%] rounded-full bg-indigo-500/5 blur-[55px] pointer-events-none" />
-                            
+                        <div className="rounded-sm p-8 text-white text-center shadow-[0_10px_40px_-22px_rgba(60,40,20,0.3)] border border-stone-200/70 relative overflow-hidden" style={{ backgroundColor: mood.accent }}>
                             <div className="relative z-10">
-                                <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10 shadow-lg text-indigo-400">
-                                    <Bell className="w-6 h-6 animate-pulse" />
+                                <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                    <Bell className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-xl font-black mb-2 text-white">Need more info?</h3>
-                                <p className="text-slate-400 mb-6 text-sm font-semibold leading-relaxed">Contact the ministry coordinator for detailed inquiries.</p>
+                                <h3 className="text-xl font-black mb-2">Need more info?</h3>
+                                <p className="text-white/80 mb-6 text-sm font-semibold leading-relaxed">Reach out to the ministry coordinator for any questions.</p>
                                 <a 
                                     href={contactHref} 
                                     target={coordinatorWhatsApp ? '_blank' : undefined}
                                     rel={coordinatorWhatsApp ? 'noopener noreferrer' : undefined}
-                                    className="inline-flex items-center justify-center gap-2 mx-auto px-6 py-4 bg-white hover:bg-blue-50 text-slate-950 hover:text-blue-700 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] duration-300"
+                                    className="inline-flex items-center justify-center gap-2 mx-auto px-6 py-4 bg-white text-stone-900 rounded-sm font-black text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] duration-300 hover:bg-stone-100"
                                 >
                                     {coordinatorWhatsApp && <FaWhatsapp className="text-[#25D366]" size={16} />}
                                     {contactLabel}
@@ -1288,34 +1274,33 @@ const CommunityDetail: React.FC = () => {
 
             {/* Gallery Lightbox Modal */}
             {activePhoto && (
-                <div 
-                    className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in cursor-zoom-out"
+                <div
+                    className="fixed inset-0 z-[9999] bg-stone-900/70 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in cursor-zoom-out"
                     onClick={() => setActivePhoto(null)}
                 >
                     {/* Close button */}
-                    <button 
-                        onClick={() => setActivePhoto(null)} 
-                        className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-110"
+                    <button
+                        onClick={() => setActivePhoto(null)}
+                        className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/80 hover:bg-white text-stone-800 flex items-center justify-center transition-all cursor-pointer hover:scale-110 shadow-lg"
                     >
                         <X size={24} />
                     </button>
 
-                    {/* Image container */}
-                    <div 
-                        className="relative max-w-5xl max-h-[80vh] flex flex-col items-center justify-center cursor-default"
+                    {/* Polaroid frame */}
+                    <div
+                        className="relative bg-white p-3 pb-12 rounded-[2px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] max-w-3xl w-full cursor-default"
                         onClick={e => e.stopPropagation()}
                     >
-                        <img 
-                            src={activePhoto.url || activePhoto.imageUrl || activePhoto.image_url} 
-                            alt={activePhoto.caption || activePhoto.eventName} 
-                            className="max-w-full max-h-[70vh] object-contain rounded-2xl shadow-2xl border border-white/10 animate-scale-in" 
+                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-amber-200/50 border border-amber-200/30 -rotate-2 pointer-events-none" />
+                        <img
+                            src={activePhoto.url || activePhoto.imageUrl || activePhoto.image_url}
+                            alt={activePhoto.caption || activePhoto.eventName}
+                            className="w-full max-h-[68vh] object-contain rounded-[1px] bg-stone-100 animate-scale-in"
                         />
-                        
-                        {/* Caption info panel */}
-                        <div className="mt-5 text-center text-white max-w-xl px-4">
-                            <h3 className="text-xl font-black tracking-tight">{activePhoto.caption || activePhoto.eventName}</h3>
+                        <div className="mt-3 text-center px-2">
+                            <h3 className="font-serif text-lg font-bold text-stone-800 tracking-tight">{activePhoto.caption || activePhoto.eventName}</h3>
                             {activePhoto.description && (
-                                <p className="text-slate-300 text-sm mt-2 font-medium leading-relaxed">{activePhoto.description}</p>
+                                <p className="text-stone-500 text-sm mt-1 font-medium leading-relaxed">{activePhoto.description}</p>
                             )}
                         </div>
                     </div>
