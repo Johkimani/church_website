@@ -36,15 +36,15 @@ const JUMUIYAS = [
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";
 
-type SubTab = "members" | "officials" | "gallery" | "notifications" | "activities" | "about";
+type SubTab = "dashboard" | "import" | "review" | "organize" | "results" | "allocations";
 
 const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; description: string }> = {
-  members: { label: "Members", icon: <Users size={16} />, description: "Manage members — list, dashboard, import, review, groups, registered & distributions" },
-  officials: { label: "Officials", icon: <UserCheck size={16} />, description: "Manage chairperson, secretary, treasurer and other officials" },
-  gallery: { label: "Gallery", icon: <Image size={16} />, description: "Upload and manage photo albums" },
-  notifications: { label: "Notifications", icon: <Bell size={16} />, description: "Create and send community announcements" },
-  activities: { label: "Activities", icon: <Calendar size={16} />, description: "Update meeting schedule and manage events" },
-  about: { label: "About", icon: <BookOpen size={16} />, description: "Edit description and saint biography" },
+  dashboard: { label: "Dashboard", icon: <PieChart size={16} />, description: "Overview and registration statistics" },
+  import: { label: "New Admission", icon: <Upload size={16} />, description: "Import and add new members" },
+  organize: { label: "Organize", icon: <GitMerge size={16} />, description: "Assign members to groups" },
+  review: { label: "Review", icon: <ClipboardList size={16} />, description: "Review and approve pending registrations" },
+  results: { label: "All Members", icon: <Users size={16} />, description: "View and manage all registered members" },
+  allocations: { label: "Allocations", icon: <UserCheck size={16} />, description: "Approve CSA member allocations" },
 };
 
 function StatCard({ label, value, icon, bg, color }: { label: string; value: string | number; icon: React.ReactNode; bg: string; color: string }) {
@@ -107,8 +107,7 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
 const SummaryBarMemo = memo(SummaryBar);
 
 const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor }) => {
-  const [activeTab, setActiveTab] = useState<SubTab>("members");
-  const [membersSubTab, setMembersSubTab] = useState<"list" | "dashboard" | "import" | "review" | "groups" | "registered" | "distributions">("list");
+  const [activeTab, setActiveTab] = useState<SubTab>("dashboard");
 
   const currentMeta = subTabMeta[activeTab];
 
@@ -122,7 +121,7 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
             return (
               <button
                 key={id}
-                onClick={() => { setActiveTab(id); if (id === "members") setMembersSubTab("list"); }}
+                onClick={() => setActiveTab(id)}
                 className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   isActive
                     ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200"
@@ -365,7 +364,7 @@ export default function JumuiyaMembersAdmin() {
           </div>
         </div>
 
-        <JumuiyaQuickManager jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
       </div>
     );
   }
