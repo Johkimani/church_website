@@ -6,22 +6,16 @@ interface Booking {
   id: number;
   member_name: string;
   member_email: string;
-<<<<<<< HEAD
-=======
   year_of_study: string;
   jumuiya_id: string;
   phone: string;
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
   activity_type: string;
   activity_name: string;
   activity_day: string | null;
   activity_time: string | null;
   fare: string;
   paid_amount: string;
-<<<<<<< HEAD
-  status: string;
-=======
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
+
   created_at: string;
   updated_at: string;
 }
@@ -68,15 +62,6 @@ export default function AdminBookings() {
     b.activity_name?.toLowerCase().includes(search.toLowerCase())
   );
 
-<<<<<<< HEAD
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case "paid": return "bg-emerald-100 text-emerald-700";
-      case "pending": return "bg-amber-100 text-amber-700";
-      case "cancelled": return "bg-red-100 text-red-700";
-      default: return "bg-slate-100 text-slate-600";
-    }
-=======
   // Group bookings by activity for better organization
   const groupedBookings = filtered.reduce((acc, booking) => {
     const key = `${booking.activity_type}:${booking.activity_name}`;
@@ -112,7 +97,6 @@ export default function AdminBookings() {
       return "bg-amber-50 text-amber-700 border-amber-200 font-medium";
     }
     return "bg-slate-50 text-slate-600 border-slate-200";
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
   };
 
   return (
@@ -157,51 +141,6 @@ export default function AdminBookings() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-<<<<<<< HEAD
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">#</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Member</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Activity</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Type</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600">Fare</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600">Paid</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Status</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((b, i) => (
-                  <tr key={b.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 text-slate-400 font-mono text-xs">{b.id}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-slate-800">{b.member_name}</div>
-                      <div className="text-xs text-slate-400">{b.member_email}</div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">{b.activity_name}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-[10px] font-semibold uppercase text-slate-400">{b.activity_type}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-slate-600">KES {Number(b.fare).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right font-mono text-emerald-600 font-semibold">KES {Number(b.paid_amount).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${statusBadge(b.status)}`}>
-                        {b.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-400">
-                      {new Date(b.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="px-4 py-3 text-xs text-slate-400 border-t border-slate-100">
-            Showing {filtered.length} of {bookings.length} bookings
-=======
           {Object.entries(groupedBookings).length > 0 && (
             <div className="px-6 py-4 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
               <h3 className="text-base font-bold text-slate-800 mb-1">
@@ -258,7 +197,6 @@ export default function AdminBookings() {
           </div>
           <div className="px-4 py-3 text-xs text-slate-400 border-t border-slate-100">
             Showing {filtered.length} of {bookings.length} bookings across {Object.keys(groupedBookings).length} activities
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           </div>
         </div>
       )}

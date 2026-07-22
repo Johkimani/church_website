@@ -9,13 +9,6 @@ import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import MembersList from "../../Jumuiya/admin/MembersList";
 import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
-import AdminGallery from "../../Jumuiya/admin/AdminGallery";
-import AdminNotifications from "../../Jumuiya/admin/AdminNotifications";
-import AdminAbout from "../../Jumuiya/admin/AdminAbout";
-import AdminOfficials from "../../Jumuiya/admin/AdminOfficials";
-import AdminActivities from "../../Jumuiya/admin/AdminActivities";
-import AdminRegisteredMembers from "../../Jumuiya/admin/AdminRegisteredMembers";
-import DistributionResults from "../../Jumuiya/admin/DistributionResults";
 import AllMembersTable from "./AllMembersTable";
 import AssociatesTable from "./AssociatesTable";
 import JumuiyaQuickManager from "./JumuiyaQuickManager";
@@ -148,63 +141,12 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
         </div>
       </div>
 
-      {/* Description */}
-      <div className="flex items-center gap-3 mb-5 px-1">
-        <div className="w-1 h-6 rounded-full bg-indigo-500" />
-        <p className="text-sm text-slate-500">{currentMeta.description}</p>
-      </div>
-
-      {/* Members Tab */}
-      {activeTab === "members" && (
-        <div>
-          <div className="flex flex-wrap gap-2 mb-5">
-            {[
-              { id: "list" as const, label: "All Members", icon: <Users size={14} /> },
-              { id: "dashboard" as const, label: "Dashboard", icon: <BarChart3 size={14} /> },
-              { id: "import" as const, label: "Import", icon: <Upload size={14} /> },
-              { id: "review" as const, label: "Review", icon: <CheckCircle size={14} /> },
-              { id: "groups" as const, label: "Groups", icon: <GitMerge size={14} /> },
-              { id: "registered" as const, label: "Registered", icon: <ListChecks size={14} /> },
-              { id: "distributions" as const, label: "Distributions", icon: <PieChart size={14} /> },
-            ].map(({ id, label, icon }) => (
-              <button
-                key={id}
-                onClick={() => setMembersSubTab(id)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  membersSubTab === id
-                    ? "bg-indigo-100 text-indigo-700"
-                    : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {icon}
-                {label}
-              </button>
-            ))}
-          </div>
-          {membersSubTab === "list" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
-          {membersSubTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-          {membersSubTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
-          {membersSubTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
-          {membersSubTab === "groups" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
-          {membersSubTab === "registered" && <AdminRegisteredMembers jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-          {membersSubTab === "distributions" && <DistributionResults jumuiyaId={jumuiyaId} />}
-        </div>
-      )}
-
-      {/* Officials Tab */}
-      {activeTab === "officials" && <AdminOfficials selectedId={jumuiyaId} />}
-
-      {/* Gallery Tab */}
-      {activeTab === "gallery" && <AdminGallery selectedId={jumuiyaId} />}
-
-      {/* Notifications Tab */}
-      {activeTab === "notifications" && <AdminNotifications selectedId={jumuiyaId} />}
-
-      {/* Activities Tab */}
-      {activeTab === "activities" && <AdminActivities selectedId={jumuiyaId} />}
-
-      {/* About Tab */}
-      {activeTab === "about" && <AdminAbout selectedId={jumuiyaId} />}
+      {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
+      {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
+      {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
+      {activeTab === "organize" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
+      {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
+      {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
     </div>
   );
 };
