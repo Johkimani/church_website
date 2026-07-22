@@ -148,14 +148,6 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
         </div>
       </div>
 
-<<<<<<< HEAD
-      {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-      {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
-      {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
-      {activeTab === "organize" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
-      {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
-      {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-=======
       {/* Description */}
       <div className="flex items-center gap-3 mb-5 px-1">
         <div className="w-1 h-6 rounded-full bg-indigo-500" />
@@ -213,7 +205,6 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
 
       {/* About Tab */}
       {activeTab === "about" && <AdminAbout selectedId={jumuiyaId} />}
->>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
     </div>
   );
 };
