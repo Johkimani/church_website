@@ -65,10 +65,13 @@ export default function Terms() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
+<<<<<<< HEAD
           <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-6">
             <Scale className="w-3.5 h-3.5" />
             Terms of Service
           </div>
+=======
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none mb-6">
             Terms &amp; Conditions
           </h1>

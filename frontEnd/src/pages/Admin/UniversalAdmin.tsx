@@ -16,6 +16,11 @@ import {
   UserPlus,
   ClipboardList,
   Trash2,
+<<<<<<< HEAD
+=======
+  Home,
+  Shield,
+>>>>>>> ac9b14a9307aa0a86e676c714744493cd735ebab
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +29,7 @@ import apiService from '../Landing/services/api';
 import { useEffect, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
+import { Home } from '../projects/pages/Home';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -45,6 +51,7 @@ const menuItems = [
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
+  { id: 'secretary-dashboard', name: 'My Jumuiya Dashboard', icon: Shield, path: '/admin/secretary-dashboard' },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
@@ -137,7 +144,7 @@ export default function UniversalAdmin() {
 
   const checkAccess = (path: string): boolean => {
     if (isSuperAdmin) return true;
-    if (path === "/admin" || path === "/admin/") return normalized.length > 0;
+    if (path === "/admin" || path === "/admin/") return normalized.includes("CSA_CHAIR");
 
     const allowedPrefixes = new Set<string>();
 
@@ -181,6 +188,7 @@ export default function UniversalAdmin() {
           break;
         case "JUMUIYA_CHAIRPERSON":
         case "JUMUIYA_SECRETARY":
+          allowedPrefixes.add("/admin/secretary-dashboard");
           allowedPrefixes.add("/admin/jumuiya-members");
           break;
         case "CHOIR_CHAIRPERSON":
@@ -216,11 +224,22 @@ export default function UniversalAdmin() {
   };
 
   const hasAccess = checkAccess(location.pathname);
+
   const allowedMenuItems = menuItems.filter((item) => {
     if (item.path) return checkAccess(item.path);
     if (item.subItems) return item.subItems.some((child) => checkAccess(child.path));
     return false;
   });
+
+  // ── Redirect non-chair users away from dashboard to their first allowed page ──
+  useEffect(() => {
+    if (location.pathname !== "/admin" && location.pathname !== "/admin/") return;
+    if (normalized.includes("CSA_CHAIR")) return;
+    const fallback = allowedMenuItems.find((i) => i.path && i.path !== "/admin");
+    if (fallback?.path) {
+      navigate(fallback.path, { replace: true });
+    }
+  }, [location.pathname, normalized, allowedMenuItems, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -336,12 +355,21 @@ export default function UniversalAdmin() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="admin-panel-header">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
-          >
-            <Menu size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition duration-200"
+            >
+              <Menu size={24} />
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-200 transition duration-200"
+              title="Back to Home"
+            >
+              <Home size={24} />
+            </button>
+          </div>
 
           <div className="flex-1 hidden md:flex md:items-center md:justify-center">
             <div className="relative max-w-lg text-center">
