@@ -1,13 +1,43 @@
-import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { 
-  Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, 
-  BarChart3, List, TrendingUp, UserPlus, GitMerge, CheckCircle, 
-  ArrowUpRight, ArrowLeftRight, Filter, X, Loader2
+import {
+  Users, Search, RefreshCw, Download, Church, Calendar,
+  BarChart3, List, TrendingUp, Upload, GitMerge, CheckCircle,
+  ArrowLeftRight, ClipboardList, UserCheck, Image, X, Loader2
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
+import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
+import MemberReview from "../../Jumuiya/admin/MemberReview";
+import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
+import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
+import GalleryManager from "./GalleryManager";
+
+type DashboardTab = "overview" | "import" | "organize" | "review" | "members" | "allocations" | "analytics" | "gallery";
+
+const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }[]> = {
+  chair: [
+    { id: "overview", label: "Dashboard", icon: BarChart3 },
+    { id: "import", label: "New Admission", icon: Upload },
+    { id: "organize", label: "Organize", icon: GitMerge },
+    { id: "review", label: "Review", icon: ClipboardList },
+    { id: "members", label: "All Members", icon: Users },
+    { id: "allocations", label: "Allocations", icon: UserCheck },
+    { id: "analytics", label: "Reports", icon: TrendingUp },
+  ],
+  secretary: [
+    { id: "overview", label: "Dashboard", icon: BarChart3 },
+    { id: "review", label: "Review", icon: ClipboardList },
+    { id: "members", label: "All Members", icon: Users },
+    { id: "analytics", label: "Reports", icon: TrendingUp },
+  ],
+  os: [
+    { id: "overview", label: "Dashboard", icon: BarChart3 },
+    { id: "members", label: "All Members", icon: Users },
+    { id: "gallery", label: "Gallery", icon: Image },
+  ],
+};
 
 // ── Jumuiya config ──
 const JUMUIYAS: Record<string, { name: string; color: string; initials: string }> = {
@@ -54,7 +84,17 @@ export default function SecretaryDashboard() {
   const jumuiyaId = user?.jumuiya_id || "";
   const jumuiyaInfo = JUMUIYAS[jumuiyaId] || { name: jumuiyaId || "Your Jumuiya", color: "#6b7280", initials: "J" };
 
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "analytics">("overview");
+  // ── Role detection ──
+  const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+  const normalizedRoles = userRoles.map(r => String(r).toUpperCase().trim());
+  const isChair = normalizedRoles.includes("JUMUIYA_CHAIRPERSON");
+  const isSecretary = normalizedRoles.includes("JUMUIYA_SECRETARY");
+  const isOS = normalizedRoles.includes("JUMUIYA_OS");
+  const roleKey = isChair ? "chair" : isSecretary ? "secretary" : "os";
+  const tabs = TAB_CONFIGS[roleKey];
+  const roleLabel = isChair ? "Chairperson Dashboard" : isSecretary ? "Secretary Dashboard" : "Jumuiya Dashboard";
+
+  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
 
   // ── Overview data ──
   const [stats, setStats] = useState<any>(null);
@@ -160,6 +200,7 @@ export default function SecretaryDashboard() {
 
   useEffect(() => {
     if (activeTab === "analytics") fetchAnalytics();
+    if (activeTab === "members" && members.length === 0) fetchMembers();
   }, [activeTab, jumuiyaId]);
 
   // ── Filtered & sorted members ──
@@ -269,7 +310,7 @@ export default function SecretaryDashboard() {
           <div>
             <h2 className="text-2xl font-black text-slate-800">{jumuiyaInfo.name}</h2>
             <p className="text-sm text-slate-500">
-              Secretary Dashboard · {user?.role && (Array.isArray(user.role) ? user.role.join(", ") : user.role)}
+              {roleLabel}
             </p>
           </div>
         </div>
@@ -283,12 +324,8 @@ export default function SecretaryDashboard() {
       </div>
 
       {/* ── Tab Navigation ── */}
-      <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 w-fit">
-        {([
-          { id: "overview", label: "Overview", icon: BarChart3 },
-          { id: "members", label: "All Members", icon: Users },
-          { id: "analytics", label: "Reports", icon: TrendingUp },
-        ] as const).map(tab => (
+      <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 w-fit flex-wrap">
+        {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -749,6 +786,31 @@ export default function SecretaryDashboard() {
             </>
           )}
         </div>
+      )}
+
+      {/* ═══════════ NEW ADMISSION TAB (Chair only) ═══════════ */}
+      {activeTab === "import" && (
+        <MemberImportForm jumuiyaId={jumuiyaId} />
+      )}
+
+      {/* ═══════════ ORGANIZE TAB (Chair only) ═══════════ */}
+      {activeTab === "organize" && (
+        <OrganizationPanel jumuiyaId={jumuiyaId} />
+      )}
+
+      {/* ═══════════ REVIEW TAB (Chair + Secretary) ═══════════ */}
+      {activeTab === "review" && (
+        <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} />
+      )}
+
+      {/* ═══════════ ALLOCATIONS TAB (Chair only) ═══════════ */}
+      {activeTab === "allocations" && (
+        <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} jumuiyaColor={jumuiyaInfo.color} />
+      )}
+
+      {/* ═══════════ GALLERY TAB (OS only) ═══════════ */}
+      {activeTab === "gallery" && (
+        <GalleryManager />
       )}
     </div>
   );
