@@ -4,7 +4,8 @@ import { memberService } from "../../../api/jumuiyaMemberService";
 import {
   Users, Search, RefreshCw, Download, Church, Calendar,
   BarChart3, List, TrendingUp, Upload, GitMerge, CheckCircle,
-  ArrowLeftRight, ClipboardList, UserCheck, Image, X, Loader2
+  ArrowLeftRight, ClipboardList, UserCheck, Image, X, Loader2,
+  Edit2, Save, Trash2, Flag
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
@@ -118,6 +119,13 @@ export default function SecretaryDashboard() {
     sem_5_reg: false, sem_6_reg: false, sem_7_reg: false, sem_8_reg: false,
   });
 
+  // ── Edit / Flag / Delete state ──
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [flagging, setFlagging] = useState<string | null>(null);
+
   // ── Analytics data ──
   const [analytics, setAnalytics] = useState<any>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
@@ -202,6 +210,71 @@ export default function SecretaryDashboard() {
     if (activeTab === "analytics") fetchAnalytics();
     if (activeTab === "members" && members.length === 0) fetchMembers();
   }, [activeTab, jumuiyaId]);
+
+  // ── Member Actions (Edit / Flag / Delete) ──
+  const handleEditMember = (m: any) => {
+    const nameStr = m.name || "";
+    const nameParts = nameStr.split(" ");
+    setEditingId(m.member_id || m.id);
+    setEditForm({
+      first_name: m.first_name || nameParts[0] || "",
+      last_name: m.last_name || nameParts.slice(1).join(" ") || "",
+      course: m.course || "",
+      phone: m.phone || "",
+      gender: m.gender || "",
+      year_of_study: m.year || "",
+    });
+  };
+
+  const handleSaveMember = async (memberId: string) => {
+    setSaving(true);
+    try {
+      await memberService.updateMember(memberId, editForm);
+      setMembers(prev => prev.map(m =>
+        (m.member_id === memberId || m.id === memberId) ? { ...m, ...editForm } : m
+      ));
+      setEditingId(null);
+      toast.success("Member updated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to update member");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    if (!confirm("Permanently delete this member?\n\nThis action cannot be undone.")) return;
+    setDeleting(memberId);
+    try {
+      await memberService.deleteMember(memberId);
+      setMembers(prev => prev.filter(m => m.member_id !== memberId && m.id !== memberId));
+      toast.success("Member deleted");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to delete member");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleFlagMember = async (memberId: string, currentlyFlagged: boolean) => {
+    setFlagging(memberId);
+    try {
+      await memberService.flagMember(memberId, !currentlyFlagged);
+      setMembers(prev => prev.map(m =>
+        (m.member_id === memberId || m.id === memberId) ? { ...m, flagged: !currentlyFlagged } : m
+      ));
+      toast.success(currentlyFlagged ? "Member unflagged" : "Member flagged as inactive");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to flag member");
+    } finally {
+      setFlagging(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
 
   // ── Filtered & sorted members ──
   const filteredMembers = useMemo(() => {
@@ -609,52 +682,112 @@ export default function SecretaryDashboard() {
                         </div>
                       </th>
                     ))}
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingMembers ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center">
+                      <td colSpan={7} className="px-4 py-12 text-center">
                         <Loader2 size={32} className="text-indigo-500 animate-spin mx-auto mb-2" />
                         <p className="text-slate-400 text-sm">Loading members...</p>
                       </td>
                     </tr>
                   ) : filteredMembers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                      <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
                         <Users size={32} className="mx-auto mb-2 opacity-50" />
                         {members.length === 0 ? "No members found in this Jumuiya" : "No members match your filters"}
                       </td>
                     </tr>
                   ) : (
-                    filteredMembers.map((m, i) => (
-                      <tr key={m.registration_id || m.id || i} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-slate-800">
-                          {m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 font-mono text-xs">{m.reg_number || "—"}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            (m.gender || "").toLowerCase() === "male"
-                              ? "bg-blue-50 text-blue-600"
-                              : "bg-pink-50 text-pink-600"
-                          }`}>
-                            {(m.gender || "").toLowerCase() === "male" ? "M" : "W"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 text-xs max-w-[120px] truncate" title={m.course}>
-                          {m.course || "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
-                            {m.year_sem || getYearSemLabel(m)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 text-xs">
-                          {formatDate(m.registration_date)}
-                        </td>
-                      </tr>
-                    ))
+                    filteredMembers.map((m, i) => {
+                      const memberId = m.member_id || m.id;
+                      const isEditing = editingId === memberId;
+                      const isFlagged = m.flagged || m.status === "flagged" || m.member_flagged_inactive === true;
+
+                      if (isEditing) {
+                        return (
+                          <tr key={memberId || i} className="border-b border-indigo-100 bg-indigo-50/30">
+                            <td className="px-4 py-2">
+                              <input value={editForm.first_name || ""} onChange={e => setEditForm((p: any) => ({ ...p, first_name: e.target.value }))} placeholder="First name" className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                            </td>
+                            <td className="px-4 py-2">
+                              <input value={editForm.last_name || ""} onChange={e => setEditForm((p: any) => ({ ...p, last_name: e.target.value }))} placeholder="Last name" className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                            </td>
+                            <td className="px-4 py-2">
+                              <select value={editForm.gender || ""} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))} className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                <option value="">—</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-2">
+                              <input value={editForm.course || ""} onChange={e => setEditForm((p: any) => ({ ...p, course: e.target.value }))} placeholder="Course" className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                            </td>
+                            <td className="px-4 py-2 text-xs text-slate-400">{m.year_sem || getYearSemLabel(m)}</td>
+                            <td className="px-4 py-2 text-xs text-slate-400">{formatDate(m.registration_date)}</td>
+                            <td className="px-4 py-2">
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={() => handleSaveMember(memberId)} disabled={saving} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50" title="Save">
+                                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                                </button>
+                                <button onClick={handleCancelEdit} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors" title="Cancel">
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return (
+                        <tr key={memberId || i} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${isFlagged ? 'bg-rose-50/50' : ''}`}>
+                          <td className="px-4 py-3 font-medium text-slate-800">
+                            {m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 font-mono text-xs">{m.reg_number || "—"}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              (m.gender || "").toLowerCase() === "male"
+                                ? "bg-blue-50 text-blue-600"
+                                : "bg-pink-50 text-pink-600"
+                            }`}>
+                              {(m.gender || "").toLowerCase() === "male" ? "M" : "W"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-600 text-xs max-w-[120px] truncate" title={m.course}>
+                            {m.course || "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
+                              {m.year_sem || getYearSemLabel(m)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 text-xs">
+                            {formatDate(m.registration_date)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              {isFlagged && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-600 uppercase mr-1">Flagged</span>
+                              )}
+                              <button onClick={() => handleEditMember(m)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit member">
+                                <Edit2 size={13} />
+                              </button>
+                              <button onClick={() => handleFlagMember(memberId, isFlagged)} disabled={flagging === memberId} className={`p-1.5 rounded-lg transition-colors ${isFlagged ? 'text-amber-600 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'} disabled:opacity-50`} title={isFlagged ? "Unflag member" : "Flag as inactive"}>
+                                {flagging === memberId ? <Loader2 size={13} className="animate-spin" /> : <Flag size={13} />}
+                              </button>
+                              {isChair && (
+                                <button onClick={() => handleDeleteMember(memberId)} disabled={deleting === memberId} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50" title="Delete member">
+                                  {deleting === memberId ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
