@@ -149,6 +149,8 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
         );
     }
 
+    const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
     return (
         <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             {/* Toolbar */}
@@ -171,7 +173,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                             display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
                             borderRadius: '12px', background: jumuiyaColor, border: 'none',
                             color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
-                            boxShadow: `0 4px 14px ${jumuiyaColor}55`
+                            boxShadow: `0 4px 14px ${_c('55')}`
                         }}>
                         <FaDownload size={12} /> Download PDF
                     </button>
@@ -207,7 +209,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                 borderRadius: '28px',
                 overflow: 'hidden',
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-                border: `1px solid ${jumuiyaColor}20`,
+                border: `1px solid ${_c('20')}`,
                 position: 'relative',
             }}>
                 {/* Glossy overlay */}
@@ -219,7 +221,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
 
                 {/* ── Header ── */}
                 <div style={{
-                    background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${jumuiyaColor}DD 100%)`,
+                    background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${_c('DD')} 100%)`,
                     padding: '24px 28px', color: 'white', position: 'relative', overflow: 'hidden'
                 }}>
                     <div style={{ position: 'absolute', right: '-20px', top: '-20px', fontSize: '8rem', opacity: 0.08 }}>
@@ -264,8 +266,8 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
                         <div style={{
                             width: '56px', height: '56px', borderRadius: '16px',
-                            background: `linear-gradient(135deg, ${jumuiyaColor}15, ${jumuiyaColor}05)`,
-                            border: `2px solid ${jumuiyaColor}30`,
+                            background: `linear-gradient(135deg, ${_c('15')}, ${_c('05')})`,
+                            border: `2px solid ${_c('30')}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '1.5rem', color: jumuiyaColor
                         }}>
@@ -317,11 +319,11 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                         textAlign: 'center',
                                         padding: '14px 6px 12px',
                                         background: isStamped
-                                            ? `linear-gradient(135deg, ${jumuiyaColor}12, ${jumuiyaColor}08)`
+                                            ? `linear-gradient(135deg, ${_c('12')}, ${_c('08')})`
                                             : '#f8fafc',
                                         borderRadius: '14px',
                                         border: isStamped
-                                            ? `1.5px solid ${jumuiyaColor}40`
+                                            ? `1.5px solid ${_c('40')}`
                                             : '1.5px dashed #d1d5db',
                                         position: 'relative',
                                     }}>
@@ -340,10 +342,10 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                             borderRadius: '50%',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             background: isStamped
-                                                ? `linear-gradient(135deg, ${jumuiyaColor}, ${jumuiyaColor}BB)`
+                                                ? `linear-gradient(135deg, ${jumuiyaColor}, ${_c('BB')})`
                                                 : 'transparent',
                                             border: isStamped ? 'none' : '2px solid #d1d5db',
-                                            boxShadow: isStamped ? `0 2px 8px ${jumuiyaColor}44` : 'none',
+                                            boxShadow: isStamped ? `0 2px 8px ${_c('44')}` : 'none',
                                         }}>
                                             {isStamped ? (
                                                 <FaCheckCircle style={{ color: 'white', fontSize: '0.9rem' }} />
@@ -358,7 +360,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                             <div style={{
                                                 fontSize: '0.45rem', fontWeight: 800, color: jumuiyaColor,
                                                 textTransform: 'uppercase', letterSpacing: '0.5px',
-                                                background: `${jumuiyaColor}15`,
+                                                background: `${_c('15')}`,
                                                 padding: '1px 4px', borderRadius: '4px',
                                                 display: 'inline-block'
                                             }}>
@@ -387,7 +389,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     {/* Summary */}
                     <div style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        paddingTop: '16px', borderTop: `2px solid ${jumuiyaColor}12`
+                        paddingTop: '16px', borderTop: `2px solid ${_c('12')}`
                     }}>
                         <div>
                             <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
@@ -429,8 +431,8 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
             {isDemo && (
                 <div style={{
                     maxWidth: '580px', margin: '20px auto 0', padding: '16px 20px',
-                    borderRadius: '16px', background: `${jumuiyaColor}08`,
-                    border: `1px solid ${jumuiyaColor}20`, textAlign: 'center'
+                    borderRadius: '16px', background: `${_c('08')}`,
+                    border: `1px solid ${_c('20')}`, textAlign: 'center'
                 }}>
                     <p style={{ color: '#475569', fontSize: '0.85rem', fontWeight: 500, margin: 0 }}>
                         This is a preview. Register for a semester to get your stamp card!

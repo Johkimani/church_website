@@ -69,6 +69,8 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
         }
     };
 
+    const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
             <div className="tab-header-wrap">
@@ -277,7 +279,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                     <div className="animate-slide-up">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                             <h3>Order Tracking</h3>
-                            <div style={{ padding: '8px 16px', background: `${jumuiyaColor}10`, color: jumuiyaColor, borderRadius: '30px', fontWeight: 700, fontSize: '0.85rem' }}>
+                            <div style={{ padding: '8px 16px', background: `${_c('10')}`, color: jumuiyaColor, borderRadius: '30px', fontWeight: 700, fontSize: '0.85rem' }}>
                                 {orders.length} ACTIVE REQUESTS
                             </div>
                         </div>

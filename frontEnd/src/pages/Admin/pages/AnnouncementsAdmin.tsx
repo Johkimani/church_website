@@ -134,7 +134,10 @@ const NotificationRow: React.FC<NotificationRowProps> = ({ n, canManage, onDelet
 export default function AnnouncementsAdmin() {
   const { user } = useAuth();
 
-  const roles = useMemo(() => (Array.isArray(user?.role) ? user.role : []), [user?.role]);
+  const roles = useMemo(() => {
+    const r = user?.role;
+    return Array.isArray(r) ? r : r ? [r] : [];
+  }, [user?.role]);
   const { isCSAOs, isJumuiyaOs } = useMemo(() => detectCapabilities(roles), [roles]);
 
   // Access gate — need at least one OS role

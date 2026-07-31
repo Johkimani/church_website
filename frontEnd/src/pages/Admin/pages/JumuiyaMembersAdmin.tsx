@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Users, ArrowLeft, Church, CheckCircle, AlertTriangle, RefreshCw, UserPlus, BarChart3, Upload, Search, GitMerge, ClipboardList, ThumbsDown, Edit2, Save, Trash2, GraduationCap, Image, Bell, BookOpen, UserCheck, Calendar, ListChecks, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { useAuth } from "../../../context/AuthContext";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
 import MemberReview from "../../Jumuiya/admin/MemberReview";
-import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import MembersList from "../../Jumuiya/admin/MembersList";
 import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
@@ -36,12 +36,11 @@ const JUMUIYAS = [
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";
 
-type SubTab = "dashboard" | "import" | "review" | "organize" | "results" | "allocations";
+type SubTab = "dashboard" | "import" | "review" | "results" | "allocations";
 
 const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; description: string }> = {
   dashboard: { label: "Dashboard", icon: <PieChart size={16} />, description: "Overview and registration statistics" },
   import: { label: "New Admission", icon: <Upload size={16} />, description: "Import and add new members" },
-  organize: { label: "Organize", icon: <GitMerge size={16} />, description: "Assign members to groups" },
   review: { label: "Review", icon: <ClipboardList size={16} />, description: "Review and approve pending registrations" },
   results: { label: "All Members", icon: <Users size={16} />, description: "View and manage all registered members" },
   allocations: { label: "Allocations", icon: <UserCheck size={16} />, description: "Approve CSA member allocations" },
@@ -106,17 +105,20 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
 
 const SummaryBarMemo = memo(SummaryBar);
 
-const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor }) => {
+const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string; isJumuiyaOfficial?: boolean }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, isJumuiyaOfficial }) => {
   const [activeTab, setActiveTab] = useState<SubTab>("dashboard");
 
   const currentMeta = subTabMeta[activeTab];
+  const visibleTabs = (Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]).filter(
+    ([id]) => !(isJumuiyaOfficial && id === "import")
+  );
 
   return (
     <div>
       {/* Main Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200 p-2 mb-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
-          {(Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]).map(([id, meta]) => {
+          {visibleTabs.map(([id, meta]) => {
             const isActive = activeTab === id;
             return (
               <button
@@ -141,26 +143,27 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
       </div>
 
       {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-      {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
+      {activeTab === "import" && !isJumuiyaOfficial && <MemberImportForm jumuiyaId={jumuiyaId} />}
       {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
-      {activeTab === "organize" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
       {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
     </div>
   );
 };
 
-function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any; onClick: () => void }) {
+function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any; onClick?: () => void }) {
   const s = stats;
   const totalMembers = s?.totalMembers || 0;
   const hasData = totalMembers > 0;
+  const isLocked = !onClick;
   const maleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Male" || g.gender === "male")?.count || 0);
   const femaleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Female" || g.gender === "female")?.count || 0);
 
   return (
     <button
       onClick={onClick}
-      className="bg-white rounded-xl border border-slate-200 p-5 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group w-full"
+      disabled={isLocked}
+      className={`bg-white rounded-xl border ${isLocked ? "border-slate-100 opacity-50 cursor-not-allowed" : "border-slate-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"} p-5 text-left transition-all duration-200 group w-full`}
     >
       <div className="flex items-center gap-4 mb-4">
         <div
@@ -230,7 +233,39 @@ const JumuiyaCardMemo = memo(JumuiyaCard);
 export default function JumuiyaMembersAdmin() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const userRoles = useMemo(() => (
+    Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : []
+  ), [user?.role]);
+  const normalizedRoles = useMemo(() => (
+    userRoles.map(r => String(r).toUpperCase().trim())
+  ), [userRoles]);
+  const isJumuiyaOfficial = useMemo(() => (
+    normalizedRoles.some(r => ["JUMUIYA_OS", "JUMUIYA_SECRETARY", "JUMUIYA_CHAIRPERSON"].includes(r))
+  ), [normalizedRoles]);
+  const userJumuiyaId = user?.jumuiya_id || "";
+  const [userJumuiyaSlug, setUserJumuiyaSlug] = useState("");
   const [globalTab, setGlobalTab] = useState<Tab>("admissions");
+
+  useEffect(() => {
+    if (user && isJumuiyaOfficial) setGlobalTab("jumuiyas");
+  }, [user, isJumuiyaOfficial]);
+
+  // Resolve UUID jumuiya_id → slug for matching against JUMUIYAS array
+  useEffect(() => {
+    if (!userJumuiyaId || !isJumuiyaOfficial) { setUserJumuiyaSlug(""); return; }
+    const found = JUMUIYAS.find(j => j.id === userJumuiyaId);
+    if (found) { setUserJumuiyaSlug(found.id); return; }
+    memberService.getJumuiyaLookup().then((res: any) => {
+      const lookup = res?.data || res || {};
+      const entry = lookup[userJumuiyaId];
+      if (entry) {
+        const slug = JUMUIYAS.find(j => j.name.toLowerCase() === (entry.name || "").toLowerCase())?.id || "";
+        setUserJumuiyaSlug(slug);
+      }
+    }).catch(() => {});
+  }, [userJumuiyaId, isJumuiyaOfficial]);
+
   const [stats, setStats] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -345,6 +380,17 @@ export default function JumuiyaMembersAdmin() {
         </div>
       );
     }
+    if (isJumuiyaOfficial && userJumuiyaSlug && userJumuiyaSlug !== id) {
+      return (
+        <div className="text-center py-20">
+          <p className="text-red-500 font-semibold">Access denied</p>
+          <p className="text-sm text-slate-500 mt-1 mb-4">You can only manage your own Jumuiya.</p>
+          <button onClick={() => navigate("/admin/jumuiya-members")} className="mt-4 text-sm text-indigo-600 hover:underline">
+            Back to all Jumuiyas
+          </button>
+        </div>
+      );
+    }
     return (
       <div>
         <button
@@ -364,7 +410,7 @@ export default function JumuiyaMembersAdmin() {
           </div>
         </div>
 
-        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} />
       </div>
     );
   }
@@ -386,36 +432,42 @@ export default function JumuiyaMembersAdmin() {
 
       {/* Global Tabs */}
       <div className="flex gap-1 border-b border-slate-200 mb-6">
-        <button
-          onClick={() => { setGlobalTab("admissions"); setRefreshKey(k => k + 1); }}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            globalTab === "admissions"
-              ? "border-indigo-500 text-indigo-600"
-              : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-          }`}
-        >
-          <UserPlus size={16} /> New Admissions
-        </button>
-        <button
-          onClick={() => { setGlobalTab("all-members"); setRefreshKey(k => k + 1); }}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            globalTab === "all-members"
-              ? "border-indigo-500 text-indigo-600"
-              : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-          }`}
-        >
-          <Users size={16} /> All CSA Members
-        </button>
-        <button
-          onClick={() => { setGlobalTab("associates"); setRefreshKey(k => k + 1); }}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            globalTab === "associates"
-              ? "border-indigo-500 text-indigo-600"
-              : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-          }`}
-        >
-          <GraduationCap size={16} /> Associates
-        </button>
+        {!isJumuiyaOfficial && (
+          <button
+            onClick={() => { setGlobalTab("admissions"); setRefreshKey(k => k + 1); }}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              globalTab === "admissions"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <UserPlus size={16} /> New Admissions
+          </button>
+        )}
+        {!isJumuiyaOfficial && (
+          <button
+            onClick={() => { setGlobalTab("all-members"); setRefreshKey(k => k + 1); }}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              globalTab === "all-members"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <Users size={16} /> All CSA Members
+          </button>
+        )}
+        {!isJumuiyaOfficial && (
+          <button
+            onClick={() => { setGlobalTab("associates"); setRefreshKey(k => k + 1); }}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              globalTab === "associates"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <GraduationCap size={16} /> Associates
+          </button>
+        )}
         <button
           onClick={() => { setGlobalTab("jumuiyas"); setRefreshKey(k => k + 1); }}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
@@ -428,11 +480,11 @@ export default function JumuiyaMembersAdmin() {
         </button>
       </div>
 
-      {globalTab === "admissions" && <CSADistributionCenter />}
+      {!isJumuiyaOfficial && globalTab === "admissions" && <CSADistributionCenter />}
 
-      {globalTab === "all-members" && <AllMembersTable key={refreshKey} refreshKey={refreshKey} />}
+      {!isJumuiyaOfficial && globalTab === "all-members" && <AllMembersTable key={refreshKey} refreshKey={refreshKey} />}
 
-      {globalTab === "associates" && <AssociatesTable key={refreshKey} refreshKey={refreshKey} />}
+      {!isJumuiyaOfficial && globalTab === "associates" && <AssociatesTable key={refreshKey} refreshKey={refreshKey} />}
 
       {globalTab === "jumuiyas" && (
         <div>
@@ -478,9 +530,17 @@ export default function JumuiyaMembersAdmin() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map((j) => (
-                <JumuiyaCardMemo key={j.id} j={j} stats={stats[j.id]} onClick={() => navigate(`/admin/jumuiya-members/${j.id}`)} />
-              ))}
+              {filtered.map((j) => {
+                const canClick = !isJumuiyaOfficial || userJumuiyaSlug === j.id;
+                return (
+                  <JumuiyaCardMemo
+                    key={j.id}
+                    j={j}
+                    stats={stats[j.id]}
+                    onClick={canClick ? () => navigate(`/admin/jumuiya-members/${j.id}`) : undefined}
+                  />
+                );
+              })}
               {filtered.length === 0 && (
                 <div className="col-span-full text-center py-12 text-slate-400">
                   No Jumuiya matching "{debouncedSearch}"

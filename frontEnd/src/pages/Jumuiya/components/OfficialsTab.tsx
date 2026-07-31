@@ -41,6 +41,8 @@ const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md'
 const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, formerOfficials, jumuiyaColor, jumuiyaName, isAdmin }) => {
     const navigate = useNavigate();
 
+    const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
             <div className="tab-header-wrap">
@@ -68,7 +70,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, fo
                                 gap: '12px',
                                 padding: '12px 24px',
                                 borderRadius: '16px',
-                                boxShadow: `0 10px 20px -5px ${jumuiyaColor}50`
+                                boxShadow: `0 10px 20px -5px ${_c('50')}`
                             }}
                         >
                             Manage Officials <FaArrowRight />

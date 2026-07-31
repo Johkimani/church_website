@@ -19,6 +19,8 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
 
     const displayedMembers = members;
 
+    const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
             <div className="tab-header-wrap">
@@ -136,9 +138,9 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                                 borderRadius: '20px',
                                                 fontSize: '0.75rem',
                                                 fontWeight: 600,
-                                                background: `${jumuiyaColor}15`,
+                                                background: `${_c('15')}`,
                                                 color: jumuiyaColor,
-                                                border: `1px solid ${jumuiyaColor}30`,
+                                                border: `1px solid ${_c('30')}`,
                                                 display: 'inline-block'
                                             }}>
                                                 {member.jumuiya_name}

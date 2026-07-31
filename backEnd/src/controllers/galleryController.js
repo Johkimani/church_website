@@ -7,8 +7,9 @@ import logger from "../logger/winston.js";
  */
 export const getGallery = async (req, res) => {
     try {
-        const user = req.user; // Populated by verifyToken if applicable
-        
+        const user = req.user;
+        const { module_id: filterModule } = req.query;
+
         // Proximity Algorithm: Find photos taken within +/- 3 days of today's MM-DD (Anniversaries)
         const today = new Date();
         const startDay = new Date(today);
@@ -30,22 +31,25 @@ export const getGallery = async (req, res) => {
         `;
         let params = [];
 
-        // Access Control Logic
-        const roles = user?.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
-        const isGlobalViewer = roles.some((r) =>
-          ["csa_chair", "os", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim())
-        );
-        if (user && !isGlobalViewer) {
-            // Member sees their Jumuiya + General photos
-            query += ' AND (module_id = $1 OR module_id = $2)';
-            params.push('general');
-            params.push(user.jumuiya_id?.toString() || 'none');
-        } else if (!user) {
-            // Anonymous sees ONLY general
+        // If a specific module_id is requested (admin dashboard), filter by it
+        if (filterModule) {
             query += ' AND module_id = $1';
-            params.push('general');
+            params.push(filterModule);
+        } else {
+            // Access Control Logic for public / general browsing
+            const roles = user?.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
+            const isGlobalViewer = roles.some((r) =>
+              ["csa_chair", "os", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim())
+            );
+            if (user && !isGlobalViewer) {
+                query += ' AND (module_id = $1 OR module_id = $2)';
+                params.push('general');
+                params.push(user.jumuiya_id?.toString() || 'none');
+            } else if (!user) {
+                query += ' AND module_id = $1';
+                params.push('general');
+            }
         }
-        // If global viewer (csa_chair, os, jumuiya_coordinator), no extra filters (sees everything)
 
         query += ' ORDER BY upload_date DESC';
         

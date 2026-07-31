@@ -76,6 +76,8 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
             .slice(0, 2);
     };
 
+    const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
             <div className="tab-header-wrap">
@@ -104,7 +106,7 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                     borderRadius: '32px',
                     overflow: 'hidden',
                     boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-                    border: `1px solid ${jumuiyaColor}20`,
+                    border: `1px solid ${_c('20')}`,
                     position: 'relative',
                     transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                 }}>
@@ -116,13 +118,13 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        background: `radial-gradient(circle at 100% 0%, ${jumuiyaColor}08 0%, transparent 50%)`,
+                        background: `radial-gradient(circle at 100% 0%, ${_c('08')} 0%, transparent 50%)`,
                         pointerEvents: 'none',
                     }} />
 
                     {/* Card Header with Gradient */}
                     <div style={{
-                        background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${jumuiyaColor}DD 100%)`,
+                        background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${_c('DD')} 100%)`,
                         padding: '28px 32px',
                         color: 'white',
                         position: 'relative',
@@ -185,8 +187,8 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                                 width: '100px',
                                 height: '100px',
                                 borderRadius: '24px',
-                                background: `linear-gradient(135deg, ${jumuiyaColor}15, ${jumuiyaColor}05)`,
-                                border: `2px solid ${jumuiyaColor}30`,
+                                background: `linear-gradient(135deg, ${_c('15')}, ${_c('05')})`,
+                                border: `2px solid ${_c('30')}`,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -232,7 +234,7 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                                         fontWeight: 700,
                                         color: jumuiyaColor,
                                         fontFamily: 'monospace',
-                                        background: `${jumuiyaColor}10`,
+                                        background: `${_c('10')}`,
                                         padding: '6px 12px',
                                         borderRadius: '8px',
                                         display: 'inline-block'
@@ -262,7 +264,7 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                                 <div style={{
                                     width: `${progressPercentage}%`,
                                     height: '100%',
-                                    background: `linear-gradient(90deg, ${jumuiyaColor}, ${jumuiyaColor}CC)`,
+                                    background: `linear-gradient(90deg, ${jumuiyaColor}, ${_c('CC')})`,
                                     borderRadius: '4px',
                                     transition: 'width 0.5s ease'
                                 }} />
@@ -295,9 +297,9 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                                     <div key={sem.id} style={{
                                         textAlign: 'center',
                                         padding: '12px 8px',
-                                        background: sem.status ? `${jumuiyaColor}12` : '#f8fafc',
+                                        background: sem.status ? `${_c('12')}` : '#f8fafc',
                                         borderRadius: '16px',
-                                        border: sem.status ? `1.5px solid ${jumuiyaColor}40` : '1.5px solid #e2e8f0',
+                                        border: sem.status ? `1.5px solid ${_c('40')}` : '1.5px solid #e2e8f0',
                                         transition: 'all 0.2s ease',
                                         cursor: 'default',
                                         position: 'relative'
@@ -313,7 +315,7 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                                         </div>
                                         <div style={{ fontSize: '1.25rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                             {sem.status ?
-                                                <FaCheckCircle style={{ color: jumuiyaColor, filter: `drop-shadow(0 2px 4px ${jumuiyaColor}40)` }} /> :
+                                                <FaCheckCircle style={{ color: jumuiyaColor, filter: `drop-shadow(0 2px 4px ${_c('40')})` }} /> :
                                                 <FaRegCircle style={{ color: '#cbd5e1' }} />
                                             }
                                         </div>
@@ -337,7 +339,7 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                         {/* Footer Details */}
                         <div style={{
                             paddingTop: '24px',
-                            borderTop: `2px solid ${jumuiyaColor}15`,
+                            borderTop: `2px solid ${_c('15')}`,
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'flex-end'
@@ -401,8 +403,8 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                     margin: '24px auto',
                     padding: '20px',
                     borderRadius: '20px',
-                    background: `linear-gradient(135deg, ${jumuiyaColor}08, ${jumuiyaColor}02)`,
-                    border: `1px solid ${jumuiyaColor}20`,
+                    background: `linear-gradient(135deg, ${_c('08')}, ${_c('02')})`,
+                    border: `1px solid ${_c('20')}`,
                     textAlign: 'center'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
