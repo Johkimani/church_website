@@ -49,6 +49,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     setEditForm({
       first_name: m.first_name || "",
       last_name: m.last_name || "",
+      email: m.email || "",
       gender: m.gender || "",
       course: m.course || "",
       phone: m.phone || "",
@@ -171,6 +172,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg #</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Email</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Gender</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Course</th>
@@ -195,6 +197,14 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
                           </div>
                         ) : (
                           <span className="text-slate-700 font-medium">{m.first_name} {m.last_name}</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {isEditing ? (
+                          <input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
+                            placeholder="email" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28" />
+                        ) : (
+                          <span className="text-slate-500">{m.email || "—"}</span>
                         )}
                       </td>
                       <td className="py-3 px-4">

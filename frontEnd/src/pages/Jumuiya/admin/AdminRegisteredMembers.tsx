@@ -121,6 +121,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
     XLSX.writeFile(wb, `${jumuiyaName.replace(/\s+/g, "-")}-registered-members.xlsx`);
   };
 
+  const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
   return (
     <div className="admin-card" style={{ "--jumuiya-color": jumuiyaColor } as React.CSSProperties}>
       {/* Header */}
@@ -136,7 +138,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
 
       {/* Stats Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "24px" }}>
-        <div style={{ background: `${jumuiyaColor}10`, borderRadius: "12px", padding: "16px", textAlign: "center" }}>
+        <div style={{ background: `${_c('10')}`, borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: jumuiyaColor, fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "var(--text-primary)" }}>{stats.total}</p>
           <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Total</p>
@@ -305,7 +307,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{
                       padding: "3px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600,
-                      background: `${jumuiyaColor}15`, color: jumuiyaColor
+                      background: `${_c('15')}`, color: jumuiyaColor
                     }}>
                       {m.year_sem || getYearSemLabel(m)}
                     </span>

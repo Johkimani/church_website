@@ -2,40 +2,34 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import {
-  Users, Search, RefreshCw, Download, Church, Calendar,
-  BarChart3, List, TrendingUp, Upload, GitMerge, CheckCircle,
-  ArrowLeftRight, ClipboardList, UserCheck, Image, X, Loader2,
-  Edit2, Save, Trash2, Flag
+  Users, Church, Calendar, RefreshCw,
+  BarChart3, TrendingUp, Upload, GitMerge, CheckCircle,
+  ArrowLeftRight, UserCheck, Image, Loader2
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
-import MemberReview from "../../Jumuiya/admin/MemberReview";
 import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import GalleryManager from "./GalleryManager";
+import JumuiyaAnalyticsDashboard from "../../Jumuiya/admin/JumuiyaAnalyticsDashboard";
 
-type DashboardTab = "overview" | "import" | "organize" | "review" | "members" | "allocations" | "analytics" | "gallery";
+type DashboardTab = "overview" | "import" | "organize" | "allocations" | "analytics" | "gallery";
 
 const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }[]> = {
   chair: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
     { id: "import", label: "New Admission", icon: Upload },
     { id: "organize", label: "Organize", icon: GitMerge },
-    { id: "review", label: "Review", icon: ClipboardList },
-    { id: "members", label: "All Members", icon: Users },
     { id: "allocations", label: "Allocations", icon: UserCheck },
     { id: "analytics", label: "Reports", icon: TrendingUp },
   ],
   secretary: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
-    { id: "review", label: "Review", icon: ClipboardList },
-    { id: "members", label: "All Members", icon: Users },
     { id: "analytics", label: "Reports", icon: TrendingUp },
   ],
   os: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
-    { id: "members", label: "All Members", icon: Users },
     { id: "gallery", label: "Gallery", icon: Image },
   ],
 };
@@ -83,7 +77,27 @@ function formatDate(d: string | null | undefined): string {
 export default function SecretaryDashboard() {
   const { user } = useAuth();
   const jumuiyaId = user?.jumuiya_id || "";
-  const jumuiyaInfo = JUMUIYAS[jumuiyaId] || { name: jumuiyaId || "Your Jumuiya", color: "#6b7280", initials: "J" };
+
+  // Resolve jumuiya UUID → display info (API lookup for UUIDs, local map for slugs)
+  const [resolvedInfo, setResolvedInfo] = useState<{ name: string; color: string; initials: string } | null>(null);
+  const jumuiyaInfo = resolvedInfo || JUMUIYAS[jumuiyaId] || { name: jumuiyaId || "Your Jumuiya", color: "#6b7280", initials: "J" };
+
+  useEffect(() => {
+    if (!jumuiyaId) return;
+    if (JUMUIYAS[jumuiyaId]) {
+      setResolvedInfo(null); // already known
+      return;
+    }
+    memberService.getJumuiyaLookup().then((res: any) => {
+      const data = res?.data || res || {};
+      const entry = data[jumuiyaId];
+      if (entry) {
+        const name = entry.name || entry.fullName || jumuiyaId;
+        const initials = name.split(" ").map((w: string) => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();
+        setResolvedInfo({ name, color: "#6b7280", initials });
+      }
+    }).catch(() => {});
+  }, [jumuiyaId]);
 
   // ── Role detection ──
   const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
@@ -141,6 +155,11 @@ export default function SecretaryDashboard() {
         memberService.getSeasons(jumuiyaId).catch(() => ({ data: [] })),
       ]);
       setStats(statsRes.data || null);
+      if (statsRes.data?.jumuiyaName && !JUMUIYAS[jumuiyaId]) {
+        const name = statsRes.data.jumuiyaName;
+        const initials = name.split(" ").map((w: string) => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();
+        setResolvedInfo({ name, color: "#6b7280", initials });
+      }
       setCsaAllocations((csaRes.data?.members || csaRes.data || []));
       setSeasons(seasonsRes.data || []);
     } catch (err) {
@@ -156,8 +175,11 @@ export default function SecretaryDashboard() {
     if (!jumuiyaId) return;
     setLoadingMembers(true);
     try {
-      const res = await memberService.csaGetJumuiyaMemberList(jumuiyaId);
-      setMembers(res.data || []);
+      const data = await memberService.getMembers(jumuiyaId);
+      // For secretaries, only show members from their jumuiya (source = 'jum'), filter out CSA members
+      const raw = data?.data || data || [];
+      const jumuiyaOnly = raw.filter((m: any) => m.source === 'jum');
+      setMembers(jumuiyaOnly);
     } catch (err) {
       // Fallback: try export members endpoint
       try {
@@ -201,6 +223,11 @@ export default function SecretaryDashboard() {
     }
   }, [jumuiyaId]);
 
+  const refreshAll = useCallback(() => {
+    fetchOverview();
+    fetchMembers();
+  }, [fetchOverview, fetchMembers]);
+
   useEffect(() => {
     fetchOverview();
     fetchMembers();
@@ -208,7 +235,6 @@ export default function SecretaryDashboard() {
 
   useEffect(() => {
     if (activeTab === "analytics") fetchAnalytics();
-    if (activeTab === "members" && members.length === 0) fetchMembers();
   }, [activeTab, jumuiyaId]);
 
   // ── Member Actions (Edit / Flag / Delete) ──
@@ -340,6 +366,12 @@ export default function SecretaryDashboard() {
   };
 
   const genderCounts = useMemo(() => {
+    const bd = stats?.genderBreakdown;
+    if (bd && Array.isArray(bd)) {
+      const male = bd.find((g: any) => g.gender?.toLowerCase() === "male")?.count || 0;
+      const female = bd.find((g: any) => g.gender?.toLowerCase() === "female")?.count || 0;
+      return { male, female };
+    }
     let male = 0, female = 0;
     members.forEach(m => {
       const g = (m.gender || "").toLowerCase();
@@ -347,7 +379,7 @@ export default function SecretaryDashboard() {
       else if (g === "female") female++;
     });
     return { male, female };
-  }, [members]);
+  }, [stats, members]);
 
   const semesterCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -458,18 +490,6 @@ export default function SecretaryDashboard() {
                     <div>
                       <p className="text-2xl font-black text-slate-800">{stats?.csa?.total || 0}</p>
                       <p className="text-xs text-slate-400 font-medium">CSA Allocated</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                      <List size={20} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-black text-slate-800">{stats?.groups?.length || 0}</p>
-                      <p className="text-xs text-slate-400 font-medium">Groups</p>
                     </div>
                   </div>
                 </div>
@@ -597,328 +617,18 @@ export default function SecretaryDashboard() {
         </div>
       )}
 
-      {/* ═══════════ MEMBERS TAB ═══════════ */}
-      {activeTab === "members" && (
-        <div className="space-y-4">
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by name, reg number, course..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-              />
-            </div>
-            <select
-              value={genderFilter}
-              onChange={e => setGenderFilter(e.target.value)}
-              className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            >
-              <option value="all">All Genders</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-            <select
-              value={semesterFilter}
-              onChange={e => setSemesterFilter(e.target.value)}
-              className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            >
-              <option value="all">All Semesters</option>
-              {SEMESTERS.map(s => (
-                <option key={s.label} value={s.label}>Sem {s.label}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => setShowExport(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors"
-            >
-              <Download size={16} /> Export
-            </button>
-            <button
-              onClick={fetchMembers}
-              disabled={loadingMembers}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors"
-            >
-              <RefreshCw size={16} className={loadingMembers ? "animate-spin" : ""} />
-            </button>
-          </div>
-
-          {/* Count badge */}
-          <div className="text-xs text-slate-500">
-            Showing <span className="font-bold text-slate-700">{filteredMembers.length}</span> of{" "}
-            <span className="font-bold text-slate-700">{members.length}</span> members
-          </div>
-
-          {/* Members Table */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    {[
-                      { key: "name", label: "Name" },
-                      { key: "reg_number", label: "Reg Number" },
-                      { key: "gender", label: "Gender" },
-                      { key: "course", label: "Course" },
-                      { key: "year_sem", label: "Year.Sem" },
-                      { key: "registration_date", label: "Registered" },
-                    ].map(col => (
-                      <th
-                        key={col.key}
-                        onClick={() => {
-                          if (sortKey === col.key) setSortDir(d => d === "asc" ? "desc" : "asc");
-                          else { setSortKey(col.key); setSortDir("asc"); }
-                        }}
-                        className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-800 transition-colors select-none"
-                      >
-                        <div className="flex items-center gap-1">
-                          {col.label}
-                          {sortKey === col.key && (
-                            <span className="text-indigo-500">{sortDir === "asc" ? "▲" : "▼"}</span>
-                          )}
-                        </div>
-                      </th>
-                    ))}
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingMembers ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center">
-                        <Loader2 size={32} className="text-indigo-500 animate-spin mx-auto mb-2" />
-                        <p className="text-slate-400 text-sm">Loading members...</p>
-                      </td>
-                    </tr>
-                  ) : filteredMembers.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
-                        <Users size={32} className="mx-auto mb-2 opacity-50" />
-                        {members.length === 0 ? "No members found in this Jumuiya" : "No members match your filters"}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredMembers.map((m, i) => {
-                      const memberId = m.member_id || m.id;
-                      const isEditing = editingId === memberId;
-                      const isFlagged = m.flagged || m.status === "flagged" || m.member_flagged_inactive === true;
-
-                      if (isEditing) {
-                        return (
-                          <tr key={memberId || i} className="border-b border-indigo-100 bg-indigo-50/30">
-                            <td className="px-4 py-2">
-                              <input value={editForm.first_name || ""} onChange={e => setEditForm((p: any) => ({ ...p, first_name: e.target.value }))} placeholder="First name" className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400" />
-                            </td>
-                            <td className="px-4 py-2">
-                              <input value={editForm.last_name || ""} onChange={e => setEditForm((p: any) => ({ ...p, last_name: e.target.value }))} placeholder="Last name" className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400" />
-                            </td>
-                            <td className="px-4 py-2">
-                              <select value={editForm.gender || ""} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))} className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400">
-                                <option value="">—</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                              </select>
-                            </td>
-                            <td className="px-4 py-2">
-                              <input value={editForm.course || ""} onChange={e => setEditForm((p: any) => ({ ...p, course: e.target.value }))} placeholder="Course" className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400" />
-                            </td>
-                            <td className="px-4 py-2 text-xs text-slate-400">{m.year_sem || getYearSemLabel(m)}</td>
-                            <td className="px-4 py-2 text-xs text-slate-400">{formatDate(m.registration_date)}</td>
-                            <td className="px-4 py-2">
-                              <div className="flex items-center justify-end gap-1">
-                                <button onClick={() => handleSaveMember(memberId)} disabled={saving} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50" title="Save">
-                                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                                </button>
-                                <button onClick={handleCancelEdit} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors" title="Cancel">
-                                  <X size={13} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      }
-
-                      return (
-                        <tr key={memberId || i} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${isFlagged ? 'bg-rose-50/50' : ''}`}>
-                          <td className="px-4 py-3 font-medium text-slate-800">
-                            {m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-slate-500 font-mono text-xs">{m.reg_number || "—"}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                              (m.gender || "").toLowerCase() === "male"
-                                ? "bg-blue-50 text-blue-600"
-                                : "bg-pink-50 text-pink-600"
-                            }`}>
-                              {(m.gender || "").toLowerCase() === "male" ? "M" : "W"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 text-xs max-w-[120px] truncate" title={m.course}>
-                            {m.course || "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
-                              {m.year_sem || getYearSemLabel(m)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-500 text-xs">
-                            {formatDate(m.registration_date)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-end gap-1">
-                              {isFlagged && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-600 uppercase mr-1">Flagged</span>
-                              )}
-                              <button onClick={() => handleEditMember(m)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit member">
-                                <Edit2 size={13} />
-                              </button>
-                              <button onClick={() => handleFlagMember(memberId, isFlagged)} disabled={flagging === memberId} className={`p-1.5 rounded-lg transition-colors ${isFlagged ? 'text-amber-600 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'} disabled:opacity-50`} title={isFlagged ? "Unflag member" : "Flag as inactive"}>
-                                {flagging === memberId ? <Loader2 size={13} className="animate-spin" /> : <Flag size={13} />}
-                              </button>
-                              {isChair && (
-                                <button onClick={() => handleDeleteMember(memberId)} disabled={deleting === memberId} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50" title="Delete member">
-                                  {deleting === memberId ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Export Modal */}
-          {showExport && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowExport(false)}>
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 mx-4" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-slate-800">Export Members</h3>
-                  <button onClick={() => setShowExport(false)} className="p-1 hover:bg-slate-100 rounded-lg">
-                    <X size={20} className="text-slate-400" />
-                  </button>
-                </div>
-                <p className="text-xs text-slate-500 mb-4">Select columns to include:</p>
-                <div className="space-y-2 max-h-64 overflow-y-auto mb-6">
-                  {Object.entries(exportCols).map(([key, val]) => (
-                    <label key={key} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={val}
-                        onChange={() => setExportCols(prev => ({ ...prev, [key]: !prev[key] }))}
-                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-slate-700 capitalize">{key.replace(/_/g, " ")}</span>
-                    </label>
-                  ))}
-                </div>
-                <button
-                  onClick={handleExport}
-                  disabled={!Object.values(exportCols).some(v => v)}
-                  className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Download size={16} className="inline mr-2" />
-                  Export {filteredMembers.length} Members
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ═══════════ ANALYTICS TAB ═══════════ */}
       {activeTab === "analytics" && (
-        <div className="space-y-6">
-          {loadingAnalytics ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 size={32} className="text-indigo-500 animate-spin" />
-            </div>
-          ) : (
-            <>
-              {/* Analytics Stat Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <p className="text-3xl font-black text-slate-800">{members.length}</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Total in {jumuiyaInfo.name}</p>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <p className="text-3xl font-black text-emerald-600">{genderCounts.male}</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Male Members</p>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <p className="text-3xl font-black text-pink-600">{genderCounts.female}</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Female Members</p>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <p className="text-3xl font-black text-amber-600">{csaAllocations.length}</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">CSA Allocations</p>
-                </div>
-              </div>
-
-              {/* Semester Fill Rate Details */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h3 className="text-sm font-bold text-slate-700 mb-4">Semester Registration Details</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {SEMESTERS.map(s => (
-                    <div key={s.label} className="bg-slate-50 rounded-lg p-3 text-center">
-                      <p className="text-xl font-black text-indigo-600">{semesterCounts[s.label] || 0}</p>
-                      <p className="text-xs text-slate-400 font-medium">Sem {s.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Groups Overview */}
-              {stats?.groups && stats.groups.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-bold text-slate-700 mb-4">Groups Overview</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {stats.groups.map((g: any) => (
-                      <div key={g.id || g.name} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                            <Users size={14} className="text-indigo-600" />
-                          </div>
-                          <span className="text-sm font-semibold text-slate-700">{g.name || `Group ${g.id}`}</span>
-                        </div>
-                        <span className="text-sm font-bold text-slate-500">{g.member_count ?? g.count ?? "—"}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recent Registrations */}
-              {analytics?.recentRegistrations?.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-bold text-slate-700 mb-4">Recent Registrations</h3>
-                  <div className="space-y-2">
-                    {analytics.recentRegistrations.map((r: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
-                            {(r.name || "?").charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-slate-700">{r.name || "—"}</p>
-                            <p className="text-xs text-slate-400">{r.reg_number || ""}</p>
-                          </div>
-                        </div>
-                        <span className="text-xs text-slate-400">{formatDate(r.registration_date)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        <JumuiyaAnalyticsDashboard
+          jumuiyaId={jumuiyaId}
+          jumuiyaName={jumuiyaInfo.name}
+          jumuiyaColor={jumuiyaInfo.color}
+          members={members}
+          stats={stats}
+          csaAllocations={csaAllocations}
+          user={user}
+          onRegister={refreshAll}
+        />
       )}
 
       {/* ═══════════ NEW ADMISSION TAB (Chair only) ═══════════ */}
@@ -931,11 +641,6 @@ export default function SecretaryDashboard() {
         <OrganizationPanel jumuiyaId={jumuiyaId} />
       )}
 
-      {/* ═══════════ REVIEW TAB (Chair + Secretary) ═══════════ */}
-      {activeTab === "review" && (
-        <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} />
-      )}
-
       {/* ═══════════ ALLOCATIONS TAB (Chair only) ═══════════ */}
       {activeTab === "allocations" && (
         <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} jumuiyaColor={jumuiyaInfo.color} />
@@ -943,7 +648,7 @@ export default function SecretaryDashboard() {
 
       {/* ═══════════ GALLERY TAB (OS only) ═══════════ */}
       {activeTab === "gallery" && (
-        <GalleryManager />
+        <GalleryManager jumuiyaId={jumuiyaId} jumuiyaInfo={{ ...jumuiyaInfo, saintImage: stats?.saintImage || '' }} />
       )}
     </div>
   );

@@ -93,6 +93,40 @@ const checkExistingDuplicates = async (members) => {
   return results;
 };
 
+/**
+ * Resolve a jumuiya identifier (UUID or slug) to { slug, name }.
+ * Accepts a UUID (from sub_groups.group_id) or a slug like "st-monica".
+ * Returns null if unresolvable.
+ */
+const resolveJumuiyaInput = async (input) => {
+  if (!input) return null;
+  const slugToName = {
+    "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
+    "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
+    "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
+    "st-monica": "St. Monica",
+  };
+  if (slugToName[input]) return { slug: input, name: slugToName[input] };
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
+  if (isUuid) {
+    const result = await pool.query(
+      `SELECT slug, name FROM sub_groups WHERE group_id = $1`, [input]
+    );
+    if (result.rows.length) {
+      const row = result.rows[0];
+      return { slug: row.slug || input, name: row.name };
+    }
+  }
+  const nameResult = await pool.query(
+    `SELECT slug, name FROM sub_groups WHERE LOWER(name) = LOWER($1)`, [input]
+  );
+  if (nameResult.rows.length) {
+    const row = nameResult.rows[0];
+    return { slug: row.slug || input, name: row.name };
+  }
+  return null;
+};
+
 // ─── Seasons ────────────────────────────────────────────
 
 export const createSeason = async (req, res) => {
@@ -115,12 +149,14 @@ export const createSeason = async (req, res) => {
 
 export const getSeasons = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
     const result = await pool.query(
       `SELECT * FROM registration_seasons WHERE jumuiya_id = $1 ORDER BY start_date DESC`,
-      [jumuiya_id]
+      [resolved.slug]
     );
-    res.json({ status: "success", data: result.rows });
+    res.json({ status: "success", data: result.rows, jumuiyaName: resolved.name });
   } catch (error) {
     logger.error("getSeasons error:", error.message);
     res.status(500).json({ error: error.message });
@@ -719,21 +755,16 @@ export const getGroupMembers = async (req, res) => {
 
 export const getStatistics = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
 
     const sgResult = await pool.query(
-      `SELECT group_id FROM sub_groups WHERE name = $1 OR slug = $1`, [jumuiyaName]
+      `SELECT group_id FROM sub_groups WHERE name = $1 OR slug = $1`, [resolved.name]
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
-    const [jumMembers, csaMembers, genderBrkdwn, groupStats, activeSeason] = await Promise.all([
+    const [jumMembers, csaMembers, genderBrkdwn, totalMembersRow, groupStats, activeSeason, subGroupRow] = await Promise.all([
       jumuiyaUUID
         ? pool.query(
             `SELECT COUNT(*)::int as total,
@@ -759,12 +790,23 @@ export const getStatistics = async (req, res) => {
       jumuiyaUUID
         ? pool.query(
             `SELECT LOWER(gender) as gender, COUNT(*)::int as count
-             FROM members WHERE jumuiya_id = $1 AND source IN ('jum', 'csa')
+             FROM members WHERE jumuiya_id = $1
                AND (flagged_inactive IS NULL OR flagged_inactive = false)
+               AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
              GROUP BY LOWER(gender)`,
             [jumuiyaUUID]
           )
         : Promise.resolve({ rows: [] }),
+
+      jumuiyaUUID
+        ? pool.query(
+            `SELECT COUNT(*)::int as total
+             FROM members WHERE jumuiya_id = $1
+               AND (flagged_inactive IS NULL OR flagged_inactive = false)
+               AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`,
+            [jumuiyaUUID]
+          )
+        : Promise.resolve({ rows: [{ total: 0 }] }),
 
       pool.query(
         `SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
@@ -774,29 +816,39 @@ export const getStatistics = async (req, res) => {
          WHERE mg.jumuiya_id = $1
          GROUP BY mg.id, mg.group_name, mg.group_type, mg.capacity
          ORDER BY mg.group_name`,
-        [jumuiya_id]
+         [resolved.slug]
       ),
 
       pool.query(
         `SELECT * FROM registration_seasons
          WHERE jumuiya_id = $1 AND status = 'active'
          LIMIT 1`,
-        [jumuiya_id]
+        [resolved.slug]
       ),
+
+      jumuiyaUUID
+        ? pool.query(
+            `SELECT saint_image FROM sub_groups WHERE group_id = $1`,
+            [jumuiyaUUID]
+          )
+        : Promise.resolve({ rows: [] }),
     ]);
 
     const jumRow = jumMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
     const csaRow = csaMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+    const totalRow = totalMembersRow.rows[0] || { total: 0 };
 
     res.json({
       status: "success",
       data: {
         jum: jumRow,
         csa: csaRow,
-        totalMembers: (jumRow.total || 0) + (csaRow.total || 0),
+        totalMembers: totalRow.total,
         genderBreakdown: genderBrkdwn.rows,
         groups: groupStats.rows,
         activeSeason: activeSeason.rows[0] || null,
+        jumuiyaName: resolved.name,
+        saintImage: subGroupRow.rows[0]?.saint_image || null,
       },
     });
   } catch (error) {
@@ -907,16 +959,12 @@ function deriveYearFromReg(memberId) {
 
 export const getMembers = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.json({ status: "success", data: [] });
+
     const sgResult = await pool.query(
-      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [jumuiyaName]
+      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [resolved.name]
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
@@ -925,7 +973,8 @@ export const getMembers = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.email, m.phone, m.year_of_study, m.join_date, m.source, m.flagged_inactive
+      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.email, m.phone, m.year_of_study, m.join_date, m.source, m.flagged_inactive,
+              m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg, m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg
        FROM members m
        LEFT JOIN registered r ON r.member_id = m.member_id AND r.status = 'active'
        WHERE m.jumuiya_id = $1 AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
@@ -944,6 +993,14 @@ export const getMembers = async (req, res) => {
       join_date: r.join_date || null,
       source: r.source,
       flagged_inactive: r.flagged_inactive || false,
+      sem_1_reg: r.sem_1_reg,
+      sem_2_reg: r.sem_2_reg,
+      sem_3_reg: r.sem_3_reg,
+      sem_4_reg: r.sem_4_reg,
+      sem_5_reg: r.sem_5_reg,
+      sem_6_reg: r.sem_6_reg,
+      sem_7_reg: r.sem_7_reg,
+      sem_8_reg: r.sem_8_reg,
     }));
 
     const seen = new Set();
@@ -970,16 +1027,12 @@ export const getMembers = async (req, res) => {
 
 export const exportMembers = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.json({ status: "success", data: [] });
+
     const sgResult = await pool.query(
-      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [jumuiyaName]
+      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [resolved.name]
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
@@ -1966,17 +2019,11 @@ export const csaFinalizeDistribution = async (req, res) => {
  */
 export const csaGetJumuiyaMemberList = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
+    let { jumuiya_id } = req.params;
     const { batch_id, academic_year } = req.query;
 
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
 
     let query = `
       SELECT CONCAT_WS(' ', m.first_name, m.last_name) as name,
@@ -1991,7 +2038,7 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
       WHERE aa.target_jumuiya = $1 AND aa.status = 'approved'
         AND db.status = 'finalized'
     `;
-    const params = [jumuiyaName];
+    const params = [resolved.name];
     let paramIdx = 2;
 
     if (batch_id) {
@@ -2009,7 +2056,7 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
 
     res.json({
       status: "success",
-      data: { jumuiya: jumuiyaName, members: result.rows, total: result.rows.length },
+      data: { jumuiya: resolved.name, members: result.rows, total: result.rows.length },
     });
   } catch (error) {
     logger.error("csaGetJumuiyaMemberList error:", error.message);
@@ -2023,21 +2070,11 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
  */
 export const getCsaAllocations = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
+    let { jumuiya_id } = req.params;
     const { academic_year } = req.query;
 
-    const slugToName = {
-      "st-anthony": "St. Anthony",
-      "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine",
-      "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth",
-      "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
 
     const yearFilter = academic_year ? `AND mi.academic_year = '${academic_year.replace(/'/g, "''")}'` : "";
 
@@ -2055,13 +2092,13 @@ export const getCsaAllocations = async (req, res) => {
          AND m.jumuiya_id = sg.group_id
          ${yearFilter}
        ORDER BY m.first_name`,
-      [jumuiyaName]
+      [resolved.name]
     );
 
     res.json({
       status: "success",
       data: {
-        jumuiya: jumuiyaName,
+        jumuiya: resolved.name,
         members: result.rows,
         total: result.rows.length,
       },

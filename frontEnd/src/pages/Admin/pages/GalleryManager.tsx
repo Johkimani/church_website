@@ -25,13 +25,22 @@ interface GalleryImage {
   moderation_status?: string;
 }
 
-export default function GalleryManager() {
+interface Props {
+  jumuiyaId?: string;
+  jumuiyaInfo?: { name: string; slug?: string; color?: string; saintImage?: string };
+}
+
+export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Patron saint photo state
+  const [saintImage, setSaintImage] = useState(jumuiyaInfo?.saintImage || '');
+  const [saintUploading, setSaintUploading] = useState(false);
 
   const categories = ['general', 'Hero Slider', 'gallery-grid', 'teaser'];
   const [uploadCategory, setUploadCategory] = useState(categories[0]);
@@ -41,12 +50,14 @@ export default function GalleryManager() {
 
   useEffect(() => {
     loadImages();
-  }, []);
+  }, [jumuiyaId]);
 
   const loadImages = async () => {
     setLoading(true);
     try {
-      const { data } = await apiClient.get('/hub-gallery');
+      const params: Record<string, string> = {};
+      if (jumuiyaId) params.module_id = jumuiyaId;
+      const { data } = await apiClient.get('/hub-gallery', { params });
       const items = data?.items || [];
       setImages(items);
     } catch (err) {
@@ -90,6 +101,25 @@ export default function GalleryManager() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleSaintImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !jumuiyaId) return;
+    setSaintUploading(true);
+    try {
+      const { uploadFile } = await import('../../../api/axiosInstance');
+      const res = await uploadFile([file]);
+      const url = res?.data?.[0]?.url || res?.data?.url || '';
+      if (url) {
+        await apiClient.patch(`/jumuiya/${encodeURIComponent(jumuiyaId)}`, { saint_image: url });
+        setSaintImage(url);
+      }
+    } catch (err) {
+      console.error('Failed to upload saint image:', err);
+    } finally {
+      setSaintUploading(false);
+    }
+  };
+
   const handleDeleteImage = async (id: number) => {
     if (!window.confirm('Are you sure you want to remove this photo from the gallery?')) return;
     try {
@@ -120,7 +150,7 @@ export default function GalleryManager() {
         formData.append('files', uploadFile);
         formData.append('eventName', file.name.replace(/\.[^.]+$/, ''));
         formData.append('description', '');
-        formData.append('moduleId', 'general');
+        formData.append('moduleId', jumuiyaId || 'general');
         formData.append('category', uploadCategory);
         await apiClient.post('/hub-gallery/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -232,8 +262,12 @@ export default function GalleryManager() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-black text-slate-800 tracking-tight">Gallery Manager</h2>
-          <p className="text-slate-700 text-xs mt-0.5">Manage public photos and visual media for the church website.</p>
+          <h2 className="text-lg font-black text-slate-800 tracking-tight">
+            {jumuiyaInfo ? `${jumuiyaInfo.name} Gallery` : 'Gallery Manager'}
+          </h2>
+          <p className="text-slate-700 text-xs mt-0.5">
+            {jumuiyaInfo ? `Manage photos for ${jumuiyaInfo.name}` : 'Manage public photos and visual media for the church website.'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold border border-blue-100">
@@ -241,6 +275,49 @@ export default function GalleryManager() {
           </div>
         </div>
       </div>
+
+      {/* Patron Saint Photo (only for jumuiya-specific galleries) */}
+      {jumuiyaId && (
+        <div className="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+            <span className="w-1.5 h-5 bg-indigo-500 rounded-full inline-block" />
+            Patron Saint Photo
+          </h3>
+          <div className="flex items-center gap-6">
+            <div className="w-[150px] h-[150px] rounded-2xl bg-white overflow-hidden border-4 border-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.12)] shrink-0">
+              {saintImage ? (
+                <img
+                  src={saintImage}
+                  alt="Patron Saint"
+                  className="w-full h-full object-cover transition-all duration-600"
+                  onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
+                  style={{ opacity: saintImage ? 1 : 0 }}
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50">
+                  <ImageIcon size={32} className="mb-1 opacity-40" />
+                  <span className="text-[10px] font-bold">No Photo</span>
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-700 mb-1">
+                {saintImage ? 'Current photo' : 'No patron saint photo set'}
+              </p>
+              <p className="text-xs text-slate-400 mb-3">
+                Upload a photo of the patron saint for {jumuiyaInfo?.name || 'this Jumuiya'}.
+              </p>
+              <label className="relative cursor-pointer inline-block">
+                <input type="file" accept="image/*" className="hidden" onChange={handleSaintImageUpload} disabled={saintUploading} />
+                <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 hover:-translate-y-0.5 transition-all shadow-md shadow-indigo-200">
+                  {saintUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                  {saintUploading ? 'Uploading...' : saintImage ? 'Replace Photo' : 'Upload Photo'}
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upload Zone */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

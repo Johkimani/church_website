@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { RefreshCw, Users, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshCw, Users, Search, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
 
 interface Props {
   jumuiyaId: string;
@@ -45,6 +45,9 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25; // Show 25 members per page
 
@@ -74,14 +77,38 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     fetchMembers(); 
   }, [jumuiyaId]);
 
+  const yearOptions = useMemo(() => {
+    const years = new Set<string>();
+    members.forEach(m => { if (m.year_of_study) years.add(m.year_of_study); });
+    return [...years].sort();
+  }, [members]);
+
   // Memoized filtered results
-  const filtered = useMemo(() => debouncedSearch
-    ? members.filter(m =>
+  const filtered = useMemo(() => {
+    let result = members;
+
+    if (sourceFilter) {
+      result = result.filter(m => m.source === sourceFilter);
+    }
+
+    if (genderFilter) {
+      result = result.filter(m => m.gender === genderFilter);
+    }
+
+    if (yearFilter) {
+      result = result.filter(m => m.year_of_study === yearFilter);
+    }
+
+    if (debouncedSearch) {
+      result = result.filter(m =>
         `${m.first_name} ${m.last_name}`.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         (m.member_id || "").toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         (m.email || "").toLowerCase().includes(debouncedSearch.toLowerCase())
-      )
-    : members, [members, debouncedSearch]);
+      );
+    }
+
+    return result;
+  }, [members, debouncedSearch, sourceFilter, genderFilter, yearFilter]);
 
   // Memoized pagination calculations
   const { paginatedMembers, totalPages } = useMemo(() => {
@@ -92,6 +119,24 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
       totalPages: Math.ceil(filtered.length / itemsPerPage)
     };
   }, [filtered, currentPage]);
+
+  const exportCSV = () => {
+    const headers = ["Reg #", "Name", "Source", "Gender", "Email", "Phone", "Year", "Joined"];
+    const rows = filtered.map((m: any) => [
+      m.member_id, `${m.first_name} ${m.last_name}`,
+      m.source === "csa" ? "CSA" : "Jum",
+      m.gender === "male" ? "M" : m.gender === "female" ? "F" : "",
+      m.email, m.phone, m.year_of_study, m.join_date?.slice(0, 10)
+    ]);
+    const csv = [headers.join(","), ...rows.map((r: any) => r.map((v: any) => `"${String(v || "").replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${jumuiyaName.replace(/\s+/g, "_")}_members_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -112,18 +157,41 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
             {debouncedSearch && <span> • {filtered.length} matching</span>}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Sources</option>
+            <option value="jum">Jumuiya</option>
+            <option value="csa">CSA</option>
+          </select>
+          <select value={genderFilter} onChange={e => { setGenderFilter(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Genders</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+          <select value={yearFilter} onChange={e => { setYearFilter(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Years</option>
+            {yearOptions.map(y => (
+              <option key={y} value={y}>Year {y}</option>
+            ))}
+          </select>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search members..."
-              className="pl-8 pr-8 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 w-48" />
+              className="pl-8 pr-8 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 w-44" />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                 <X size={14} />
               </button>
             )}
           </div>
+          <button onClick={exportCSV} disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <Download size={14} /> Export CSV
+          </button>
           <button onClick={fetchMembers} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
             <RefreshCw size={14} /> Refresh
           </button>
