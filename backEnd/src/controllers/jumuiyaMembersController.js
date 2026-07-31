@@ -1,5 +1,15 @@
-import { testDb as pool } from "../Configs/dbConfig.js";
+import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+
+/**
+ * Error carrying an HTTP status so route handlers can map it to a response.
+ */
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
 import { payAndWait } from "./stkPush/stkHelper.js";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
@@ -191,40 +201,37 @@ export const createJumuiyaMember = async (req, res) => {
       return res.status(400).json({ success: false, message: "member_id and jumuiya_id are required" });
     }
 
-    // Start Transaction
-    await pool.query('BEGIN');
+    const row = await withTransaction(async (client) => {
+      // 1. Update members table
+      await client.query(
+        `UPDATE members SET jumuiya_id = $1 WHERE member_id = $2`,
+        [jumuiya_id, member_id]
+      );
 
-    // 1. Update members table
-    await pool.query(
-      `UPDATE members SET jumuiya_id = $1 WHERE member_id = $2`,
-      [jumuiya_id, member_id]
-    );
+      // 2. Fetch updated member with jumuiya name via JOIN
+      const updateResult = await client.query(
+        `SELECT m.*, sg.name as jumuiya_name
+         FROM members m
+         LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+         WHERE m.member_id = $1`,
+        [member_id]
+      );
 
-    // 2. Fetch updated member with jumuiya name via JOIN
-    const updateResult = await pool.query(
-      `SELECT m.*, sg.name as jumuiya_name
-       FROM members m
-       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-       WHERE m.member_id = $1`,
-      [member_id]
-    );
+      if (updateResult.rows.length === 0) {
+        throw new HttpError(404, "Member not found");
+      }
 
-    if (updateResult.rows.length === 0) {
-      await pool.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Member not found" });
-    }
+      // 3. Insert into registered table
+      await client.query(
+        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
+         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')
+         ON CONFLICT DO NOTHING`, 
+        [member_id, jumuiya_id]
+      );
 
-    // 3. Insert into registered table
-    await pool.query(
-      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
-       VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')
-       ON CONFLICT DO NOTHING`, 
-      [member_id, jumuiya_id]
-    );
+      return updateResult.rows[0];
+    });
 
-    await pool.query('COMMIT');
-
-    const row = updateResult.rows[0];
     res.status(200).json({ 
       success: true, 
       message: "Successfully joined the community",
@@ -235,7 +242,9 @@ export const createJumuiyaMember = async (req, res) => {
       }
     });
   } catch (error) {
-    await pool.query('ROLLBACK');
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     logger.error("Error joining jumuiya: " + error.message);
     res.status(500).json({ success: false, message: "Failed to join community" });
   }
@@ -259,7 +268,7 @@ export const updateJumuiyaMember = async (req, res) => {
     const effectiveId = newMemberId || id;
     const memberIdChanged = newMemberId && newMemberId !== id;
 
-    // Resolve jumuiya slug/UUID to UUID + display name (logic before BEGIN)
+    // Resolve jumuiya slug/UUID to UUID + display name (logic before transaction)
     let jumuiyaUuid = null;
     let jumuiyaName = null;
     if (jumuiya_id) {
@@ -270,59 +279,142 @@ export const updateJumuiyaMember = async (req, res) => {
       }
     }
 
-    await pool.query('BEGIN');
-
-    // ── Try members table first ──
-    const currentRes = await pool.query(
-      "SELECT jumuiya_id, first_name, last_name FROM members WHERE member_id = $1",
-      [id]
-    );
-
-    if (currentRes.rows.length > 0) {
-      // ─── Path A: update members table ───
-      const oldJumuiyaId = currentRes.rows[0].jumuiya_id;
-      const oldFirstName = currentRes.rows[0].first_name;
-      const oldLastName = currentRes.rows[0].last_name;
-
-      if (memberIdChanged) {
-        await pool.query("UPDATE members SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
-      }
-
-      await pool.query(
-        `UPDATE members
-         SET first_name = COALESCE($1, first_name),
-             last_name = COALESCE($2, last_name),
-             year_of_study = COALESCE($3, year_of_study),
-             email = COALESCE($4, email),
-             phone = COALESCE($5, phone),
-             gender = COALESCE($6, gender),
-             course = COALESCE($7, course),
-             jumuiya_id = COALESCE($8, jumuiya_id)
-         WHERE member_id = $9`,
-        [first_name, last_name, year_of_study, email, phone, gender, course, jumuiyaUuid, effectiveId]
+    const data = await withTransaction(async (client) => {
+      // ── Try members table first ──
+      const currentRes = await client.query(
+        "SELECT jumuiya_id, first_name, last_name FROM members WHERE member_id = $1",
+        [id]
       );
 
-      // Sync import_records
-      const shouldSync = first_name || last_name || email || phone || gender || course || jumuiya_id;
-      if (shouldSync || memberIdChanged) {
-        const syncSets = [];
-        const syncVals = [];
-        let sp = 1;
-        if (first_name || last_name) {
-          const syncName = `${first_name || oldFirstName} ${last_name || oldLastName}`.trim();
-          syncSets.push(`cleaned_name = $${sp++}`); syncVals.push(syncName);
-        }
-        if (email !== undefined) { syncSets.push(`cleaned_email = $${sp++}`); syncVals.push(email); }
-        if (course !== undefined) { syncSets.push(`cleaned_course = $${sp++}`); syncVals.push(course); }
-        if (phone !== undefined) { syncSets.push(`cleaned_phone = $${sp++}`); syncVals.push(phone); }
-        if (gender !== undefined) { syncSets.push(`cleaned_gender = $${sp++}`); syncVals.push(gender); }
-        syncSets.push(`cleaned_jumuiya = $${sp++}`); syncVals.push(jumuiyaName);
-        syncVals.push(id);
-        await pool.query(`UPDATE import_records SET ${syncSets.join(", ")} WHERE cleaned_reg_number = $${sp}`, syncVals);
+      if (currentRes.rows.length > 0) {
+        // ─── Path A: update members table ───
+        const oldJumuiyaId = currentRes.rows[0].jumuiya_id;
+        const oldFirstName = currentRes.rows[0].first_name;
+        const oldLastName = currentRes.rows[0].last_name;
+
         if (memberIdChanged) {
-          await pool.query("UPDATE import_records SET cleaned_reg_number = $1 WHERE cleaned_reg_number = $2", [newMemberId, id]);
+          await client.query("UPDATE members SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
         }
+
+        await client.query(
+          `UPDATE members
+           SET first_name = COALESCE($1, first_name),
+               last_name = COALESCE($2, last_name),
+               year_of_study = COALESCE($3, year_of_study),
+               email = COALESCE($4, email),
+               phone = COALESCE($5, phone),
+               gender = COALESCE($6, gender),
+               course = COALESCE($7, course),
+               jumuiya_id = COALESCE($8, jumuiya_id)
+           WHERE member_id = $9`,
+          [first_name, last_name, year_of_study, email, phone, gender, course, jumuiyaUuid, effectiveId]
+        );
+
+        // Sync import_records
+        const shouldSync = first_name || last_name || email || phone || gender || course || jumuiya_id;
+        if (shouldSync || memberIdChanged) {
+          const syncSets = [];
+          const syncVals = [];
+          let sp = 1;
+          if (first_name || last_name) {
+            const syncName = `${first_name || oldFirstName} ${last_name || oldLastName}`.trim();
+            syncSets.push(`cleaned_name = $${sp++}`); syncVals.push(syncName);
+          }
+          if (email !== undefined) { syncSets.push(`cleaned_email = $${sp++}`); syncVals.push(email); }
+          if (course !== undefined) { syncSets.push(`cleaned_course = $${sp++}`); syncVals.push(course); }
+          if (phone !== undefined) { syncSets.push(`cleaned_phone = $${sp++}`); syncVals.push(phone); }
+          if (gender !== undefined) { syncSets.push(`cleaned_gender = $${sp++}`); syncVals.push(gender); }
+          syncSets.push(`cleaned_jumuiya = $${sp++}`); syncVals.push(jumuiyaName);
+          syncVals.push(id);
+          await client.query(`UPDATE import_records SET ${syncSets.join(", ")} WHERE cleaned_reg_number = $${sp}`, syncVals);
+          if (memberIdChanged) {
+            await client.query("UPDATE import_records SET cleaned_reg_number = $1 WHERE cleaned_reg_number = $2", [newMemberId, id]);
+          }
+        }
+
+        // Sync associates table
+        {
+          const aSets = [];
+          const aVals = [];
+          let ap = 1;
+          if (first_name || last_name) {
+            aSets.push(`name = $${ap++}`);
+            aVals.push(`${first_name || oldFirstName} ${last_name || oldLastName}`.trim());
+          }
+          if (email !== undefined) { aSets.push(`email = $${ap++}`); aVals.push(email); }
+          if (phone !== undefined) { aSets.push(`phone = $${ap++}`); aVals.push(phone); }
+          if (gender !== undefined) { aSets.push(`gender = $${ap++}`); aVals.push(gender); }
+          if (jumuiyaName) { aSets.push(`jumuiya_name = $${ap++}`); aVals.push(jumuiyaName); }
+          if (jumuiyaUuid) { aSets.push(`jumuiya_id = $${ap++}`); aVals.push(jumuiyaUuid); }
+          if (aSets.length > 0) {
+            aVals.push(id);
+            await client.query(`UPDATE associates SET ${aSets.join(", ")} WHERE member_id = $${ap}`, aVals);
+          }
+          if (memberIdChanged) {
+            await client.query("UPDATE associates SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
+          }
+        }
+
+        // Registration table sync
+        if (oldJumuiyaId || jumuiyaUuid) {
+          if (jumuiyaUuid !== oldJumuiyaId) {
+            if (oldJumuiyaId) {
+              await client.query("DELETE FROM registered WHERE member_id = $1 AND jumuiya_id = $2", [effectiveId, oldJumuiyaId]);
+            }
+            if (jumuiyaUuid) {
+              await client.query(
+                "INSERT INTO registered (member_id, jumuiya_id, registration_date, status) VALUES ($1, $2, CURRENT_TIMESTAMP, 'active') ON CONFLICT DO NOTHING",
+                [effectiveId, jumuiyaUuid]
+              );
+            }
+          }
+        }
+
+        const result = await client.query(
+          `SELECT m.*, sg.name as jumuiya_name
+           FROM members m
+           LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+           WHERE m.member_id = $1`,
+          [effectiveId]
+        );
+
+        const row = result.rows[0];
+        return {
+          ...row,
+          id: row.member_id,
+          name: `${row.first_name} ${row.last_name || ""}`.trim()
+        };
       }
+
+      // ─── Path B: update import_records and sync to members ───
+      const syncSets = [];
+      const syncVals = [];
+      let sp = 1;
+      const syncName = [first_name, last_name].filter(Boolean).join(" ").trim();
+      if (syncName) { syncSets.push(`cleaned_name = $${sp++}`); syncVals.push(syncName); }
+      if (email !== undefined) { syncSets.push(`cleaned_email = $${sp++}`); syncVals.push(email); }
+      if (phone !== undefined) { syncSets.push(`cleaned_phone = $${sp++}`); syncVals.push(phone); }
+      if (gender !== undefined) { syncSets.push(`cleaned_gender = $${sp++}`); syncVals.push(gender); }
+      syncSets.push(`cleaned_jumuiya = $${sp++}`); syncVals.push(jumuiyaName);
+      syncVals.push(id);
+      await client.query(`UPDATE import_records SET ${syncSets.join(", ")} WHERE cleaned_reg_number = $${sp}`, syncVals);
+      if (memberIdChanged) {
+        await client.query("UPDATE import_records SET cleaned_reg_number = $1 WHERE cleaned_reg_number = $2", [newMemberId, id]);
+      }
+
+      // Also upsert into members table
+      await client.query(`
+        INSERT INTO members (member_id, first_name, last_name, email, phone, gender, course, jumuiya_id, source, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'jum', 'valid')
+        ON CONFLICT (member_id) DO UPDATE SET
+          first_name = COALESCE($2, members.first_name),
+          last_name = COALESCE($3, members.last_name),
+          email = COALESCE($4, members.email),
+          phone = COALESCE($5, members.phone),
+          gender = COALESCE($6, members.gender),
+          course = COALESCE($7, members.course),
+          jumuiya_id = COALESCE($8, members.jumuiya_id)
+      `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, course || null, jumuiyaUuid]);
 
       // Sync associates table
       {
@@ -331,7 +423,7 @@ export const updateJumuiyaMember = async (req, res) => {
         let ap = 1;
         if (first_name || last_name) {
           aSets.push(`name = $${ap++}`);
-          aVals.push(`${first_name || oldFirstName} ${last_name || oldLastName}`.trim());
+          aVals.push(`${first_name || ''} ${last_name || ''}`.trim());
         }
         if (email !== undefined) { aSets.push(`email = $${ap++}`); aVals.push(email); }
         if (phone !== undefined) { aSets.push(`phone = $${ap++}`); aVals.push(phone); }
@@ -340,107 +432,14 @@ export const updateJumuiyaMember = async (req, res) => {
         if (jumuiyaUuid) { aSets.push(`jumuiya_id = $${ap++}`); aVals.push(jumuiyaUuid); }
         if (aSets.length > 0) {
           aVals.push(id);
-          await pool.query(`UPDATE associates SET ${aSets.join(", ")} WHERE member_id = $${ap}`, aVals);
+          await client.query(`UPDATE associates SET ${aSets.join(", ")} WHERE member_id = $${ap}`, aVals);
         }
         if (memberIdChanged) {
-          await pool.query("UPDATE associates SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
+          await client.query("UPDATE associates SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
         }
       }
 
-      // Registration table sync
-      if (oldJumuiyaId || jumuiyaUuid) {
-        if (jumuiyaUuid !== oldJumuiyaId) {
-          if (oldJumuiyaId) {
-            await pool.query("DELETE FROM registered WHERE member_id = $1 AND jumuiya_id = $2", [effectiveId, oldJumuiyaId]);
-          }
-          if (jumuiyaUuid) {
-            await pool.query(
-              "INSERT INTO registered (member_id, jumuiya_id, registration_date, status) VALUES ($1, $2, CURRENT_TIMESTAMP, 'active') ON CONFLICT DO NOTHING",
-              [effectiveId, jumuiyaUuid]
-            );
-          }
-        }
-      }
-
-      await pool.query('COMMIT');
-
-      const result = await pool.query(
-        `SELECT m.*, sg.name as jumuiya_name
-         FROM members m
-         LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-         WHERE m.member_id = $1`,
-        [effectiveId]
-      );
-
-      const row = result.rows[0];
-      return res.json({
-        success: true,
-        data: {
-          ...row,
-          id: row.member_id,
-          name: `${row.first_name} ${row.last_name || ""}`.trim()
-        }
-      });
-    }
-
-    // ─── Path B: update import_records and sync to members ───
-    const syncSets = [];
-    const syncVals = [];
-    let sp = 1;
-    const syncName = [first_name, last_name].filter(Boolean).join(" ").trim();
-    if (syncName) { syncSets.push(`cleaned_name = $${sp++}`); syncVals.push(syncName); }
-    if (email !== undefined) { syncSets.push(`cleaned_email = $${sp++}`); syncVals.push(email); }
-    if (phone !== undefined) { syncSets.push(`cleaned_phone = $${sp++}`); syncVals.push(phone); }
-    if (gender !== undefined) { syncSets.push(`cleaned_gender = $${sp++}`); syncVals.push(gender); }
-    syncSets.push(`cleaned_jumuiya = $${sp++}`); syncVals.push(jumuiyaName);
-    syncVals.push(id);
-    await pool.query(`UPDATE import_records SET ${syncSets.join(", ")} WHERE cleaned_reg_number = $${sp}`, syncVals);
-    if (memberIdChanged) {
-      await pool.query("UPDATE import_records SET cleaned_reg_number = $1 WHERE cleaned_reg_number = $2", [newMemberId, id]);
-    }
-
-    // Also upsert into members table
-    await pool.query(`
-      INSERT INTO members (member_id, first_name, last_name, email, phone, gender, course, jumuiya_id, source, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'jum', 'valid')
-      ON CONFLICT (member_id) DO UPDATE SET
-        first_name = COALESCE($2, members.first_name),
-        last_name = COALESCE($3, members.last_name),
-        email = COALESCE($4, members.email),
-        phone = COALESCE($5, members.phone),
-        gender = COALESCE($6, members.gender),
-        course = COALESCE($7, members.course),
-        jumuiya_id = COALESCE($8, members.jumuiya_id)
-    `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, course || null, jumuiyaUuid]);
-
-    // Sync associates table
-    {
-      const aSets = [];
-      const aVals = [];
-      let ap = 1;
-      if (first_name || last_name) {
-        aSets.push(`name = $${ap++}`);
-        aVals.push(`${first_name || ''} ${last_name || ''}`.trim());
-      }
-      if (email !== undefined) { aSets.push(`email = $${ap++}`); aVals.push(email); }
-      if (phone !== undefined) { aSets.push(`phone = $${ap++}`); aVals.push(phone); }
-      if (gender !== undefined) { aSets.push(`gender = $${ap++}`); aVals.push(gender); }
-      if (jumuiyaName) { aSets.push(`jumuiya_name = $${ap++}`); aVals.push(jumuiyaName); }
-      if (jumuiyaUuid) { aSets.push(`jumuiya_id = $${ap++}`); aVals.push(jumuiyaUuid); }
-      if (aSets.length > 0) {
-        aVals.push(id);
-        await pool.query(`UPDATE associates SET ${aSets.join(", ")} WHERE member_id = $${ap}`, aVals);
-      }
-      if (memberIdChanged) {
-        await pool.query("UPDATE associates SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
-      }
-    }
-
-    await pool.query('COMMIT');
-
-    return res.json({
-      success: true,
-      data: {
+      return {
         member_id: effectiveId,
         id: effectiveId,
         name: syncName || effectiveId,
@@ -453,11 +452,12 @@ export const updateJumuiyaMember = async (req, res) => {
         jumuiya_name: jumuiyaName,
         jumuiya_id: jumuiyaUuid,
         source: "jum",
-      }
+      };
     });
 
+    return res.json({ success: true, data });
+
   } catch (error) {
-    try { await pool.query('ROLLBACK'); } catch (_) { /* no active txn */ }
     logger.error(`Error updating jumuiya member: ${error.message} | stack: ${error.stack}`);
     res.status(500).json({ success: false, message: "Failed to update member" });
   }
@@ -473,29 +473,28 @@ export const deleteJumuiyaMember = async (req, res) => {
   try {
     const { id } = req.params; // member_id
 
-    await pool.query('BEGIN');
+    await withTransaction(async (client) => {
+      await client.query("DELETE FROM registered WHERE member_id = $1", [id]);
+      await client.query("DELETE FROM group_assignments WHERE member_id = $1", [id]);
+      await client.query("DELETE FROM allocation_approvals WHERE member_id = $1", [id]);
+      await client.query("DELETE FROM import_records WHERE cleaned_reg_number = $1", [id]);
+      await client.query("DELETE FROM associates WHERE member_id = $1", [id]);
 
-    await pool.query("DELETE FROM registered WHERE member_id = $1", [id]);
-    await pool.query("DELETE FROM group_assignments WHERE member_id = $1", [id]);
-    await pool.query("DELETE FROM allocation_approvals WHERE member_id = $1", [id]);
-    await pool.query("DELETE FROM import_records WHERE cleaned_reg_number = $1", [id]);
-    await pool.query("DELETE FROM associates WHERE member_id = $1", [id]);
+      const result = await client.query(
+        "DELETE FROM members WHERE member_id = $1 RETURNING *",
+        [id]
+      );
 
-    const result = await pool.query(
-      "DELETE FROM members WHERE member_id = $1 RETURNING *",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      await pool.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Member not found" });
-    }
-
-    await pool.query('COMMIT');
+      if (result.rows.length === 0) {
+        throw new HttpError(404, "Member not found");
+      }
+    });
 
     res.json({ success: true, message: "Member permanently removed from the system" });
   } catch (error) {
-    await pool.query('ROLLBACK');
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     logger.error("Error deleting jumuiya member: " + error.message);
     res.status(500).json({ success: false, message: "Failed to delete member" });
   }
@@ -547,28 +546,27 @@ export const bulkJoinJumuiya = async (req, res) => {
       return res.status(400).json({ success: false, message: "member_ids (array) and jumuiya_id are required" });
     }
 
-    // Start Transaction
-    await pool.query('BEGIN');
+    const updateResult = await withTransaction(async (client) => {
+      // 1. Update members table directly
+      const result = await client.query(
+        `UPDATE members 
+         SET jumuiya_id = $1 
+         WHERE member_id = ANY($2) 
+         RETURNING *`,
+        [jumuiya_id, member_ids]
+      );
 
-    // 1. Update members table directly
-    const updateResult = await pool.query(
-      `UPDATE members 
-       SET jumuiya_id = $1 
-       WHERE member_id = ANY($2) 
-       RETURNING *`,
-      [jumuiya_id, member_ids]
-    );
+      // 2. Insert into registered table
+      // This officially registers the members in the community
+      await client.query(
+        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
+         SELECT unnest($1::text[]), $2, CURRENT_TIMESTAMP, 'active'
+         ON CONFLICT DO NOTHING`,
+        [member_ids, jumuiya_id]
+      );
 
-    // 2. Insert into registered table
-    // This officially registers the members in the community
-    await pool.query(
-      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
-       SELECT unnest($1::text[]), $2, CURRENT_TIMESTAMP, 'active'
-       ON CONFLICT DO NOTHING`,
-      [member_ids, jumuiya_id]
-    );
-
-    await pool.query('COMMIT');
+      return result;
+    });
 
     res.status(200).json({ 
       success: true, 
@@ -576,7 +574,6 @@ export const bulkJoinJumuiya = async (req, res) => {
       count: updateResult.rows.length
     });
   } catch (error) {
-    await pool.query('ROLLBACK');
     logger.error("Error in bulk join: " + error.message);
     res.status(500).json({ success: false, message: "Failed to register members in bulk" });
   }
@@ -612,52 +609,51 @@ export const bulkRegisterWithPayment = async (req, res) => {
     }
 
     // 2. If payment success, proceed with bulk registration logic
-    // Start Transaction
-    await pool.query('BEGIN');
+    const updateResult = await withTransaction(async (client) => {
+      const isSecondSem = new Date().getMonth() >= 5 ? 1 : 0;
 
-    const isSecondSem = new Date().getMonth() >= 5 ? 1 : 0;
+      // Update members table — normalize year_of_study and set the correct sem_*_reg
+      const result = await client.query(
+        `WITH norm AS (
+           SELECT
+             member_id,
+             CASE
+               WHEN year_of_study ~ '^[1-4]$' THEN year_of_study
+               WHEN year_of_study ~ '^\\d{4}-\\d{4}$'
+                 THEN GREATEST(1, LEAST(4,
+                   EXTRACT(YEAR FROM CURRENT_DATE)::int - CAST(SPLIT_PART(year_of_study, '-', 1) AS integer) + 1
+                 ))::text
+             END AS norm_yos
+           FROM members
+           WHERE member_id = ANY($3)
+         )
+         UPDATE members m
+         SET jumuiya_id = $1, migrated_to_associates = NULL,
+             year_of_study = COALESCE(norm.norm_yos, m.year_of_study),
+             sem_1_reg = CASE WHEN norm.norm_yos = '1' AND $2 = 0 THEN true ELSE m.sem_1_reg END,
+             sem_2_reg = CASE WHEN norm.norm_yos = '1' AND $2 = 1 THEN true ELSE m.sem_2_reg END,
+             sem_3_reg = CASE WHEN norm.norm_yos = '2' AND $2 = 0 THEN true ELSE m.sem_3_reg END,
+             sem_4_reg = CASE WHEN norm.norm_yos = '2' AND $2 = 1 THEN true ELSE m.sem_4_reg END,
+             sem_5_reg = CASE WHEN norm.norm_yos = '3' AND $2 = 0 THEN true ELSE m.sem_5_reg END,
+             sem_6_reg = CASE WHEN norm.norm_yos = '3' AND $2 = 1 THEN true ELSE m.sem_6_reg END,
+             sem_7_reg = CASE WHEN norm.norm_yos = '4' AND $2 = 0 THEN true ELSE m.sem_7_reg END,
+             sem_8_reg = CASE WHEN norm.norm_yos = '4' AND $2 = 1 THEN true ELSE m.sem_8_reg END
+         FROM norm
+         WHERE m.member_id = norm.member_id
+         RETURNING m.*`,
+        [jumuiya_id, isSecondSem, member_ids]
+      );
 
-    // Update members table — normalize year_of_study and set the correct sem_*_reg
-    const updateResult = await pool.query(
-      `WITH norm AS (
-         SELECT
-           member_id,
-           CASE
-             WHEN year_of_study ~ '^[1-4]$' THEN year_of_study
-             WHEN year_of_study ~ '^\\d{4}-\\d{4}$'
-               THEN GREATEST(1, LEAST(4,
-                 EXTRACT(YEAR FROM CURRENT_DATE)::int - CAST(SPLIT_PART(year_of_study, '-', 1) AS integer) + 1
-               ))::text
-           END AS norm_yos
-         FROM members
-         WHERE member_id = ANY($3)
-       )
-       UPDATE members m
-       SET jumuiya_id = $1, migrated_to_associates = NULL,
-           year_of_study = COALESCE(norm.norm_yos, m.year_of_study),
-           sem_1_reg = CASE WHEN norm.norm_yos = '1' AND $2 = 0 THEN true ELSE m.sem_1_reg END,
-           sem_2_reg = CASE WHEN norm.norm_yos = '1' AND $2 = 1 THEN true ELSE m.sem_2_reg END,
-           sem_3_reg = CASE WHEN norm.norm_yos = '2' AND $2 = 0 THEN true ELSE m.sem_3_reg END,
-           sem_4_reg = CASE WHEN norm.norm_yos = '2' AND $2 = 1 THEN true ELSE m.sem_4_reg END,
-           sem_5_reg = CASE WHEN norm.norm_yos = '3' AND $2 = 0 THEN true ELSE m.sem_5_reg END,
-           sem_6_reg = CASE WHEN norm.norm_yos = '3' AND $2 = 1 THEN true ELSE m.sem_6_reg END,
-           sem_7_reg = CASE WHEN norm.norm_yos = '4' AND $2 = 0 THEN true ELSE m.sem_7_reg END,
-           sem_8_reg = CASE WHEN norm.norm_yos = '4' AND $2 = 1 THEN true ELSE m.sem_8_reg END
-       FROM norm
-       WHERE m.member_id = norm.member_id
-       RETURNING m.*`,
-      [jumuiya_id, isSecondSem, member_ids]
-    );
+      // Insert into registered table
+      await client.query(
+        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
+         SELECT unnest($1::text[]), $2, CURRENT_TIMESTAMP, 'active'
+         ON CONFLICT DO NOTHING`,
+        [member_ids, jumuiya_id]
+      );
 
-    // Insert into registered table
-    await pool.query(
-      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
-       SELECT unnest($1::text[]), $2, CURRENT_TIMESTAMP, 'active'
-       ON CONFLICT DO NOTHING`,
-      [member_ids, jumuiya_id]
-    );
-
-    await pool.query('COMMIT');
+      return result;
+    });
 
     res.status(200).json({ 
       success: true, 
@@ -666,7 +662,6 @@ export const bulkRegisterWithPayment = async (req, res) => {
     });
 
   } catch (error) {
-    if (pool) await pool.query('ROLLBACK');
     logger.error("Error in bulkRegisterWithPayment: " + error.message);
     res.status(500).json({ success: false, message: "Internal server error during bulk registration" });
   }
@@ -796,41 +791,51 @@ export const manualRegisterMember = async (req, res) => {
       return res.status(400).json({ success: false, message: "member_id and jumuiya_id are required" });
     }
 
-    await pool.query("BEGIN");
+    const member = await withTransaction(async (client) => {
+      // 1. Verify member exists
+      const memberResult = await client.query("SELECT * FROM members WHERE member_id = $1", [member_id]);
+      if (memberResult.rows.length === 0) {
+        throw new HttpError(404, "Member not found");
+      }
 
-    // 1. Verify member exists
-    const member = await pool.query("SELECT * FROM members WHERE member_id = $1", [member_id]);
-    if (member.rows.length === 0) {
-      await pool.query("ROLLBACK");
-      return res.status(404).json({ success: false, message: "Member not found" });
-    }
+      // 2. Update members table — set jumuiya, semester flags, and un-migrate if needed
+      const semUpdates = [];
+      const semVals = [];
+      let idx = 2;
+      const SEM_COLS = ["sem_1_reg", "sem_2_reg", "sem_3_reg", "sem_4_reg",
+                        "sem_5_reg", "sem_6_reg", "sem_7_reg", "sem_8_reg"];
+      for (const col of SEM_COLS) {
+        const val = Array.isArray(semesters) ? semesters.includes(col) : false;
+        semUpdates.push(`${col} = $${idx++}`);
+        semVals.push(val);
+      }
+      semVals.push(member_id);
+      await client.query(
+        `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL, ${semUpdates.join(", ")} WHERE member_id = $${idx}`,
+        [jumuiya_id, ...semVals]
+      );
 
-    // 2. Update members table — set jumuiya, semester flags, and un-migrate if needed
-    const semUpdates = [];
-    const semVals = [];
-    let idx = 2;
-    const SEM_COLS = ["sem_1_reg", "sem_2_reg", "sem_3_reg", "sem_4_reg",
-                      "sem_5_reg", "sem_6_reg", "sem_7_reg", "sem_8_reg"];
-    for (const col of SEM_COLS) {
-      const val = Array.isArray(semesters) ? semesters.includes(col) : false;
-      semUpdates.push(`${col} = $${idx++}`);
-      semVals.push(val);
-    }
-    semVals.push(member_id);
-    await pool.query(
-      `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL, ${semUpdates.join(", ")} WHERE member_id = $${idx}`,
-      [jumuiya_id, ...semVals]
-    );
+      // 3. Insert into registered (idempotent)
+      await client.query(
+        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
+         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
+         ON CONFLICT DO NOTHING`,
+        [member_id, jumuiya_id, serial_no || null]
+      );
 
-    // 3. Insert into registered (idempotent)
-    await pool.query(
-      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
-       VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
-       ON CONFLICT DO NOTHING`,
-      [member_id, jumuiya_id, serial_no || null]
-    );
+      // 4. Record the cash payment atomically with the registration so the
+      //    Manual (Cash) analytics card never under-reports collected money.
+      if (amount) {
+        const cashCheckoutId = `CASH-${member_id}-${Date.now()}`;
+        await client.query(
+          `INSERT INTO mpesa_request (user_id, checkout_id, amount, status, mpesa_receipt, payment_source, created_at)
+           VALUES ($1, $2, $3, 'paid', 'CASH', 'cash', CURRENT_TIMESTAMP)`,
+          [member_id, cashCheckoutId, amount]
+        );
+      }
 
-    await pool.query("COMMIT");
+      return memberResult.rows[0];
+    });
 
     // Debug: verify the registered row exists
     const regDebug = await pool.query(
@@ -844,32 +849,273 @@ export const manualRegisterMember = async (req, res) => {
     );
     logger.info(`DEBUG members row for ${member_id}: ${JSON.stringify(memberDebug.rows[0] || null)}`);
 
-    // Record cash payment outside transaction (best-effort, non-blocking)
-    logger.info(`Cash payment check: amount=${amount}, truthy=${!!amount}`);
-    if (amount) {
-      try {
-        const cashCheckoutId = `CASH-${member_id}-${Date.now()}`;
-        const payResult = await pool.query(
-          `INSERT INTO mpesa_request (user_id, checkout_id, amount, status, mpesa_receipt, created_at)
-           VALUES ($1, $2, $3, 'success', 'CASH', CURRENT_TIMESTAMP)`,
-          [member_id, cashCheckoutId, amount]
-        );
-        logger.info(`Cash payment recorded: ${JSON.stringify(payResult.rows[0])}`);
-      } catch (payErr) {
-        logger.warn("Failed to record cash payment: " + payErr.message);
-      }
-    }
-
-    const row = member.rows[0];
+    const row = member;
     res.status(200).json({
       success: true,
       message: `Member ${member_id} registered successfully`,
       data: { id: row.member_id, name: `${row.first_name} ${row.last_name || ""}`.trim() },
     });
   } catch (error) {
-    await pool.query("ROLLBACK");
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     logger.error("Error in manualRegisterMember: " + error.message);
     res.status(500).json({ success: false, error: "Failed to register member" });
+  }
+};
+
+/**
+ * POST /api/jumuiya-members/secretary-register
+ * Jumuiya Secretary registers a member manually.
+ * Member gets sem_N_reg = true immediately (sees registered on their side).
+ * A pending payment is created for CSA Secretary tracking.
+ */
+export const secretaryRegisterMember = async (req, res) => {
+  try {
+    const { member_id, jumuiya_id, semesters, serial_no, amount, registered_by, registered_by_name, jumuiya_name } = req.body;
+
+    if (!member_id || !jumuiya_id) {
+      return res.status(400).json({ success: false, message: "member_id and jumuiya_id are required" });
+    }
+
+    const memberName = await withTransaction(async (client) => {
+      // 1. Verify member exists
+      const member = await client.query("SELECT * FROM members WHERE member_id = $1", [member_id]);
+      if (member.rows.length === 0) {
+        throw new HttpError(404, "Member not found");
+      }
+
+      // 2. Update members table — set semester flags
+      const semUpdates = [];
+      const semVals = [];
+      let idx = 2;
+      const SEM_COLS = ["sem_1_reg", "sem_2_reg", "sem_3_reg", "sem_4_reg",
+                        "sem_5_reg", "sem_6_reg", "sem_7_reg", "sem_8_reg"];
+      for (const col of SEM_COLS) {
+        const val = Array.isArray(semesters) ? semesters.includes(col) : false;
+        semUpdates.push(`${col} = $${idx++}`);
+        semVals.push(val);
+      }
+      semVals.push(member_id);
+      await client.query(
+        `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL, ${semUpdates.join(", ")} WHERE member_id = $${idx}`,
+        [jumuiya_id, ...semVals]
+      );
+
+      // 3. Insert into registered (idempotent)
+      await client.query(
+        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
+         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
+         ON CONFLICT DO NOTHING`,
+        [member_id, jumuiya_id, serial_no || null]
+      );
+
+      // 4. Build semester labels for the payment record
+      const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
+      const COL_MAP = ["sem_1_reg", "sem_2_reg", "sem_3_reg", "sem_4_reg",
+                       "sem_5_reg", "sem_6_reg", "sem_7_reg", "sem_8_reg"];
+      const labels = (semesters || [])
+        .map(s => SEMESTER_LABELS[COL_MAP.indexOf(s)])
+        .filter(Boolean);
+
+      const name = `${member.rows[0].first_name || ""} ${member.rows[0].last_name || ""}`.trim();
+
+      // 5. Create pending payment record
+      await client.query(
+        `INSERT INTO pending_payments (member_id, member_name, jumuiya_id, jumuiya_name, amount, semesters, semester_labels, serial_no, status, registered_by, registered_by_name)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10)`,
+        [member_id, name, jumuiya_id, jumuiya_name || '', amount || 0,
+         JSON.stringify(semesters || []), JSON.stringify(labels), serial_no || null,
+         registered_by || '', registered_by_name || '']
+      );
+
+      return name;
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Member ${memberName} registered successfully. Payment marked as pending.`,
+      data: { id: member_id, name: memberName },
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    logger.error("Error in secretaryRegisterMember: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to register member" });
+  }
+};
+
+/**
+ * GET /api/jumuiya-members/pending-payments
+ * Get pending payments (CSA Secretary view).
+ * Query: ?jumuiya_id=xxx&status=pending (default: pending, use "all" for all statuses)
+ */
+export const getPendingPayments = async (req, res) => {
+  try {
+    const { jumuiya_id, status = 'pending' } = req.query;
+    let query = `SELECT * FROM pending_payments`;
+    const conditions = [];
+    const params = [];
+    let idx = 1;
+    if (status !== 'all') {
+      conditions.push(`status = $${idx++}`);
+      params.push(status);
+    }
+    if (jumuiya_id) {
+      conditions.push(`jumuiya_id = $${idx++}`);
+      params.push(jumuiya_id);
+    }
+    if (conditions.length > 0) query += ` WHERE ${conditions.join(' AND ')}`;
+    query += ` ORDER BY created_at DESC`;
+
+    const result = await pool.query(query, params);
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (error) {
+    logger.error("Error in getPendingPayments: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch pending payments" });
+  }
+};
+
+/**
+ * GET /api/jumuiya-members/pending-payments/my
+ * Get pending payments for a specific jumuiya (Jumuiya Secretary view).
+ * Query: ?jumuiya_id=xxx&status=pending (default: all)
+ */
+export const getMyJumuiyaPendingPayments = async (req, res) => {
+  try {
+    const { jumuiya_id, status = 'all' } = req.query;
+    if (!jumuiya_id) {
+      return res.status(400).json({ success: false, message: "jumuiya_id is required" });
+    }
+    let query = `SELECT * FROM pending_payments WHERE jumuiya_id = $1`;
+    const params = [jumuiya_id];
+    if (status !== 'all') {
+      query += ` AND status = $2`;
+      params.push(status);
+    }
+    query += ` ORDER BY created_at DESC`;
+    const result = await pool.query(query, params);
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (error) {
+    logger.error("Error in getMyJumuiyaPendingPayments: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch pending payments" });
+  }
+};
+
+/**
+ * PATCH /api/jumuiya-members/pending-payments/:id/settle
+ * CSA Secretary marks a pending payment as paid.
+ */
+export const settlePendingPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { settled_by } = req.body;
+
+    const payment = await withTransaction(async (client) => {
+      const result = await client.query(
+        `UPDATE pending_payments SET status = 'paid', settled_at = CURRENT_TIMESTAMP, settled_by = $1 WHERE id = $2 AND status = 'pending' RETURNING *`,
+        [settled_by || '', id]
+      );
+
+      if (result.rows.length === 0) {
+        throw new HttpError(404, "Pending payment not found or already settled");
+      }
+
+      const paymentRow = result.rows[0];
+
+      // Record the cash collection so the Manual (Cash) analytics card reflects it
+      const cashCheckoutId = `CASH-${paymentRow.member_id}-${Date.now()}`;
+      await client.query(
+        `INSERT INTO mpesa_request (user_id, checkout_id, amount, status, mpesa_receipt, payment_source, created_at)
+         VALUES ($1, $2, $3, 'paid', 'CASH', 'cash', CURRENT_TIMESTAMP)`,
+        [paymentRow.member_id, cashCheckoutId, paymentRow.amount]
+      );
+
+      return paymentRow;
+    });
+
+    res.status(200).json({ success: true, message: "Payment settled successfully", data: payment });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    logger.error("Error in settlePendingPayment: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to settle payment" });
+  }
+};
+
+/**
+ * POST /api/jumuiya-members/pending-payments/batch-settle
+ * CSA Secretary marks all pending payments for a jumuiya as paid.
+ */
+export const batchSettlePendingPayments = async (req, res) => {
+  try {
+    const { jumuiya_id, settled_by } = req.body;
+    if (!jumuiya_id) {
+      return res.status(400).json({ success: false, message: "jumuiya_id is required" });
+    }
+
+    const rows = await withTransaction(async (client) => {
+      const result = await client.query(
+        `UPDATE pending_payments SET status = 'paid', settled_at = CURRENT_TIMESTAMP, settled_by = $1 WHERE jumuiya_id = $2 AND status = 'pending' RETURNING *`,
+        [settled_by || '', jumuiya_id]
+      );
+
+      // Record a cash collection per settled payment so the Manual (Cash) card reflects them
+      for (const payment of result.rows) {
+        const cashCheckoutId = `CASH-${payment.member_id}-${payment.id}-${Date.now()}`;
+        await client.query(
+          `INSERT INTO mpesa_request (user_id, checkout_id, amount, status, mpesa_receipt, payment_source, created_at)
+           VALUES ($1, $2, $3, 'paid', 'CASH', 'cash', CURRENT_TIMESTAMP)`,
+          [payment.member_id, cashCheckoutId, payment.amount]
+        );
+      }
+
+      return result.rows;
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${rows.length} payment(s) settled successfully`,
+      data: rows,
+    });
+  } catch (error) {
+    logger.error("Error in batchSettlePendingPayments: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to settle payments" });
+  }
+};
+
+/**
+ * PATCH /api/jumuiya-members/pending-payments/:id/cancel
+ * Jumuiya Secretary cancels a pending payment (mistaken registration).
+ */
+export const cancelPendingPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const roles = Array.isArray(req.user?.role) ? req.user.role : req.user?.role ? [req.user.role] : [];
+    const isGlobal = roles.some(r => ["csa_secretary", "csa_chair", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim()));
+    const existing = await pool.query(
+      `SELECT id, jumuiya_id FROM pending_payments WHERE id = $1 AND status = 'pending'`,
+      [id]
+    );
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Pending payment not found or already settled" });
+    }
+    if (!isGlobal && String(existing.rows[0].jumuiya_id || "").toLowerCase() !== String(req.user?.jumuiya_id || "").toLowerCase()) {
+      return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+    }
+    const result = await pool.query(
+      `UPDATE pending_payments SET status = 'cancelled' WHERE id = $1 AND status = 'pending' RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Pending payment not found or already settled" });
+    }
+    res.status(200).json({ success: true, message: "Payment cancelled", data: result.rows[0] });
+  } catch (error) {
+    logger.error("Error in cancelPendingPayment: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to cancel payment" });
   }
 };
 
@@ -881,32 +1127,32 @@ export const unregisterJumuiyaMember = async (req, res) => {
   try {
     const { id } = req.params; // member_id
 
-    // Start Transaction
-    await pool.query('BEGIN');
+    const row = await withTransaction(async (client) => {
+      // 1. Remove from registered table
+      await client.query("DELETE FROM registered WHERE member_id = $1", [id]);
 
-    // 1. Remove from registered table
-    await pool.query("DELETE FROM registered WHERE member_id = $1", [id]);
+      // 2. Clear jumuiya_id in members table
+      const result = await client.query(
+        "UPDATE members SET jumuiya_id = NULL WHERE member_id = $1 RETURNING *",
+        [id]
+      );
 
-    // 2. Clear jumuiya_id in members table
-    const result = await pool.query(
-      "UPDATE members SET jumuiya_id = NULL WHERE member_id = $1 RETURNING *",
-      [id]
-    );
+      if (result.rows.length === 0) {
+        throw new HttpError(404, "Member not found");
+      }
 
-    if (result.rows.length === 0) {
-      await pool.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Member not found" });
-    }
-
-    await pool.query('COMMIT');
+      return result.rows[0];
+    });
 
     res.json({ 
       success: true, 
       message: "Member unregistered from Jumuiya successfully",
-      data: result.rows[0]
+      data: row
     });
   } catch (error) {
-    await pool.query('ROLLBACK');
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     logger.error("Error unregistering member: " + error.message);
     res.status(500).json({ success: false, message: "Failed to unregister member" });
   }
@@ -941,58 +1187,55 @@ export const registerWithPayment = async (req, res) => {
     }
 
     // 2. If payment success, proceed with registration logic
-    // Start Transaction
-    await pool.query('BEGIN');
-
-    // Determine which semester column to flag based on year_of_study + current month
-    const memberInfo = await pool.query(
-      `SELECT year_of_study FROM members WHERE member_id = $1`,
-      [member_id]
-    );
-    let semCol = null;
-    let normalizedYos = null;
-    if (memberInfo.rows.length > 0) {
-      normalizedYos = normalizeYearOfStudy(memberInfo.rows[0].year_of_study);
-      if (normalizedYos) {
-        const month = new Date().getMonth();
-        const isSecondSem = month >= 5;
-        const semIndex = (parseInt(normalizedYos) - 1) * 2 + (isSecondSem ? 1 : 0);
-        semCol = SEMESTER_COLS[semIndex];
+    const row = await withTransaction(async (client) => {
+      // Determine which semester column to flag based on year_of_study + current month
+      const memberInfo = await client.query(
+        `SELECT year_of_study FROM members WHERE member_id = $1`,
+        [member_id]
+      );
+      let semCol = null;
+      let normalizedYos = null;
+      if (memberInfo.rows.length > 0) {
+        normalizedYos = normalizeYearOfStudy(memberInfo.rows[0].year_of_study);
+        if (normalizedYos) {
+          const month = new Date().getMonth();
+          const isSecondSem = month >= 5;
+          const semIndex = (parseInt(normalizedYos) - 1) * 2 + (isSecondSem ? 1 : 0);
+          semCol = SEMESTER_COLS[semIndex];
+        }
       }
-    }
 
-    // Update members table — also normalize year_of_study if needed
-    const yosUpdate = normalizedYos ? `, year_of_study = '${normalizedYos}'` : '';
-    await pool.query(
-      `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL${yosUpdate}${semCol ? `, ${semCol} = true` : ''} WHERE member_id = $2`,
-      [jumuiya_id, member_id]
-    );
+      // Update members table — also normalize year_of_study if needed
+      const yosUpdate = normalizedYos ? `, year_of_study = '${normalizedYos}'` : '';
+      await client.query(
+        `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL${yosUpdate}${semCol ? `, ${semCol} = true` : ''} WHERE member_id = $2`,
+        [jumuiya_id, member_id]
+      );
 
-    // Fetch updated member with jumuiya name via JOIN
-    const updateResult = await pool.query(
-      `SELECT m.*, sg.name as jumuiya_name
-       FROM members m
-       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-       WHERE m.member_id = $1`,
-      [member_id]
-    );
+      // Fetch updated member with jumuiya name via JOIN
+      const updateResult = await client.query(
+        `SELECT m.*, sg.name as jumuiya_name
+         FROM members m
+         LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+         WHERE m.member_id = $1`,
+        [member_id]
+      );
 
-    if (updateResult.rows.length === 0) {
-      await pool.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: "Member not found" });
-    }
+      if (updateResult.rows.length === 0) {
+        throw new HttpError(404, "Member not found");
+      }
 
-    // Insert into registered table
-    await pool.query(
-      `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
-       VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')
-       ON CONFLICT DO NOTHING`, 
-      [member_id, jumuiya_id]
-    );
+      // Insert into registered table
+      await client.query(
+        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
+         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')
+         ON CONFLICT DO NOTHING`, 
+        [member_id, jumuiya_id]
+      );
 
-    await pool.query('COMMIT');
+      return updateResult.rows[0];
+    });
 
-    const row = updateResult.rows[0];
     const memberName = `${row.first_name} ${row.last_name || ""}`.trim();
     const jumuiyaName = row.jumuiya_name || 'your community';
 
@@ -1042,7 +1285,9 @@ export const registerWithPayment = async (req, res) => {
     });
 
   } catch (error) {
-    if (pool) await pool.query('ROLLBACK');
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     logger.error("Error in registerWithPayment: " + error.message);
     res.status(500).json({ success: false, message: "Internal server error during registration" });
   }
@@ -1288,13 +1533,19 @@ export const getAnalytics = async (req, res) => {
       // 10. Payment summary broken down by source (MPesa vs Manual)
       pool.query(`
         SELECT
-          COUNT(*)::int as total_transactions,
-          COALESCE(SUM(amount), 0)::numeric as total_amount,
+          SUM(CASE WHEN status IN ('success', 'paid') THEN 1 ELSE 0 END)::int as total_transactions,
+          COALESCE(
+            SUM(amount) FILTER (WHERE (mpesa_receipt IS NULL OR mpesa_receipt != 'CASH') AND status IN ('success', 'paid')),
+            0
+          )::numeric + COALESCE(
+            SUM(amount) FILTER (WHERE mpesa_receipt = 'CASH' AND status IN ('success', 'paid')),
+            0
+          )::numeric as total_amount,
           SUM(CASE WHEN status IN ('success', 'paid') THEN 1 ELSE 0 END)::int as successful,
           SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)::int as pending,
           SUM(CASE WHEN status IN ('failed', 'cancelled') THEN 1 ELSE 0 END)::int as failed,
           COALESCE(SUM(amount) FILTER (WHERE (mpesa_receipt IS NULL OR mpesa_receipt != 'CASH') AND status IN ('success', 'paid')), 0)::numeric as mpesa_success_amount,
-          COALESCE(SUM(amount) FILTER (WHERE mpesa_receipt = 'CASH' AND status = 'success'), 0)::numeric as manual_success_amount
+          COALESCE(SUM(amount) FILTER (WHERE mpesa_receipt = 'CASH' AND status IN ('success', 'paid')), 0)::numeric as manual_success_amount
         FROM mpesa_request
       `),
     ]);
@@ -1332,7 +1583,7 @@ export const getPayments = async (req, res) => {
     const { status } = req.query;
     let query = `
       SELECT
-        p.id, p.phone, p.amount, p.status, p.mpesa_receipt, p.user_id, p.payment_source,
+        p.checkout_id as id, p.phone_number as phone, p.amount, p.status, p.mpesa_receipt, p.user_id, p.payment_source,
         p.created_at, p.updated_at,
         m.first_name, m.last_name, m.member_id as reg_number, m.email,
         sg.name as jumuiya_name
@@ -1375,8 +1626,8 @@ export const updatePaymentStatus = async (req, res) => {
            mpesa_receipt = COALESCE($2, mpesa_receipt),
            result_code = CASE WHEN $1 = 'success' THEN 0 WHEN $1 = 'failed' THEN 1 ELSE result_code END,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3
-       RETURNING id, phone, amount, status, mpesa_receipt, created_at, updated_at`,
+       WHERE checkout_id = $3
+       RETURNING checkout_id as id, phone_number as phone, amount, status, mpesa_receipt, created_at, updated_at`,
       [status, mpesa_receipt || null, id]
     );
 

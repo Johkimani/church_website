@@ -28,6 +28,7 @@ import { startImportSyncWorker } from "./services/importSyncJob.js";
 import questionsMigration from "./migrations/questionsMigration.js";
 import publishStatsMigration from "./migrations/publishStatsMigration.js";
 import activityBookingMigration from "./migrations/activityBookingMigration.js";
+import { pendingPaymentsMigration } from "./migrations/pendingPaymentsMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -173,6 +174,7 @@ const initServer = async () => {
     await questionsMigration();
     await publishStatsMigration();
     await activityBookingMigration();
+    await pendingPaymentsMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

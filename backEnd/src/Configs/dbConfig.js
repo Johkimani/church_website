@@ -48,4 +48,31 @@ export const testDb = {
   query: (text, params) => pool.query(text, params)
 };
 
+/**
+ * Run fn(client) inside a single-connection transaction.
+ * BEGIN/COMMIT/ROLLBACK run on the SAME pooled connection, so the
+ * transaction is genuinely atomic and the connection is always released.
+ * Throw from fn to roll back and re-throw the original error.
+ */
+export const withTransaction = async (fn) => {
+  const client = await pool.connect();
+  let destroyOnRelease = false;
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {
+      // Connection may be broken; drop it instead of returning it to the pool.
+      destroyOnRelease = true;
+    }
+    throw error;
+  } finally {
+    client.release(destroyOnRelease);
+  }
+};
+
 
