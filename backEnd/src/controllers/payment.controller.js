@@ -68,14 +68,14 @@ export const mpesaCallback = async (req, res) => {
 
       await db.query(
         `INSERT INTO mpesa_request
-           (checkout_id, merchant_request_id, phone, amount, status, result_code, result_desc, mpesa_receipt)
+           (checkout_id, merchant_request_id, phone_number, amount, status, result_code, result_desc, mpesa_receipt)
          VALUES ($1, $2, $3, $4, 'paid', $5, $6, $7)
          ON CONFLICT (checkout_id) DO UPDATE SET
            status        = 'paid',
            result_code   = EXCLUDED.result_code,
            result_desc   = EXCLUDED.result_desc,
            mpesa_receipt  = EXCLUDED.mpesa_receipt,
-           phone         = COALESCE(EXCLUDED.phone, mpesa_request.phone),
+           phone_number   = COALESCE(EXCLUDED.phone_number, mpesa_request.phone_number),
            amount        = COALESCE(EXCLUDED.amount, mpesa_request.amount),
            updated_at    = CURRENT_TIMESTAMP`,
         [CheckoutRequestID, MerchantRequestID, String(phoneNumber), amount, ResultCode, ResultDesc, mpesaReceipt]
@@ -153,7 +153,7 @@ export const getPayments = async (req, res) => {
     const result = await db.query(`
       SELECT *
       FROM mpesa_request
-      ORDER BY id DESC
+      ORDER BY created_at DESC
     `);
 
     return res.json(result.rows);

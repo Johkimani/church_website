@@ -66,7 +66,16 @@ app.use(requestIp.mw());
 
 app.use(cors(corsOptions));
 
-// Rate limiter
+// ─── Rate limiters ─────────────────────────────────────────────────────────────
+// M-Pesa callbacks arrive from Safaricom's servers and can burst/retry, so they
+// get a much higher allowance than client-facing endpoints. Payment endpoints
+// (which trigger real-money STK pushes) get a tighter tier per client IP.
+const isMpesaCallbackPath = (req) =>
+  /\/payments\/callback$|\/stkPush\/callback$|\/authentication\/mpesa\/callback$/i.test(req.path);
+
+const isPaymentEndpoint = (req) =>
+  /\/payments(\/|$)/i.test(req.path) || /\/stkPush(\/|$)/i.test(req.path);
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5000,
@@ -83,8 +92,40 @@ const limiter = rateLimit({
   },
 });
 
-// Rate limiter activation for DDoS protection
-app.use(limiter);
+const callbackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (req, res) => req.clientIp,
+  handler: (req, res, next, options) => {
+    res.status(options.statusCode || 429).json({
+      error: `Too many callback requests from this IP`,
+    });
+  },
+});
+
+const paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => req.clientIp,
+  handler: (req, res, next, options) => {
+    res.status(options.statusCode || 429).json({
+      error: `There are too many payment requests. You are only allowed ${options.max
+      } requests per ${options.windowMs / 60000} minutes`,
+    });
+  },
+});
+
+// Rate limiter activation for DDoS protection (per-tier)
+app.use((req, res, next) => {
+  if (isMpesaCallbackPath(req)) return callbackLimiter(req, res, next);
+  if (isPaymentEndpoint(req)) return paymentLimiter(req, res, next);
+  return limiter(req, res, next);
+});
 app.use(morganMiddleware);
 
 app.use("/api", apiRoutes)

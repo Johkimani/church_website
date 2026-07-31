@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2, BarChart3, List } from "lucide-react";
+import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import AnalyticsDashboard from "./AnalyticsDashboard";
@@ -90,7 +90,12 @@ export default function CsaSecretaryDashboard() {
   const [regSerialNo, setRegSerialNo] = useState("");
   const [regAmount, setRegAmount] = useState("");
   const [regSubmitting, setRegSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"members" | "analytics">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "analytics" | "pending">("members");
+
+  // ── Pending payments (from Jumuiya Secretaries) ──
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [csaPaymentFilter, setCsaPaymentFilter] = useState<"pending" | "all">("pending");
 
   const EXPORT_COLUMNS = [
     { key: "serial_no", label: "Serial No" },
@@ -141,7 +146,17 @@ export default function CsaSecretaryDashboard() {
     }
   };
 
+  const fetchPendingPayments = async (status?: string) => {
+    setLoadingPending(true);
+    try {
+      const res = await memberService.getPendingPayments({ status: status || csaPaymentFilter });
+      setPendingPayments(res.data || []);
+    } catch { setPendingPayments([]); }
+    setLoadingPending(false);
+  };
+
   useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchPendingPayments(); }, []);
 
   const jumuiyaCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -367,10 +382,155 @@ export default function CsaSecretaryDashboard() {
         >
           <BarChart3 size={16} /> Reports & Analytics
         </button>
+        <button
+          onClick={() => { setActiveTab("pending"); fetchPendingPayments(); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "pending"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Clock size={16} /> Jumuiya Pending
+          {pendingPayments.length > 0 && (
+            <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{pendingPayments.length}</span>
+          )}
+        </button>
       </div>
 
       {activeTab === "analytics" ? (
         <AnalyticsDashboard />
+      ) : activeTab === "pending" ? (
+        <>
+        {/* ═══════════ JUMUIYA PENDING PAYMENTS ═══════════ */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-800">Jumuiya Payments</h2>
+            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+              <button onClick={() => { setCsaPaymentFilter("pending"); fetchPendingPayments("pending"); }}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${csaPaymentFilter === "pending" ? "bg-white text-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
+                Pending {pendingPayments.filter(p => p.status === "pending").length > 0 && `(${pendingPayments.filter(p => p.status === "pending").length})`}
+              </button>
+              <button onClick={() => { setCsaPaymentFilter("all"); fetchPendingPayments("all"); }}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${csaPaymentFilter === "all" ? "bg-white text-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>
+                History
+              </button>
+            </div>
+          </div>
+          <button onClick={() => fetchPendingPayments()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+            <RefreshCw size={13} /> Refresh
+          </button>
+        </div>
+        {loadingPending ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={24} className="text-blue-500 animate-spin" />
+          </div>
+        ) : pendingPayments.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+            <Clock size={32} className="text-slate-200 mx-auto mb-2" />
+            <p className="text-slate-400 text-sm">No pending payments from Jumuiya Secretaries</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Group by jumuiya */}
+            {(() => {
+              const groups: Record<string, any[]> = {};
+              pendingPayments.forEach((p: any) => {
+                const key = p.jumuiya_name || p.jumuiya_id || "Unknown";
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(p);
+              });
+              return Object.entries(groups).map(([jumuiyaName, payments]) => (
+                <div key={jumuiyaName} className="border-b border-slate-200 last:border-b-0">
+                  <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <Church size={15} className="text-slate-500" />
+                      <h3 className="font-bold text-sm text-slate-700">{jumuiyaName}</h3>
+                      <span className="text-xs text-slate-400 bg-white px-2 py-0.5 rounded-full">{payments.length} pending</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 font-semibold">
+                        Total: KES {payments.reduce((sum, p) => sum + (p.amount || 0), 0)}
+                      </span>
+                      {payments.some(p => p.status === "pending") && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Settle all pending payments for ${jumuiyaName}?`)) return;
+                            try {
+                              await memberService.batchSettlePendingPayments({ jumuiya_id: payments[0].jumuiya_id });
+                              toast.success(`Payments settled`);
+                              fetchPendingPayments();
+                            } catch (err: any) {
+                              toast.error(err?.response?.data?.message || "Batch settle failed");
+                            }
+                          }}
+                          className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-colors"
+                        >
+                          Settle All
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100">
+                          <th className="text-left py-2 px-4 font-semibold text-slate-500 text-xs uppercase">Member</th>
+                          <th className="text-left py-2 px-4 font-semibold text-slate-500 text-xs uppercase">Amount</th>
+                          <th className="text-left py-2 px-4 font-semibold text-slate-500 text-xs uppercase">Semesters</th>
+                          <th className="text-left py-2 px-4 font-semibold text-slate-500 text-xs uppercase">Registered By</th>
+                          <th className="text-left py-2 px-4 font-semibold text-slate-500 text-xs uppercase">Date</th>
+                          <th className="text-left py-2 px-4 font-semibold text-slate-500 text-xs uppercase">Status</th>
+                          <th className="text-left py-2 px-4 font-semibold text-slate-500 text-xs uppercase">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payments.map((p: any) => (
+                          <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
+                            <td className="py-2.5 px-4 font-medium text-slate-700">{p.member_name}</td>
+                            <td className="py-2.5 px-4 text-slate-600 font-semibold">KES {p.amount}</td>
+                            <td className="py-2.5 px-4 text-slate-500">{(p.semester_labels || []).join(", ") || (p.semesters || []).join(", ")}</td>
+                            <td className="py-2.5 px-4 text-slate-500">{p.registered_by_name || "—"}</td>
+                            <td className="py-2.5 px-4 text-slate-500">{formatDate(p.created_at)}</td>
+                            <td className="py-2.5 px-4">
+                              {p.status === "paid" ? (
+                                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Paid</span>
+                              ) : p.status === "cancelled" ? (
+                                <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Cancelled</span>
+                              ) : (
+                                <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Pending</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-4">
+                              {p.status === "pending" ? (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await memberService.settlePendingPayment(p.id);
+                                      toast.success(`${p.member_name} payment settled`);
+                                      fetchPendingPayments();
+                                    } catch (err: any) {
+                                      toast.error(err?.response?.data?.message || "Settle failed");
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-colors"
+                                >
+                                  <DollarSign size={12} /> Settle
+                                </button>
+                              ) : (
+                                <span className="text-xs text-slate-300">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        )}
+        </>
       ) : (
         <>
       {/* Stats */}

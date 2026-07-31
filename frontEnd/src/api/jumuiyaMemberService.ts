@@ -139,6 +139,26 @@ export const memberService = {
   manualRegisterMember: (data: { member_id: string; jumuiya_id: string; semesters?: string[]; serial_no?: number; amount?: number }) =>
     apiClient.post(`/jumuiya-members/registered/manual`, data).then(r => r.data),
 
+  // ── Jumuiya Secretary Manual Registration (creates pending payment) ──
+  secretaryRegisterMember: (data: { member_id: string; jumuiya_id: string; jumuiya_name?: string; semesters?: string[]; serial_no?: number; amount?: number; registered_by?: string; registered_by_name?: string }) =>
+    apiClient.post(`/jumuiya-members/secretary-register`, data).then(r => r.data),
+
+  // ── Pending Payments ──
+  getPendingPayments: (params?: { jumuiya_id?: string }) =>
+    apiClient.get(`/jumuiya-members/pending-payments`, { params }).then(r => r.data),
+
+  getMyJumuiyaPendingPayments: (params: { jumuiya_id: string }) =>
+    apiClient.get(`/jumuiya-members/pending-payments/my`, { params }).then(r => r.data),
+
+  settlePendingPayment: (id: number, data?: { settled_by?: string }) =>
+    apiClient.patch(`/jumuiya-members/pending-payments/${id}/settle`, data || {}).then(r => r.data),
+
+  cancelPendingPayment: (id: number) =>
+    apiClient.patch(`/jumuiya-members/pending-payments/${id}/cancel`).then(r => r.data),
+
+  batchSettlePendingPayments: (data: { jumuiya_id: string; settled_by?: string }) =>
+    apiClient.post(`/jumuiya-members/pending-payments/batch-settle`, data).then(r => r.data),
+
   // ── All Members (across all jumuiyas) ──
   getAllMembersAcrossJumuiyas: () =>
     apiClient.get(`/jumuiya-members/all`).then(r => r.data),
@@ -189,6 +209,10 @@ export const memberService = {
 
   bulkRegisterWithPayment: (data: { member_ids: string[]; jumuiya_id: string; phoneNumber: string; amount: number }) =>
     apiClient.post(`/jumuiya-members/bulk-register-with-payment`, data).then(r => r.data),
+
+  // ── Jumuiya Lookup (resolve UUID to name) ──
+  getJumuiyaLookup: () =>
+    apiClient.get(`/jumuiya-members/lookup`).then(r => r.data),
 
   // ── Analytics ──
   getAnalytics: () =>
