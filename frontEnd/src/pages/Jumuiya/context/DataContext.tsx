@@ -67,8 +67,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                                     description: found.description || item.description,
                                     about: found.about || item.about,
                                     color: found.color || item.color,
-                                    // Always prefer local saintImage — backend paths may be stale
-                                    saintImage: item.saintImage || found.saintImage,
+                                    saintImage: found.saintImage || item.saintImage,
                                     historyPdf: found.historyPdf || item.historyPdf,
                                     meetingSchedule: found.meetingSchedule || item.meetingSchedule,
                                     officials: found.officials && found.officials.length > 0 ? found.officials : item.officials,
