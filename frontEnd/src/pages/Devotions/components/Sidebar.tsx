@@ -9,18 +9,24 @@ import {
   FaStar,
   FaChartBar,
   FaUserGraduate,
+  FaCross,
+  FaBookOpen,
+  FaBible,
 } from "react-icons/fa";
 
 // ✅ Your navigation items
 const items = [
   { to: "/devotions", label: "Dashboard", icon: <FaHome /> },
-  { to: "readings", label: "Scripture", icon: <FaBook /> },
+  { to: "readings", label: "Prayer Book", icon: <FaBook /> },
+  { to: "bible", label: "Holy Bible", icon: <FaBible /> },
   { to: "prayer", label: "Prayer", icon: <FaPrayingHands /> },
   { to: "liturgy", label: "Liturgy", icon: <FaChurch /> },
   { to: "rosary", label: "Rosary", icon: <FaBed /> },
   { to: "challenge", label: "Daily Challenge", icon: <FaStar /> },
   { to: "comparison", label: "Jumuiya Comparison", icon: <FaChartBar /> },
   { to: "progress", label: "My Progress", icon: <FaUserGraduate /> },
+  { to: "prayer-module", label: "Novenas & Litanies", icon: <FaBookOpen /> },
+  { to: "daily-liturgy", label: "Daily Missal", icon: <FaCross /> },
 ];
 
 // ✅ Carousel content (linked to nav)
@@ -32,8 +38,8 @@ const carouselItems = [
     link: "/devotions/liturgy",
   },
   {
-    title: "Daily Scripture",
-    description: "Read and reflect on daily Bible readings.",
+    title: "Catholic Prayers",
+    description: "Browse all Catholic prayers by time of day and category.",
     bgStyle: "bg-gradient-to-r from-purple-300 via-purple-200 to-transparent",
     link: "/devotions/readings",
   },

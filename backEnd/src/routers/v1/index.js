@@ -26,12 +26,14 @@ import paymentRouter from "./payment.router.js";
 import jumuiyaMemberRouter from "./jumuiyaMemberRouter.js";
 import settingsRouter from "./settingsRoutes.js";
 import { roleManagementRouter } from "./roleManagementRouter.js";
+import readingsRouter from "./readingsRoutes.js";
 import categoryCardsRouter from "./categoryCardsRoutes.js";
 import hireAvailabilityRouter from "./hireAvailability.js";
 import hireSubmitRouter from "./hireSubmit.js";
 import hireStatusRouter from "./hireStatus.js";
 import statsPublishRoutes from "./statsPublishRoutes.js";
 import suggestionRouter from "./suggestionRouter.js";
+import bibleRouter from "./bibleRoutes.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -102,6 +104,12 @@ router.use("/", statsPublishRoutes);
 
 // Suggestion-specific routes (bin, unmask, soft-delete)
 router.use("/suggestions", suggestionRouter);
+
+// Daily readings (USCCB proxy)
+router.use("/", readingsRouter);
+
+// Bible reader
+router.use("/", bibleRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
