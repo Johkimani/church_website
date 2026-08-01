@@ -140,14 +140,9 @@ export default function AnnouncementsAdmin() {
   }, [user?.role]);
   const { isCSAOs, isJumuiyaOs } = useMemo(() => detectCapabilities(roles), [roles]);
 
-  // Access gate — need at least one OS role
-  const canAccessPage = isCSAOs || isJumuiyaOs;
+  // Access gate — CSA OS role needed for CSA announcements page
+  const canAccessPage = isCSAOs;
 
-  // Default to the tab the user manages; if both, default to CSA
-  const defaultTab: ActiveTab = isCSAOs ? "csa" : "jumuiya";
-  const [activeTab, setActiveTab] = useState<ActiveTab>(defaultTab);
-
-  const canManageTab = activeTab === "csa" ? isCSAOs : isJumuiyaOs;
 
   const [showModal, setShowModal] = useState(false);
   const [editingNotif, setEditingNotif] = useState<NotificationAdminEvent | null>(null);
@@ -172,14 +167,13 @@ export default function AnnouncementsAdmin() {
     if (canAccessPage) load();
   }, [canAccessPage, load]);
 
-  // ── Filtered list for active tab ─────────────────────────────────────────
+  // ── Filtered list for CSA announcements ─────────────────────────────────
   const filtered = useMemo(() => {
     return notifications.filter((n) => {
       const cat = (n.category ?? n.posted_to ?? "").toLowerCase();
-      if (activeTab === "csa") return cat === "csa";
-      return cat !== "csa"; // jumuiya
+      return cat === "csa";
     });
-  }, [notifications, activeTab]);
+  }, [notifications]);
 
   // ── Create ───────────────────────────────────────────────────────────────
   const handleCreate = useCallback(
@@ -245,7 +239,7 @@ export default function AnnouncementsAdmin() {
         </div>
         <h2 className="text-xl font-black text-slate-800">Access Denied</h2>
         <p className="text-sm text-slate-500 font-medium text-center max-w-sm">
-          You need a CSA OS or Jumuiya OS role to manage notifications. Contact your administrator.
+          You need a CSA OS role to manage CSA announcements. Contact your administrator.
         </p>
       </div>
     );
@@ -256,64 +250,26 @@ export default function AnnouncementsAdmin() {
       {/* ── Page Header ───────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between mb-8 gap-4 flex-wrap">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900">Announcements Management</h2>
+          <h2 className="text-3xl font-bold text-slate-900">Announcements Management (CSA)</h2>
           <p className="text-slate-500 font-medium mt-1 text-sm">
-            {isCSAOs && isJumuiyaOs
-              ? "You manage both the CSA and Jumuiya notification channels."
-              : isCSAOs
-              ? "You manage the CSA notification channel."
-              : "You manage your Jumuiya notification channel."}
+            Create and manage general CSA-wide announcements.
           </p>
         </div>
 
-        {canManageTab && (
+        {isCSAOs && (
           <button
             id="create-announcement-btn"
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white px-5 py-3 rounded-xl text-sm font-black transition-all shadow-md shadow-blue-200"
           >
             <FiPlus className="text-base" />
-            New {activeTab === "csa" ? "CSA" : "Jumuiya"} Announcement
+            New CSA Announcement
           </button>
         )}
       </div>
 
-      {/* ── Tab Switcher ──────────────────────────────────────────────────── */}
-      <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200 mb-6 max-w-sm">
-        <button
-          id="tab-csa"
-          onClick={() => setActiveTab("csa")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-200 ${
-            activeTab === "csa"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <FaChurch className="text-sm" />
-          CSA
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${activeTab === "csa" ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
-            {notifications.filter(n => (n.category ?? n.posted_to ?? "").toLowerCase() === "csa").length}
-          </span>
-        </button>
-        <button
-          id="tab-jumuiya"
-          onClick={() => setActiveTab("jumuiya")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-200 ${
-            activeTab === "jumuiya"
-              ? "bg-white text-emerald-600 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <FaUsers className="text-sm" />
-          Jumuiya
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${activeTab === "jumuiya" ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
-            {notifications.filter(n => (n.category ?? n.posted_to ?? "").toLowerCase() !== "csa").length}
-          </span>
-        </button>
-      </div>
+      {!isCSAOs && <ReadOnlyBanner channel="csa" />}
 
-      {/* ── Read-only warning for the tab the user does NOT control ─────── */}
-      {!canManageTab && <ReadOnlyBanner channel={activeTab} />}
 
       {/* ── List ──────────────────────────────────────────────────────────── */}
       {loading ? (
@@ -327,14 +283,14 @@ export default function AnnouncementsAdmin() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState channel={activeTab} />
+        <EmptyState channel="csa" />
       ) : (
         <div className="space-y-3">
           {filtered.map((n) => (
             <NotificationRow
               key={n.id}
               n={n}
-              canManage={canManageTab}
+              canManage={isCSAOs}
               onDelete={handleDelete}
               onEdit={openEdit}
             />

@@ -42,7 +42,10 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
   const [saintImage, setSaintImage] = useState(jumuiyaInfo?.saintImage || '');
   const [saintUploading, setSaintUploading] = useState(false);
 
-  const categories = ['general', 'Hero Slider', 'gallery-grid', 'teaser'];
+  const isJumuiya = !!jumuiyaId;
+  const categories = isJumuiya
+    ? ['Family Prayer Meeting', 'Events', 'Trips']
+    : ['general', 'Hero Slider', 'gallery-grid', 'teaser'];
   const [uploadCategory, setUploadCategory] = useState(categories[0]);
   const [activeTab, setActiveTab] = useState('All');
   const [editItem, setEditItem] = useState<GalleryImage | null>(null);
@@ -134,20 +137,20 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
     if (selectedFiles.length === 0) return;
     setUploadStatus('uploading');
     setUploadProgress(0);
+    let completed = 0;
     try {
-      // We will attempt to use the real file upload endpoint if available
-      // Must dynamically import to avoid top-level issues if not all components have it
-      const { uploadFile } = await import('../../../api/axiosInstance');
-      
+      const { uploadFile: uploadFileFn } = await import('../../../api/axiosInstance');
+      void uploadFileFn; // imported for potential future use
+
       for (const file of selectedFiles) {
         const formData = new FormData();
-        let uploadFile = file;
+        let fileToUpload = file;
         if (file.size >= 200 * 1024 && file.type.startsWith('image/')) {
           const { resizeImage } = await import('../../../utils/imageOptimization');
           const blob = await resizeImage(file, 1200, 1200);
-          uploadFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+          fileToUpload = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
         }
-        formData.append('files', uploadFile);
+        formData.append('files', fileToUpload);
         formData.append('eventName', file.name.replace(/\.[^.]+$/, ''));
         formData.append('description', '');
         formData.append('moduleId', jumuiyaId || 'general');

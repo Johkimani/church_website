@@ -154,7 +154,7 @@ const JumuiyaDetail: React.FC = () => {
             case 'activities':
                 return <ActivitiesTab jumuiyaColor={detailColor} />;
             case 'channels':
-                return <ChannelsTab socialMedia={jumuiya.socialMedia || []} gallery={jumuiya.gallery} />;
+                return <ChannelsTab socialMedia={jumuiya.socialMedia || []} jumuiyaId={jumuiya.group_id || jumuiya.id} />;
             case 'tshirts':
                 return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={''} />;
             case 'settings':

@@ -1,12 +1,38 @@
-import React, { useState } from 'react';
-import type { SocialMedia, GalleryImage } from '../data/jumuiyaData';
+import React, { useState, useEffect } from 'react';
+import type { SocialMedia } from '../data/jumuiyaData';
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaYoutube, FaEnvelope, FaGlobe, FaTiktok, FaImages, FaArrowLeft, FaArrowRight, FaTimes, FaShareAlt } from "react-icons/fa";
+import { apiClient } from '../../../api/axiosInstance';
 import './TabsSystem.css';
 
 interface ChannelsTabProps {
     socialMedia: SocialMedia[];
-    gallery: GalleryImage[];
+    jumuiyaId?: string; // group_id from the jumuiya record
 }
+
+// The 3 fixed categories for every Jumuiya gallery
+const JUMUIYA_CATEGORIES = ['Family Prayer Meeting', 'Events', 'Trips'] as const;
+type JumuiyaCategory = typeof JUMUIYA_CATEGORIES[number];
+
+interface LiveGalleryImage {
+    id: number;
+    image_url: string;
+    event_name: string;
+    category?: string;
+    description?: string;
+    upload_date?: string;
+}
+
+interface AlbumView {
+    caption: JumuiyaCategory;
+    images: LiveGalleryImage[];
+    coverUrl: string;
+}
+
+const CATEGORY_ICONS: Record<JumuiyaCategory, string> = {
+    'Family Prayer Meeting': '🙏',
+    'Events': '📅',
+    'Trips': '✈️',
+};
 
 const getPlatformIcon = (platform: string) => {
     const p = platform.toLowerCase();
@@ -20,37 +46,77 @@ const getPlatformIcon = (platform: string) => {
     return <FaGlobe />;
 };
 
-const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, gallery }) => {
-    const [selectedAlbum, setSelectedAlbum] = useState<GalleryImage | null>(null);
+const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, jumuiyaId }) => {
+    const [albums, setAlbums] = useState<AlbumView[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [selectedAlbum, setSelectedAlbum] = useState<AlbumView | null>(null);
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-    const openAlbum = (album: GalleryImage) => {
-        setSelectedAlbum(album);
+    useEffect(() => {
+        if (!jumuiyaId) return;
+        fetchGallery();
+    }, [jumuiyaId]);
+
+    const fetchGallery = async () => {
+        if (!jumuiyaId) return;
+        setLoading(true);
+        try {
+            const { data } = await apiClient.get('/hub-gallery', {
+                params: { module_id: jumuiyaId },
+            });
+            const items: LiveGalleryImage[] = data?.items || [];
+
+            // Group by the 3 fixed Jumuiya categories
+            const grouped: Record<JumuiyaCategory, LiveGalleryImage[]> = {
+                'Family Prayer Meeting': [],
+                'Events': [],
+                'Trips': [],
+            };
+
+            items.forEach(img => {
+                const cat = (img.category || '') as JumuiyaCategory;
+                if (grouped[cat]) {
+                    grouped[cat].push(img);
+                }
+            });
+
+            const built: AlbumView[] = JUMUIYA_CATEGORIES
+                .filter(cat => grouped[cat].length > 0)
+                .map(cat => ({
+                    caption: cat,
+                    images: grouped[cat],
+                    coverUrl: grouped[cat][0].image_url,
+                }));
+
+            setAlbums(built);
+        } catch (err) {
+            console.error('Failed to load Jumuiya gallery:', err);
+            setAlbums([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const closeAlbum = () => {
-        setSelectedAlbum(null);
-    };
-
-    const openLightbox = (index: number) => {
-        setLightboxIndex(index);
-    };
-
-    const closeLightbox = () => {
-        setLightboxIndex(null);
-    };
+    const openAlbum = (album: AlbumView) => setSelectedAlbum(album);
+    const closeAlbum = () => { setSelectedAlbum(null); setLightboxIndex(null); };
+    const openLightbox = (index: number) => setLightboxIndex(index);
+    const closeLightbox = () => setLightboxIndex(null);
 
     const nextImage = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (selectedAlbum && selectedAlbum.images && lightboxIndex !== null) {
-            setLightboxIndex((prev) => (prev !== null && prev < (selectedAlbum.images?.length || 0) - 1 ? prev + 1 : 0));
+        if (selectedAlbum && lightboxIndex !== null) {
+            setLightboxIndex(prev =>
+                prev !== null && prev < selectedAlbum.images.length - 1 ? prev + 1 : 0
+            );
         }
     };
 
     const prevImage = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (selectedAlbum && selectedAlbum.images && lightboxIndex !== null) {
-            setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : (selectedAlbum.images?.length || 0) - 1));
+        if (selectedAlbum && lightboxIndex !== null) {
+            setLightboxIndex(prev =>
+                prev !== null && prev > 0 ? prev - 1 : selectedAlbum.images.length - 1
+            );
         }
     };
 
@@ -58,7 +124,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, gallery }) => {
         <div className="tab-system-content">
             <div className="tab-header-wrap">
                 <div className="header-text">
-                    <h1 className="page-title">Connect & Explore</h1>
+                    <h1 className="page-title">Connect &amp; Explore</h1>
                     <p className="page-description">
                         Follow our official channels and dive into our community's shared memories and celebrations.
                     </p>
@@ -103,45 +169,82 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, gallery }) => {
                     <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
                 </div>
 
-                <div className="gallery-grid-premium">
-                    {gallery.map(album => (
-                        <div
-                            key={album.id}
-                            className="gallery-item-premium tab-card"
-                            onClick={() => openAlbum(album)}
-                            style={{ padding: 0 }}
-                        >
-                            <img src={album.url} alt={album.caption} />
-                            <div className="gallery-overlay-premium">
-                                <div style={{ color: 'white', fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>{album.caption}</div>
-                                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <FaImages /> {album.images?.length || 0} Photos
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '48px 0', opacity: 0.5 }}>
+                        <FaImages style={{ fontSize: '2rem', marginBottom: '12px' }} />
+                        <p style={{ fontWeight: 700, fontSize: '0.85rem' }}>Loading gallery...</p>
+                    </div>
+                ) : albums.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '48px 0', opacity: 0.4 }}>
+                        <FaImages style={{ fontSize: '2.5rem', marginBottom: '12px' }} />
+                        <p style={{ fontWeight: 700 }}>No photos uploaded yet</p>
+                        <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>Your Jumuiya OS will add photos here soon.</p>
+                    </div>
+                ) : (
+                    <div className="gallery-grid-premium">
+                        {albums.map(album => (
+                            <div
+                                key={album.caption}
+                                className="gallery-item-premium tab-card"
+                                onClick={() => openAlbum(album)}
+                                style={{ padding: 0 }}
+                            >
+                                <img
+                                    src={album.coverUrl}
+                                    alt={album.caption}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                                <div className="gallery-overlay-premium">
+                                    <div style={{ fontSize: '1.6rem', marginBottom: '4px' }}>
+                                        {CATEGORY_ICONS[album.caption]}
+                                    </div>
+                                    <div style={{ color: 'white', fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>
+                                        {album.caption}
+                                    </div>
+                                    <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <FaImages /> {album.images.length} {album.images.length === 1 ? 'Photo' : 'Photos'}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Album Modal */}
             {selectedAlbum && (
                 <div className="lightbox-overlay" onClick={closeAlbum}>
-                    <div className="tab-card glass-card" onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '1000px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
+                    <div
+                        className="tab-card glass-card"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: '90%', maxWidth: '1000px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}
+                    >
                         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{selectedAlbum.caption}</h2>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
+                                {CATEGORY_ICONS[selectedAlbum.caption]} {selectedAlbum.caption}
+                            </h2>
                             <button className="btn-premium" onClick={closeAlbum} style={{ padding: '8px', background: 'var(--bg-soft)', borderRadius: '50%' }}>
                                 <FaTimes />
                             </button>
                         </div>
                         <div style={{ padding: '24px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-                            {selectedAlbum.images?.map((img, index) => (
+                            {selectedAlbum.images.map((img, index) => (
                                 <div
-                                    key={index}
+                                    key={img.id}
                                     className="gallery-item-premium"
                                     onClick={() => openLightbox(index)}
                                     style={{ height: '150px' }}
                                 >
-                                    <img src={img} alt={`${selectedAlbum.caption} ${index + 1}`} loading="lazy" />
+                                    <img
+                                        src={img.image_url}
+                                        alt={img.event_name || `${selectedAlbum.caption} ${index + 1}`}
+                                        loading="lazy"
+                                    />
+                                    {img.event_name && (
+                                        <div className="gallery-overlay-premium" style={{ fontSize: '0.7rem', padding: '8px' }}>
+                                            <span style={{ color: 'white', fontWeight: 700 }}>{img.event_name}</span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -150,14 +253,14 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, gallery }) => {
             )}
 
             {/* Lightbox */}
-            {lightboxIndex !== null && selectedAlbum && selectedAlbum.images && (
+            {lightboxIndex !== null && selectedAlbum && (
                 <div className="lightbox-overlay" onClick={closeLightbox}>
                     <button className="btn-premium" onClick={prevImage} style={{ position: 'absolute', left: '20px', zIndex: 2001, background: 'rgba(255,255,255,0.1)', color: 'white' }}>
                         <FaArrowLeft />
                     </button>
                     <div className="lightbox-img-wrap" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
                         <img
-                            src={selectedAlbum.images[lightboxIndex]}
+                            src={selectedAlbum.images[lightboxIndex].image_url}
                             alt={`${selectedAlbum.caption} ${lightboxIndex + 1}`}
                         />
                         <div style={{ position: 'absolute', bottom: '-40px', width: '100%', textAlign: 'center', color: 'white', fontWeight: 600 }}>
