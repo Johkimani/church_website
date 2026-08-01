@@ -4,7 +4,7 @@ import { memberService } from "../../../api/jumuiyaMemberService";
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, Upload, GitMerge, CheckCircle,
-  ArrowLeftRight, UserCheck, Image, Loader2
+  ArrowLeftRight, UserCheck, Image, Loader2, CalendarCheck
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
@@ -13,12 +13,16 @@ import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import GalleryManager from "./GalleryManager";
 import JumuiyaAnalyticsDashboard from "../../Jumuiya/admin/JumuiyaAnalyticsDashboard";
+import JumuiyaAttendanceRegister from "./JumuiyaAttendanceRegister";
+import JumuiyaAnnouncementsRegister from "./JumuiyaAnnouncementsRegister";
+import { Megaphone } from "lucide-react";
 
-type DashboardTab = "overview" | "import" | "organize" | "allocations" | "analytics" | "gallery";
+type DashboardTab = "overview" | "import" | "organize" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements";
 
 const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }[]> = {
   chair: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
+    { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "import", label: "New Admission", icon: Upload },
     { id: "organize", label: "Organize", icon: GitMerge },
     { id: "allocations", label: "Allocations", icon: UserCheck },
@@ -26,10 +30,13 @@ const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }
   ],
   secretary: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
+    { id: "announcements", label: "Announcements", icon: Megaphone },
+    { id: "attendance", label: "Attendance", icon: CalendarCheck },
     { id: "analytics", label: "Reports", icon: TrendingUp },
   ],
   os: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
+    { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "gallery", label: "Gallery", icon: Image },
   ],
 };
@@ -631,6 +638,15 @@ export default function SecretaryDashboard() {
         />
       )}
 
+      {/* ═══════════ ATTENDANCE TAB (Secretary only) ═══════════ */}
+      {activeTab === "attendance" && (
+        <JumuiyaAttendanceRegister
+          jumuiyaId={jumuiyaId}
+          jumuiyaName={jumuiyaInfo.name}
+          jumuiyaColor={jumuiyaInfo.color}
+        />
+      )}
+
       {/* ═══════════ NEW ADMISSION TAB (Chair only) ═══════════ */}
       {activeTab === "import" && (
         <MemberImportForm jumuiyaId={jumuiyaId} />
@@ -644,6 +660,15 @@ export default function SecretaryDashboard() {
       {/* ═══════════ ALLOCATIONS TAB (Chair only) ═══════════ */}
       {activeTab === "allocations" && (
         <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} jumuiyaColor={jumuiyaInfo.color} />
+      )}
+
+      {/* ═══════════ ANNOUNCEMENTS TAB (Jumuiya OS & Chair) ═══════════ */}
+      {activeTab === "announcements" && (
+        <JumuiyaAnnouncementsRegister
+          jumuiyaId={jumuiyaId}
+          jumuiyaName={jumuiyaInfo.name}
+          jumuiyaColor={jumuiyaInfo.color}
+        />
       )}
 
       {/* ═══════════ GALLERY TAB (OS only) ═══════════ */}

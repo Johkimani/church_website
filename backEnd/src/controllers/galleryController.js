@@ -27,15 +27,18 @@ export const getGallery = async (req, res) => {
             (${anniversaryCondition}) as is_anniversary
             FROM hub_gallery 
             WHERE moderation_status = 'Approved'
-            AND (category = 'general' OR category IS NULL)
         `;
         let params = [];
 
-        // If a specific module_id is requested (admin dashboard), filter by it
+        // If a specific module_id is requested (jumuiya gallery or admin dashboard),
+        // return ALL categories for that module — no category restriction.
         if (filterModule) {
             query += ' AND module_id = $1';
             params.push(filterModule);
         } else {
+            // General browsing: only show CSA-level photos (general category)
+            query += " AND (category = 'general' OR category IS NULL)";
+
             // Access Control Logic for public / general browsing
             const roles = user?.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
             const isGlobalViewer = roles.some((r) =>
@@ -144,8 +147,8 @@ export const uploadToGallery = async (req, res) => {
         const imageUrl = req.file.path; // Cloudinary URL from multer-storage-cloudinary
 
         const query = `
-            INSERT INTO hub_gallery (module_id, image_url, description, event_name, public_id, category)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO hub_gallery (module_id, image_url, description, event_name, public_id, category, moderation_status)
+            VALUES ($1, $2, $3, $4, $5, $6, 'Approved')
             RETURNING *
         `;
         const values = [moduleId || 'general', imageUrl, description || '', eventName || 'Untitled Event', publicId || '', category || 'general'];

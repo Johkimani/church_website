@@ -2,7 +2,7 @@ import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
 // Bump this whenever the schema below changes so the init re-runs on next boot.
-const SCHEMA_VERSION = "community-v2";
+const SCHEMA_VERSION = "community-v3";
 
 const runParallel = (queries) => Promise.all(queries.map((q) => db.query(q)));
 
@@ -298,6 +298,25 @@ export const setupCommunityDatabase = async () => {
         ALTER TABLE projects ADD COLUMN IF NOT EXISTS image_url TEXT;
         ALTER TABLE projects ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending';
         ALTER TABLE projects ADD COLUMN IF NOT EXISTS budget NUMERIC(12, 2) DEFAULT 0;`).catch(() => {}),
+      // Drop the hub_gallery FK on module_id so Jumuiya group IDs (which are not
+      // hub_modules records) can be stored without a foreign key violation.
+      db.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'hub_gallery_module_id_fkey'
+              AND conrelid = 'hub_gallery'::regclass
+          ) THEN
+            ALTER TABLE hub_gallery DROP CONSTRAINT hub_gallery_module_id_fkey;
+          END IF;
+        END $$;
+      `).catch(() => {}),
+      // Ensure hub_gallery has moderation_status and public_id columns
+      db.query(`
+        ALTER TABLE hub_gallery ADD COLUMN IF NOT EXISTS moderation_status VARCHAR(30) DEFAULT 'Approved';
+        ALTER TABLE hub_gallery ADD COLUMN IF NOT EXISTS public_id TEXT;
+      `).catch(() => {}),
     ]);
     logger.info("weekly_activities columns verified");
     logger.info("semester_activities columns verified");

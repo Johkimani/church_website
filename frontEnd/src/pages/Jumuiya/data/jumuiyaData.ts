@@ -819,7 +819,7 @@ export const jumuiyaList: JumuiyaData[] = [
       {
         id: "2",
         url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
-        caption: "Rosary Gathering",
+        caption: "Events",
         images: [
           "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800",
           "https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?w=800",
@@ -829,7 +829,7 @@ export const jumuiyaList: JumuiyaData[] = [
       {
         id: "3",
         url: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
-        caption: "Mothers' Fellowship",
+        caption: "Trips",
         images: [
           "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800",
           "https://images.unsplash.com/photo-1551846206-55e8bd20de8d?w=800",
