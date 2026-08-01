@@ -1,210 +1,487 @@
-import { useState, useEffect } from "react";
-import { FaBible, FaBookOpen, FaMusic, FaShareAlt } from "react-icons/fa";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  CATHOLIC_PRAYERS,
+  CATEGORY_META,
+  type CatholicPrayer,
+  type PrayerCategory,
+} from "../data/catholicPrayers";
 
-const weeklyReadings = [
-  {
-    day: "Sunday",
-    verse: "I am the resurrection and the life. Whoever believes in me, though he die, yet shall he live.",
-    source: "John 11:25",
-    first: { ref: "Acts 10:34-43", text: "Peter opened his mouth and said: 'Truly I understand that God shows no partiality, but in every nation anyone who fears him and does what is right is acceptable to him...'" },
-    second: { ref: "Colossians 3:1-4", text: "If then you have been raised with Christ, seek the things that are above, where Christ is, seated at the right hand of God..." },
-    psalm: { ref: "Psalm 118", text: "This is the day that the Lord has made; let us rejoice and be glad in it. Give thanks to the Lord, for he is good; his steadfast love endures forever!" },
-  },
-  {
-    day: "Monday",
-    verse: "Let your light shine before others, so that they may see your good works and give glory to your Father who is in heaven.",
-    source: "Matthew 5:16",
-    first: { ref: "Isaiah 1:10-17", text: "Hear the word of the Lord, you rulers of Sodom! Give ear to the teaching of our God, you people of Gomorrah! 'What to me is the multitude of your sacrifices? says the Lord... Learn to do good; seek justice, correct oppression; bring justice to the fatherless, plead the widow's cause.'" },
-    second: { ref: "Hebrews 10:19-25", text: "Therefore, brothers, since we have confidence to enter the holy places by the blood of Jesus, by the new and living way that he opened for us through the curtain... let us draw near with a true heart in full assurance of faith..." },
-    psalm: { ref: "Psalm 50", text: "The Mighty One, God the Lord, speaks and summons the earth from the rising of the sun to its setting. Out of Zion, the perfection of beauty, God shines forth." },
-  },
-  {
-    day: "Tuesday",
-    verse: "Blessed are the pure in heart, for they shall see God.",
-    source: "Matthew 5:8",
-    first: { ref: "Ezekiel 18:1-10", text: "The word of the Lord came to me: 'What do you mean by repeating this proverb concerning the land of Israel: The fathers have eaten sour grapes, and the children's teeth are set on edge? As I live, declares the Lord God, this proverb shall no more be used by you in Israel... The soul who sins shall die.'" },
-    second: { ref: "James 1:22-27", text: "But be doers of the word, and not hearers only, deceiving yourselves. For if anyone is a hearer of the word and not a doer, he is like a man who looks intently at his natural face in a mirror..." },
-    psalm: { ref: "Psalm 24", text: "The earth is the Lord's and the fullness thereof, the world and those who dwell therein, for he has founded it upon the seas and established it upon the rivers." },
-  },
-  {
-    day: "Wednesday",
-    verse: "Ask, and it will be given to you; seek, and you will find; knock, and it will be opened to you.",
-    source: "Matthew 7:7",
-    first: { ref: "Jeremiah 29:11-14", text: "For I know the plans I have for you, declares the Lord, plans for welfare and not for evil, to give you a future and a hope. Then you will call upon me and come and pray to me, and I will hear you." },
-    second: { ref: "Romans 8:26-30", text: "Likewise the Spirit helps us in our weakness. For we do not know what to pray for as we ought, but the Spirit himself intercedes for us with groanings too deep for words..." },
-    psalm: { ref: "Psalm 145", text: "The Lord is near to all who call on him, to all who call on him in truth. He fulfills the desire of those who fear him; he also hears their cry and saves them." },
-  },
-  {
-    day: "Thursday",
-    verse: "I can do all things through him who strengthens me.",
-    source: "Philippians 4:13",
-    first: { ref: "Deuteronomy 31:1-8", text: "So Moses continued to speak these words to all Israel. 'Be strong and courageous. Do not fear or be in dread of them, for it is the Lord your God who goes with you. He will not leave you or forsake you.'" },
-    second: { ref: "Ephesians 6:10-18", text: "Finally, be strong in the Lord and in the strength of his might. Put on the whole armor of God, that you may be able to stand against the schemes of the devil..." },
-    psalm: { ref: "Psalm 27", text: "The Lord is my light and my salvation; whom shall I fear? The Lord is the stronghold of my life; of whom shall I be afraid?" },
-  },
-  {
-    day: "Friday",
-    verse: "Greater love has no one than this, that someone lay down his life for his friends.",
-    source: "John 15:13",
-    first: { ref: "Isaiah 53:1-12", text: "Surely he has borne our griefs and carried our sorrows; yet we esteemed him stricken, smitten by God, and afflicted. But he was pierced for our transgressions; he was crushed for our iniquities..." },
-    second: { ref: "1 Peter 2:19-25", text: "For this is a gracious thing, when, mindful of God, one endures sorrows while suffering unjustly. For what credit is it if, when you sin and are beaten for it, you endure? But if when you do good and suffer for it you endure, this is a gracious thing in the sight of God." },
-    psalm: { ref: "Psalm 22", text: "My God, my God, why have you forsaken me? Why are you so far from saving me, from the words of my groaning? O my God, I cry by day, but you do not answer, and by night, but I find no rest." },
-  },
-  {
-    day: "Saturday",
-    verse: "Come to me, all who labor and are heavy laden, and I will give you rest.",
-    source: "Matthew 11:28",
-    first: { ref: "Exodus 33:12-17", text: "Moses said to the Lord, 'See, you say to me, Bring up this people, but you have not let me know whom you will send with me...' And the Lord said to Moses, 'This very thing that you have spoken I will do, for you have found favor in my sight, and I know you by name.'" },
-    second: { ref: "Hebrews 4:1-11", text: "Therefore, while the promise of entering his rest still stands, let us fear lest any of you should seem to have failed to reach it. For good news came to us just as to them, but the message they heard did not benefit them..." },
-    psalm: { ref: "Psalm 62", text: "For God alone my soul waits in silence; from him comes my salvation. He alone is my rock and my salvation, my fortress; I shall not be greatly shaken." },
-  },
-];
+const CATEGORIES = Object.keys(CATEGORY_META) as PrayerCategory[];
+
+const SECTION_ICONS: Record<PrayerCategory, string> = {
+  morning: "M",
+  daytime: "D",
+  evening: "V",
+  night: "N",
+  mass: "MA",
+  rosary: "R",
+  essential: "CE",
+  acts: "AV",
+  litanies: "L",
+  saints: "S",
+  devotions: "DE",
+  fasting: "J",
+  special: "E",
+};
 
 export default function Readings() {
-  type SectionType = "first" | "second" | "psalm" | null;
-  const [openSection, setOpenSection] = useState<SectionType>(null);
-  const [mounted, setMounted] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<PrayerCategory>("morning");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPrayer, setSelectedPrayer] = useState<CatholicPrayer | null>(null);
+  const [bookmarks, setBookmarks] = useState<Set<string>>(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem("catholic-prayer-bookmarks") || "[]"));
+    } catch { return new Set(); }
+  });
+  const [fontSize, setFontSize] = useState(() => {
+    try { return parseInt(localStorage.getItem("prayer-font-size") || "18"); } catch { return 18; }
+  });
 
   useEffect(() => {
-    setMounted(true);
+    localStorage.setItem("prayer-font-size", String(fontSize));
+  }, [fontSize]);
+
+  const toggleBookmark = useCallback((id: string) => {
+    setBookmarks((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      localStorage.setItem("catholic-prayer-bookmarks", JSON.stringify([...next]));
+      return next;
+    });
   }, []);
 
-  const todayIndex = new Date().getDay();
-  const todayReading = weeklyReadings[todayIndex];
-
-  const toggleSection = (section: SectionType): void => {
-    setOpenSection(openSection === section ? null : section);
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: "Verse of the Day",
-        text: `${todayReading.verse} (${todayReading.source})`,
-      });
+  const filteredPrayers = useMemo(() => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return CATHOLIC_PRAYERS.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.text.toLowerCase().includes(q) ||
+          p.tags.some((t) => t.includes(q))
+      );
     }
-  };
+    return CATHOLIC_PRAYERS.filter((p) => p.category === selectedCategory);
+  }, [selectedCategory, searchQuery]);
 
-  const getMessage = () => {
-    if (!openSection) return "Take a quiet moment with God's word today.";
-    switch (openSection) {
-      case "first": return "The first reading speaks — listen with your heart.";
-      case "second": return "Let this message strengthen your faith.";
-      case "psalm": return "Pray this slowly — let it become your voice.";
-      default: return "";
-    }
+  const bookmarkedPrayers = useMemo(
+    () => CATHOLIC_PRAYERS.filter((p) => bookmarks.has(p.id)),
+    [bookmarks]
+  );
+
+  const totalPrayers = CATHOLIC_PRAYERS.length;
+  const meta = CATEGORY_META[selectedCategory];
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    CATEGORIES.forEach((cat) => {
+      counts[cat] = CATHOLIC_PRAYERS.filter((p) => p.category === cat).length;
+    });
+    return counts;
+  }, []);
+
+  // Keyboard nav in reader
+  useEffect(() => {
+    if (!selectedPrayer) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedPrayer(null);
+      const idx = filteredPrayers.findIndex((p) => p.id === selectedPrayer.id);
+      if (idx === -1) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+        if (idx < filteredPrayers.length - 1) setSelectedPrayer(filteredPrayers[idx + 1]);
+      }
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+        if (idx > 0) setSelectedPrayer(filteredPrayers[idx - 1]);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [selectedPrayer, filteredPrayers]);
+
+  const renderPrayerText = (text: string, size: number) => {
+    const lines = text.split("\n");
+    return lines.map((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <div key={i} className="h-3" />;
+
+      // V./R. responses
+      if (/^[VR]\.\s/.test(trimmed)) {
+        return (
+          <div key={i} className="flex gap-2 my-2">
+            <span className="font-bold text-amber-700 flex-shrink-0" style={{ fontSize: size }}>
+              {trimmed.substring(0, 2)}
+            </span>
+            <span className="italic text-slate-700" style={{ fontSize: size }}>
+              {trimmed.substring(3)}
+            </span>
+          </div>
+        );
+      }
+
+      // Let us pray
+      if (/^Let us pray/i.test(trimmed)) {
+        return (
+          <p key={i} className="mt-4 mb-2 italic text-slate-600" style={{ fontSize: size }}>
+            {trimmed}
+          </p>
+        );
+      }
+
+      // Heading lines (ALL CAPS section titles — at least 8 chars to avoid false positives)
+      if (/^[A-Z\s]{8,}$/.test(trimmed)) {
+        return (
+          <h3 key={i} className="text-center font-bold text-slate-800 mt-6 mb-3 tracking-wider text-sm uppercase">
+            {trimmed}
+          </h3>
+        );
+      }
+
+      // Glory Be / Amen lines
+      if (/^Glory be/i.test(trimmed) || trimmed === "Amen.") {
+        return (
+          <p key={i} className="text-center italic text-slate-500 my-2" style={{ fontSize: size - 1 }}>
+            {trimmed}
+          </p>
+        );
+      }
+
+      // Standard paragraph
+      return (
+        <p key={i} className="text-slate-700 leading-[1.9] mb-3" style={{ fontSize: size }}>
+          {trimmed}
+        </p>
+      );
+    });
   };
 
   return (
-    <div className="min-h-screen w-full flex justify-center px-4 py-10">
-      <div className="relative w-full max-w-3xl">
-        <div
-          className={`absolute z-20 flex flex-col items-end 
-          right-[-10px] sm:right-[-20px] top-0 transition-all duration-1000
-          ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-        >
-          <div className="relative mb-2">
-            <div className="bg-white/90 backdrop-blur-md text-gray-700 text-[11px] sm:text-xs px-3 py-2 rounded-xl shadow-lg border border-gray-200 max-w-[160px] sm:max-w-[200px] animate-fadeIn">
-              {getMessage()}
-            </div>
-            <div className="absolute bottom-[-5px] right-6 w-3 h-3 bg-white rotate-45 border-r border-b border-gray-200"></div>
+    <div className="min-h-screen bg-gradient-to-b from-stone-50 via-amber-50/20 to-stone-50">
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* BOOK COVER HERO                                   */}
+      {/* ═══════════════════════════════════════════════════ */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-stone-800 via-stone-900 to-slate-900">
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.03) 40px, rgba(255,255,255,0.03) 41px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.03) 40px, rgba(255,255,255,0.03) 41px)`
+        }} />
+        <div className="relative max-w-3xl mx-auto px-4 py-12 text-center">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold text-amber-300/80 mb-4 tracking-widest uppercase border border-white/10">
+            <span>{'\u271D'}</span>
+            <span>Preces Catholicae</span>
           </div>
-          <img
-            src="../src/assets/images/read-you-bible.png"
-            alt="Guide"
-            className="w-16 sm:w-20 drop-shadow-xl animate-float"
-          />
-        </div>
-
-        <div className="text-center mb-2">
-          <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest">{todayReading.day}</span>
-        </div>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-indigo-600 to-purple-500 bg-clip-text text-transparent">
-          Verse of the Day
-        </h2>
-
-        <div className="backdrop-blur-xl p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row items-center gap-5 mb-10">
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-4 rounded-2xl shadow-lg">
-              <img src="/src/assets/bible.svg" className="w-12 h-12" />
-            </div>
-
-            <div className="flex-1">
-              <p className="italic text-lg sm:text-xl text-gray-700">
-                "{todayReading.verse}"
-              </p>
-
-              <div className="flex flex-col sm:flex-row justify-between mt-4 gap-3">
-                <span className="bg-indigo-100 text-indigo-700 text-xs sm:text-sm px-4 py-1 rounded-full">
-                  {todayReading.source}
-                </span>
-
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-500 text-white text-sm rounded-xl shadow hover:scale-105 transition"
-                >
-                  <FaShareAlt /> Share
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {[
-              { key: "first" as const, title: "First Reading", icon: <FaBible />, color: "indigo", ref: todayReading.first.ref, text: todayReading.first.text },
-              { key: "second" as const, title: "Second Reading", icon: <FaBookOpen />, color: "green", ref: todayReading.second.ref, text: todayReading.second.text },
-              { key: "psalm" as const, title: "Responsorial Psalm", icon: <FaMusic />, color: "yellow", ref: todayReading.psalm.ref, text: todayReading.psalm.text },
-            ].map((section) => {
-              const isOpen = openSection === section.key;
-              const colorMap: Record<string, string> = {
-                indigo: "bg-indigo-100 hover:bg-indigo-200 border-indigo-400",
-                green: "bg-green-100 hover:bg-green-200 border-green-400",
-                yellow: "bg-yellow-100 hover:bg-yellow-200 border-yellow-400",
-              };
-
-              return (
-                <div key={section.key}>
-                  <button
-                    onClick={() => toggleSection(section.key)}
-                    className={`w-full flex justify-between items-center p-4 rounded-xl transition-all shadow-sm ${colorMap[section.color]}`}
-                  >
-                    <span className="flex items-center gap-3 font-semibold text-gray-800">
-                      {section.icon} {section.title}
-                    </span>
-                    <span>{isOpen ? "−" : "+"}</span>
-                  </button>
-                  <div
-                    className={`grid transition-all duration-300 ${
-                      isOpen ? "grid-rows-[1fr] mt-2" : "grid-rows-[0fr]"
-                    }`}
-                  >
-                    <div className="overflow-hidden">
-                      <div className="p-4 bg-white rounded-xl shadow-inner border-l-4">
-                        <p className="font-semibold">{section.ref}</p>
-                        <p className="italic mt-2 text-gray-600">
-                          {section.text}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <h1 className="text-3xl sm:text-4xl font-serif text-white mb-3 font-bold tracking-wide">
+            Catholic Prayer Book
+          </h1>
+          <p className="text-sm text-stone-400 max-w-md mx-auto leading-relaxed font-serif italic">
+            A collection of traditional prayers for every moment of the Christian life
+          </p>
+          <div className="mt-6 flex items-center justify-center gap-6 text-[10px] text-stone-500 font-bold tracking-widest uppercase">
+            <span>{totalPrayers} Prayers</span>
+            <span className="text-stone-700">{'\u2022'}</span>
+            <span>13 Categories</span>
+            <span className="text-stone-700">{'\u2022'}</span>
+            <span>USCCB & Vatican Sources</span>
           </div>
         </div>
       </div>
 
-      <style>
-        {`
-          @keyframes float {
-            0%,100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-          }
-          .animate-float { animation: float 4s ease-in-out infinite; }
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-          .animate-fadeIn { animation: fadeIn 0.4s ease-in-out; }
-        `}
-      </style>
+      <div className="max-w-3xl mx-auto px-4">
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* SEARCH + FONT SIZE                                */}
+        {/* ═══════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-3 -mt-5 mb-6 relative z-10">
+          <div className="relative flex-1">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search prayers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white rounded-xl border border-stone-200 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-300 transition-all shadow-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1 bg-white rounded-xl border border-stone-200 px-2 py-1.5 shadow-sm">
+            <button onClick={() => setFontSize((s) => Math.max(14, s - 1))} aria-label="Decrease font size" className="p-1 text-stone-400 hover:text-stone-600 text-xs font-bold">A-</button>
+            <span className="text-[10px] text-stone-400 font-bold w-5 text-center">{fontSize}</span>
+            <button onClick={() => setFontSize((s) => Math.min(24, s + 1))} aria-label="Increase font size" className="p-1 text-stone-400 hover:text-stone-600 text-xs font-bold">A+</button>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* BOOKMARKS BAR                                     */}
+        {/* ═══════════════════════════════════════════════════ */}
+        {bookmarkedPrayers.length > 0 && !searchQuery && (
+          <div className="mb-6 p-4 bg-amber-50/80 rounded-xl border border-amber-100">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">My Favorites ({bookmarkedPrayers.length})</span>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+              {bookmarkedPrayers.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPrayer(p)}
+                  className="flex-shrink-0 px-2.5 py-1 bg-white text-amber-700 rounded-lg text-[11px] font-medium border border-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  {p.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* CHAPTER-STYLE CATEGORY NAVIGATION                  */}
+        {/* ═══════════════════════════════════════════════════ */}
+        {!searchQuery && (
+          <div className="mb-8">
+            <h2 className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-3">Table of Contents</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+              {CATEGORIES.map((cat) => {
+                const m = CATEGORY_META[cat];
+                const count = categoryCounts[cat];
+                const isActive = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                      isActive
+                        ? "bg-stone-800 text-white shadow-md"
+                        : "bg-white text-stone-700 hover:bg-stone-100 border border-stone-100"
+                    }`}
+                  >
+                    <span className={`w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                      isActive ? "bg-white/20 text-white" : "bg-stone-100 text-stone-500"
+                    }`}>
+                      {SECTION_ICONS[cat]}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-bold truncate ${isActive ? "text-white" : "text-stone-800"}`}>
+                        {m.label}
+                      </div>
+                      <div className={`text-[10px] ${isActive ? "text-stone-300" : "text-stone-400"}`}>
+                        {count} prayer{count !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                    <svg className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-white/50" : "text-stone-300"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* SEARCH RESULTS HEADER                              */}
+        {/* ═══════════════════════════════════════════════════ */}
+        {searchQuery && (
+          <div className="mb-4 flex items-center gap-2">
+            <p className="text-sm text-stone-500">
+              {filteredPrayers.length} result{filteredPrayers.length !== 1 ? "s" : ""} for
+            </p>
+            <span className="font-serif italic text-stone-800">"{searchQuery}"</span>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* PRAYER LIST — BOOK STYLE                          */}
+        {/* ═══════════════════════════════════════════════════ */}
+        {!searchQuery && (
+          <div className="mb-4 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-stone-800 flex items-center justify-center text-[10px] font-bold text-white">
+              {SECTION_ICONS[selectedCategory]}
+            </div>
+            <div>
+              <h2 className="text-lg font-serif font-bold text-stone-800">{meta.label}</h2>
+              <p className="text-[11px] text-stone-500">{meta.description}</p>
+            </div>
+          </div>
+        )}
+
+        {filteredPrayers.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center">
+              <svg className="w-7 h-7 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <h3 className="text-base font-serif font-bold text-stone-600 mb-1">No prayers found</h3>
+            <p className="text-sm text-stone-400">Try a different search term or browse another chapter</p>
+          </div>
+        ) : (
+          <div className="space-y-1 mb-12">
+            {filteredPrayers.map((prayer, idx) => {
+              const isBookmarked = bookmarks.has(prayer.id);
+              return (
+                <button
+                  key={prayer.id}
+                  onClick={() => setSelectedPrayer(prayer)}
+                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-left hover:bg-white hover:shadow-sm border border-transparent hover:border-stone-100 transition-all group"
+                >
+                  <span className="w-6 h-6 rounded-full bg-stone-100 group-hover:bg-stone-800 group-hover:text-white flex items-center justify-center text-[10px] font-bold text-stone-400 flex-shrink-0 transition-colors">
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-serif font-bold text-stone-800 group-hover:text-amber-700 transition-colors truncate">
+                      {prayer.title}
+                    </h3>
+                    <p className="text-[11px] text-stone-400 truncate mt-0.5">
+                      {prayer.text.substring(0, 80)}...
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[10px] text-stone-400 font-medium">{prayer.readTime} min</span>
+                    {isBookmarked && (
+                      <svg className="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    )}
+                    <svg className="w-4 h-4 text-stone-300 group-hover:text-stone-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* FOOTER                                             */}
+        {/* ═══════════════════════════════════════════════════ */}
+        {!searchQuery && (
+          <div className="text-center py-8 border-t border-stone-100 mb-8">
+            <p className="text-[10px] text-stone-400 font-serif italic">
+              All prayers sourced from USCCB, Vatican, EWTN, and traditional Catholic prayer books
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* FULL PRAYER READER MODAL — BOOK PAGE STYLE        */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {selectedPrayer && (
+        <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-labelledby="prayer-title">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm"
+            onClick={() => setSelectedPrayer(null)}
+          />
+
+          {/* Book page */}
+          <div className="relative mx-auto my-4 sm:my-8 w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] bg-[#FFFEF8] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-stone-200/50">
+            {/* Page header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200/60 bg-[#FFFEF8]">
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-md bg-stone-800 flex items-center justify-center text-[10px] font-bold text-white">
+                  {SECTION_ICONS[selectedPrayer.category]}
+                </span>
+                <div>
+                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">
+                    {CATEGORY_META[selectedPrayer.category].label}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => toggleBookmark(selectedPrayer.id)}
+                  aria-label={bookmarks.has(selectedPrayer.id) ? "Remove bookmark" : "Add bookmark"}
+                  className="p-2 rounded-lg hover:bg-stone-100 transition-colors"
+                >
+                  <svg className={`w-4 h-4 ${bookmarks.has(selectedPrayer.id) ? "text-amber-500" : "text-stone-300"}`} fill={bookmarks.has(selectedPrayer.id) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setSelectedPrayer(null)}
+                  aria-label="Close prayer"
+                  className="p-2 rounded-lg hover:bg-stone-100 transition-colors text-stone-400"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Title page */}
+            <div className="px-6 sm:px-10 pt-8 pb-4 text-center border-b border-stone-100">
+              <h2 id="prayer-title" className="text-2xl sm:text-3xl font-serif font-bold text-stone-800 mb-2">
+                {selectedPrayer.title}
+              </h2>
+              <div className="flex items-center justify-center gap-3 text-[10px] text-stone-400 font-medium">
+                <span>{selectedPrayer.readTime} min read</span>
+                <span className="text-stone-200">|</span>
+                <span>{selectedPrayer.text.split(/\s+/).length} words</span>
+              </div>
+            </div>
+
+            {/* Prayer text — book page */}
+            <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8">
+              <div className="max-w-lg mx-auto font-serif">
+                {renderPrayerText(selectedPrayer.text, fontSize)}
+              </div>
+            </div>
+
+            {/* Bottom bar */}
+            <div className="flex items-center justify-between px-6 py-3 border-t border-stone-100 bg-[#FFFEF8]">
+              <div className="flex flex-wrap gap-1">
+                {selectedPrayer.tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="px-2 py-0.5 bg-stone-100 text-stone-500 rounded text-[9px] font-medium">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    const idx = filteredPrayers.findIndex((p) => p.id === selectedPrayer.id);
+                    if (idx > 0) setSelectedPrayer(filteredPrayers[idx - 1]);
+                  }}
+                  disabled={filteredPrayers.findIndex((p) => p.id === selectedPrayer.id) === 0}
+                  aria-label="Previous prayer"
+                  className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed text-stone-400"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    const idx = filteredPrayers.findIndex((p) => p.id === selectedPrayer.id);
+                    if (idx < filteredPrayers.length - 1) setSelectedPrayer(filteredPrayers[idx + 1]);
+                  }}
+                  disabled={filteredPrayers.findIndex((p) => p.id === selectedPrayer.id) === filteredPrayers.length - 1}
+                  aria-label="Next prayer"
+                  className="p-1.5 rounded-lg hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed text-stone-400"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

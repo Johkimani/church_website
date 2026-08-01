@@ -32,7 +32,7 @@ const {user} = useAuth();
             />
           </div>
           <div className="sm:w-2/3 w-full text-center sm:text-left sm:pl-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Bible Readings</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Prayer Book</h2>
             <p className="text-base text-gray-800 opacity-90 mb-4 italic">
               "The Lord is my shepherd; I shall not want..."
             </p>
