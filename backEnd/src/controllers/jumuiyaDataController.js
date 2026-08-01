@@ -205,3 +205,32 @@ function groupBy(arr, key) {
       return acc;
     }, {});
   }
+
+export const updateJumuiyaSaintImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { saint_image } = req.body;
+
+    if (!saint_image) {
+      return res.status(400).json({ success: false, error: 'saint_image URL is required' });
+    }
+
+    const result = await pool.query(
+      `UPDATE sub_groups 
+       SET saint_image = $1 
+       WHERE group_id = $2 OR slug = $2 OR LOWER(name) = LOWER($2) OR LOWER(slug) = LOWER($2)
+       RETURNING *`,
+      [saint_image, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jumuiya not found' });
+    }
+
+    logger.info(`Updated saint_image for Jumuiya ${id}: ${saint_image}`);
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    logger.error('Error updating Jumuiya saint image: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to update patron saint image' });
+  }
+};

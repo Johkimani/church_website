@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../api/axiosInstance';
 import { UPLOAD_BASE } from '../../../api/config';
+import { jumuiyaList } from '../../Jumuiya/data/jumuiyaData';
 import { 
   Image as ImageIcon, 
   Upload, 
@@ -39,8 +40,14 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   // Patron saint photo state
-  const [saintImage, setSaintImage] = useState(jumuiyaInfo?.saintImage || '');
+  const defaultSaintImage = jumuiyaList.find(j => j.id === jumuiyaId)?.saintImage || '';
+  const [saintImage, setSaintImage] = useState(jumuiyaInfo?.saintImage || defaultSaintImage);
   const [saintUploading, setSaintUploading] = useState(false);
+
+  useEffect(() => {
+    const fallback = jumuiyaList.find(j => j.id === jumuiyaId)?.saintImage || '';
+    setSaintImage(jumuiyaInfo?.saintImage || fallback);
+  }, [jumuiyaId, jumuiyaInfo?.saintImage]);
 
   const isJumuiya = !!jumuiyaId;
   const categories = isJumuiya
@@ -113,7 +120,7 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
       const res = await uploadFile([file]);
       const url = res?.data?.[0]?.url || res?.data?.url || '';
       if (url) {
-        await apiClient.patch(`/jumuiya/${encodeURIComponent(jumuiyaId)}`, { saint_image: url });
+        await apiClient.patch(`/jumuiya-data/${encodeURIComponent(jumuiyaId)}/saint-image`, { saint_image: url });
         setSaintImage(url);
       }
     } catch (err) {
