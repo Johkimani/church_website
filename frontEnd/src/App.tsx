@@ -95,6 +95,7 @@ const DeletionApproval = lazy(() => import("./pages/Admin/pages/DeletionApproval
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
 const SacramentalsBannerManager = lazy(() => import("./pages/Admin/pages/SacramentalsBannerManager"));
 const JumuiyaMembersAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaMembersAdmin"));
+const AttendanceTallyAdmin = lazy(() => import("./pages/Admin/pages/AttendanceTallyAdmin"));
 const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 const CsaSecretaryDashboard = lazy(() => import("./pages/Admin/pages/CsaSecretaryDashboard"));
 const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
@@ -161,6 +162,7 @@ const App: React.FC = () => {
           <Route path="projects" element={<ProjectsManager />} />
           <Route path="jumuiya-members" element={<JumuiyaMembersAdmin />} />
           <Route path="jumuiya-members/:id" element={<JumuiyaMembersAdmin />} />
+          <Route path="attendance-tally" element={<AttendanceTallyAdmin />} />
           <Route path="registered-members" element={<CsaSecretaryDashboard />} />
           <Route path="secretary-dashboard" element={<SecretaryDashboard />} />
           <Route path="activity-log" element={<ActivityLog />} />

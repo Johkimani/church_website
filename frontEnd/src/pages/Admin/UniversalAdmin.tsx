@@ -18,6 +18,7 @@ import {
   Trash2,
   Home,
   Shield,
+  CalendarCheck,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -49,6 +50,7 @@ const menuItems = [
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
   { id: 'secretary-dashboard', name: 'My Jumuiya Dashboard', icon: Shield, path: '/admin/secretary-dashboard' },
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
+  { id: 'attendance-tally', name: 'Attendance Tally', icon: CalendarCheck, path: '/admin/attendance-tally' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' }
@@ -149,6 +151,7 @@ export default function UniversalAdmin() {
         case "JUMUIYA_COORDINATOR":
           allowedPrefixes.add("/admin/officials");
           allowedPrefixes.add("/admin/jumuiya-members");
+          allowedPrefixes.add("/admin/attendance-tally");
           break;
         case "OS":
           allowedPrefixes.add("/admin/announcements");

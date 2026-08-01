@@ -16,6 +16,8 @@ import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import jumuiyaMembersRouter from "../jumuiyaMembersRouter.js"
 import jumuiyaDataRouter from "../jumuiyaDataRouter.js"
+import attendanceRouter from "../attendanceRouter.js"
+import jumuiyaAttendanceRouter from "../jumuiyaAttendanceRouter.js"
 
 
 import ordersRouter from "./orders.router.js";
@@ -74,6 +76,12 @@ router.use("/settings", settingsRouter);
 
 // Jumuiya members endpoints
 router.use("/jumuiya-members", jumuiyaMembersRouter);
+
+// Attendance tally & analytics (Jumuiya Coordinator)
+router.use("/attendance", attendanceRouter);
+
+// Per-member attendance register (Jumuiya Secretary)
+router.use("/jumuiya-attendance", jumuiyaAttendanceRouter);
 
 // Jumuiya data (full aggregated data with group_id)
 router.use("/jumuiya-data", jumuiyaDataRouter);
