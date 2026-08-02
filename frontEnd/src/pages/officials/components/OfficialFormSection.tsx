@@ -3,7 +3,7 @@ import PhoneInput from 'react-phone-number-input/input';
 import { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { Upload, X, Check, BarChart2, Search, UserCheck } from 'lucide-react';
-import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS } from '../constants/adminConstants';
+import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
 import { resizeImage } from '../../../utils/imageOptimization';
 import { memberService } from '../../../api/jumuiyaMemberService';
 
@@ -12,7 +12,7 @@ interface OfficialFormSectionProps {
  isSubmitting: boolean;
  displayTerm?: string;
  officialsExist: boolean;
- mode?: 'csa' | 'jumuiya';
+ mode?: 'csa' | 'jumuiya' | 'groups';
  allOfficials?: any[];
 }
 
@@ -41,6 +41,12 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
       Object.keys(POSITION_BY_CATEGORY).forEach(cat => {
         const limit = POSITION_BY_CATEGORY[cat]?.length || 0;
         const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived').length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    } else if (mode === 'groups') {
+      GROUP_OPTIONS.forEach(cat => {
+        const limit = POSITIONS_BY_GROUP[cat]?.length || 0;
+        const count = allOfficials.filter(o => o.category === cat && o.status !== 'archived').length;
         stats[cat] = { count, limit, isFull: count >= limit };
       });
     } else {
@@ -140,21 +146,29 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
    setLookupError('');
  };
 
- const availableJumuiyaRoles = React.useMemo(() => {
- if (mode !== 'jumuiya' || !category) return JUMUIYA_ROLES;
- const occupiedRoles = allOfficials
- .filter(o => o.category === category)
- .map(o => o.position);
- return JUMUIYA_ROLES.filter(role => !occupiedRoles.includes(role));
- }, [mode, category, allOfficials]);
+  const availableJumuiyaRoles = React.useMemo(() => {
+  if (mode !== 'jumuiya' || !category) return JUMUIYA_ROLES;
+  const occupiedRoles = allOfficials
+  .filter(o => o.category === category)
+  .map(o => o.position);
+  return JUMUIYA_ROLES.filter(role => !occupiedRoles.includes(role));
+  }, [mode, category, allOfficials]);
 
- const availableCSARoles = React.useMemo(() => {
- if (mode !== 'csa' || !category) return POSITION_BY_CATEGORY[category] || [];
- const occupiedRoles = allOfficials
- .filter(o => o.category === category)
- .map(o => o.position);
- return (POSITION_BY_CATEGORY[category] || []).filter(role => !occupiedRoles.includes(role));
- }, [mode, category, allOfficials]);
+  const availableGroupRoles = React.useMemo(() => {
+  if (mode !== 'groups' || !category) return POSITIONS_BY_GROUP[category] || [];
+  const occupiedRoles = allOfficials
+  .filter(o => o.category === category)
+  .map(o => o.position);
+  return (POSITIONS_BY_GROUP[category] || []).filter(role => !occupiedRoles.includes(role));
+  }, [mode, category, allOfficials]);
+
+  const availableCSARoles = React.useMemo(() => {
+  if (mode !== 'csa' || !category) return POSITION_BY_CATEGORY[category] || [];
+  const occupiedRoles = allOfficials
+  .filter(o => o.category === category)
+  .map(o => o.position);
+  return (POSITION_BY_CATEGORY[category] || []).filter(role => !occupiedRoles.includes(role));
+  }, [mode, category, allOfficials]);
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
@@ -265,7 +279,7 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
 
  <div className="space-y-2">
  <div className="flex justify-between items-center mb-1">
- <label className="block text-sm font-semibold text-gray-700 ">{mode === 'jumuiya' ? 'Jumuiya *' : 'Category *'}</label>
+  <label className="block text-sm font-semibold text-gray-700 ">{mode === 'jumuiya' ? 'Jumuiya *' : mode === 'groups' ? 'Group *' : 'Category *'}</label>
  {mode === 'jumuiya' && (
  <button 
  type="button" 
@@ -283,14 +297,21 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
   className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none appearance-none font-medium" 
   required
   >
-  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
+  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : mode === 'groups' ? 'Select Group' : 'Select category'}</option>
   {mode === 'csa' 
   ? Object.keys(POSITION_BY_CATEGORY).map(k => {
       const stats = categoryStats[k];
       const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
       return <option key={k} value={k}>{label}</option>;
     })
-  : JUMUIYA_OPTIONS.map(k => {
+  : mode === 'groups'
+    ? GROUP_OPTIONS.map(k => {
+        const stats = categoryStats[k];
+        const limit = POSITIONS_BY_GROUP[k]?.length || 0;
+        const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${limit})`;
+        return <option key={k} value={k}>{label}</option>;
+      })
+    : JUMUIYA_OPTIONS.map(k => {
       const stats = categoryStats[k];
       const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/8)`;
       return <option key={k} value={k}>{label}</option>;
@@ -323,11 +344,13 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  required 
  disabled={!category}
  >
- <option value="">Select position/role</option>
- {mode === 'csa'
- ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
- : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
- }
+  <option value="">Select position/role</option>
+  {mode === 'csa'
+  ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
+  : mode === 'groups'
+    ? (category && availableGroupRoles.map(p => <option key={p} value={p}>{p}</option>))
+    : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
+  }
  </select>
  </div>
 

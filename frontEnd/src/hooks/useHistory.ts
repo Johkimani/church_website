@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_HISTORY, API_RESTORE, API_JUMUIYA_HISTORY, API_JUMUIYA_RESTORE } from '../utils/officialsApi';
+import { API_HISTORY, API_RESTORE, API_JUMUIYA_HISTORY, API_JUMUIYA_RESTORE, API_GROUP_HISTORY, API_GROUP_RESTORE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import type { Official } from './useOfficials';
 
@@ -16,13 +16,13 @@ export interface HistoryResponse {
   };
 }
 
-export function useHistory(filters: { termId?: string; onlyArchived?: boolean; page?: number; limit?: number; mode?: 'csa' | 'jumuiya' }) {
+export function useHistory(filters: { termId?: string; onlyArchived?: boolean; page?: number; limit?: number; mode?: 'csa' | 'jumuiya' | 'groups' }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { termId, onlyArchived, page = 1, limit = 20, mode = 'csa' } = filters;
 
-  const getBaseUrl = () => mode === 'jumuiya' ? API_JUMUIYA_HISTORY : API_HISTORY;
-  const getRestoreUrl = () => mode === 'jumuiya' ? API_JUMUIYA_RESTORE : API_RESTORE;
+  const getBaseUrl = () => mode === 'jumuiya' ? API_JUMUIYA_HISTORY : mode === 'groups' ? API_GROUP_HISTORY : API_HISTORY;
+  const getRestoreUrl = () => mode === 'jumuiya' ? API_JUMUIYA_RESTORE : mode === 'groups' ? API_GROUP_RESTORE : API_RESTORE;
 
   const historyQuery = useQuery({
     queryKey: ['history', filters],
@@ -64,8 +64,10 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
       // Clear persistence-level caches so public views pull fresh restored records
       apiService.clearOfficialsCache();
 
-      queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_officials'] : ['officials'] });
-      queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
+      const activeKey = mode === 'jumuiya' ? ['jumuiya-officials'] : mode === 'groups' ? ['group-officials'] : ['officials'];
+      const historyKey = mode === 'jumuiya' ? ['jumuiya_history'] : mode === 'groups' ? ['group_history'] : ['history'];
+      queryClient.invalidateQueries({ queryKey: activeKey });
+      queryClient.invalidateQueries({ queryKey: historyKey });
       showSuccessToast('Officials Restored Successfully', json.message || 'The selected official records have been restored.');
     },
     onError: (error: Error) => {
@@ -88,7 +90,8 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
+      const historyKey = mode === 'jumuiya' ? ['jumuiya_history'] : mode === 'groups' ? ['group_history'] : ['history'];
+      queryClient.invalidateQueries({ queryKey: historyKey });
       showSuccessToast('Archived Official Deleted', 'The archived record has been permanently removed.');
     },
     onError: (error: Error) => {
@@ -113,7 +116,8 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mode === 'jumuiya' ? ['jumuiya_history'] : ['history'] });
+      const historyKey = mode === 'jumuiya' ? ['jumuiya_history'] : mode === 'groups' ? ['group_history'] : ['history'];
+      queryClient.invalidateQueries({ queryKey: historyKey });
       showSuccessToast('Archived Officials Deleted', 'The selected records have been permanently removed.');
     },
     onError: (error: Error) => {

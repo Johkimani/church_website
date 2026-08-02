@@ -3,7 +3,7 @@ import { X, Save, ShieldAlert, Phone } from 'lucide-react';
 import PhoneInput from 'react-phone-number-input/input';
 import { isValidPhoneNumber } from 'react-phone-number-input';
 import type { Official } from '../../../hooks/useOfficials';
-import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES } from '../constants/adminConstants';
+import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
 import { resizeImage } from '../../../utils/imageOptimization';
 
 interface EditOfficialModalProps {
@@ -12,7 +12,7 @@ interface EditOfficialModalProps {
  official: Official | null;
  onUpdate: (id: number, formData: FormData) => Promise<void>;
  isUpdating: boolean;
- mode?: 'csa' | 'jumuiya';
+ mode?: 'csa' | 'jumuiya' | 'groups';
  allOfficials?: any[];
  displayTerm?: string;
  officialsExist?: boolean;
@@ -36,6 +36,12 @@ export function EditOfficialModal({
       Object.keys(POSITION_BY_CATEGORY).forEach(cat => {
         const limit = POSITION_BY_CATEGORY[cat]?.length || 0;
         const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived' && o.id !== official?.id).length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    } else if (mode === 'groups') {
+      GROUP_OPTIONS.forEach(cat => {
+        const limit = POSITIONS_BY_GROUP[cat]?.length || 0;
+        const count = allOfficials.filter(o => o.category === cat && o.status !== 'archived' && o.id !== official?.id).length;
         stats[cat] = { count, limit, isFull: count >= limit };
       });
     } else {
@@ -68,6 +74,14 @@ export function EditOfficialModal({
  .filter(o => o.category === category && o.id !== official?.id)
  .map(o => o.position);
  return JUMUIYA_ROLES.filter(role => !occupiedRoles.includes(role));
+ }, [mode, category, allOfficials, official]);
+
+ const availableGroupRoles = React.useMemo(() => {
+ if (mode !== 'groups' || !category) return POSITIONS_BY_GROUP[category] || [];
+ const occupiedRoles = allOfficials
+ .filter(o => o.category === category && o.id !== official?.id)
+ .map(o => o.position);
+ return (POSITIONS_BY_GROUP[category] || []).filter(role => !occupiedRoles.includes(role));
  }, [mode, category, allOfficials, official]);
 
  const availableCSARoles = React.useMemo(() => {
@@ -154,14 +168,21 @@ export function EditOfficialModal({
   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium" 
   required
   >
-  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
+  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : mode === 'groups' ? 'Select Group' : 'Select category'}</option>
   {mode === 'csa' 
   ? Object.keys(POSITION_BY_CATEGORY).map(k => {
       const stats = categoryStats[k];
       const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
       return <option key={k} value={k}>{label}</option>;
     })
-  : JUMUIYA_OPTIONS.map(k => {
+  : mode === 'groups'
+    ? GROUP_OPTIONS.map(k => {
+        const stats = categoryStats[k];
+        const limit = POSITIONS_BY_GROUP[k]?.length || 0;
+        const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${limit})`;
+        return <option key={k} value={k}>{label}</option>;
+      })
+    : JUMUIYA_OPTIONS.map(k => {
       const stats = categoryStats[k];
       const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/8)`;
       return <option key={k} value={k}>{label}</option>;
@@ -192,11 +213,13 @@ export function EditOfficialModal({
  required 
  disabled={!category}
  >
- <option value="">Select position/role</option>
- {mode === 'csa'
- ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
- : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
- }
+  <option value="">Select position/role</option>
+  {mode === 'csa'
+  ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
+  : mode === 'groups'
+    ? (category && availableGroupRoles.map(p => <option key={p} value={p}>{p}</option>))
+    : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
+  }
  </select>
  </div>
  </div>

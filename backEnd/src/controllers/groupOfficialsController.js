@@ -10,42 +10,83 @@ import {
   syncCurrentTerm,
   formatPhoneForExcel 
 } from '../utils/helpers.js';
-import { autoAssignRoleForOfficial, removeRoleForOfficial } from '../utils/positionToRole.js';
 import logger from "../logger/winston.js";
 import { emitSocketEvent } from "../socket/index.js";
 
-const toJumuiyaSlug = (value) => {
-  if (!value) return '';
-  return value
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[.]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+export const GROUP_OPTIONS = [
+  'Choir',
+  'Dancers',
+  'Charismatic',
+  'St. Francis'
+];
+
+export const POSITIONS_BY_GROUP = {
+  'Choir': [
+    'Secretary',
+    'Vice Secretary',
+    'Treasurer',
+    'Project Manager',
+    'Male Representative',
+    'Female Representative',
+    'Choir Master',
+    'Choir Mistress'
+  ],
+  'Dancers': [
+    'Chairperson',
+    'Vice Chairperson'
+  ],
+  'Charismatic': [
+    'Chairperson',
+    'Vice Chairperson',
+    'Secretary',
+    'Treasurer'
+  ],
+  'St. Francis': [
+    'Chairperson',
+    'Vice Chairperson'
+  ]
 };
+
+const GROUP_SORT_SQL = `
+ORDER BY 
+  CASE 
+    WHEN o.category = 'Choir' THEN 1
+    WHEN o.category = 'Dancers' THEN 2
+    WHEN o.category = 'Charismatic' THEN 3
+    WHEN o.category = 'St. Francis' THEN 4
+    ELSE 5
+  END,
+  CASE
+    WHEN o.position = 'Chairperson' THEN 1
+    WHEN o.position = 'Vice Chairperson' THEN 2
+    WHEN o.position = 'Secretary' THEN 3
+    WHEN o.position = 'Vice Secretary' THEN 4
+    WHEN o.position = 'Treasurer' THEN 5
+    WHEN o.position = 'Project Manager' THEN 6
+    WHEN o.position = 'Male Representative' THEN 7
+    WHEN o.position = 'Female Representative' THEN 8
+    WHEN o.position = 'Choir Master' THEN 9
+    WHEN o.position = 'Choir Mistress' THEN 10
+    WHEN o.position = 'Choreographer' THEN 11
+    WHEN o.position = 'Assistant Choreographer' THEN 12
+    WHEN o.position = 'Music Director' THEN 13
+    WHEN o.position = 'Organist' THEN 14
+    WHEN o.position = 'Choir Representative' THEN 15
+    WHEN o.position = 'Prayer Coordinator' THEN 16
+    WHEN o.position = 'Worship Coordinator' THEN 17
+    WHEN o.position = 'Welfare Coordinator' THEN 18
+    ELSE 99
+  END`;
 
 const resolveMemberForRegNumber = async (regNumber) => {
   const search = regNumber?.trim();
   if (!search) return null;
 
   const result = await pool.query(
-    `SELECT DISTINCT ON (member_id)
-        member_id, first_name, last_name, phone, jumuiya_id, jumuiya_name, jumuiya_slug
-     FROM (
-        SELECT
-          m.member_id,
-          m.first_name,
-          m.last_name,
-          m.phone,
-          sg.group_id::text as jumuiya_id,
-          sg.name as jumuiya_name,
-          LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug
-        FROM members m
-        LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-        WHERE m.member_id LIKE '%/' || $1 || '/%' OR m.member_id ILIKE $2
-     ) matches
-     ORDER BY member_id, jumuiya_name
+    `SELECT member_id, first_name, last_name, phone
+     FROM members
+     WHERE member_id LIKE '%/' || $1 || '/%' OR member_id ILIKE $2
+     ORDER BY member_id
      LIMIT 2`,
     [search, `%${search}%`]
   );
@@ -61,58 +102,7 @@ const resolveMemberForRegNumber = async (regNumber) => {
   return { member: result.rows[0] };
 };
 
-export const VALID_JUMUIYAS = [
-  'St. Anthony',
-  'St. Augustine',
-  'St. Catherine',
-  'St. Dominic',
-  'St. Elizabeth',
-  'St. Maria Goretti',
-  'St. Monica'
-];
-
-export const VALID_ROLES = [
-  'Chairperson',
-  'Ass Chairperson',
-  'Organizing Secretary',
-  'Treasurer',
-  'Secretary',
-  'Ass Secretary',
-  'Liturgist',
-  'Ass Liturgist'
-];
-
-/**
- * Shared SQL sorting logic for Jumuiya officials.
- */
-const JUMUIYA_SORT_SQL = `
-ORDER BY 
-  CASE 
-    WHEN o.category = 'St. Anthony' THEN 1
-    WHEN o.category = 'St. Augustine' THEN 2
-    WHEN o.category = 'St. Catherine' THEN 3
-    WHEN o.category = 'St. Dominic' THEN 4
-    WHEN o.category = 'St. Elizabeth' THEN 5
-    WHEN o.category = 'St. Maria Goretti' THEN 6
-    WHEN o.category = 'St. Monica' THEN 7
-    ELSE 8
-  END,
-  CASE
-    WHEN o.position = 'Chairperson' THEN 1
-    WHEN o.position = 'Ass Chairperson' THEN 2
-    WHEN o.position = 'Organizing Secretary' THEN 3
-    WHEN o.position = 'Treasurer' THEN 4
-    WHEN o.position = 'Secretary' THEN 5
-    WHEN o.position = 'Ass Secretary' THEN 6
-    WHEN o.position = 'Liturgist' THEN 7
-    WHEN o.position = 'Ass Liturgist' THEN 8
-    ELSE 9
-  END`;
-
-/**
- * Fetches active or archived Jumuiya officials.
- */
-export const getAllJumuiyaOfficials = async (req, res) => {
+export const getAllGroupOfficials = async (req, res) => {
   try {
     const termId = req.query.term_id;
     const includeArchived = req.query.include_archived === 'true';
@@ -129,7 +119,7 @@ export const getAllJumuiyaOfficials = async (req, res) => {
     if (termId) {
       query = `
         SELECT ${SELECT_COLS}
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE (o.election_term_id = $1 OR o.status = 'active' OR o.status IS NULL)
         AND (o.status = 'active' OR o.status IS NULL)`;
@@ -144,11 +134,11 @@ export const getAllJumuiyaOfficials = async (req, res) => {
         query += ` AND o.term_of_service = $${params.length + 1}`;
         params.push(termOfService);
       }
-      query += ` ${JUMUIYA_SORT_SQL}`;
+      query += ` ${GROUP_SORT_SQL}`;
     } else if (includeArchived) {
       query = `
         SELECT ${SELECT_COLS}
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE 1=1`;
       
@@ -161,11 +151,11 @@ export const getAllJumuiyaOfficials = async (req, res) => {
         query += ` AND o.term_of_service = $${params.length + 1}`;
         params.push(termOfService);
       }
-      query += ` ORDER BY o.status, et.year DESC ${JUMUIYA_SORT_SQL.replace('ORDER BY', ',')}`;
+      query += ` ORDER BY o.status, et.year DESC ${GROUP_SORT_SQL.replace('ORDER BY', ',')}`;
     } else {
       query = `
         SELECT ${SELECT_COLS}
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE (o.status = 'active' OR o.status IS NULL)`;
       
@@ -178,24 +168,24 @@ export const getAllJumuiyaOfficials = async (req, res) => {
         query += ` AND o.term_of_service = $${params.length + 1}`;
         params.push(termOfService);
       }
-      query += ` ${JUMUIYA_SORT_SQL}`;
+      query += ` ${GROUP_SORT_SQL}`;
     }
 
     const result = await pool.query(query, params);
     res.json({ success: true, data: result.rows });
   } catch (error) {
-    logger.error('Error fetching jumuiya officials: ' + error.message);
-    res.status(500).json({ success: false, error: 'Failed to fetch jumuiya officials' });
+    logger.error('Error fetching group officials: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to fetch group officials' });
   }
 };
 
-export const getJumuiyaOfficialById = async (req, res) => {
+export const getGroupOfficialById = async (req, res) => {
   try {
     const { id } = req.params;
     if (isNaN(Number(id))) {
       return res.status(400).json({ success: false, message: "Invalid ID format" });
     }
-    const result = await pool.query('SELECT * FROM jumuiya_officials WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM group_officials WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Official not found' });
@@ -203,19 +193,19 @@ export const getJumuiyaOfficialById = async (req, res) => {
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
-    logger.error('Error fetching jumuiya official: ' + error.message);
+    logger.error('Error fetching group official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch official' });
   }
 };
 
-export const createJumuiyaOfficial = async (req, res) => {
+export const createGroupOfficial = async (req, res) => {
   try {
     const { name, category, position, contact, term_of_service, reg_number } = req.body;
-    logger.info(`Creating Jumuiya official: ${name}, ${category}, ${position}`);
+    logger.info(`Creating group official: ${name}, ${category}, ${position}`);
 
     if (!name || !category || !position) {
-        logger.warn('Missing required fields for Jumuiya official');
-        return res.status(400).json({ success: false, message: 'Name, Jumuiya, and Position are required' });
+        logger.warn('Missing required fields for group official');
+        return res.status(400).json({ success: false, message: 'Name, Group, and Position are required' });
     }
 
     const normalizedContact = normalizePhone(contact);
@@ -224,46 +214,36 @@ export const createJumuiyaOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid phone number' });
     }
 
-    if (!VALID_JUMUIYAS.includes(category)) {
-      logger.warn(`Invalid Jumuiya category: ${category}`);
-      return res.status(400).json({ success: false, message: `Invalid Jumuiya. Must be one of: ${VALID_JUMUIYAS.join(', ')}` });
+    if (!GROUP_OPTIONS.includes(category)) {
+      logger.warn(`Invalid group category: ${category}`);
+      return res.status(400).json({ success: false, message: `Invalid Group. Must be one of: ${GROUP_OPTIONS.join(', ')}` });
     }
 
-    if (!VALID_ROLES.includes(position)) {
-      logger.warn(`Invalid position: ${position}`);
-      return res.status(400).json({ success: false, message: `Invalid Role. Must be one of: ${VALID_ROLES.join(', ')}` });
+    const validPositions = POSITIONS_BY_GROUP[category] || [];
+    if (!validPositions.includes(position)) {
+      logger.warn(`Invalid position: ${position} for ${category}`);
+      return res.status(400).json({ success: false, message: `Invalid Position for ${category}. Must be one of: ${validPositions.join(', ')}` });
     }
 
-    // Validate reg_number if provided
+    // Validate reg_number if provided (link to member, no jumuiya constraint for groups)
     let validatedRegNumber = null;
     if (reg_number && reg_number.trim()) {
       const lookup = await resolveMemberForRegNumber(reg_number);
       if (lookup?.error) {
         return res.status(400).json({ success: false, message: lookup.error });
       }
-
-      const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
-      const targetJumuiyaSlug = toJumuiyaSlug(category);
-      if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
-        return res.status(409).json({
-          success: false,
-          message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
-        });
-      }
-
       validatedRegNumber = lookup.member.member_id;
     }
 
-    // Build checking promises to run in parallel
     const promises = [
       pool.query("SELECT id FROM election_terms WHERE is_current = TRUE"),
-      pool.query("SELECT name FROM jumuiya_officials WHERE category = $1 AND position = $2 AND (status = 'active' OR status IS NULL)", [category, position])
+      pool.query("SELECT name FROM group_officials WHERE category = $1 AND position = $2 AND (status = 'active' OR status IS NULL)", [category, position])
     ];
 
     let contactQueryIndex = -1;
     if (normalizedContact) {
       promises.push(
-        pool.query("SELECT id FROM jumuiya_officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)", [normalizedContact])
+        pool.query("SELECT id FROM group_officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)", [normalizedContact])
       );
       contactQueryIndex = promises.length - 1;
     }
@@ -292,37 +272,28 @@ export const createJumuiyaOfficial = async (req, res) => {
     const termId = currentTermResult.rows.length > 0 ? currentTermResult.rows[0].id : null;
 
     const result = await pool.query(
-      `INSERT INTO jumuiya_officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number) 
+      `INSERT INTO group_officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number) 
        VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8) RETURNING *`,
       [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
     );
 
-    if (validatedRegNumber && position) {
-      const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, true, category, req.user?.member_id || null
-      );
-      if (roleResult) {
-        logger.info(`Auto-assigned role for jumuiya official ${name}: ${JSON.stringify(roleResult)}`);
-      }
-    }
-
     await syncCurrentTerm(term_of_service);
 
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_jumuiya", data: result.rows[0] });
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_group", data: result.rows[0] });
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
-    logger.error('Error creating jumuiya official: ' + error.message);
+    logger.error('Error creating group official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to create official' });
   }
 };
 
-export const updateJumuiyaOfficial = async (req, res) => {
+export const updateGroupOfficial = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, category, position, contact, term_of_service, reg_number } = req.body;
 
-    const existing = await pool.query('SELECT * FROM jumuiya_officials WHERE id = $1', [id]);
+    const existing = await pool.query('SELECT * FROM group_officials WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Official not found' });
     }
@@ -330,12 +301,15 @@ export const updateJumuiyaOfficial = async (req, res) => {
     const currentCategory = category || existing.rows[0].category;
     const currentPosition = position || existing.rows[0].position;
 
-    if (category && !VALID_JUMUIYAS.includes(category)) {
-      return res.status(400).json({ success: false, message: `Invalid Jumuiya. Must be one of: ${VALID_JUMUIYAS.join(', ')}` });
+    if (category && !GROUP_OPTIONS.includes(category)) {
+      return res.status(400).json({ success: false, message: `Invalid Group. Must be one of: ${GROUP_OPTIONS.join(', ')}` });
     }
 
-    if (position && !VALID_ROLES.includes(position)) {
-      return res.status(400).json({ success: false, message: `Invalid Role. Must be one of: ${VALID_ROLES.join(', ')}` });
+    if (position) {
+      const validPositions = POSITIONS_BY_GROUP[currentCategory] || [];
+      if (!validPositions.includes(position)) {
+        return res.status(400).json({ success: false, message: `Invalid Position for ${currentCategory}. Must be one of: ${validPositions.join(', ')}` });
+      }
     }
 
     const normalizedContact = contact ? normalizePhone(contact) : null;
@@ -345,7 +319,7 @@ export const updateJumuiyaOfficial = async (req, res) => {
 
     if (normalizedContact) {
       const dup = await pool.query(
-        "SELECT id FROM jumuiya_officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL)",
+        "SELECT id FROM group_officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL)",
         [normalizedContact, id]
       );
       if (dup.rows.length > 0) {
@@ -360,39 +334,13 @@ export const updateJumuiyaOfficial = async (req, res) => {
       if (lookup?.error) {
         return res.status(400).json({ success: false, message: lookup.error });
       }
-
-      const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
-      const targetJumuiyaSlug = toJumuiyaSlug(currentCategory);
-      if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
-        return res.status(409).json({
-          success: false,
-          message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${currentCategory}`
-        });
-      }
-
-      validatedRegNumber = lookup.member.member_id;
-    } else if (validatedRegNumber) {
-      const lookup = await resolveMemberForRegNumber(validatedRegNumber);
-      if (lookup?.error) {
-        return res.status(400).json({ success: false, message: lookup.error });
-      }
-
-      const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
-      const targetJumuiyaSlug = toJumuiyaSlug(currentCategory);
-      if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
-        return res.status(409).json({
-          success: false,
-          message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${currentCategory}`
-        });
-      }
-
       validatedRegNumber = lookup.member.member_id;
     }
 
     // Limit check for category+position combo during an update
     if (category || position) {
       const posDup = await pool.query(
-        "SELECT name FROM jumuiya_officials WHERE category = $1 AND position = $2 AND id != $3 AND (status = 'active' OR status IS NULL)",
+        "SELECT name FROM group_officials WHERE category = $1 AND position = $2 AND id != $3 AND (status = 'active' OR status IS NULL)",
         [currentCategory, currentPosition, id]
       );
       if (posDup.rows.length > 0) {
@@ -416,9 +364,8 @@ export const updateJumuiyaOfficial = async (req, res) => {
       photoUrl = formatPhotoUrl(req.file);
     }
 
-
     const result = await pool.query(
-      `UPDATE jumuiya_officials SET name = COALESCE($1, name), category = COALESCE($2, category),
+      `UPDATE group_officials SET name = COALESCE($1, name), category = COALESCE($2, category),
        position = COALESCE($3, position), contact = COALESCE($4, contact),
        photo = COALESCE($5, photo), term_of_service = COALESCE($6, term_of_service),
        reg_number = COALESCE($7, reg_number),
@@ -427,50 +374,24 @@ export const updateJumuiyaOfficial = async (req, res) => {
       [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
-    const oldPosition = existing.rows[0].position;
-    const oldRegNumber = existing.rows[0].reg_number;
-    const newPosition = position || oldPosition;
-    const newRegNumber = validatedRegNumber || oldRegNumber;
-
-    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
-      if (oldPosition && oldRegNumber) {
-        await removeRoleForOfficial(oldRegNumber, oldPosition, true);
-      }
-      if (newRegNumber && newPosition) {
-        const roleResult = await autoAssignRoleForOfficial(
-          newRegNumber, newPosition, true, result.rows[0].category, req.user?.member_id || null
-        );
-        if (roleResult) {
-          logger.info(`Auto-assigned role for updated jumuiya official: ${JSON.stringify(roleResult)}`);
-        }
-      }
-    } else if (validatedRegNumber && position && oldPosition === position) {
-      const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, true, result.rows[0].category, req.user?.member_id || null
-      );
-      if (roleResult) {
-        logger.info(`Re-assigned role for jumuiya official: ${JSON.stringify(roleResult)}`);
-      }
-    }
-
     if (term_of_service) {
       await syncCurrentTerm(term_of_service);
     }
 
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_jumuiya", id, data: result.rows[0] });
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_group", id, data: result.rows[0] });
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
-    logger.error('Error updating jumuiya official: ' + error.message);
+    logger.error('Error updating group official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to update official' });
   }
 };
 
-export const deleteJumuiyaOfficial = async (req, res) => {
+export const deleteGroupOfficial = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query('SELECT * FROM jumuiya_officials WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM group_officials WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Official not found' });
     }
@@ -486,23 +407,23 @@ export const deleteJumuiyaOfficial = async (req, res) => {
       }
     }
 
-    await pool.query('DELETE FROM jumuiya_officials WHERE id = $1', [id]);
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_jumuiya", id });
+    await pool.query('DELETE FROM group_officials WHERE id = $1', [id]);
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_group", id });
     res.json({ success: true, message: 'Official deleted successfully' });
   } catch (error) {
-    logger.error('Error deleting jumuiya official: ' + error.message);
+    logger.error('Error deleting group official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to delete official' });
   }
 };
 
-export const exportJumuiyaOfficials = async (req, res) => {
+export const exportGroupOfficials = async (req, res) => {
   try {
     const { fields, term_of_service: termOfService } = req.query;
     const selectedFields = fields ? fields.split(',') : ['name', 'category', 'position', 'contact'];
 
     let query = `
         SELECT o.id, o.name, o.category, o.position, o.contact, o.created_at, et.name as term_name, et.year as term_year, o.term_of_service
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE (o.status = 'active' OR o.status IS NULL)`;
     
@@ -511,7 +432,7 @@ export const exportJumuiyaOfficials = async (req, res) => {
       query += ` AND o.term_of_service = $1`;
       params.push(termOfService);
     }
-    query += ` ${JUMUIYA_SORT_SQL}`;
+    query += ` ${GROUP_SORT_SQL}`;
 
     const result = await pool.query(query, params);
 
@@ -529,7 +450,7 @@ export const exportJumuiyaOfficials = async (req, res) => {
     });
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Jumuiya Officials');
+    const worksheet = workbook.addWorksheet('Group Officials');
 
     worksheet.columns = selectedFields.map((field, idx) => ({
       header: headers[idx],
@@ -548,17 +469,17 @@ export const exportJumuiyaOfficials = async (req, res) => {
     });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="jumuiya_officials.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="group_officials.xlsx"');
     
     const buffer = await workbook.xlsx.writeBuffer();
     res.send(buffer);
   } catch (error) {
-    logger.error('Error exporting jumuiya officials: ' + error.message);
-    res.status(500).json({ success: false, message: 'Failed to export jumuiya officials' });
+    logger.error('Error exporting group officials: ' + error.message);
+    res.status(500).json({ success: false, message: 'Failed to export group officials' });
   }
 };
 
-export const exportArchivedJumuiyaOfficials = async (req, res) => {
+export const exportArchivedGroupOfficials = async (req, res) => {
   try {
     const { termId } = req.params;
     const { fields, term_of_service: termOfService } = req.query;
@@ -566,7 +487,7 @@ export const exportArchivedJumuiyaOfficials = async (req, res) => {
 
     let query = `
         SELECT o.id, o.name, o.category, o.position, o.contact, o.created_at, o.status, et.name as term_name, et.year as term_year, o.term_of_service
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE o.status = 'archived'`;
     let params = [];
@@ -575,10 +496,10 @@ export const exportArchivedJumuiyaOfficials = async (req, res) => {
       params.push(termId);
     }
     if (termOfService) {
-      query += (termId ? ` AND` : ` AND`) + ` (o.term_of_service = $${params.length + 1} OR et.name = $${params.length + 1})`;
+      query += ` AND (o.term_of_service = $${params.length + 1} OR et.name = $${params.length + 1})`;
       params.push(termOfService);
     }
-    query += ` ${JUMUIYA_SORT_SQL}`;
+    query += ` ${GROUP_SORT_SQL}`;
 
     const result = await pool.query(query, params);
 
@@ -596,7 +517,7 @@ export const exportArchivedJumuiyaOfficials = async (req, res) => {
     });
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Archived Jumuiya Officials');
+    const worksheet = workbook.addWorksheet('Archived Group Officials');
 
     worksheet.columns = selectedFields.map((field, idx) => ({
       header: headers[idx],
@@ -615,17 +536,17 @@ export const exportArchivedJumuiyaOfficials = async (req, res) => {
     });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="archived_jumuiya_officials.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="archived_group_officials.xlsx"');
     
     const buffer = await workbook.xlsx.writeBuffer();
     res.send(buffer);
   } catch (error) {
-    logger.error('Error exporting archived jumuiya officials: ' + error.message);
+    logger.error('Error exporting archived group officials: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to export archived officials' });
   }
 };
 
-export const archiveCurrentJumuiyaOfficials = async (req, res) => {
+export const archiveCurrentGroupOfficials = async (req, res) => {
   const client = await pool.connect();
   try {
     const { election_term_id, name, year, start_date, end_date, description, category } = req.body;
@@ -670,7 +591,7 @@ export const archiveCurrentJumuiyaOfficials = async (req, res) => {
     }
 
     const currentOfficials = await client.query(
-      `SELECT * FROM jumuiya_officials WHERE ${activeFilter}`,
+      `SELECT * FROM group_officials WHERE ${activeFilter}`,
       params
     );
 
@@ -682,9 +603,8 @@ export const archiveCurrentJumuiyaOfficials = async (req, res) => {
       });
     }
 
-    // 3. Archive all current officials in one bulk operation
     await client.query(
-      `UPDATE jumuiya_officials 
+      `UPDATE group_officials 
        SET status = 'archived', 
            election_term_id = $1, 
            updated_at = CURRENT_TIMESTAMP 
@@ -696,7 +616,7 @@ export const archiveCurrentJumuiyaOfficials = async (req, res) => {
 
     await client.query('COMMIT');
 
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "archive_jumuiya" });
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "archive_group" });
 
     res.json({
       success: true,
@@ -705,14 +625,14 @@ export const archiveCurrentJumuiyaOfficials = async (req, res) => {
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    logger.error('Error archiving jumuiya officials: ' + error.message);
+    logger.error('Error archiving group officials: ' + error.message);
     res.status(500).json({ success: false, message: `Failed to archive officials: ${error.message}` });
   } finally {
     client.release();
   }
 };
 
-export const getJumuiyaOfficialsByTerm = async (req, res) => {
+export const getGroupOfficialsByTerm = async (req, res) => {
   try {
     const { termId } = req.params;
     const includeArchived = req.query.include_archived === 'true';
@@ -725,24 +645,24 @@ export const getJumuiyaOfficialsByTerm = async (req, res) => {
 
     if (termId) {
       queryBase = `
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE o.election_term_id = $1 AND o.status = 'archived'`;
       params = [termId];
     } else if (req.query.only_archived === 'true') {
       queryBase = `
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE o.status = 'archived'`;
       params = [];
     } else if (includeArchived) {
       queryBase = `
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id`;
       params = [];
     } else {
       queryBase = `
-        FROM jumuiya_officials o
+        FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE o.status = 'active' OR o.status IS NULL`;
       params = [];
@@ -755,7 +675,7 @@ export const getJumuiyaOfficialsByTerm = async (req, res) => {
     const dataQuery = `
       SELECT o.*, et.name as term_name, et.year as term_year 
       ${queryBase} 
-      ${termId || req.query.only_archived === 'true' ? `ORDER BY et.year DESC ${JUMUIYA_SORT_SQL.replace('ORDER BY', ',')}` : JUMUIYA_SORT_SQL}
+      ${termId || req.query.only_archived === 'true' ? `ORDER BY et.year DESC ${GROUP_SORT_SQL.replace('ORDER BY', ',')}` : GROUP_SORT_SQL}
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
@@ -771,12 +691,12 @@ export const getJumuiyaOfficialsByTerm = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Error fetching jumuiya officials by term: ' + error.message);
+    logger.error('Error fetching group officials by term: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch officials' });
   }
 };
 
-export const restoreArchivedJumuiyaOfficials = async (req, res) => {
+export const restoreArchivedGroupOfficials = async (req, res) => {
   try {
     const { officialIds } = req.body;
 
@@ -788,7 +708,7 @@ export const restoreArchivedJumuiyaOfficials = async (req, res) => {
     }
 
     const officialsToRestore = await pool.query(
-      `SELECT name, category, position FROM jumuiya_officials WHERE id = ANY($1) AND position IS NOT NULL AND position != ''`,
+      `SELECT name, category, position FROM group_officials WHERE id = ANY($1) AND position IS NOT NULL AND position != ''`,
       [officialIds]
     );
 
@@ -814,7 +734,7 @@ export const restoreArchivedJumuiyaOfficials = async (req, res) => {
 
       for (const [category, positions] of Object.entries(positionsByCategory)) {
          const dupPos = await pool.query(
-           `SELECT name, position FROM jumuiya_officials WHERE category = $1 AND position = ANY($2) AND status = 'active' AND id != ANY($3)`,
+           `SELECT name, position FROM group_officials WHERE category = $1 AND position = ANY($2) AND status = 'active' AND id != ANY($3)`,
            [category, positions, officialIds]
          );
 
@@ -829,12 +749,12 @@ export const restoreArchivedJumuiyaOfficials = async (req, res) => {
     }
 
     const result = await pool.query(
-      `UPDATE jumuiya_officials SET status = 'active', election_term_id = NULL, updated_at = CURRENT_TIMESTAMP
+      `UPDATE group_officials SET status = 'active', election_term_id = NULL, updated_at = CURRENT_TIMESTAMP
        WHERE id = ANY($1) RETURNING *`,
       [officialIds]
     );
 
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "restore_jumuiya", ids: officialIds });
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "restore_group", ids: officialIds });
 
     res.json({
       success: true,
@@ -842,17 +762,17 @@ export const restoreArchivedJumuiyaOfficials = async (req, res) => {
       data: result.rows
     });
   } catch (error) {
-    logger.error('Error restoring jumuiya officials: ' + error.message);
+    logger.error('Error restoring group officials: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to restore officials' });
   }
 };
 
-export const deleteArchivedJumuiyaOfficial = async (req, res) => {
+export const deleteArchivedGroupOfficial = async (req, res) => {
   try {
     const { id } = req.params;
 
     const result = await pool.query(
-      `DELETE FROM jumuiya_officials WHERE id = $1 AND status = 'archived' RETURNING *`,
+      `DELETE FROM group_officials WHERE id = $1 AND status = 'archived' RETURNING *`,
       [id]
     );
 
@@ -869,8 +789,7 @@ export const deleteArchivedJumuiyaOfficial = async (req, res) => {
         }
     }
 
-
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_archived_jumuiya", id });
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_archived_group", id });
 
     res.json({ success: true, message: 'Archived official deleted successfully' });
   } catch (error) {
@@ -879,13 +798,13 @@ export const deleteArchivedJumuiyaOfficial = async (req, res) => {
   }
 };
 
-export const clearAllJumuiyaOfficials = async (req, res) => {
+export const clearAllGroupOfficials = async (req, res) => {
   try {
     const snapshot = await pool.query(
-      `SELECT photo FROM jumuiya_officials WHERE photo IS NOT NULL`
+      `SELECT photo FROM group_officials WHERE photo IS NOT NULL`
     );
 
-    const result = await pool.query(`DELETE FROM jumuiya_officials`);
+    const result = await pool.query(`DELETE FROM group_officials`);
 
     for (const row of snapshot.rows) {
       if (row.photo) {
@@ -898,15 +817,15 @@ export const clearAllJumuiyaOfficials = async (req, res) => {
       }
     }
 
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "clear_all_jumuiya" });
-    res.json({ success: true, message: `All jumuiya officials cleared (${result.rowCount} deleted)` });
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "clear_all_group" });
+    res.json({ success: true, message: `All group officials cleared (${result.rowCount} deleted)` });
   } catch (error) {
-    logger.error('Error clearing all jumuiya officials: ' + error.message);
-    res.status(500).json({ success: false, message: 'Failed to clear jumuiya officials' });
+    logger.error('Error clearing all group officials: ' + error.message);
+    res.status(500).json({ success: false, message: 'Failed to clear group officials' });
   }
 };
 
-export const bulkDeleteArchivedJumuiyaOfficials = async (req, res) => {
+export const bulkDeleteArchivedGroupOfficials = async (req, res) => {
   try {
     const { officialIds } = req.body;
     
@@ -914,18 +833,16 @@ export const bulkDeleteArchivedJumuiyaOfficials = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Official IDs are required' });
     }
 
-    // Get photos before deletion to clean up files
     const snapshot = await pool.query(
-      `SELECT photo FROM jumuiya_officials WHERE id = ANY($1) AND status = 'archived' AND photo IS NOT NULL`,
+      `SELECT photo FROM group_officials WHERE id = ANY($1) AND status = 'archived' AND photo IS NOT NULL`,
       [officialIds]
     );
 
     const result = await pool.query(
-      `DELETE FROM jumuiya_officials WHERE id = ANY($1) AND status = 'archived' RETURNING *`,
+      `DELETE FROM group_officials WHERE id = ANY($1) AND status = 'archived' RETURNING *`,
       [officialIds]
     );
 
-    // Clean up photos
     for (const row of snapshot.rows) {
       if (row.photo) {
         if (row.photo.startsWith('http')) {
@@ -937,8 +854,7 @@ export const bulkDeleteArchivedJumuiyaOfficials = async (req, res) => {
       }
     }
 
-
-    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "bulk_delete_archived_jumuiya", ids: officialIds });
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "bulk_delete_archived_group", ids: officialIds });
 
     res.json({ 
       success: true, 

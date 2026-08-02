@@ -5,13 +5,11 @@ import {
   ArrowLeft,
   Calendar,
   Megaphone,
-  UserCheck,
   Users,
   Plus,
   Edit2,
   Trash2,
   Loader2,
-  Image as ImageIcon,
   CheckCircle,
   XCircle,
   Clock,
@@ -21,7 +19,7 @@ import {
   FileText as FilePdf
 } from 'lucide-react';
 
-type TabType = 'activities' | 'announcements' | 'officials' | 'members' | 'about';
+type TabType = 'activities' | 'announcements' | 'members' | 'about';
 
 export default function CommunityDetailEditor() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -75,7 +73,6 @@ export default function CommunityDetailEditor() {
       switch (activeTab) {
         case 'activities': tableName = 'hub_activities'; break;
         case 'announcements': tableName = 'hub_announcements'; break;
-        case 'officials': tableName = 'hub_officials'; break;
         case 'members': tableName = 'enrollments'; break;
       }
 
@@ -124,9 +121,6 @@ export default function CommunityDetailEditor() {
       if (activeTab === 'announcements') {
         if (!formValues.title) return alert('Title required');
       }
-      if (activeTab === 'officials') {
-        if (!formValues.name) return alert('Name required');
-      }
       if (activeTab === 'members') {
         if (!formValues.full_name) return alert('Full name required');
       }
@@ -140,18 +134,14 @@ export default function CommunityDetailEditor() {
         if (uploaded[0]) {
           const uploadedUrl = uploaded[0].url || uploaded[0].secure_url || uploaded[0].path;
           const uploadedId = uploaded[0].public_id || uploaded[0].id;
-          // Map to correct column based on tab
-          if (activeTab === 'officials') {
-            formValues.photo_url = uploadedUrl;
-          } else {
-            formValues.image_url = uploadedUrl;
-          }
+          // Map to correct column
+          formValues.image_url = uploadedUrl;
           formValues.public_id = uploadedId;
         }
         setUploading(false);
       }
 
-      const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : activeTab === 'officials' ? 'hub_officials' : 'enrollments';
+      const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : 'enrollments';
 
       // Build properly mapped payload based on table
       let payload: any = { module_id: categoryId };
@@ -173,16 +163,6 @@ export default function CommunityDetailEditor() {
           title: formValues.title,
           content: formValues.description || formValues.content, // Map description -> content
           announcement_date: formValues.announcement_date || new Date().toISOString()
-        };
-      } else if (activeTab === 'officials') {
-        // hub_officials: id, module_id, name, role, email, phone_number, photo_url
-        payload = {
-          module_id: categoryId,
-          name: formValues.name,
-          role: formValues.role || '',
-          email: formValues.email || '',
-          phone_number: formValues.whatsapp || formValues.contact || formValues.phone_number || '', // Map whatsapp/contact -> phone_number
-          photo_url: formValues.photo_url || ''
         };
       } else if (activeTab === 'members') {
         // enrollments: id, module_id (as class_id), full_name, voice_type, music_level, status
@@ -220,7 +200,6 @@ export default function CommunityDetailEditor() {
       try {
         localStorage.removeItem('csa_cache_hub_activities');
         localStorage.removeItem('csa_cache_hub_announcements');
-        localStorage.removeItem('csa_cache_hub_officials');
         localStorage.removeItem('csa_cache_enrollments');
       } catch { }
 
@@ -235,13 +214,12 @@ export default function CommunityDetailEditor() {
   const handleDelete = async (id: number | string) => {
     if (!confirm('Are you sure? This action cannot be undone.')) return;
     try {
-      const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : activeTab === 'officials' ? 'hub_officials' : 'enrollments';
+      const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : 'enrollments';
       await deleteTableRecord(tableName, id as any);
       showToast('Deleted');
       try {
         localStorage.removeItem('csa_cache_hub_activities');
         localStorage.removeItem('csa_cache_hub_announcements');
-        localStorage.removeItem('csa_cache_hub_officials');
         localStorage.removeItem('csa_cache_enrollments');
       } catch { }
       await loadCategoryData();
@@ -291,7 +269,6 @@ export default function CommunityDetailEditor() {
     ...(isAboutEnabled ? [{ id: 'about' as TabType, label: 'About Content', icon: Info }] : []),
     { id: 'activities', label: 'Semester Activities', icon: Calendar },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
-    { id: 'officials', label: 'Officials Management', icon: UserCheck },
     { id: 'members', label: 'Registered Members', icon: Users },
   ];
 
@@ -439,7 +416,6 @@ export default function CommunityDetailEditor() {
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
                 {activeTab === 'activities' && <Calendar size={32} />}
                 {activeTab === 'announcements' && <Megaphone size={32} />}
-                {activeTab === 'officials' && <UserCheck size={32} />}
                 {activeTab === 'members' && <Users size={32} />}
               </div>
               <h4 className="text-slate-800 font-bold italic">No records found</h4>
@@ -557,31 +533,6 @@ export default function CommunityDetailEditor() {
                     ))}
                   </tbody>
                 </table>
-              ) : activeTab === 'officials' ? (
-                /* Officials Grid */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {data.map((official) => (
-                    <div key={official.id} className="flex flex-col border border-slate-100 rounded-2xl overflow-hidden hover:shadow-md transition-shadow group bg-slate-50/20">
-                      <div className="h-48 bg-slate-100 relative overflow-hidden">
-                        {official.photo_url ? (
-                          <img src={official.photo_url} alt={official.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300">
-                            <ImageIcon size={48} />
-                          </div>
-                        )}
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={(e) => { e.stopPropagation(); openEditModal(official); }} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-blue-600 hover:bg-white"><Edit2 size={14} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDelete(official.id); }} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-rose-600 hover:bg-white"><Trash2 size={14} /></button>
-                        </div>
-                      </div>
-                      <div className="p-4 text-center">
-                        <h4 className="font-black text-slate-800 uppercase tracking-tight">{official.name}</h4>
-                        <p className="text-xs text-blue-600 font-bold uppercase tracking-widest mt-1">{official.role}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               ) : (
                 /* List View for Activities/Announcements */
                 <div className="space-y-4">
@@ -620,7 +571,7 @@ export default function CommunityDetailEditor() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-xl font-bold mb-4">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : activeTab === 'officials' ? 'Official' : 'Member'}</h3>
+            <h3 className="text-xl font-bold mb-4">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : 'Member'}</h3>
             <div className="space-y-3">
               {(activeTab === 'activities' || activeTab === 'announcements') && (
                 <>
@@ -641,27 +592,6 @@ export default function CommunityDetailEditor() {
                       <label className="text-sm font-bold">Date</label>
                       <input type="date" value={formValues.activity_date?.slice?.(0, 10) || formValues.announcement_date?.slice?.(0, 10) || ''} onChange={(e) => setFormValues(v => ({ ...v, activity_date: e.target.value, announcement_date: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
                     </div>
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'officials' && (
-                <>
-                  <div>
-                    <label className="text-sm font-bold">Full name</label>
-                    <input value={formValues.name || ''} onChange={(e) => setFormValues(v => ({ ...v, name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold">Position / Role</label>
-                    <input value={formValues.role || ''} onChange={(e) => setFormValues(v => ({ ...v, role: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold">Email (optional)</label>
-                    <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold">WhatsApp / Phone Number</label>
-                    <input value={formValues.whatsapp || formValues.contact || formValues.phone_number || ''} onChange={(e) => setFormValues(v => ({ ...v, whatsapp: e.target.value, contact: e.target.value, phone_number: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="+254..." />
                   </div>
                 </>
               )}

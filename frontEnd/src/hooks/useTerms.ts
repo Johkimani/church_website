@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_TERMS, API_ARCHIVE, API_JUMUIYA_ARCHIVE } from '../utils/officialsApi';
+import { API_TERMS, API_ARCHIVE, API_JUMUIYA_ARCHIVE, API_GROUP_ARCHIVE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../pages/Landing/services/api';
@@ -15,6 +15,7 @@ export interface ElectionTerm {
   created_at?: string;
   archived_csa_count?: string | number;
   archived_jumuiya_count?: string | number;
+  archived_group_count?: string | number;
 }
 
 export function useTerms() {
@@ -68,8 +69,8 @@ export function useTerms() {
   });
 
   const archiveOfficialsMutation = useMutation({
-    mutationFn: async (payload: any & { isJumuiya?: boolean }) => {
-      const url = payload.isJumuiya ? API_JUMUIYA_ARCHIVE : API_ARCHIVE;
+    mutationFn: async (payload: any & { isJumuiya?: boolean; isGroup?: boolean }) => {
+      const url = payload.isGroup ? API_GROUP_ARCHIVE : (payload.isJumuiya ? API_JUMUIYA_ARCHIVE : API_ARCHIVE);
       const res = await fetch(url, {
         method: 'POST',
         headers: { 
@@ -83,33 +84,42 @@ export function useTerms() {
       return json;
     },
     onMutate: async (variables) => {
-      const targetQueryKey = variables.isJumuiya ? ['jumuiya_officials'] : ['officials'];
+      const targetQueryKey = variables.isGroup ? ['group-officials'] : (variables.isJumuiya ? ['jumuiya-officials'] : ['officials']);
       
       // Cancel outgoing refetches to prevent them overwriting our optimistic state
       await queryClient.cancelQueries({ queryKey: targetQueryKey });
       
       // Snapshot the current officials list
-      const previousOfficials = queryClient.getQueryData(targetQueryKey);
-      
-      // Optimistically set active list to empty array immediately
-      queryClient.setQueryData(targetQueryKey, []);
-      
+      const snapshots = queryClient.getQueryCache().findAll({ queryKey: targetQueryKey }).map(query => ({
+        queryKey: query.queryKey,
+        data: query.state.data as unknown
+      }));
+
+      // Optimistically clear every matching active list immediately
+      snapshots.forEach(snapshot => {
+        queryClient.setQueryData(snapshot.queryKey, []);
+      });
+
       // Instantly clear client-side localStorage persist caches
       apiService.clearOfficialsCache();
       
-      return { previousOfficials, targetQueryKey };
+      return { snapshots };
     },
     onSuccess: (json, variables) => {
-      queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_officials'] : ['officials'] });
+      const activeKey = variables.isGroup ? ['group-officials'] : (variables.isJumuiya ? ['jumuiya-officials'] : ['officials']);
+      const historyKey = variables.isGroup ? ['group_history'] : (variables.isJumuiya ? ['jumuiya_history'] : ['history']);
+      queryClient.invalidateQueries({ queryKey: activeKey });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      queryClient.invalidateQueries({ queryKey: variables.isJumuiya ? ['jumuiya_history'] : ['history'] });
+      queryClient.invalidateQueries({ queryKey: historyKey });
       showSuccessToast('Officials Archived Successfully', `${json.data?.archived_count || 'Officials'} records have been successfully archived.`);
     },
     onError: (error: Error, _variables, context) => {
       // Rollback to original state if mutation fails
-      if (context?.previousOfficials && context?.targetQueryKey) {
-        queryClient.setQueryData(context.targetQueryKey, context.previousOfficials);
+      if (context?.snapshots) {
+        context.snapshots.forEach(snapshot => {
+          queryClient.setQueryData(snapshot.queryKey, snapshot.data);
+        });
       }
       showErrorToast('Failed to Archive Officials', error.message);
     },

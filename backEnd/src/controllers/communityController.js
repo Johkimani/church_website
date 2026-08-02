@@ -2,6 +2,7 @@ import { BackendDataService } from '../services/backend-data.js';
 import { db } from '../Configs/dbConfig.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { fetchOfficialsRows } from './communityViewController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,9 +92,11 @@ export const getModule = async (req, res) => {
 
         const meta = moduleResult.rows[0];
 
+        // Group modules read from group_officials (with CSA choir leadership merged in); others use hub_officials
+        const officialsRows = await fetchOfficialsRows(id).catch(() => []);
+
         // Fetch related data in parallel with per-query catch to avoid total failure
-        const [officials, activities, announcements, gallery, schedules, classes] = await Promise.all([
-            db.query('SELECT * FROM hub_officials WHERE module_id = $1', [id]).catch(() => ({ rows: [] })),
+        const [activities, announcements, gallery, schedules, classes] = await Promise.all([
             db.query('SELECT * FROM hub_activities WHERE module_id = $1 ORDER BY activity_date DESC', [id]).catch(() => ({ rows: [] })),
             db.query('SELECT * FROM hub_announcements WHERE module_id = $1 ORDER BY announcement_date DESC', [id]).catch(() => ({ rows: [] })),
             db.query('SELECT * FROM hub_gallery WHERE module_id = $1', [id]).catch(() => ({ rows: [] })),
@@ -116,7 +119,7 @@ export const getModule = async (req, res) => {
                 uniform: meta.uniform_info
             },
             story: meta.story,
-            officials: officials.rows,
+            officials: officialsRows,
             activities: activities.rows.map(a => {
                 let formattedDate = null;
                 try {

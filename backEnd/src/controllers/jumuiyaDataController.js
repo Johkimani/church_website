@@ -28,8 +28,8 @@ export const getAllJumuiyaData = async (req, res) => {
     const [
         schedulesRes,
         officialsRes,
-        termsRes,
-        formerOfficialsRes,
+        archivedOfficialsRes,
+        currentTermRes,
         socialMediaRes,
         albumsRes,
         imagesRes,
@@ -39,8 +39,11 @@ export const getAllJumuiyaData = async (req, res) => {
     ] = await Promise.all([
         pool.query("SELECT * FROM jumuiya_meeting_schedule WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_officials WHERE category = ANY($1) AND status = 'active'", [jumuiyaNames]),
-        pool.query("SELECT * FROM jumuiya_term_of_office WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
-        pool.query("SELECT * FROM jumuiya_former_officials WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
+        pool.query(`SELECT jo.id, jo.name, jo.category, jo.position, jo.contact, jo.photo, jo.term_of_service, et.year
+                    FROM jumuiya_officials jo
+                    LEFT JOIN election_terms et ON jo.election_term_id = et.id
+                    WHERE jo.status = 'archived' AND jo.category = ANY($1)`, [jumuiyaNames]),
+        pool.query("SELECT et.year FROM election_terms WHERE is_current = TRUE ORDER BY id DESC LIMIT 1"),
         pool.query("SELECT * FROM jumuiya_social_media WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_gallery_albums WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_gallery_images ORDER BY sort_order ASC"), // images have album_id
@@ -52,8 +55,8 @@ export const getAllJumuiyaData = async (req, res) => {
     // Fast lookups
     const groupedSchedules = groupById(schedulesRes.rows, 'jumuiya_id');
     const groupedOfficials = groupBy(officialsRes.rows, 'category'); // Custom grouping by name
-    const groupedTerms = groupById(termsRes.rows, 'jumuiya_id');
-    const groupedFormer = groupById(formerOfficialsRes.rows, 'jumuiya_id');
+    const groupedArchived = groupBy(archivedOfficialsRes.rows, 'category');
+    const currentTermYear = currentTermRes.rows.length ? currentTermRes.rows[0].year : null;
     const groupedSocial = groupById(socialMediaRes.rows, 'jumuiya_id');
     const groupedNotifications = groupById(notificationsRes.rows, 'jumuiya_id');
     const groupedSocial_v2 = groupById(socialMediaRes.rows, 'jumuiya_id'); // Re-using just in case
@@ -87,21 +90,22 @@ export const getAllJumuiyaData = async (req, res) => {
             venue: sched.venue || ''
         } : { day: '', time: '', venue: '' };
 
-        // Form term of office
-        const term = groupedTerms[jId] ? groupedTerms[jId][0] : null;
-        const termOfOffice = term ? {
-            startYear: term.start_year || '',
-            endYear: term.end_year || ''
+        // Form term of office (from global current election term)
+        const termOfOffice = currentTermYear ? {
+            startYear: (currentTermYear || '').split('-')[0] || '',
+            endYear: (currentTermYear || '').split('-')[1] || ''
         } : undefined;
 
-        // Form former officials
-        const formerOfficials = (groupedFormer[jId] || []).map(fo => ({
-            id: fo.id.toString(),
-            name: fo.name,
-            position: fo.position,
-            image: fo.photo || undefined,
-            yearsServed: fo.years_served || ''
-        }));
+        // Form former officials (from archived jumuiya_officials grouped by term)
+        const formerOfficials = (groupedArchived[jName] || [])
+            .sort((a, b) => ((b.year || '') > (a.year || '') ? 1 : (b.year || '') < (a.year || '') ? -1 : 0))
+            .map(fo => ({
+                id: fo.id.toString(),
+                name: fo.name,
+                position: fo.position,
+                image: fo.photo || undefined,
+                yearsServed: fo.year || fo.term_of_service || ''
+            }));
 
         // Form social media
         const socialMedia = (groupedSocial[jId] || []).map(sm => ({
