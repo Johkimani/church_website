@@ -9,5 +9,10 @@ export const API_JUMUIYA_ARCHIVE = `${API_JUMUIYA_BASE}/archive`;
 export const API_JUMUIYA_HISTORY = `${API_JUMUIYA_BASE}/term`;
 export const API_JUMUIYA_RESTORE = `${API_JUMUIYA_BASE}/restore`;
 
+export const API_GROUP_BASE = `${import.meta.env.VITE_SERVER_URI}/group-officials`;
+export const API_GROUP_ARCHIVE = `${API_GROUP_BASE}/archive`;
+export const API_GROUP_HISTORY = `${API_GROUP_BASE}/term`;
+export const API_GROUP_RESTORE = `${API_GROUP_BASE}/restore`;
+
 // Extract only the domain from the versioned API URI for image assets
 export const UPLOAD_BASE = (import.meta.env.VITE_SERVER_URI || '').split('/api')[0];

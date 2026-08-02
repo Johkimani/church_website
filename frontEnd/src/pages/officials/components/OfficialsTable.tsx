@@ -1,60 +1,62 @@
 import React from 'react';
 import { Edit2, Trash2, Phone, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import type { Official } from '../../../hooks/useOfficials';
-import { CATEGORY_ORDER, CATEGORY_COLORS, POSITION_RANK, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS, JUMUIYA_ROLES } from '../constants/adminConstants';
+import { CATEGORY_ORDER, CATEGORY_COLORS, POSITION_RANK, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS, JUMUIYA_ROLES, GROUP_OPTIONS, GROUP_COLORS, POSITIONS_BY_GROUP, GROUP_POSITION_RANK } from '../constants/adminConstants';
 import { UPLOAD_BASE } from '../../../utils/officialsApi';
 
 interface OfficialsTableProps {
- officials: Official[];
- searchTerm: string;
- onSearchChange?: (val: string) => void;
- onEdit: (official: Official) => void;
- onDelete: (official: Official) => void;
- isDeleting: number | boolean;
- displayTerm?: string;
- mode?: 'csa' | 'jumuiya';
+  officials: Official[];
+  searchTerm: string;
+  onSearchChange?: (val: string) => void;
+  onEdit: (official: Official) => void;
+  onDelete: (official: Official) => void;
+  isDeleting: number | boolean;
+  displayTerm?: string;
+  mode?: 'csa' | 'jumuiya' | 'groups';
 }
 
 export function OfficialsTable({ officials, searchTerm, onSearchChange, onEdit, onDelete, isDeleting, displayTerm, mode = 'csa' }: OfficialsTableProps) {
- const [expandedJumuiya, setExpandedJumuiya] = React.useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
 
- const filteredOfficials = React.useMemo(() => {
- const q = searchTerm.trim().toLowerCase();
- const filtered = officials.filter(o => {
- if (!q) return true;
- return (
- (o.name || '').toLowerCase().includes(q) ||
- (o.category || '').toLowerCase().includes(q) ||
- (o.position || '').toLowerCase().includes(q)
- );
- });
+  const filteredOfficials = React.useMemo(() => {
+  const q = searchTerm.trim().toLowerCase();
+  const filtered = officials.filter(o => {
+  if (!q) return true;
+  return (
+  (o.name || '').toLowerCase().includes(q) ||
+  (o.category || '').toLowerCase().includes(q) ||
+  (o.position || '').toLowerCase().includes(q)
+  );
+  });
 
- const grouped: Record<string, Official[]> = {};
- filtered.forEach(o => {
- const c = o.category || 'Other';
- (grouped[c] ||= []).push(o);
- });
+  const grouped: Record<string, Official[]> = {};
+  filtered.forEach(o => {
+  const c = o.category || 'Other';
+  (grouped[c] ||= []).push(o);
+  });
 
- Object.keys(grouped).forEach(cat => {
- if (mode === 'csa') {
- grouped[cat].sort((a, b) => (POSITION_RANK[a.position] ?? 9999) - (POSITION_RANK[b.position] ?? 9999));
- } else {
- grouped[cat].sort((a, b) => (JUMUIYA_ROLES.indexOf(a.position)) - (JUMUIYA_ROLES.indexOf(b.position)));
- }
- });
+  Object.keys(grouped).forEach(cat => {
+  if (mode === 'csa') {
+  grouped[cat].sort((a, b) => (POSITION_RANK[a.position] ?? 9999) - (POSITION_RANK[b.position] ?? 9999));
+  } else if (mode === 'jumuiya') {
+  grouped[cat].sort((a, b) => (JUMUIYA_ROLES.indexOf(a.position)) - (JUMUIYA_ROLES.indexOf(b.position)));
+  } else {
+  grouped[cat].sort((a, b) => (GROUP_POSITION_RANK[cat]?.[a.position] ?? 9999) - (GROUP_POSITION_RANK[cat]?.[b.position] ?? 9999));
+  }
+  });
 
- const sorted: Official[] = [];
- const orderedCategories = mode === 'csa' ? CATEGORY_ORDER : JUMUIYA_OPTIONS;
- 
- orderedCategories.forEach(cat => {
- if (grouped[cat]) sorted.push(...grouped[cat]);
- });
- Object.keys(grouped).forEach(cat => {
- if (!orderedCategories.includes(cat)) sorted.push(...grouped[cat]);
- });
+  const sorted: Official[] = [];
+  const orderedCategories = mode === 'csa' ? CATEGORY_ORDER : mode === 'jumuiya' ? JUMUIYA_OPTIONS : GROUP_OPTIONS;
+  
+  orderedCategories.forEach(cat => {
+  if (grouped[cat]) sorted.push(...grouped[cat]);
+  });
+  Object.keys(grouped).forEach(cat => {
+  if (!orderedCategories.includes(cat)) sorted.push(...grouped[cat]);
+  });
 
- return sorted;
- }, [officials, searchTerm, mode]);
+  return sorted;
+  }, [officials, searchTerm, mode]);
 
  const getPhotoUrl = (photo: string | null | undefined) => {
  if (!photo) return DEFAULT_AVATAR;
@@ -87,7 +89,7 @@ export function OfficialsTable({ officials, searchTerm, onSearchChange, onEdit, 
  </div>
  <div>
  <div className="font-bold text-gray-900 group-hover:text-blue-600 :text-blue-400 transition-colors">{o.name}</div>
- <span className={`inline-block px-2.5 py-0.5 mt-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${mode === 'csa' ? (CATEGORY_COLORS[o.category] || 'from-gray-500 to-gray-600') : (JUMUIYA_COLORS[o.category] || 'from-indigo-500 to-indigo-600')}`}>
+  <span className={`inline-block px-2.5 py-0.5 mt-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${mode === 'csa' ? (CATEGORY_COLORS[o.category] || 'from-gray-500 to-gray-600') : mode === 'jumuiya' ? (JUMUIYA_COLORS[o.category] || 'from-indigo-500 to-indigo-600') : (GROUP_COLORS[o.category] || 'from-teal-500 to-teal-600')}`}>
  {o.category}
  </span>
  </div>
@@ -166,59 +168,61 @@ export function OfficialsTable({ officials, searchTerm, onSearchChange, onEdit, 
    </div>
  )}
 
- <div className="overflow-x-auto scrollbar-hide flex-1">
- {mode === 'csa' ? (
- <table className="w-full text-left border-collapse min-w-[700px]">
- {renderTableHeader()}
- <tbody className="divide-y divide-gray-100 ">
- {renderTableRows(filteredOfficials)}
- </tbody>
- </table>
- ) : (
- <div className="flex flex-col">
- {JUMUIYA_OPTIONS.map((jumuiyaName) => {
- const jumuiyaOfficials = filteredOfficials.filter(o => o.category === jumuiyaName);
- const isExpanded = expandedJumuiya === jumuiyaName;
- const hasResults = jumuiyaOfficials.length > 0;
- const shouldExpand = (searchTerm && hasResults) ? true : isExpanded;
+  <div className="overflow-x-auto scrollbar-hide flex-1">
+  {mode === 'csa' ? (
+  <table className="w-full text-left border-collapse min-w-[700px]">
+  {renderTableHeader()}
+  <tbody className="divide-y divide-gray-100 ">
+  {renderTableRows(filteredOfficials)}
+  </tbody>
+  </table>
+  ) : (
+  <div className="flex flex-col">
+  {(mode === 'jumuiya' ? JUMUIYA_OPTIONS : GROUP_OPTIONS).map((catName) => {
+  const catOfficials = filteredOfficials.filter(o => o.category === catName);
+  const isExpanded = expandedCategory === catName;
+  const hasResults = catOfficials.length > 0;
+  const shouldExpand = (searchTerm && hasResults) ? true : isExpanded;
+  const catColor = mode === 'jumuiya' ? (JUMUIYA_COLORS[catName] || 'from-indigo-500 to-indigo-600') : (GROUP_COLORS[catName] || 'from-teal-500 to-teal-600');
+  const roleLimit = mode === 'jumuiya' ? JUMUIYA_ROLES.length : (POSITIONS_BY_GROUP[catName]?.length || 0);
 
- if (searchTerm && !hasResults) return null;
+  if (searchTerm && !hasResults) return null;
 
- return (
- <div key={jumuiyaName} className="border-b border-gray-100 last:border-0">
- <button 
- onClick={() => setExpandedJumuiya(shouldExpand ? null : jumuiyaName)}
- className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 :bg-gray-700 transition-colors text-left"
- >
- <div className="flex items-center gap-3">
- {shouldExpand ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
- <div className="font-bold text-gray-900 w-32 sm:w-auto">{jumuiyaName}</div>
- </div>
- <span className={`shrink-0 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold text-white bg-gradient-to-r shadow-sm ${JUMUIYA_COLORS[jumuiyaName]}`}>
- {jumuiyaOfficials.length} / 8 Roles
- </span>
- </button>
- {shouldExpand && (
- <div className="bg-white border-t border-gray-100 overflow-x-auto">
- <table className="w-full text-left border-collapse min-w-[700px]">
- {renderTableHeader()}
- <tbody className="divide-y divide-gray-100 ">
- {renderTableRows(jumuiyaOfficials)}
- </tbody>
- </table>
- </div>
- )}
- </div>
- );
- })}
- {filteredOfficials.length === 0 && (
- <div className="px-6 py-12 text-center text-gray-500 italic bg-gray-50/50 ">
- No officials found matching your search.
- </div>
- )}
- </div>
- )}
- </div>
+  return (
+  <div key={catName} className="border-b border-gray-100 last:border-0">
+  <button 
+  onClick={() => setExpandedCategory(shouldExpand ? null : catName)}
+  className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 :bg-gray-700 transition-colors text-left"
+  >
+  <div className="flex items-center gap-3">
+  {shouldExpand ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
+  <div className="font-bold text-gray-900 w-32 sm:w-auto">{catName}</div>
+  </div>
+  <span className={`shrink-0 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold text-white bg-gradient-to-r shadow-sm ${catColor}`}>
+  {catOfficials.length} / {roleLimit} Roles
+  </span>
+  </button>
+  {shouldExpand && (
+  <div className="bg-white border-t border-gray-100 overflow-x-auto">
+  <table className="w-full text-left border-collapse min-w-[700px]">
+  {renderTableHeader()}
+  <tbody className="divide-y divide-gray-100 ">
+  {renderTableRows(catOfficials)}
+  </tbody>
+  </table>
+  </div>
+  )}
+  </div>
+  );
+  })}
+  {filteredOfficials.length === 0 && (
+  <div className="px-6 py-12 text-center text-gray-500 italic bg-gray-50/50 ">
+  No officials found matching your search.
+  </div>
+  )}
+  </div>
+  )}
+  </div>
  </div>
  );
 }

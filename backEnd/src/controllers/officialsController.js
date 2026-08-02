@@ -71,7 +71,8 @@ export const getAllElectionTerms = async (req, res) => {
     const query = `
       SELECT et.*, 
         (SELECT COUNT(*) FROM officials o WHERE o.election_term_id = et.id AND o.status = 'archived') as archived_csa_count,
-        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count
+        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count,
+        (SELECT COUNT(*) FROM group_officials go WHERE go.election_term_id = et.id AND go.status = 'archived') as archived_group_count
       FROM election_terms et 
       ORDER BY et.is_current DESC, et.year DESC, et.created_at DESC
     `;
@@ -88,7 +89,8 @@ export const getCurrentElectionTerm = async (req, res) => {
     const query = `
       SELECT et.*, 
         (SELECT COUNT(*) FROM officials o WHERE o.election_term_id = et.id AND o.status = 'archived') as archived_csa_count,
-        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count
+        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count,
+        (SELECT COUNT(*) FROM group_officials go WHERE go.election_term_id = et.id AND go.status = 'archived') as archived_group_count
       FROM election_terms et 
       WHERE et.is_current = TRUE
     `;
@@ -774,11 +776,6 @@ export const deleteOfficial = async (req, res) => {
         const filePath = path.join(process.cwd(), 'localFileUploads', path.basename(official.photo));
         deleteFile(filePath);
       }
-    }
-
-
-    if (official.reg_number && official.position) {
-      await removeRoleForOfficial(official.reg_number, official.position, false);
     }
 
     await pool.query('DELETE FROM officials WHERE id = $1', [id]);

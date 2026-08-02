@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { X, Share2, Copy, Send, Mail, CheckCircle } from 'lucide-react';
 import { showSuccessToast } from '../../../utils/customToast';
 import type { Official } from '../../../hooks/useOfficials';
-import { JUMUIYA_OPTIONS } from '../constants/adminConstants';
+import { JUMUIYA_OPTIONS, GROUP_OPTIONS } from '../constants/adminConstants';
 
 interface ShareModalProps {
  isOpen: boolean;
  onClose: () => void;
  officials: Official[];
- mode: 'csa' | 'jumuiya';
+ mode: 'csa' | 'jumuiya' | 'groups';
 }
 
 export function ShareModal({ isOpen, onClose, officials, mode }: ShareModalProps) {
@@ -22,11 +22,12 @@ export function ShareModal({ isOpen, onClose, officials, mode }: ShareModalProps
  const [selectedJumuiya, setSelectedJumuiya] = useState<string>('All');
  const [chairpersonsOnly, setChairpersonsOnly] = useState(false);
  const [shareText, setShareText] = useState('');
+ const filterOptions = mode === 'groups' ? GROUP_OPTIONS : JUMUIYA_OPTIONS;
 
  useEffect(() => {
  let filtered = [...officials];
 
- if (mode === 'jumuiya') {
+ if (mode === 'jumuiya' || mode === 'groups') {
  if (chairpersonsOnly) {
  filtered = filtered.filter(o => o.position === 'Chairperson');
  } else if (selectedJumuiya !== 'All') {
@@ -93,40 +94,40 @@ export function ShareModal({ isOpen, onClose, officials, mode }: ShareModalProps
  </div>
  </div>
 
- {mode === 'jumuiya' && (
- <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100 ">
- <div className="space-y-2">
- <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Special Views</p>
- <button
- onClick={() => {
- setChairpersonsOnly(!chairpersonsOnly);
- if (!chairpersonsOnly) setSelectedJumuiya('All');
- }}
- className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all border ${chairpersonsOnly ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100 ' : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-500 hover:text-indigo-600'}`}
- >
- <span>Chairpersons of all Jumuiyas</span>
- {chairpersonsOnly && <CheckCircle className="w-4 h-4" />}
- </button>
- </div>
+  {mode === 'jumuiya' || mode === 'groups' ? (
+  <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100 ">
+  <div className="space-y-2">
+  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Special Views</p>
+  <button
+  onClick={() => {
+  setChairpersonsOnly(!chairpersonsOnly);
+  if (!chairpersonsOnly) setSelectedJumuiya('All');
+  }}
+  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all border ${chairpersonsOnly ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100 ' : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-500 hover:text-indigo-600'}`}
+  >
+  <span>{mode === 'groups' ? 'Chairpersons of all Groups' : 'Chairpersons of all Jumuiyas'}</span>
+  {chairpersonsOnly && <CheckCircle className="w-4 h-4" />}
+  </button>
+  </div>
 
- {!chairpersonsOnly && (
- <div className="space-y-2">
- <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Filter by Jumuiya</p>
- <div className="flex flex-wrap gap-2">
- {['All', ...JUMUIYA_OPTIONS].map(j => (
- <button
- key={j}
- onClick={() => setSelectedJumuiya(j)}
- className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedJumuiya === j ? 'bg-indigo-100 border-indigo-300 text-indigo-700 ' : 'bg-white border-gray-100 text-gray-500 hover:border-indigo-300 :border-indigo-800'}`}
- >
- {j}
- </button>
- ))}
- </div>
- </div>
- )}
- </div>
- )}
+  {!chairpersonsOnly && (
+  <div className="space-y-2">
+  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{mode === 'groups' ? 'Filter by Group' : 'Filter by Jumuiya'}</p>
+  <div className="flex flex-wrap gap-2">
+  {['All', ...filterOptions].map(j => (
+  <button
+  key={j}
+  onClick={() => setSelectedJumuiya(j)}
+  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedJumuiya === j ? 'bg-indigo-100 border-indigo-300 text-indigo-700 ' : 'bg-white border-gray-100 text-gray-500 hover:border-indigo-300 :border-indigo-800'}`}
+  >
+  {j}
+  </button>
+  ))}
+  </div>
+  </div>
+  )}
+  </div>
+  ) : null}
  </div>
 
  <div className="space-y-2">

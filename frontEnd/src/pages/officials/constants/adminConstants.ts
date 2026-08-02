@@ -69,3 +69,32 @@ export const JUMUIYA_COLORS: Record<string, string> = {
   'St. Maria Goretti': 'from-blue-600 to-blue-700',
   'St. Monica': 'from-red-600 to-red-700'
 };
+
+export const GROUP_OPTIONS = [
+  'Choir',
+  'Dancers',
+  'Charismatic',
+  'St. Francis'
+];
+
+export const POSITIONS_BY_GROUP: Record<string, string[]> = {
+  'Choir': ['Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager', 'Male Representative', 'Female Representative', 'Choir Master', 'Choir Mistress'],
+  'Dancers': ['Chairperson', 'Vice Chairperson'],
+  'Charismatic': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer'],
+  'St. Francis': ['Chairperson', 'Vice Chairperson']
+};
+
+export const GROUP_POSITION_RANK: Record<string, Record<string, number>> = {};
+Object.entries(POSITIONS_BY_GROUP).forEach(([group, positions]) => {
+  GROUP_POSITION_RANK[group] = {};
+  positions.forEach((pos, idx) => {
+    GROUP_POSITION_RANK[group][pos] = idx;
+  });
+});
+
+export const GROUP_COLORS: Record<string, string> = {
+  'Choir': 'from-red-600 to-red-700',
+  'Dancers': 'from-cyan-600 to-cyan-700',
+  'Charismatic': 'from-orange-600 to-orange-700',
+  'St. Francis': 'from-teal-600 to-teal-700'
+};

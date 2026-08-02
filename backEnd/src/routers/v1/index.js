@@ -7,6 +7,7 @@ import JumuiComparisonRoutes from "./JumuiComparisonRoutes.js"
 import notificationRoutes from "./notification.js"
 import officialsRouter from "./officialsRouter.js";
 import jumuiyaOfficialsRouter from "./jumuiyaOfficialsRouter.js";
+import groupOfficialsRouter from "./groupOfficialsRouter.js";
 import galleryRouter from "./galleryRouter.js";
 import communityViewRouter from "./communityViewRouter.js";
 import sliderRoutes from "./sliderRoutes.js";
@@ -49,6 +50,7 @@ router.use("/member", verifyToken, memberProgressRoute); // Kept: user-level rou
 // Features
 router.use("/officials", officialsRouter);
 router.use("/jumuiya-officials", jumuiyaOfficialsRouter);
+router.use("/group-officials", groupOfficialsRouter);
 router.use("/", galleryRouter); // handles /choir/gallery
 router.use("/community-view", communityViewRouter);
 router.use("/orders", ordersRouter);

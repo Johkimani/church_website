@@ -1,6 +1,76 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
+// Hub module ids that map to a group_officials category
+const GROUP_MODULE_MAP = {
+  choir: 'Choir',
+  dancers: 'Dancers',
+  charismatic: 'Charismatic',
+  'st-francis': 'St. Francis',
+};
+
+// Choir leadership is split across CSA officials (Chairperson/Vice Chairperson)
+// and group_officials (the remaining 8). This is the canonical display order
+// so the user-facing choir list reads as a single 10-person leadership.
+const CHOIR_POSITION_RANK = (() => {
+  const order = [
+    'Choir Chairperson', 'Choir Vice Chairperson',
+    'Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager',
+    'Male Representative', 'Female Representative', 'Choir Master', 'Choir Mistress',
+  ];
+  const map = {};
+  order.forEach((pos, i) => { map[pos.toLowerCase()] = i; });
+  return map;
+})();
+
+const getChoirRank = (position) => {
+  const rank = CHOIR_POSITION_RANK[(position || '').trim().toLowerCase()];
+  return rank === undefined ? 99 : rank;
+};
+
+const mapOfficialRow = (o) => ({
+  id: o.id,
+  name: o.name,
+  role: o.position,
+  photo_url: o.photo,
+  email: null,
+  phone_number: o.contact,
+});
+
+// Fetch officials for a module. Group modules read from group_officials
+// (public shape: role/photoUrl/email/phoneNumber); others fall back to hub_officials.
+// For Choir the CSA Chairperson/Vice Chairperson rows are merged in so the full
+// 10-person choir leadership renders as one list.
+const fetchOfficialsRows = async (moduleId) => {
+  const groupCategory = GROUP_MODULE_MAP[moduleId];
+  if (groupCategory) {
+    const res = await pool.query(
+      `SELECT id, name, position, contact, photo FROM group_officials
+       WHERE LOWER(category) = LOWER($1) AND status = 'active'
+       ORDER BY id`,
+      [groupCategory]
+    );
+    let officials = res.rows.map(mapOfficialRow);
+
+    if (groupCategory === 'Choir') {
+      const csa = await pool.query(
+        `SELECT id, name, position, contact, photo FROM officials
+         WHERE LOWER(category) = 'choir officials' AND (status = 'active' OR status IS NULL)
+         ORDER BY id`
+      );
+      officials = officials.concat(
+        csa.rows.map(o => ({ ...mapOfficialRow(o), id: `csa-${o.id}` }))
+      );
+      officials.sort((a, b) => getChoirRank(a.role) - getChoirRank(b.role));
+    }
+    return officials;
+  }
+  const res = await pool.query(`SELECT * FROM hub_officials WHERE module_id = $1`, [moduleId]);
+  return res.rows;
+};
+
+export { fetchOfficialsRows };
+
 // Build a module object from a db row + its related sub-data
 const buildModule = (mod, officials, activities, gallery, announcements) => ({
   id: mod.id,
@@ -68,13 +138,13 @@ export const getCommunityModules = async (req, res) => {
 
     const modules = await Promise.all(
       modulesResult.rows.map(async (mod) => {
-        const [officials, activities, gallery, announcements] = await Promise.all([
-          pool.query(`SELECT * FROM hub_officials WHERE module_id = $1`, [mod.id]),
+        const [officialsRows, activities, gallery, announcements] = await Promise.all([
+          fetchOfficialsRows(mod.id),
           pool.query(`SELECT * FROM hub_activities WHERE module_id = $1 ORDER BY activity_date DESC`, [mod.id]),
           pool.query(`SELECT * FROM hub_gallery WHERE module_id = $1`, [mod.id]),
           pool.query(`SELECT * FROM hub_announcements WHERE module_id = $1 ORDER BY announcement_date DESC`, [mod.id]),
         ]);
-        return buildModule(mod, officials, activities, gallery, announcements);
+        return buildModule(mod, { rows: officialsRows }, activities, gallery, announcements);
       })
     );
 
@@ -107,14 +177,14 @@ export const getCommunityModuleById = async (req, res) => {
 
     const mod = modResult.rows[0];
 
-    const [officials, activities, gallery, announcements] = await Promise.all([
-      pool.query(`SELECT * FROM hub_officials WHERE module_id = $1`, [mod.id]),
+    const [officialsRows, activities, gallery, announcements] = await Promise.all([
+      fetchOfficialsRows(mod.id),
       pool.query(`SELECT * FROM hub_activities WHERE module_id = $1 ORDER BY activity_date DESC`, [mod.id]),
       pool.query(`SELECT * FROM hub_gallery WHERE module_id = $1`, [mod.id]),
       pool.query(`SELECT * FROM hub_announcements WHERE module_id = $1 ORDER BY announcement_date DESC`, [mod.id]),
     ]);
 
-    res.json(buildModule(mod, officials, activities, gallery, announcements));
+    res.json(buildModule(mod, { rows: officialsRows }, activities, gallery, announcements));
   } catch (error) {
     logger.error('Error fetching community module: ' + error.message);
     res.status(500).json({ message: 'Failed to fetch community module' });
