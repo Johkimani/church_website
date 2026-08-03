@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Prayer } from '../data/prayerCategories';
 import type { Novena } from '../data/novenas';
 import { getNovenaCalendar, formatNovenaDates } from '../data/novenaCalendar';
@@ -16,6 +16,29 @@ const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string
   healing: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   daily: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
 };
+
+// ═══════════════════════════════════════════════════════════
+// JUMUIYA (PARISH GROUPS)
+// ═══════════════════════════════════════════════════════════
+
+interface Jumuiya {
+  id: string;
+  name: string;
+  shortName: string;
+  patron: string;
+  novenaId: string;
+  color: string;
+}
+
+const JUMUIYAS: Jumuiya[] = [
+  { id: 'anthony', name: 'St. Anthony', shortName: 'Anthony', patron: 'novenas-saint-antonius', novenaId: 'novenas-saint-antonius', color: 'from-amber-500 to-yellow-600' },
+  { id: 'augustine', name: 'St. Augustine', shortName: 'Augustine', patron: 'novenas-saint-augustine', novenaId: 'novenas-saint-augustine', color: 'from-yellow-500 to-amber-600' },
+  { id: 'catherine', name: 'St. Catherine', shortName: 'Catherine', patron: 'novenas-saint-catherine-siena', novenaId: 'novenas-saint-catherine-siena', color: 'from-red-500 to-rose-600' },
+  { id: 'dominic', name: 'St. Dominic', shortName: 'Dominic', patron: 'novenas-saint-dominic', novenaId: 'novenas-saint-dominic', color: 'from-blue-500 to-indigo-600' },
+  { id: 'elizabeth', name: 'St. Elizabeth', shortName: 'Elizabeth', patron: 'novenas-saint-elizabeth', novenaId: 'novenas-saint-elizabeth', color: 'from-emerald-500 to-teal-600' },
+  { id: 'monica', name: 'St. Monica', shortName: 'Monica', patron: 'novenas-saint-monica', novenaId: 'novenas-saint-monica', color: 'from-purple-500 to-violet-600' },
+  { id: 'mary-goretti', name: 'St. Mary Goretti', shortName: 'Mary Goretti', patron: 'novenas-saint-mary-goretti', novenaId: 'novenas-saint-mary-goretti', color: 'from-pink-500 to-rose-600' },
+];
 
 // ═══════════════════════════════════════════════════════════
 // NOVENA CATEGORIZATION
@@ -59,6 +82,11 @@ const NOVENA_TYPE_MAP: Record<string, NovenaType> = {
   'novenas-holy-infant': 'devotional',
   'novenas-christian-unity': 'devotional',
   'novenas-lady-sorrows': 'marian',
+  'novenas-saint-augustine': 'saint',
+  'novenas-saint-catherine-siena': 'saint',
+  'novenas-saint-dominic': 'saint',
+  'novenas-saint-elizabeth': 'saint',
+  'novenas-saint-mary-goretti': 'saint',
 };
 
 const NOVENA_INTENTIONS: Record<string, string> = {
@@ -97,12 +125,11 @@ const NOVENA_INTENTIONS: Record<string, string> = {
   'novenas-holy-infant': 'Childlike trust in God',
   'novenas-christian-unity': 'Unity among all Christians',
   'novenas-lady-sorrows': "Compassion through Mary's sorrows",
-};
-
-const TYPE_META: Record<NovenaType, { label: string; description: string }> = {
-  marian: { label: 'Marian Novenas', description: 'Through the intercession of Our Lady' },
-  saint: { label: 'Saint Novenas', description: 'With the saints who intercede for us' },
-  devotional: { label: 'Devotional Novenas', description: 'For special devotions and liturgical seasons' },
+  'novenas-saint-augustine': 'Conversion and wisdom',
+  'novenas-saint-catherine-siena': 'Courage and dialogue',
+  'novenas-saint-dominic': 'Preaching and truth',
+  'novenas-saint-elizabeth': 'Charity and service to the poor',
+  'novenas-saint-mary-goretti': 'Purity, forgiveness, and youth',
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -141,57 +168,57 @@ function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: No
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border-2 ${
-        active ? 'border-indigo-300 shadow-xl shadow-indigo-100/50' : 'border-amber-200 shadow-lg shadow-amber-100/50'
-      }`}
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/20 cursor-pointer group"
       onClick={onStart}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${novena.color} opacity-[0.07]`} />
+      <div className="absolute inset-0 opacity-10" style={{
+        backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(201,168,76,0.3), transparent 60%), radial-gradient(circle at 70% 50%, rgba(201,168,76,0.15), transparent 60%)'
+      }} />
       <div className="relative p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               {active ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wide">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold uppercase tracking-wide border border-emerald-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Praying Now
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wide">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-bold uppercase tracking-wide border border-amber-500/30">
                   Starting {status.daysUntil === 0 ? 'Today' : status.daysUntil === 1 ? 'Tomorrow' : `in ${status.daysUntil} days`}
                 </span>
               )}
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-1">{novena.title}</h2>
-            {intention && <p className="text-sm text-indigo-600 font-medium">{intention}</p>}
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1">{novena.title}</h2>
+            {intention && <p className="text-sm text-amber-400/80 font-medium">{intention}</p>}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onStart(); }}
             className={`flex-shrink-0 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
               active
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
-                : 'bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-200'
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20'
+                : 'bg-amber-500 text-slate-900 hover:bg-amber-400 shadow-lg shadow-amber-500/20'
             }`}
           >
             {active ? 'Pray Now' : 'Begin Novena'}
           </button>
         </div>
 
-        <p className="text-sm text-slate-600 leading-relaxed mb-5 max-w-2xl">{novena.description}</p>
+        <p className="text-sm text-slate-400 leading-relaxed mb-5 max-w-2xl">{novena.description}</p>
 
         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
           <span className="flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             {formatNovenaDates(status.entry.startDate, status.entry.endDate)}
           </span>
           {status.entry.feastDay && (
-            <span className="flex items-center gap-1.5 text-indigo-500">
+            <span className="flex items-center gap-1.5 text-amber-400">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
               {status.entry.feastDay}
             </span>
           )}
           {active && (
-            <span className="flex items-center gap-1.5 text-green-600 font-semibold">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
               Day {status.currentDay} of 9 — {Math.round(status.progress)}%
             </span>
           )}
@@ -199,14 +226,87 @@ function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: No
 
         {active && (
           <div className="mt-4">
-            <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
                 style={{ width: `${status.progress}%` }}
               />
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; novena: Novena; status: NovenaStatus; onStart: () => void }) {
+  const active = status?.status === 'active';
+  const upcoming = status?.status === 'upcoming';
+  const past = status?.status === 'past';
+  const intention = NOVENA_INTENTIONS[novena.id] || '';
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 hover:border-amber-500/30 transition-all duration-300 cursor-pointer group backdrop-blur-sm"
+      onClick={onStart}
+    >
+      <div className={`h-1 bg-gradient-to-r ${jumuiya.color}`} />
+      <div className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${jumuiya.color} flex items-center justify-center text-white text-xs font-bold shadow-lg`}>
+            {jumuiya.shortName.split(' ').map(w => w[0]).join('').substring(0, 2)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-white truncate group-hover:text-amber-400 transition-colors">{jumuiya.name}</h3>
+            <p className="text-[10px] text-slate-500 truncate">{novena.title.replace('Novena to ', '')}</p>
+          </div>
+          {active && (
+            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/30 animate-pulse">
+              Active
+            </span>
+          )}
+          {upcoming && status && 'daysUntil' in status && (
+            <span className="flex-shrink-0 px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-[10px] font-bold border border-amber-500/30">
+              {status.daysUntil === 0 ? 'Today' : `In ${status.daysUntil}d`}
+            </span>
+          )}
+          {past && (
+            <span className="flex-shrink-0 px-2 py-0.5 bg-slate-700/50 text-slate-500 rounded-full text-[10px] font-bold border border-slate-600/30">
+              Done
+            </span>
+          )}
+        </div>
+
+        {intention && <p className="text-[11px] text-amber-400/60 mb-2">{intention}</p>}
+
+        {active && status && 'currentDay' in status && (
+          <div className="mb-3">
+            <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+              <span className="font-semibold text-emerald-400">Day {status.currentDay} of 9</span>
+              <span>{Math.round(status.progress)}%</span>
+            </div>
+            <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${status.progress}%` }} />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          {!active && !upcoming && (
+            <div className="flex gap-1">
+              {Array.from({ length: 9 }, (_, i) => (
+                <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+              ))}
+            </div>
+          )}
+          {(active || upcoming) && <div />}
+          <span className="text-[11px] font-semibold text-amber-400 group-hover:text-amber-300 flex items-center gap-1">
+            {active ? 'Pray Now' : past ? 'Read Again' : 'Start'}
+            <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -220,24 +320,18 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
 
   return (
     <div
-      className={`bg-white rounded-2xl overflow-hidden border transition-all duration-300 group cursor-pointer ${
-        active
-          ? 'border-2 border-indigo-300 shadow-lg shadow-indigo-100/60'
-          : past
-            ? 'border border-slate-100 opacity-60 hover:opacity-80'
-            : 'border border-slate-100 hover:shadow-lg hover:border-indigo-200'
-      }`}
-      style={active ? undefined : { boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+      className="bg-white rounded-xl overflow-hidden border border-slate-100 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group cursor-pointer"
+      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
       onClick={onStart}
     >
-      <div className={`h-1.5 bg-gradient-to-r ${novena.color}`} />
+      <div className={`h-1 bg-gradient-to-r ${novena.color}`} />
       <div className="p-5">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight">
+          <h3 className="font-bold text-slate-800 group-hover:text-amber-700 transition-colors leading-tight text-sm">
             {novena.title}
           </h3>
           {active && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wide animate-pulse">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide">
               Active
             </span>
           )}
@@ -253,12 +347,12 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
           )}
         </div>
 
-        {intention && <p className="text-xs text-indigo-500 font-medium mb-1.5">{intention}</p>}
+        {intention && <p className="text-xs text-amber-600 font-medium mb-1.5">{intention}</p>}
 
         {calendarStatus?.entry && (
           <p className="text-xs text-slate-400 mb-2">
             {formatNovenaDates(calendarStatus.entry.startDate, calendarStatus.entry.endDate)}
-            {calendarStatus.entry.feastDay && <span className="text-indigo-400 ml-1">— {calendarStatus.entry.feastDay}</span>}
+            {calendarStatus.entry.feastDay && <span className="text-amber-500 ml-1">— {calendarStatus.entry.feastDay}</span>}
           </p>
         )}
 
@@ -267,14 +361,11 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
         {active && calendarStatus && 'currentDay' in calendarStatus && (
           <div className="mb-3">
             <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-              <span className="font-semibold text-indigo-700">Day {calendarStatus.currentDay} of 9</span>
+              <span className="font-semibold text-emerald-700">Day {calendarStatus.currentDay} of 9</span>
               <span>{Math.round(calendarStatus.progress)}%</span>
             </div>
             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
-                style={{ width: `${calendarStatus.progress}%` }}
-              />
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${calendarStatus.progress}%` }} />
             </div>
           </div>
         )}
@@ -288,7 +379,7 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
             </div>
           )}
           {active && <div />}
-          <span className="text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 flex items-center gap-1">
+          <span className="text-xs font-semibold text-amber-600 group-hover:text-amber-700 flex items-center gap-1">
             {active ? 'Pray Now' : past ? 'Read Again' : 'Start'}
             <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -300,61 +391,8 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
   );
 }
 
-function MonthTimeline({ novenaStatuses }: { novenaStatuses: { novena: Novena; status: NovenaStatus }[] }) {
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const currentMonth = new Date().getMonth();
-
-  const monthData = useMemo(() => {
-    return MONTHS.map((name, i) => {
-      const novenasInMonth = novenaStatuses.filter((n) => {
-        if (!n.status?.entry) return false;
-        const sm = n.status.entry.startDate.getMonth();
-        const em = n.status.entry.endDate.getMonth();
-        return sm === i || em === i;
-      });
-      return { name, index: i, novenas: novenasInMonth, hasActive: novenasInMonth.some((n) => n.status?.status === 'active') };
-    });
-  }, [novenaStatuses]);
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}>
-      <h3 className="text-sm font-bold text-slate-700 mb-4">Liturgical Year Overview</h3>
-      <div className="flex gap-1 overflow-x-auto pb-2">
-        {monthData.map((m) => (
-          <div
-            key={m.name}
-            className={`flex-1 min-w-[52px] rounded-lg p-2 text-center transition-all cursor-default ${
-              m.index === currentMonth
-                ? 'bg-indigo-100 border border-indigo-200'
-                : m.novenas.length > 0
-                  ? 'bg-slate-50 hover:bg-slate-100'
-                  : 'bg-transparent'
-            }`}
-          >
-            <p className={`text-[10px] font-bold mb-1.5 ${m.index === currentMonth ? 'text-indigo-700' : 'text-slate-500'}`}>
-              {m.name}
-            </p>
-            <div className="flex flex-col items-center gap-0.5">
-              {m.novenas.slice(0, 3).map((n) => (
-                <div
-                  key={n.novena.id}
-                  className="w-full h-1 rounded-full"
-                  style={{ background: n.status?.status === 'active' ? '#22c55e' : '#cbd5e1' }}
-                />
-              ))}
-              {m.novenas.length > 3 && (
-                <span className="text-[8px] text-slate-400">+{m.novenas.length - 3}</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════
-// LITANY + PRAYER CARDS (unchanged)
+// LITANY + PRAYER CARDS
 // ═══════════════════════════════════════════════════════════
 
 function LitanyPreview({ prayer }: { prayer: Prayer }) {
@@ -379,8 +417,7 @@ function LitanyPreview({ prayer }: { prayer: Prayer }) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-3">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[10px] font-bold">
-          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold">
           {totalCount} invocations
         </span>
         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-[10px] font-medium">
@@ -390,7 +427,7 @@ function LitanyPreview({ prayer }: { prayer: Prayer }) {
       <div className="space-y-0 bg-slate-50/50 rounded-lg p-3">
         {invocations.map((inv, i) => (
           <div key={i} className="flex items-center gap-2 py-1">
-            <span className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
+            <span className="w-1 h-1 rounded-full bg-slate-300 flex-shrink-0" />
             <span className="text-xs text-slate-700 font-medium flex-1 truncate">{inv.name}</span>
             <span className="text-[11px] text-emerald-600 italic whitespace-nowrap">{inv.response}</span>
           </div>
@@ -414,13 +451,12 @@ function PrayerCard({ prayer, onClick, compact = false }: { prayer: Prayer; onCl
       style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}
       onClick={() => onClick?.(prayer)}
     >
-      {/* Subtle top accent for healing/daily */}
       {(isHealing || isDaily) && (
         <div className={`h-1 ${isHealing ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-amber-400 to-orange-400'}`} />
       )}
       <div className={compact ? 'p-4' : 'p-5'}>
         <div className="flex items-start justify-between gap-3 mb-2">
-          <h3 className={`font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors ${compact ? 'text-sm' : ''}`}>
+          <h3 className={`font-semibold text-slate-800 group-hover:text-amber-700 transition-colors ${compact ? 'text-sm' : ''}`}>
             {prayer.title}
           </h3>
           <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${style.bg} ${style.text} ${style.border}`}>
@@ -455,6 +491,8 @@ function PrayerCard({ prayer, onClick, compact = false }: { prayer: Prayer; onCl
 // ═══════════════════════════════════════════════════════════
 
 export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNovena, className = '' }: PrayerListProps) {
+  const [activeJumuiya, setActiveJumuiya] = useState<string>('all');
+
   const litanyPrayers = prayers.filter((p) => p.category === 'litanies');
   const healingPrayers = prayers.filter((p) => p.category === 'healing');
   const dailyPrayers = prayers.filter((p) => p.category === 'daily');
@@ -464,12 +502,10 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
   const calendar = useMemo(() => getNovenaCalendar(year), [year]);
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
 
-  // Compute status for all novenas
   const allStatuses = useMemo(() => {
     return novenas.map((n) => ({ novena: n, status: getNovenaStatus(n.id, calendar, today) }));
   }, [novenas, calendar, today]);
 
-  // Find hero novena (active first, then nearest upcoming)
   const heroNovena = useMemo(() => {
     const active = allStatuses.find((n) => n.status?.status === 'active');
     if (active) return active;
@@ -483,10 +519,24 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
     return upcoming[0] || null;
   }, [allStatuses]);
 
-  // Group by category, sorted: active > upcoming > past within each group
+  // Jumuiya-specific novenas
+  const jumuiyaData = useMemo(() => {
+    return JUMUIYAS.map((j) => {
+      const novena = novenas.find((n) => n.id === j.novenaId);
+      const status = novena ? getNovenaStatus(novena.id, calendar, today) : null;
+      return { jumuiya: j, novena, status };
+    }).filter((d) => d.novena);
+  }, [novenas, calendar, today]);
+
+  // Filtered novenas excluding jumuiya patron novenas
+  const otherNovenas = useMemo(() => {
+    const jumuiyaIds = new Set(JUMUIYAS.map((j) => j.novenaId));
+    return allStatuses.filter((n) => !jumuiyaIds.has(n.novena.id));
+  }, [allStatuses]);
+
   const grouped = useMemo(() => {
     const STATUS_ORDER = { active: 0, upcoming: 1, past: 2 };
-    const sortFn = (a: typeof allStatuses[0], b: typeof allStatuses[0]) => {
+    const sortFn = (a: typeof otherNovenas[0], b: typeof otherNovenas[0]) => {
       const oa = a.status ? STATUS_ORDER[a.status.status] : 2;
       const ob = b.status ? STATUS_ORDER[b.status.status] : 2;
       if (oa !== ob) return oa - ob;
@@ -494,11 +544,11 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       return 0;
     };
     return {
-      marian: allStatuses.filter((n) => NOVENA_TYPE_MAP[n.novena.id] === 'marian').sort(sortFn),
-      saint: allStatuses.filter((n) => NOVENA_TYPE_MAP[n.novena.id] === 'saint').sort(sortFn),
-      devotional: allStatuses.filter((n) => NOVENA_TYPE_MAP[n.novena.id] === 'devotional').sort(sortFn),
+      marian: otherNovenas.filter((n) => NOVENA_TYPE_MAP[n.novena.id] === 'marian').sort(sortFn),
+      saint: otherNovenas.filter((n) => NOVENA_TYPE_MAP[n.novena.id] === 'saint').sort(sortFn),
+      devotional: otherNovenas.filter((n) => NOVENA_TYPE_MAP[n.novena.id] === 'devotional').sort(sortFn),
     };
-  }, [allStatuses]);
+  }, [otherNovenas]);
 
   if (!hasResults) {
     return (
@@ -510,29 +560,114 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
   }
 
   return (
-    <div className={`space-y-10 ${className}`}>
+    <div className={`space-y-12 ${className}`}>
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* HERO                                                   */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/10">
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(201,168,76,0.05) 40px, rgba(201,168,76,0.05) 41px)'
+        }} />
+        <div className="relative px-6 sm:px-8 py-8 text-center">
+          <p className="text-[10px] font-bold text-amber-500/60 uppercase tracking-[0.3em] mb-3">Devotiones Ecclesiae</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Novenas &amp; Litanies</h1>
+          <p className="text-sm text-slate-400 max-w-lg mx-auto">
+            Nine-day prayers of faith and intercession, with solemn litanies and daily devotions
+          </p>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* JUMUIYA (PARISH GROUPS) — DARK SECTION                 */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {jumuiyaData.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 sm:p-8">
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(201,168,76,0.2), transparent 50%), radial-gradient(circle at 80% 50%, rgba(201,168,76,0.1), transparent 50%)'
+          }} />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
+                <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Our Jumuiyas</h2>
+                <p className="text-[11px] text-slate-500">Seven parish groups with their patron saints</p>
+              </div>
+            </div>
+
+            {/* Jumuiya filter tabs */}
+            <div className="flex gap-2 overflow-x-auto pb-3 mb-6 -mx-1 px-1">
+              <button
+                onClick={() => setActiveJumuiya('all')}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                  activeJumuiya === 'all'
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                    : 'bg-transparent text-slate-500 border-slate-700/50 hover:border-slate-600'
+                }`}
+              >
+                All Groups
+              </button>
+              {JUMUIYAS.map((j) => {
+                const data = jumuiyaData.find((d) => d.jumuiya.id === j.id);
+                const isActive = data?.status?.status === 'active';
+                return (
+                  <button
+                    key={j.id}
+                    onClick={() => setActiveJumuiya(j.id)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1.5 ${
+                      activeJumuiya === j.id
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        : 'bg-transparent text-slate-500 border-slate-700/50 hover:border-slate-600'
+                    }`}
+                  >
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                    {j.shortName}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Jumuiya cards grid */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {jumuiyaData
+                .filter((d) => activeJumuiya === 'all' || d.jumuiya.id === activeJumuiya)
+                .map(({ jumuiya, novena, status }) => (
+                  <JumuiyaCard
+                    key={jumuiya.id}
+                    jumuiya={jumuiya}
+                    novena={novena!}
+                    status={status}
+                    onStart={() => onStartNovena?.(novena!)}
+                  />
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ═══════════════════════════════════════════════════════ */}
       {/* WHAT IS A NOVENA?                                      */}
       {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && (
         <details className="group">
-          <summary className="flex items-center gap-2 cursor-pointer text-sm text-slate-500 hover:text-indigo-600 transition-colors select-none">
+          <summary className="flex items-center gap-2 cursor-pointer text-sm text-slate-500 hover:text-amber-700 transition-colors select-none">
             <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             What is a Novena?
           </summary>
           <div className="mt-3 bg-white rounded-xl border border-slate-100 p-5 text-sm text-slate-600 leading-relaxed" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}>
             <p className="mb-2">
-              A <strong className="text-slate-800">novena</strong> is a nine-day period of prayer rooted in Catholic tradition, 
-              modeled after the Apostles' nine days of prayer between Ascension and Pentecost. The word comes from the 
-              Latin <em className="text-indigo-600">novem</em>, meaning nine.
+              A <strong className="text-slate-800">novena</strong> is a nine-day period of prayer rooted in Catholic tradition,
+              modeled after the Apostles' nine days of prayer between Ascension and Pentecost. The word comes from the
+              Latin <em className="text-amber-700">novem</em>, meaning nine.
             </p>
             <p className="mb-2">
-              Each day carries a specific prayer and intention, building toward a spiritual goal — healing, conversion, 
-              deeper devotion, or intercession for a particular need. Many novenas are tied to feast days, beginning 
+              Each day carries a specific prayer and intention, building toward a spiritual goal — healing, conversion,
+              deeper devotion, or intercession for a particular need. Many novenas are tied to feast days, beginning
               nine days before the celebration.
             </p>
             <p>
-              You can begin a novena at any time, even outside its liturgical season. Track your progress daily, and 
+              You can begin a novena at any time, even outside its liturgical season. Track your progress daily, and
               return each day for the next prayer in the series.
             </p>
           </div>
@@ -547,24 +682,23 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       )}
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* NOVENA CATEGORIES                                     */}
+      {/* ALL NOVENAS BY CATEGORY                                */}
       {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && (
         <>
           {(['marian', 'saint', 'devotional'] as const).map((type) => {
             const items = grouped[type];
             if (items.length === 0) return null;
-            const meta = TYPE_META[type];
+            const labels = { marian: 'Marian Novenas', saint: 'Saint Novenas', devotional: 'Devotional Novenas' };
+            const desc = { marian: 'Through the intercession of Our Lady', saint: 'With the saints who intercede for us', devotional: 'For special devotions and liturgical seasons' };
             const activeInGroup = items.filter((n) => n.status?.status === 'active').length;
-            const upcomingInGroup = items.filter((n) => n.status?.status === 'upcoming').length;
             return (
               <section key={type}>
                 <div className="mb-4">
-                  <h2 className="text-base font-bold text-slate-800">{meta.label}</h2>
+                  <h2 className="text-base font-bold text-slate-800">{labels[type]}</h2>
                   <p className="text-xs text-slate-500">
-                    {meta.description}
-                    {activeInGroup > 0 && <span className="ml-2 text-green-600 font-semibold">{activeInGroup} active</span>}
-                    {upcomingInGroup > 0 && <span className="ml-2 text-amber-600 font-semibold">{upcomingInGroup} soon</span>}
+                    {desc[type]}
+                    {activeInGroup > 0 && <span className="ml-2 text-emerald-600 font-semibold">{activeInGroup} active</span>}
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -575,9 +709,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
               </section>
             );
           })}
-
-          {/* Month Timeline */}
-          <MonthTimeline novenaStatuses={allStatuses} />
         </>
       )}
 

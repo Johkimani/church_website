@@ -39,6 +39,7 @@ import { NOVENA_PRAYERS_4 } from "./novenaPrayers4";
 import { NOVENA_PRAYERS_5 } from "./novenaPrayers5";
 import { NOVENA_PRAYERS_6 } from "./novenaPrayers6";
 import { NOVENA_PRAYERS_7 } from "./novenaPrayers7";
+import { NOVENA_PRAYERS_8 } from "./novenaPrayers8";
 
 // Helper to filter prayers by novenaId
 function getPrayers(novenaId: string): Prayer[] {
@@ -50,6 +51,7 @@ function getPrayers(novenaId: string): Prayer[] {
     ...NOVENA_PRAYERS_5,
     ...NOVENA_PRAYERS_6,
     ...NOVENA_PRAYERS_7,
+    ...NOVENA_PRAYERS_8,
   ].filter((p) => p.novenaId === novenaId);
 }
 
@@ -329,5 +331,44 @@ export const NOVENAS: Novena[] = [
     "Nine days meditating on the seven sorrows of the Blessed Virgin Mary, from the prophecy of Simeon to the burial of Jesus.",
     "from-purple-600 to-indigo-700",
     getPrayers("novenas-lady-sorrows")
+  ),
+
+  // ═══════════════════════════════════════════════════════════════
+  // BATCH 8 — Patron Saint novenas from novenaPrayers8.ts
+  // ═══════════════════════════════════════════════════════════════
+  buildNovena(
+    "novenas-saint-augustine",
+    "Novena to Saint Augustine",
+    "Nine days with the great Doctor of Grace — for conversion, wisdom, detachment from worldly things, and the love of Sacred Scripture.",
+    "from-yellow-500 to-amber-600",
+    getPrayers("novenas-saint-augustine")
+  ),
+  buildNovena(
+    "novenas-saint-catherine-siena",
+    "Novena to Saint Catherine of Siena",
+    "Nine days with the mystic and Doctor of the Church — for courage in faith, holy dialogue, Church unity, and the grace of complete self-offering to God.",
+    "from-red-500 to-rose-600",
+    getPrayers("novenas-saint-catherine-siena")
+  ),
+  buildNovena(
+    "novenas-saint-dominic",
+    "Novena to Saint Dominic",
+    "Nine days with the founder of the Order of Preachers — for the grace of preaching truth, devotion to the Holy Rosary, study, and the conversion of sinners.",
+    "from-blue-500 to-indigo-600",
+    getPrayers("novenas-saint-dominic")
+  ),
+  buildNovena(
+    "novenas-saint-elizabeth",
+    "Novena to Saint Elizabeth of Hungary",
+    "Nine days with the princess of charity — for love of the poor, humility in service, patience in affliction, and trust in divine providence.",
+    "from-emerald-500 to-teal-600",
+    getPrayers("novenas-saint-elizabeth")
+  ),
+  buildNovena(
+    "novenas-saint-mary-goretti",
+    "Novena to Saint Mary Goretti",
+    "Nine days with the lily of purity — for purity of heart, forgiveness of enemies, courage in trials, and the conversion of sinners through the power of mercy.",
+    "from-pink-500 to-rose-600",
+    getPrayers("novenas-saint-mary-goretti")
   ),
 ];
