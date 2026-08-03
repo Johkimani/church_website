@@ -1,0 +1,302 @@
+/* ══════════════════════════════════════════════════════════════
+   PARCHMENT & GOLD — manuscript-inspired design system
+   Light parchment + candlelit dark mode via CSS variables.
+   Usage: <div className="parchment parchment-bg" data-theme={theme}>
+   ══════════════════════════════════════════════════════════════ */
+
+.parchment {
+  /* ── Royal Violet — ivory, charcoal ink, deep liturgical purple ── */
+  --p-bg: #f6f4f9;
+  --p-paper: #ffffff;
+  --p-paper-2: #eeeaf3;
+  --p-wash: #f0edf5;
+  --p-ink: #2a2333;
+  --p-muted: #6b6277;
+  --p-faint: #a49aaf;
+  --p-gold: #5b3a8f;
+  --p-gold-deep: #483071;
+  --p-gold-soft: rgba(91, 58, 143, 0.1);
+  --p-gold-line: rgba(91, 58, 143, 0.38);
+  --p-rule: #e7e1ef;
+  --p-rule-strong: #d2c9df;
+  --p-shadow: rgba(42, 35, 51, 0.1);
+  --p-overlay: rgba(20, 16, 26, 0.55);
+
+  --p-serif: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+  --p-body: "Lora", Georgia, serif;
+  --p-caps: "Cinzel", "Times New Roman", serif;
+}
+
+/* ── Dark: deep violet-charcoal ───────────────────────────── */
+.parchment[data-theme="dark"] {
+  --p-bg: #121019;
+  --p-paper: #191627;
+  --p-paper-2: #201c2c;
+  --p-wash: #241f30;
+  --p-ink: #ece7f3;
+  --p-muted: #a49bb8;
+  --p-faint: #6f6684;
+  --p-gold: #a68cd9;
+  --p-gold-deep: #bda9e6;
+  --p-gold-soft: rgba(166, 140, 217, 0.14);
+  --p-gold-line: rgba(166, 140, 217, 0.45);
+  --p-rule: #2b2538;
+  --p-rule-strong: #3a3050;
+  --p-shadow: rgba(0, 0, 0, 0.55);
+  --p-overlay: rgba(8, 5, 13, 0.75);
+}
+
+/* ── Surfaces ─────────────────────────────────────────────── */
+.parchment-bg {
+  background-color: var(--p-bg);
+  color: var(--p-ink);
+}
+
+.paper {
+  background-color: var(--p-paper);
+  border: 1px solid var(--p-rule);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 23px,
+    rgba(30, 36, 46, 0.03) 23px,
+    rgba(30, 36, 46, 0.03) 24px
+  );
+}
+
+.paper-2 {
+  background-color: var(--p-paper-2);
+  border: 1px solid var(--p-rule);
+}
+
+.wash {
+  background-color: var(--p-wash);
+}
+
+/* ── Typography ───────────────────────────────────────────── */
+.font-serif-book {
+  font-family: var(--p-serif);
+}
+
+.font-body-book {
+  font-family: var(--p-body);
+}
+
+.font-caps-book {
+  font-family: var(--p-caps);
+}
+
+.ink {
+  color: var(--p-ink);
+}
+
+.muted {
+  color: var(--p-muted);
+}
+
+.faint {
+  color: var(--p-faint);
+}
+
+.gold {
+  color: var(--p-gold);
+}
+
+.gold-deep {
+  color: var(--p-gold-deep);
+}
+
+.small-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* ── Rules & ornaments ────────────────────────────────────── */
+.rule {
+  border-color: var(--p-rule);
+}
+
+.rule-strong {
+  border-color: var(--p-rule-strong);
+}
+
+.gold-rule {
+  border-color: var(--p-gold-line);
+}
+
+.gold-rule-fill {
+  background-color: var(--p-gold-line);
+}
+
+.gold-rule-double {
+  border-top: 1px solid var(--p-gold-line);
+  border-bottom: 1px solid var(--p-gold-line);
+}
+
+.gold-soft {
+  background-color: var(--p-gold-soft);
+}
+
+/* ── Drop cap ─────────────────────────────────────────────── */
+.dropcap::first-letter {
+  font-family: var(--p-serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 3.4em;
+  line-height: 0.82;
+  float: left;
+  padding-right: 0.14em;
+  padding-top: 0.06em;
+  color: var(--p-gold);
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn-ghost {
+  color: var(--p-muted);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-ghost:hover {
+  color: var(--p-gold);
+  background-color: var(--p-gold-soft);
+}
+
+/* ── Focus ring in gold ───────────────────────────────────── */
+.focus-gold:focus-visible,
+.search-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--p-gold-soft), 0 0 0 1px var(--p-gold-line);
+  border-color: var(--p-gold-line);
+}
+
+/* ── Laid-paper sheen for the reader page ─────────────────── */
+.page-sheen {
+  position: relative;
+}
+
+.page-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(255, 255, 255, 0.06), transparent 60%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(30, 36, 46, 0.02) 2px,
+      rgba(30, 36, 46, 0.02) 3px
+    );
+}
+
+.parchment[data-theme="dark"] .page-sheen::before {
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(255, 255, 255, 0.04), transparent 60%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(230, 235, 240, 0.02) 2px,
+      rgba(230, 235, 240, 0.02) 3px
+    );
+}
+
+/* ── Reader scrollbars ────────────────────────────────────── */
+.parchment ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.parchment ::-webkit-scrollbar-thumb {
+  background: var(--p-rule-strong);
+  border-radius: 999px;
+  border: 2px solid var(--p-paper);
+}
+
+.parchment ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ── Search field ─────────────────────────────────────────── */
+.search-field {
+  background-color: var(--p-paper);
+  border: 1px solid var(--p-rule);
+  color: var(--p-ink);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.search-field::placeholder {
+  color: var(--p-faint);
+}
+
+/* ── Interactive surfaces ─────────────────────────────────── */
+.hover-rule:hover {
+  border-color: var(--p-rule-strong);
+}
+
+.hover-soft:hover {
+  background-color: var(--p-gold-soft);
+}
+
+.hover-gold:hover {
+  color: var(--p-gold);
+}
+
+.hover-gold-deep:hover {
+  color: var(--p-gold-deep);
+}
+
+.chip {
+  border: 1px solid var(--p-gold-line);
+}
+
+.chip:hover {
+  border-color: var(--p-gold);
+}
+
+.prayer-row {
+  transition: background-color 0.15s ease;
+}
+
+.prayer-row:hover {
+  background-color: var(--p-gold-soft);
+}
+
+.prayer-row:hover .prayer-title {
+  color: var(--p-gold);
+}
+
+.prayer-row:hover .row-arrow {
+  color: var(--p-gold);
+}
+
+.prayer-title {
+  transition: color 0.15s ease;
+}
+
+.row-arrow {
+  transition: color 0.15s ease;
+}
+
+/* ── Scrollbar utility for the mobile nav (Tailwind uses scrollbar-thin) ── */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--p-rule-strong);
+  border-radius: 999px;
+}
+
+/* ── Hide scrollbar on the chapter tab ribbon (still scrollable) ── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
