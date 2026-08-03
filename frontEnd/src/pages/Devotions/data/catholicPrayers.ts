@@ -23,26 +23,30 @@ export type PrayerCategory =
   | "rosary"
   | "essential"
   | "acts"
+  | "confession"
   | "litanies"
   | "saints"
   | "devotions"
+  | "meals"
   | "fasting"
   | "special";
 
-export const CATEGORY_META: Record<PrayerCategory, { label: string; description: string; icon: string; color: string; gradient: string }> = {
-  morning: { label: "Morning Prayers", description: "Begin your day with God", icon: "\u2600", color: "text-amber-600", gradient: "from-amber-400 to-orange-500" },
-  daytime: { label: "Daytime Prayers", description: "Pause and pray through the day", icon: "\u2605", color: "text-sky-600", gradient: "from-sky-400 to-blue-500" },
-  evening: { label: "Evening Prayers", description: "Give thanks as day turns to night", icon: "\u263D", color: "text-indigo-600", gradient: "from-indigo-400 to-purple-500" },
-  night: { label: "Night Prayers", description: "Rest in God's peace", icon: "\u2606", color: "text-slate-600", gradient: "from-slate-400 to-indigo-500" },
-  mass: { label: "Mass Prayers", description: "Prayers for the Holy Sacrifice of the Mass", icon: "\u271D", color: "text-rose-600", gradient: "from-rose-400 to-red-500" },
-  rosary: { label: "The Rosary", description: "Meditate on the mysteries of faith", icon: "\u262C", color: "text-purple-600", gradient: "from-purple-400 to-violet-500" },
-  essential: { label: "Essential Prayers", description: "The foundation of Catholic prayer", icon: "\u2720", color: "text-blue-600", gradient: "from-blue-400 to-indigo-500" },
-  acts: { label: "Acts of Virtue", description: "Acts of Faith, Hope, Love, and Contrition", icon: "\u2764", color: "text-pink-600", gradient: "from-pink-400 to-rose-500" },
-  litanies: { label: "Litanies", description: "Solemn prayers of invocation", icon: "\u2726", color: "text-emerald-600", gradient: "from-emerald-400 to-teal-500" },
-  saints: { label: "Prayers to Saints", description: "Ask the saints to intercede for us", icon: "\u2606", color: "text-amber-600", gradient: "from-amber-400 to-yellow-500" },
-  devotions: { label: "Devotions", description: "Popular Catholic devotional prayers", icon: "\u262F", color: "text-violet-600", gradient: "from-violet-400 to-purple-500" },
-  fasting: { label: "Fasting Prayers", description: "Prayers for days of fasting and penance", icon: "\u2020", color: "text-stone-600", gradient: "from-stone-400 to-stone-600" },
-  special: { label: "Special Prayers", description: "For particular needs and occasions", icon: "\u2736", color: "text-teal-600", gradient: "from-teal-400 to-cyan-500" },
+export const CATEGORY_META: Record<PrayerCategory, { label: string; description: string }> = {
+  morning: { label: "Morning Prayers", description: "Begin your day with God" },
+  daytime: { label: "Daytime Prayers", description: "Pause and pray through the day" },
+  evening: { label: "Evening Prayers", description: "Give thanks as day turns to night" },
+  night: { label: "Night Prayers", description: "Rest in God's peace" },
+  mass: { label: "Mass Prayers", description: "Prayers for the Holy Sacrifice of the Mass" },
+  rosary: { label: "The Rosary", description: "Meditate on the mysteries of faith" },
+  essential: { label: "Essential Prayers", description: "The foundation of Catholic prayer" },
+  acts: { label: "Acts of Virtue", description: "Acts of Faith, Hope, Love, and Contrition" },
+  confession: { label: "Confession Prayers", description: "Prepare your heart for the Sacrament of Penance" },
+  litanies: { label: "Litanies", description: "Solemn prayers of invocation" },
+  saints: { label: "Prayers to Saints", description: "Ask the saints to intercede for us" },
+  devotions: { label: "Devotions", description: "Popular Catholic devotional prayers" },
+  meals: { label: "Meal Prayers", description: "Give thanks at table — before and after meals" },
+  fasting: { label: "Fasting Prayers", description: "Prayers for days of fasting and penance" },
+  special: { label: "Special Prayers", description: "For particular needs and occasions" },
 };
 
 function w(text: string): number {
@@ -576,7 +580,7 @@ Glory to the Father, and to the Son, and to the Holy Spirit, as it was in the be
   {
     id: "grace-before-meals",
     title: "Grace Before Meals",
-    category: "devotions",
+    category: "meals",
     text: `Bless us, O Lord, and these Your gifts, which we are about to receive from Your bounty, through Christ our Lord. Amen.`,
     tags: ["grace", "meals", "food", "daily"],
     readTime: 0,
@@ -584,7 +588,7 @@ Glory to the Father, and to the Son, and to the Holy Spirit, as it was in the be
   {
     id: "grace-after-meals",
     title: "Grace After Meals",
-    category: "devotions",
+    category: "meals",
     text: `We give You thanks, Almighty God, for all Your benefits, who live and reign now and forever. Amen.`,
     tags: ["grace", "meals", "thanksgiving", "daily"],
     readTime: 0,
@@ -1394,6 +1398,325 @@ Lacrymosa dies illa, Qua resurget ex favilla, Judicandus homo reus.
 
 Huic ergo parce, Deus: Pie Jesu Domine, Dona eis requiem. Amen.`,
     tags: ["dies irae", "dead", "funeral", "sequence", "latin"],
+    readTime: 0,
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // CONFESSION PRAYERS
+  // ═══════════════════════════════════════════════════════
+  {
+    id: "examination-of-conscience",
+    title: "Examination of Conscience",
+    category: "confession",
+    text: `Come, Holy Spirit, enlighten my mind to know my sins, and move my heart to be truly sorry for them.
+
+Have I placed God first in my life, or have I put other things before Him? Have I prayed faithfully, or have I been careless and distracted? Have I used God's name with love and reverence, or carelessly or in anger? Have I kept Sundays and holy days holy, attending Mass and avoiding unnecessary work? Have I been obedient and respectful to my parents and lawful superiors? Have I loved my neighbor, or have I given way to anger, hatred, or revenge? Have I been honest in word and deed, or have I lied, cheated, or stolen? Have I been pure in thought, word, and action? Have I been faithful and chaste in my thoughts and desires? Have I been content with what I have, or envious and greedy?
+
+O my God, I am sorry for my sins with all my heart. In choosing to do wrong and failing to do good, I have sinned against You, whom I should love above all things. I firmly intend, with Your help, to do penance, to sin no more, and to avoid whatever leads me to sin. Amen.`,
+    tags: ["confession", "penance", "examination", "conscience"],
+    readTime: 0,
+  },
+  {
+    id: "prayer-before-confession",
+    title: "Prayer Before Confession",
+    category: "confession",
+    text: `Lord Jesus Christ, You are the Good Shepherd who came to seek the lost sheep. Give me the grace to know my sins, to be truly sorry for them, and to confess them humbly. Do not look on my sins, but on the faith of Your Church, and grant me the grace of Your mercy. Cleanse me by Your healing forgiveness, that I may serve You with a pure heart. You who live and reign, one God, forever and ever. Amen.`,
+    tags: ["confession", "penance", "before", "mercy"],
+    readTime: 0,
+  },
+  {
+    id: "prayer-after-confession",
+    title: "Prayer of Thanksgiving After Confession",
+    category: "confession",
+    text: `My God, I thank You with all my heart for Your wonderful forgiveness. You have washed away my sins and called me Your child again. Strengthen me by Your grace, keep me from my past sins, and help me to amend my life and serve You faithfully, that I may one day praise You forever in heaven. Amen.`,
+    tags: ["confession", "penance", "thanksgiving", "after"],
+    readTime: 0,
+  },
+  {
+    id: "prayer-of-the-penitent",
+    title: "Prayer of the Penitent (In the Confessional)",
+    category: "confession",
+    text: `Bless me, Father, for I have sinned. It has been some time since my last confession, and these are my sins: ... I am sorry for these and all the sins of my past life, especially for ...
+
+O my God, I am heartily sorry for having offended You, and I detest all my sins because of Your just punishments, but most of all because they offend You, my God, who are all good and deserving of all my love. I firmly resolve, with the help of Your grace, to sin no more and to avoid the near occasions of sin. Amen.`,
+    tags: ["confession", "penance", "penitent", "absolution"],
+    readTime: 0,
+  },
+  {
+    id: "psalm-51",
+    title: "Psalm 51 — Have Mercy on Me, O God",
+    category: "confession",
+    text: `Have mercy on me, O God, in your goodness; in your great compassion wipe out my offense. Thoroughly wash away my guilt, and from my sin cleanse me. For I acknowledge my offense, and my sin is before me always: against you only have I sinned, and done what is evil in your sight.
+
+Cleanse me with hyssop, that I may be pure; wash me, and I shall be whiter than snow. A clean heart create for me, O God, and a steadfast spirit renew within me. Cast me not out from your presence, and your holy spirit take not from me. Give me back the joy of your salvation, and a willing spirit sustain in me.
+
+For you do not desire sacrifice, a burnt offering you would not accept; my sacrifice, O God, is a contrite spirit; a heart contrite and humbled, O God, you will not spurn. Amen.`,
+    tags: ["confession", "psalm", "miserere", "penance", "mercy"],
+    readTime: 0,
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // MEAL PRAYERS
+  // ═══════════════════════════════════════════════════════
+  {
+    id: "short-grace-before-meals",
+    title: "Short Grace Before Meals",
+    category: "meals",
+    text: `Bless us, O Lord, and these Your gifts, which we are about to receive from Your bounty, through Christ our Lord. Amen. Lord, make us truly grateful for all we have received. Amen.`,
+    tags: ["grace", "meals", "food", "short"],
+    readTime: 0,
+  },
+  {
+    id: "grace-before-family-meal",
+    title: "Grace Before a Family Meal",
+    category: "meals",
+    text: `Heavenly Father, we thank You for bringing our family together at this table. Bless this food which Your goodness provides, bless those who prepared it, and grant that as we share this meal we may grow in love for You and for one another. Through Christ our Lord. Amen.`,
+    tags: ["grace", "meals", "family", "blessing"],
+    readTime: 0,
+  },
+  {
+    id: "grace-after-family-meal",
+    title: "Thanksgiving After a Family Meal",
+    category: "meals",
+    text: `We give You thanks, Almighty God, for all Your benefits. Bless our family, and keep us united in Your love. May the souls of the faithful departed, through the mercy of God, rest in peace. Amen.`,
+    tags: ["grace", "meals", "family", "thanksgiving"],
+    readTime: 0,
+  },
+  {
+    id: "grace-before-meals-children",
+    title: "Grace Before Meals for Children",
+    category: "meals",
+    text: `God is great, God is good, let us thank Him for our food. By His hands we all are fed; give us, Lord, our daily bread. Amen.`,
+    tags: ["grace", "meals", "children", "simple"],
+    readTime: 0,
+  },
+  {
+    id: "prayer-for-the-hungry",
+    title: "Prayer for Those Who Are Hungry",
+    category: "meals",
+    text: `Lord Jesus, You fed the hungry crowds and taught us to hunger for holiness. Bless all who hunger today, in body or in spirit. Give us generous hearts to share our bread with those in need, that no one may lack what You so freely give. Amen.`,
+    tags: ["hunger", "charity", "poor", "meals"],
+    readTime: 0,
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // ADDITIONAL ESSENTIAL PRAYERS
+  // ═══════════════════════════════════════════════════════
+  {
+    id: "sign-of-the-cross",
+    title: "The Sign of the Cross",
+    category: "essential",
+    text: `By the sign of the cross, deliver us from our enemies, O Lord our God. In the name of the Father, and of the Son, and of the Holy Spirit. Amen.`,
+    tags: ["sign of the cross", "trinity", "essential"],
+    readTime: 0,
+  },
+  {
+    id: "de-profundis",
+    title: "De Profundis (Psalm 130)",
+    category: "essential",
+    text: `Out of the depths I cry to you, O Lord; Lord, hear my voice! Let your ears be attentive to my voice in supplication. If you, O Lord, mark iniquities, Lord, who can stand? But with you is forgiveness, that you may be revered.
+
+I trust in the Lord; my soul trusts in his word. My soul waits for the Lord more than sentinels wait for the dawn. For with the Lord is kindness and with him is plenteous redemption; and he will redeem Israel from all their iniquities. Amen.`,
+    tags: ["psalm", "mercy", "trust", "essential"],
+    readTime: 0,
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // ADDITIONAL DEVOTIONS
+  // ═══════════════════════════════════════════════════════
+  {
+    id: "divine-mercy-chaplet",
+    title: "The Divine Mercy Chaplet",
+    category: "devotions",
+    text: `Begin with the Sign of the Cross, then on the ordinary rosary beads pray the Our Father, the Hail Mary, and the Apostles' Creed.
+
+On each large bead, pray: Eternal Father, I offer You the Body and Blood, Soul and Divinity of Your dearly beloved Son, Our Lord Jesus Christ, in atonement for our sins and those of the whole world.
+
+On each of the ten small beads, pray: For the sake of His sorrowful Passion, have mercy on us and on the whole world.
+
+To conclude, pray three times: Holy God, Holy Mighty One, Holy Immortal One, have mercy on us and on the whole world.
+
+O Blood and Water, which gushed forth from the Heart of Jesus as a fount of mercy for us, I trust in You. Amen.`,
+    tags: ["divine mercy", "chaplet", "mercy", "faustina"],
+    readTime: 0,
+  },
+  {
+    id: "o-salutaris-hostia",
+    title: "O Salutaris Hostia",
+    category: "devotions",
+    text: `O Salutaris Hostia, quae caeli pandis ostium, bella premunt hostilia, da robur, fer auxilium.
+
+(O saving Victim, opening wide the gate of heaven to man below! Our foes press on from every side; Your aid supply, Your strength bestow.)
+
+Uni trinoque Domino sit sempiterna gloria, qui vitam sine termino nobis donet in patria. Amen.
+
+(To Your great name be endless praise, immortal Godhead, One in Three; O grant us endless length of days, in our true native land with Thee. Amen.)`,
+    tags: ["eucharist", "benediction", "latin", "adoration"],
+    readTime: 0,
+  },
+  {
+    id: "tantum-ergo",
+    title: "Tantum Ergo",
+    category: "devotions",
+    text: `Tantum ergo Sacramentum veneremur cernui, et antiquum documentum novo cedat ritui; praestet fides supplementum sensuum defectui.
+
+(Down in adoration falling, this great Sacrament we hail; over ancient forms of worship new and nobler rites prevail; faith will tell us Christ is present when our human senses fail.)
+
+Genitori, Genitoque laus et jubilatio, salus, honor, virtus quoque sit et benedictio; procedenti ab utroque compar sit laudatio. Amen.
+
+(To the everlasting Father, and the Son who reigns on high, with the Holy Ghost proceeding forth from Each eternally, be salvation, honor, blessing, might and endless majesty. Amen.)`,
+    tags: ["eucharist", "benediction", "latin", "adoration"],
+    readTime: 0,
+  },
+  {
+    id: "adoro-te-devote",
+    title: "Adoro Te Devote",
+    category: "devotions",
+    text: `Adoro te devote, latens Deitas, quae sub his figuris vere latitas; tibi se cor meum totum subiicit, quia te contemplans totum deficit.
+
+(Godhead here in hiding, whom I do adore, masked by these bare shadows, shape and nothing more; see, Lord, at Your service low lies here a heart lost, all lost in wonder at the God You are.)
+
+Jesu, quem velatum nunc aspicio, oro fiat illud quod tam sitio, ut te revelata cernens facie, visu sim beatus tuae gloriae. Amen.
+
+(Jesu, whom I look at shrouded here below, I beseech You send me what I thirst for so, that I may behold You, unveiled, and forever gaze in bliss upon Your glory. Amen.)`,
+    tags: ["eucharist", "adoration", "thomas aquinas", "latin"],
+    readTime: 0,
+  },
+  {
+    id: "divine-praises",
+    title: "The Divine Praises",
+    category: "devotions",
+    text: `Blessed be God. Blessed be His Holy Name. Blessed be Jesus Christ, true God and true Man. Blessed be the Name of Jesus. Blessed be His Most Sacred Heart. Blessed be His Most Precious Blood. Blessed be Jesus in the Most Holy Sacrament of the Altar. Blessed be the Holy Spirit, the Paraclete. Blessed be the great Mother of God, Mary most holy. Blessed be her holy and Immaculate Conception. Blessed be her glorious Assumption. Blessed be the name of Mary, Virgin and Mother. Blessed be Saint Joseph, her most chaste spouse. Blessed be God in His angels and in His saints. Amen.`,
+    tags: ["benediction", "praise", "sacrament"],
+    readTime: 0,
+  },
+  {
+    id: "consecration-sacred-heart",
+    title: "Consecration to the Sacred Heart of Jesus",
+    category: "devotions",
+    text: `Most sweet Jesus, humbly kneeling at Your feet, we consecrate to You our hearts, our lives, and all that we have. Accept this offering, O Sacred Heart, and make us faithful to You in all things. Grant that we may never separate ourselves from Your love, and may we spend our lives in making You known and loved. Take us into Your Sacred Heart and keep us there forever. Amen.`,
+    tags: ["sacred heart", "consecration", "jesus", "devotion"],
+    readTime: 0,
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // ADDITIONAL LITANIES
+  // ═══════════════════════════════════════════════════════
+  {
+    id: "litany-of-humility",
+    title: "Litany of Humility",
+    category: "litanies",
+    text: `O Jesus! meek and humble of heart, hear me.
+
+From the desire of being esteemed, deliver me, Jesus.
+From the desire of being loved, deliver me, Jesus.
+From the desire of being extolled, deliver me, Jesus.
+From the desire of being honored, deliver me, Jesus.
+From the desire of being praised, deliver me, Jesus.
+From the desire of being preferred to others, deliver me, Jesus.
+From the desire of being consulted, deliver me, Jesus.
+From the desire of being approved, deliver me, Jesus.
+From the fear of being humiliated, deliver me, Jesus.
+From the fear of being despised, deliver me, Jesus.
+From the fear of suffering rebukes, deliver me, Jesus.
+From the fear of being calumniated, deliver me, Jesus.
+From the fear of being forgotten, deliver me, Jesus.
+From the fear of being ridiculed, deliver me, Jesus.
+From the fear of being wronged, deliver me, Jesus.
+From the fear of being suspected, deliver me, Jesus.
+
+That others may be loved more than I, Jesus, grant me the grace to desire it.
+That others may be esteemed more than I, Jesus, grant me the grace to desire it.
+That in the opinion of the world others may increase and I may decrease, Jesus, grant me the grace to desire it.
+That others may be chosen and I set aside, Jesus, grant me the grace to desire it.
+That others may be praised and I unnoticed, Jesus, grant me the grace to desire it.
+That others may be preferred to me in everything, Jesus, grant me the grace to desire it.
+That others may become holier than I, provided that I may become as holy as I should, Jesus, grant me the grace to desire it.
+
+Jesus, meek and humble of heart, make my heart like unto Thine. Amen.`,
+    tags: ["humility", "litany", "virtue"],
+    readTime: 0,
+  },
+  {
+    id: "litany-of-st-joseph",
+    title: "Litany of Saint Joseph",
+    category: "litanies",
+    text: `Lord, have mercy on us. Christ, have mercy on us. Lord, have mercy on us. Christ, hear us. Christ, graciously hear us.
+
+God the Father of heaven, have mercy on us. God the Son, Redeemer of the world, have mercy on us. God the Holy Spirit, have mercy on us. Holy Trinity, one God, have mercy on us.
+
+Holy Mary, pray for us. Saint Joseph, pray for us. Renowned offspring of David, pray for us. Light of Patriarchs, pray for us. Spouse of the Mother of God, pray for us. Guardian of the Virgin, pray for us. Foster father of the Son of God, pray for us. Faithful guardian of Christ, pray for us. Head of the Holy Family, pray for us. Joseph most just, pray for us. Joseph most chaste, pray for us. Joseph most prudent, pray for us. Joseph most valiant, pray for us. Joseph most obedient, pray for us. Joseph most faithful, pray for us. Mirror of patience, pray for us. Lover of poverty, pray for us. Model of workmen, pray for us. Glory of domestic life, pray for us. Guardian of virgins, pray for us. Pillar of families, pray for us. Comfort of the afflicted, pray for us. Hope of the sick, pray for us. Patron of the dying, pray for us. Terror of demons, pray for us. Protector of Holy Church, pray for us.
+
+Lamb of God, who takes away the sins of the world, spare us, O Lord. Lamb of God, who takes away the sins of the world, graciously hear us, O Lord. Lamb of God, who takes away the sins of the world, have mercy on us.
+
+O God, who in Your inexpressible providence were pleased to choose Saint Joseph to be the spouse of Your most holy Mother, grant that we may be worthy to have him for our intercessor in heaven, whom on earth we venerate as our protector. You who live and reign forever and ever. Amen.`,
+    tags: ["st. joseph", "litany", "family", "worker"],
+    readTime: 0,
+  },
+  {
+    id: "litany-of-the-saints",
+    title: "Litany of the Saints",
+    category: "litanies",
+    text: `Lord, have mercy on us. Christ, have mercy on us. Lord, have mercy on us. Christ, hear us. Christ, graciously hear us.
+
+God the Father of heaven, have mercy on us. God the Son, Redeemer of the world, have mercy on us. God the Holy Spirit, have mercy on us. Holy Trinity, one God, have mercy on us.
+
+Holy Mary, pray for us. Holy Mother of God, pray for us. Holy Virgin of virgins, pray for us. Saint Michael, pray for us. Saint Gabriel, pray for us. Saint Raphael, pray for us. All you holy Angels and Archangels, pray for us. All you holy ranks of blessed Spirits, pray for us.
+
+Saint John the Baptist, pray for us. Saint Joseph, pray for us. All you holy Patriarchs and Prophets, pray for us. Saint Peter, pray for us. Saint Paul, pray for us. Saint Andrew, pray for us. Saint James, pray for us. Saint John, pray for us. Saint Thomas, pray for us. Saint James, pray for us. Saint Philip, pray for us. Saint Bartholomew, pray for us. Saint Matthew, pray for us. Saint Simon, pray for us. Saint Thaddeus, pray for us. Saint Matthias, pray for us. Saint Barnabas, pray for us. Saint Luke, pray for us. Saint Mark, pray for us. All you holy Apostles and Evangelists, pray for us. All you holy Disciples of the Lord, pray for us.
+
+All you holy Innocents, pray for us. Saint Stephen, pray for us. Saint Lawrence, pray for us. Saint Vincent, pray for us. Saints Fabian and Sebastian, pray for us. Saints John and Paul, pray for us. Saints Cosmas and Damian, pray for us. All you holy Martyrs, pray for us.
+
+Saint Sylvester, pray for us. Saint Gregory, pray for us. Saint Ambrose, pray for us. Saint Augustine, pray for us. Saint Jerome, pray for us. Saint Martin, pray for us. Saint Nicholas, pray for us. All you holy Bishops and Confessors, pray for us. All you holy Doctors, pray for us. Saint Anthony, pray for us. Saint Benedict, pray for us. Saint Bernard, pray for us. Saint Dominic, pray for us. Saint Francis, pray for us. All you holy Priests and Levites, pray for us. All you holy Monks and Hermits, pray for us.
+
+Saint Mary Magdalene, pray for us. Saint Agatha, pray for us. Saint Lucy, pray for us. Saint Agnes, pray for us. Saint Cecilia, pray for us. Saint Catherine, pray for us. Saint Anastasia, pray for us. All you holy Virgins and Widows, pray for us. All you holy Saints of God, intercede for us.
+
+Be merciful, spare us, O Lord. Be merciful, graciously hear us, O Lord. From all evil, deliver us, O Lord. From all sin, deliver us, O Lord. From everlasting death, deliver us, O Lord. We sinners, we beseech You, hear us. That You would spare us, we beseech You, hear us. That You would pardon us, we beseech You, hear us. That You would lead all people to the light of the Gospel, we beseech You, hear us. That You would grant eternal rest to all the faithful departed, we beseech You, hear us.
+
+Lamb of God, who takes away the sins of the world, spare us, O Lord. Lamb of God, who takes away the sins of the world, graciously hear us, O Lord. Lamb of God, who takes away the sins of the world, have mercy on us.
+
+O Christ, hear us. Christ, graciously hear us. Amen.`,
+    tags: ["litany", "saints", "all saints", "intercession"],
+    readTime: 0,
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // ADDITIONAL SAINTS
+  // ═══════════════════════════════════════════════════════
+  {
+    id: "prayer-to-st-jude",
+    title: "Prayer to Saint Jude (Impossible Causes)",
+    category: "saints",
+    text: `Most holy Apostle, Saint Jude, faithful servant and friend of Jesus, the Church honors and invokes you universally as the patron of hopeless cases, of things despaired of. Pray for me, who am so miserable. Make use, I implore you, of that particular privilege given to you, to bring visible and speedy help where help is almost despaired of. Come to my assistance in this great need, that I may receive the consolation and succor of heaven in all my necessities, tribulations, and sufferings. I promise you, O blessed Jude, to be ever mindful of this great favor, and never to cease honoring you as my special and powerful patron. Amen.`,
+    tags: ["st. jude", "hopeless", "desperate", "intercession"],
+    readTime: 0,
+  },
+  {
+    id: "prayer-to-st-peregrine",
+    title: "Prayer to Saint Peregrine (Against Cancer)",
+    category: "saints",
+    text: `O great Saint Peregrine, called the Mighty and the Wonder-Worker, because of the powerful intercession you have obtained from God for those who call upon you in serious need: you know well that our loving God has given you the power to help those who, like you, are afflicted with cancer and other diseases. I come to you with great confidence, begging you to plead my cause before God, the healer of all ills. I beg you, by the merits of the graces granted to you, to obtain for me a perfect cure, if it is God's will. If I must suffer, grant me the grace to bear my cross with patience and love. Amen.`,
+    tags: ["st. peregrine", "cancer", "sickness", "healing"],
+    readTime: 0,
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // ADDITIONAL SPECIAL PRAYERS
+  // ═══════════════════════════════════════════════════════
+  {
+    id: "prayer-for-a-happy-death",
+    title: "Prayer for a Happy Death",
+    category: "special",
+    text: `O God, whose mercy is infinite and whose goodness is without limit, in Your tender love look upon me in my final hour. Jesus, Mary, and Joseph, I give you my heart and my soul. Jesus, Mary, and Joseph, assist me in my last agony. Jesus, Mary, and Joseph, may I breathe forth my soul in peace with you. Grant that I may die in Your friendship, strengthened by the sacraments, and come to share eternal life with all the saints. Amen.`,
+    tags: ["death", "happy death", "final hour", "last rites"],
+    readTime: 0,
+  },
+  {
+    id: "prayer-for-the-unborn",
+    title: "Prayer for the Unborn",
+    category: "special",
+    text: `Heavenly Father, You are the Author of life, and every person is made in Your image. Protect the lives of the unborn, and touch the hearts of all who doubt the sacred gift of life. Grant wisdom to those who counsel, courage to those who are afraid, and compassion to all who serve the unborn and their families. Through Christ our Lord. Amen.`,
+    tags: ["unborn", "life", "pro-life", "protection"],
     readTime: 0,
   },
 ];

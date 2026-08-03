@@ -160,14 +160,14 @@ export default function Sidebar() {
       </aside>
 
       {/* ✅ Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 md:hidden flex justify-around py-3 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 md:hidden flex items-center overflow-x-auto z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] scrollbar-thin">
         {items.map((it) => (
           <NavLink
             key={it.to}
             to={it.to}
             end
             className={({ isActive }) =>
-              `flex flex-col items-center text-xs transition-colors ${
+              `flex flex-shrink-0 flex-col items-center justify-center min-w-[56px] text-xs transition-colors py-2 px-2 ${
                 isActive
                   ? "text-pink-600"
                   : "text-gray-700 hover:text-pink-600"
