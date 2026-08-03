@@ -99,10 +99,10 @@ const NOVENA_INTENTIONS: Record<string, string> = {
   'novenas-lady-sorrows': "Compassion through Mary's sorrows",
 };
 
-const TYPE_META: Record<NovenaType, { label: string; description: string; icon: string; color: string }> = {
-  marian: { label: 'Marian Novenas', description: 'Through the intercession of Our Lady', icon: '\u2766', color: 'text-pink-600' },
-  saint: { label: 'Saint Novenas', description: 'With the saints who intercede for us', icon: '\u2720', color: 'text-blue-600' },
-  devotional: { label: 'Devotional Novenas', description: 'For special devotions and liturgical seasons', icon: '\u271D', color: 'text-purple-600' },
+const TYPE_META: Record<NovenaType, { label: string; description: string }> = {
+  marian: { label: 'Marian Novenas', description: 'Through the intercession of Our Lady' },
+  saint: { label: 'Saint Novenas', description: 'With the saints who intercede for us' },
+  devotional: { label: 'Devotional Novenas', description: 'For special devotions and liturgical seasons' },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -559,16 +559,13 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
             const upcomingInGroup = items.filter((n) => n.status?.status === 'upcoming').length;
             return (
               <section key={type}>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className={`text-xl ${meta.color}`}>{meta.icon}</span>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">{meta.label}</h2>
-                    <p className="text-xs text-slate-500">
-                      {meta.description}
-                      {activeInGroup > 0 && <span className="ml-2 text-green-600 font-semibold">{activeInGroup} active</span>}
-                      {upcomingInGroup > 0 && <span className="ml-2 text-amber-600 font-semibold">{upcomingInGroup} soon</span>}
-                    </p>
-                  </div>
+                <div className="mb-4">
+                  <h2 className="text-base font-bold text-slate-800">{meta.label}</h2>
+                  <p className="text-xs text-slate-500">
+                    {meta.description}
+                    {activeInGroup > 0 && <span className="ml-2 text-green-600 font-semibold">{activeInGroup} active</span>}
+                    {upcomingInGroup > 0 && <span className="ml-2 text-amber-600 font-semibold">{upcomingInGroup} soon</span>}
+                  </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {items.map(({ novena, status }) => (
@@ -589,14 +586,9 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {/* ═══════════════════════════════════════════════════════ */}
       {litanyPrayers.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-4 p-4 bg-blue-50/60 rounded-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-lg font-bold shadow-sm">
-              L
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-slate-800">Litanies</h2>
-              <p className="text-xs text-slate-500">Solemn prayers of invocation and response — {litanyPrayers.length} litanies available</p>
-            </div>
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-800">Litanies</h2>
+            <p className="text-xs text-slate-500">Solemn prayers of invocation and response — {litanyPrayers.length} litanies</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {litanyPrayers.map((prayer) => (
@@ -611,14 +603,9 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {/* ═══════════════════════════════════════════════════════ */}
       {healingPrayers.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-4 p-4 bg-emerald-50/60 rounded-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-lg font-bold shadow-sm">
-              +
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-slate-800">Healing Prayers</h2>
-              <p className="text-xs text-slate-500">Prayers for body, mind, and spirit — {healingPrayers.length} prayers available</p>
-            </div>
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-800">Healing Prayers</h2>
+            <p className="text-xs text-slate-500">Prayers for body, mind, and spirit — {healingPrayers.length} prayers</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {healingPrayers.map((prayer) => (
@@ -633,14 +620,9 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {/* ═══════════════════════════════════════════════════════ */}
       {dailyPrayers.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-4 p-4 bg-amber-50/60 rounded-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-lg font-bold shadow-sm">
-              /
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-slate-800">Daily Catholic Prayers</h2>
-              <p className="text-xs text-slate-500">Essential prayers for every day — {dailyPrayers.length} prayers available</p>
-            </div>
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-800">Daily Catholic Prayers</h2>
+            <p className="text-xs text-slate-500">Essential prayers for every day — {dailyPrayers.length} prayers</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {dailyPrayers.map((prayer) => (
