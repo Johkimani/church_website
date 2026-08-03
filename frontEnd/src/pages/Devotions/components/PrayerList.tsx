@@ -206,13 +206,15 @@ function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: No
 
         <p className="text-sm text-slate-400 leading-relaxed mb-5 max-w-2xl">{novena.description}</p>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-          <span className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-4 text-xs">
+          <span className={`flex items-center gap-1.5 font-bold ${
+            active ? 'text-emerald-400' : 'text-amber-400'
+          }`}>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             {formatNovenaDates(status.entry.startDate, status.entry.endDate)}
           </span>
           {status.entry.feastDay && (
-            <span className="flex items-center gap-1.5 text-amber-400">
+            <span className="flex items-center gap-1.5 text-amber-400 font-medium">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
               {status.entry.feastDay}
             </span>
@@ -220,6 +222,11 @@ function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: No
           {active && (
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
               Day {status.currentDay} of 9 — {Math.round(status.progress)}%
+            </span>
+          )}
+          {!active && upcoming && 'daysUntil' in status && (
+            <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+              Starts {status.daysUntil === 0 ? 'today' : status.daysUntil === 1 ? 'tomorrow' : `in ${status.daysUntil} days`}
             </span>
           )}
         </div>
@@ -245,6 +252,9 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
   const past = status?.status === 'past';
   const intention = NOVENA_INTENTIONS[novena.id] || '';
 
+  const formatDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formatFullDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
   return (
     <div
       className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 hover:border-amber-500/30 transition-all duration-300 cursor-pointer group backdrop-blur-sm"
@@ -252,6 +262,7 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
     >
       <div className={`h-1 bg-gradient-to-r ${jumuiya.color}`} />
       <div className="p-4">
+        {/* Header */}
         <div className="flex items-center gap-3 mb-3">
           <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${jumuiya.color} flex items-center justify-center text-white text-xs font-bold shadow-lg`}>
             {jumuiya.shortName.split(' ').map(w => w[0]).join('').substring(0, 2)}
@@ -272,13 +283,37 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
           )}
           {past && (
             <span className="flex-shrink-0 px-2 py-0.5 bg-slate-700/50 text-slate-500 rounded-full text-[10px] font-bold border border-slate-600/30">
-              Done
+              Completed
             </span>
           )}
         </div>
 
+        {/* Date banner — prominent */}
+        {status?.entry && (
+          <div className={`rounded-lg p-2.5 mb-3 border ${
+            active ? 'bg-emerald-500/10 border-emerald-500/20' :
+            upcoming ? 'bg-amber-500/10 border-amber-500/20' :
+            'bg-slate-700/30 border-slate-600/30'
+          }`}>
+            <div className="flex items-center gap-2">
+              <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
+                active ? 'text-emerald-400' : upcoming ? 'text-amber-400' : 'text-slate-500'
+              }`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <span className={`text-[11px] font-bold ${
+                active ? 'text-emerald-400' : upcoming ? 'text-amber-400' : 'text-slate-400'
+              }`}>
+                {formatDate(status.entry.startDate)} — {formatDate(status.entry.endDate)}
+              </span>
+            </div>
+            {status.entry.feastDay && (
+              <p className="text-[10px] text-amber-400/60 mt-1 ml-5.5">{status.entry.feastDay}</p>
+            )}
+          </div>
+        )}
+
         {intention && <p className="text-[11px] text-amber-400/60 mb-2">{intention}</p>}
 
+        {/* Progress for active */}
         {active && status && 'currentDay' in status && (
           <div className="mb-3">
             <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
@@ -289,6 +324,20 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
               <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${status.progress}%` }} />
             </div>
           </div>
+        )}
+
+        {/* Countdown for upcoming */}
+        {upcoming && status && 'daysUntil' in status && (
+          <p className="text-[11px] text-amber-400/70 mb-3">
+            Starts {status.daysUntil === 0 ? 'today' : status.daysUntil === 1 ? 'tomorrow' : `in ${status.daysUntil} days`} — {formatFullDate(status.entry.startDate)}
+          </p>
+        )}
+
+        {/* Days completed for past */}
+        {past && (
+          <p className="text-[11px] text-slate-500 mb-3">
+            Novena completed — {formatFullDate(status.entry.startDate)}
+          </p>
         )}
 
         <div className="flex items-center justify-between">
@@ -318,6 +367,9 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
   const upcoming = calendarStatus?.status === 'upcoming';
   const past = calendarStatus?.status === 'past';
 
+  const formatDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formatFullDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
   return (
     <div
       className="bg-white rounded-xl overflow-hidden border border-slate-100 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group cursor-pointer"
@@ -326,12 +378,13 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
     >
       <div className={`h-1 bg-gradient-to-r ${novena.color}`} />
       <div className="p-5">
+        {/* Title + Status */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-bold text-slate-800 group-hover:text-amber-700 transition-colors leading-tight text-sm">
             {novena.title}
           </h3>
           {active && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide animate-pulse">
               Active
             </span>
           )}
@@ -342,22 +395,39 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
           )}
           {past && (
             <span className="flex-shrink-0 px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">
-              Done
+              Completed
             </span>
           )}
         </div>
 
-        {intention && <p className="text-xs text-amber-600 font-medium mb-1.5">{intention}</p>}
-
+        {/* Date banner — prominent */}
         {calendarStatus?.entry && (
-          <p className="text-xs text-slate-400 mb-2">
-            {formatNovenaDates(calendarStatus.entry.startDate, calendarStatus.entry.endDate)}
-            {calendarStatus.entry.feastDay && <span className="text-amber-500 ml-1">— {calendarStatus.entry.feastDay}</span>}
-          </p>
+          <div className={`rounded-lg p-2.5 mb-3 border ${
+            active ? 'bg-emerald-50 border-emerald-200' :
+            upcoming ? 'bg-amber-50 border-amber-200' :
+            'bg-slate-50 border-slate-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
+                active ? 'text-emerald-500' : upcoming ? 'text-amber-500' : 'text-slate-400'
+              }`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <span className={`text-[11px] font-bold ${
+                active ? 'text-emerald-700' : upcoming ? 'text-amber-700' : 'text-slate-500'
+              }`}>
+                {formatDate(calendarStatus.entry.startDate)} — {formatDate(calendarStatus.entry.endDate)}
+              </span>
+            </div>
+            {calendarStatus.entry.feastDay && (
+              <p className="text-[10px] text-amber-600 mt-1 ml-5.5">{calendarStatus.entry.feastDay}</p>
+            )}
+          </div>
         )}
 
-        <p className="text-sm text-slate-600 line-clamp-2 mb-4">{novena.description}</p>
+        {intention && <p className="text-xs text-amber-600 font-medium mb-1.5">{intention}</p>}
 
+        <p className="text-sm text-slate-600 line-clamp-2 mb-3">{novena.description}</p>
+
+        {/* Progress for active */}
         {active && calendarStatus && 'currentDay' in calendarStatus && (
           <div className="mb-3">
             <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
@@ -368,6 +438,20 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
               <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${calendarStatus.progress}%` }} />
             </div>
           </div>
+        )}
+
+        {/* Countdown for upcoming */}
+        {upcoming && calendarStatus && 'daysUntil' in calendarStatus && (
+          <p className="text-[11px] text-amber-600 mb-3">
+            Starts {calendarStatus.daysUntil === 0 ? 'today' : calendarStatus.daysUntil === 1 ? 'tomorrow' : `in ${calendarStatus.daysUntil} days`} — {formatFullDate(calendarStatus.entry.startDate)}
+          </p>
+        )}
+
+        {/* Completed note for past */}
+        {past && (
+          <p className="text-[11px] text-slate-400 mb-3">
+            Novena completed — {formatFullDate(calendarStatus.entry.startDate)}
+          </p>
         )}
 
         <div className="flex items-center justify-between">
