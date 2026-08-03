@@ -16,9 +16,10 @@ import { NOVENA_PRAYERS_4 } from "./novenaPrayers4";
 import { NOVENA_PRAYERS_5 } from "./novenaPrayers5";
 import { NOVENA_PRAYERS_6 } from "./novenaPrayers6";
 import { NOVENA_PRAYERS_7 } from "./novenaPrayers7";
+import { NOVENA_PRAYERS_8 } from "./novenaPrayers8";
 
 export const PRAYERS: Prayer[] = [
-  // Merge all detailed novena prayers (34 novenas × 9 days = 306 prayers)
+  // Merge all detailed novena prayers (39 novenas × 9 days = 351 prayers)
   ...NOVENA_PRAYERS,
   ...NOVENA_PRAYERS_2,
   ...NOVENA_PRAYERS_3,
@@ -26,6 +27,7 @@ export const PRAYERS: Prayer[] = [
   ...NOVENA_PRAYERS_5,
   ...NOVENA_PRAYERS_6,
   ...NOVENA_PRAYERS_7,
+  ...NOVENA_PRAYERS_8,
 
   // ═══════════════════════════════════════════════════════════════
   // LITANIES — Full prayers with proper invocation/response format
