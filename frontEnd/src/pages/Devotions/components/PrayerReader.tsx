@@ -7,6 +7,7 @@ interface PrayerReaderProps {
 
 const CATEGORY_COLORS: Record<string, string> = {
   litanies: 'from-blue-600 to-indigo-600',
+  saints: 'from-amber-500 to-yellow-600',
   healing: 'from-emerald-600 to-teal-600',
   daily: 'from-amber-500 to-orange-500',
   novenas: 'from-purple-600 to-indigo-600',
