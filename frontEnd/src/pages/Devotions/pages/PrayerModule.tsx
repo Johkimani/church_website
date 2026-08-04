@@ -13,6 +13,7 @@ import NovenaCalendar from '../components/NovenaCalendar';
 const CATEGORIES = {
   novenas: { label: 'Novenas', icon: '9', color: 'bg-purple-100 text-purple-800' },
   litanies: { label: 'Litanies', icon: 'L', color: 'bg-blue-100 text-blue-800' },
+  saints: { label: 'Saints', icon: 'S', color: 'bg-amber-100 text-amber-800' },
   healing: { label: 'Healing', icon: '+', color: 'bg-emerald-100 text-emerald-800' },
   daily: { label: 'Daily', icon: '/', color: 'bg-amber-100 text-amber-800' },
 };
@@ -115,14 +116,28 @@ export default function PrayerModule() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 pb-12">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-800">Novenas &amp; Litanies</h1>
-          <p className="text-sm text-slate-500 mt-1">Catholic prayers, devotions, and spiritual practices</p>
+
+        {/* ═══════════════ HEADER ═══════════════ */}
+        <div className="mb-8">
+          <h1
+            className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight"
+            style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif" }}
+          >
+            Novenas &amp; Litanies
+          </h1>
+          <p className="text-sm text-slate-400 mt-2 font-medium">
+            Catholic prayers, devotions, and spiritual practices
+          </p>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-100 mb-8 w-fit" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        {/* ═══════════════ SEGMENTED TAB CONTROL ═══════════════ */}
+        <div
+          className="inline-flex rounded-xl p-1 mb-8 w-fit"
+          style={{
+            background: "rgba(30, 41, 59, 0.04)",
+            border: "1px solid rgba(30, 41, 59, 0.06)",
+          }}
+        >
           {([
             { key: 'prayers' as TabKey, label: 'Prayers' },
             { key: 'calendar' as TabKey, label: 'Novenas by Date' },
@@ -130,11 +145,19 @@ export default function PrayerModule() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              className="relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300"
+              style={
                 activeTab === tab.key
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                  : 'text-slate-600 hover:text-indigo-600 hover:bg-indigo-50'
-              }`}
+                  ? {
+                      background: "linear-gradient(135deg, #D97706, #B45309)",
+                      color: "#FFFFFF",
+                      boxShadow: "0 2px 8px rgba(217, 119, 6, 0.3), 0 1px 2px rgba(0,0,0,0.1)",
+                    }
+                  : {
+                      color: "#64748B",
+                      background: "transparent",
+                    }
+              }
             >
               {tab.label}
             </button>
@@ -143,32 +166,6 @@ export default function PrayerModule() {
 
         {activeTab === 'prayers' ? (
           <>
-            {/* Stats bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-              {[
-                { label: 'Novenas', count: NOVENAS.length, letter: 'N', gradient: 'from-purple-500 to-indigo-500' },
-                { label: 'Litanies', count: PRAYERS.filter((p) => p.category === 'litanies').length, letter: 'L', gradient: 'from-blue-500 to-indigo-500' },
-                { label: 'Healing', count: PRAYERS.filter((p) => p.category === 'healing').length, letter: 'H', gradient: 'from-emerald-500 to-teal-500' },
-                { label: 'Daily', count: PRAYERS.filter((p) => p.category === 'daily').length, letter: 'D', gradient: 'from-amber-500 to-orange-500' },
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  className="bg-white rounded-xl p-4 border border-slate-100 hover:shadow-md transition-shadow"
-                  style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${s.gradient} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-                      {s.letter}
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold text-slate-800">{s.count}</p>
-                      <p className="text-xs text-slate-400">{s.label}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
             {/* Filters */}
             <PrayerFilter
               filters={filters}

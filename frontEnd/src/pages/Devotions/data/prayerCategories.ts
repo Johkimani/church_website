@@ -1,7 +1,7 @@
 export interface Prayer {
   id: string;
   title: string;
-  category: "novenas" | "litanies" | "healing" | "daily";
+  category: "novenas" | "litanies" | "saints" | "healing" | "daily";
   text: string;
   day?: number;
   intention?: string;
@@ -17,9 +17,16 @@ import { NOVENA_PRAYERS_5 } from "./novenaPrayers5";
 import { NOVENA_PRAYERS_6 } from "./novenaPrayers6";
 import { NOVENA_PRAYERS_7 } from "./novenaPrayers7";
 import { NOVENA_PRAYERS_8 } from "./novenaPrayers8";
+import { NOVENA_PRAYERS_9 } from "./novenaPrayers9";
+import { NOVENA_PRAYERS_10 } from "./novenaPrayers10";
+import { NOVENA_PRAYERS_11 } from "./novenaPrayers11";
+import { NOVENA_PRAYERS_12 } from "./novenaPrayers12";
+import { NOVENA_PRAYERS_13 } from "./novenaPrayers13";
+import { NOVENA_PRAYERS_14 } from "./novenaPrayers14";
+import { NOVENA_PRAYERS_15 } from "./novenaPrayers15";
 
 export const PRAYERS: Prayer[] = [
-  // Merge all detailed novena prayers (39 novenas × 9 days = 351 prayers)
+  // Merge all detailed novena prayers (59 novenas × 9 days = 531 prayers)
   ...NOVENA_PRAYERS,
   ...NOVENA_PRAYERS_2,
   ...NOVENA_PRAYERS_3,
@@ -28,6 +35,13 @@ export const PRAYERS: Prayer[] = [
   ...NOVENA_PRAYERS_6,
   ...NOVENA_PRAYERS_7,
   ...NOVENA_PRAYERS_8,
+  ...NOVENA_PRAYERS_9,
+  ...NOVENA_PRAYERS_10,
+  ...NOVENA_PRAYERS_11,
+  ...NOVENA_PRAYERS_12,
+  ...NOVENA_PRAYERS_13,
+  ...NOVENA_PRAYERS_14,
+  ...NOVENA_PRAYERS_15,
 
   // ═══════════════════════════════════════════════════════════════
   // LITANIES — Full prayers with proper invocation/response format
@@ -134,4 +148,83 @@ Let us pray: O God, who by the light of the Holy Spirit did instruct the hearts 
     text: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen." },
   { id: "daily-9", title: "Fatima Prayer", category: "daily", intention: "Reparations",
     text: "O my Jesus, forgive us our sins, save us from the fires of hell, lead all souls to Heaven, especially those in most need of Thy mercy. Amen." },
+
+  // ═══════════════════════════════════════════════════════════════
+  // ADDITIONAL LITANIES
+  // ═══════════════════════════════════════════════════════════════
+
+  { id: "lit-humility", title: "Litany of Humility", category: "litanies", intention: "Humility",
+    text: `O Jesus, meek and humble of heart, hear me.
+
+From the desire of being esteemed, deliver me, O Jesus.
+From the desire of being loved, deliver me, O Jesus.
+From the desire of being extolled, deliver me, O Jesus.
+From the desire of being honored, deliver me, O Jesus.
+From the desire of being praised, deliver me, O Jesus.
+From the desire of being preferred to others, deliver me, O Jesus.
+From the desire of being consulted, deliver me, O Jesus.
+From the desire of being approved, deliver me, O Jesus.
+From the fear of being humiliated, deliver me, O Jesus.
+From the fear of being despised, deliver me, O Jesus.
+From the fear of being rebuked, deliver me, O Jesus.
+From the fear of being calumniated, deliver me, O Jesus.
+From the fear of being forgotten, deliver me, O Jesus.
+From the fear of being ridiculed, deliver me, O Jesus.
+From the fear of being wronged, deliver me, O Jesus.
+From the fear of being suspected, deliver me, O Jesus.
+
+That others may be loved more than I, Jesus, grant me the grace to desire it.
+That others may be esteemed more than I, Jesus, grant me the grace to desire it.
+That others may increase and I may decrease, Jesus, grant me the grace to desire it.
+That others may be chosen and I set aside, Jesus, grant me the grace to desire it.
+That others may be praised and I unnoticed, Jesus, grant me the grace to desire it.
+That others may be preferred to me in everything, Jesus, grant me the grace to desire it.
+That others may become holier than I, provided I may become as holy as I should, Jesus, grant me the grace to desire it.` },
+
+  { id: "lit-precious-blood", title: "Litany of the Precious Blood", category: "litanies", intention: "Redemption",
+    text: `Lord, have mercy on us. Christ, have mercy on us. Lord, have mercy on us. Christ, hear us. Christ, graciously hear us.
+
+God the Father of Heaven, have mercy on us. God the Son, Redeemer of the world, have mercy on us. God the Holy Spirit, have mercy on us. Holy Trinity, one God, have mercy on us.
+
+Blood of Christ, only-begotten Son of the Eternal Father, save us. Blood of Christ, incarnate Word of God, save us. Blood of Christ, of the New and Eternal Testament, save us. Blood of Christ, falling upon the earth in the Agony, save us. Blood of Christ, shed profusely in the Scourging, save us. Blood of Christ, flowing forth in the Crowning with Thorns, save us. Blood of Christ, poured out on the Cross, save us. Blood of Christ, price of our salvation, save us. Blood of Christ, without which there is no forgiveness, save us. Blood of Christ, Eucharistic drink and refreshment of souls, save us. Blood of Christ, stream of mercy, save us. Blood of Christ, victor over demons, save us. Blood of Christ, courage of Martyrs, save us. Blood of Christ, strength of Confessors, save us. Blood of Christ, bringing forth Virgins, save us. Blood of Christ, help of those in peril, save us. Blood of Christ, relief of the burdened, save us. Blood of Christ, solace of the sorrowing, save us. Blood of Christ, hope of the repentant, save us. Blood of Christ, consolation of the dying, save us. Blood of Christ, peace and tenderness of hearts, save us. Blood of Christ, pledge of eternal life, save us. Blood of Christ, freeing souls from purgatory, save us. Blood of Christ, worthy of all praise and glory, save us.
+
+Lamb of God, who takes away the sins of the world, spare us, O Lord. Lamb of God, who takes away the sins of the world, graciously hear us, O Lord. Lamb of God, who takes away the sins of the world, have mercy on us.
+
+V. You have redeemed us, O Lord, in Your Blood.
+R. And made us, for our God, a kingdom.
+
+Let us pray: Almighty and eternal God, You have appointed Your only-begotten Son the Redeemer of the world and willed to be appeased by His Blood. Grant, we beg of You, that we may worthily adore this price of our salvation and through its power be safeguarded from the evils of the present life, so that we may enjoy its fruits forever in heaven. Through the same Christ our Lord. Amen.` },
+
+  { id: "lit-saints", title: "Litany of the Saints", category: "litanies", intention: "Universal intercession",
+    text: `Lord, have mercy on us. Christ, have mercy on us. Lord, have mercy on us. Christ, hear us. Christ, graciously hear us.
+
+God the Father of Heaven, have mercy on us. God the Son, Redeemer of the world, have mercy on us. God the Holy Spirit, have mercy on us. Holy Trinity, one God, have mercy on us.
+
+Holy Mary, pray for us. Holy Mother of God, pray for us. Holy Virgin of Virgins, pray for us. Saint Michael, pray for us. Saint Gabriel, pray for us. Saint Raphael, pray for us. All Holy Angels and Archangels, pray for us. Saint John the Baptist, pray for us. Saint Joseph, pray for us. All Holy Patriarchs and Prophets, pray for us. Saint Peter, pray for us. Saint Paul, pray for us. Saint Andrew, pray for us. Saint James, pray for us. Saint John, pray for us. Saint Thomas, pray for us. Saint James, pray for us. Saint Philip, pray for us. Saint Bartholomew, pray for us. Saint Matthew, pray for us. Saint Simon, pray for us. Saint Thaddeus, pray for us. Saint Matthias, pray for us. Saint Barnabas, pray for us. Saint Luke, pray for us. Saint Mark, pray for us. All Holy Apostles and Evangelists, pray for us. All Holy Disciples of the Lord, pray for us. All Holy Innocents, pray for us. Saint Stephen, pray for us. Saint Lawrence, pray for us. Saint Vincent, pray for us. Saints Fabian and Sebastian, pray for us. Saints John and Paul, pray for us. Saints Cosmas and Damian, pray for us. All Holy Martyrs, pray for us. Saint Sylvester, pray for us. Saint Gregory, pray for us. Saint Ambrose, pray for us. Saint Augustine, pray for us. Saint Jerome, pray for us. Saint Martin, pray for us. Saint Nicholas, pray for us. All Holy Bishops and Confessors, pray for us. All Holy Doctors, pray for us. Saint Anthony, pray for us. Saint Benedict, pray for us. Saint Bernard, pray for us. Saint Dominic, pray for us. Saint Francis, pray for us. Saint Ignatius, pray for us. Saint Xavier, pray for us. Saint John Baptist de la Salle, pray for us. Saint Patrick, pray for us. Saint Catherine, pray for us. Saint Teresa, pray for us. All Holy Religious, pray for us. All Holy Men and Women of God, pray for us.
+
+Lamb of God, who takes away the sins of the world, spare us, O Lord. Lamb of God, who takes away the sins of the world, graciously hear us, O Lord. Lamb of God, who takes away the sins of the world, have mercy on us.
+
+V. Lord, deliver us, we pray, from all evil.
+R. Past, present, and to come.
+
+Let us pray: O God, who give relief to your suppliants through the intercession of your saints, grant us your servants the grace of being helped by them in all our necessities, through Jesus Christ our Lord. Amen.` },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PRAYERS TO SAINTS
+  // ═══════════════════════════════════════════════════════════════
+
+  { id: "saint-joseph-workers", title: "Prayer to St. Joseph for Workers", category: "saints", intention: "Work and labor",
+    text: "Glorious Saint Joseph, model of all those who labor, obtain for me the grace to do my work in a spirit of penance, to do it with fidelity and joy, and to offer it to the Blessed Trinity as a sacrifice of reparation for my sins and for the needs of all my brothers and sisters. Help me to find employment and to do my work faithfully. Through your intercession, may God bless my efforts and grant me what I need to support myself and those who depend on me. Saint Joseph, pray for us. Amen." },
+
+  { id: "saint-anthony", title: "Prayer to St. Anthony for Lost Things", category: "saints", intention: "Finding lost things",
+    text: "Dear Saint Anthony, your love of God, your eloquence, and your zeal for the salvation of souls made you so powerful in obtaining help from God. I turn to you with confidence and ask your help in finding what I have lost. If it is God's will, I pray that I may recover what I have lost, or find something even better. Guide me to discover what truly matters — the lost souls who need God's mercy. Saint Anthony, pray for us. Amen." },
+
+  { id: "saint-jude", title: "Prayer to St. Jude for Desperate Cases", category: "saints", intention: "Hopeless causes",
+    text: "Most holy Apostle, Saint Jude, faithful servant and friend of Jesus, the Church honors and invokes you universally as the patron of hope. Please intercede on my behalf. Make use of that particular privilege given to you to bring hope, comfort, and help where they are needed most. Come to my assistance in this time of need. In my difficult situation, I pray that God will place in your hands what is needed to resolve the problems I face. I praise God with you and all the saints forever. Saint Jude, pray for us. Amen." },
+
+  { id: "saint-therese", title: "Prayer to St. Thérèse of Lisieux", category: "saints", intention: "Little Way of spiritual childhood",
+    text: "O Little Flower of Jesus, you whose heart overflowed with love for God and neighbor, I place my trust in your powerful intercession. Teach me the Little Way — to do small things with great love. Help me to trust in God's mercy, to seek holiness in the ordinary moments of life, and to never miss an opportunity to show kindness. Saint Thérèse, you promised to spend your heaven doing good on earth. Intercede for me before the throne of God and obtain for me the graces I need. Amen." },
+
+  { id: "saint-benedict", title: "Prayer to St. Benedict for Protection", category: "saints", intention: "Spiritual protection",
+    text: "O glorious Saint Benedict, you who by your holy life and miracles have glorified God, intercede for us sinners. Protect me from all spiritual and physical dangers. By the power of the Holy Cross, which you carried as your shield, ward off every evil from my path. Keep me safe in body and soul, in health and in sickness, in life and in death. O Holy Father Benedict, pray for us, that by your intercession we may be delivered from all evil and may arrive at eternal happiness. Amen." },
 ];

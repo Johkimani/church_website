@@ -13,6 +13,7 @@ interface PrayerListProps {
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
   litanies: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  saints: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
   healing: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   daily: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
 };
@@ -87,6 +88,63 @@ const NOVENA_TYPE_MAP: Record<string, NovenaType> = {
   'novenas-saint-dominic': 'saint',
   'novenas-saint-elizabeth': 'saint',
   'novenas-saint-mary-goretti': 'saint',
+  'novenas-our-lady-of-guadalupe': 'marian',
+  'novenas-holy-cross': 'devotional',
+  'novenas-saint-patrick': 'saint',
+  'novenas-saint-raphael': 'saint',
+  'novenas-saint-clare': 'saint',
+  'novenas-immaculate-conception': 'marian',
+  'novenas-precious-blood': 'devotional',
+  'novenas-saint-michael-archangel': 'saint',
+  'novenas-saint-gabriel': 'saint',
+  'novenas-saint-ursula': 'saint',
+  'novenas-saint-anthony-patron': 'saint',
+  'novenas-saint-clement': 'saint',
+  'novenas-saint-lucy': 'saint',
+  'novenas-saint-barbara': 'saint',
+  'novenas-saint-ambrose': 'saint',
+  'novenas-saint-nicholas': 'saint',
+  'novenas-saint-elizabeth-ann-seton': 'saint',
+  'novenas-saint-benedict': 'saint',
+  'novenas-saint-hildegard': 'saint',
+  'novenas-all-angels': 'saint',
+  'novenas-saint-mary-of-egypt': 'saint',
+  'novenas-jesus-christ': 'devotional',
+  'novenas-holy-rosary': 'marian',
+  'novenas-saint-rita': 'saint',
+  'novenas-saint-charles-borromeo': 'saint',
+  'novenas-saint-cyril-alexandria': 'saint',
+  'novenas-saint-bonaventure': 'saint',
+  'novenas-saint-francis-xavier': 'saint',
+  'novenas-saint-ignatius-loyola': 'saint',
+  'novenas-saint-teresa-avila': 'saint',
+  'novenas-saint-john-cross': 'saint',
+  'novenas-holy-martyrs': 'saint',
+  'novenas-saint-helen': 'saint',
+  'novenas-saint-joachim-anne': 'saint',
+  'novenas-saint-matthew': 'saint',
+  'novenas-saint-thomas-apostle': 'saint',
+  'novenas-saint-luke': 'saint',
+  'novenas-saint-peter-apostle': 'saint',
+  'novenas-saint-paul-apostle': 'saint',
+  'novenas-saint-james-apostle': 'saint',
+  'novenas-saint-andrew-apostle': 'saint',
+  'novenas-saint-philip-apostle': 'saint',
+  'novenas-saint-simon-apostle': 'saint',
+  'novenas-saint-jude-apostle': 'saint',
+  'novenas-our-lady-star-evangelization': 'marian',
+  'novenas-saint-rose-lima': 'saint',
+  'novenas-saint-martin-de-porres': 'saint',
+  'novenas-saint-anne': 'saint',
+  'novenas-saint-celestine': 'saint',
+  'novenas-saint-brendan': 'saint',
+  'novenas-saint-kateri': 'saint',
+  'novenas-saint-oscar-romero': 'saint',
+  'novenas-all-saints-africa': 'saint',
+  'novenas-jesus-nazareth': 'devotional',
+  'novenas-sacrament-reconciliation': 'devotional',
+  'novenas-sacrament-eucharist': 'devotional',
+  'novenas-holy-cross-passion': 'devotional',
 };
 
 const NOVENA_INTENTIONS: Record<string, string> = {
@@ -130,6 +188,63 @@ const NOVENA_INTENTIONS: Record<string, string> = {
   'novenas-saint-dominic': 'Preaching and truth',
   'novenas-saint-elizabeth': 'Charity and service to the poor',
   'novenas-saint-mary-goretti': 'Purity, forgiveness, and youth',
+  'novenas-our-lady-of-guadalupe': 'Conversion and intercession of Our Lady',
+  'novenas-holy-cross': 'Faith, courage, and reverence for the Cross',
+  'novenas-saint-patrick': 'Faith, evangelization, and protection',
+  'novenas-saint-raphael': 'Healing and safe travels',
+  'novenas-saint-clare': 'Poverty, purity, and Eucharistic devotion',
+  'novenas-immaculate-conception': 'Purity and Marian devotion',
+  'novenas-precious-blood': 'Remission of sins and spiritual healing',
+  'novenas-saint-michael-archangel': 'Protection from evil and spiritual warfare',
+  'novenas-saint-gabriel': 'Communication and God\'s messages',
+  'novenas-saint-ursula': 'Patronage of young women and students',
+  'novenas-saint-anthony-patron': 'Patron of lost causes and patronage',
+  'novenas-saint-clement': 'Patronage of mariners and unity',
+  'novenas-saint-lucy': 'Patronage of the blind and eye ailments',
+  'novenas-saint-barbara': 'Patronage of miners and protection from storms',
+  'novenas-saint-ambrose': 'Patronage of learning and eloquence',
+  'novenas-saint-nicholas': 'Patronage of children and generosity',
+  'novenas-saint-elizabeth-ann-seton': 'Patronage of Catholic schools and converts',
+  'novenas-saint-benedict': 'Patronage of monks and protection from evil',
+  'novenas-saint-hildegard': 'Patronage of musicians and healing',
+  'novenas-all-angels': 'Angelic protection and intercession',
+  'novenas-saint-mary-of-egypt': 'Patronage of penitent sinners',
+  'novenas-jesus-christ': 'Deepening Faith',
+  'novenas-holy-rosary': 'Marian Consecration',
+  'novenas-saint-rita': 'Patronage of impossible causes and abused women',
+  'novenas-saint-charles-borromeo': 'Patronage of catechists and seminarians',
+  'novenas-saint-cyril-alexandria': 'Patronage of theologians and defense of orthodoxy',
+  'novenas-saint-bonaventure': 'Patronage of theologians and Franciscan learning',
+  'novenas-saint-francis-xavier': 'Patronage of missionaries and evangelization',
+  'novenas-saint-ignatius-loyola': 'Patronage of spiritual exercises and discernment',
+  'novenas-saint-teresa-avila': 'Patronage of prayer and contemplation',
+  'novenas-saint-john-cross': 'Patronage of mystics and dark nights of the soul',
+  'novenas-holy-martyrs': 'Intercession of the martyrs',
+  'novenas-saint-helen': 'Patronage of archaeologists and the True Cross',
+  'novenas-saint-joachim-anne': 'Patronage of married couples and grandparents',
+  'novenas-saint-matthew': 'Patronage of accountants and tax collectors',
+  'novenas-saint-thomas-apostle': 'Patronage of builders and doubt turned to faith',
+  'novenas-saint-luke': 'Patronage of physicians and artists',
+  'novenas-saint-peter-apostle': 'Patronage of the papacy and keys to the kingdom',
+  'novenas-saint-paul-apostle': 'Patronage of missionaries and converts',
+  'novenas-saint-james-apostle': 'Patronage of pilgrims and Spain',
+  'novenas-saint-andrew-apostle': 'Patronage of fishermen and Scotland',
+  'novenas-saint-philip-apostle': 'Patronage of evangelization',
+  'novenas-saint-simon-apostle': 'Patronage of the poor and tanners',
+  'novenas-saint-jude-apostle': 'Patronage of desperate and hopeless causes',
+  'novenas-our-lady-star-evangelization': 'Her Intercession',
+  'novenas-saint-rose-lima': 'Patronage of Latin America and floral piety',
+  'novenas-saint-martin-de-porres': 'Patronage of social justice and the poor',
+  'novenas-saint-anne': 'Patronage of grandmothers and married couples',
+  'novenas-saint-celestine': 'Patronage of peace and resignation',
+  'novenas-saint-brendan': 'Patronage of sailors and travelers',
+  'novenas-saint-kateri': 'Patronage of Native Americans and environment',
+  'novenas-saint-oscar-romero': 'Patronage of social justice and human rights',
+  'novenas-all-saints-africa': 'Intercession of African saints',
+  'novenas-jesus-nazareth': 'Spiritual Growth',
+  'novenas-sacrament-reconciliation': 'Deepening Faith',
+  'novenas-sacrament-eucharist': 'Spiritual Growth',
+  'novenas-holy-cross-passion': 'Deepening Faith',
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -290,7 +405,7 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
 
         {/* Date banner — prominent */}
         {status?.entry && (
-          <div className={`rounded-lg p-2.5 mb-3 border ${
+          <div className={`rounded-lg p-3 mb-3 border ${
             active ? 'bg-emerald-500/10 border-emerald-500/20' :
             upcoming ? 'bg-amber-500/10 border-amber-500/20' :
             'bg-slate-700/30 border-slate-600/30'
@@ -306,7 +421,7 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
               </span>
             </div>
             {status.entry.feastDay && (
-              <p className="text-[10px] text-amber-400/60 mt-1 ml-5.5">{status.entry.feastDay}</p>
+              <p className="text-[10px] text-amber-400/60 mt-1.5 ml-5.5">{status.entry.feastDay}</p>
             )}
           </div>
         )}
@@ -343,9 +458,17 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
         <div className="flex items-center justify-between">
           {!active && !upcoming && (
             <div className="flex gap-1">
-              {Array.from({ length: 9 }, (_, i) => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-700" />
-              ))}
+              {Array.from({ length: 9 }, (_, i) => {
+                const dayNum = i + 1;
+                const completed = past;
+                return (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full ${completed ? 'bg-emerald-500/40' : 'bg-slate-700'}`}
+                    title={`Day ${dayNum}${completed ? ' — completed' : ''}`}
+                  />
+                );
+              })}
             </div>
           )}
           {(active || upcoming) && <div />}
@@ -402,7 +525,7 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
 
         {/* Date banner — prominent */}
         {calendarStatus?.entry && (
-          <div className={`rounded-lg p-2.5 mb-3 border ${
+          <div className={`rounded-lg p-3 mb-3 border ${
             active ? 'bg-emerald-50 border-emerald-200' :
             upcoming ? 'bg-amber-50 border-amber-200' :
             'bg-slate-50 border-slate-200'
@@ -418,14 +541,14 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
               </span>
             </div>
             {calendarStatus.entry.feastDay && (
-              <p className="text-[10px] text-amber-600 mt-1 ml-5.5">{calendarStatus.entry.feastDay}</p>
+              <p className="text-[10px] text-amber-600 mt-1.5 ml-5.5">{calendarStatus.entry.feastDay}</p>
             )}
           </div>
         )}
 
         {intention && <p className="text-xs text-amber-600 font-medium mb-1.5">{intention}</p>}
 
-        <p className="text-sm text-slate-600 line-clamp-2 mb-3">{novena.description}</p>
+        <p className="text-sm text-slate-600 line-clamp-2 mb-3" title={novena.description}>{novena.description}</p>
 
         {/* Progress for active */}
         {active && calendarStatus && 'currentDay' in calendarStatus && (
@@ -457,9 +580,17 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
         <div className="flex items-center justify-between">
           {!active && (
             <div className="flex gap-1">
-              {Array.from({ length: 9 }, (_, i) => (
-                <div key={i} className="w-2 h-2 rounded-full bg-slate-200" />
-              ))}
+              {Array.from({ length: 9 }, (_, i) => {
+                const dayNum = i + 1;
+                const completed = calendarStatus?.status === 'past';
+                return (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${completed ? 'bg-emerald-400' : 'bg-slate-200'}`}
+                    title={`Day ${dayNum}${completed ? ' — completed' : ''}`}
+                  />
+                );
+              })}
             </div>
           )}
           {active && <div />}
@@ -576,11 +707,13 @@ function PrayerCard({ prayer, onClick, compact = false }: { prayer: Prayer; onCl
 
 export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNovena, className = '' }: PrayerListProps) {
   const [activeJumuiya, setActiveJumuiya] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'upcoming' | 'past'>('all');
 
   const litanyPrayers = prayers.filter((p) => p.category === 'litanies');
+  const saintsPrayers = prayers.filter((p) => p.category === 'saints');
   const healingPrayers = prayers.filter((p) => p.category === 'healing');
   const dailyPrayers = prayers.filter((p) => p.category === 'daily');
-  const hasResults = novenas.length > 0 || litanyPrayers.length > 0 || healingPrayers.length > 0 || dailyPrayers.length > 0;
+  const hasResults = novenas.length > 0 || litanyPrayers.length > 0 || saintsPrayers.length > 0 || healingPrayers.length > 0 || dailyPrayers.length > 0;
 
   const year = new Date().getFullYear();
   const calendar = useMemo(() => getNovenaCalendar(year), [year]);
@@ -589,6 +722,21 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
   const allStatuses = useMemo(() => {
     return novenas.map((n) => ({ novena: n, status: getNovenaStatus(n.id, calendar, today) }));
   }, [novenas, calendar, today]);
+
+  const statusCounts = useMemo(() => {
+    const counts = { active: 0, upcoming: 0, past: 0 };
+    for (const n of allStatuses) {
+      if (n.status?.status === 'active') counts.active++;
+      else if (n.status?.status === 'upcoming') counts.upcoming++;
+      else if (n.status?.status === 'past') counts.past++;
+    }
+    return counts;
+  }, [allStatuses]);
+
+  const filteredByStatus = useMemo(() => {
+    if (statusFilter === 'all') return allStatuses;
+    return allStatuses.filter((n) => n.status?.status === statusFilter);
+  }, [allStatuses, statusFilter]);
 
   const heroNovena = useMemo(() => {
     const active = allStatuses.find((n) => n.status?.status === 'active');
@@ -615,8 +763,8 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
   // Filtered novenas excluding jumuiya patron novenas
   const otherNovenas = useMemo(() => {
     const jumuiyaIds = new Set(JUMUIYAS.map((j) => j.novenaId));
-    return allStatuses.filter((n) => !jumuiyaIds.has(n.novena.id));
-  }, [allStatuses]);
+    return filteredByStatus.filter((n) => !jumuiyaIds.has(n.novena.id));
+  }, [filteredByStatus]);
 
   const grouped = useMemo(() => {
     const STATUS_ORDER = { active: 0, upcoming: 1, past: 2 };
@@ -766,6 +914,44 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       )}
 
       {/* ═══════════════════════════════════════════════════════ */}
+      {/* STATUS FILTER PILLS                                    */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {novenas.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {([
+            { key: 'all' as const, label: 'All Novenas', count: novenas.length },
+            { key: 'active' as const, label: 'Active Now', count: statusCounts.active },
+            { key: 'upcoming' as const, label: 'Upcoming', count: statusCounts.upcoming },
+            { key: 'past' as const, label: 'Completed', count: statusCounts.past },
+          ]).map((pill) => (
+            <button
+              key={pill.key}
+              onClick={() => setStatusFilter(pill.key)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                statusFilter === pill.key
+                  ? pill.key === 'active'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
+                    : pill.key === 'upcoming'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm'
+                      : pill.key === 'past'
+                        ? 'bg-slate-100 text-slate-600 border-slate-200 shadow-sm'
+                        : 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'
+              }`}
+            >
+              {pill.key === 'active' && pill.count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+              {pill.label}
+              <span className={`ml-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                statusFilter === pill.key
+                  ? 'bg-white/60 text-inherit'
+                  : 'bg-slate-100 text-slate-400'
+              }`}>{pill.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════ */}
       {/* ALL NOVENAS BY CATEGORY                                */}
       {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && (
@@ -807,6 +993,23 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {litanyPrayers.map((prayer) => (
+              <PrayerCard key={prayer.id} prayer={prayer} onClick={onPrayerClick} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* PRAYERS TO SAINTS                                     */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {saintsPrayers.length > 0 && (
+        <section>
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-800">Prayers to Saints</h2>
+            <p className="text-xs text-slate-500">Ask the saints to intercede for us — {saintsPrayers.length} prayers</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {saintsPrayers.map((prayer) => (
               <PrayerCard key={prayer.id} prayer={prayer} onClick={onPrayerClick} />
             ))}
           </div>

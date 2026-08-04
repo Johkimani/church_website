@@ -50,7 +50,10 @@ const Terms = lazy(() => import("./pages/Terms.tsx"));
 const Dashboard = lazy(() => import("./pages/Devotions/pages/Dashboard"));
 const Readings = lazy(() => import("./pages/Devotions/pages/Readings"));
 const Prayer = lazy(() => import("./pages/Devotions/pages/Prayer"));
-const Liturgy = lazy(() => import("./pages/Devotions/pages/Liturgy"));
+const LiturgicalSeasons = lazy(() => import("./pages/Devotions/pages/LiturgicalSeasons"));
+const LiturgySection = lazy(() => import("./pages/Devotions/pages/LiturgySection"));
+const SacraLiturgiaPage = lazy(() => import("./pages/Devotions/pages/SacraLiturgiaPage"));
+const PrayersOfTheMass = lazy(() => import("./pages/Devotions/pages/PrayersOfTheMass"));
 const Rosary = lazy(() => import("./pages/Devotions/pages/Rosary"));
 const Challenge = lazy(() => import("./pages/Devotions/pages/Challenge"));
 const Appadmin = lazy(() => import("./pages/Devotions/Adminpage/App"));
@@ -58,6 +61,8 @@ const JumuiComparison = lazy(() => import("./pages/Devotions/csaComparison/CsaCo
 const MemberDashboard = lazy(() => import("./pages/Devotions/individualStatus/IndividualProgress"));
 const DailyLiturgy = lazy(() => import("./pages/Devotions/pages/DailyLiturgy"));
 const PrayerModule = lazy(() => import("./pages/Devotions/pages/PrayerModule"));
+const PrayerBook = lazy(() => import("./pages/Devotions/pages/PrayerBook"));
+const AllPrayers = lazy(() => import("./pages/Devotions/pages/AllPrayers"));
 const Bible = lazy(() => import("./pages/Devotions/pages/Bible"));
 
 // Officials
@@ -102,6 +107,8 @@ const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
 const AdminBookings = lazy(() => import("./pages/Admin/pages/AdminBookings"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
+const DevotionsManager = lazy(() => import("./pages/Admin/pages/DevotionsManager"));
+const DashboardAssetsManager = lazy(() => import("./pages/Admin/pages/DashboardAssetsManager"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -152,6 +159,8 @@ const App: React.FC = () => {
           <Route path="announcements" element={<AnnouncementsAdmin />} />
           <Route path="officials" element={<AdminPanel />} />
           <Route path="devotions" element={<Appadmin />} />
+          <Route path="devotions-manager" element={<DevotionsManager />} />
+          <Route path="dashboard-assets" element={<DashboardAssetsManager />} />
           <Route path="donations" element={<DonationMonitor />} />
           <Route path="community-management" element={<CommunityManager />} />
           <Route path="community-management/:categoryId" element={<CommunityDetailEditor />} />
@@ -208,15 +217,20 @@ const App: React.FC = () => {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="readings" element={<Readings />} />
+            <Route path="all-prayers" element={<AllPrayers />} />
+            <Route path="readings" element={<PrayerBook />} />
             <Route path="prayer" element={<Prayer />} />
-            <Route path="liturgy" element={<Liturgy />} />
+<Route path="liturgy" element={<LiturgySection />} />
+             <Route path="sacra-liturgia-page" element={<SacraLiturgiaPage />} />
+             <Route path="prayers-of-the-mass" element={<PrayersOfTheMass />} />
+             <Route path="liturgical-seasons" element={<LiturgicalSeasons />} />
             <Route path="rosary" element={<Rosary />} />
             <Route path="challenge" element={<Challenge />} />
             <Route path="comparison" element={<JumuiComparison />} />
             <Route path="progress" element={<MemberDashboard />} />
             <Route path="daily-liturgy" element={<DailyLiturgy />} />
             <Route path="prayer-module" element={<PrayerModule />} />
+            <Route path="prayer-book" element={<PrayerBook />} />
             <Route path="bible" element={<Bible />} />
           </Route>
 

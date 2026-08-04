@@ -194,9 +194,52 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
 
             {/* Prayer text */}
             <div className="bg-slate-50 rounded-xl p-5 mb-5 border border-slate-100">
-              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                {currentPrayer.prayer.text}
-              </p>
+              {/* Opening Prayer */}
+              <div className="mb-5 pb-5 border-b border-slate-200">
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Opening Prayer</p>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  In the name of the Father, and of the Son, and of the Holy Spirit. Amen.
+                </p>
+                <p className="text-sm text-slate-700 leading-relaxed mt-2">
+                  Come, Holy Spirit, fill the hearts of Your faithful and enkindle in us the fire of Your love. Send forth Your Spirit and we shall be created, and You shall renew the face of the earth.
+                </p>
+                <p className="text-sm text-slate-700 leading-relaxed mt-2 italic">
+                  O God, who by the light of the Holy Spirit did instruct the hearts of the faithful, grant that by the same Spirit we may be truly wise and ever rejoice in His consolation. Through Christ our Lord. Amen.
+                </p>
+              </div>
+
+              {/* Daily Prayer */}
+              <div className="mb-5 pb-5 border-b border-slate-200">
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Day {selectedDay} Prayer</p>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                  {currentPrayer.prayer.text}
+                </p>
+              </div>
+
+              {/* Closing Prayers */}
+              <div>
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Closing Prayers</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-bold text-slate-600 mb-1">Our Father</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      Our Father, who art in heaven, hallowed be Thy name; Thy kingdom come; Thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-600 mb-1">Hail Mary</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      Hail Mary, full of grace; the Lord is with thee; blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-600 mb-1">Glory Be</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Notes */}

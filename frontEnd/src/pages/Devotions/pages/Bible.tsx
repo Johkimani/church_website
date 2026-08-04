@@ -175,6 +175,7 @@ export default function Bible(): JSX.Element {
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem("bible-font-size") || "18", 10));
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("bible-dark-mode") === "true");
   const [paragraphMode, setParagraphMode] = useState(() => localStorage.getItem("bible-paragraph-mode") === "true");
+  const [immersiveMode, setImmersiveMode] = useState(false);
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
   const [recentBooks, setRecentBooks] = useState<RecentBook[]>([]);
   const [readChapters, setReadChapters] = useState<Record<string, Set<number>>>({});
@@ -465,7 +466,7 @@ export default function Bible(): JSX.Element {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           {selectedBook ? (
             <button
-              onClick={() => { setSelectedBook(null); setVerses([]); setShowBookNav(false); }}
+              onClick={() => { setSelectedBook(null); setVerses([]); setShowBookNav(false); setImmersiveMode(false); }}
               className={`flex items-center gap-2 text-sm font-medium ${darkMode ? "text-stone-200 hover:text-white" : "text-stone-700 hover:text-stone-900"}`}
             >
               <span className="text-lg font-serif font-bold">{selectedBook.name}</span>
@@ -481,67 +482,90 @@ export default function Bible(): JSX.Element {
             </button>
           )}
 
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => { setSearchOpen(!searchOpen); if (!searchOpen) setTimeout(() => searchRef.current?.focus(), 100); }}
-              className={`p-2 rounded-lg transition-colors ${darkMode ? "text-stone-300 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}
-            >
-              <FaSearch className="text-sm" />
-            </button>
-
-            {selectedBook && (
-              <>
-                {/* Paragraph mode toggle */}
-                <button
-                  onClick={toggleParagraphMode}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors ${
-                    paragraphMode
-                      ? "bg-amber-500 text-white"
-                      : darkMode ? "text-stone-400 hover:bg-[#333] border border-[#444]" : "text-stone-500 hover:bg-stone-100 border border-stone-200"
-                  }`}
-                  title={paragraphMode ? "Paragraph mode on" : "Verse-by-verse mode"}
-                >
-                  ¶
-                </button>
-
-                <div className={`flex items-center gap-0.5 rounded-lg border ${darkMode ? "border-[#444]" : "border-stone-200"}`}>
-                  <button onClick={() => changeFontSize(-2)} className={`px-2 py-1.5 text-xs font-bold ${darkMode ? "text-stone-400 hover:text-white" : "text-stone-500 hover:text-stone-800"}`}>A-</button>
-                  <button onClick={() => changeFontSize(2)} className={`px-2 py-1.5 text-xs font-bold ${darkMode ? "text-stone-400 hover:text-white" : "text-stone-500 hover:text-stone-800"}`}>A+</button>
-                </div>
-              </>
-            )}
-
-            <button onClick={toggleDarkMode} className={`p-2 rounded-lg transition-colors ${darkMode ? "text-yellow-400 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}>
-              {darkMode ? "☀️" : "🌙"}
-            </button>
-
-            <div className="relative">
-              <select
-                value={version}
-                onChange={(e) => handleVersionChange(e.target.value)}
-                className={`appearance-none text-xs font-semibold px-3 py-2 pr-7 rounded-lg cursor-pointer transition-colors border focus:outline-none ${
-                  darkMode ? "bg-[#333] border-[#444] text-stone-200 hover:bg-[#444]" : "bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100"
-                }`}
+          {!immersiveMode && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => { setSearchOpen(!searchOpen); if (!searchOpen) setTimeout(() => searchRef.current?.focus(), 100); }}
+                className={`p-2 rounded-lg transition-colors ${darkMode ? "text-stone-300 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}
               >
-                {versions.map((v) => (
-                  <option key={v.id} value={v.id} className="text-slate-900 bg-white">{v.name}</option>
-                ))}
-              </select>
-              <FaChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none ${darkMode ? "text-stone-500" : "text-stone-400"}`} />
-            </div>
+                <FaSearch className="text-sm" />
+              </button>
 
-            <button
-              onClick={() => setShowBookmarks(!showBookmarks)}
-              className={`p-2 rounded-lg transition-colors relative ${darkMode ? "text-stone-300 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}
-            >
-              {showBookmarks ? <FaBookmarkSolid className="text-amber-500" /> : <FaRegBookmark />}
-              {bookmarks.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {bookmarks.length > 9 ? "9+" : bookmarks.length}
-                </span>
+              {selectedBook && (
+                <>
+                  <button
+                    onClick={toggleParagraphMode}
+                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                      paragraphMode
+                        ? "bg-amber-500 text-white"
+                        : darkMode ? "text-stone-400 hover:bg-[#333] border border-[#444]" : "text-stone-500 hover:bg-stone-100 border border-stone-200"
+                    }`}
+                    title={paragraphMode ? "Paragraph mode on" : "Verse-by-verse mode"}
+                  >
+                    ¶
+                  </button>
+
+                  <div className={`flex items-center gap-0.5 rounded-lg border ${darkMode ? "border-[#444]" : "border-stone-200"}`}>
+                    <button onClick={() => changeFontSize(-2)} className={`px-2 py-1.5 text-xs font-bold ${darkMode ? "text-stone-400 hover:text-white" : "text-stone-500 hover:text-stone-800"}`}>A-</button>
+                    <button onClick={() => changeFontSize(2)} className={`px-2 py-1.5 text-xs font-bold ${darkMode ? "text-stone-400 hover:text-white" : "text-stone-500 hover:text-stone-800"}`}>A+</button>
+                  </div>
+                </>
               )}
+
+              <button onClick={toggleDarkMode} className={`p-2 rounded-lg transition-colors ${darkMode ? "text-yellow-400 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}>
+                {darkMode ? "☀️" : "🌙"}
+              </button>
+
+              {selectedBook && (
+                <button
+                  onClick={() => setImmersiveMode(!immersiveMode)}
+                  className={`p-2 rounded-lg transition-colors ${darkMode ? "text-stone-300 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}
+                  title={immersiveMode ? "Exit immersive mode" : "Immersive mode"}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                  </svg>
+                </button>
+              )}
+
+              <div className="relative">
+                <select
+                  value={version}
+                  onChange={(e) => handleVersionChange(e.target.value)}
+                  className={`appearance-none text-xs font-semibold px-3 py-2 pr-7 rounded-lg cursor-pointer transition-colors border focus:outline-none ${
+                    darkMode ? "bg-[#333] border-[#444] text-stone-200 hover:bg-[#444]" : "bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100"
+                  }`}
+                >
+                  {versions.map((v) => (
+                    <option key={v.id} value={v.id} className="text-slate-900 bg-white">{v.name}</option>
+                  ))}
+                </select>
+                <FaChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none ${darkMode ? "text-stone-500" : "text-stone-400"}`} />
+              </div>
+
+              <button
+                onClick={() => setShowBookmarks(!showBookmarks)}
+                className={`p-2 rounded-lg transition-colors relative ${darkMode ? "text-stone-300 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}
+              >
+                {showBookmarks ? <FaBookmarkSolid className="text-amber-500" /> : <FaRegBookmark />}
+                {bookmarks.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {bookmarks.length > 9 ? "9+" : bookmarks.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
+          {immersiveMode && selectedBook && (
+            <button
+              onClick={() => setImmersiveMode(false)}
+              className={`p-2 rounded-lg transition-colors ${darkMode ? "text-stone-300 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}
+              title="Exit immersive mode"
+            >
+              <FaTimes className="text-sm" />
             </button>
-          </div>
+          )}
         </div>
 
         {searchOpen && (
@@ -574,9 +598,9 @@ export default function Bible(): JSX.Element {
         <div className={`max-w-3xl mx-auto px-4 py-4 ${darkMode ? "text-stone-200" : ""}`}>
           <div className={`rounded-2xl border p-4 ${darkMode ? "bg-[#222] border-[#333]" : "bg-white border-stone-200 shadow-sm"}`}>
             {[
-              { label: "Old Testament", books: OT },
-              ...(DC.length > 0 ? [{ label: "Deuterocanonical", books: DC }] : []),
-              { label: "New Testament", books: NT },
+              { label: "Old Testament", books: OT, color: "amber" },
+              ...(DC.length > 0 ? [{ label: "Deuterocanonical", books: DC, color: "rose" }] : []),
+              { label: "New Testament", books: NT, color: "emerald" },
             ].map((section) => (
               <div key={section.label} className="mb-4 last:mb-0">
                 <h3 className={`text-[11px] font-bold uppercase tracking-wider mb-2 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
@@ -586,21 +610,29 @@ export default function Bible(): JSX.Element {
                   {section.books.map((book) => {
                     const readCount = getReadCount(book.code);
                     const hasProgress = readCount > 0;
+                    const progress = (readCount / book.chapters) * 100;
+                    const colorMap = { amber: "bg-amber-500", rose: "bg-rose-500", emerald: "bg-emerald-500" };
+                    const textColorMap = { amber: "text-amber-600", rose: "text-rose-600", emerald: "text-emerald-600" };
                     return (
                       <button
                         key={book.code}
                         onClick={() => handleBookSelect(book)}
                         className={`relative py-2 px-1 rounded-lg text-center text-xs font-medium transition-all ${
                           selectedBook?.code === book.code
-                            ? "bg-amber-500 text-white shadow-sm"
-                            : darkMode ? "text-stone-300 hover:bg-[#333]" : "text-stone-600 hover:bg-amber-50 hover:text-amber-700"
+                            ? `${colorMap[section.color]} text-white shadow-sm`
+                            : darkMode ? "text-stone-300 hover:bg-[#333]" : `text-stone-600 hover:bg-${section.color}-50 hover:text-${section.color}-700`
                         }`}
                       >
                         {book.name}
                         {hasProgress && (
-                          <span className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${
-                            readCount >= book.chapters ? "bg-green-500" : "bg-amber-400"
-                          }`} title={`${readCount}/${book.chapters} chapters read`} />
+                          <>
+                            <span className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${
+                              readCount >= book.chapters ? "bg-green-500" : colorMap[section.color]
+                            }`} title={`${readCount}/${book.chapters} chapters read`} />
+                            <div className={`absolute bottom-0.5 left-1 right-1 h-0.5 rounded-full ${darkMode ? "bg-[#333]" : "bg-stone-200"}`}>
+                              <div className={`h-full rounded-full ${colorMap[section.color]} transition-all`} style={{ width: `${progress}%` }} />
+                            </div>
+                          </>
                         )}
                       </button>
                     );
@@ -643,9 +675,31 @@ export default function Bible(): JSX.Element {
         </div>
       )}
 
-      {/* ── Main Area ── */}
-      <div className="max-w-3xl mx-auto px-4">
-        {!selectedBook && !showBookNav && !showBookmarks && (
+       {/* ── Main Area ── */}
+       <div className={`max-w-3xl mx-auto px-4 ${immersiveMode ? "py-8" : "py-6"}`}>
+         {/* Total Reading Progress */}
+         {Object.keys(readChapters).length > 0 && (
+           <div className={`mb-6 rounded-xl border px-4 py-3 ${darkMode ? "bg-[#222] border-[#333]" : "bg-white border-stone-200 shadow-sm"}`}>
+             <div className="flex items-center justify-between mb-1.5">
+                <span className={`text-[11px] font-semibold uppercase tracking-wider ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
+                  Reading Progress
+                </span>
+               <span className="text-[11px] font-bold text-amber-600">
+                 {Object.values(readChapters).reduce((a, b) => a + b.size, 0)} chapters read
+               </span>
+             </div>
+             <div className={`h-1.5 rounded-full ${darkMode ? "bg-[#333]" : "bg-stone-100"}`}>
+               <div
+                 className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500"
+                 style={{
+                   width: `${Math.min(100, (Object.values(readChapters).reduce((a, b) => a + b.size, 0) / Math.max(1, allBooks.reduce((a, b) => a + b.chapters, 0))) * 100)}%`,
+                 }}
+               />
+             </div>
+           </div>
+         )}
+
+         {!selectedBook && !showBookNav && !showBookmarks && (
           /* ── Landing ── */
           <div className="py-10 space-y-8">
             {/* Verse of the Day */}
@@ -713,13 +767,18 @@ export default function Bible(): JSX.Element {
             )}
 
             {/* Start Reading */}
-            <div className="text-center pt-4 pb-8">
-              <div className={`text-5xl mb-5 ${darkMode ? "" : "opacity-15"}`}>✝</div>
+            <div className="text-center pt-8 pb-12">
+              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 ${darkMode ? "bg-amber-900/30 border border-amber-800/30" : "bg-amber-50 border border-amber-100"}`}>
+                <span className={`text-3xl ${darkMode ? "text-amber-400" : "text-amber-600"}`}>✝</span>
+              </div>
               <h1 className={`text-2xl font-serif font-bold mb-1 ${darkMode ? "text-stone-200" : "text-stone-800"}`}>
                 {currentVersion?.name || "Holy Bible"}
               </h1>
-              <p className={`text-sm mb-6 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
+              <p className={`text-sm mb-2 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
                 {currentVersion?.subtitle || ""}
+              </p>
+              <p className={`text-xs mb-6 ${darkMode ? "text-stone-600" : "text-stone-500"}`}>
+                {versions.length} versions available · {allBooks.length} books
               </p>
               <button
                 onClick={() => setShowBookNav(true)}
@@ -731,10 +790,26 @@ export default function Bible(): JSX.Element {
           </div>
         )}
 
-        {/* ── Chapter Content ── */}
-        {selectedBook && (
-          <div className="py-6">
-            {loading && (
+         {/* ── Chapter Content ── */}
+         {selectedBook && (
+           <div className="py-6">
+             {/* Book Progress */}
+             <div className="flex items-center gap-3 mb-4">
+               <span className={`text-xs font-semibold ${darkMode ? "text-stone-400" : "text-stone-500"}`}>
+                 {selectedBook.name} {selectedChapter}
+               </span>
+               <div className={`flex-1 h-1.5 rounded-full ${darkMode ? "bg-[#333]" : "bg-stone-100"}`}>
+                 <div
+                   className="h-full rounded-full bg-amber-500 transition-all duration-300"
+                   style={{ width: `${(selectedChapter / selectedBook.chapters) * 100}%` }}
+                 />
+               </div>
+               <span className={`text-[10px] font-bold ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
+                 {selectedChapter}/{selectedBook.chapters}
+               </span>
+             </div>
+
+             {loading && (
               <div className="py-20 text-center">
                 <div className={`inline-flex items-center gap-2.5 ${darkMode ? "text-amber-400" : "text-amber-600"}`}>
                   <div className="w-5 h-5 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />
