@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { footerSections, footerSocialMedia } from "./footerRoutes";
 
 const Footers = () => {
   const currentYear = new Date().getFullYear();
+  const [hoveredSocial, setHoveredSocial] = useState<number | null>(null);
 
   return (
     <footer style={{ backgroundColor: "#111827", color: "#D1D5DB", padding: "80px 24px 40px" }}>
@@ -48,36 +50,33 @@ const Footers = () => {
         <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", alignItems: "center", gap: 24, marginTop: 32 }}>
           <div style={{ height: 1, width: "100%", maxWidth: 400, backgroundColor: "#374151" }} />
           <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
-            {footerSocialMedia.map((platform, index) => (
-              <a 
-                key={index} 
-                href={platform.url} 
-                target="_blank" 
-                rel="noreferrer"
-                aria-label={platform.name}
-                style={{
-                  width: 44, height: 44, borderRadius: 16,
-                  backgroundColor: "#1F2937", border: "1px solid #374151",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "all 0.3s",
-                  cursor: "pointer", textDecoration: "none",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#2563EB";
-                  e.currentTarget.style.borderColor = "#2563EB";
-                  e.currentTarget.style.transform = "scale(1.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#1F2937";
-                  e.currentTarget.style.borderColor = "#374151";
-                  e.currentTarget.style.transform = "scale(1)";
-                }}
-              >
-                <span style={{ fontSize: 18, color: platform.color === "text-blue-600" ? "#2563EB" : platform.color === "text-sky-500" ? "#0EA5E9" : platform.color === "text-pink-500" ? "#EC4899" : "#1D4ED8", transition: "color 0.3s" }}>
-                  <platform.icon />
-                </span>
-              </a>
-            ))}
+            {footerSocialMedia.map((platform, index) => {
+              const isHovered = hoveredSocial === index;
+              return (
+                <a
+                  key={index}
+                  href={platform.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={platform.name}
+                  style={{
+                    width: 44, height: 44, borderRadius: 16,
+                    backgroundColor: isHovered ? `${platform.iconColor}22` : "#1F2937",
+                    border: `1px solid ${isHovered ? platform.iconColor : "#374151"}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all 0.3s",
+                    transform: isHovered ? "scale(1.1)" : "scale(1)",
+                    cursor: "pointer", textDecoration: "none",
+                  }}
+                  onMouseEnter={() => setHoveredSocial(index)}
+                  onMouseLeave={() => setHoveredSocial(null)}
+                >
+                  <span style={{ fontSize: 18, color: isHovered ? "#FFFFFF" : platform.iconColor, transition: "color 0.3s" }}>
+                    <platform.icon />
+                  </span>
+                </a>
+              );
+            })}
           </div>
         </div>
       </div>

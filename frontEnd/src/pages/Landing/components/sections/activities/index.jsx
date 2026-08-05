@@ -3,7 +3,7 @@
 // same loading/error states, same card design system (white bg, slate text, blue accents)
 import { useState, useEffect, useRef } from "react";
 import { useCachedData } from "../../../../../hooks/useCachedData";
-import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, Zap, X, Smartphone, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, X, Smartphone, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import apiService from "../../../services/api";
 import toast from "react-hot-toast";
 import useCountdown from "../../../../../hooks/useCountdown";
@@ -529,19 +529,15 @@ const ActivitiesSection = () => {
   }
 
   return (
-    <div id="activities" className="py-12 md:py-20 bg-slate-50 relative">
+    <div id="activities" className="py-12 md:py-20 bg-slate-50 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48 opacity-60 pointer-events-none" />
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-slate-400 text-[10px] font-black tracking-[0.3em] uppercase mb-8 shadow-sm border border-slate-100">
-            <Zap size={12} className="text-primary/40" />
-            Our Schedule
-          </div>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">
-            CSA <span className="text-primary/80">Activities</span>
+          <h2 className="text-[clamp(2.5rem,8vw,4.5rem)] leading-none tracking-[-0.03em] mb-6 bg-gradient-to-br from-slate-900 to-blue-800 bg-clip-text text-transparent">
+            CSA Activities
           </h2>
-          <p className="text-slate-500 font-medium text-base leading-relaxed max-w-xl mx-auto">
+          <p className="text-slate-600 text-xl leading-[1.6] max-w-[650px] mx-auto">
             Join us throughout the week and semester for prayer, worship, fellowship, and service.
           </p>
         </div>
