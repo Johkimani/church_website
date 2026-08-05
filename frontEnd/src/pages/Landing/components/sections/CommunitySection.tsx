@@ -44,9 +44,6 @@ const CommunitySection: React.FC = () => {
     <section className="py-20 md:py-28 bg-stone-50 relative overflow-hidden" id="explore">
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-14 md:mb-20">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold tracking-[0.22em] uppercase mb-5">
-            Vibrant Community
-          </span>
           <h2 className="text-3xl md:text-5xl font-extrabold text-stone-900 mb-5 tracking-tight">
             Explore Our Community
           </h2>
