@@ -2,7 +2,7 @@ import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
 // Bump this whenever the schema below changes so the init re-runs on next boot.
-const SCHEMA_VERSION = "community-v3";
+const SCHEMA_VERSION = "community-v5";
 
 const runParallel = (queries) => Promise.all(queries.map((q) => db.query(q)));
 
@@ -245,9 +245,11 @@ export const setupCommunityDatabase = async () => {
       );`),
       db.query(`ALTER TABLE weekly_activities
         ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true,
-        ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;`),
+        ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS image_url TEXT;`),
       db.query(`ALTER TABLE semester_activities
-        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;`),
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true,
+        ADD COLUMN IF NOT EXISTS image_url TEXT;`),
       db.query(`ALTER TABLE hub_modules ADD COLUMN IF NOT EXISTS saint_image_url TEXT;
         ALTER TABLE hub_modules ADD COLUMN IF NOT EXISTS history_pdf_url TEXT;`),
       db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_hireable BOOLEAN DEFAULT FALSE;

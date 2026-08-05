@@ -1,6 +1,7 @@
 import { Router } from "express";
 import verifyToken from "../../middlewares/Tokens.js";
 import { authorize } from "../../middlewares/authorization.js";
+import { uploadMiddleware } from "../../middlewares/uploadMiddleware.js";
 
 import {
   // weekly
@@ -10,6 +11,8 @@ import {
   activateWeeklyActivity,
   deactivateWeeklyActivity,
   reorderWeeklyActivities,
+  uploadWeeklyImage,
+  removeWeeklyImage,
 
   // novena schedules
   getNovenaSchedules,
@@ -32,6 +35,8 @@ import {
   deleteSemesterActivity,
   activateSemesterActivity,
   deactivateSemesterActivity,
+  uploadSemesterImage,
+  removeSemesterImage,
 } from "../../controllers/activitiesController.js";
 
 import {
@@ -70,6 +75,19 @@ router.post("/weekly", ...requireAdmin('create', 'weekly_activities'), createWee
 router.patch("/weekly/:id", ...requireAdmin('update', 'weekly_activities'), updateWeeklyActivity);
 router.delete("/weekly/:id", ...requireAdmin('delete', 'weekly_activities'), deleteWeeklyActivity);
 
+// Weekly activity image (upload / remove)
+router.post(
+  "/weekly/:id/image",
+  ...requireAdmin('update', 'weekly_activities'),
+  uploadMiddleware,
+  uploadWeeklyImage
+);
+router.delete(
+  "/weekly/:id/image",
+  ...requireAdmin('update', 'weekly_activities'),
+  removeWeeklyImage
+);
+
 router.post(
   "/weekly/:id/activate",
   ...requireAdmin('activate', 'weekly_activities'),
@@ -91,6 +109,19 @@ router.post(
 router.post("/semester", ...requireAdmin('create', 'semester_activities'), createSemesterActivity);
 router.patch("/semester/:id", ...requireAdmin('update', 'semester_activities'), updateSemesterActivity);
 router.delete("/semester/:id", ...requireAdmin('delete', 'semester_activities'), deleteSemesterActivity);
+
+// Semester event image (upload / remove)
+router.post(
+  "/semester/:id/image",
+  ...requireAdmin('update', 'semester_activities'),
+  uploadMiddleware,
+  uploadSemesterImage
+);
+router.delete(
+  "/semester/:id/image",
+  ...requireAdmin('update', 'semester_activities'),
+  removeSemesterImage
+);
 
 router.post(
   "/semester/:id/activate",

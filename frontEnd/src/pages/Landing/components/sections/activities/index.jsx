@@ -45,6 +45,9 @@ const getWeeklyActivityImage = (activity) => {
   const title = String(activity?.activity || "").trim();
   const day = String(activity?.day || "").trim();
 
+  // Admin-uploaded image takes priority over the default mapping
+  if (activity?.image_url) return activity.image_url;
+
   // Requirements mapping
   if (title === "Saturday Choir Practice") return "/images/sta choir.png";
   if (title === "Tuesday Choir Practice") return "/images/choir.png";
@@ -210,6 +213,14 @@ function SemesterCard({ event, onBook, bookingState }) {
         transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] p-6 cursor-default
         ${isPast ? "opacity-60" : ""}`}
     >
+      {event.image_url && (
+        <img
+          src={event.image_url}
+          alt={event.title}
+          className="w-full h-56 object-cover rounded-xl mb-4"
+          loading="lazy"
+        />
+      )}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex-1">
           {isPast && (
