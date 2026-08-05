@@ -35,6 +35,22 @@ const activitiesService = {
     return res.data.data;
   },
 
+  uploadWeeklyImage: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await apiClient.post(`/admin/activities/weekly/${id}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  removeWeeklyImage: async (id: number) => {
+    const res = await apiClient.delete(`/admin/activities/weekly/${id}/image`);
+    clearPublicCache();
+    return res.data.data;
+  },
+
   activateWeekly: async (id: number) => {
     const res = await apiClient.post(`/admin/activities/weekly/${id}/activate`);
     clearPublicCache();
@@ -73,6 +89,22 @@ const activitiesService = {
 
   deleteSemester: async (id: number) => {
     const res = await apiClient.delete(`/admin/activities/semester/${id}`);
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  uploadSemesterImage: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await apiClient.post(`/admin/activities/semester/${id}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  removeSemesterImage: async (id: number) => {
+    const res = await apiClient.delete(`/admin/activities/semester/${id}/image`);
     clearPublicCache();
     return res.data.data;
   },
