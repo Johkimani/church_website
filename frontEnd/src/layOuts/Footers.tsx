@@ -5,34 +5,36 @@ const Footers = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-transparent text-gray-600 py-20 px-6 sm:px-12 lg:px-24">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-12 pt-4">
+    <footer style={{ backgroundColor: "#111827", color: "#D1D5DB", padding: "80px 24px 40px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 48, paddingTop: 16 }}>
         
-        {/* Slogan Section - Spans 2 on Mobile */}
-        <section className="col-span-2 lg:col-span-1 flex flex-col items-center text-center lg:items-start lg:text-left space-y-5">
-          <div className="flex flex-col items-center lg:items-start">
-            <div className="h-1.5 w-10 bg-blue-600 rounded-full mb-4"></div>
-            <p className="text-base sm:text-lg font-black italic text-gray-950 leading-tight">
+        {/* Slogan Section */}
+        <section style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 20 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+            <div style={{ height: 4, width: 40, backgroundColor: "#2563EB", borderRadius: 9999, marginBottom: 16 }} />
+            <p style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic", color: "#F9FAFB", lineHeight: 1.3, margin: 0 }}>
               "Growing Together in Faith and Service."
             </p>
           </div>
-          <p className="text-[12px] sm:text-sm leading-relaxed max-w-xs font-medium text-gray-500">
+          <p style={{ fontSize: 13, lineHeight: 1.6, maxWidth: 280, fontWeight: 500, color: "#9CA3AF", margin: 0 }}>
             Empowering students through spiritual guidance and community hubs.
           </p>
         </section>
 
         {/* Dynamic Navigation Sections */}
         {footerSections.map((section, idx) => (
-          <section key={idx} className="flex flex-col items-center text-center lg:items-start lg:text-left space-y-8">
-            <h3 className="text-[10px] sm:text-[11px] font-black text-gray-950 uppercase tracking-[0.4em]">
+          <section key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 32 }}>
+            <h3 style={{ fontSize: 11, fontWeight: 900, color: "#F9FAFB", textTransform: "uppercase", letterSpacing: "0.4em", margin: 0 }}>
               {section.title}
             </h3>
-            <ul className="space-y-4">
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
               {section.routes.map((route, rIdx) => (
                 <li key={rIdx}>
                   <Link 
                     to={route.path} 
-                    className={`${section.hoverColor} transition-colors text-xs sm:text-sm font-medium text-gray-600`}
+                    style={{ fontSize: 14, fontWeight: 500, color: "#D1D5DB", textDecoration: "none", transition: "color 0.2s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = "#60A5FA"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = "#D1D5DB"; }}
                   >
                     {route.label}
                   </Link>
@@ -42,10 +44,10 @@ const Footers = () => {
           </section>
         ))}
 
-        {/* Social Icons - Centered below all categories */}
-        <div className="col-span-2 lg:col-span-4 flex flex-col items-center gap-6 mt-8">
-           <div className="h-[1px] w-full max-w-xs bg-gray-100"></div>
-           <div className="flex justify-center gap-4 sm:gap-6">
+        {/* Social Icons */}
+        <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", alignItems: "center", gap: 24, marginTop: 32 }}>
+          <div style={{ height: 1, width: "100%", maxWidth: 400, backgroundColor: "#374151" }} />
+          <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
             {footerSocialMedia.map((platform, index) => (
               <a 
                 key={index} 
@@ -53,29 +55,59 @@ const Footers = () => {
                 target="_blank" 
                 rel="noreferrer"
                 aria-label={platform.name}
-                className={`w-11 h-11 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center ${platform.hoverBg} hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 group`}
+                style={{
+                  width: 44, height: 44, borderRadius: 16,
+                  backgroundColor: "#1F2937", border: "1px solid #374151",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.3s",
+                  cursor: "pointer", textDecoration: "none",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#2563EB";
+                  e.currentTarget.style.borderColor = "#2563EB";
+                  e.currentTarget.style.transform = "scale(1.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#1F2937";
+                  e.currentTarget.style.borderColor = "#374151";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
               >
-                <span className={`text-lg ${platform.color} group-hover:text-white transform group-hover:scale-125 transition-all duration-300`}>
+                <span style={{ fontSize: 18, color: platform.color === "text-blue-600" ? "#2563EB" : platform.color === "text-sky-500" ? "#0EA5E9" : platform.color === "text-pink-500" ? "#EC4899" : "#1D4ED8", transition: "color 0.3s" }}>
                   <platform.icon />
                 </span>
               </a>
             ))}
           </div>
         </div>
-
       </div>
 
       {/* Copyright Bar */}
-      <div className="max-w-7xl mx-auto pt-10 mt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-          © {currentYear} St. Thomas Aquinas CSA — Crafted for the Catholic Community.
+      <div style={{ maxWidth: 1200, margin: "0 auto", paddingTop: 40, marginTop: 24, borderTop: "1px solid #374151", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9CA3AF", margin: 0 }}>
+          &copy; {currentYear} St. Thomas Aquinas CSA &mdash; Crafted for the Catholic Community.
         </p>
-        <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-          <Link to="/privacy" className="hover:text-gray-700 transition-colors duration-200">Privacy</Link>
-          <span className="text-gray-300">·</span>
-          <Link to="/terms" className="hover:text-gray-700 transition-colors duration-200">Terms</Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9CA3AF" }}>
+          <Link to="/privacy" style={{ color: "#9CA3AF", textDecoration: "none", transition: "color 0.2s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#D1D5DB"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#9CA3AF"; }}
+          >Privacy</Link>
+          <span style={{ color: "#4B5563" }}>&middot;</span>
+          <Link to="/terms" style={{ color: "#9CA3AF", textDecoration: "none", transition: "color 0.2s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#D1D5DB"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#9CA3AF"; }}
+          >Terms</Link>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          footer > div { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          footer > div { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </footer>
   );
 };
