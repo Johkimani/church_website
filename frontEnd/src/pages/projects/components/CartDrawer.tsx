@@ -139,11 +139,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-1 bg-slate-100 rounded-md p-0.5">
-                                                <button onClick={() => updateCartQuantity(index, -1)} className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:bg-white transition-all">
+                                                <button onClick={() => updateCartQuantity(index, -1)} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded text-slate-500 hover:bg-white transition-all">
                                                     <Minus size={10} />
                                                 </button>
                                                 <span className="text-xs font-bold text-slate-700 min-w-[20px] text-center">{item.quantity || 1}</span>
-                                                <button onClick={() => updateCartQuantity(index, 1)} className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:bg-white transition-all">
+                                                <button onClick={() => updateCartQuantity(index, 1)} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded text-slate-500 hover:bg-white transition-all">
                                                     <Plus size={10} />
                                                 </button>
                                             </div>
@@ -164,7 +164,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         </div>
 
                         <div className="px-6 py-3 space-y-3">
-                            <div className="grid grid-cols-2 gap-2.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
                                     <div className="relative">

@@ -475,13 +475,13 @@ export default function LiturgicalSeasons() {
         <div className="relative mb-6">
           <div className="absolute -top-8 -left-8 w-24 h-24 rounded-full bg-amber-500/10 blur-3xl" />
           <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-blue-500/10 blur-2xl" />
-          <h1 className="relative text-5xl md:text-6xl font-black text-white tracking-tighter uppercase italic drop-shadow-2xl">
+          <h1 className="relative text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tighter uppercase italic drop-shadow-2xl text-center">
             Holy Liturgical Seasons
           </h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap px-4 text-center">
           <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          <p className="text-base text-amber-300 font-semibold uppercase tracking-[0.3em] italic">
+          <p className="text-sm sm:text-base text-amber-300 font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em] italic">
             Journey Through the Christian Year
           </p>
           <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />

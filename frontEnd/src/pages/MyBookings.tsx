@@ -92,10 +92,10 @@ export default function MyBookings() {
                       {b.status}
                     </span>
                   </div>
-                  <h4 className="font-semibold text-slate-800">{b.activity_name}</h4>
-                  <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
+                  <h4 className="font-semibold text-slate-800 truncate">{b.activity_name}</h4>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
                     {b.activity_time && <span className="flex items-center gap-1"><Clock size={12} /> {b.activity_time}</span>}
-                    <span className="font-mono">Paid: KES {Number(b.paid_amount).toLocaleString()} / {Number(b.fare).toLocaleString()}</span>
+                    <span className="font-mono truncate">Paid: KES {Number(b.paid_amount).toLocaleString()} / {Number(b.fare).toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="text-xs text-slate-400 shrink-0">

@@ -292,7 +292,7 @@ function Carousel() {
         <p className="text-white/80 text-xs md:text-sm mt-2 max-w-xs leading-relaxed">
           {cur.subtitle}
         </p>
-        <div className="flex gap-3 mt-5">
+        <div className="flex gap-3 mt-5 flex-wrap">
           <button className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-5 py-2 rounded-lg transition-all">
             Get Started
           </button>

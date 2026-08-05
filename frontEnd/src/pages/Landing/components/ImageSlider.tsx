@@ -235,18 +235,21 @@ function ImageSlider() {
       </button>
 
       {/* ── 4. Progress dots ──────────────────────────────────────────────── */}
-      <div className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-3 z-40">
+      <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-2 z-40 px-2">
         {displaySlides.map((slide, i) => (
             <button
               key={`dot-${slide.id}`}
               type="button"
               onClick={(e) => { e.stopPropagation(); goToSlide(i) }}
               aria-label={`Go to slide ${i + 1}`}
-              className={`transition-all duration-500 rounded-full h-1.5 md:h-2 cursor-pointer
+              className="flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 cursor-pointer"
+            >
+              <span className={`transition-all duration-500 rounded-full h-1.5 md:h-2
               ${i === currentSlide
-                ? 'w-8 sm:w-10 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]'
+                ? 'w-4 sm:w-6 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]'
                 : 'w-2 bg-white/40 hover:bg-white/80'}`}
-            />
+              />
+            </button>
         ))}
       </div>
     </section>

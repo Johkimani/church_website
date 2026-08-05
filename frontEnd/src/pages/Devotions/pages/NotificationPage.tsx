@@ -167,7 +167,7 @@ const Notifications: React.FC = () => {
 
           {/* Switcher */}
           <div className="flex justify-center mb-8">
-            <div className="inline-flex p-1 bg-gray-200/50 backdrop-blur-md rounded-2xl border border-white gap-1.5 min-w-[300px]">
+            <div className="inline-flex p-1 bg-gray-200/50 backdrop-blur-md rounded-2xl border border-white gap-1.5 w-full max-w-md">
                <button
                   id="notif-csa-tab"
                   onClick={() => setActiveCategory("csa")}

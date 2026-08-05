@@ -190,7 +190,7 @@ function AdminPanel({ onClose }: AdminPanelProps) {
       {/* Add User Modal */}
       {showAddUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
+          <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-md m-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Add New User</h2>
             <form onSubmit={handleAddUser}>
               <div className="mb-4">
@@ -256,7 +256,7 @@ function AdminPanel({ onClose }: AdminPanelProps) {
       {/* Upload Image Modal for Gallery */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-[500px]">
+          <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-[500px] m-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Add Image to Gallery</h2>
             <form onSubmit={handleImageUpload}>
               <div className="mb-4">

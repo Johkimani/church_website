@@ -58,18 +58,18 @@ export default function SacraLiturgiaPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="relative flex items-center justify-between gap-2">
-          <div className="absolute top-5 left-4 right-4 h-[2px] bg-amber-200/40" />
+        <div className="relative flex items-center gap-2 overflow-x-auto sm:overflow-visible sm:justify-between px-1 pb-2 hide-scrollbar">
+          <div className="hidden sm:block absolute top-5 left-4 right-4 h-[2px] bg-amber-200/40" />
 
           {seasons.map((season, index) => (
-            <div key={season.id} className="relative z-10 flex flex-col items-center flex-1">
+            <div key={season.id} className="relative z-10 flex flex-col items-center flex-1 min-w-[100px] sm:min-w-0">
               {index < seasons.length - 1 && (
-                <div className="absolute top-5 left-[calc(50%+20px)] right-[calc(-50%+20px)] h-[2px] bg-amber-200/30" />
+                <div className="hidden sm:block absolute top-5 left-[calc(50%+20px)] right-[calc(-50%+20px)] h-[2px] bg-amber-200/30" />
               )}
 
               <button
                 onClick={() => setActiveSeason(season.id)}
-                className={`relative flex flex-col items-center gap-1.5 px-4 py-3 rounded-full border-2 transition-all duration-300 cursor-pointer ${
+                className={`relative flex flex-col items-center gap-1.5 px-4 py-3 rounded-full border-2 transition-all duration-300 cursor-pointer shrink-0 ${
                   season.active ? "shadow-lg scale-105" : "bg-white/80 border-amber-100 hover:border-amber-300"
                 }`}
                 style={
