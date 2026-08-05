@@ -362,7 +362,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       ) : (
         <>
           <style>{styles}</style>
-          <div className="rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="rounded-xl border border-slate-200 max-h-[600px] overflow-x-auto overflow-y-auto hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-slate-50 border-b border-slate-200">

@@ -94,10 +94,6 @@ const GallerySection: React.FC = () => {
       <div className="container mx-auto px-6">
         {/* Gallery Header - Sharp & Authoritative */}
         <div className="max-w-4xl mx-auto text-center mb-12">
-          <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-slate-50 border border-slate-100/80 text-slate-400 text-[9px] font-black tracking-[0.4em] uppercase mb-6 shadow-sm">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            Parish Chronicles
-          </div>
           <h1 className="text-4xl md:text-7xl font-black text-slate-900 mb-6 tracking-tighter leading-tight">
              The Living <span className="text-primary">Heritage</span>
           </h1>
@@ -112,7 +108,7 @@ const GallerySection: React.FC = () => {
 
               <input 
                 type="text" 
-                placeholder="Search the Parish Chronicles..."
+                placeholder="Search our gallery..."
                 className="flex-1 self-stretch bg-transparent border-none outline-none px-6 text-slate-700 font-bold placeholder:text-slate-300/80 placeholder:italic text-sm tracking-tight"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -216,7 +212,7 @@ const GallerySection: React.FC = () => {
                   <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{item.event_name}</h3>
                   <button 
                     onClick={(e) => toggleLike(e, item.id)}
-                    className={`transition-all duration-300 ${likedItems.has(item.id) ? 'text-primary scale-110' : 'text-slate-300 hover:text-primary'}`}
+                    className={`transition-all duration-300 p-3 -m-3 active:scale-90 ${likedItems.has(item.id) ? 'text-primary scale-110' : 'text-slate-300 hover:text-primary'}`}
                   >
                     <Heart size={22} fill={likedItems.has(item.id) ? "currentColor" : "none"} />
                   </button>
@@ -361,10 +357,10 @@ const GallerySection: React.FC = () => {
                           </motion.div>
                         </AnimatePresence>
 
-                        <div className="flex items-center gap-6 px-10 shrink-0">
+                        <div className="flex items-center gap-4 md:gap-6 px-4 sm:px-10 w-full md:w-auto justify-center shrink-0 flex-wrap">
                            <button 
                              onClick={(e) => toggleLike(e, filteredItems[selectedIdx].id)}
-                             className={`flex items-center gap-4 px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                             className={`flex items-center gap-4 px-6 md:px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
                                likedItems.has(filteredItems[selectedIdx].id) 
                                ? 'bg-rose-600 text-white shadow-lg' 
                                : 'bg-white/80 text-slate-500 hover:text-rose-600'

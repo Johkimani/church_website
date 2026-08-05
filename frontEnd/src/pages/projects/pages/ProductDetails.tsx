@@ -158,7 +158,7 @@ export default function ProductDetails() {
                                     <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                                         Size {selectedSize && `- ${selectedSize}`}
                                     </p>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                         {SIZES.map(sz => (
                                             <button
                                                 key={sz}

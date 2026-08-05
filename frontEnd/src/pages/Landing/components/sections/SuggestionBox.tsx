@@ -60,7 +60,7 @@ const SuggestionBox: React.FC = () => {
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-50/20 rounded-full blur-3xl -ml-48 -mb-48 opacity-60"></div>
       
       {/* Floating Decorative Elements - Moved very high on mobile to avoid overlap */}
-      <div className="absolute -top-2 md:top-10 left-4 md:left-10 text-primary/10 animate-bounce direction-alternate-reverse duration-[3000ms]">
+      <div className="absolute -top-2 md:top-10 left-4 md:left-10 text-red-500/80 animate-bounce direction-alternate-reverse duration-[3000ms]">
         <Heart size={36} fill="currentColor" />
       </div>
       <div className="absolute bottom-10 right-4 md:right-10 text-amber-500/5 animate-pulse">
@@ -153,22 +153,26 @@ const SuggestionBox: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 tracking-wider ml-1">
-                        <EyeOff size={12} className="text-slate-400" />
-                        SUBMIT ANONYMOUSLY
-                      </label>
                       <button
                         type="button"
+                        role="switch"
+                        aria-checked={anonymous}
                         onClick={() => setAnonymous(!anonymous)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          anonymous ? 'bg-primary' : 'bg-slate-200'
-                        }`}
+                        className="flex items-center gap-3 px-1 py-2 -m-1 text-[10px] font-black text-slate-500 tracking-wider cursor-pointer select-none"
                       >
+                        <EyeOff size={12} className="text-slate-400" />
+                        SUBMIT ANONYMOUSLY
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            anonymous ? 'translate-x-6' : 'translate-x-1'
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-1 ${
+                            anonymous ? 'bg-primary' : 'bg-slate-200'
                           }`}
-                        />
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              anonymous ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </span>
                       </button>
                     </div>
 

@@ -290,7 +290,7 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
 
                             <div style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'repeat(4, 1fr)',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(68px, 1fr))',
                                 gap: '12px'
                             }}>
                                 {semesters.map((sem) => (

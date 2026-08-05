@@ -193,7 +193,7 @@ export const Chairs = () => {
                                     <label className="block text-sm font-bold text-slate-700 mb-2">
                                         Number of chairs needed
                                     </label>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 flex-wrap">
                                         <div className="flex-1">
                                             <div className="flex items-center border border-slate-300 rounded-xl overflow-hidden focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-200 transition-all">
                                                 <button

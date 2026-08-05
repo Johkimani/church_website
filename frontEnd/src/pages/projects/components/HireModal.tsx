@@ -283,10 +283,10 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
             <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Items to Hire</p>
               {hireItems.map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400">{getIcon(item.category)}</span>
-                    <span className="font-semibold text-slate-700">{item.name}</span>
+                <div key={i} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-slate-400 shrink-0">{getIcon(item.category)}</span>
+                    <span className="font-semibold text-slate-700 truncate">{item.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-slate-500">x{item.quantity}</span>
@@ -304,7 +304,7 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
             {/* Personal Information */}
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Personal Information</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">Full Name *</label>
                   <input name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="John Doe" required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
@@ -323,7 +323,7 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
             {/* Hire Dates */}
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Hire Details</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {showEventDate && (
                   <div>
                     <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Event Date *</label>
@@ -353,10 +353,10 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
                 </p>
                 {availError && <p className="text-xs text-amber-600">{availError}</p>}
                 {availability && availability.map((a, i) => (
-                  <div key={i} className="flex items-center justify-between py-1.5 text-sm">
-                    <div className="flex items-center gap-2">
-                      {a.can_fulfill ? <CheckCircle size={14} className="text-emerald-500" /> : <XCircle size={14} className="text-red-500" />}
-                      <span className="font-semibold text-slate-700">{a.item_name}</span>
+                  <div key={i} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1.5 text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {a.can_fulfill ? <CheckCircle size={14} className="text-emerald-500 shrink-0" /> : <XCircle size={14} className="text-red-500 shrink-0" />}
+                      <span className="font-semibold text-slate-700 truncate">{a.item_name}</span>
                     </div>
                     <span className={`text-xs font-bold ${a.can_fulfill ? 'text-emerald-600' : 'text-red-600'}`}>
                       {a.can_fulfill ? `${a.available_quantity} available` : `Only ${a.available_quantity} available (need ${a.requested_quantity})`}

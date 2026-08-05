@@ -134,7 +134,7 @@
     background: white;
     border: 1px solid var(--border);
     border-radius: var(--rm);
-    overflow: hidden;
+    overflow-x: auto;
     box-shadow: var(--shadow-sm);
 }
 
@@ -196,6 +196,19 @@
     min-width: 320px;
     max-width: 380px;
     scroll-snap-align: start;
+}
+
+.activities-countdown {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+@media (max-width: 480px) {
+    .activities-countdown > div > div {
+        font-size: 1.75rem !important;
+    }
 }
 
 .activity-date-badge {
@@ -402,6 +415,10 @@
 @media (max-width: 480px) {
     .page-title {
         font-size: 1.5rem;
+    }
+
+    .premium-table {
+        min-width: 560px;
     }
 }
 

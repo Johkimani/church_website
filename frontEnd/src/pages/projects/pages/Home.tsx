@@ -106,15 +106,6 @@ export const Home = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-8 text-center relative z-10">
-          <motion.span
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-block text-[10px] sm:text-xs font-black uppercase tracking-[0.32em] text-blue-400 bg-blue-500/10 px-5 py-2.5 rounded-full border border-blue-500/20 mb-4"
-          >
-            KYU CSA Store
-          </motion.span>
-
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
