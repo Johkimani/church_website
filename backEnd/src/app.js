@@ -128,6 +128,20 @@ app.use((req, res, next) => {
 });
 app.use(morganMiddleware);
 
+// Root + health routes (outside the /api mount so Render health checks and
+// direct visits to the root URL return JSON instead of "Cannot GET /")
+app.get("/", (req, res) => {
+  res.status(200).json({ status: "ok", service: "church-website-api" });
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use("/api", apiRoutes)
 
 // Organized Static Routes for locally uploaded media files
