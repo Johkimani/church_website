@@ -41,19 +41,24 @@ const CommunitySection: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 md:py-28 bg-stone-50 relative overflow-hidden" id="explore">
+    <section className="py-20 md:py-28 bg-stone-900 relative overflow-hidden" id="explore">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/images/church.png')" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-stone-900/85 via-stone-900/70 to-stone-900/85" />
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-14 md:mb-20">
-          <h2 className="text-3xl md:text-5xl font-extrabold text-stone-900 mb-5 tracking-tight">
+          <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-5 tracking-tight">
             Explore Our Community
           </h2>
-          <p className="text-stone-500 font-medium text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
+          <p className="text-stone-300 font-medium text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
             Faith, service, and friendship come together through the groups and
             ministries that make our parish home.
           </p>
           <div className="mt-7 flex items-center gap-3 text-stone-400">
-            <span className="h-px w-10 bg-stone-300" />
-            <span className="text-xs italic font-serif">Four ways to belong</span>
+            <span className="h-px w-10 bg-white/30" />
+            <span className="text-xs italic font-serif text-stone-300">Four ways to belong</span>
           </div>
         </div>
 
