@@ -193,9 +193,9 @@ const App: React.FC = () => {
           <Route path="officials/history" element={<PublicHistoryView />} />
 
           {/* Standalone Landing Pages */}
-          <Route path="gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
+          <Route path="gallery" element={<GalleryPage />} />
           <Route path="my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
-          <Route element={<ProtectedRoute><ProjectsProvider><Outlet /></ProjectsProvider></ProtectedRoute>}>
+          <Route element={<ProjectsProvider><Outlet /></ProjectsProvider>}>
             <Route path="projects" element={<ProjectsHome />} />
             <Route path="sacramentals" element={<SacramentalsPage />} />
             <Route path="t-shirts" element={<TshirtsPage />} />
@@ -207,14 +207,10 @@ const App: React.FC = () => {
           </Route>
           {/* show notification to all */}
           <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
-          {/* Devotions (Protected) */}
+          {/* Devotions (Public; personal tabs require login) */}
           <Route
             path="devotions"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
+            element={<Layout />}
           >
             <Route index element={<Dashboard />} />
             <Route path="all-prayers" element={<AllPrayers />} />
@@ -225,9 +221,9 @@ const App: React.FC = () => {
              <Route path="prayers-of-the-mass" element={<PrayersOfTheMass />} />
              <Route path="liturgical-seasons" element={<LiturgicalSeasons />} />
             <Route path="rosary" element={<Rosary />} />
-            <Route path="challenge" element={<Challenge />} />
-            <Route path="comparison" element={<JumuiComparison />} />
-            <Route path="progress" element={<MemberDashboard />} />
+            <Route path="challenge" element={<ProtectedRoute><Challenge /></ProtectedRoute>} />
+            <Route path="comparison" element={<ProtectedRoute><JumuiComparison /></ProtectedRoute>} />
+            <Route path="progress" element={<ProtectedRoute><MemberDashboard /></ProtectedRoute>} />
             <Route path="daily-liturgy" element={<DailyLiturgy />} />
             <Route path="prayer-module" element={<PrayerModule />} />
             <Route path="prayer-book" element={<PrayerBook />} />

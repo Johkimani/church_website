@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import toast from "react-hot-toast";
+import { BASE_URL } from "../../../api/config";
 import {
   FaArrowLeft,
   FaArrowRight,
@@ -192,7 +193,7 @@ export default function Bible(): JSX.Element {
   useEffect(() => {
     const loadVersions = async () => {
       try {
-        const res = await fetch("/api/v1/bible/versions");
+        const res = await fetch(`${BASE_URL}/bible/versions`);
         if (res.ok) {
           const data = await res.json();
           if (data.versions?.length > 0) setVersions(data.versions);
@@ -214,7 +215,7 @@ export default function Bible(): JSX.Element {
   useEffect(() => {
     const loadBooks = async () => {
       try {
-        const res = await fetch(`/api/v1/bible/books?version=${version}`);
+        const res = await fetch(`${BASE_URL}/bible/books?version=${version}`);
         if (res.ok) {
           const data = await res.json();
           if (data.books?.length > 0) setAllBooks(data.books);
@@ -283,7 +284,7 @@ export default function Bible(): JSX.Element {
     setError(null);
     setSelectedVerseNum(null);
     try {
-      const res = await fetch(`/api/v1/bible/chapter?book=${bookCode}&chapter=${chapter}&version=${v}`);
+      const res = await fetch(`${BASE_URL}/bible/chapter?book=${bookCode}&chapter=${chapter}&version=${v}`);
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Failed to load chapter");

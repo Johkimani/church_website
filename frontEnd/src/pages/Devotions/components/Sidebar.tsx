@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../../context/AuthContext";
 import {
   FaHome,
   FaBook,
@@ -35,6 +36,9 @@ const otherItems = [
   { to: "progress", label: "My Progress", icon: <FaUserGraduate size={16} /> },
   { to: "daily-liturgy", label: "Daily Missal", icon: <FaCross size={16} /> },
 ];
+
+// Personal tabs — only visible to authenticated members.
+const PROTECTED_ITEM_TO = new Set(["challenge", "comparison", "progress"]);
 
 const mobileNavItems = [
   { to: "/devotions", label: "Home", icon: <FaHome size={16} /> },
@@ -102,8 +106,12 @@ function QuickLinks() {
 }
 
 export default function Sidebar() {
+  const { isAuthenticated } = useAuth();
   const [prayersOpen, setPrayersOpen] = useState(false);
   const [liturgyOpen, setLiturgyOpen] = useState(false);
+  const visibleOtherItems = otherItems.filter(
+    (it) => isAuthenticated || !PROTECTED_ITEM_TO.has(it.to)
+  );
 
   return (
     <>
@@ -306,7 +314,7 @@ export default function Sidebar() {
           </div>
 
           {/* Other items */}
-          {otherItems.map((it) => (
+          {visibleOtherItems.map((it) => (
             <NavLink
               key={it.to}
               to={it.to}
