@@ -498,12 +498,43 @@ function PrayGuide() {
     <div className="space-y-10">
       <SectionHeader title="Guided Rosary Prayer" subtitle="Bead by bead, step by step. Audio guidance walks you through the entire Rosary." />
 
-      {/* Mystery Set Selector */}
-      <div className="flex flex-wrap gap-2">
-        {MYSTERY_SETS.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => handleSet(s.key)}
+       {/* Beginner Guide */}
+       <div className="rounded-2xl p-5" style={{ background: "rgba(217,119,6,0.06)", border: "1px solid rgba(217,119,6,0.15)" }}>
+         <p className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-3">How to Use This Guide</p>
+         <div className="grid sm:grid-cols-2 gap-3 text-xs text-slate-300 leading-relaxed">
+           <div className="flex items-start gap-2">
+             <span className="text-amber-400 mt-0.5">1.</span>
+             <span>Hold the rosary in your left hand, draped over your fingers.</span>
+           </div>
+           <div className="flex items-start gap-2">
+             <span className="text-amber-400 mt-0.5">2.</span>
+             <span>Start at the crucifix. Make the Sign of the Cross.</span>
+           </div>
+           <div className="flex items-start gap-2">
+             <span className="text-amber-400 mt-0.5">3.</span>
+             <span>Move to the next large bead for the Our Father.</span>
+           </div>
+           <div className="flex items-start gap-2">
+             <span className="text-amber-400 mt-0.5">4.</span>
+             <span>Move to each small bead for a Hail Mary. Touch each bead.</span>
+           </div>
+           <div className="flex items-start gap-2">
+             <span className="text-amber-400 mt-0.5">5.</span>
+             <span>At the centerpiece, pray the Glory Be and Fatima Prayer.</span>
+           </div>
+           <div className="flex items-start gap-2">
+             <span className="text-amber-400 mt-0.5">6.</span>
+             <span>Repeat for each decade. Move to the next large bead for the next Our Father.</span>
+           </div>
+         </div>
+       </div>
+
+       {/* Mystery Set Selector */}
+       <div className="flex flex-wrap gap-2">
+         {MYSTERY_SETS.map((s) => (
+           <button
+             key={s.key}
+             onClick={() => handleSet(s.key)}
             className="px-4 py-2 rounded-xl text-[11px] font-bold tracking-wider uppercase transition-all"
             style={{
               ...TAB_STYLE(activeSet === s.key),
@@ -532,31 +563,45 @@ function PrayGuide() {
         </div>
       </div>
 
-      {/* Current Step */}
-      <div className="rounded-2xl p-6" style={{ ...CARD_STYLE, border: `1px solid ${setColor}30` }}>
-        <div className="flex items-center gap-3 mb-4">
-          <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: `${setColor}22`, color: setColor }}>
-            {currentStep + 1}
-          </span>
-          <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
-            {steps[currentStep]?.title}
-          </h3>
-        </div>
+       {/* Current Step */}
+       <div className="rounded-2xl p-6" style={{ ...CARD_STYLE, border: `1px solid ${setColor}30` }}>
+         <div className="flex items-center gap-3 mb-4">
+           <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: `${setColor}22`, color: setColor }}>
+             {currentStep + 1}
+           </span>
+           <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+             {steps[currentStep]?.title}
+           </h3>
+         </div>
 
-        {steps[currentStep]?.isMysteryAnnouncement && (
-          <div className="rounded-xl p-4 mb-4" style={{ background: `${setColor}11`, border: `1px solid ${setColor}30` }}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: setColor }}>Mystery</p>
-            <p className="text-sm text-slate-200 leading-relaxed">{steps[currentStep].prayer}</p>
-          </div>
-        )}
+         {/* Instruction */}
+         {steps[currentStep]?.instruction && (
+           <div className="rounded-xl p-3 mb-3 flex items-start gap-3" style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.15)" }}>
+             <span className="text-amber-400 text-lg flex-shrink-0">✋</span>
+             <p className="text-xs text-slate-300 leading-relaxed">{steps[currentStep].instruction}</p>
+           </div>
+         )}
 
-        {!steps[currentStep]?.isMysteryAnnouncement && (
-          <div className="rounded-xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-sm text-slate-200 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "16px" }}>
-              {steps[currentStep]?.prayer}
-            </p>
-          </div>
-        )}
+         {steps[currentStep]?.isMysteryAnnouncement && (
+           <div className="rounded-xl p-4 mb-4" style={{ background: `${setColor}11`, border: `1px solid ${setColor}30` }}>
+             <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: setColor }}>Mystery</p>
+             <p className="text-sm text-slate-200 leading-relaxed">{steps[currentStep].prayer}</p>
+             {steps[currentStep].contemplation && (
+               <div className="mt-3 pt-3 border-t" style={{ borderColor: "rgba(217,119,6,0.15)" }}>
+                 <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-1">Contemplate</p>
+                 <p className="text-xs text-slate-400 leading-relaxed">{steps[currentStep].contemplation}</p>
+               </div>
+             )}
+           </div>
+         )}
+
+         {!steps[currentStep]?.isMysteryAnnouncement && (
+           <div className="rounded-xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+             <p className="text-sm text-slate-200 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "16px" }}>
+               {steps[currentStep]?.prayer}
+             </p>
+           </div>
+         )}
 
         {/* Controls */}
         <div className="flex items-center justify-center gap-3 mt-6">
