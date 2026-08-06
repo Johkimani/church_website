@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { marianMysteries } from "../data/mysteries/marian";
 import { sevenSorrows } from "../data/mysteries/sevenSorrows";
 import { reparationMysteries } from "../data/mysteries/reparation";
@@ -21,7 +21,7 @@ type RosaryPrayer = {
 };
 
 type MarianKey = "joyful" | "sorrowful" | "glorious" | "luminous";
-type View = "overview" | "prayers" | "mysteries" | "beads";
+type View = "overview" | "prayers" | "mysteries" | "beads" | "pray";
 
 const GOLD = "#D97706";
 const AMBER = "#FBBF24";
@@ -376,6 +376,273 @@ function BeadDiagram() {
   );
 }
 
+// ─── PRAYER GUIDE WITH AUDIO ─────────────────────────────────────────────
+
+const FULL_ROSARY_STEPS: { title: string; prayer: string; isOurFather: boolean; isHailMary: boolean; isGloryBe: boolean; isFatima: boolean; isCreed: boolean; isSignOfCross: boolean; isHailHolyQueen: boolean; isConcluding: boolean; isMysteryAnnouncement: boolean; mysteryTitle?: string }[] = [
+  { title: "Sign of the Cross", prayer: "In the name of the Father, and of the Son, and of the Holy Spirit. Amen.", isSignOfCross: true },
+  { title: "Apostles' Creed", prayer: "I believe in God, the Father almighty, Creator of heaven and earth, and in Jesus Christ, his only Son, our Lord, who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died and was buried; he descended into hell; on the third day he rose again from the dead; he ascended into heaven, and is seated at the right hand of God the Father almighty; from there he will come to judge the living and the dead. I believe in the Holy Spirit, the holy catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen.", isCreed: true },
+  { title: "Our Father", prayer: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.", isOurFather: true },
+  { title: "Hail Mary 1", prayer: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.", isHailMary: true },
+  { title: "Hail Mary 2", prayer: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.", isHailMary: true },
+  { title: "Hail Mary 3", prayer: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.", isHailMary: true },
+  { title: "Glory Be", prayer: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.", isGloryBe: true },
+];
+
+function buildFullRosarySteps(mysteries: Mystery[]) {
+  const steps: typeof FULL_ROSARY_STEPS = [];
+  mysteries.forEach((m, idx) => {
+    steps.push({ title: `Mystery ${idx + 1}: ${m.title}`, prayer: m.english, isMysteryAnnouncement: true, mysteryTitle: m.title });
+    steps.push({ title: "Our Father", prayer: FULL_ROSARY_STEPS[2].prayer, isOurFather: true });
+    for (let i = 1; i <= 10; i++) {
+      steps.push({ title: `Hail Mary ${i}`, prayer: FULL_ROSARY_STEPS[3].prayer, isHailMary: true });
+    }
+    steps.push({ title: "Glory Be & Fatima Prayer", prayer: `${FULL_ROSARY_STEPS[6].prayer}\n\nO my Jesus, forgive us our sins, save us from the fires of hell, lead all souls to heaven, especially those most in need of thy mercy. Amen.`, isGloryBe: true, isFatima: true });
+  });
+  steps.push({ title: "Hail Holy Queen", prayer: FULL_ROSARY_STEPS[9].prayer, isHailHolyQueen: true });
+  steps.push({ title: "Concluding Prayer", prayer: FULL_ROSARY_STEPS[10].prayer, isConcluding: true });
+  steps.push({ title: "Sign of the Cross", prayer: FULL_ROSARY_STEPS[0].prayer, isSignOfCross: true });
+  return steps;
+}
+
+function PrayGuide() {
+  const [activeSet, setActiveSet] = useState<MarianKey>("joyful");
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const steps = buildFullRosarySteps(marianMysteries[activeSet]);
+  const activeMysteries = marianMysteries[activeSet];
+  const setColor = MYSTERY_SETS.find((s) => s.key === activeSet)?.color || GOLD;
+
+  const speak = (text: string) => {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9;
+    u.pitch = 1;
+    u.volume = 1;
+    u.lang = "en-US";
+    u.onend = () => {
+      setIsPlaying(false);
+      setIsPaused(false);
+    };
+    u.onerror = () => {
+      setIsPlaying(false);
+      setIsPaused(false);
+    };
+    utteranceRef.current = u;
+    window.speechSynthesis.speak(u);
+    setIsPlaying(true);
+    setIsPaused(false);
+  };
+
+  const stopSpeaking = () => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlaying(false);
+    setIsPaused(false);
+  };
+
+  const handleNext = () => {
+    stopSpeaking();
+    if (currentStep < steps.length - 1) {
+      const next = currentStep + 1;
+      setCurrentStep(next);
+      setProgress(((next + 1) / steps.length) * 100);
+      setTimeout(() => speak(steps[next].prayer), 300);
+    }
+  };
+
+  const handlePrev = () => {
+    stopSpeaking();
+    if (currentStep > 0) {
+      const prev = currentStep - 1;
+      setCurrentStep(prev);
+      setProgress(((prev + 1) / steps.length) * 100);
+      setTimeout(() => speak(steps[prev].prayer), 300);
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (isPlaying && !isPaused) {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.pause();
+        setIsPaused(true);
+      }
+    } else if (isPaused) {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.resume();
+        setIsPaused(false);
+      }
+    } else {
+      speak(steps[currentStep].prayer);
+    }
+  };
+
+  const handleSet = (key: MarianKey) => {
+    setActiveSet(key);
+    setCurrentStep(0);
+    setProgress(0);
+    stopSpeaking();
+  };
+
+  const handleReset = () => {
+    stopSpeaking();
+    setCurrentStep(0);
+    setProgress(0);
+  };
+
+  return (
+    <div className="space-y-10">
+      <SectionHeader title="Guided Rosary Prayer" subtitle="Bead by bead, step by step. Audio guidance walks you through the entire Rosary." />
+
+      {/* Mystery Set Selector */}
+      <div className="flex flex-wrap gap-2">
+        {MYSTERY_SETS.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => handleSet(s.key)}
+            className="px-4 py-2 rounded-xl text-[11px] font-bold tracking-wider uppercase transition-all"
+            style={{
+              ...TAB_STYLE(activeSet === s.key),
+              ...(activeSet === s.key ? { color: s.color, border: `1px solid ${s.color}55` } : {}),
+            }}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full mr-2" style={{ background: s.color }} />
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Progress Bar */}
+      <div className="rounded-2xl p-5" style={CARD_STYLE}>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[11px] font-bold tracking-widest uppercase text-slate-400">
+            Step {currentStep + 1} of {steps.length}
+          </span>
+          <span className="text-[11px] font-bold text-amber-400">{Math.round(progress)}%</span>
+        </div>
+        <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${setColor}, ${GOLD})` }}
+          />
+        </div>
+      </div>
+
+      {/* Current Step */}
+      <div className="rounded-2xl p-6" style={{ ...CARD_STYLE, border: `1px solid ${setColor}30` }}>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: `${setColor}22`, color: setColor }}>
+            {currentStep + 1}
+          </span>
+          <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+            {steps[currentStep]?.title}
+          </h3>
+        </div>
+
+        {steps[currentStep]?.isMysteryAnnouncement && (
+          <div className="rounded-xl p-4 mb-4" style={{ background: `${setColor}11`, border: `1px solid ${setColor}30` }}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: setColor }}>Mystery</p>
+            <p className="text-sm text-slate-200 leading-relaxed">{steps[currentStep].prayer}</p>
+          </div>
+        )}
+
+        {!steps[currentStep]?.isMysteryAnnouncement && (
+          <div className="rounded-xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <p className="text-sm text-slate-200 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "16px" }}>
+              {steps[currentStep]?.prayer}
+            </p>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex items-center justify-center gap-3 mt-6">
+          <button
+            onClick={handlePrev}
+            disabled={currentStep === 0}
+            className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-25 disabled:cursor-not-allowed"
+            style={{ background: "rgba(255,255,255,0.05)", color: "#CBD5E1", border: "1px solid rgba(255,255,255,0.1)" }}
+          >
+            ← Previous
+          </button>
+          <button
+            onClick={handlePlayPause}
+            className="px-6 py-3 rounded-xl text-sm font-bold transition-all"
+            style={{
+              background: `linear-gradient(135deg, ${setColor}, ${GOLD})`,
+              color: "#050810",
+              boxShadow: `0 4px 16px ${setColor}33`,
+            }}
+          >
+            {isPlaying && !isPaused ? "⏸ Pause" : isPaused ? "▶ Resume" : "▶ Play"}
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentStep === steps.length - 1}
+            className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-25 disabled:cursor-not-allowed"
+            style={{ background: "rgba(255,255,255,0.05)", color: "#CBD5E1", border: "1px solid rgba(255,255,255,0.1)" }}
+          >
+            Next →
+          </button>
+          <button
+            onClick={stopSpeaking}
+            className="px-3 py-2 rounded-xl text-sm transition-all"
+            style={{ background: "rgba(255,255,255,0.05)", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)" }}
+            title="Stop"
+          >
+            ⏹
+          </button>
+          <button
+            onClick={handleReset}
+            className="px-3 py-2 rounded-xl text-sm transition-all"
+            style={{ background: "rgba(255,255,255,0.05)", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)" }}
+            title="Reset"
+          >
+            ↺
+          </button>
+        </div>
+      </div>
+
+      {/* Step List */}
+      <div className="rounded-2xl p-5" style={CARD_STYLE}>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-4">All Steps</p>
+        <div className="space-y-1 max-h-96 overflow-y-auto scrollbar-hide">
+          {steps.map((step, i) => {
+            const isActive = i === currentStep;
+            const isPast = i < currentStep;
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  stopSpeaking();
+                  setCurrentStep(i);
+                  setProgress(((i + 1) / steps.length) * 100);
+                  setTimeout(() => speak(step.prayer), 300);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
+                  isActive ? "bg-amber-500/10 border border-amber-500/30" : isPast ? "opacity-50" : "hover:bg-white/5"
+                }`}
+              >
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                  isActive ? "bg-amber-500 text-black" : isPast ? "bg-amber-500/30 text-amber-400" : "bg-slate-800 text-slate-500"
+                }`}>
+                  {isPast ? "✓" : i + 1}
+                </span>
+                <span className={`text-xs ${isActive ? "text-amber-400" : "text-slate-400"}`}>
+                  {step.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Rosary() {
   const [view, setView] = useState<View>("overview");
   const [mysterySet, setMysterySet] = useState<MarianKey>("joyful");
@@ -391,6 +658,7 @@ export default function Rosary() {
     { key: "prayers", label: "All Prayers" },
     { key: "mysteries", label: "The Mysteries" },
     { key: "beads", label: "Bead Guide" },
+    { key: "pray", label: "Pray" },
   ];
 
   return (
@@ -579,6 +847,9 @@ export default function Rosary() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════ PRAY ═══════════════ */}
+      {view === "pray" && <PrayGuide />}
 
       {/* ═══════════════ BEAD GUIDE ═══════════════ */}
       {view === "beads" && (
