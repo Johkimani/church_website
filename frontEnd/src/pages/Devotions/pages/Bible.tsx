@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import toast from "react-hot-toast";
 import {
   FaArrowLeft,
@@ -13,6 +13,7 @@ import {
   FaBookmark as FaBookmarkSolid,
   FaBars,
 } from "react-icons/fa";
+import { BIBLE_BOOKS, BIBLE_VERSIONS, STATIC_CHAPTERS, getStaticChapter, getStaticBooks, getStaticVersions } from "../data/bibleData";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -157,9 +158,9 @@ const SECTION_HEADINGS: Record<string, string[]> = {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function Bible(): JSX.Element {
-  const [versions, setVersions] = useState<BibleVersionInfo[]>([]);
+  const [versions, setVersions] = useState<BibleVersionInfo[]>(() => getStaticVersions());
   const [version, setVersion] = useState<string>(() => localStorage.getItem("bible-reader-version") || "dra");
-  const [allBooks, setAllBooks] = useState<BookInfo[]>([]);
+  const [allBooks, setAllBooks] = useState<BookInfo[]>(() => getStaticBooks().map(b => ({ code: b.code, name: b.name, testament: b.testament, chapters: b.chapters })));
   const [selectedBook, setSelectedBook] = useState<BookInfo | null>(null);
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [verses, setVerses] = useState<Verse[]>([]);
@@ -187,42 +188,6 @@ export default function Bible(): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const verseOfDay = useMemo(() => getVerseOfTheDay(), []);
-
-  // ── Load versions ──
-  useEffect(() => {
-    const loadVersions = async () => {
-      try {
-        const res = await fetch("/api/v1/bible/versions");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.versions?.length > 0) setVersions(data.versions);
-        }
-      } catch {
-        setVersions([
-          { id: "dra", name: "Catholic Bible", subtitle: "Douay-Rheims", source: "dailybible", testaments: ["OT", "NT", "DC"] },
-          { id: "kjv", name: "King James Version", subtitle: "Authorized 1611", source: "bible-api", testaments: ["OT", "NT"] },
-          { id: "web", name: "Holy Bible", subtitle: "World English Bible", source: "bible-api", testaments: ["OT", "NT"] },
-          { id: "bbe", name: "Good News Bible", subtitle: "Bible in Basic English", source: "bible-api", testaments: ["OT", "NT"] },
-          { id: "asv", name: "American Standard", subtitle: "1901 Edition", source: "bible-api", testaments: ["OT", "NT"] },
-        ]);
-      }
-    };
-    loadVersions();
-  }, []);
-
-  // ── Load books ──
-  useEffect(() => {
-    const loadBooks = async () => {
-      try {
-        const res = await fetch(`/api/v1/bible/books?version=${version}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.books?.length > 0) setAllBooks(data.books);
-        }
-      } catch {}
-    };
-    loadBooks();
-  }, [version]);
 
   // ── Load persisted data ──
   useEffect(() => {
@@ -277,19 +242,17 @@ export default function Bible(): JSX.Element {
   }, [selectedBook, selectedChapter, verses]);
 
   // ── Load chapter ──
-  const loadChapter = useCallback(async (bookCode: string, chapter: number, ver?: string) => {
-    const v = ver || version;
+  const loadChapter = useCallback((bookCode: string, chapter: number) => {
     setLoading(true);
     setError(null);
     setSelectedVerseNum(null);
     try {
-      const res = await fetch(`/api/v1/bible/chapter?book=${bookCode}&chapter=${chapter}&version=${v}`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to load chapter");
+      const staticVerses = getStaticChapter(bookCode, chapter);
+      if (staticVerses) {
+        setVerses(staticVerses);
+      } else {
+        setVerses([]);
       }
-      const data: ChapterData = await res.json();
-      setVerses(data.verses);
       const book = allBooks.find((b) => b.code === bookCode) || null;
       setSelectedBook(book);
       setSelectedChapter(chapter);
@@ -297,7 +260,7 @@ export default function Bible(): JSX.Element {
 
       // Save last read
       if (book) {
-        const lr: LastRead = { bookCode, bookName: book.name, chapter, version: v, timestamp: Date.now() };
+        const lr: LastRead = { bookCode, bookName: book.name, chapter, version, timestamp: Date.now() };
         setLastRead(lr);
         localStorage.setItem("bible-last-read", JSON.stringify(lr));
         saveRecentBook(book);
@@ -316,7 +279,7 @@ export default function Bible(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [version, allBooks, readChapters, recentBooks]);
+  }, [allBooks, readChapters, recentBooks, version]);
 
   // ── Book selection ──
   const handleBookSelect = (book: BookInfo) => {
@@ -366,7 +329,7 @@ export default function Bible(): JSX.Element {
   const handleVersionChange = (newVer: string) => {
     setVersion(newVer);
     localStorage.setItem("bible-reader-version", newVer);
-    if (selectedBook) loadChapter(selectedBook.code, selectedChapter, newVer);
+    if (selectedBook) loadChapter(selectedBook.code, selectedChapter);
   };
 
   // ── Font size ──
