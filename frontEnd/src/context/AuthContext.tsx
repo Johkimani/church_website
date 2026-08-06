@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { LocalStorage } from '../utils';
 import axios from 'axios';
@@ -24,6 +24,7 @@ interface AuthContextType {
   logout: () => void;
   register: () => void;
   isAuthenticated: boolean;
+  refreshSession: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -44,49 +45,63 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return null;
   });
 
-  useEffect(() => {
+  const refreshSession = useCallback(async (): Promise<string | null> => {
     const storedData = LocalStorage.get('userdata');
-    if (!storedData || storedData.status !== 'success') return;
+    if (!storedData || storedData.status !== 'success') return null;
 
-    const tryRefresh = async () => {
-      const token = storedData.accessToken;
-      if (typeof token !== 'string' || token.split('.').length !== 3) {
-        LocalStorage.remove('userdata');
-        setUser(null);
-        return;
+    const token = storedData.accessToken;
+    if (typeof token !== 'string' || token.split('.').length !== 3) {
+      LocalStorage.remove('userdata');
+      setUser(null);
+      return null;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const isExpired = payload.exp * 1000 < Date.now();
+
+      if (!isExpired) {
+        setUser((prev) =>
+          prev && prev.accessToken === storedData.accessToken ? prev : storedData
+        );
+        return storedData.accessToken;
       }
 
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const isExpired = payload.exp * 1000 < Date.now();
-
-        if (!isExpired) return;
-
-        if (!storedData.refreshToken) {
-          LocalStorage.remove('userdata');
-          setUser(null);
-          return;
-        }
-
-        const { data } = await axios.post(`${BASE_URL}/authentication/refresh`, {
-          refreshToken: storedData.refreshToken,
-        });
-
-        const updated = {
-          ...storedData,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken || storedData.refreshToken,
-        };
-        setUser(updated);
-        LocalStorage.set('userdata', updated);
-      } catch {
+      if (!storedData.refreshToken) {
         LocalStorage.remove('userdata');
         setUser(null);
+        return null;
       }
-    };
 
-    tryRefresh();
+      const { data } = await axios.post(`${BASE_URL}/authentication/refresh`, {
+        refreshToken: storedData.refreshToken,
+      });
+
+      const updated = {
+        ...storedData,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken || storedData.refreshToken,
+      };
+      setUser(updated);
+      LocalStorage.set('userdata', updated);
+      return updated.accessToken;
+    } catch {
+      LocalStorage.remove('userdata');
+      setUser(null);
+      return null;
+    }
   }, []);
+
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      refreshSession();
+    }, 10 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [refreshSession]);
 
   const login = (data: UserData) => {
     setUser(data);
@@ -103,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isAuthenticated = !!user && user.status === 'success';
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

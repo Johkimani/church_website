@@ -33,7 +33,13 @@ const verifyToken = async (req, res, next) => {
 
     next();
   } catch (err) {
-    logger.warn(`Invalid token: ${err.message}`);
+    // Routine expiry is handled by the frontend refresh flow (it is expected,
+    // not an attack), so log it at debug level to keep server logs clean.
+    if (err?.name === "TokenExpiredError") {
+      logger.debug(`Expired token (refresh flow): ${err.message}`);
+    } else {
+      logger.warn(`Invalid token: ${err.message}`);
+    }
     return res.status(401).json({ message: err.message });
   }
 };
