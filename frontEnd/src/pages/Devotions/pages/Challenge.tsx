@@ -211,28 +211,28 @@ if (portalStatus === "welcome") {
             </h1>
 
             {/* Subtitle */}
-            <p className="italic text-gray-600 text-base sm:text-lg mb-6 max-w-xl mx-auto leading-relaxed">
+            <p className="italic text-slate-300 text-base sm:text-lg mb-6 max-w-xl mx-auto leading-relaxed">
               Stay consistent. Grow your knowledge. Earn your rewards.
             </p>
 
             {/* Achievement Cards - Stacked on mobile, Grid on desktop */}
             <div className="flex flex-col sm:grid sm:grid-cols-3 gap-6 sm:gap-4 mb-10 items-center">
               {[
-                { icon: "🔥", title: "Consistency", desc: "Build a daily streak", badge: "Streak Master", color: "bg-orange-50 text-orange-900" },
-                { icon: "🧠", title: "Knowledge", desc: "Learn something new", badge: "Thinker", color: "bg-white text-gray-900 border border-gray-100" },
-                { icon: "🏆", title: "Rewards", desc: "Earn recognition", badge: "Champion", color: "bg-yellow-50 text-yellow-900" }
+                { icon: "🔥", title: "Consistency", desc: "Build a daily streak", badge: "Streak Master", color: "bg-[#0a0f1c] text-slate-300 border border-slate-800/50" },
+                { icon: "🧠", title: "Knowledge", desc: "Learn something new", badge: "Thinker", color: "bg-[#0f1526] text-white border border-amber-600/40" },
+                { icon: "🏆", title: "Rewards", desc: "Earn recognition", badge: "Champion", color: "bg-[#0a0f1c] text-slate-300 border border-slate-800/50" }
               ].map((item, idx) => (
                 <div
                   key={idx}
                   className={`flex flex-col justify-center items-center rounded-2xl w-full h-40 sm:h-44 shadow-lg transition-all duration-300
                     ${idx === 1 
-                      ? "sm:scale-110 sm:-translate-y-2 z-20 animate-float shadow-2xl bg-white" 
+                      ? "sm:scale-110 sm:-translate-y-2 z-20 animate-float shadow-2xl border-2 border-amber-600/40" 
                       : ""} ${item.color}`}
                 >
                   <div className="text-4xl animate-bounce mb-2">{item.icon}</div>
                   <p className="italic text-lg font-black tracking-tight">{item.title}</p>
                   <p className="italic text-xs opacity-70 mt-1 px-4 text-center">{item.desc}</p>
-                  <span className="mt-3 px-4 py-1.5 text-[10px] italic font-black rounded-full bg-gray-950 text-white shadow-lg uppercase tracking-widest">
+                  <span className="mt-3 px-4 py-1.5 text-[10px] italic font-black rounded-full bg-amber-600 text-white shadow-lg uppercase tracking-widest">
                     {item.badge}
                   </span>
                 </div>
@@ -240,7 +240,7 @@ if (portalStatus === "welcome") {
             </div>
 
             {/* Info Row */}
-            <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm text-gray-500 italic">
+            <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm text-slate-400 italic">
               <span>{questions.length} Questions</span>
               <span>⏱ 1 Hour</span>
             </div>
@@ -250,8 +250,8 @@ if (portalStatus === "welcome") {
               onClick={handleStartChallenge}
               disabled={questions.length <= 0}
               className="w-full flex items-center justify-center gap-2 px-8 py-3 
-                         bg-gray-700 text-white rounded-lg text-lg font-semibold shadow-md 
-                         hover:shadow-xl hover:scale-105 hover:bg-gray-600 transition-all duration-300 
+                         bg-amber-600 text-white rounded-lg text-lg font-semibold shadow-md 
+                         hover:shadow-xl hover:scale-105 hover:bg-amber-700 transition-all duration-300 
                          disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {questions.length <= 0 ? "No Questions Available" : "Let’s Go!"}
@@ -259,7 +259,7 @@ if (portalStatus === "welcome") {
             </button>
 
             {/* Footer */}
-            <p className="italic text-xs text-gray-400 mt-6">
+            <p className="italic text-xs text-slate-500 mt-6">
               Come back daily to maintain your streak
             </p>
           </div>
@@ -285,25 +285,25 @@ if (portalStatus === "welcome") {
         
         {/* Icon */}
         <div className={`w-16 h-16 mx-auto flex items-center justify-center rounded-full mb-4 
-          ${isTimeout ? "bg-red-100" : "bg-yellow-100"}`}>
+          ${isTimeout ? "bg-red-500/10" : "bg-amber-500/10"}`}>
           {isTimeout ? (
-            <FaLock className="text-2xl text-red-500" />
+            <FaLock className="text-2xl text-red-400" />
           ) : (
-            <FaInbox className="text-2xl text-yellow-500" />
+            <FaInbox className="text-2xl text-amber-400" />
           )}
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold text-white mb-2">
           {title}
         </h2>
 
         {/* Message */}
-        <p className="text-gray-600 mb-6">{message}</p>
+        <p className="text-slate-300 mb-6">{message}</p>
 
         {/* Motivation Box */}
-        <div className="bg-gray-50 border rounded-lg p-4 mb-6 text-sm text-gray-600">
-          <p className="font-medium text-gray-700 mb-1">
+        <div className="bg-[#0a0f1c] border border-slate-800/50 rounded-lg p-4 mb-6 text-sm text-slate-300">
+          <p className="font-medium text-slate-200 mb-1">
             🚀 Keep the momentum going
           </p>
           <p>
@@ -315,15 +315,15 @@ if (portalStatus === "welcome") {
         {/* Button */}
         <button
           onClick={handleReset}
-          className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white py-3 rounded-xl font-semibold 
-          hover:scale-105 transition-transform duration-300"
+          className="w-full flex items-center justify-center gap-2 bg-amber-600 text-white py-3 rounded-xl font-semibold 
+          hover:scale-105 hover:bg-amber-700 transition-all duration-300"
         >
           <FaHome />
           Return Home
         </button>
 
         {/* Footer hint */}
-        <p className="text-xs text-gray-400 mt-4">
+        <p className="text-xs text-slate-500 mt-4">
           New challenges unlock every day
         </p>
       </div>
@@ -342,25 +342,25 @@ if (portalStatus === "welcome") {
         <div className="w-full max-w-2xl p-6">
           {/* Top Bar */}
           <div className="flex justify-between items-center mb-4">
-            <span className="text-sm text-gray-600 font-medium">
+            <span className="text-sm text-slate-300 font-medium">
               Question {currentQuestionIndex + 1} of {questions.length}
             </span>
 
-            <span className="px-3 py-1 text-sm rounded-full bg-red-100 text-red-500 font-semibold">
+            <span className="px-3 py-1 text-sm rounded-full bg-red-500/10 text-red-400 font-semibold">
               ⏱ {timeLeft}s
             </span>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-gray-200 h-2 rounded-full mb-6">
+          <div className="w-full bg-slate-800 h-2 rounded-full mb-6">
             <div
-              className="h-2 bg-gray-900 rounded-full transition-all duration-300"
+              className="h-2 bg-amber-600 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
 
           {/* Question */}
-          <h3 className="text-xl font-semibold text-gray-800 mb-6 leading-relaxed">
+          <h3 className="text-xl font-semibold text-white mb-6 leading-relaxed">
             {currentQuestion.question}
           </h3>
 
@@ -370,11 +370,11 @@ if (portalStatus === "welcome") {
               <button
                 key={index}
                 onClick={() => handleNextQuestion(index)}
-                className="w-full text-left p-4 rounded-xl border border-gray-200 bg-white 
-                hover:bg-gray-50 hover:border-gray-400 
+                className="w-full text-left p-4 rounded-xl border border-slate-800/50 bg-[#0a0f1c] 
+                hover:bg-[#0f1526] hover:border-amber-600/50 
                 transition-all duration-200 shadow-sm"
               >
-                <span className="font-medium text-gray-700">{option}</span>
+                <span className="font-medium text-slate-200">{option}</span>
               </button>
             ))}
           </div>
@@ -394,11 +394,11 @@ if (portalStatus === "welcome") {
             <div className="flex items-center gap-5">
               <div className="text-4xl sm:text-5xl animate-bounce">🏆</div>
               <div>
-                <p className="text-[9px] font-black text-blue-700 uppercase tracking-[0.3em] italic">Devotion Milestone</p>
-                <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter leading-none mb-1">
-                  Score: {score}<span className="text-gray-400">/{questions.length}</span>
+                <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.3em] italic">Devotion Milestone</p>
+                <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tighter leading-none mb-1">
+                  Score: {score}<span className="text-slate-500">/{questions.length}</span>
                 </h2>
-                <p className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] italic">Know the Church</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] italic">Know the Church</p>
               </div>
             </div>
 
@@ -406,7 +406,7 @@ if (portalStatus === "welcome") {
             <div className="w-full flex justify-center sm:justify-start">
               <button
                 onClick={handleReset}
-                className="flex items-center gap-3 bg-gray-900 text-white px-8 py-3.5 rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 transition-all active:scale-95 group"
+                className="flex items-center gap-3 bg-amber-600 text-white px-8 py-3.5 rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-xl hover:bg-amber-700 transition-all active:scale-95 group"
               >
                 Finish Challenge
                 <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -428,17 +428,17 @@ if (portalStatus === "welcome") {
                 >
                   {/* Vertical Question ID Indicator */}
                   <div className="flex items-center gap-3 mb-6">
-                     <span className="text-xs font-black text-gray-500 italic tracking-tighter">QUESTION {String(i + 1).padStart(2, '0')}</span>
-                     <div className={`h-[1px] flex-1 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}></div>
+                     <span className="text-xs font-black text-slate-400 italic tracking-tighter">QUESTION {String(i + 1).padStart(2, '0')}</span>
+                     <div className={`h-[1px] flex-1 ${isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'}`}></div>
                      {isCorrect ? (
-                       <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Mastered</span>
+                       <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Mastered</span>
                      ) : (
-                       <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">Incomplete</span>
+                       <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">Incomplete</span>
                      )}
                   </div>
                   
                   {/* Question Title */}
-                  <h3 className="font-bold text-xl text-gray-800 mb-8 leading-snug max-w-xl">
+                  <h3 className="font-bold text-xl text-white mb-8 leading-snug max-w-xl">
                     {q.question}
                   </h3>
 
@@ -459,26 +459,26 @@ if (portalStatus === "welcome") {
                               ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" 
                               : isUserChoice && !isCorrectAnswer
                                 ? "bg-red-400"
-                                : "bg-gray-200"
+                                : "bg-slate-600"
                           }`}></div>
 
                           <div className="flex flex-col">
                             <span className={`text-sm font-medium transition-colors ${
                               isCorrectAnswer 
-                                ? "text-gray-900 font-bold" 
+                                ? "text-white font-bold" 
                                 : isUserChoice && !isCorrectAnswer
-                                  ? "text-red-600"
-                                  : "text-gray-600"
+                                  ? "text-red-400"
+                                  : "text-slate-300"
                             }`}>
                               {opt}
                             </span>
                             
                             {/* Sub-label */}
                             {isCorrectAnswer && (
-                              <span className="text-[8px] font-black text-green-700 uppercase tracking-widest mt-1">Correct Answer</span>
+                              <span className="text-[8px] font-black text-green-400 uppercase tracking-widest mt-1">Correct Answer</span>
                             )}
                             {isUserChoice && !isCorrectAnswer && (
-                              <span className="text-[8px] font-black text-red-600 uppercase tracking-widest mt-1">Your Selection</span>
+                              <span className="text-[8px] font-black text-red-400 uppercase tracking-widest mt-1">Your Selection</span>
                             )}
                           </div>
                         </div>
@@ -488,8 +488,8 @@ if (portalStatus === "welcome") {
 
                   {/* Minimal Reflection */}
                   {q.explanation && (
-                    <div className="mt-8 pl-6 border-l-2 border-gray-200">
-                      <p className="text-xs text-gray-500 italic leading-relaxed font-semibold">
+                    <div className="mt-8 pl-6 border-l-2 border-slate-800/50">
+                      <p className="text-xs text-slate-400 italic leading-relaxed font-semibold">
                         {q.explanation}
                       </p>
                     </div>
