@@ -106,7 +106,7 @@ export default function Layout() {
         <div className="sticky top-0 h-screen self-start z-20 shrink-0">
           <Sidebar />
         </div>
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 overflow-y-auto">
           <Outlet />
         </main>
       </div>

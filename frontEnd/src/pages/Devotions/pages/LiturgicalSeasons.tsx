@@ -469,7 +469,7 @@ function SeasonCard({ season }: { season: typeof SEASONS[0] }) {
 
 export default function LiturgicalSeasons() {
   return (
-    <div className="w-full min-h-screen bg-[#050810] relative flex flex-col overflow-hidden">
+    <div className="w-full min-h-screen bg-[#050810] relative flex flex-col">
       {/* Spiritual Header */}
       <div className="flex flex-col items-center pt-16 pb-8 bg-gradient-to-b from-[#0a0f1c] to-[#050810] shadow-lg shrink-0">
         <div className="relative mb-6">

@@ -124,7 +124,7 @@ export default function PrayerBook() {
   const theme = CAT_THEME[selectedCategory];
 
   return (
-    <div style={{ minHeight: "100vh", color: "#E2E8F0", position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", color: "#E2E8F0", position: "relative" }}>
       {/* COSMIC SKY BACKGROUND */}
       <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, #020617 0%, #0a0e27 20%, #0f172a 40%, #1a1040 65%, #0c0a1d 85%, #020617 100%)" }} />

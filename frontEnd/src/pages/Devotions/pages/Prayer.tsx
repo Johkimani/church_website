@@ -124,7 +124,7 @@ export default function RosaryTracker() {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full max-w-full overflow-hidden flex flex-col items-center bg-transparent px-3 pt-4 pb-16">
+    <div className="min-h-screen w-full max-w-full flex flex-col items-center bg-transparent px-3 pt-4 pb-16">
       
       {/* 1. Selection (Rigid Header - Optimized) */}
       <header className="w-full shrink-0 flex flex-col items-center space-y-2 mb-2">
