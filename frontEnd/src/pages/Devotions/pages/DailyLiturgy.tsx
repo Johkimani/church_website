@@ -58,10 +58,7 @@ export default function DailyLiturgy() {
           </summary>
           <div className="mt-3 bg-[#0a0f1c] rounded-xl border border-slate-800/50 p-5 text-sm text-slate-300 leading-relaxed">
             <p className="mb-2">
-              The <strong className="text-white">Daily Missal</strong> contains the Scripture readings for each day of the
-            </p> 
-              Catholic liturgical year — the same readings proclaimed at Mass worldwide. Each day typically includes a 
-              First Reading, Responsorial Psalm, and Gospel Reading.
+              The <strong className="text-white">Daily Missal</strong> contains the Scripture readings for each day of the Catholic liturgical year — the same readings proclaimed at Mass worldwide. Each day typically includes a First Reading, Responsorial Psalm, and Gospel Reading.
             </p>
             <p className="mb-2">
               On Sundays and feast days, a <strong className="text-white">Second Reading</strong> is added between the
@@ -69,7 +66,7 @@ export default function DailyLiturgy() {
               <strong className="text-amber-400"> Year B</strong> (Mark), and <strong className="text-amber-400">Year C</strong> (Luke).
             </p>
             <p>
-              Toggle between <strong className="text-emerald-600">English</strong> and <strong className="text-emerald-600">Kiswahili</strong> 
+               Toggle between <strong className="text-amber-400">English</strong> and <strong className="text-amber-400">Kiswahili</strong>
               to read in either language. Each reading includes the official liturgical conclusion 
               ("The word of the Lord" / "Thanks be to God").
             </p>
