@@ -3,6 +3,7 @@ import { FaUserPlus, FaDatabase, FaListUl, FaSearch, FaEnvelope, FaIdCard, FaGra
 import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { apiClient } from '../../../api/axiosInstance';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './Admin.css';
 
@@ -67,23 +68,13 @@ const DatabaseRegistration: React.FC = () => {
                 password: generateTempPassword()
             };
 
-            const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
-            const res = await fetch(`${baseUrl}/api/members`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => null);
-                throw new Error(errorData?.error || `Server responded with ${res.status}`);
-            }
+            const res = await apiClient.post('/members', payload);
 
             setMessage({ type: 'success', text: `Successfully registered ${form.first_name} ${form.last_name} into the database!` });
             setForm(emptyForm());
             refetch();
         } catch (error: any) {
-            setMessage({ type: 'error', text: error.message || 'Failed to inject member into database' });
+            setMessage({ type: 'error', text: error.response?.data?.error || error.message || 'Failed to inject member into database' });
         } finally {
             setIsSubmitting(false);
         }
