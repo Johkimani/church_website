@@ -108,7 +108,7 @@ export default function PrayerBook() {
         );
       }
       if (/^Let us pray/i.test(t)) {
-        return <div key={i} style={{ marginTop: 20, marginBottom: 10, fontStyle: "italic", color: "#C084FC", fontSize: size }}>{t}</div>;
+        return <div key={i} style={{ marginTop: 20, marginBottom: 10, fontStyle: "italic", color: "#D97706", fontSize: size }}>{t}</div>;
       }
       if (/^[A-Z\s]{8,}$/.test(t)) {
         return <div key={i} style={{ textAlign: "center", fontWeight: 700, marginTop: 28, marginBottom: 14, letterSpacing: "0.08em", fontSize: 12, textTransform: "uppercase", color: "#FFFFFF" }}>{t}</div>;
@@ -128,9 +128,9 @@ export default function PrayerBook() {
       {/* COSMIC SKY BACKGROUND */}
       <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, #020617 0%, #0a0e27 20%, #0f172a 40%, #1a1040 65%, #0c0a1d 85%, #020617 100%)" }} />
-        <div style={{ position: "absolute", top: "5%", left: "10%", width: 500, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", filter: "blur(60px)", animation: "nebDrift1 25s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", top: "30%", right: "5%", width: 600, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)", filter: "blur(70px)", animation: "nebDrift2 30s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "10%", left: "30%", width: 450, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(14,165,233,0.08) 0%, transparent 70%)", filter: "blur(50px)", animation: "nebDrift3 20s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", top: "5%", left: "10%", width: 500, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(217,119,6,0.12) 0%, transparent 70%)", filter: "blur(60px)", animation: "nebDrift1 25s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", top: "30%", right: "5%", width: 600, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(217,119,6,0.1) 0%, transparent 70%)", filter: "blur(70px)", animation: "nebDrift2 30s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: "10%", left: "30%", width: 450, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)", filter: "blur(50px)", animation: "nebDrift3 20s ease-in-out infinite" }} />
         <div style={{ position: "absolute", inset: 0, backgroundImage: `
           radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
           radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.5) 0%, transparent 100%),
@@ -217,7 +217,7 @@ export default function PrayerBook() {
           <div style={{ display: "flex", gap: 12 }}>
             {[
               { label: "Prayers", val: CATHOLIC_PRAYERS.length, color: theme.accent },
-              { label: "Categories", val: CATEGORIES.length, color: "#A78BFA" },
+              { label: "Categories", val: CATEGORIES.length, color: "#D97706" },
               { label: "Saved", val: bookmarks.size, color: "#FBBF24" },
             ].map((s) => (
               <div key={s.label} style={{

@@ -1,49 +1,50 @@
 /* ══════════════════════════════════════════════════════════════
    PARCHMENT & GOLD — manuscript-inspired design system
-   Light parchment + candlelit dark mode via CSS variables.
+   Sacred Obsidian & Gold — near-black obsidian surfaces with amber
+   gold accents, matching the Devotions theme.
    Usage: <div className="parchment parchment-bg" data-theme={theme}>
    ══════════════════════════════════════════════════════════════ */
 
 .parchment {
-  /* ── Royal Violet — ivory, charcoal ink, deep liturgical purple ── */
-  --p-bg: #f6f4f9;
-  --p-paper: #ffffff;
-  --p-paper-2: #eeeaf3;
-  --p-wash: #f0edf5;
-  --p-ink: #2a2333;
-  --p-muted: #6b6277;
-  --p-faint: #a49aaf;
-  --p-gold: #5b3a8f;
-  --p-gold-deep: #483071;
-  --p-gold-soft: rgba(91, 58, 143, 0.1);
-  --p-gold-line: rgba(91, 58, 143, 0.38);
-  --p-rule: #e7e1ef;
-  --p-rule-strong: #d2c9df;
-  --p-shadow: rgba(42, 35, 51, 0.1);
-  --p-overlay: rgba(20, 16, 26, 0.55);
+  /* ── Sacred Obsidian & Gold — obsidian, slate ink, amber gold ── */
+  --p-bg: #050810;
+  --p-paper: #0a0f1c;
+  --p-paper-2: #0d1424;
+  --p-wash: #0a0f1c;
+  --p-ink: #f1f5f9;
+  --p-muted: #94a3b8;
+  --p-faint: #64748b;
+  --p-gold: #d97706;
+  --p-gold-deep: #b45309;
+  --p-gold-soft: rgba(217, 119, 6, 0.1);
+  --p-gold-line: rgba(217, 119, 6, 0.35);
+  --p-rule: #1e2536;
+  --p-rule-strong: #2d3750;
+  --p-shadow: rgba(0, 0, 0, 0.55);
+  --p-overlay: rgba(5, 8, 16, 0.75);
 
   --p-serif: "Cormorant Garamond", "Times New Roman", Georgia, serif;
   --p-body: "Lora", Georgia, serif;
   --p-caps: "Cinzel", "Times New Roman", serif;
 }
 
-/* ── Dark: deep violet-charcoal ───────────────────────────── */
+/* ── Dark: richer candlelit obsidian ──────────────────────── */
 .parchment[data-theme="dark"] {
-  --p-bg: #121019;
-  --p-paper: #191627;
-  --p-paper-2: #201c2c;
-  --p-wash: #241f30;
-  --p-ink: #ece7f3;
-  --p-muted: #a49bb8;
-  --p-faint: #6f6684;
-  --p-gold: #a68cd9;
-  --p-gold-deep: #bda9e6;
-  --p-gold-soft: rgba(166, 140, 217, 0.14);
-  --p-gold-line: rgba(166, 140, 217, 0.45);
-  --p-rule: #2b2538;
-  --p-rule-strong: #3a3050;
-  --p-shadow: rgba(0, 0, 0, 0.55);
-  --p-overlay: rgba(8, 5, 13, 0.75);
+  --p-bg: #070a14;
+  --p-paper: #0d1220;
+  --p-paper-2: #111827;
+  --p-wash: #0b101c;
+  --p-ink: #f8fafc;
+  --p-muted: #9aa7bd;
+  --p-faint: #6b7a93;
+  --p-gold: #e0a030;
+  --p-gold-deep: #c2701c;
+  --p-gold-soft: rgba(224, 160, 48, 0.12);
+  --p-gold-line: rgba(224, 160, 48, 0.4);
+  --p-rule: #212a3d;
+  --p-rule-strong: #33405a;
+  --p-shadow: rgba(0, 0, 0, 0.6);
+  --p-overlay: rgba(4, 6, 12, 0.8);
 }
 
 /* ── Surfaces ─────────────────────────────────────────────── */
