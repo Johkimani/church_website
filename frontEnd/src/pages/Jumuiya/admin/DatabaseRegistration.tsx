@@ -19,6 +19,12 @@ interface DatabaseMemberForm {
 const YEAR_OPTIONS = ['1st', '2nd', '3rd', '4th', 'Alumni'];
 const GRADIENT_PRIMARY = 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)';
 
+const generateTempPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const bytes = crypto.getRandomValues(new Uint8Array(10));
+    return Array.from(bytes, b => chars[b % chars.length]).join('');
+};
+
 const emptyForm = (): DatabaseMemberForm => ({
     member_id: '',
     first_name: '',
@@ -58,7 +64,7 @@ const DatabaseRegistration: React.FC = () => {
         try {
             const payload = {
                 ...form,
-                password: "REDACTED"
+                password: generateTempPassword()
             };
 
             const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
