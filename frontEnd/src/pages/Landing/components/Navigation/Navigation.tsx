@@ -23,15 +23,13 @@ function Navigation() {
     navigate("/");
   };
 
-  const navLinks = [
+const navLinks = [
     { name: "Home", path: "/" },
     { name: "Community", path: "/community" },
     { name: "Jumuiya", path: "/jumuiya" },
     { name: "Officials", path: "/officials" },
-    ...(user ? [
-      { name: "Projects", path: "/#projects" },
-      { name: "Activities", path: "/#activities" },
-    ] : []),
+    { name: "Projects", path: "/#projects" },
+    { name: "Activities", path: "/#activities" },
     { name: "Gallery", path: "/#gallery" },
     { name: "Devotion", path: "/devotions" },
   ];
