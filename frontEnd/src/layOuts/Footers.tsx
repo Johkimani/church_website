@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { footerSections, footerSocialMedia } from "./footerRoutes";
+import DeveloperModal from "./DeveloperModal";
 
 const Footers = () => {
   const currentYear = new Date().getFullYear();
   const [hoveredSocial, setHoveredSocial] = useState<number | null>(null);
+  const [devModalOpen, setDevModalOpen] = useState(false);
 
   return (
     <footer style={{ backgroundColor: "#111827", color: "#D1D5DB", padding: "80px 24px 40px" }}>
@@ -96,8 +98,23 @@ const Footers = () => {
             onMouseEnter={(e) => { e.currentTarget.style.color = "#D1D5DB"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "#9CA3AF"; }}
           >Terms</Link>
+          <span style={{ color: "#4B5563" }}>&middot;</span>
+          <button
+            onClick={() => setDevModalOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={devModalOpen}
+            style={{
+              color: "#9CA3AF", background: "none", border: "none", padding: 0, margin: 0,
+              font: "inherit", textTransform: "inherit", letterSpacing: "inherit", fontWeight: "inherit",
+              fontSize: "inherit", cursor: "pointer", transition: "color 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#D1D5DB"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#9CA3AF"; }}
+          >Developers</button>
         </div>
       </div>
+
+      <DeveloperModal open={devModalOpen} onClose={() => setDevModalOpen(false)} />
 
       <style>{`
         @media (max-width: 768px) {

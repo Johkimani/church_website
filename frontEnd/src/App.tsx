@@ -109,6 +109,7 @@ const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
 const DevotionsManager = lazy(() => import("./pages/Admin/pages/DevotionsManager"));
 const DashboardAssetsManager = lazy(() => import("./pages/Admin/pages/DashboardAssetsManager"));
+const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -177,6 +178,7 @@ const App: React.FC = () => {
           <Route path="activity-log" element={<ActivityLog />} />
           <Route path="bookings" element={<AdminBookings />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="developers" element={<DeveloperTeamManager />} />
         </Route>
 
         {/* Order Confirmation (no layout) */}

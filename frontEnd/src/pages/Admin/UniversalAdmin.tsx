@@ -21,6 +21,7 @@ import {
   Shield,
   CalendarCheck,
   Palette,
+  Code2,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -57,6 +58,7 @@ const menuItems = [
   { id: 'attendance-tally', name: 'Attendance Tally', icon: CalendarCheck, path: '/admin/attendance-tally' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
+  { id: 'developers', name: 'Developer Team', icon: Code2, path: '/admin/developers' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' }
 ];
 
