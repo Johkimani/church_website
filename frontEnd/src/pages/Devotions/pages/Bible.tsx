@@ -174,7 +174,7 @@ export default function Bible(): JSX.Element {
   const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
   const [selectedVerseNum, setSelectedVerseNum] = useState<number | null>(null);
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem("bible-font-size") || "18", 10));
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("bible-dark-mode") === "true");
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("bible-dark-mode") !== "false");
   const [paragraphMode, setParagraphMode] = useState(() => localStorage.getItem("bible-paragraph-mode") === "true");
   const [immersiveMode, setImmersiveMode] = useState(false);
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
