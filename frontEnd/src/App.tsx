@@ -185,73 +185,77 @@ const App: React.FC = () => {
         <Route path="/suggestions/unmask/:role/:token" element={<UnmaskApproval />} />
         <Route path="/officials/deletion-approval/:token" element={<DeletionApproval />} />
 
-        {/* Public Routes with Page Layout */}
-        <Route path="/" element={<Pageoulet />}>
-          <Route index element={<Home />} />
-          <Route path="officials" element={<PublicView />} />
-          <Route path="officials/:id" element={<OfficialProfile />} />
-          <Route path="officials/history" element={<PublicHistoryView />} />
+          {/* Public Routes with Page Layout */}
+          <Route path="/" element={<Pageoulet />}>
+            <Route index element={<Home />} />
+            <Route path="officials" element={<PublicView />} />
+            <Route path="officials/:id" element={<OfficialProfile />} />
+            <Route path="officials/history" element={<PublicHistoryView />} />
 
-          {/* Standalone Landing Pages */}
-          <Route path="gallery" element={<GalleryPage />} />
-          <Route path="my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
-          <Route element={<ProjectsProvider><Outlet /></ProjectsProvider>}>
-            <Route path="projects" element={<ProjectsHome />} />
-            <Route path="sacramentals" element={<SacramentalsPage />} />
-            <Route path="t-shirts" element={<TshirtsPage />} />
-            <Route path="chairs" element={<ChairsPage />} />
-            <Route path="instruments" element={<InstrumentsPage />} />
-            <Route path="other-projects" element={<OtherProjectsPage />} />
-            <Route path="activities" element={<ActivitiesPage />} />
-            <Route path="product/:id" element={<ProductDetailsPage />} />
+            {/* Standalone Landing Pages */}
+            <Route path="gallery" element={<GalleryPage />} />
+            <Route path="my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+
+            {/* Projects (Public) */}
+            <Route element={<ProjectsProvider><Outlet /></ProjectsProvider>}>
+              <Route path="projects" element={<ProjectsHome />} />
+              <Route path="sacramentals" element={<SacramentalsPage />} />
+              <Route path="t-shirts" element={<TshirtsPage />} />
+              <Route path="chairs" element={<ChairsPage />} />
+              <Route path="instruments" element={<InstrumentsPage />} />
+              <Route path="other-projects" element={<OtherProjectsPage />} />
+              <Route path="activities" element={<ActivitiesPage />} />
+              <Route path="product/:id" element={<ProductDetailsPage />} />
+            </Route>
+
+            {/* show notification to all */}
+            <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
+
+            {/* Devotions (Public; personal tabs require login) */}
+            <Route
+              path="devotions"
+              element={<Layout />}
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="all-prayers" element={<AllPrayers />} />
+              <Route path="readings" element={<PrayerBook />} />
+              <Route path="prayer" element={<Prayer />} />
+              <Route path="liturgy" element={<LiturgySection />} />
+              <Route path="sacra-liturgia-page" element={<SacraLiturgiaPage />} />
+              <Route path="prayers-of-the-mass" element={<PrayersOfTheMass />} />
+              <Route path="liturgical-seasons" element={<LiturgicalSeasons />} />
+              <Route path="rosary" element={<Rosary />} />
+              <Route path="challenge" element={<ProtectedRoute><Challenge /></ProtectedRoute>} />
+              <Route path="comparison" element={<ProtectedRoute><JumuiComparison /></ProtectedRoute>} />
+              <Route path="progress" element={<ProtectedRoute><MemberDashboard /></ProtectedRoute>} />
+              <Route path="daily-liturgy" element={<DailyLiturgy />} />
+              <Route path="prayer-module" element={<PrayerModule />} />
+              <Route path="prayer-book" element={<PrayerBook />} />
+              <Route path="bible" element={<Bible />} />
+            </Route>
+
+            {/* Jumuiya (Public with persistent provider wrapper to optimize load speed) */}
+            <Route element={<DataProvider><Outlet /></DataProvider>}>
+              <Route path="jumuiya" element={<JumuiyaLanding />} />
+              <Route path="jumuiya/:id" element={<JumuiyaDetail />} />
+            </Route>
+
+            {/* Community Hub with persistent provider wrapper to optimize load speed */}
+            <Route element={<CommunityProvider><Outlet /></CommunityProvider>}>
+              <Route path="community" element={<Community />} />
+              <Route path="community/:moduleId" element={<CommunityDetail />} />
+            </Route>
+
+            {/* Legal Pages */}
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="terms" element={<Terms />} />
+
+            {/* 404 - Catch-all for unmatched routes */}
+            <Route path="/*" element={<NotFound />} />
           </Route>
-          {/* show notification to all */}
-          <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
-          {/* Devotions (Public; personal tabs require login) */}
-          <Route
-            path="devotions"
-            element={<Layout />}
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="all-prayers" element={<AllPrayers />} />
-            <Route path="readings" element={<PrayerBook />} />
-            <Route path="prayer" element={<Prayer />} />
-<Route path="liturgy" element={<LiturgySection />} />
-             <Route path="sacra-liturgia-page" element={<SacraLiturgiaPage />} />
-             <Route path="prayers-of-the-mass" element={<PrayersOfTheMass />} />
-             <Route path="liturgical-seasons" element={<LiturgicalSeasons />} />
-            <Route path="rosary" element={<Rosary />} />
-            <Route path="challenge" element={<ProtectedRoute><Challenge /></ProtectedRoute>} />
-            <Route path="comparison" element={<ProtectedRoute><JumuiComparison /></ProtectedRoute>} />
-            <Route path="progress" element={<ProtectedRoute><MemberDashboard /></ProtectedRoute>} />
-            <Route path="daily-liturgy" element={<DailyLiturgy />} />
-            <Route path="prayer-module" element={<PrayerModule />} />
-            <Route path="prayer-book" element={<PrayerBook />} />
-            <Route path="bible" element={<Bible />} />
-          </Route>
+        </Routes>
+      </Suspense>
+    );
+  };
 
-          {/* Jumuiya (Public with persistent provider wrapper to optimize load speed) */}
-          <Route element={<DataProvider><Outlet /></DataProvider>}>
-            <Route path="jumuiya" element={<JumuiyaLanding />} />
-            <Route path="jumuiya/:id" element={<JumuiyaDetail />} />
-          </Route>
-
-          {/* Community Hub with persistent provider wrapper to optimize load speed */}
-          <Route element={<CommunityProvider><Outlet /></CommunityProvider>}>
-            <Route path="community" element={<Community />} />
-            <Route path="community/:moduleId" element={<CommunityDetail />} />
-          </Route>
-
-          {/* Legal Pages */}
-          <Route path="privacy" element={<Privacy />} />
-          <Route path="terms" element={<Terms />} />
-
-          {/* 404 - Catch-all for unmatched routes */}
-          <Route path="/*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </Suspense>
-  );
-};
-
-export default App;
+  export default App;
