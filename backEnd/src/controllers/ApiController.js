@@ -21,6 +21,18 @@ const TABLE_PRIMARY_KEYS = {
   jumuiya: "group_id",
 };
 
+// Columns that must never be returned through the generic table API
+const SENSITIVE_COLUMNS = ["password", "refresh_token", "password_hash", "reset_token"];
+
+const scrubSensitive = (row) => {
+  if (row && typeof row === "object") {
+    for (const col of SENSITIVE_COLUMNS) {
+      delete row[col];
+    }
+  }
+  return row;
+};
+
 // Get all records from a table
 export const getTableData = async (tableName, queryParams = {}) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
@@ -42,14 +54,14 @@ export const getTableData = async (tableName, queryParams = {}) => {
     query += ` ORDER BY "${sortCol}" DESC`;
 
     const result = await pool.query(query, values);
-    return result.rows;
+    return result.rows.map(scrubSensitive);
   } catch (firstError) {
     // Fallback to unordered if ordering column is missing
     if (firstError.code === '42703') {
       logger.warn(`Falling back to unordered SELECT for "${dbTableName}" - column "${sortCol}" not found`);
       try {
         const fallback = await pool.query(`SELECT * FROM "${dbTableName}"`);
-        return fallback.rows;
+        return fallback.rows.map(scrubSensitive);
       } catch (fallbackError) {
         console.error(`Fallback SELECT also failed for "${dbTableName}":`, fallbackError.message);
         return [];
@@ -91,7 +103,7 @@ export const createRecord = async (tableName, data) => {
     `;
     
     const result = await pool.query(query, values);
-    return result.rows[0];
+    return scrubSensitive(result.rows[0]);
   } catch (error) {
     logger.error(`Error creating record in ${dbTableName}: ${error.message}`);
     console.error(`Error creating record in ${dbTableName}:`, error.message);
@@ -146,7 +158,7 @@ export const updateRecord = async (tableName, id, data) => {
     `;
     
     const result = await pool.query(query, [...values, id]);
-    return result.rows[0];
+    return scrubSensitive(result.rows[0]);
   } catch (error) {
     console.error(`Error updating record in ${dbTableName}:`, error.message);
     throw error;

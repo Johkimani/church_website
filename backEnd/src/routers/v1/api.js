@@ -131,21 +131,14 @@ api.get("/:table", validateTable, requireReadAccess, async (req, res) => {
     let data = await getTableData(table, req.query);
     
     if (table === 'enrollments') {
-      data = data.map(item => {
-        if (['charismatic', 'dancers', 'youth'].includes(item.module_id) || ['charismatic', 'dancers', 'youth'].includes(item.class_id)) {
-          return {
-            id: item.id,
-            fullName: item.full_name,
-            phoneNumber: item.phone,
-            email: item.email || 'N/A',
-            registrationDate: item.enrolled_at,
-            status: item.status,
-            module_id: item.module_id,
-            class_id: item.class_id
-          };
-        }
-        return item;
-      });
+      data = data.map(item => ({
+        id: item.id,
+        fullName: item.full_name || item.name,
+        registrationDate: item.enrolled_at,
+        status: item.status,
+        module_id: item.module_id,
+        class_id: item.class_id
+      }));
     }
 
     logger.debug(`Success fetching from route '/:table'`);
