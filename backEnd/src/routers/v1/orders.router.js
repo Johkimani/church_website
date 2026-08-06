@@ -5,19 +5,20 @@ import {
   confirmPayment,
   updateOrderStatus
 } from "../../controllers/orders.controller.js";
+import verifyToken from "../../middlewares/Tokens.js";
 
 const router = Router();
 
-// CREATE ORDER
+// CREATE ORDER (public checkout)
 router.post("/", createOrder);
 
-// GET ALL ORDERS
-router.get("/", getOrders);
+// GET ALL ORDERS (admin only — contains buyer PII)
+router.get("/", verifyToken, getOrders);
 
-// MANUAL PAYMENT CONFIRMATION BY M-PESA RECEIPT
+// MANUAL PAYMENT CONFIRMATION BY M-PESA RECEIPT (public: user confirms own receipt)
 router.post("/confirm-payment", confirmPayment);
 
-// UPDATE ORDER STATUS
-router.patch("/:id", updateOrderStatus);
+// UPDATE ORDER STATUS (admin only)
+router.patch("/:id", verifyToken, updateOrderStatus);
 
 export default router;

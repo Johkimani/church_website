@@ -1,4 +1,6 @@
 import winston from "winston";
+import path from "path";
+import { fileURLToPath } from "url";
 // Define your severity levels.
 const levels = {
   error: 0,
@@ -45,14 +47,35 @@ const format = winston.format.combine(
   )
 );
 
+// Fixed log directory so logs always land in backEnd/logs regardless of process CWD
+const LOGS_DIR = fileURLToPath(new URL("../../logs", import.meta.url));
+
 // Define which transports the logger must use to print out messages.
-// In this example, we are using three different transports
+// File transports rotate at 10 MB, keeping the latest 5 files each.
 const transports = [
   // Allow the use the console to print the messages
   new winston.transports.Console(),
-  new winston.transports.File({ filename: "logs/error.log", level: "error" }),
-  new winston.transports.File({ filename: "logs/info.log", level: "info" }),
-  new winston.transports.File({ filename: "logs/http.log", level: "http" }),
+  new winston.transports.File({
+    filename: path.join(LOGS_DIR, "error.log"),
+    level: "error",
+    maxsize: 10 * 1024 * 1024,
+    maxFiles: 5,
+    tailable: true,
+  }),
+  new winston.transports.File({
+    filename: path.join(LOGS_DIR, "info.log"),
+    level: "info",
+    maxsize: 10 * 1024 * 1024,
+    maxFiles: 5,
+    tailable: true,
+  }),
+  new winston.transports.File({
+    filename: path.join(LOGS_DIR, "http.log"),
+    level: "http",
+    maxsize: 10 * 1024 * 1024,
+    maxFiles: 5,
+    tailable: true,
+  }),
 ];
 
 // Create the logger instance that has to be exported

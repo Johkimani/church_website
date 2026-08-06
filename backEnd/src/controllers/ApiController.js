@@ -25,7 +25,10 @@ const TABLE_PRIMARY_KEYS = {
 export const getTableData = async (tableName, queryParams = {}) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const sortCol = TABLE_SORT_COLUMNS[tableName] || (dbTableName === 'sub_groups' ? 'group_id' : 'id');
-  const filterKeys = Object.keys(queryParams).filter((key) => queryParams[key] !== undefined && queryParams[key] !== '');
+  const SAFE_IDENTIFIER = /^[a-zA-Z0-9_]+$/;
+  const filterKeys = Object.keys(queryParams)
+    .filter((key) => queryParams[key] !== undefined && queryParams[key] !== '')
+    .filter((key) => SAFE_IDENTIFIER.test(key));
 
   try {
     let query = `SELECT * FROM "${dbTableName}"`;
@@ -37,6 +40,10 @@ export const getTableData = async (tableName, queryParams = {}) => {
         return `"${key}" = $${index + 1}`;
       });
       query += ` WHERE ${filters.join(' AND ')}`;
+    }
+
+    if (!SAFE_IDENTIFIER.test(sortCol)) {
+      throw new Error('Invalid sort column');
     }
 
     query += ` ORDER BY "${sortCol}" DESC`;

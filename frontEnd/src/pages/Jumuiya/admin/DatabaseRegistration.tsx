@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaDatabase, FaListUl, FaSearch, FaEnvelope, FaIdCard, FaGraduationCap, FaArrowLeft, FaEdit, FaTrash, FaCheckCircle, FaTimes, FaUser, FaSpinner, FaFilter, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { LocalStorage } from '../../../utils';
 import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
@@ -62,9 +63,14 @@ const DatabaseRegistration: React.FC = () => {
             };
 
             const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
+            const userdata = LocalStorage.get("userdata");
+            const accessToken = userdata?.accessToken;
             const res = await fetch(`${baseUrl}/api/members`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                },
                 body: JSON.stringify(payload)
             });
 
