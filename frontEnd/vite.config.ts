@@ -1,9 +1,16 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  if (mode === 'production' && !env.VITE_SERVER_URI) {
+    throw new Error(
+      'VITE_SERVER_URI must be set for production builds. Add VITE_SERVER_URI (https://church-website-q8z9.onrender.com/api/v1) to the Vercel environment variables, then rebuild.'
+    )
+  }
+  return {
+    plugins: [
     react({
       babel: {
         plugins: [['babel-plugin-react-compiler']],
@@ -72,4 +79,5 @@ export default defineConfig({
       },
     },
   },
+  }
 })
