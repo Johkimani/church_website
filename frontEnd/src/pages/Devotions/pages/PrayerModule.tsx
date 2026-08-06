@@ -11,11 +11,11 @@ import NovenaTracker from '../components/NovenaTracker';
 import NovenaCalendar from '../components/NovenaCalendar';
 
 const CATEGORIES = {
-  novenas: { label: 'Novenas', icon: '9', color: 'bg-purple-100 text-purple-800' },
-  litanies: { label: 'Litanies', icon: 'L', color: 'bg-blue-100 text-blue-800' },
-  saints: { label: 'Saints', icon: 'S', color: 'bg-amber-100 text-amber-800' },
-  healing: { label: 'Healing', icon: '+', color: 'bg-emerald-100 text-emerald-800' },
-  daily: { label: 'Daily', icon: '/', color: 'bg-amber-100 text-amber-800' },
+  novenas: { label: 'Novenas', icon: '9', color: 'bg-purple-500/10 text-purple-300' },
+  litanies: { label: 'Litanies', icon: 'L', color: 'bg-blue-500/10 text-blue-300' },
+  saints: { label: 'Saints', icon: 'S', color: 'bg-amber-500/10 text-amber-400' },
+  healing: { label: 'Healing', icon: '+', color: 'bg-emerald-500/10 text-emerald-400' },
+  daily: { label: 'Daily', icon: '/', color: 'bg-amber-500/10 text-amber-400' },
 };
 
 type TabKey = 'prayers' | 'calendar';
@@ -114,13 +114,13 @@ export default function PrayerModule() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 pb-12">
+    <div className="min-h-screen bg-transparent pb-12">
       <div className="max-w-6xl mx-auto px-4 py-8">
 
         {/* ═══════════════ HEADER ═══════════════ */}
         <div className="mb-8">
           <h1
-            className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight"
+            className="text-3xl sm:text-4xl font-bold text-white tracking-tight"
             style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif" }}
           >
             Novenas &amp; Litanies
@@ -134,8 +134,8 @@ export default function PrayerModule() {
         <div
           className="inline-flex rounded-xl p-1 mb-8 w-fit"
           style={{
-            background: "rgba(30, 41, 59, 0.04)",
-            border: "1px solid rgba(30, 41, 59, 0.06)",
+            background: "rgba(15, 23, 42, 0.6)",
+            border: "1px solid rgba(71, 85, 105, 0.4)",
           }}
         >
           {([
@@ -188,7 +188,7 @@ export default function PrayerModule() {
 
             {/* CTA banner */}
             {!hasActiveFilters && (
-              <div className="mt-12 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-2xl p-8 text-white text-center">
+              <div className="mt-12 bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 rounded-2xl p-8 text-white text-center">
                 <div className="relative z-10">
                   <h2 className="text-2xl font-bold mb-3">
                     {currentNovena.status === 'active' 
@@ -197,7 +197,7 @@ export default function PrayerModule() {
                         ? 'Coming Soon'
                         : 'Begin Your Prayer Journey'}
                   </h2>
-                  <p className="text-indigo-100 mb-6 max-w-xl mx-auto text-sm">
+                  <p className="text-amber-100 mb-6 max-w-xl mx-auto text-sm">
                     {currentNovena.status === 'active' ? (
                       <>The <strong>{currentNovena.event?.title}</strong> is currently active. Join thousands of faithful praying together.</>
                     ) : currentNovena.status === 'upcoming' ? (
@@ -209,7 +209,7 @@ export default function PrayerModule() {
                   <div className="flex flex-wrap justify-center gap-3">
                     <button
                       onClick={() => setActiveNovena(currentNovena.novena)}
-                      className="bg-white text-indigo-700 px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-50 transition-colors shadow-lg"
+                      className="bg-white text-amber-700 px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-amber-50 transition-colors shadow-lg"
                     >
                       {currentNovena.status === 'active' 
                         ? 'Pray Now' 
