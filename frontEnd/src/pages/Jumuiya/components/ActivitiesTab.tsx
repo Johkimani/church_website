@@ -134,7 +134,7 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor }) => {
                         <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--jumuiya-color)', letterSpacing: '1px' }}>Next Big Event</span>
                     </div>
 
-                    <div className="tab-card glass-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-2xl)', padding: 'var(--space-2xl)' }}>
+                    <div className="tab-card glass-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 'var(--space-2xl)', padding: 'var(--space-2xl)' }}>
                         <div>
                             <div className="badge info" style={{ marginBottom: '16px', background: `${getActivityTypeDetails(featuredActivity.type).color}15`, color: getActivityTypeDetails(featuredActivity.type).color }}>
                                 {getActivityTypeDetails(featuredActivity.type).icon} <span style={{ marginLeft: '6px' }}>{featuredActivity.type}</span>
@@ -159,7 +159,7 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor }) => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '24px', background: 'var(--bg-soft)', borderRadius: 'var(--rm)', padding: 'var(--space-xl)' }}>
-                            <div style={{ display: 'flex', gap: '20px' }}>
+                            <div className="activities-countdown">
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--jumuiya-color)', lineHeight: '1' }}>{timeRemaining?.days || 0}</div>
                                     <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 800, marginTop: '4px', opacity: 0.6 }}>Days</div>

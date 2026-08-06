@@ -38,17 +38,17 @@ export default function JumuiComparison() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
               {data.slice(0, 3).map((j, i) => (
                 <div
                   key={j._id}
-                  className={`p-4 rounded-xl ${
+                  className={`p-3 sm:p-4 rounded-xl min-w-0 ${
                     i === 0 ? "bg-yellow-500" : i === 1 ? "bg-gray-400" : "bg-orange-500"
                   }`}
                 >
-                  <p className="text-sm">#{i + 1}</p>
-                  <h2 className="font-bold">{j._id}</h2>
-                  <p>{j.accuracy?.toFixed(1)}%</p>
+                  <p className="text-xs sm:text-sm">#{i + 1}</p>
+                  <h2 className="font-bold text-xs sm:text-base truncate">{j._id}</h2>
+                  <p className="text-xs sm:text-sm">{j.accuracy?.toFixed(1)}%</p>
                 </div>
               ))}
             </div>

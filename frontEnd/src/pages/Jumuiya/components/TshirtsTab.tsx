@@ -79,11 +79,11 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                     <p className="page-description">Get your official {jumuiyaName} wear and represent us with pride.</p>
                 </div>
                 {/* Sub-tab selection */}
-                <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-soft)', padding: '6px', borderRadius: '40px', marginTop: '16px', border: '1px solid var(--border-light)' }}>
+                <div className="tshirt-subtabs" style={{ background: 'var(--bg-soft)', padding: '6px', borderRadius: '40px', marginTop: '16px', border: '1px solid var(--border-light)' }}>
                     <button
                         onClick={() => setSubTab('order')}
                         style={{
-                            flex: 1, padding: '10px 24px', borderRadius: '30px', border: 'none',
+                            flex: 1, padding: '10px 20px', borderRadius: '30px', border: 'none',
                             background: subTab === 'order' ? jumuiyaColor : 'transparent',
                             color: subTab === 'order' ? 'white' : 'var(--text-secondary)',
                             fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s'
@@ -94,7 +94,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                     <button
                         onClick={() => setSubTab('history')}
                         style={{
-                            flex: 1, padding: '10px 24px', borderRadius: '30px', border: 'none',
+                            flex: 1, padding: '10px 20px', borderRadius: '30px', border: 'none',
                             background: subTab === 'history' ? jumuiyaColor : 'transparent',
                             color: subTab === 'history' ? 'white' : 'var(--text-secondary)',
                             fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s'
@@ -107,10 +107,10 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
 
             <div className="animate-fade-in">
                 {subTab === 'order' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '40px', alignItems: 'start' }}>
+                    <div className="tshirt-order-grid">
                         {/* Left: Product Showcase */}
-                        <div className="tab-card glass-card" style={{ padding: '0', overflow: 'hidden', position: 'sticky', top: '20px' }}>
-                            <div style={{ position: 'relative', height: '500px' }}>
+                        <div className="tab-card glass-card tshirt-showcase-card" style={{ padding: '0', overflow: 'hidden' }}>
+                            <div className="tshirt-showcase-media" style={{ position: 'relative' }}>
                                 <img
                                     src={tshirtMockup}
                                     alt="T-shirtcloseup"
@@ -121,7 +121,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                                     <p style={{ color: 'white', opacity: 0.9, fontSize: '1.1rem' }}>Premium 100% Cotton • Gold Typography • Limited Edition</p>
                                 </div>
                             </div>
-                            <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                            <div className="tshirt-stat-grid" style={{ padding: '32px' }}>
                                 <div style={{ textAlign: 'center', padding: '16px', background: 'var(--bg-soft)', borderRadius: '16px' }}>
                                     <div style={{ fontWeight: 800, fontSize: '1.2rem', color: jumuiyaColor }}>KES 1,200</div>
                                     <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>PRICE PER UNIT</div>
@@ -181,7 +181,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                                             {errors.phone && <small className="error-text tshirt-error-hint">{errors.phone}</small>}
                                         </div>
 
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                        <div className="tshirt-form-row-2col">
                                             <div className="form-field-group">
                                                 <label className="tshirt-form-label">
                                                     <FaRuler style={{ color: jumuiyaColor }} />

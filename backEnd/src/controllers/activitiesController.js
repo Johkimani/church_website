@@ -20,7 +20,7 @@ export const getWeeklyActivities = async (req, res) => {
 
 export const createWeeklyActivity = async (req, res) => {
   console.log("[createWeekly] Request body:", req.body);
-  const { day, time, activity, venue, fare } = req.body;
+  const { day, time, activity, venue, fare, image_url } = req.body;
 
   if (!day || !time || !activity || !venue) {
     return res.status(400).json({
@@ -31,10 +31,10 @@ export const createWeeklyActivity = async (req, res) => {
 
   try {
     const result = await db.query(
-      `INSERT INTO weekly_activities (day, time, activity, venue, fare)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO weekly_activities (day, time, activity, venue, fare, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [day, time, activity, venue, fare || null]
+      [day, time, activity, venue, fare || null, image_url || null]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -46,15 +46,15 @@ export const createWeeklyActivity = async (req, res) => {
 
 export const updateWeeklyActivity = async (req, res) => {
   const { id } = req.params;
-  const { day, time, activity, venue, fare } = req.body;
+  const { day, time, activity, venue, fare, image_url } = req.body;
 
   try {
     const result = await db.query(
       `UPDATE weekly_activities
-       SET day=$1, time=$2, activity=$3, venue=$4, fare=$5
-       WHERE id=$6
+       SET day=$1, time=$2, activity=$3, venue=$4, fare=$5, image_url=$6
+       WHERE id=$7
        RETURNING *`,
-      [day, time, activity, venue, fare || null, id]
+      [day, time, activity, venue, fare || null, image_url || null, id]
     );
 
     if (result.rows.length === 0) {
@@ -88,6 +88,55 @@ export const deleteWeeklyActivity = async (req, res) => {
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Upload a custom image for a weekly activity (Cloudinary URL from multer)
+export const uploadWeeklyImage = async (req, res) => {
+  const { id } = req.params;
+
+  if (!req.file?.path) {
+    return res.status(400).json({
+      success: false,
+      error: "No image file uploaded",
+    });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE weekly_activities SET image_url=$1 WHERE id=$2 RETURNING *`,
+      [req.file.path, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error uploading weekly activity image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Remove the custom image for a weekly activity (falls back to public default)
+export const removeWeeklyImage = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `UPDATE weekly_activities SET image_url=NULL WHERE id=$1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error removing weekly activity image:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -189,7 +238,7 @@ export const getSemesterActivities = async (req, res) => {
 
 export const createSemesterActivity = async (req, res) => {
   console.log("[createSemester] Request body:", req.body);
-  const { title, date_time, venue, description, fare } = req.body;
+  const { title, date_time, venue, description, fare, image_url } = req.body;
 
   if (!title || !date_time || !venue) {
     return res.status(400).json({
@@ -200,10 +249,10 @@ export const createSemesterActivity = async (req, res) => {
 
   try {
     const result = await db.query(
-      `INSERT INTO semester_activities (title, date_time, venue, description, fare)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO semester_activities (title, date_time, venue, description, fare, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [title, date_time, venue, description || "", fare || null]
+      [title, date_time, venue, description || "", fare || null, image_url || null]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -214,15 +263,15 @@ export const createSemesterActivity = async (req, res) => {
 
 export const updateSemesterActivity = async (req, res) => {
   const { id } = req.params;
-  const { title, date_time, venue, description, fare } = req.body;
+  const { title, date_time, venue, description, fare, image_url } = req.body;
 
   try {
     const result = await db.query(
       `UPDATE semester_activities
-       SET title=$1, date_time=$2, venue=$3, description=$4, fare=$5
-       WHERE id=$6
+       SET title=$1, date_time=$2, venue=$3, description=$4, fare=$5, image_url=$6
+       WHERE id=$7
        RETURNING *`,
-      [title, date_time, venue, description, fare || null, id]
+      [title, date_time, venue, description, fare || null, image_url || null, id]
     );
 
     if (result.rows.length === 0) {
@@ -234,6 +283,55 @@ export const updateSemesterActivity = async (req, res) => {
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Upload a custom image for a semester event (Cloudinary URL from multer)
+export const uploadSemesterImage = async (req, res) => {
+  const { id } = req.params;
+
+  if (!req.file?.path) {
+    return res.status(400).json({
+      success: false,
+      error: "No image file uploaded",
+    });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE semester_activities SET image_url=$1 WHERE id=$2 RETURNING *`,
+      [req.file.path, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error uploading semester activity image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Remove the custom image for a semester event
+export const removeSemesterImage = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `UPDATE semester_activities SET image_url=NULL WHERE id=$1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error removing semester activity image:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };

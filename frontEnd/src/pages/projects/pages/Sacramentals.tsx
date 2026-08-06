@@ -258,7 +258,7 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
 
                 {/* Price */}
                 <div className="mt-auto pt-1">
-                    <span className="text-sm sm:text-base font-black text-slate-900">
+                    <span className="block text-xs sm:text-base font-black text-slate-900 truncate">
                         KSh {Number(product.price).toLocaleString()}
                     </span>
                 </div>
@@ -464,7 +464,7 @@ export const Sacramentals = () => {
                     className="bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-blue-50 p-3 sm:p-4 space-y-3"
                 >
                     {/* Search + Sort row */}
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
                             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs sm:text-sm" />
                             <input
@@ -485,7 +485,7 @@ export const Sacramentals = () => {
                         <select
                             value={sortBy}
                             onChange={e => setSortBy(e.target.value as typeof sortBy)}
-                            className="px-3 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
+                            className="w-full sm:w-auto px-3 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
                         >
                             <option value="none">Sort</option>
                             <option value="price-asc">Price: Low → High</option>

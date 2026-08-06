@@ -62,6 +62,7 @@ const menuItems = [
 
 export default function UniversalAdmin() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -70,6 +71,23 @@ export default function UniversalAdmin() {
 
   const toggleMenu = (id: string) => {
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+  };
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) setIsSidebarOpen(false);
+    else setIsSidebarOpen(true);
+  }, [isMobile]);
+
+  const closeSidebarIfMobile = () => {
+    if (isMobile) setIsSidebarOpen(false);
   };
 
   useEffect(() => {
@@ -252,10 +270,20 @@ export default function UniversalAdmin() {
 
   return (
     <div className="h-screen bg-slate-100 flex overflow-hidden">
+      {/* Mobile backdrop */}
+      {isMobile && isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={closeSidebarIfMobile}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`${isSidebarOpen ? 'w-72' : 'w-20'
-          } bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-100 transition-all duration-300 ease-in-out flex flex-col z-50 shadow-2xl`}
+        className={`${isMobile
+            ? `fixed inset-y-0 left-0 w-72 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+            : `${isSidebarOpen ? 'w-72' : 'w-20'} transition-all duration-300 ease-in-out`
+          } bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-slate-100 flex flex-col z-50 shadow-2xl`}
       >
         {/* Sidebar Header */}
         <div className="h-20 flex items-center px-6 border-b border-slate-800 shrink-0">
@@ -281,6 +309,7 @@ export default function UniversalAdmin() {
                 <Link
                   key={item.id}
                   to={item.path!}
+                  onClick={closeSidebarIfMobile}
                   className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isActive
                       ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30'
                       : 'text-slate-300 hover:bg-white/10 hover:text-white'
@@ -328,6 +357,7 @@ export default function UniversalAdmin() {
                         <Link
                           key={child.id}
                           to={child.path}
+                          onClick={closeSidebarIfMobile}
                           className={`flex items-center text-sm px-3 py-2 rounded-xl transition-colors ${
                             isSubActive ? 'bg-blue-500/95 text-white shadow-md shadow-blue-900/30' : 'text-slate-400 hover:text-white hover:bg-white/5'
                           }`}
@@ -414,7 +444,7 @@ export default function UniversalAdmin() {
 
         {/* Dynamic Content */}
         <main className="flex-1 overflow-y-auto bg-slate-100">
-          <div className="p-8 max-w-full">
+          <div className="p-4 md:p-8 max-w-full">
             <div className="admin-panel-card min-h-[calc(100vh-9rem)]">
               {hasAccess ? <Outlet /> : <ArtDeco404 />}
             </div>
