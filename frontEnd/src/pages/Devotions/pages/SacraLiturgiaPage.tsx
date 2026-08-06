@@ -22,7 +22,7 @@ export default function SacraLiturgiaPage() {
 
   return (
     <div className="w-full min-h-screen bg-transparent font-sans">
-      <header className="sticky top-0 z-50 bg-[#0a0f1c]/90 backdrop-blur-xl border-b border-slate-800/50 shadow-sm">
+      <header className="sticky top-16 lg:top-20 z-30 bg-[#0a0f1c]/90 backdrop-blur-xl border-b border-slate-800/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">

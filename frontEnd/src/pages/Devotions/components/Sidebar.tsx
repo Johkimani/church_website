@@ -370,41 +370,37 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 md:hidden flex justify-around py-2 z-50"
-        style={{
-          background: "rgba(11, 15, 27, 0.85)",
-          backdropFilter: "blur(20px) saturate(1.8)",
-          WebkitBackdropFilter: "blur(20px) saturate(1.8)",
-          borderTop: "1px solid rgba(217, 119, 6, 0.1)",
-          boxShadow: "0 -4px 20px rgba(0,0,0,0.4)",
-        }}
-      >
-        {mobileNavItems.map((it) => (
-          <NavLink
-            key={it.to}
-            to={it.to}
-            end={it.to === "/devotions"}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all duration-200 ${
-                isActive ? "" : "text-slate-500"
-              }`
-            }
-            style={({ isActive }) =>
-              isActive
-                ? {
-                    color: "#D97706",
-                    background: "rgba(217, 119, 6, 0.08)",
-                  }
-                : undefined
-            }
-          >
-            <span className="text-xl">{it.icon}</span>
-            <span className="text-[8px] font-medium tracking-wide">{it.label.split(" ")[0]}</span>
-          </NavLink>
-        ))}
-      </nav>
+       {/* Mobile Bottom Navigation */}
+       <nav
+         className="fixed bottom-0 left-0 right-0 md:hidden flex justify-around py-2 z-50"
+         style={{
+           background: "rgba(11, 15, 27, 0.85)",
+           backdropFilter: "blur(20px) saturate(1.8)",
+           WebkitBackdropFilter: "blur(20px) saturate(1.8)",
+           borderTop: "1px solid rgba(217, 119, 6, 0.1)",
+           boxShadow: "0 -4px 20px rgba(0,0,0,0.4)",
+         }}
+       >
+         {mobileNavItems.map((it) => (
+           <NavLink
+             key={it.to}
+             to={it.to}
+             end={it.to === "/devotions"}
+             className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-200 hover:bg-white/5 min-h-[48px] justify-center"
+             style={({ isActive }) =>
+               isActive
+                 ? {
+                     color: "#D97706",
+                     background: "rgba(217, 119, 6, 0.08)",
+                   }
+                 : undefined
+             }
+           >
+             <span className="text-xl">{it.icon}</span>
+             <span className="text-[8px] font-medium tracking-wide">{it.label.split(" ")[0]}</span>
+           </NavLink>
+         ))}
+       </nav>
 
       <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }`}</style>
     </>

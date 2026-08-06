@@ -131,6 +131,22 @@ export const generateAndSaveQuestions = (data: { topic: string }) =>
 export const fetchDailyQuestions = (limit: number = 10) =>
   apiClient.get(`/questions/?limit=${limit}`);
 
+export type AssistantChatHistoryItem = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export const postAssistantChat = (data: {
+  message: string;
+  history?: AssistantChatHistoryItem[];
+  context?: {
+    path?: string;
+    name?: string;
+    role?: string | string[];
+    knowledge?: string;
+  };
+}) => apiClient.post("/assistant/chat", data);
+
 export const fetchJumuiyaComparisonData = () => apiClient.get("/csa/jumuiya-comparison");
 
 // Published stats (admin-controlled snapshots)

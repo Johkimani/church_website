@@ -425,14 +425,14 @@ export default function Bible(): JSX.Element {
       onTouchEnd={selectedBook ? handleTouchEnd : undefined}
     >
       {/* ── Top Bar ── */}
-      <div className={`sticky top-0 z-30 transition-colors duration-300 ${darkMode ? "bg-[#222] border-b border-[#333]" : "bg-white/80 backdrop-blur-md border-b border-stone-200/60"}`}>
+      <div className={`sticky top-16 lg:top-20 z-30 transition-colors duration-300 ${darkMode ? "bg-[#222] border-b border-[#333]" : "bg-white/80 backdrop-blur-md border-b border-stone-200/60"}`}>
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           {selectedBook ? (
             <button
               onClick={() => { setSelectedBook(null); setVerses([]); setShowBookNav(false); setImmersiveMode(false); }}
               className={`flex items-center gap-2 text-sm font-medium ${darkMode ? "text-stone-200 hover:text-white" : "text-stone-700 hover:text-stone-900"}`}
             >
-              <span className="text-lg font-serif font-bold max-w-[45vw] truncate">{selectedBook.name}</span>
+              <span className="text-lg font-serif font-bold max-w-[38vw] truncate">{selectedBook.name}</span>
               <span className={`${darkMode ? "text-amber-400" : "text-amber-600"} font-serif`}>{selectedChapter}</span>
             </button>
           ) : (
@@ -887,7 +887,7 @@ export default function Bible(): JSX.Element {
 
             {/* Verse action bar */}
             {selectedVerseNum !== null && (
-              <div className={`sticky bottom-0 mt-4 rounded-xl border px-4 py-2.5 flex items-center gap-2 ${
+              <div className={`sticky bottom-16 md:bottom-0 mt-4 rounded-xl border px-4 py-2.5 flex items-center gap-2 ${
                 darkMode ? "bg-[#222] border-[#333]" : "bg-white/90 backdrop-blur-sm border-stone-200 shadow-lg"
               }`}>
                 <span className={`text-xs font-semibold mr-1 ${darkMode ? "text-stone-400" : "text-stone-500"}`}>
@@ -911,7 +911,7 @@ export default function Bible(): JSX.Element {
                   {isBookmarked(selectedVerseNum) ? <FaBookmarkSolid className="text-amber-500 text-[10px]" /> : <FaRegBookmark className="text-[10px]" />}
                   {isBookmarked(selectedVerseNum) ? "Saved" : "Save"}
                 </button>
-                <button onClick={() => setSelectedVerseNum(null)} className={`ml-auto p-1.5 ${darkMode ? "text-stone-600" : "text-stone-400"}`}>
+                <button onClick={() => setSelectedVerseNum(null)} className={`ml-auto p-2.5 ${darkMode ? "text-stone-600" : "text-stone-400"}`}>
                   <FaTimes className="text-xs" />
                 </button>
               </div>
@@ -919,16 +919,16 @@ export default function Bible(): JSX.Element {
 
             {/* Bottom nav */}
             {!loading && verses.length > 0 && (
-              <div className={`flex items-center justify-between py-6 mt-4 border-t ${darkMode ? "border-[#333]" : "border-stone-100"}`}>
+              <div className={`flex flex-wrap items-center justify-between gap-3 py-6 mt-4 border-t ${darkMode ? "border-[#333]" : "border-stone-100"}`}>
                 <button
                   onClick={goToPrev}
                   disabled={selectedChapter <= 1}
-                  className={`flex items-center gap-2 text-sm font-medium disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
+                  className={`flex items-center gap-2 text-sm font-medium min-w-0 disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
                     darkMode ? "text-stone-400 hover:text-amber-400" : "text-stone-500 hover:text-amber-700"
                   }`}
                 >
-                  <FaArrowLeft className="text-xs" />
-                  {selectedChapter > 1 ? `${selectedBook.name} ${selectedChapter - 1}` : ""}
+                  <FaArrowLeft className="text-xs flex-shrink-0" />
+                  <span className="truncate">{selectedChapter > 1 ? `${selectedBook.name} ${selectedChapter - 1}` : ""}</span>
                 </button>
                 <div className="relative">
                   <select
@@ -947,12 +947,12 @@ export default function Bible(): JSX.Element {
                 <button
                   onClick={goToNext}
                   disabled={selectedChapter >= selectedBook.chapters}
-                  className={`flex items-center gap-2 text-sm font-medium disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
+                  className={`flex items-center gap-2 text-sm font-medium min-w-0 disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
                     darkMode ? "text-stone-400 hover:text-amber-400" : "text-stone-500 hover:text-amber-700"
                   }`}
                 >
-                  {selectedChapter < selectedBook.chapters ? `${selectedBook.name} ${selectedChapter + 1}` : ""}
-                  <FaArrowRight className="text-xs" />
+                  <span className="truncate">{selectedChapter < selectedBook.chapters ? `${selectedBook.name} ${selectedChapter + 1}` : ""}</span>
+                  <FaArrowRight className="text-xs flex-shrink-0" />
                 </button>
               </div>
             )}

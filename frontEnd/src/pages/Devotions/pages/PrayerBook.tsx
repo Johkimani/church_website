@@ -356,7 +356,7 @@ export default function PrayerBook() {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(290px, 100%), 1fr))", gap: 14 }}>
               {filteredPrayers.map((prayer, idx) => {
                 const isMarked = bookmarks.has(prayer.id);
                 const t = CAT_THEME[prayer.category];

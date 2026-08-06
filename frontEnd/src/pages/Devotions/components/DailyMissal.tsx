@@ -166,8 +166,8 @@ function ReadingCard({ reading, lang }: { reading: Reading; lang: Lang }) {
       }}
     >
       {/* ── Header ── */}
-      <div className={`px-5 py-3 ${cfg.bgLight} border-b ${cfg.border} flex items-center justify-between`}>
-        <div className="flex items-center gap-2">
+      <div className={`px-5 py-3 ${cfg.bgLight} border-b ${cfg.border} flex flex-wrap items-center justify-between gap-2`}>
+        <div className="flex items-center gap-2 min-w-0">
           <span className={`text-[10px] font-bold uppercase tracking-wider ${cfg.color} ${cfg.bgLight} px-2 py-0.5 rounded-full border ${cfg.border}`}>
             {label}
           </span>
@@ -177,9 +177,9 @@ function ReadingCard({ reading, lang }: { reading: Reading; lang: Lang }) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-slate-400 font-medium">~{readMin} min</span>
-          <span className="text-xs font-medium text-slate-500">{reading.citation}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-[10px] text-slate-400 font-medium flex-shrink-0">~{readMin} min</span>
+          <span className="text-xs font-medium text-slate-500 truncate">{reading.citation}</span>
         </div>
       </div>
 

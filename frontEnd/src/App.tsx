@@ -8,6 +8,7 @@ import { Home } from "./pages/Landing/components/page/Home";
 import { PublicRoute, ProtectedRoute } from "./Regulator";
 import { DataProvider } from "./pages/Jumuiya/context/DataContext";
 import Pageoulet from "./assets/Layouts/Pageoulet";
+import RafikiWidget from "./components/assistant/RafikiWidget";
 import Authorisation from "./assets/Layouts/Authorisation";
 import Login from "./pages/Authorization/Login";
 import GalleryPage from "./pages/Landing/components/page/GalleryPage";
@@ -125,6 +126,7 @@ const App: React.FC = () => {
   return (
     <Suspense fallback={<FallBack />}>
       <Toaster position="top-right" reverseOrder={false} />
+      <RafikiWidget />
       <Routes>
         {/* Authentication Routes */}
         <Route

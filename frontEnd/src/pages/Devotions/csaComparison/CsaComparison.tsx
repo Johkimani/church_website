@@ -64,7 +64,7 @@ export default function JumuiComparison() {
               </ResponsiveContainer>
             </div>
 
-            <div className="mt-6 bg-gray-800 rounded-xl overflow-hidden">
+            <div className="mt-6 bg-gray-800 rounded-xl overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-700">
                   <tr>

@@ -311,7 +311,7 @@ export default function Readings() {
       {/* TOOLBAR — search, font size, theme                 */}
       {/* ═══════════════════════════════════════════════════ */}
       <div
-        className="sticky top-0 z-30"
+        className="sticky top-16 lg:top-20 z-30"
         style={{ backgroundColor: "var(--p-bg)", borderBottom: "1px solid var(--p-rule)" }}
       >
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
