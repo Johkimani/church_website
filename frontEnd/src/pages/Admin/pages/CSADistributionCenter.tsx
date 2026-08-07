@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { BASE_URL } from "../../../api/config";
 import {
   Upload, Plus, Trash2, FileSpreadsheet, CheckCircle,
   AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Printer, Edit2, Save,
@@ -157,17 +156,13 @@ export default function CSADistributionCenter() {
   const fetchData = async (year?: string, gender?: string) => {
     setLoadingData(true);
     try {
-      const params = new URLSearchParams();
-      if (year) params.set("academic_year", year);
-      if (gender) params.set("gender", gender);
-      const query = params.toString() ? `?${params.toString()}` : "";
-
-      const [pendingRes, statsRes] = await Promise.all([
-        fetch(`${BASE_URL}/jumuiya-members/csa/pending-members${query}`),
-        fetch(`${BASE_URL}/jumuiya-members/csa/jumuiya-stats?academic_year=${year || ""}`),
+      const [pendingData, statsData] = await Promise.all([
+        memberService.csaGetPendingMembers({
+          academic_year: year || undefined,
+          gender: gender || undefined,
+        }),
+        memberService.csaGetJumuiyaStats({ academic_year: year || undefined }),
       ]);
-      const pendingData = await pendingRes.json();
-      const statsData = await statsRes.json();
       setPendingMembers(pendingData.data || []);
       setJumuiyaStats(statsData.data || null);
       setDistributionDone(false);

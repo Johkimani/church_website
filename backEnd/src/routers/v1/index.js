@@ -71,8 +71,8 @@ router.use("/activities", activitiesPublicRouter);
 router.use("/admin/activities", activitiesAdminRouter);
 
 
-// Jumuiya Member Collection System
-router.use("/jumuiya-members", jumuiyaMemberRouter);
+// Jumuiya Member Collection System (auth: member PII + management writes)
+router.use("/jumuiya-members", verifyToken, jumuiyaMemberRouter);
 
 // Category cards (home page card images)
 router.use("/", categoryCardsRouter);
@@ -80,8 +80,8 @@ router.use("/", categoryCardsRouter);
 // System settings (hire admin numbers, etc.)
 router.use("/settings", settingsRouter);
 
-// Jumuiya members endpoints
-router.use("/jumuiya-members", jumuiyaMembersRouter);
+// Jumuiya members endpoints (auth: member PII + management writes)
+router.use("/jumuiya-members", verifyToken, jumuiyaMembersRouter);
 
 // Attendance tally & analytics (Jumuiya Coordinator)
 router.use("/attendance", attendanceRouter);

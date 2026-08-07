@@ -4,11 +4,12 @@ import {
   upsertCategoryCard,
   deleteCategoryCard,
 } from "../../controllers/categoryCardsController.js";
+import verifyToken from "../../middlewares/Tokens.js";
 
 const router = express.Router();
 
 router.get("/category-cards", getCategoryCards);
-router.post("/category-cards", upsertCategoryCard);
-router.delete("/category-cards/:category", deleteCategoryCard);
+router.post("/category-cards", verifyToken, upsertCategoryCard);
+router.delete("/category-cards/:category", verifyToken, deleteCategoryCard);
 
 export default router;
