@@ -1,9 +1,10 @@
 
 
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useReducer } from "react";
 
 import { useAuth } from "./AuthContext.tsx";
+import { UPLOAD_BASE } from "../api/config";
 
 const parseJwtPayload = (token: string) => {
   try {
@@ -33,7 +34,10 @@ const getSocket = async (token: string | undefined): Promise<ReturnType<typeof i
   }
   try {
     const { io } = await import("socket.io-client");
-    const socketUri = import.meta.env.VITE_SOCKET_URI || 'http://localhost:3001';
+    const socketUri =
+      import.meta.env.VITE_SOCKET_URI ||
+      UPLOAD_BASE ||
+      (import.meta.env.DEV ? "http://localhost:3001" : "");
     return io(socketUri, {
       withCredentials: true,
       auth: { token },
@@ -46,6 +50,19 @@ const getSocket = async (token: string | undefined): Promise<ReturnType<typeof i
 
 // Create a context to hold the socket instance
 type Socket = ReturnType<typeof import("socket.io-client")>;
+
+type SocketState = { socket: Socket | null };
+type SocketAction = { type: "SET_SOCKET"; socket: Socket | null };
+
+const socketReducer = (state: SocketState, action: SocketAction): SocketState => {
+  switch (action.type) {
+    case "SET_SOCKET":
+      return { socket: action.socket };
+    default:
+      return state;
+  }
+};
+
 const SocketContext = createContext<{ socket: Socket | null }>({ socket: null });
 
 // Custom hook to access the socket instance from the context
@@ -54,10 +71,12 @@ const useSocket = () => useContext(SocketContext);
 // SocketProvider component to manage the socket instance and provide it through context
 const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [state, dispatch] = useReducer(socketReducer, { socket: null });
 
   useEffect(() => {
     let cancelled = false;
+    let activeSocket: Socket | null = null;
+
     if (user?.accessToken) {
       getSocket(user.accessToken).then((newSocket) => {
         if (cancelled) {
@@ -65,25 +84,27 @@ const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =
           return;
         }
         if (newSocket) {
-          newSocket.on("connect_error", (err: any) => {
+          activeSocket = newSocket;
+          newSocket.on("connect_error", (err: { message?: string }) => {
             if (err?.message?.toLowerCase?.().includes("jwt expired")) {
               console.warn("Socket connection failed due to expired JWT. Closing socket.");
               newSocket.close();
             }
           });
         }
-        setSocket(newSocket);
+        dispatch({ type: "SET_SOCKET", socket: newSocket });
       });
     } else {
-      setSocket(null);
+      dispatch({ type: "SET_SOCKET", socket: null });
     }
     return () => {
       cancelled = true;
+      activeSocket?.close();
     };
   }, [user]);
 
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider value={{ socket: state.socket }}>
       {children}
     </SocketContext.Provider>
   );
