@@ -43,10 +43,19 @@ export const addSSEClient = (memberId, jumuiyaId, res) => {
 
 /**
  * Remove a client from the registry on disconnect.
+ *
+ * Identity-guarded: only deletes if the current entry still belongs to the
+ * closing response. Without this, superseding a stale connection (see
+ * addSSEClient) would cause the old connection's "close" handler to delete
+ * the NEW connection from the registry, silently killing the active stream.
  */
-export const removeSSEClient = (memberId) => {
-  clients.delete(String(memberId));
-  logger.info(`[SSE] -client member:${memberId} | total:${clients.size}`);
+export const removeSSEClient = (memberId, res) => {
+  const id   = String(memberId);
+  const current = clients.get(id);
+  if (current && current.res === res) {
+    clients.delete(id);
+    logger.info(`[SSE] -client member:${memberId} | total:${clients.size}`);
+  }
 };
 
 /**

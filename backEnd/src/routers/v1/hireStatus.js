@@ -3,6 +3,8 @@ import { db as pool } from "../../Configs/dbConfig.js";
 import logger from "../../logger/winston.js";
 import { sendEmail } from "../../Configs/emailConfig.js";
 import { sendSms } from "../../services/smsService.js";
+import verifyToken from "../../middlewares/Tokens.js";
+import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 
 const router = Router();
 
@@ -43,8 +45,8 @@ router.get("/group/:reference", async (req, res) => {
   }
 });
 
-// PATCH update status for ALL items in a hire group
-router.patch("/group/:reference", async (req, res) => {
+// PATCH update status for ALL items in a hire group (officials only)
+router.patch("/group/:reference", verifyToken, requireRole(...OFFICIAL_ROLES), async (req, res) => {
   const { reference } = req.params;
   const { status, payment_status, admin_notes, payment_method } = req.body;
 
@@ -282,6 +284,7 @@ router.post("/pay-cash/:reference", async (req, res) => {
 });
 
 // POST manually confirm M-Pesa payment for a hire request (fallback when callback fails)
+// Only allowed when an M-Pesa checkout was actually initiated and is still pending.
 router.post("/confirm-payment/:reference", async (req, res) => {
   const { reference } = req.params;
   const { mpesa_receipt } = req.body;
@@ -291,48 +294,108 @@ router.post("/confirm-payment/:reference", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `UPDATE hire_requests SET
-        status = 'paid',
-        payment_status = 'paid',
-        payment_method = 'mpesa',
-        mpesa_receipt = $1,
-        paid_at = CURRENT_TIMESTAMP,
-        updated_at = CURRENT_TIMESTAMP
-       WHERE hire_reference = $2 AND payment_status = 'pending'
-       RETURNING id, hire_reference, status, payment_status, payment_method, mpesa_receipt, paid_at, customer_name, phone_number, item_name, quantity`,
-      [mpesa_receipt, reference]
+    const pending = await pool.query(
+      `SELECT id, mpesa_checkout_id, status, payment_status FROM hire_requests
+       WHERE hire_reference = $1 ORDER BY id DESC LIMIT 1`,
+      [reference]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "No pending hire request found with this reference" });
+    if (pending.rows.length === 0) {
+      return res.status(404).json({ error: "No hire requests found with this reference" });
     }
 
-    logger.info(`Manual M-Pesa confirmation for hire: ${reference}, Receipt: ${mpesa_receipt}`);
+    const hire = pending.rows[0];
 
-    // Send SMS confirmation
-    const hire = result.rows[0];
+    // Idempotent: callback already confirmed this payment
+    if (hire.payment_status === "paid" && hire.status === "paid") {
+      return res.json({
+        reference,
+        payment_status: "paid",
+        payment_method: "mpesa",
+        message: "Payment already confirmed",
+      });
+    }
+
+    // Must have an initiated M-Pesa checkout for this group
+    if (!hire.mpesa_checkout_id) {
+      return res.status(400).json({ error: "No M-Pesa payment initiated for this hire reference" });
+    }
+
+    const mpesaResult = await pool.query(
+      `SELECT status FROM mpesa_request WHERE checkout_id = $1`,
+      [hire.mpesa_checkout_id]
+    );
+    const mpesaStatus = mpesaResult.rows.length > 0 ? mpesaResult.rows[0].status : null;
+
+    if (!mpesaStatus) {
+      return res.status(400).json({ error: "M-Pesa payment record not found for this hire reference" });
+    }
+    if (mpesaStatus !== "pending") {
+      return res.status(400).json({ error: `M-Pesa payment already processed (${mpesaStatus})` });
+    }
+
+    const client = await pool.connect();
     try {
-      const settingsRes = await pool.query(
-        `SELECT key, value FROM system_settings WHERE key IN ('hire_admin_phone', 'hire_pickup_location', 'hire_pickup_instructions')`
+      await client.query("BEGIN");
+
+      const result = await client.query(
+        `UPDATE hire_requests SET
+          status = 'paid',
+          payment_status = 'paid',
+          payment_method = 'mpesa',
+          mpesa_receipt = $1,
+          paid_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+         WHERE hire_reference = $2 AND payment_status = 'pending'
+         RETURNING id, hire_reference, status, payment_status, payment_method, mpesa_receipt, paid_at, customer_name, phone_number, item_name, quantity`,
+        [mpesa_receipt, reference]
       );
-      const settings = {};
-      settingsRes.rows.forEach(r => { settings[r.key] = r.value; });
-      const adminPhone = settings.hire_admin_phone || '0712345678';
-      const pickupLocation = settings.hire_pickup_location || 'the church premises';
-      const pickupInstructions = settings.hire_pickup_instructions || 'We will contact you with the exact pickup time. Call the admin for any inquiries.';
-      const message = `Payment of KES confirmed for ${hire.item_name} × ${hire.quantity} (Ref: ${hire.hire_reference}). Pickup location: ${pickupLocation}. ${pickupInstructions} Admin contact: ${adminPhone}`;
-      await sendSms(message, hire.phone_number);
-    } catch (smsErr) {
-      logger.error(`Failed to send hire confirmation SMS: ${smsErr.message}`);
+
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "No pending hire request found with this reference" });
+      }
+
+      // Keep mpesa_request consistent with the manual confirmation
+      await client.query(
+        `UPDATE mpesa_request SET status = 'paid', mpesa_receipt = $1, result_code = 0, updated_at = CURRENT_TIMESTAMP
+         WHERE checkout_id = $2`,
+        [mpesa_receipt, hire.mpesa_checkout_id]
+      );
+
+      await client.query("COMMIT");
+
+      logger.info(`Manual M-Pesa confirmation for hire: ${reference}, Receipt: ${mpesa_receipt}`);
+
+      // Send SMS confirmation
+      const hireRow = result.rows[0];
+      try {
+        const settingsRes = await pool.query(
+          `SELECT key, value FROM system_settings WHERE key IN ('hire_admin_phone', 'hire_pickup_location', 'hire_pickup_instructions')`
+        );
+        const settings = {};
+        settingsRes.rows.forEach(r => { settings[r.key] = r.value; });
+        const adminPhone = settings.hire_admin_phone || '0712345678';
+        const pickupLocation = settings.hire_pickup_location || 'the church premises';
+        const pickupInstructions = settings.hire_pickup_instructions || 'We will contact you with the exact pickup time. Call the admin for any inquiries.';
+        const message = `Payment of KES confirmed for ${hireRow.item_name} × ${hireRow.quantity} (Ref: ${hireRow.hire_reference}). Pickup location: ${pickupLocation}. ${pickupInstructions} Admin contact: ${adminPhone}`;
+        await sendSms(message, hireRow.phone_number);
+      } catch (smsErr) {
+        logger.error(`Failed to send hire confirmation SMS: ${smsErr.message}`);
+      }
+      res.json({
+        reference,
+        payment_status: 'paid',
+        payment_method: 'mpesa',
+        mpesa_receipt,
+        message: 'Payment confirmed successfully!',
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      logger.error(`Hire confirm payment error: ${error.message}`);
+      res.status(500).json({ error: error.message });
+    } finally {
+      client.release();
     }
-    res.json({
-      reference,
-      payment_status: 'paid',
-      payment_method: 'mpesa',
-      mpesa_receipt,
-      message: 'Payment confirmed successfully!',
-    });
   } catch (error) {
     logger.error(`Hire confirm payment error: ${error.message}`);
     res.status(500).json({ error: error.message });

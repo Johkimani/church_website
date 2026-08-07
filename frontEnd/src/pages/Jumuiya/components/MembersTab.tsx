@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaCheck, FaUsers } from "react-icons/fa";
-import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
+import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
 
@@ -12,10 +12,24 @@ interface MembersTabProps {
 
 const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor = 'var(--primary-color)' }) => {
     const [activeSubTab, setActiveSubTab] = useState<'registered' | 'all'>('registered');
-    const { members, isLoading, error } = useJumuiyaMembers({ 
-        jumuiya_id: jumuiyaId,
-        type: activeSubTab 
-    });
+    const [members, setMembers] = useState<JumuiyaRosterMember[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        if (jumuiyaId) {
+            (async () => {
+                try {
+                    const res = activeSubTab === 'registered'
+                        ? await memberService.getJumuiyaRegistered(jumuiyaId)
+                        : await memberService.getJumuiyaRoster(jumuiyaId);
+                    if (!cancelled && res?.success) setMembers(res.data || []);
+                } catch { /* roster read is best-effort */ }
+                if (!cancelled) setIsLoading(false);
+            })();
+        }
+        return () => { cancelled = true; };
+    }, [jumuiyaId, activeSubTab]);
 
     const displayedMembers = members;
 

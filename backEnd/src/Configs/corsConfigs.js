@@ -1,3 +1,5 @@
+import { ApiError } from "../utils/ApiError.js";
+
 const rawOrigins = process.env.CORS_ORIGIN || "";
 const allowedOrigins = rawOrigins
   .split(",")
@@ -14,7 +16,16 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    callback(new Error("Not allowed by CORS"));
+    // Log the denied origin + current allowlist so misconfigurations are
+    // obvious in the server logs.
+    console.warn(
+      `[CORS] Blocked origin "${origin}". ` +
+        (allowedOrigins.length
+          ? `Allowed: ${allowedOrigins.join(", ")}`
+          : "No origins allowed - set the CORS_ORIGIN environment variable.")
+    );
+
+    callback(new ApiError(403, "Not allowed by CORS"));
   },
   credentials: true,
 };

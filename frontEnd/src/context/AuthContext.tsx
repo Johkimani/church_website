@@ -86,9 +86,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(updated);
       LocalStorage.set('userdata', updated);
       return updated.accessToken;
-    } catch {
-      LocalStorage.remove('userdata');
-      setUser(null);
+    } catch (err) {
+      // Only end the session on a definitive auth rejection (4xx from the
+      // refresh endpoint). Transient network/server failures (backend waking
+      // up, no internet) must not wipe a still-valid session.
+      const isRejected =
+        axios.isAxiosError(err) &&
+        err.response?.status !== undefined &&
+        err.response.status >= 400 &&
+        err.response.status < 500;
+      if (isRejected) {
+        LocalStorage.remove('userdata');
+        setUser(null);
+      }
       return null;
     }
   }, []);

@@ -1,4 +1,14 @@
+import { db } from "../Configs/dbConfig.js";
+
 const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+
+// Any approved official may manage the member/role directory, orders, payments
+// and other admin surfaces. Shared across routers that gate admin endpoints.
+const OFFICIAL_ROLES = [
+  "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
+  "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
+  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
+];
 
 const getUserRoles = (req) => {
   if (!req.user) return [];
@@ -21,19 +31,35 @@ const requireRole = (...allowedRoles) => {
   };
 };
 
+// Normalize jumuiya identifiers for comparison (ignores case, dots, hyphens)
+const normalizeKey = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
 // Enforce that jumuiya-scoped users can only act on their own jumuiya.
-// getTargetJumuiyaId receives the req object and returns the jumuiya_id being acted on.
-const enforceJumuiyaScope = (getTargetJumuiyaId) => (req, res, next) => {
-  if (!req.user) return res.status(401).json({ success: false, message: "Authentication required" });
-  const isGlobal = getUserRoles(req).some(r => GLOBAL_ROLES.includes(String(r).toLowerCase().trim()));
-  if (isGlobal) return next();
-  const targetId = getTargetJumuiyaId(req);
-  const ownId = req.user.jumuiya_id;
-  if (!targetId || !ownId || String(targetId).toLowerCase() !== String(ownId).toLowerCase()) {
+// getTargetJumuiyaId receives the req object and returns the jumuiya_id being
+// acted on. Targets may be a UUID, a slug (e.g. "st-anthony"), or a name — the
+// middleware resolves slugs/names to group_id before comparing to the token.
+const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, message: "Authentication required" });
+    const isGlobal = getUserRoles(req).some(r => GLOBAL_ROLES.includes(String(r).toLowerCase().trim()));
+    if (isGlobal) return next();
+    const targetId = getTargetJumuiyaId(req);
+    const ownId = req.user.jumuiya_id;
+    if (!targetId || !ownId) {
+      return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+    }
+    if (normalizeKey(targetId) === normalizeKey(ownId)) return next();
+    // Target may be a slug or name — resolve to group_id and compare
+    const { rows } = await db.query(
+      "SELECT group_id FROM sub_groups WHERE LOWER(slug) = $1 OR LOWER(group_id) = $1 OR LOWER(name) = $1",
+      [String(targetId).toLowerCase()]
+    );
+    if (rows.length > 0 && normalizeKey(rows[0].group_id) === normalizeKey(ownId)) return next();
+    return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+  } catch (error) {
     return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
   }
-  next();
 };
 
-export { requireRole, enforceJumuiyaScope };
+export { requireRole, enforceJumuiyaScope, OFFICIAL_ROLES };
 export default requireRole;

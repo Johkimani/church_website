@@ -109,7 +109,7 @@ router.get("/", async (req, res) => {
   // ── 9. Clean up on client disconnect ────────────────────────────────────
   req.on("close", () => {
     clearInterval(pingInterval);
-    removeSSEClient(memberId);
+    removeSSEClient(memberId, res);
   });
 });
 

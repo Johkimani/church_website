@@ -1,11 +1,10 @@
 
 
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useEffect, useState } from "react";
-
-import socketio from "socket.io-client";
+import React, { createContext, useContext, useEffect, useReducer } from "react";
 
 import { useAuth } from "./AuthContext.tsx";
+import { UPLOAD_BASE } from "../api/config";
 
 const parseJwtPayload = (token: string) => {
   try {
@@ -23,7 +22,7 @@ const isJwtExpired = (token: string) => {
 };
 
 // Function to establish a socket connection with authorization token
-const getSocket = (token: string | undefined): ReturnType<typeof socketio> | null => { 
+const getSocket = async (token: string | undefined): Promise<ReturnType<typeof import("socket.io-client")> | null> => {
   if (!token) return null;
   // Basic JWT format check (3 parts separated by dots). Prevent connecting with malformed tokens.
   if (typeof token === 'string' && token.split('.').length !== 3) {
@@ -34,8 +33,12 @@ const getSocket = (token: string | undefined): ReturnType<typeof socketio> | nul
     return null;
   }
   try {
-    const socketUri = import.meta.env.VITE_SOCKET_URI || 'http://localhost:3001';
-    return socketio(socketUri, {
+    const { io } = await import("socket.io-client");
+    const socketUri =
+      import.meta.env.VITE_SOCKET_URI ||
+      UPLOAD_BASE ||
+      (import.meta.env.DEV ? "http://localhost:3001" : "");
+    return io(socketUri, {
       withCredentials: true,
       auth: { token },
     });
@@ -46,7 +49,21 @@ const getSocket = (token: string | undefined): ReturnType<typeof socketio> | nul
 };
 
 // Create a context to hold the socket instance
-const SocketContext = createContext<{ socket: ReturnType<typeof socketio> | null }>({ socket: null });
+type Socket = ReturnType<typeof import("socket.io-client")>;
+
+type SocketState = { socket: Socket | null };
+type SocketAction = { type: "SET_SOCKET"; socket: Socket | null };
+
+const socketReducer = (state: SocketState, action: SocketAction): SocketState => {
+  switch (action.type) {
+    case "SET_SOCKET":
+      return { socket: action.socket };
+    default:
+      return state;
+  }
+};
+
+const SocketContext = createContext<{ socket: Socket | null }>({ socket: null });
 
 // Custom hook to access the socket instance from the context
 const useSocket = () => useContext(SocketContext);
@@ -54,30 +71,40 @@ const useSocket = () => useContext(SocketContext);
 // SocketProvider component to manage the socket instance and provide it through context
 const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [socket, setSocket] = useState<ReturnType<typeof socketio> | null>(null);
+  const [state, dispatch] = useReducer(socketReducer, { socket: null });
 
   useEffect(() => {
+    let cancelled = false;
+    let activeSocket: Socket | null = null;
+
     if (user?.accessToken) {
-      const newSocket = getSocket(user.accessToken);
-      if (newSocket) {
-        newSocket.on("connect_error", (err: any) => {
-          if (err?.message?.toLowerCase?.().includes("jwt expired")) {
-            console.warn("Socket connection failed due to expired JWT. Closing socket.");
-            newSocket.close();
-          }
-        });
-      }
-      setSocket(newSocket);
-      return () => {
-        newSocket?.close();
-      };
+      getSocket(user.accessToken).then((newSocket) => {
+        if (cancelled) {
+          newSocket?.close();
+          return;
+        }
+        if (newSocket) {
+          activeSocket = newSocket;
+          newSocket.on("connect_error", (err: { message?: string }) => {
+            if (err?.message?.toLowerCase?.().includes("jwt expired")) {
+              console.warn("Socket connection failed due to expired JWT. Closing socket.");
+              newSocket.close();
+            }
+          });
+        }
+        dispatch({ type: "SET_SOCKET", socket: newSocket });
+      });
     } else {
-      setSocket(null);
+      dispatch({ type: "SET_SOCKET", socket: null });
     }
+    return () => {
+      cancelled = true;
+      activeSocket?.close();
+    };
   }, [user]);
 
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider value={{ socket: state.socket }}>
       {children}
     </SocketContext.Provider>
   );
