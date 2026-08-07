@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { Send, Sparkles, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { postAssistantChat } from "../../api/axiosInstance";
 import {
@@ -124,15 +124,26 @@ export default function RafikiWidget() {
 
   return (
     <>
-      {/* Floating action button */}
+      <style>{`
+        @keyframes rafiki-pop {
+          from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .rafiki-panel { animation: rafiki-pop 0.25s ease-out; transform-origin: top right; }
+      `}</style>
+      {/* Top-right trigger pill */}
       {!open && !hideOnLogin && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Open Rafiki assistant"
-          className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-[9999] w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+          className="fixed top-20 right-4 md:top-24 md:right-6 z-[9999] inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-transform"
         >
-          <MessageCircle className="w-7 h-7" />
-          <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-white" />
+          <Sparkles className="w-4 h-4" />
+          Ask Rafiki
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400" />
+          </span>
         </button>
       )}
 
@@ -141,7 +152,7 @@ export default function RafikiWidget() {
         <div
           role="dialog"
           aria-label="Rafiki assistant"
-          className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-[9999] w-[calc(100vw-2rem)] max-w-sm h-[min(600px,calc(100dvh-9rem))] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
+          className="rafiki-panel fixed top-20 right-4 md:top-24 md:right-6 z-[9999] w-[calc(100vw-2rem)] max-w-sm h-[min(600px,calc(100dvh-9rem))] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white">
