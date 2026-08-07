@@ -31,7 +31,7 @@ function AboutSection() {
 
           <div className="flex flex-col items-center text-center relative z-10">
             <div className="mb-8 p-2.5 bg-gradient-to-br from-[#2563eb] via-[#3b82f6] to-[#60a5fa] rounded-full shadow-lg shadow-blue-500/10 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-               <img src="/images/st-thomas-berruguete.jpg" alt="St. Thomas Aquinas" className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover object-top" />
+               <img src="/images/st-thomas-icon.jpg" alt="St. Thomas Aquinas" className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover object-top" />
             </div>
             <span className="inline-block px-3 py-1 bg-blue-50 text-blue-500 rounded-full text-[9px] font-black tracking-[0.2em] uppercase mb-3">PURPOSE</span>
             <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight group-hover:text-primary transition-colors duration-300">
@@ -53,7 +53,7 @@ function AboutSection() {
 
           <div className="flex flex-col items-center text-center relative z-10">
             <div className="mb-8 p-2.5 bg-gradient-to-br from-[#059669] via-[#10b981] to-[#34d399] rounded-full shadow-lg shadow-emerald-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-               <img src="/images/st-thomas-delcastillo.jpg" alt="St. Thomas Aquinas" className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover object-top" />
+               <img src="/images/st-thomas-icon.jpg" alt="St. Thomas Aquinas" className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover object-top" />
             </div>
             <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-500 rounded-full text-[9px] font-black tracking-[0.2em] uppercase mb-3">FUTURE</span>
             <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight group-hover:text-primary transition-colors duration-300">
