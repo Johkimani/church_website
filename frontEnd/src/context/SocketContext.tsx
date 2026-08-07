@@ -3,8 +3,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import socketio from "socket.io-client";
-
 import { useAuth } from "./AuthContext.tsx";
 
 const parseJwtPayload = (token: string) => {
@@ -23,7 +21,7 @@ const isJwtExpired = (token: string) => {
 };
 
 // Function to establish a socket connection with authorization token
-const getSocket = (token: string | undefined): ReturnType<typeof socketio> | null => { 
+const getSocket = async (token: string | undefined): Promise<ReturnType<typeof import("socket.io-client")> | null> => {
   if (!token) return null;
   // Basic JWT format check (3 parts separated by dots). Prevent connecting with malformed tokens.
   if (typeof token === 'string' && token.split('.').length !== 3) {
@@ -34,8 +32,9 @@ const getSocket = (token: string | undefined): ReturnType<typeof socketio> | nul
     return null;
   }
   try {
+    const { io } = await import("socket.io-client");
     const socketUri = import.meta.env.VITE_SOCKET_URI || 'http://localhost:3001';
-    return socketio(socketUri, {
+    return io(socketUri, {
       withCredentials: true,
       auth: { token },
     });
@@ -46,7 +45,8 @@ const getSocket = (token: string | undefined): ReturnType<typeof socketio> | nul
 };
 
 // Create a context to hold the socket instance
-const SocketContext = createContext<{ socket: ReturnType<typeof socketio> | null }>({ socket: null });
+type Socket = ReturnType<typeof import("socket.io-client")>;
+const SocketContext = createContext<{ socket: Socket | null }>({ socket: null });
 
 // Custom hook to access the socket instance from the context
 const useSocket = () => useContext(SocketContext);
@@ -54,26 +54,32 @@ const useSocket = () => useContext(SocketContext);
 // SocketProvider component to manage the socket instance and provide it through context
 const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [socket, setSocket] = useState<ReturnType<typeof socketio> | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     if (user?.accessToken) {
-      const newSocket = getSocket(user.accessToken);
-      if (newSocket) {
-        newSocket.on("connect_error", (err: any) => {
-          if (err?.message?.toLowerCase?.().includes("jwt expired")) {
-            console.warn("Socket connection failed due to expired JWT. Closing socket.");
-            newSocket.close();
-          }
-        });
-      }
-      setSocket(newSocket);
-      return () => {
-        newSocket?.close();
-      };
+      getSocket(user.accessToken).then((newSocket) => {
+        if (cancelled) {
+          newSocket?.close();
+          return;
+        }
+        if (newSocket) {
+          newSocket.on("connect_error", (err: any) => {
+            if (err?.message?.toLowerCase?.().includes("jwt expired")) {
+              console.warn("Socket connection failed due to expired JWT. Closing socket.");
+              newSocket.close();
+            }
+          });
+        }
+        setSocket(newSocket);
+      });
     } else {
       setSocket(null);
     }
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   return (
