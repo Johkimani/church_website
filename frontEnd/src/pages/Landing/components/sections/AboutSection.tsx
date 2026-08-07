@@ -1,8 +1,8 @@
 function AboutSection() {
   return (
     <section id="about" className="max-w-7xl mx-auto px-4 py-12 md:px-6 md:py-20 lg:px-8 relative">
-      {/* Catholic background - Christ painting, clearly visible, keeps text readable */}
-      <div className="absolute inset-0 -z-20 bg-[url('/images/christ.jpg')] bg-cover bg-center opacity-50" aria-hidden="true" />
+      {/* Catholic background - Eucharistic adoration, clearly visible, keeps text readable */}
+      <div className="absolute inset-0 -z-20 bg-[url('/images/eucharist.jpg')] bg-cover bg-center opacity-50" aria-hidden="true" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/90 via-white/50 to-white/90" aria-hidden="true" />
 
       {/* Background ambient light - Subtler near-white */}
