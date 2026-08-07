@@ -129,14 +129,14 @@ export default function RafikiWidget() {
           from { opacity: 0; transform: translateY(-10px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .rafiki-panel { animation: rafiki-pop 0.25s ease-out; transform-origin: top right; }
+        .rafiki-panel { animation: rafiki-pop 0.25s ease-out; transform-origin: bottom right; }
       `}</style>
-      {/* Top-right trigger pill */}
+      {/* Bottom-right trigger pill */}
       {!open && !hideOnLogin && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Open Rafiki assistant"
-          className="fixed top-20 right-4 md:top-24 md:right-6 z-[9999] inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-transform"
+          className="fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[9999] inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-transform"
         >
           <Sparkles className="w-4 h-4" />
           Ask Rafiki
@@ -152,7 +152,7 @@ export default function RafikiWidget() {
         <div
           role="dialog"
           aria-label="Rafiki assistant"
-          className="rafiki-panel fixed top-20 right-4 md:top-24 md:right-6 z-[9999] w-[calc(100vw-2rem)] max-w-sm h-[min(600px,calc(100dvh-9rem))] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
+          className="rafiki-panel fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[9999] w-[calc(100vw-2rem)] max-w-sm h-[min(600px,calc(100dvh-5rem))] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white">
