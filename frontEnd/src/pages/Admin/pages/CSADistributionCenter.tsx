@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { BASE_URL } from "../../../api/config";
 import {
   Upload, Plus, Trash2, FileSpreadsheet, CheckCircle,
   AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Printer, Edit2, Save,
@@ -162,8 +163,8 @@ export default function CSADistributionCenter() {
       const query = params.toString() ? `?${params.toString()}` : "";
 
       const [pendingRes, statsRes] = await Promise.all([
-        fetch(`/api/v1/jumuiya-members/csa/pending-members${query}`),
-        fetch(`/api/v1/jumuiya-members/csa/jumuiya-stats?academic_year=${year || ""}`),
+        fetch(`${BASE_URL}/jumuiya-members/csa/pending-members${query}`),
+        fetch(`${BASE_URL}/jumuiya-members/csa/jumuiya-stats?academic_year=${year || ""}`),
       ]);
       const pendingData = await pendingRes.json();
       const statsData = await statsRes.json();

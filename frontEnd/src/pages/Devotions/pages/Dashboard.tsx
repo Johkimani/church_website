@@ -114,6 +114,9 @@ export default function Dashboard() {
   const [greeting, setGreeting] = useState("");
   const [quote, setQuote] = useState(0);
 
+  // "My Progress" is personal — hide it for logged-out visitors.
+  const cards = CARDS.filter((card) => card.to !== "progress" || !!user);
+
   useEffect(() => {
     const h = new Date().getHours();
     if (h < 12) setGreeting("Good Morning");
@@ -274,7 +277,7 @@ export default function Dashboard() {
 
       {/* ═══════════════ 5 CARD GRID ═══════════════ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-        {CARDS.map((card) => (
+        {cards.map((card) => (
           <Link key={card.to} to={card.to} className="block group">
             <div
               className="rounded-2xl relative overflow-hidden transition-all duration-300"

@@ -1,27 +1,34 @@
 import axios from 'axios';
 import logger from '../logger/winston.js';
 
-const PING_URL = 'https://csa-church-website-rosy.vercel.app/';
-const INTERVAL_MS = 15 * 60 * 1000; // 13 minutes
+const PING_URLS = [
+    // Self-ping to keep the Render instance warm while it is awake
+    'https://church-website-q8z9.onrender.com/health',
+    // Frontend alive check
+    'https://csakyu.com/',
+];
+const INTERVAL_MS = 13 * 60 * 1000; // 13 minutes
 
 export const startKeepAliveWorker = () => {
-    logger.info(`🚀 Keep-alive worker started. Pinging ${PING_URL} every 13 minutes.`);
+    logger.info(`🚀 Keep-alive worker started. Pinging ${PING_URLS.join(', ')} every 13 minutes.`);
 
     // Initial ping after 30 seconds to allow server to fully settle
     setTimeout(() => {
-        pingServer();
+        pingServers();
     }, 30000);
 
     setInterval(() => {
-        pingServer();
+        pingServers();
     }, INTERVAL_MS);
 };
 
-const pingServer = async () => {
-    try {
-        const response = await axios.get(PING_URL);
-        logger.debug(`📡 Keep-alive ping successful: ${response.status} ${response.statusText}`);
-    } catch (error) {
-        logger.warn(`⚠️ Keep-alive ping failed for ${PING_URL}: ${error.message}`);
+const pingServers = async () => {
+    for (const url of PING_URLS) {
+        try {
+            const response = await axios.get(url);
+            logger.debug(`📡 Keep-alive ping successful: ${response.status} ${response.statusText} -> ${url}`);
+        } catch (error) {
+            logger.warn(`⚠️ Keep-alive ping failed for ${url}: ${error.message}`);
+        }
     }
 };
