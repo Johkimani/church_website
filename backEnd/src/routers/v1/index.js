@@ -61,7 +61,7 @@ router.use("/orders", ordersRouter);
 
 router.use("/questions", verifyToken, QuestionsRoutes);
 router.use("/files", verifyToken, uploadMedia);
-router.use("/notifications", verifyToken, notificationRoutes);
+router.use("/notifications", notificationRoutes);
 router.use("/csa", verifyToken, JumuiComparisonRoutes);
 // Slider and config endpoints for frontend banners
 router.use("/", sliderRoutes);
