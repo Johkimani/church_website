@@ -34,8 +34,7 @@ export const getAllJumuiyaData = async (req, res) => {
         albumsRes,
         imagesRes,
         notificationsRes,
-        tshirtOrdersRes,
-        membersRes
+        tshirtOrdersRes
     ] = await Promise.all([
         pool.query("SELECT * FROM jumuiya_meeting_schedule WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_officials WHERE category = ANY($1) AND status = 'active'", [jumuiyaNames]),
@@ -48,8 +47,7 @@ export const getAllJumuiyaData = async (req, res) => {
         pool.query("SELECT * FROM jumuiya_gallery_albums WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_gallery_images ORDER BY sort_order ASC"), // images have album_id
         pool.query("SELECT * FROM jumuiya_notifications WHERE jumuiya_id = ANY($1) ORDER BY posted_at DESC", [jumuiyaIds]),
-        pool.query("SELECT * FROM jumuiya_tshirt_orders WHERE jumuiya_id = ANY($1) ORDER BY submitted_at DESC", [jumuiyaIds]),
-        pool.query("SELECT * FROM members WHERE jumuiya_id = ANY($1)", [jumuiyaIds])
+        pool.query("SELECT * FROM jumuiya_tshirt_orders WHERE jumuiya_id = ANY($1) ORDER BY submitted_at DESC", [jumuiyaIds])
     ]);
 
     // Fast lookups
@@ -61,7 +59,9 @@ export const getAllJumuiyaData = async (req, res) => {
     const groupedNotifications = groupById(notificationsRes.rows, 'jumuiya_id');
     const groupedSocial_v2 = groupById(socialMediaRes.rows, 'jumuiya_id'); // Re-using just in case
     const groupedTshirts = groupById(tshirtOrdersRes.rows, 'jumuiya_id');
-    const groupedMembers = groupById(membersRes.rows, 'jumuiya_id'); // Reverted to jumuiya_id
+    
+    // Note: member PII is intentionally NOT included in this public payload.
+    // Member directories are served by the authenticated /jumuiya-members routes.
     
     // Group albums map and then attach images
     const imagesByAlbum = groupBy(imagesRes.rows, 'album_id');
@@ -145,15 +145,9 @@ export const getAllJumuiyaData = async (req, res) => {
             submittedAt: ts.submitted_at ? new Date(ts.submitted_at).toISOString() : new Date().toISOString()
         }));
 
-        // Form members
-        const members = (groupedMembers[jId] || []).map(m => ({
-            id: m.member_id,
-            name: `${m.first_name} ${m.last_name}`,
-            year: m.year_of_study || '',
-            email: m.email || '',
-            phone: m.phone || '',
-            isRegistered: !!m.jumuiya_id
-        }));
+        // Form members (aggregate count only — full member records carry PII and
+        // are intentionally excluded from this public endpoint)
+        const members = [];
 
         return {
             id: sg.slug,

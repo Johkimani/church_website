@@ -1,5 +1,30 @@
 import { apiClient } from "./axiosInstance";
 
+export interface JumuiyaRosterMember {
+  id: string;
+  member_id?: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  year?: string;
+  email?: string;
+  phone?: string;
+  gender?: string;
+  course?: string;
+  jumuiya_id?: string;
+  jumuiya_name?: string;
+  is_registered?: boolean;
+  is_current_jumuiya?: boolean;
+  sem_1_reg?: boolean;
+  sem_2_reg?: boolean;
+  sem_3_reg?: boolean;
+  sem_4_reg?: boolean;
+  sem_5_reg?: boolean;
+  sem_6_reg?: boolean;
+  sem_7_reg?: boolean;
+  sem_8_reg?: boolean;
+}
+
 const BASE = (jumuiyaId: string) => `/jumuiya-members/${jumuiyaId}`;
 
 export const memberService = {
@@ -55,6 +80,13 @@ export const memberService = {
 
   reassignMember: (jumuiyaId: string, groupId: number, memberId: number) =>
     apiClient.patch(`${BASE(jumuiyaId)}/groups/${groupId}/reassign`, { member_id: memberId }).then(r => r.data),
+
+  // ── Jumuiya roster (any authenticated member of that jumuiya — server-scoped) ──
+  getJumuiyaRoster: (jumuiya_id: string) =>
+    apiClient.get(`/jumuiya-members`, { params: { jumuiya_id } }).then(r => r.data),
+
+  getJumuiyaRegistered: (jumuiya_id: string) =>
+    apiClient.get(`/jumuiya-members/registered`, { params: { jumuiya_id } }).then(r => r.data),
 
   // ── Members ──
   getMembers: (jumuiyaId: string) =>

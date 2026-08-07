@@ -1,11 +1,10 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { FaDownload, FaCheckCircle, FaStamp, FaUniversity, FaIdCard, FaEnvelope, FaSpinner, FaCheck } from 'react-icons/fa';
 import { useAuth } from '../../../context/AuthContext';
-import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
+import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { memberService } from '../../../api/jumuiyaMemberService';
 
 interface StampCardProps {
     jumuiyaId: string;
@@ -19,10 +18,25 @@ const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"]
 
 const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, latestSemester, onClose }) => {
     const { user } = useAuth();
-    const { members, isLoading } = useJumuiyaMembers();
+    const [members, setMembers] = useState<JumuiyaRosterMember[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const cardRef = useRef<HTMLDivElement>(null);
     const [sendingEmail, setSendingEmail] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        if (jumuiyaId) {
+            (async () => {
+                try {
+                    const res = await memberService.getJumuiyaRoster(jumuiyaId);
+                    if (!cancelled && res?.success) setMembers(res.data || []);
+                } catch { /* falls back to demo record below */ }
+                if (!cancelled) setIsLoading(false);
+            })();
+        }
+        return () => { cancelled = true; };
+    }, [jumuiyaId]);
 
     const memberRecord = members.find(m => m.id === user?.member_id && m.jumuiya_id === jumuiyaId);
     const isDemo = !memberRecord;
