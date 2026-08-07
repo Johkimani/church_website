@@ -1,9 +1,9 @@
 function AboutSection() {
   return (
     <section id="about" className="max-w-7xl mx-auto px-4 py-12 md:px-6 md:py-20 lg:px-8 relative">
-      {/* Church background - subtle, keeps text readable */}
-      <div className="absolute inset-0 -z-20 bg-[url('/images/church.jpg')] bg-cover bg-center opacity-20" aria-hidden="true" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white via-white/70 to-white" aria-hidden="true" />
+      {/* Church background - clearly visible, keeps text readable */}
+      <div className="absolute inset-0 -z-20 bg-[url('/images/church.jpg')] bg-cover bg-center opacity-50" aria-hidden="true" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/90 via-white/50 to-white/90" aria-hidden="true" />
 
       {/* Background ambient light - Subtler near-white */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[400px] bg-slate-50/20 blur-[120px] -z-10 rounded-full hidden md:block" />
