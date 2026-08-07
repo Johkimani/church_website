@@ -60,35 +60,43 @@ export const getOrders = async (req, res) => {
 
 export const confirmPayment = async (req, res) => {
   try {
-    const { phone, checkout_id, mpesa_receipt } = req.body;
+    const { checkout_id, mpesa_receipt } = req.body;
 
     if (!mpesa_receipt) {
       return res.status(400).json({ error: "M-Pesa receipt number is required" });
     }
-    if (!phone && !checkout_id) {
-      return res.status(400).json({ error: "Phone number or checkout ID is required" });
+    if (!checkout_id) {
+      return res.status(400).json({ error: "Checkout ID is required" });
     }
 
-    // Find the order — by checkout_id first, then fallback to phone
-    let order;
-    if (checkout_id) {
-      const result = await db.query(
-        `SELECT * FROM orders WHERE checkout_id = $1 AND status = 'pending' LIMIT 1`,
-        [checkout_id],
-      );
-      order = result.rows[0];
-    }
+    // The pending payment must exist server-side (created when the STK push was
+    // initiated). No phone-number fallback: that allowed marking any pending
+    // order as paid without owning its checkout.
+    const payResult = await db.query(
+      `SELECT status FROM mpesa_request WHERE checkout_id = $1`,
+      [checkout_id],
+    );
+    const payRow = payResult.rows[0];
 
-    if (!order && phone) {
-      const result = await db.query(
-        `SELECT * FROM orders WHERE phone = $1 AND status = 'pending' ORDER BY created_at DESC LIMIT 1`,
-        [phone],
-      );
-      order = result.rows[0];
+    const orderRes = await db.query(
+      `SELECT * FROM orders WHERE checkout_id = $1 AND status = 'pending' LIMIT 1`,
+      [checkout_id],
+    );
+    const order = orderRes.rows[0];
+
+    // Payment already confirmed (e.g. the Safaricom callback landed first):
+    // treat as an idempotent success.
+    if (!order && payRow?.status === "paid") {
+      return res.json({ status: "paid" });
     }
 
     if (!order) {
-      return res.status(404).json({ error: "No pending order found for this phone/checkout" });
+      return res.status(404).json({ error: "No pending order found for this checkout" });
+    }
+    if (!payRow || payRow.status !== "pending") {
+      return res.status(400).json({
+        error: "No pending payment request found for this checkout — please initiate the M-Pesa payment first",
+      });
     }
 
     // Update the order
@@ -97,13 +105,11 @@ export const confirmPayment = async (req, res) => {
       [mpesa_receipt, order.id],
     );
 
-    // Also update mpesa_request if checkout_id exists
-    if (order.checkout_id) {
-      await db.query(
-        `UPDATE mpesa_request SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP WHERE checkout_id = $2`,
-        [mpesa_receipt, order.checkout_id],
-      );
-    }
+    // Also update mpesa_request
+    await db.query(
+      `UPDATE mpesa_request SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP WHERE checkout_id = $2`,
+      [mpesa_receipt, checkout_id],
+    );
 
     logger.info(`Payment manually confirmed: Order ${order.order_reference}, Receipt=${mpesa_receipt}`);
     res.json({ status: "paid", order: updated.rows[0] });

@@ -8,7 +8,7 @@ import {
 } from "../../controllers/ApiController.js";
 import logger from "../../logger/winston.js";
 import verifyToken from "../../middlewares/Tokens.js";
-import { requireRole } from "../../middlewares/requireRole.js";
+import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 
 export const api = Router();
 
@@ -72,36 +72,36 @@ const PUBLIC_POST_TABLES = new Set([
 ]);
 
 // Tables so sensitive (PII, password hashes, payment records) that only members
-// holding an approved official role may read them.
-const OFFICIAL_READ_ROLES = [
-  "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
-  "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
-  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
-];
-
+// holding an approved official role may read them. orders/hire_requests contain
+// buyer PII (names, phones, addresses) and are therefore official-only too.
 const SENSITIVE_ROLE_READ_TABLES = new Set([
   "members",
   "users",
   "mpesa_request",
   "contributions",
+  "orders",
+  "hire_requests",
 ]);
 
 // Authz: lock down reads of sensitive tables and ALL writes except public POSTs.
 // Role-level enforcement: officials-only reads for the most sensitive tables.
+// Writes (POST/PATCH/DELETE) outside the public set are official-only — the
+// generic record API accepts arbitrary columns, so a plain member must never
+// be allowed to write (e.g. PATCH /members/:id to change email/password).
 const authorizeTableAccess = (req, res, next) => {
   const { table } = req.params;
   const method = req.method.toUpperCase();
 
   if (method === "GET" || method === "HEAD") {
     if (SENSITIVE_ROLE_READ_TABLES.has(table)) {
-      return verifyToken(req, res, () => requireRole(...OFFICIAL_READ_ROLES)(req, res, next));
+      return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
     }
     if (PROTECTED_READ_TABLES.has(table)) return verifyToken(req, res, next);
     return next();
   }
 
   if (method === "POST" && PUBLIC_POST_TABLES.has(table)) return next();
-  return verifyToken(req, res, next);
+  return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
 };
 
 // GET all data from all tables (must be before /:table route)

@@ -1,5 +1,13 @@
 const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
 
+// Any approved official may manage the member/role directory, orders, payments
+// and other admin surfaces. Shared across routers that gate admin endpoints.
+const OFFICIAL_ROLES = [
+  "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
+  "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
+  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
+];
+
 const getUserRoles = (req) => {
   if (!req.user) return [];
   return Array.isArray(req.user.role)
@@ -35,5 +43,5 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => (req, res, next) => {
   next();
 };
 
-export { requireRole, enforceJumuiyaScope };
+export { requireRole, enforceJumuiyaScope, OFFICIAL_ROLES };
 export default requireRole;
