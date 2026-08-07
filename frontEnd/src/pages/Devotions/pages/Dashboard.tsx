@@ -158,7 +158,7 @@ export default function Dashboard() {
 
   return (
     <div
-      className="px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 max-w-5xl mx-auto min-h-screen"
+      className="ml-auto w-[85%] sm:w-full sm:max-w-5xl sm:mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 min-h-screen"
       style={{
         backgroundImage: `linear-gradient(rgba(9, 13, 22, 0.88), rgba(9, 13, 22, 0.88)), url(${BG_IMAGE})`,
         backgroundSize: "cover",
