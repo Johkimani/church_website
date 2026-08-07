@@ -124,20 +124,20 @@ export default function RosaryTracker() {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full max-w-full overflow-hidden flex flex-col items-center bg-transparent px-3 pt-4 pb-16">
+    <div className="min-h-screen w-full max-w-full flex flex-col items-center bg-transparent px-3 pt-4 pb-16">
       
       {/* 1. Selection (Rigid Header - Optimized) */}
       <header className="w-full shrink-0 flex flex-col items-center space-y-2 mb-2">
         <div className="flex flex-wrap gap-2 justify-center px-2">
-          <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest self-center mr-1 italic">Devotion</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest self-center mr-1 italic">Devotion</span>
           {(["dominican","servite","franciscan","brigittine","divineMercy"] as RosaryType[]).map((type) => (
             <button
               key={type}
               onClick={() => { setRosaryType(type); setActiveBead(1); }}
               className={`px-4 py-2 text-xs rounded-full font-black transition-all border whitespace-nowrap tracking-wide leading-none shadow-sm h-9 flex items-center justify-center ${
                 rosaryType === type 
-                ? "bg-gray-900 text-white border-gray-900 scale-105" 
-                : "bg-white text-gray-600 border-gray-100"
+                ? "bg-amber-600 text-white border-amber-600 scale-105" 
+                : "bg-[#0a0f1c] text-slate-300 border-slate-700 hover:border-amber-500/50"
               }`}
             >
               {type.toUpperCase()}
@@ -148,12 +148,12 @@ export default function RosaryTracker() {
 
       {/* 2. Optimized Info Display */}
       <div className="w-full text-center shrink-0 mb-1">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 text-gray-900 text-[10px] font-extrabold uppercase tracking-widest border border-black/5">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0a0f1c] text-slate-200 text-[10px] font-extrabold uppercase tracking-widest border border-slate-700">
            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: config.bigBeadColor }}></span>
            {rosaryType} • Bead {activeBead}
         </div>
         <div className="h-[36px] flex flex-col justify-center px-4 mt-1">
-          <p className="text-xs sm:text-sm font-serif italic text-gray-800 leading-tight line-clamp-2">
+          <p className="text-xs sm:text-sm font-serif italic text-slate-300 leading-tight line-clamp-2">
             "{message}"
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function RosaryTracker() {
                 <rect x="-16" y="18" width="44" height="12" fill="#1f2937" rx="2" />
             </g>
             
-            <circle cx="200" cy="180" r="150" fill="none" stroke="#E5E7EB" strokeWidth="1" strokeDasharray="4,6" className="opacity-40" />
+            <circle cx="200" cy="180" r="150" fill="none" stroke="#334155" strokeWidth="1" strokeDasharray="4,6" className="opacity-40" />
 
             <g>
               {Array.from({ length: config.beadCount }, (_, i) => {
@@ -223,7 +223,7 @@ export default function RosaryTracker() {
           <button
             onClick={prevBead}
             disabled={activeBead === 1}
-            className="flex-1 bg-white border border-gray-100 text-gray-500 py-4 rounded-full font-black shadow-sm active:scale-95 disabled:opacity-30 transition-all text-[11px] uppercase tracking-widest"
+            className="flex-1 bg-[#0a0f1c] border border-slate-700 text-slate-300 py-4 rounded-full font-black shadow-sm active:scale-95 disabled:opacity-30 transition-all text-[11px] uppercase tracking-widest"
           >
             Back
           </button>

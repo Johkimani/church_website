@@ -5,12 +5,13 @@ import {
   deleteTestimonial,
   approveTestimonial,
 } from "../../controllers/testimonialsController.js";
+import verifyToken from "../../middlewares/Tokens.js";
 
 const router = express.Router();
 
 router.get("/testimonials", getTestimonials);
 router.post("/testimonials", createTestimonial);
-router.patch("/testimonials/:id/approve", approveTestimonial);
-router.delete("/testimonials/:id", deleteTestimonial);
+router.patch("/testimonials/:id/approve", verifyToken, approveTestimonial);
+router.delete("/testimonials/:id", verifyToken, deleteTestimonial);
 
 export default router;

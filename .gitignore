@@ -39,6 +39,3 @@ git_status_output.txt
 
 # Scripts with credentials
 check_roles.mjs
-
-# DB/schema output dumps (may contain real data or credentials)
-backEnd/*.txt

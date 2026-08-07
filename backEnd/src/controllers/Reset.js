@@ -18,6 +18,11 @@ export const Reset = async (req, res) => {
     return res.status(400).send("Email, password, and purpose are required");
   }
 
+  if (typeof password !== "string" || password.length < 8) {
+    logger.warn("Reset attempt with weak password");
+    return res.status(400).send("Password must be at least 8 characters");
+  }
+
   try {
     //   Check if user exists
 
@@ -46,7 +51,7 @@ export const Reset = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const OTP = Math.floor(100000 + Math.random() * 900000).toString();
+    const OTP = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash("sha256").update(OTP).digest("hex");
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -168,7 +173,7 @@ export const ResendOTP = async (req, res) => {
 
     const resetData = result.rows[0];
 
-    const OTP = Math.floor(100000 + Math.random() * 900000).toString();
+    const OTP = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash("sha256").update(OTP).digest("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 

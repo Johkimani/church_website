@@ -8,6 +8,7 @@ import { Home } from "./pages/Landing/components/page/Home";
 import { PublicRoute, ProtectedRoute } from "./Regulator";
 import { DataProvider } from "./pages/Jumuiya/context/DataContext";
 import Pageoulet from "./assets/Layouts/Pageoulet";
+import RafikiWidget from "./components/assistant/RafikiWidget";
 import Authorisation from "./assets/Layouts/Authorisation";
 import Login from "./pages/Authorization/Login";
 import GalleryPage from "./pages/Landing/components/page/GalleryPage";
@@ -109,6 +110,7 @@ const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
 const DevotionsManager = lazy(() => import("./pages/Admin/pages/DevotionsManager"));
 const DashboardAssetsManager = lazy(() => import("./pages/Admin/pages/DashboardAssetsManager"));
+const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -124,6 +126,7 @@ const App: React.FC = () => {
   return (
     <Suspense fallback={<FallBack />}>
       <Toaster position="top-right" reverseOrder={false} />
+      <RafikiWidget />
       <Routes>
         {/* Authentication Routes */}
         <Route
@@ -177,6 +180,7 @@ const App: React.FC = () => {
           <Route path="activity-log" element={<ActivityLog />} />
           <Route path="bookings" element={<AdminBookings />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="developers" element={<DeveloperTeamManager />} />
         </Route>
 
         {/* Order Confirmation (no layout) */}
@@ -252,10 +256,10 @@ const App: React.FC = () => {
 
             {/* 404 - Catch-all for unmatched routes */}
             <Route path="/*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </Suspense>
-    );
-  };
+        </Route>
+      </Routes>
+    </Suspense>
+  );
+};
 
-  export default App;
+export default App;

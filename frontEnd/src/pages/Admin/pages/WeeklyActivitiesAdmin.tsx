@@ -28,7 +28,7 @@ const FALLBACK_IMAGES: Record<string, string> = {
   Thursday: "/images/rosary_prayers.jpg",
   Friday: "/images/mass.webp",
   Saturday: "/images/sta choir.png",
-  Sunday: "/images/church.png",
+  Sunday: "/images/church.jpg",
 };
 
 function getEffectiveImage(a: { activity: string; day: string; image_url?: string | null }): string {
@@ -40,7 +40,7 @@ function getEffectiveImage(a: { activity: string; day: string; image_url?: strin
   if (title === "Thursday Rosary Prayers") return "/images/rosary_prayers.jpg";
   if (title === "Wednesday Bible Study") return "/images/biblestudy.webp";
   if (title === "Friday Mass") return "/images/mass.webp";
-  return FALLBACK_IMAGES[a.day] || "/images/church.png";
+  return FALLBACK_IMAGES[a.day] || "/images/church.jpg";
 }
 
 function ActivityImage({ activity, onReplace, onRemove }: {

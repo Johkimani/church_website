@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaDatabase, FaListUl, FaSearch, FaEnvelope, FaIdCard, FaGraduationCap, FaArrowLeft, FaEdit, FaTrash, FaCheckCircle, FaTimes, FaUser, FaSpinner, FaFilter, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { LocalStorage } from '../../../utils';
 import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
-import { apiClient } from '../../../api/axiosInstance';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './Admin.css';
 
@@ -19,12 +19,6 @@ interface DatabaseMemberForm {
 
 const YEAR_OPTIONS = ['1st', '2nd', '3rd', '4th', 'Alumni'];
 const GRADIENT_PRIMARY = 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)';
-
-const generateTempPassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    const bytes = crypto.getRandomValues(new Uint8Array(10));
-    return Array.from(bytes, b => chars[b % chars.length]).join('');
-};
 
 const emptyForm = (): DatabaseMemberForm => ({
     member_id: '',
@@ -65,16 +59,31 @@ const DatabaseRegistration: React.FC = () => {
         try {
             const payload = {
                 ...form,
-                password: generateTempPassword()
+                password: form.member_id
             };
 
-            const res = await apiClient.post('/members', payload);
+            const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
+            const userdata = LocalStorage.get("userdata");
+            const accessToken = userdata?.accessToken;
+            const res = await fetch(`${baseUrl}/api/members`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => null);
+                throw new Error(errorData?.error || `Server responded with ${res.status}`);
+            }
 
             setMessage({ type: 'success', text: `Successfully registered ${form.first_name} ${form.last_name} into the database!` });
             setForm(emptyForm());
             refetch();
         } catch (error: any) {
-            setMessage({ type: 'error', text: error.response?.data?.error || error.message || 'Failed to inject member into database' });
+            setMessage({ type: 'error', text: error.message || 'Failed to inject member into database' });
         } finally {
             setIsSubmitting(false);
         }

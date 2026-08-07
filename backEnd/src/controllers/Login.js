@@ -199,8 +199,8 @@ export const firstLoginSetup = async (req, res) => {
       return res.status(400).json({ status: false, message: "member_id, currentPassword, and newPassword are required" });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ status: false, message: "New password must be at least 6 characters" });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ status: false, message: "New password must be at least 8 characters" });
     }
 
     // Fetch member

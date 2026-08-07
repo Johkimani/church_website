@@ -39,7 +39,7 @@ const ACTIVITY_IMAGES = {
 };
 
 // ── Image mapping for Weekly Activities ───────────────────────────
-const DEFAULT_ACTIVITY_IMAGE = "/images/church.png";
+const DEFAULT_ACTIVITY_IMAGE = "/images/church.jpg";
 
 const getWeeklyActivityImage = (activity) => {
   const title = String(activity?.activity || "").trim();

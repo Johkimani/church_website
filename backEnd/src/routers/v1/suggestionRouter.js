@@ -15,8 +15,8 @@ import verifyToken from "../../middlewares/Tokens.js";
 
 const router = Router();
 
-// ── List all non-deleted suggestions with member info ──
-router.get("/", listSuggestions);
+// ── List all non-deleted suggestions with member info (admin only) ──
+router.get("/", verifyToken, listSuggestions);
 
 // ── Bin (literal paths before parameterized) ──
 router.get("/bin", verifyToken, getBin);

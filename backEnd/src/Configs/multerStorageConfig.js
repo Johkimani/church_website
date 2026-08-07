@@ -59,15 +59,17 @@ const cloudinaryStorage = {
   },
 };
 
-// File type validation
+// File type validation (checks both the declared mimetype and the extension)
 function fileFilter(req, file, cb) {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const allowedExt = /jpeg|jpg|png|gif|webp/;
+  const allowedMime = /^image\/(jpeg|png|gif|webp)$/;
   const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
+  const mimeOk = allowedMime.test(file.mimetype || "");
 
-  if (allowedTypes.test(ext)) {
+  if (allowedExt.test(ext) && mimeOk) {
     cb(null, true);
   } else {
-    logger.warn(`Unsupported file type attempted: ${ext}`);
+    logger.warn(`Unsupported file type attempted: ext=${ext} mime=${file.mimetype}`);
     cb(new UploadError("Unsupported file type. Only images (jpg, png, gif, webp) are allowed.", "UNSUPPORTED_TYPE"), false);
   }
 }

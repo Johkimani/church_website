@@ -45,6 +45,12 @@ function classifyError(err) {
     return { statusCode, message };
   }
 
+  // Generic errors: never leak internal details (SQL, connection errors, etc.)
+  // to clients in production.
+  if (process.env.NODE_ENV === "production" && statusCode >= 500) {
+    return { statusCode, message: "Internal Server Error" };
+  }
+
   // Fallback: generic error
   return { statusCode, message };
 }

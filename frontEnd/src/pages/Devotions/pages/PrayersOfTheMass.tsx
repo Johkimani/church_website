@@ -135,14 +135,14 @@ export default function PrayersOfTheMass() {
   const toggleProper = (key: string) => setExpandedProper(expandedProper === key ? null : key);
 
   return (
-    <div className="w-full min-h-screen bg-[#F8F6F0]">
+    <div className="w-full min-h-screen bg-transparent">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <span className="text-white text-xl">✝</span>
           </div>
-          <h1 className="text-3xl font-bold text-[#1a1a2e] tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>
+          <h1 className="text-3xl font-bold text-white tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>
             Prayers of the Mass
           </h1>
           <p className="text-sm text-slate-400 mt-2 max-w-lg mx-auto leading-relaxed">
@@ -221,8 +221,8 @@ export default function PrayersOfTheMass() {
 
         {/* Penitential Acts */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-[#1a1a2e] mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">§</span>
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-sm">§</span>
             The Four Forms of the Penitential Act
           </h2>
           <p className="text-sm text-slate-400 mb-6 leading-relaxed">
@@ -246,8 +246,8 @@ export default function PrayersOfTheMass() {
 
         {/* Eucharistic Prayers */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-[#1a1a2e] mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-400 font-bold text-sm">EP</span>
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-300 font-bold text-sm">EP</span>
             The Four Eucharistic Prayers
           </h2>
           <p className="text-sm text-slate-400 mb-6 leading-relaxed">
@@ -271,8 +271,8 @@ export default function PrayersOfTheMass() {
 
         {/* Proper Prefaces */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-[#1a1a2e] mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-sm">PF</span>
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold text-sm">PF</span>
             Proper Prefaces
           </h2>
           <p className="text-sm text-slate-400 mb-6 leading-relaxed">
@@ -280,10 +280,10 @@ export default function PrayersOfTheMass() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {PROPER_PREFACES.map((pf) => (
-              <div key={pf.season} className="p-4 rounded-xl bg-white border border-amber-100/40">
-                <div className="text-sm font-bold text-amber-700 mb-2">{pf.season}</div>
-                <p className="text-xs text-slate-500 mb-2 leading-relaxed italic">"{pf.text}"</p>
-                <p className="text-[10px] text-slate-400 leading-relaxed">{pf.note}</p>
+              <div key={pf.season} className="p-4 rounded-xl bg-[#0a0f1c] border border-amber-500/20">
+                <div className="text-sm font-bold text-amber-400 mb-2">{pf.season}</div>
+                <p className="text-xs text-slate-400 mb-2 leading-relaxed italic">"{pf.text}"</p>
+                <p className="text-[10px] text-slate-500 leading-relaxed">{pf.note}</p>
               </div>
             ))}
           </div>
@@ -291,30 +291,30 @@ export default function PrayersOfTheMass() {
 
         {/* Ordinary vs Proper */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-[#1a1a2e] mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-500 font-bold text-sm">OP</span>
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-300 font-bold text-sm">OP</span>
             Ordinary vs. Proper of the Mass
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-xl bg-white border border-sky-200/40">
-              <div className="text-base font-bold text-sky-600 mb-1">{ORDINARY_VS_PROPER.ordinary.title}</div>
-              <div className="text-[10px] text-slate-400 italic mb-3">{ORDINARY_VS_PROPER.ordinary.latin}</div>
-              <p className="text-xs text-slate-500 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.ordinary.description}</p>
+            <div className="p-5 rounded-xl bg-[#0a0f1c] border border-sky-500/20">
+              <div className="text-base font-bold text-sky-300 mb-1">{ORDINARY_VS_PROPER.ordinary.title}</div>
+              <div className="text-[10px] text-slate-500 italic mb-3">{ORDINARY_VS_PROPER.ordinary.latin}</div>
+              <p className="text-xs text-slate-400 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.ordinary.description}</p>
               <div className="space-y-1">
                 {ORDINARY_VS_PROPER.ordinary.parts.map((p) => (
-                  <div key={p} className="text-xs text-slate-600 py-1 flex items-center gap-2">
+                  <div key={p} className="text-xs text-slate-300 py-1 flex items-center gap-2">
                     <span className="text-sky-400 flex-shrink-0">•</span> {p}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="p-5 rounded-xl bg-white border border-amber-200/40">
-              <div className="text-base font-bold text-amber-700 mb-1">{ORDINARY_VS_PROPER.proper.title}</div>
-              <div className="text-[10px] text-slate-400 italic mb-3">{ORDINARY_VS_PROPER.proper.latin}</div>
-              <p className="text-xs text-slate-500 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.proper.description}</p>
+            <div className="p-5 rounded-xl bg-[#0a0f1c] border border-amber-500/20">
+              <div className="text-base font-bold text-amber-400 mb-1">{ORDINARY_VS_PROPER.proper.title}</div>
+              <div className="text-[10px] text-slate-500 italic mb-3">{ORDINARY_VS_PROPER.proper.latin}</div>
+              <p className="text-xs text-slate-400 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.proper.description}</p>
               <div className="space-y-1">
                 {ORDINARY_VS_PROPER.proper.parts.map((p) => (
-                  <div key={p} className="text-xs text-slate-600 py-1 flex items-center gap-2">
+                  <div key={p} className="text-xs text-slate-300 py-1 flex items-center gap-2">
                     <span className="text-amber-400 flex-shrink-0">•</span> {p}
                   </div>
                 ))}
@@ -325,20 +325,20 @@ export default function PrayersOfTheMass() {
 
         {/* Mass Intentions */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-[#1a1a2e] mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 font-bold text-sm">MI</span>
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-300 font-bold text-sm">MI</span>
             Mass Intentions
           </h2>
-          <div className="p-5 rounded-xl bg-white border border-purple-100/40">
-            <p className="text-xs text-slate-600 mb-3 leading-relaxed">{MASS_INTENTIONS.description}</p>
+          <div className="p-5 rounded-xl bg-[#0a0f1c] border border-purple-500/20">
+            <p className="text-xs text-slate-300 mb-3 leading-relaxed">{MASS_INTENTIONS.description}</p>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {MASS_INTENTIONS.types.map((t) => (
-                <div key={t} className="text-xs text-slate-500 py-1 flex items-center gap-2">
-                  <span className="text-purple-400 flex-shrink-0">•</span> {t}
+                <div key={t} className="text-xs text-slate-400 py-1 flex items-center gap-2">
+                  <span className="text-purple-300 flex-shrink-0">•</span> {t}
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-slate-400 italic leading-relaxed">{MASS_INTENTIONS.practice}</p>
+            <p className="text-[10px] text-slate-500 italic leading-relaxed">{MASS_INTENTIONS.practice}</p>
           </div>
         </div>
       </div>
@@ -350,24 +350,24 @@ function PrayerCard({ title, subtitle, color, latin, text, explanation, expanded
   title: string; subtitle: string; color: string; latin: string; text: string; explanation: string; expanded: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="mb-4 rounded-2xl overflow-hidden bg-white border border-amber-100/40 shadow-sm transition-all duration-300">
+    <div className="mb-4 rounded-2xl overflow-hidden bg-[#0a0f1c] border border-slate-800/50 shadow-sm transition-all duration-300">
       <button onClick={onToggle} className="w-full flex items-center gap-4 p-5 text-left">
         <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow" style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)` }}>
           <span className="text-white text-base font-bold" style={{ filter: "brightness(10)" }}>{title.charAt(0)}</span>
         </div>
         <div className="flex-1">
-          <div className="text-sm font-bold text-[#1a1a2e]">{title}</div>
+          <div className="text-sm font-bold text-white">{title}</div>
           <div className="text-xs text-slate-400 italic">{subtitle}</div>
         </div>
-        <span className="text-slate-300 text-sm transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
+        <span className="text-slate-500 text-sm transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
       </button>
       {expanded && (
         <div className="px-5 pb-5 pt-0 ml-[52px]">
           {latin && (
-            <div className="p-4 rounded-xl mb-4 bg-amber-50/50 border border-amber-100/40 italic text-sm text-slate-600 leading-relaxed">{latin}</div>
+            <div className="p-4 rounded-xl mb-4 bg-amber-500/10 border border-amber-500/20 italic text-sm text-slate-300 leading-relaxed">{latin}</div>
           )}
-          <div className="p-4 rounded-xl mb-4 bg-slate-50/50 border border-slate-100/40 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{text}</div>
-          <p className="text-xs text-slate-400 leading-relaxed pl-4 border-l-2" style={{ borderColor: `${color}40` }}>{explanation}</p>
+          <div className="p-4 rounded-xl mb-4 bg-slate-800/40 border border-slate-800/50 text-sm text-slate-300 leading-relaxed whitespace-pre-line">{text}</div>
+          <p className="text-xs text-slate-500 leading-relaxed pl-4 border-l-2" style={{ borderColor: `${color}40` }}>{explanation}</p>
         </div>
       )}
     </div>
@@ -378,19 +378,19 @@ function PenitentialActCard({ name, description, text, absolution, index, expand
   name: string; description: string; text: string; absolution: string; index: number; expanded: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-white border border-slate-100/40 transition-all duration-300">
+    <div className="rounded-2xl overflow-hidden bg-[#0a0f1c] border border-slate-800/50 transition-all duration-300">
       <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 text-left">
-        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">{index}</span>
+        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-300">{index}</span>
         <div className="flex-1">
-          <div className="text-sm font-semibold text-slate-700">{name}</div>
+          <div className="text-sm font-semibold text-slate-200">{name}</div>
           <div className="text-[10px] text-slate-400 mt-0.5">{description}</div>
         </div>
-        <span className="text-slate-300 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
+        <span className="text-slate-500 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
       </button>
       {expanded && (
         <div className="px-4 pb-4 pt-0 ml-12">
-          <div className="p-3 rounded-lg mb-3 bg-slate-50/50 border border-slate-100/40 text-xs text-slate-600 leading-relaxed whitespace-pre-line">{text}</div>
-          <div className="p-3 rounded-lg bg-green-50/50 border border-green-100/40 text-xs text-green-700 leading-relaxed">
+          <div className="p-3 rounded-lg mb-3 bg-slate-800/40 border border-slate-800/50 text-xs text-slate-300 leading-relaxed whitespace-pre-line">{text}</div>
+          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 leading-relaxed">
             <strong>Absolution:</strong> {absolution}
           </div>
         </div>
@@ -403,27 +403,27 @@ function EucharisticPrayerCard({ name, description, keyElements, whenToUse, inde
   name: string; description: string; keyElements: string[]; whenToUse: string; index: number; expanded: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-white border border-rose-100/40 transition-all duration-300">
+    <div className="rounded-2xl overflow-hidden bg-[#0a0f1c] border border-rose-500/20 transition-all duration-300">
       <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 text-left">
-        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-xs font-bold text-rose-400">EP{index}</span>
+        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-xs font-bold text-rose-300">EP{index}</span>
         <div className="flex-1">
-          <div className="text-sm font-semibold text-slate-700">{name}</div>
+          <div className="text-sm font-semibold text-slate-200">{name}</div>
           <div className="text-[10px] text-slate-400 mt-0.5 truncate">{description}</div>
         </div>
-        <span className="text-slate-300 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
+        <span className="text-slate-500 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
       </button>
       {expanded && (
         <div className="px-4 pb-4 pt-0 ml-12">
-          <p className="text-xs text-slate-500 mb-3 leading-relaxed">{description}</p>
+          <p className="text-xs text-slate-400 mb-3 leading-relaxed">{description}</p>
           <div className="mb-3">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Key Elements</div>
             {keyElements.map((ke) => (
-              <div key={ke} className="text-xs text-slate-500 py-1 flex items-center gap-2">
+              <div key={ke} className="text-xs text-slate-300 py-1 flex items-center gap-2">
                 <span className="text-rose-300 flex-shrink-0">•</span> {ke}
               </div>
             ))}
           </div>
-          <div className="p-3 rounded-lg bg-rose-50/50 border border-rose-100/40 text-xs text-rose-400 leading-relaxed">
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 leading-relaxed">
             <strong>When to use:</strong> {whenToUse}
           </div>
         </div>

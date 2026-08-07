@@ -11,9 +11,6 @@ const verifyToken = async (req, res, next) => {
   try {
     let token = null;
     token = authHeader && authHeader.split(" ")[1];
-    if (!token && req.query.token) {
-      token = req.query.token;
-    }
     if (!token) {
       logger.warn("Unauthorized access attempt with malformed token");
       return res.status(401).json({ error: "Token required" });

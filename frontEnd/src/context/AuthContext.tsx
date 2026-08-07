@@ -33,6 +33,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   register: () => {},
   isAuthenticated: false,
+  refreshSession: async () => null,
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

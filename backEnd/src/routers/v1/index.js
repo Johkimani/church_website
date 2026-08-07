@@ -37,6 +37,7 @@ import hireStatusRouter from "./hireStatus.js";
 import statsPublishRoutes from "./statsPublishRoutes.js";
 import suggestionRouter from "./suggestionRouter.js";
 import bibleRouter from "./bibleRoutes.js";
+import assistantRoutes from "./assistantRoutes.js";
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -46,6 +47,9 @@ router.use("/stkPush", stkPushRouter);
 // Authentication & Users
 router.use("/authentication", authRoutes);
 router.use("/member", verifyToken, memberProgressRoute); // Kept: user-level route, NOT admin
+
+// Site assistant (public chat helper) - mounted early, before catch-all table CRUD
+router.use("/assistant", assistantRoutes);
 
 // Features
 router.use("/officials", officialsRouter);

@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import toast from "react-hot-toast";
-import { BASE_URL } from "../../../api/config";
 import {
   FaArrowLeft,
   FaArrowRight,
@@ -14,6 +13,7 @@ import {
   FaBookmark as FaBookmarkSolid,
   FaBars,
 } from "react-icons/fa";
+import { BIBLE_BOOKS, BIBLE_VERSIONS, STATIC_CHAPTERS, getStaticChapter, getStaticBooks, getStaticVersions } from "../data/bibleData";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -158,9 +158,9 @@ const SECTION_HEADINGS: Record<string, string[]> = {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function Bible(): JSX.Element {
-  const [versions, setVersions] = useState<BibleVersionInfo[]>([]);
+  const [versions, setVersions] = useState<BibleVersionInfo[]>(() => getStaticVersions());
   const [version, setVersion] = useState<string>(() => localStorage.getItem("bible-reader-version") || "dra");
-  const [allBooks, setAllBooks] = useState<BookInfo[]>([]);
+  const [allBooks, setAllBooks] = useState<BookInfo[]>(() => getStaticBooks().map(b => ({ code: b.code, name: b.name, testament: b.testament, chapters: b.chapters })));
   const [selectedBook, setSelectedBook] = useState<BookInfo | null>(null);
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [verses, setVerses] = useState<Verse[]>([]);
@@ -174,7 +174,7 @@ export default function Bible(): JSX.Element {
   const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
   const [selectedVerseNum, setSelectedVerseNum] = useState<number | null>(null);
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem("bible-font-size") || "18", 10));
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("bible-dark-mode") === "true");
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("bible-dark-mode") !== "false");
   const [paragraphMode, setParagraphMode] = useState(() => localStorage.getItem("bible-paragraph-mode") === "true");
   const [immersiveMode, setImmersiveMode] = useState(false);
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
@@ -188,42 +188,6 @@ export default function Bible(): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const verseOfDay = useMemo(() => getVerseOfTheDay(), []);
-
-  // ── Load versions ──
-  useEffect(() => {
-    const loadVersions = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/bible/versions`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.versions?.length > 0) setVersions(data.versions);
-        }
-      } catch {
-        setVersions([
-          { id: "dra", name: "Catholic Bible", subtitle: "Douay-Rheims", source: "dailybible", testaments: ["OT", "NT", "DC"] },
-          { id: "kjv", name: "King James Version", subtitle: "Authorized 1611", source: "bible-api", testaments: ["OT", "NT"] },
-          { id: "web", name: "Holy Bible", subtitle: "World English Bible", source: "bible-api", testaments: ["OT", "NT"] },
-          { id: "bbe", name: "Good News Bible", subtitle: "Bible in Basic English", source: "bible-api", testaments: ["OT", "NT"] },
-          { id: "asv", name: "American Standard", subtitle: "1901 Edition", source: "bible-api", testaments: ["OT", "NT"] },
-        ]);
-      }
-    };
-    loadVersions();
-  }, []);
-
-  // ── Load books ──
-  useEffect(() => {
-    const loadBooks = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/bible/books?version=${version}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.books?.length > 0) setAllBooks(data.books);
-        }
-      } catch {}
-    };
-    loadBooks();
-  }, [version]);
 
   // ── Load persisted data ──
   useEffect(() => {
@@ -278,19 +242,17 @@ export default function Bible(): JSX.Element {
   }, [selectedBook, selectedChapter, verses]);
 
   // ── Load chapter ──
-  const loadChapter = useCallback(async (bookCode: string, chapter: number, ver?: string) => {
-    const v = ver || version;
+  const loadChapter = useCallback((bookCode: string, chapter: number) => {
     setLoading(true);
     setError(null);
     setSelectedVerseNum(null);
     try {
-      const res = await fetch(`${BASE_URL}/bible/chapter?book=${bookCode}&chapter=${chapter}&version=${v}`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to load chapter");
+      const staticVerses = getStaticChapter(bookCode, chapter);
+      if (staticVerses) {
+        setVerses(staticVerses);
+      } else {
+        setVerses([]);
       }
-      const data: ChapterData = await res.json();
-      setVerses(data.verses);
       const book = allBooks.find((b) => b.code === bookCode) || null;
       setSelectedBook(book);
       setSelectedChapter(chapter);
@@ -298,7 +260,7 @@ export default function Bible(): JSX.Element {
 
       // Save last read
       if (book) {
-        const lr: LastRead = { bookCode, bookName: book.name, chapter, version: v, timestamp: Date.now() };
+        const lr: LastRead = { bookCode, bookName: book.name, chapter, version, timestamp: Date.now() };
         setLastRead(lr);
         localStorage.setItem("bible-last-read", JSON.stringify(lr));
         saveRecentBook(book);
@@ -317,7 +279,7 @@ export default function Bible(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [version, allBooks, readChapters, recentBooks]);
+  }, [allBooks, readChapters, recentBooks, version]);
 
   // ── Book selection ──
   const handleBookSelect = (book: BookInfo) => {
@@ -367,7 +329,7 @@ export default function Bible(): JSX.Element {
   const handleVersionChange = (newVer: string) => {
     setVersion(newVer);
     localStorage.setItem("bible-reader-version", newVer);
-    if (selectedBook) loadChapter(selectedBook.code, selectedChapter, newVer);
+    if (selectedBook) loadChapter(selectedBook.code, selectedChapter);
   };
 
   // ── Font size ──
@@ -463,14 +425,14 @@ export default function Bible(): JSX.Element {
       onTouchEnd={selectedBook ? handleTouchEnd : undefined}
     >
       {/* ── Top Bar ── */}
-      <div className={`sticky top-0 z-30 transition-colors duration-300 ${darkMode ? "bg-[#222] border-b border-[#333]" : "bg-white/80 backdrop-blur-md border-b border-stone-200/60"}`}>
+      <div className={`sticky top-16 lg:top-20 z-30 transition-colors duration-300 ${darkMode ? "bg-[#222] border-b border-[#333]" : "bg-white/80 backdrop-blur-md border-b border-stone-200/60"}`}>
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           {selectedBook ? (
             <button
               onClick={() => { setSelectedBook(null); setVerses([]); setShowBookNav(false); setImmersiveMode(false); }}
               className={`flex items-center gap-2 text-sm font-medium ${darkMode ? "text-stone-200 hover:text-white" : "text-stone-700 hover:text-stone-900"}`}
             >
-              <span className="text-lg font-serif font-bold max-w-[45vw] truncate">{selectedBook.name}</span>
+              <span className="text-lg font-serif font-bold max-w-[38vw] truncate">{selectedBook.name}</span>
               <span className={`${darkMode ? "text-amber-400" : "text-amber-600"} font-serif`}>{selectedChapter}</span>
             </button>
           ) : (
@@ -925,7 +887,7 @@ export default function Bible(): JSX.Element {
 
             {/* Verse action bar */}
             {selectedVerseNum !== null && (
-              <div className={`sticky bottom-0 mt-4 rounded-xl border px-4 py-2.5 flex items-center gap-2 ${
+              <div className={`sticky bottom-16 md:bottom-0 mt-4 rounded-xl border px-4 py-2.5 flex items-center gap-2 ${
                 darkMode ? "bg-[#222] border-[#333]" : "bg-white/90 backdrop-blur-sm border-stone-200 shadow-lg"
               }`}>
                 <span className={`text-xs font-semibold mr-1 ${darkMode ? "text-stone-400" : "text-stone-500"}`}>
@@ -949,7 +911,7 @@ export default function Bible(): JSX.Element {
                   {isBookmarked(selectedVerseNum) ? <FaBookmarkSolid className="text-amber-500 text-[10px]" /> : <FaRegBookmark className="text-[10px]" />}
                   {isBookmarked(selectedVerseNum) ? "Saved" : "Save"}
                 </button>
-                <button onClick={() => setSelectedVerseNum(null)} className={`ml-auto p-1.5 ${darkMode ? "text-stone-600" : "text-stone-400"}`}>
+                <button onClick={() => setSelectedVerseNum(null)} className={`ml-auto p-2.5 ${darkMode ? "text-stone-600" : "text-stone-400"}`}>
                   <FaTimes className="text-xs" />
                 </button>
               </div>
@@ -957,16 +919,16 @@ export default function Bible(): JSX.Element {
 
             {/* Bottom nav */}
             {!loading && verses.length > 0 && (
-              <div className={`flex items-center justify-between py-6 mt-4 border-t ${darkMode ? "border-[#333]" : "border-stone-100"}`}>
+              <div className={`flex flex-wrap items-center justify-between gap-3 py-6 mt-4 border-t ${darkMode ? "border-[#333]" : "border-stone-100"}`}>
                 <button
                   onClick={goToPrev}
                   disabled={selectedChapter <= 1}
-                  className={`flex items-center gap-2 text-sm font-medium disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
+                  className={`flex items-center gap-2 text-sm font-medium min-w-0 disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
                     darkMode ? "text-stone-400 hover:text-amber-400" : "text-stone-500 hover:text-amber-700"
                   }`}
                 >
-                  <FaArrowLeft className="text-xs" />
-                  {selectedChapter > 1 ? `${selectedBook.name} ${selectedChapter - 1}` : ""}
+                  <FaArrowLeft className="text-xs flex-shrink-0" />
+                  <span className="truncate">{selectedChapter > 1 ? `${selectedBook.name} ${selectedChapter - 1}` : ""}</span>
                 </button>
                 <div className="relative">
                   <select
@@ -985,12 +947,12 @@ export default function Bible(): JSX.Element {
                 <button
                   onClick={goToNext}
                   disabled={selectedChapter >= selectedBook.chapters}
-                  className={`flex items-center gap-2 text-sm font-medium disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
+                  className={`flex items-center gap-2 text-sm font-medium min-w-0 disabled:opacity-25 disabled:cursor-not-allowed transition-colors ${
                     darkMode ? "text-stone-400 hover:text-amber-400" : "text-stone-500 hover:text-amber-700"
                   }`}
                 >
-                  {selectedChapter < selectedBook.chapters ? `${selectedBook.name} ${selectedChapter + 1}` : ""}
-                  <FaArrowRight className="text-xs" />
+                  <span className="truncate">{selectedChapter < selectedBook.chapters ? `${selectedBook.name} ${selectedChapter + 1}` : ""}</span>
+                  <FaArrowRight className="text-xs flex-shrink-0" />
                 </button>
               </div>
             )}

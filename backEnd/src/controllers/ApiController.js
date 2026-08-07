@@ -21,23 +21,14 @@ const TABLE_PRIMARY_KEYS = {
   jumuiya: "group_id",
 };
 
-// Columns that must never be returned through the generic table API
-const SENSITIVE_COLUMNS = ["password", "refresh_token", "password_hash", "reset_token"];
-
-const scrubSensitive = (row) => {
-  if (row && typeof row === "object") {
-    for (const col of SENSITIVE_COLUMNS) {
-      delete row[col];
-    }
-  }
-  return row;
-};
-
 // Get all records from a table
 export const getTableData = async (tableName, queryParams = {}) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const sortCol = TABLE_SORT_COLUMNS[tableName] || (dbTableName === 'sub_groups' ? 'group_id' : 'id');
-  const filterKeys = Object.keys(queryParams).filter((key) => queryParams[key] !== undefined && queryParams[key] !== '');
+  const SAFE_IDENTIFIER = /^[a-zA-Z0-9_]+$/;
+  const filterKeys = Object.keys(queryParams)
+    .filter((key) => queryParams[key] !== undefined && queryParams[key] !== '')
+    .filter((key) => SAFE_IDENTIFIER.test(key));
 
   try {
     let query = `SELECT * FROM "${dbTableName}"`;
@@ -51,17 +42,21 @@ export const getTableData = async (tableName, queryParams = {}) => {
       query += ` WHERE ${filters.join(' AND ')}`;
     }
 
+    if (!SAFE_IDENTIFIER.test(sortCol)) {
+      throw new Error('Invalid sort column');
+    }
+
     query += ` ORDER BY "${sortCol}" DESC`;
 
     const result = await pool.query(query, values);
-    return result.rows.map(scrubSensitive);
+    return result.rows;
   } catch (firstError) {
     // Fallback to unordered if ordering column is missing
     if (firstError.code === '42703') {
       logger.warn(`Falling back to unordered SELECT for "${dbTableName}" - column "${sortCol}" not found`);
       try {
         const fallback = await pool.query(`SELECT * FROM "${dbTableName}"`);
-        return fallback.rows.map(scrubSensitive);
+        return fallback.rows;
       } catch (fallbackError) {
         console.error(`Fallback SELECT also failed for "${dbTableName}":`, fallbackError.message);
         return [];
@@ -103,7 +98,7 @@ export const createRecord = async (tableName, data) => {
     `;
     
     const result = await pool.query(query, values);
-    return scrubSensitive(result.rows[0]);
+    return result.rows[0];
   } catch (error) {
     logger.error(`Error creating record in ${dbTableName}: ${error.message}`);
     console.error(`Error creating record in ${dbTableName}:`, error.message);
@@ -158,7 +153,7 @@ export const updateRecord = async (tableName, id, data) => {
     `;
     
     const result = await pool.query(query, [...values, id]);
-    return scrubSensitive(result.rows[0]);
+    return result.rows[0];
   } catch (error) {
     console.error(`Error updating record in ${dbTableName}:`, error.message);
     throw error;

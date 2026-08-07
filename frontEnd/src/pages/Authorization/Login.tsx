@@ -129,7 +129,7 @@ const Login: React.FC = () => {
 
             {/* Registration */}
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-2 pl-1">
+              <label className="block text-xs font-black text-gray-600 uppercase tracking-[0.3em] mb-2 pl-1">
                 Registration No.
               </label>
               <input
@@ -143,7 +143,7 @@ const Login: React.FC = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-2 pl-1">
+              <label className="block text-xs font-black text-gray-600 uppercase tracking-[0.3em] mb-2 pl-1">
                 Password
               </label>
               <div className="relative flex items-center">

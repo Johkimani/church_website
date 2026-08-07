@@ -6,9 +6,9 @@ import {
   updateRecord,
   getAllData,
 } from "../../controllers/ApiController.js";
+import logger from "../../logger/winston.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import { requireRole } from "../../middlewares/requireRole.js";
-import logger from "../../logger/winston.js";
 
 export const api = Router();
 
@@ -52,71 +52,64 @@ const validateTable = (req, res, next) => {
   next();
 };
 
-// Tables whose data is safe to expose without authentication (public content / catalog)
-const PUBLIC_READ_TABLES = new Set([
-  "events",
-  "activities",
-  "gallery",
-  "officials",
-  "projects",
-  "jumuiya",
-  "testimonials",
-  "categories",
-  "product_categories",
-  "products",
-  "config",
-  "hub_modules",
-  "hub_activities",
-  "hub_announcements",
-  "hub_officials",
-  "hub_gallery",
-  "enrollments",
+// Tables whose full contents (incl. PII / password hashes / payment records)
+// must NEVER be readable without authentication.
+const PROTECTED_READ_TABLES = new Set([
+  "members",
+  "users",
+  "mpesa_request",
+  "contributions",
+  "orders",
+  "hire_requests",
+  "suggestions",
 ]);
 
-// Tables that legitimately accept public (unauthenticated) writes
-const PUBLIC_WRITE_TABLES = new Set(["enrollments", "suggestions"]);
+// Tables with a legitimate PUBLIC write (public registration / feedback / suggestions)
+const PUBLIC_POST_TABLES = new Set([
+  "enrollments",
+  "testimonials",
+  "suggestions",
+]);
 
-// Roles allowed to read/write restricted tables (all seeded staff roles + legacy admins)
-const ADMIN_ROLES = [
-  "csa_chair",
-  "csa_vice_chair",
-  "csa_secretary",
-  "jumuiya_coordinator",
-  "jumuiya_chairperson",
-  "jumuiya_secretary",
-  "jumuiya_os",
-  "os",
-  "treasurer",
-  "project_manager",
-  "instrument_manager",
-  "liturgist",
-  "choir_chairperson",
-  "choir_secretary",
-  "choir_project_coordinator",
-  "st_francis_chair",
-  "charismatic_chair",
-  "dance_chair",
-  "mentorship_chair",
-  "admin",
-  "super_admin",
-  "supreme_admin",
+// Tables so sensitive (PII, password hashes, payment records) that only members
+// holding an approved official role may read them.
+const OFFICIAL_READ_ROLES = [
+  "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
+  "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
+  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
 ];
 
-const requireReadAccess = (req, res, next) => {
-  if (PUBLIC_READ_TABLES.has(req.params.table)) return next();
-  verifyToken(req, res, () => requireRole(...ADMIN_ROLES)(req, res, next));
-};
+const SENSITIVE_ROLE_READ_TABLES = new Set([
+  "members",
+  "users",
+  "mpesa_request",
+  "contributions",
+]);
 
-const requireWriteAccess = (req, res, next) => {
-  if (PUBLIC_WRITE_TABLES.has(req.params.table)) return next();
-  verifyToken(req, res, () => requireRole(...ADMIN_ROLES)(req, res, next));
+// Authz: lock down reads of sensitive tables and ALL writes except public POSTs.
+// Role-level enforcement: officials-only reads for the most sensitive tables.
+const authorizeTableAccess = (req, res, next) => {
+  const { table } = req.params;
+  const method = req.method.toUpperCase();
+
+  if (method === "GET" || method === "HEAD") {
+    if (SENSITIVE_ROLE_READ_TABLES.has(table)) {
+      return verifyToken(req, res, () => requireRole(...OFFICIAL_READ_ROLES)(req, res, next));
+    }
+    if (PROTECTED_READ_TABLES.has(table)) return verifyToken(req, res, next);
+    return next();
+  }
+
+  if (method === "POST" && PUBLIC_POST_TABLES.has(table)) return next();
+  return verifyToken(req, res, next);
 };
 
 // GET all data from all tables (must be before /:table route)
-api.get("/all/data", verifyToken, requireRole(...ADMIN_ROLES), async (req, res) => {
+// Not used by the frontend; kept behind auth and stripped of sensitive tables.
+api.get("/all/data", verifyToken, async (req, res) => {
   try {
     const data = await getAllData();
-    logger.debug(`received data from route '/all/data'`);
+    for (const key of PROTECTED_READ_TABLES) delete data[key];
     return res.json(data);
   } catch (error) {
     logger.error(`Error in '/all/data': ${error.message}\n${error.stack}`);
@@ -125,20 +118,27 @@ api.get("/all/data", verifyToken, requireRole(...ADMIN_ROLES), async (req, res) 
 });
 
 // GET all records from a table
-api.get("/:table", validateTable, requireReadAccess, async (req, res) => {
+api.get("/:table", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table } = req.params;
     let data = await getTableData(table, req.query);
     
     if (table === 'enrollments') {
-      data = data.map(item => ({
-        id: item.id,
-        fullName: item.full_name || item.name,
-        registrationDate: item.enrolled_at,
-        status: item.status,
-        module_id: item.module_id,
-        class_id: item.class_id
-      }));
+      data = data.map(item => {
+        if (['charismatic', 'dancers', 'youth'].includes(item.module_id) || ['charismatic', 'dancers', 'youth'].includes(item.class_id)) {
+          return {
+            id: item.id,
+            fullName: item.full_name,
+            phoneNumber: item.phone,
+            email: item.email || 'N/A',
+            registrationDate: item.enrolled_at,
+            status: item.status,
+            module_id: item.module_id,
+            class_id: item.class_id
+          };
+        }
+        return item;
+      });
     }
 
     logger.debug(`Success fetching from route '/:table'`);
@@ -157,7 +157,7 @@ api.get("/:table", validateTable, requireReadAccess, async (req, res) => {
 });
 
 // POST create a new record in a table
-api.post("/:table", validateTable, requireWriteAccess, async (req, res) => {
+api.post("/:table", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table } = req.params;
     
@@ -192,7 +192,7 @@ api.post("/:table", validateTable, requireWriteAccess, async (req, res) => {
 });
 
 // PATCH update a record in a table
-api.patch("/:table/:id", validateTable, verifyToken, requireRole(...ADMIN_ROLES), async (req, res) => {
+api.patch("/:table/:id", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table, id } = req.params;
     const updated = await updateRecord(table, id, req.body);
@@ -207,7 +207,7 @@ api.patch("/:table/:id", validateTable, verifyToken, requireRole(...ADMIN_ROLES)
 });
 
 // DELETE a record from a table
-api.delete("/:table/:id", validateTable, verifyToken, requireRole(...ADMIN_ROLES), async (req, res) => {
+api.delete("/:table/:id", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table, id } = req.params;
     const deleted = await deleteRecord(table, id);

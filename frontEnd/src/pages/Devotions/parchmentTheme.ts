@@ -7,7 +7,7 @@ export interface ParchmentThemeState {
 const STORAGE_KEY = "prayer-book-theme";
 const CHANGE_EVENT = "parchment-theme-change";
 
-const DEFAULT_STATE: ParchmentThemeState = { dark: false };
+const DEFAULT_STATE: ParchmentThemeState = { dark: true };
 
 function readState(): ParchmentThemeState {
   try {

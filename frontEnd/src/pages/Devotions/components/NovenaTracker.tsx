@@ -79,7 +79,7 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
   const currentPrayer = novena.days.find((d) => d.day === selectedDay);
 
   return (
-    <div className={`bg-white rounded-2xl overflow-hidden ${className}`} style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+    <div className={`bg-[#0a0f1c] rounded-2xl overflow-hidden ${className}`} style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
       {/* Header */}
       <div className={`bg-gradient-to-r ${novena.color} p-6 text-white`}>
         <div className="flex items-center justify-between mb-3">
@@ -87,7 +87,7 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
             <h2 className="text-xl font-bold">{novena.title}</h2>
             <p className="text-sm text-white/80 mt-0.5">{novena.description}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0">
+          <button onClick={onClose} className="p-2.5 hover:bg-white/20 rounded-full transition-colors flex-shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -112,7 +112,7 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
       </div>
 
       {/* Day selector */}
-      <div className="flex border-b border-slate-100 overflow-x-auto">
+      <div className="flex border-b border-slate-800/50 overflow-x-auto">
         {novena.days.map((d) => {
           const done = completedDays.includes(d.day);
           const active = selectedDay === d.day;
@@ -122,21 +122,21 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
               onClick={() => setSelectedDay(d.day)}
               className={`flex-1 min-w-0 py-3 px-1 text-xs font-semibold transition-all relative ${
                 active
-                  ? 'text-indigo-700 bg-indigo-50'
+                  ? 'text-amber-400 bg-amber-500/10'
                   : done
-                    ? 'text-emerald-600 bg-emerald-50/50 hover:bg-emerald-50'
-                    : 'text-slate-500 hover:bg-slate-50'
+                    ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                    : 'text-slate-400 hover:bg-slate-800/50'
               }`}
             >
               <div className="flex flex-col items-center gap-1">
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  done ? 'bg-emerald-500 text-white' : active ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'
+                  done ? 'bg-emerald-500 text-white' : active ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-400'
                 }`}>
                   {done ? '✓' : d.day}
                 </span>
                 <span className="truncate w-full">Day {d.day}</span>
               </div>
-              {active && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-indigo-600 rounded-full" />}
+              {active && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-amber-500 rounded-full" />}
             </button>
           );
         })}
@@ -146,25 +146,25 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
       <div className="p-6">
         {isComplete ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
-              <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Novena Complete!</h3>
-            <p className="text-sm text-slate-600 mb-6 max-w-md mx-auto">
+            <h3 className="text-xl font-bold text-white mb-2">Novena Complete!</h3>
+            <p className="text-sm text-slate-300 mb-6 max-w-md mx-auto">
               Congratulations! You have completed all 9 days of the {novena.title}. May God hear and answer your prayers.
             </p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={handleReset}
-                className="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+                className="px-5 py-2.5 text-sm font-semibold text-slate-300 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"
               >
                 Start Over
               </button>
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors"
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-amber-600 rounded-xl hover:bg-amber-700 transition-colors"
               >
                 Done
               </button>
@@ -175,17 +175,17 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
             {/* Day header */}
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">{currentPrayer.prayer.title}</h3>
+                <h3 className="text-lg font-bold text-white">{currentPrayer.prayer.title}</h3>
                 {currentPrayer.prayer.intention && (
-                  <p className="text-xs text-slate-400 mt-0.5">Intention: {currentPrayer.prayer.intention}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Intention: {currentPrayer.prayer.intention}</p>
                 )}
               </div>
               <button
                 onClick={() => toggleDay(selectedDay)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   completedDays.includes(selectedDay)
-                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
-                    : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200'
+                    ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
                 }`}
               >
                 {completedDays.includes(selectedDay) ? '✓ Prayed' : 'Mark as Prayed'}
@@ -193,48 +193,48 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
             </div>
 
             {/* Prayer text */}
-            <div className="bg-slate-50 rounded-xl p-5 mb-5 border border-slate-100">
+            <div className="bg-slate-800/40 rounded-xl p-5 mb-5 border border-slate-800/50">
               {/* Opening Prayer */}
-              <div className="mb-5 pb-5 border-b border-slate-200">
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Opening Prayer</p>
-                <p className="text-sm text-slate-700 leading-relaxed">
+              <div className="mb-5 pb-5 border-b border-slate-800">
+                <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">Opening Prayer</p>
+                <p className="text-sm text-slate-300 leading-relaxed">
                   In the name of the Father, and of the Son, and of the Holy Spirit. Amen.
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed mt-2">
+                <p className="text-sm text-slate-300 leading-relaxed mt-2">
                   Come, Holy Spirit, fill the hearts of Your faithful and enkindle in us the fire of Your love. Send forth Your Spirit and we shall be created, and You shall renew the face of the earth.
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed mt-2 italic">
+                <p className="text-sm text-slate-300 leading-relaxed mt-2 italic">
                   O God, who by the light of the Holy Spirit did instruct the hearts of the faithful, grant that by the same Spirit we may be truly wise and ever rejoice in His consolation. Through Christ our Lord. Amen.
                 </p>
               </div>
 
               {/* Daily Prayer */}
-              <div className="mb-5 pb-5 border-b border-slate-200">
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Day {selectedDay} Prayer</p>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+              <div className="mb-5 pb-5 border-b border-slate-800">
+                <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">Day {selectedDay} Prayer</p>
+                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
                   {currentPrayer.prayer.text}
                 </p>
               </div>
 
               {/* Closing Prayers */}
               <div>
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Closing Prayers</p>
+                <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">Closing Prayers</p>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-xs font-bold text-slate-600 mb-1">Our Father</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">
+                    <p className="text-xs font-bold text-slate-400 mb-1">Our Father</p>
+                    <p className="text-sm text-slate-300 leading-relaxed">
                       Our Father, who art in heaven, hallowed be Thy name; Thy kingdom come; Thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-600 mb-1">Hail Mary</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">
+                    <p className="text-xs font-bold text-slate-400 mb-1">Hail Mary</p>
+                    <p className="text-sm text-slate-300 leading-relaxed">
                       Hail Mary, full of grace; the Lord is with thee; blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-600 mb-1">Glory Be</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">
+                    <p className="text-xs font-bold text-slate-400 mb-1">Glory Be</p>
+                    <p className="text-sm text-slate-300 leading-relaxed">
                       Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.
                     </p>
                   </div>
@@ -244,14 +244,14 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-200 mb-2">
                 Personal Note for Day {selectedDay}
               </label>
               <textarea
                 value={notes[selectedDay] || ''}
                 onChange={(e) => setNotes((prev) => ({ ...prev, [selectedDay]: e.target.value }))}
                 placeholder="Write your intentions, reflections, or gratitude..."
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-all resize-none"
+                className="w-full px-4 py-3 border border-slate-700 rounded-xl text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all resize-none"
                 rows={3}
               />
             </div>
@@ -261,7 +261,7 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
               <button
                 onClick={() => setSelectedDay((d) => Math.max(1, d - 1))}
                 disabled={selectedDay === 1}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -271,7 +271,7 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
 
               <button
                 onClick={handleReset}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
               >
                 Reset Progress
               </button>
@@ -279,7 +279,7 @@ export default function NovenaTracker({ novena, onClose, className = '' }: Noven
               <button
                 onClick={() => setSelectedDay((d) => Math.min(9, d + 1))}
                 disabled={selectedDay === 9}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 Day {Math.min(9, selectedDay + 1)}
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

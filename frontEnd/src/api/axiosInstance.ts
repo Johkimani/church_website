@@ -46,7 +46,6 @@ apiClient.interceptors.request.use(
         LocalStorage.remove("userdata");
       }
     }
-    console.log(`[REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, config.data || "");
     return config;
   },
   (error) => Promise.reject(error)
@@ -62,7 +61,6 @@ const processQueue = (error: any, token: string | null = null) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[RESPONSE] ${response.config.method?.toUpperCase()} ${response.config.url} ${response.status}`);
     return response;
   },
   async (error) => {
@@ -130,6 +128,22 @@ export const generateAndSaveQuestions = (data: { topic: string }) =>
 
 export const fetchDailyQuestions = (limit: number = 10) =>
   apiClient.get(`/questions/?limit=${limit}`);
+
+export type AssistantChatHistoryItem = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export const postAssistantChat = (data: {
+  message: string;
+  history?: AssistantChatHistoryItem[];
+  context?: {
+    path?: string;
+    name?: string;
+    role?: string | string[];
+    knowledge?: string;
+  };
+}) => apiClient.post("/assistant/chat", data);
 
 export const fetchJumuiyaComparisonData = () => apiClient.get("/csa/jumuiya-comparison");
 
