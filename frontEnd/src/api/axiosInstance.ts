@@ -46,7 +46,6 @@ apiClient.interceptors.request.use(
         LocalStorage.remove("userdata");
       }
     }
-    console.log(`[REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, config.data || "");
     return config;
   },
   (error) => Promise.reject(error)
@@ -62,7 +61,6 @@ const processQueue = (error: any, token: string | null = null) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[RESPONSE] ${response.config.method?.toUpperCase()} ${response.config.url} ${response.status}`);
     return response;
   },
   async (error) => {

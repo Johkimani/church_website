@@ -59,7 +59,7 @@ const DatabaseRegistration: React.FC = () => {
         try {
             const payload = {
                 ...form,
-                password: "Password123!"
+                password: form.member_id
             };
 
             const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';

@@ -74,7 +74,16 @@ const isMpesaCallbackPath = (req) =>
   /\/payments\/callback$|\/stkPush\/callback$|\/authentication\/mpesa\/callback$/i.test(req.path);
 
 const isPaymentEndpoint = (req) =>
-  /\/payments(\/|$)/i.test(req.path) || /\/stkPush(\/|$)/i.test(req.path);
+  /\/payments(\/|$)/i.test(req.path) ||
+  /\/stkPush(\/|$)/i.test(req.path) ||
+  /\/stk-push-guest(\/|$)/i.test(req.path);
+
+// Credential-guessing endpoints (login, OTP, password reset, first-login setup)
+// get a much tighter allowance than general traffic (OWASP: lockout after a few
+// tries). Token refresh is exempt — it is already gated by a valid refresh token
+// and fires frequently for legitimate multi-tab users.
+const isAuthEndpoint = (req) =>
+  /\/api\/v1\/authentication\/(login|reset|otp|verify|first-login-setup)/i.test(req.path);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -120,10 +129,25 @@ const paymentLimiter = rateLimit({
   },
 });
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => req.clientIp,
+  handler: (req, res, next, options) => {
+    res.status(options.statusCode || 429).json({
+      error: `Too many authentication attempts. You are only allowed ${options.max
+      } requests per ${options.windowMs / 60000} minutes`,
+    });
+  },
+});
+
 // Rate limiter activation for DDoS protection (per-tier)
 app.use((req, res, next) => {
   if (isMpesaCallbackPath(req)) return callbackLimiter(req, res, next);
   if (isPaymentEndpoint(req)) return paymentLimiter(req, res, next);
+  if (isAuthEndpoint(req)) return authLimiter(req, res, next);
   return limiter(req, res, next);
 });
 app.use(morganMiddleware);

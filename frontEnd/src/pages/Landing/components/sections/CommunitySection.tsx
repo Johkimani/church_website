@@ -44,7 +44,7 @@ const CommunitySection: React.FC = () => {
     <section className="py-20 md:py-28 bg-stone-900 relative overflow-hidden" id="explore">
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/church.png')" }}
+        style={{ backgroundImage: "url('/images/church.jpg')" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-stone-900/85 via-stone-900/70 to-stone-900/85" />
       <div className="container mx-auto px-6 relative z-10">
