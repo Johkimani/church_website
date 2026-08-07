@@ -123,6 +123,8 @@ export default function Dashboard() {
     else if (h < 17) setGreeting("Good Afternoon");
     else setGreeting("Good Evening");
   }, []);
+
+  useEffect(() => {
     const t = setInterval(() => setQuote((q) => (q + 1) % QUOTES.length), 6000);
     return () => clearInterval(t);
   }, []);
