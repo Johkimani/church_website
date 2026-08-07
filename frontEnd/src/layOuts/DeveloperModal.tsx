@@ -55,6 +55,7 @@ export default function DeveloperModal({
   const saved = loadDeveloperSettings();
   const devs = developers ?? saved.developers;
   const chair = chairperson ?? saved.chairperson;
+  const teamPhoto = saved.teamPhoto;
 
   useEffect(() => {
     if (!open) return;
@@ -171,6 +172,17 @@ export default function DeveloperModal({
                 The passionate developers who brought this platform to life.
               </p>
             </div>
+
+            {/* Team photo */}
+            {teamPhoto && (
+              <div className="mt-6">
+                <img
+                  src={teamPhoto}
+                  alt="Development team group photo"
+                  className="w-full max-h-56 object-cover rounded-2xl ring-1 ring-white/10"
+                />
+              </div>
+            )}
 
             {/* Developer cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-7">

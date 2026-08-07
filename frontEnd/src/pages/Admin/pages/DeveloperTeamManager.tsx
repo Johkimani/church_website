@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Code2, Plus, Trash2, Save, RotateCcw, Phone, ShieldCheck } from "lucide-react";
+import { useState, useRef } from "react";
+import { Code2, Plus, Trash2, Save, RotateCcw, Phone, ShieldCheck, Users } from "lucide-react";
 import PanelHeader from "../components/PanelHeader";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
+import { uploadFile } from "../../../api/axiosInstance";
 import {
   type Developer,
   type ChairpersonContact,
@@ -18,6 +19,67 @@ const GRADIENT_PALETTE = [
   "linear-gradient(135deg, #059669, #0EA5E9)",
   "linear-gradient(135deg, #F59E0B, #EF4444)",
 ];
+
+function PhotoField({
+  value,
+  onChange,
+  label = "Photo",
+  placeholder = "Paste an image link...",
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  label?: string;
+  placeholder?: string;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res = await uploadFile(file, { compress: true });
+      const url = res.data?.data?.url;
+      if (url) {
+        onChange(url);
+        toast.success("Photo uploaded");
+      } else {
+        toast.error("Upload did not return a URL");
+      }
+    } catch {
+      toast.error("Photo upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+        {label}
+      </label>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1 min-w-0 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-all"
+        />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          {uploading ? "Uploading..." : "From device"}
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+    </div>
+  );
+}
 
 function AvatarPreview({ name, avatar, gradient }: { name: string; avatar?: string; gradient: string }) {
   if (avatar && avatar.trim()) {
@@ -50,6 +112,7 @@ export default function DeveloperTeamManager() {
   const { user } = useAuth();
   const [developers, setDevelopers] = useState<Developer[]>(() => loadDeveloperSettings().developers);
   const [chair, setChair] = useState<ChairpersonContact>(() => loadDeveloperSettings().chairperson);
+  const [teamPhoto, setTeamPhoto] = useState<string>(() => loadDeveloperSettings().teamPhoto ?? "");
 
   const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
   const isChair = userRoles.some((r: string) => String(r).toUpperCase().trim() === "CSA_CHAIR");
@@ -92,7 +155,7 @@ export default function DeveloperTeamManager() {
   };
 
   const handleSave = () => {
-    saveDeveloperSettings({ developers, chairperson: chair });
+    saveDeveloperSettings({ developers, chairperson: chair, teamPhoto });
     toast.success("Development team details saved");
   };
 
@@ -100,6 +163,7 @@ export default function DeveloperTeamManager() {
     resetDeveloperSettings();
     setDevelopers(DEFAULT_SETTINGS.developers);
     setChair(DEFAULT_SETTINGS.chairperson);
+    setTeamPhoto("");
     toast.success("Restored default details");
   };
 
@@ -180,14 +244,11 @@ export default function DeveloperTeamManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                    Photo URL
-                  </label>
-                  <input
+                  <PhotoField
+                    label="Photo"
                     value={dev.avatar ?? ""}
-                    onChange={(e) => updateDeveloper(index, { avatar: e.target.value })}
-                    placeholder="https://example.com/photo.jpg"
-                    className={inputCls}
+                    onChange={(url) => updateDeveloper(index, { avatar: url })}
+                    placeholder="Paste image link or upload from device"
                   />
                 </div>
               </div>
@@ -205,6 +266,40 @@ export default function DeveloperTeamManager() {
               No developers yet. Click "Add Developer" to get started.
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Team photo */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-5 border-b border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-500" />
+            Team Photo
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            One group photo of the whole team together. Shown at the top of the Development Team dialog.
+          </p>
+        </div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          <div>
+            {teamPhoto ? (
+              <img
+                src={teamPhoto}
+                alt="Team photo preview"
+                className="w-full max-h-44 object-cover rounded-2xl ring-2 ring-slate-100 shadow-sm"
+              />
+            ) : (
+              <div className="w-full min-h-28 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm">
+                No team photo yet
+              </div>
+            )}
+          </div>
+          <PhotoField
+            label="Team photo"
+            value={teamPhoto}
+            onChange={setTeamPhoto}
+            placeholder="Paste a group photo link or upload from device"
+          />
         </div>
       </div>
 

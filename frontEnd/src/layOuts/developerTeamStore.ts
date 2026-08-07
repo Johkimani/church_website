@@ -14,6 +14,7 @@ export interface ChairpersonContact {
 export interface DeveloperTeamSettings {
   developers: Developer[];
   chairperson: ChairpersonContact;
+  teamPhoto?: string;
 }
 
 export const DEFAULT_DEVELOPERS: Developer[] = [
@@ -48,6 +49,7 @@ export function loadDeveloperSettings(): DeveloperTeamSettings {
       chairperson: parsed.chairperson
         ? { ...DEFAULT_CHAIRPERSON, ...parsed.chairperson }
         : DEFAULT_CHAIRPERSON,
+      teamPhoto: typeof parsed.teamPhoto === "string" ? parsed.teamPhoto : "",
     };
   } catch {
     return DEFAULT_SETTINGS;
