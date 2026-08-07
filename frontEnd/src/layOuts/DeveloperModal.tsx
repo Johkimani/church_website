@@ -60,6 +60,9 @@ export default function DeveloperModal({
   const [viewPhoto, setViewPhoto] = useState(false);
   const viewPhotoRef = useRef(false);
   viewPhotoRef.current = viewPhoto;
+  const [viewDev, setViewDev] = useState<Developer | null>(null);
+  const viewDevRef = useRef<Developer | null>(null);
+  viewDevRef.current = viewDev;
 
   useEffect(() => {
     if (!open) return;
@@ -83,6 +86,10 @@ export default function DeveloperModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
+        if (viewDevRef.current) {
+          setViewDev(null);
+          return;
+        }
         if (viewPhotoRef.current) {
           setViewPhoto(false);
           return;
@@ -256,7 +263,22 @@ export default function DeveloperModal({
                       border: "1px solid rgba(255,255,255,0.07)",
                     }}
                   >
-                    <Avatar name={dev.name} avatar={dev.avatar} gradient={dev.gradient} />
+                    {dev.avatar ? (
+                      <button
+                        type="button"
+                        onClick={() => setViewDev(dev)}
+                        aria-label={`View ${dev.name}'s photo`}
+                        title="Click to view photo"
+                        className="relative w-16 h-16 rounded-full overflow-hidden group ring-2 ring-white/10"
+                      >
+                        <Avatar name={dev.name} avatar={dev.avatar} gradient={dev.gradient} />
+                        <span className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <FaExpand size={16} className="text-white" />
+                        </span>
+                      </button>
+                    ) : (
+                      <Avatar name={dev.name} avatar={dev.avatar} gradient={dev.gradient} />
+                    )}
                     <p className="mt-3 text-sm font-semibold text-white">{dev.name}</p>
                     <p className="text-xs text-slate-400 mt-0.5">{dev.role}</p>
                   </div>
@@ -316,6 +338,33 @@ export default function DeveloperModal({
             className="max-w-full max-h-[92vh] object-contain rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* Developer photo lightbox */}
+      {viewDev && viewDev.avatar && (
+        <div
+          className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
+          style={{ background: "rgba(2, 6, 23, 0.94)", backdropFilter: "blur(4px)" }}
+          onClick={() => setViewDev(null)}
+        >
+          <button
+            onClick={() => setViewDev(null)}
+            aria-label="Close photo"
+            className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
+          >
+            <FaTimes size={20} />
+          </button>
+          <div className="text-center max-w-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={viewDev.avatar}
+              alt={`${viewDev.name}'s photo full size`}
+              className="max-w-full max-h-[78vh] object-contain rounded-xl shadow-2xl mx-auto"
+            />
+            <p className="mt-4 text-white font-semibold">{viewDev.name}</p>
+            <p className="text-sm text-slate-400">{viewDev.role}</p>
+          </div>
         </div>
       )}
     </>
