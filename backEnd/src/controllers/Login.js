@@ -46,7 +46,14 @@ export const Login = async (req, res) => {
     const user = result.rows[0];
 
     const storedHash = typeof user.password === 'string' ? user.password.trim() : user.password;
-    const match = await bcrypt.compare(password, storedHash);
+    let match = await bcrypt.compare(password, storedHash);
+    if (!match) {
+      // The default password is the member's registration number (stored in
+      // uppercase). Users often type it in lowercase — accept the uppercase
+      // form too. This only ever succeeds when the stored hash corresponds to
+      // an all-uppercase plaintext (i.e. the reg-number default).
+      match = await bcrypt.compare(password.toUpperCase(), storedHash);
+    }
 
     if (!match) {
       logger.error(`Invalid username or password for '${userReg}'`);
@@ -219,7 +226,12 @@ export const firstLoginSetup = async (req, res) => {
     }
 
     const storedHash = typeof member.rows[0].password === 'string' ? member.rows[0].password.trim() : member.rows[0].password;
-    const valid = await bcrypt.compare(currentPassword, storedHash);
+    let valid = await bcrypt.compare(currentPassword, storedHash);
+    if (!valid) {
+      // Match the login fallback: the default reg-number password may be typed
+      // in either case.
+      valid = await bcrypt.compare(currentPassword.toUpperCase(), storedHash);
+    }
     if (!valid) {
       return res.status(401).json({ status: false, message: "Current password is incorrect" });
     }
@@ -231,6 +243,12 @@ export const firstLoginSetup = async (req, res) => {
 
     const existingEmail = (member.rows[0].email || "").trim();
     const submittedEmail = (email || "").trim().toLowerCase();
+
+    // Reject anything that isn't a real email address before staging an OTP.
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (submittedEmail && !EMAIL_REGEX.test(submittedEmail)) {
+      return res.status(400).json({ status: false, message: "Please enter a valid email address" });
+    }
 
     // ── Case A: email already recorded → change password, no verification ──
     if (existingEmail) {

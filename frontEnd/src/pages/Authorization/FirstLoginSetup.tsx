@@ -9,6 +9,8 @@ import OTPInput from "./OTPInput";
 
 type ApiError = AxiosError<{ message?: string; error?: string }>;
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function FirstLoginSetup() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,6 +33,8 @@ export default function FirstLoginSetup() {
   const [resending, setResending] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [done, setDone] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     if (resendCountdown <= 0) return;
@@ -52,16 +56,23 @@ export default function FirstLoginSetup() {
   };
 
   const handleSubmit = async () => {
+    setFormError("");
+    setEmailError("");
+
+    if (!hasEmail && !email.trim()) {
+      setEmailError("Email is required");
+      return;
+    }
+    if (!hasEmail && !EMAIL_REGEX.test(email.trim())) {
+      setEmailError("Please enter a valid email address, e.g. example@gmail.com");
+      return;
+    }
     if (!newPassword || newPassword.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match");
-      return;
-    }
-    if (!hasEmail && !email.trim()) {
-      toast.error("Email is required");
       return;
     }
 
@@ -71,7 +82,7 @@ export default function FirstLoginSetup() {
         member_id,
         currentPassword,
         newPassword,
-        email: hasEmail ? undefined : email.trim(),
+        email: hasEmail ? undefined : email.trim().toLowerCase(),
         firstLogin: true,
       });
       const status = res.data?.status;
@@ -85,7 +96,9 @@ export default function FirstLoginSetup() {
       }
     } catch (err) {
       const data = (err as ApiError)?.response?.data;
-      toast.error(data?.message || "Failed to update password");
+      const message = data?.message || "Failed to update password. Please try again.";
+      toast.error(message);
+      setFormError(message);
     } finally {
       setLoading(false);
     }
@@ -192,13 +205,26 @@ export default function FirstLoginSetup() {
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (emailError) setEmailError("");
+                      }}
+                      placeholder="example@gmail.com"
+                      autoComplete="off"
                       className="w-full bg-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all border border-gray-200"
                     />
+                    {emailError && (
+                      <p className="text-xs text-red-600 font-bold mt-1.5 pl-1">{emailError}</p>
+                    )}
                     <p className="text-xs text-amber-600 font-medium mt-1.5 pl-1">
                       No email is recorded on your account yet. You must verify the email you provide — a code will be sent to it before your password is changed.
                     </p>
+                  </div>
+                )}
+
+                {formError && (
+                  <div className="p-4 rounded-2xl text-sm font-bold border border-red-200 bg-red-50 text-red-700">
+                    {formError}
                   </div>
                 )}
 

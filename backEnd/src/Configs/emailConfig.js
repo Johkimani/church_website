@@ -15,9 +15,20 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false,
   },
+  // Fail fast instead of hanging the request for minutes when SMTP is slow
+  // or the mail service is unreachable (defaults are 2-10 minutes).
+  connectionTimeout: 15000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 const sendEmail = async (subject, text, to) => {
+  if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
+    const error = new Error("SMTP is not configured (MAIL_USER / MAIL_PASSWORD missing)");
+    console.error(error.message);
+    throw error;
+  }
+
   const mailOptions = {
     from: process.env.MAIL_USER,
     to,
