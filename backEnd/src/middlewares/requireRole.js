@@ -17,6 +17,12 @@ const getUserRoles = (req) => {
     : req.user.role ? [req.user.role] : [];
 };
 
+// True when the (optionally authenticated) caller holds any official role.
+// Used by controllers to decide whether to include sensitive fields such as
+// member reg_numbers in public GET responses.
+const isOfficial = (req) =>
+  getUserRoles(req).some(r => OFFICIAL_ROLES.includes(String(r).toLowerCase().trim()));
+
 const requireRole = (...allowedRoles) => {
   const allowed = allowedRoles.map(r => String(r).toLowerCase().trim());
   return (req, res, next) => {
@@ -61,5 +67,5 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
   }
 };
 
-export { requireRole, enforceJumuiyaScope, OFFICIAL_ROLES };
+export { requireRole, enforceJumuiyaScope, isOfficial, OFFICIAL_ROLES };
 export default requireRole;

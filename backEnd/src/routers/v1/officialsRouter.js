@@ -22,6 +22,7 @@ import {
 
 import { uploadMiddleware } from '../../middlewares/uploadMiddleware.js';
 import verifyToken from '../../middlewares/Tokens.js';
+import optionalAuth from '../../middlewares/optionalAuth.js';
 import requireRole, { OFFICIAL_ROLES } from '../../middlewares/requireRole.js';
 
 const router = express.Router();
@@ -36,8 +37,8 @@ router.delete('/terms/:id', verifyToken, deleteElectionTerm);
 // Archive & Restore routes
 router.post('/archive', verifyToken, archiveCurrentOfficials);
 router.post('/restore', verifyToken, restoreArchivedOfficials);
-router.get('/term', getOfficialsByTerm);
-router.get('/term/:termId', getOfficialsByTerm);
+router.get('/term', optionalAuth, getOfficialsByTerm);
+router.get('/term/:termId', optionalAuth, getOfficialsByTerm);
 router.get('/term/:termId/export', verifyToken, requireRole(...OFFICIAL_ROLES), exportArchivedOfficials);
 router.delete('/term', verifyToken, requireRole(...OFFICIAL_ROLES), bulkDeleteArchivedOfficials);
 router.delete('/term/:officialId', verifyToken, requireRole(...OFFICIAL_ROLES), deleteArchivedOfficial);
@@ -46,9 +47,9 @@ router.delete('/term/:officialId', verifyToken, requireRole(...OFFICIAL_ROLES), 
 router.delete('/clear-all', verifyToken, clearAllOfficials);
 
 // Basic CRUD routes for Officials
-router.get('/list', getAllOfficials); 
+router.get('/list', optionalAuth, getAllOfficials); 
 router.get('/export', verifyToken, requireRole(...OFFICIAL_ROLES), exportOfficials);
-router.get('/:id', getOfficialById);
+router.get('/:id', optionalAuth, getOfficialById);
 router.post('/', verifyToken, uploadMiddleware, createOfficial);
 router.put('/:id', verifyToken, uploadMiddleware, updateOfficial);
 router.delete('/:id', verifyToken, deleteOfficial);
