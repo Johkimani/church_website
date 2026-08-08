@@ -257,6 +257,10 @@ export const importMembers = async (req, res) => {
       [validCount, errorCount, importId]
     );
 
+    // Create valid/warning members immediately so they appear in the members
+    // table and can log in right away (no 5-minute sync job wait).
+    await syncNewImportRecords();
+
     res.status(201).json({
       status: "success",
       data: {
