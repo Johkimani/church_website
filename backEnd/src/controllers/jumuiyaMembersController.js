@@ -12,23 +12,7 @@ class HttpError extends Error {
   }
 }
 import { payAndWait } from "./stkPush/stkHelper.js";
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
-
-const mailTransporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-  tls: { rejectUnauthorized: false },
-});
+import { sendMail, isConfigured } from "../Configs/emailConfig.js";
 
 /**
  * Normalize year_of_study to a numeric year level (1-4).
@@ -1243,9 +1227,8 @@ export const registerWithPayment = async (req, res) => {
     const jumuiyaName = row.jumuiya_name || 'your community';
 
     // Send confirmation email (non-blocking)
-    if (row.email && process.env.MAIL_USER && process.env.MAIL_PASS) {
-      mailTransporter.sendMail({
-        from: process.env.MAIL_USER,
+    if (row.email && isConfigured()) {
+      sendMail({
         to: row.email,
         subject: `Registration Confirmed — ${jumuiyaName}`,
         html: `
@@ -1342,15 +1325,12 @@ export const sendStampCard = async (req, res) => {
       return res.status(400).json({ success: false, error: "Email and PDF data are required" });
     }
 
-    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-      logger.warn("Email not configured: MAIL_USER / MAIL_PASS missing in .env");
+    if (!isConfigured()) {
+      logger.warn("Email not configured: RESEND_API_KEY / RESEND_FROM missing in .env");
       return res.status(500).json({ success: false, error: "Email service is not configured. Please contact the admin." });
     }
 
-    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-
     const mailOptions = {
-      from: process.env.MAIL_USER,
       to: email,
       subject: `Your Semester Stamp Card - ${jumuiyaName || 'Community'}`,
       html: `
@@ -1375,12 +1355,12 @@ export const sendStampCard = async (req, res) => {
       `,
       attachments: [{
         filename: `Stamp_Card_${memberName ? memberName.replace(/\s+/g, '_') : 'member'}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf',
+        content: pdfBase64,
+        content_type: 'application/pdf',
       }],
     };
 
-    await mailTransporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     logger.info(`Stamp card emailed to ${email}`);
     res.json({ success: true, message: "Stamp card sent to your email" });
   } catch (error) {

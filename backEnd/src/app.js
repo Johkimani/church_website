@@ -164,7 +164,7 @@ app.get("/health", (req, res) => {
     status: "ok",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    mailConfigured: Boolean(process.env.MAIL_USER && process.env.MAIL_PASSWORD),
+    mailConfigured: Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM),
   });
 });
 

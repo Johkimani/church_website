@@ -1,93 +1,82 @@
-import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import dns from "node:dns";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
 
-const SMTP_HOST = "smtp.gmail.com";
-const SMTP_PORT = 465;
+const RESEND_API_URL = "https://api.resend.com/emails";
+const REQUEST_TIMEOUT_MS = 15000;
 
-// nodemailer resolves BOTH A and AAAA records and connects to a randomly
-// chosen one, so Gmail's IPv6 addresses get picked ~50% of the time. Render
-// can't route Gmail's IPv6 and dies with "connect ENETUNREACH <ipv6>:465"
-// (a `family: 4` transport option is ignored by nodemailer's own resolver).
-//
-// Workaround: resolve an IPv4 address ourselves and pin it as a literal host
-// (nodemailer skips DNS for IP literals). The domain is kept as `servername`
-// so TLS SNI / certificate verification still target smtp.gmail.com.
-let cachedIpv4 = null;
-let cacheExpires = 0;
-const CACHE_TTL_MS = 30 * 60 * 1000;
+const isConfigured = () => Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
 
-async function resolveIpv4() {
-  if (cachedIpv4 && Date.now() < cacheExpires) {
-    return cachedIpv4;
-  }
-  const addresses = await dns.promises.resolve4(SMTP_HOST);
-  if (!addresses.length) {
-    throw new Error(`Could not resolve IPv4 addresses for ${SMTP_HOST}`);
-  }
-  cachedIpv4 = addresses[0];
-  cacheExpires = Date.now() + CACHE_TTL_MS;
-  console.log(`Resolved ${SMTP_HOST} -> ${cachedIpv4} for SMTP (IPv4)`);
-  return cachedIpv4;
-}
-
-const buildTransporter = (host) =>
-  nodemailer.createTransport({
-    host,
-    port: SMTP_PORT,
-    secure: true,
-    servername: SMTP_HOST,
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASSWORD,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-    // Fail fast instead of hanging the request for minutes when SMTP is slow
-    // or the mail service is unreachable (defaults are 2-10 minutes).
-    connectionTimeout: 15000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  });
-
-const sendEmail = async (subject, text, to) => {
-  if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
-    const error = new Error("SMTP is not configured (MAIL_USER / MAIL_PASSWORD missing)");
+/**
+ * Send an email via the Resend HTTP API.
+ *
+ * NOTE: Render's egress network blocks all outbound SMTP ports (25/465/587),
+ * so nodemailer/Gmail SMTP can never work from the API host. Resend is a
+ * plain HTTPS API (port 443), which Render allows.
+ *
+ * @param {Object} options
+ * @param {string} options.to      Recipient address(es)
+ * @param {string} options.subject Subject line
+ * @param {string} [options.text]  Plain-text body
+ * @param {string} [options.html]  HTML body
+ * @param {Array<{filename: string, content: string, content_type: string}>} [options.attachments]
+ *                                  Attachments; `content` must be base64
+ */
+const sendMail = async ({ to, subject, text, html, attachments }) => {
+  if (!isConfigured()) {
+    const error = new Error("Email is not configured (RESEND_API_KEY / RESEND_FROM missing)");
     console.error(error.message);
     throw error;
   }
 
-  const mailOptions = {
-    from: process.env.MAIL_USER,
+  const body = {
+    from: process.env.RESEND_FROM,
     to,
     subject,
     text,
+    html,
+    attachments,
   };
+  Object.keys(body).forEach((key) => body[key] === undefined && delete body[key]);
 
-  // If a pinned IP can't be reached (network blip or Gmail IP rotation),
-  // fall back to the next resolved IPv4 address before giving up.
-  const ipv4s = await dns.promises.resolve4(SMTP_HOST);
-  let lastError;
-  for (const host of ipv4s) {
-    try {
-      cachedIpv4 = host;
-      cacheExpires = Date.now() + CACHE_TTL_MS;
-      const info = await buildTransporter(host).sendMail(mailOptions);
-      console.log("Email sent successfully:", info.response);
-      return info;
-    } catch (error) {
-      lastError = error;
-      console.error(`Error sending email via ${host}:`, error.message);
-    }
+  let response;
+  try {
+    response = await fetch(RESEND_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    console.error("Error sending email:", error.message);
+    throw error;
   }
-  throw lastError;
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const errorBody = await response.json();
+      detail = errorBody.message || JSON.stringify(errorBody);
+    } catch {
+      detail = response.statusText;
+    }
+    const error = new Error(`Email API error ${response.status}: ${detail}`);
+    console.error(error.message);
+    throw error;
+  }
+
+  const info = await response.json();
+  console.log("Email sent successfully:", info.id);
+  return info;
 };
 
-export { sendEmail };
+const sendEmail = async (subject, text, to) => sendMail({ to, subject, text });
+
+export { sendMail, sendEmail, isConfigured };
 export default sendEmail;
