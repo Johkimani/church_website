@@ -35,6 +35,7 @@ export default function FirstLoginSetup() {
   const [done, setDone] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [formError, setFormError] = useState("");
+  const [emailEditable, setEmailEditable] = useState(false);
 
   useEffect(() => {
     if (resendCountdown <= 0) return;
@@ -204,13 +205,21 @@ export default function FirstLoginSetup() {
                     </label>
                     <input
                       type="email"
+                      name="email"
                       value={email}
+                      readOnly={!emailEditable}
+                      onFocus={() => {
+                        if (!emailEditable) {
+                          setEmail("");
+                          setEmailEditable(true);
+                        }
+                      }}
                       onChange={(e) => {
                         setEmail(e.target.value);
                         if (emailError) setEmailError("");
                       }}
                       placeholder="example@gmail.com"
-                      autoComplete="off"
+                      autoComplete="email"
                       className="w-full bg-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all border border-gray-200"
                     />
                     {emailError && (
