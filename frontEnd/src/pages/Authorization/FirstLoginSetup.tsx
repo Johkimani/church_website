@@ -268,6 +268,10 @@ export default function FirstLoginSetup() {
                   <OTPInput length={6} onComplete={handleOTPComplete} />
                 </div>
 
+                <p className="text-xs text-gray-400 font-medium text-center">
+                  Tip: you can copy the code from your email and paste it directly into the boxes.
+                </p>
+
                 {otpLoading && (
                   <div className="flex items-center justify-center gap-2 text-xs font-black text-gray-500 uppercase tracking-widest">
                     <Loader2 className="w-4 h-4 animate-spin" />
