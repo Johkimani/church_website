@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
@@ -176,14 +177,18 @@ app.use("/gallery-images", express.static(path.join(__dirname, "../galleryImages
 // Initialize Backend Data Service
 BackendDataService.init();
 
-// SPA: serve built frontend + fallback to index.html for non-API routes
+// SPA: serve built frontend + fallback to index.html for non-API routes.
+// Only when the build actually exists (the frontend normally deploys to
+// Vercel, so backEnd/frontEnd/dist is usually absent on the API host).
+// Uses an Express 5-compatible named wildcard — app.get('*') throws
+// "Missing parameter name at index 1: *" on boot in production.
 const frontendDistPath = path.join(__dirname, "../../frontEnd/dist");
 const indexHtmlPath = path.join(frontendDistPath, "index.html");
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && fs.existsSync(indexHtmlPath)) {
   app.use(express.static(frontendDistPath));
 
-  app.get('*', (req, res, next) => {
+  app.get('/{*splat}', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     if (req.path.startsWith('/uploads')) return next();
     if (req.path.startsWith('/gallery-images')) return next();
