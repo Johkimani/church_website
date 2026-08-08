@@ -26,7 +26,9 @@ const Login: React.FC = () => {
       const response = await loginApi({ userReg: normalizedUserReg, password: normalizedPassword });
       if (response.data.status === "success") {
         if (response.data.forcePasswordChange) {
-          navigate("/login/first-login-setup", { state: { loginResponse: response.data } });
+          navigate("/login/first-login-setup", {
+            state: { loginResponse: response.data, currentPassword: normalizedPassword },
+          });
         } else {
           login(response.data);
           const role = response.data.role;

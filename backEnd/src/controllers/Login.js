@@ -187,25 +187,31 @@ export const refreshAccessToken = async (req, res) => {
 };
 
 /**
- * First-login setup: force password change + optional email update.
- * Verifies current password (should be the default reg number) before
- * allowing the update.
+ * First-login setup: force password change + email recording.
+ *
+ * Verifies the current password before allowing any update, then:
+ *  - Email already recorded on the member  → change password directly.
+ *  - No email recorded but one is provided → stage the new password + email
+ *    in `password_resets` (temp_password) and email an OTP. NOTHING is
+ *    committed to `members` until the OTP is verified — so a failed OTP can
+ *    never record the password or a (possibly wrong) email. The member may
+ *    re-submit with a corrected email, which replaces the staged record.
  */
 export const firstLoginSetup = async (req, res) => {
   try {
-    const { member_id, currentPassword, newPassword, email } = req.body;
+    const { member_id, currentPassword, newPassword, email, firstLogin } = req.body;
 
     if (!member_id || !currentPassword || !newPassword) {
       return res.status(400).json({ status: false, message: "member_id, currentPassword, and newPassword are required" });
     }
 
-    if (newPassword.length < 8) {
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
       return res.status(400).json({ status: false, message: "New password must be at least 8 characters" });
     }
 
     // Fetch member
     const member = await pool.query(
-      "SELECT member_id, password, first_name, last_name FROM members WHERE member_id = $1",
+      "SELECT member_id, password, email FROM members WHERE member_id = $1",
       [member_id]
     );
     if (member.rows.length === 0) {
@@ -218,35 +224,82 @@ export const firstLoginSetup = async (req, res) => {
       return res.status(401).json({ status: false, message: "Current password is incorrect" });
     }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
+    // The default reg-number password must never be kept as the final one.
+    if (await bcrypt.compare(member_id, newPassword)) {
+      return res.status(400).json({ status: false, message: "New password cannot be your registration number" });
+    }
 
-    // Update password and optionally email
-    if (email && email.trim()) {
-      const token = crypto.randomBytes(32).toString("hex");
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await pool.query(
-        `UPDATE members SET password = $1, email = $2, email_verified = FALSE,
-         email_verification_token = $4, email_verification_expires = $5 WHERE member_id = $3`,
-        [hashed, email.trim(), member_id, token, expires]
-      );
-      try {
-        const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-        await sendMail(
-          "Verify your email — CSA Kirinyaga",
-          `Hi ${member_id},\n\nPlease verify your email by clicking the link below:\n${FRONTEND_URL}/verify-email?token=${token}&reg=${encodeURIComponent(member_id)}\n\nThis link expires in 24 hours.\n\n— CSA Kirinyaga Chapter`,
-          email.trim()
-        );
-      } catch (mailErr) {
-        logger.error("Failed to send verification email:", mailErr.message);
-      }
-    } else {
+    const existingEmail = (member.rows[0].email || "").trim();
+    const submittedEmail = (email || "").trim().toLowerCase();
+
+    // ── Case A: email already recorded → change password, no verification ──
+    if (existingEmail) {
+      const hashed = await bcrypt.hash(newPassword, 10);
       await pool.query(
         "UPDATE members SET password = $1 WHERE member_id = $2",
         [hashed, member_id]
       );
+      return res.json({ status: "success", message: "Password updated successfully" });
     }
 
-    res.json({ status: true, message: "Password updated successfully" });
+    // No email on file and none provided.
+    if (!submittedEmail) {
+      if (firstLogin) {
+        return res.status(400).json({ status: false, message: "An email address is required to finish setting up your account" });
+      }
+      // Authenticated member changing their password from account settings.
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await pool.query(
+        "UPDATE members SET password = $1 WHERE member_id = $2",
+        [hashed, member_id]
+      );
+      return res.json({ status: "success", message: "Password updated successfully" });
+    }
+
+    // ── Case B: no email on file → MUST verify via OTP before committing ──
+    const emailTaken = await pool.query(
+      "SELECT 1 FROM members WHERE lower(email) = $1 AND member_id <> $2",
+      [submittedEmail, member_id]
+    );
+    if (emailTaken.rows.length > 0) {
+      return res.status(409).json({ status: false, message: "That email is already linked to another account" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    const OTP = crypto.randomInt(100000, 1000000).toString();
+    const hashedOtp = crypto.createHash("sha256").update(OTP).digest("hex");
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Replace any previous pending setup for this member/email (covers
+    // wrong-email correction: re-submitting with a new email swaps the stage).
+    await pool.query(
+      `DELETE FROM password_resets WHERE email = $1 OR member_id = $2`,
+      [submittedEmail, member_id]
+    );
+    await pool.query(
+      `INSERT INTO password_resets (member_id, email, otp, otp_expires, temp_password)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [member_id, submittedEmail, hashedOtp, expiresAt, hashed]
+    );
+
+    try {
+      await sendMail(
+        "Your verification code — CSA Kirinyaga",
+        `Hi ${member_id},\n\nUse the code below to verify your email and activate your account:\n\n${OTP}\n\nThis code expires in 10 minutes.\n\n— CSA Kirinyaga Chapter`,
+        submittedEmail
+      );
+    } catch (mailErr) {
+      // If the mail never went out, drop the staged record so nothing lingers.
+      await pool.query(`DELETE FROM password_resets WHERE email = $1`, [submittedEmail]);
+      logger.error("Failed to send first-login OTP:", mailErr.message);
+      return res.status(500).json({ status: false, message: "Could not send the verification code. Please try again." });
+    }
+
+    return res.json({
+      status: "otp_required",
+      message: "A verification code has been sent to your email. Enter it to finish setting up your account.",
+      email: submittedEmail,
+    });
   } catch (error) {
     logger.error("firstLoginSetup error:", error.message);
     res.status(500).json({ status: false, message: "Server error" });
