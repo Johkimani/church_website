@@ -197,6 +197,11 @@ app.get("/diag/network", async (req, res) => {
   results.push(await test("smtp.gmail.com:465 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 465, 12000));
   results.push(await test("smtp.gmail.com:587 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 587, 12000));
   results.push(await test("smtp.gmail.com:465 (domain)", "smtp.gmail.com", 465, 12000));
+  results.push(await test("smtp.gmail.com:443 (HTTPS to Gmail)", smtpIps[0] || "smtp.gmail.com", 443, 12000));
+  results.push(await test("imap.gmail.com:993", "imap.gmail.com", 993, 12000));
+  results.push(await test("smtp.office365.com:587", "smtp.office365.com", 587, 12000));
+  results.push(await test("smtp.sendgrid.net:587", "smtp.sendgrid.net", 587, 12000));
+  results.push(await test("smtp-relay.brevo.com:587", "smtp-relay.brevo.com", 587, 12000));
   results.push(await test("example.com:80", "example.com", 80, 12000));
   res.status(200).json(results);
 });
