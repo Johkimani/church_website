@@ -8,6 +8,9 @@ dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
+  // Force IPv4 — Render's network can't route Gmail's IPv6 addresses and
+  // otherwise fails with "connect ENETUNREACH <ipv6>:465".
+  family: 4,
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASSWORD,
