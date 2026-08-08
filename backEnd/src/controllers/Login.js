@@ -309,8 +309,8 @@ export const firstLoginSetup = async (req, res) => {
     } catch (mailErr) {
       // If the mail never went out, drop the staged record so nothing lingers.
       await pool.query(`DELETE FROM password_resets WHERE email = $1`, [submittedEmail]);
-      logger.error("Failed to send first-login OTP:", mailErr.message);
-      return res.status(500).json({ status: false, message: "Could not send the verification code. Please try again." });
+      logger.error(`Failed to send first-login OTP: ${mailErr.message}`);
+      return res.status(500).json({ status: false, message: `Could not send the verification code. (${mailErr.message})` });
     }
 
     return res.json({
