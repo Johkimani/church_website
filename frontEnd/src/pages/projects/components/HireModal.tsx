@@ -66,8 +66,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
   const [payPhone, setPayPhone] = useState("");
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState<{ success: boolean; message: string; receipt?: string } | null>(null);
-  const [receiptInput, setReceiptInput] = useState("");
-  const [confirming, setConfirming] = useState(false);
   const paidRef = useRef(false);
 
   // Availability checking
@@ -226,20 +224,9 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     }
   };
 
-  // Manual M-Pesa receipt confirmation (fallback when callback fails)
-  const confirmPayment = async () => {
-    if (!result || !receiptInput.trim()) return;
-    setConfirming(true);
-    try {
-      await apiClient.post(`/hire/confirm-payment/${result.reference}`, { mpesa_receipt: receiptInput.trim() });
-      setPayResult({ success: true, message: `Payment confirmed! Receipt: ${receiptInput.trim()}`, receipt: receiptInput.trim() });
-      setPaymentStep("done");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to confirm payment");
-    } finally {
-      setConfirming(false);
-    }
-  };
+  // Manual M-Pesa receipt confirmation is handled by the office (officials
+  // only). Customers who paid via M-Pesa but whose STK push timed out can
+  // check their status at /hire-status or contact the office with their reference.
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -437,15 +424,11 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
 
             {payResult && !payResult.success && (
               <div className="border-t border-slate-200 pt-4 mt-2">
-                <p className="text-xs font-bold text-slate-700 text-center mb-3">Already paid via M-Pesa? Enter receipt</p>
-                <div className="flex gap-2">
-                  <input type="text" value={receiptInput} onChange={e => setReceiptInput(e.target.value)} placeholder="e.g. QLS1234567"
-                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-                  <button onClick={confirmPayment} disabled={confirming || !receiptInput.trim()}
-                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black rounded-xl text-xs transition-all flex items-center gap-1.5 disabled:cursor-not-allowed">
-                    {confirming ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
-                  </button>
-                </div>
+                <p className="text-xs text-slate-500 text-center leading-relaxed">
+                  Paid via M-Pesa but the payment timed out? Track your request at{" "}
+                  <span className="font-bold text-slate-700">/hire-status</span> — the office verifies
+                  payments and will confirm your receipt shortly.
+                </p>
               </div>
             )}
           </div>

@@ -9,11 +9,19 @@ import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 const router = Router();
 
 // GET all items in a hire group by reference
+// Public lookup by reference: return only the fields needed to track the
+// request and pay. Never expose internal columns (e.g. mpesa_checkout_id).
 router.get("/group/:reference", async (req, res) => {
   try {
     const { reference } = req.params;
     const result = await pool.query(
-      `SELECT * FROM hire_requests WHERE hire_reference = $1 ORDER BY id`,
+      `SELECT hire_reference, customer_name, phone_number, email,
+              item_name, item_category, quantity,
+              start_date, end_date, event_date, pickup_date, return_date,
+              status, notes, total_cost,
+              payment_status, payment_method, mpesa_receipt, paid_at,
+              pickup_location, pickup_time
+       FROM hire_requests WHERE hire_reference = $1 ORDER BY id`,
       [reference]
     );
     if (result.rows.length === 0) {
@@ -256,6 +264,8 @@ router.get("/payment-status/:reference", async (req, res) => {
 });
 
 // POST pay with cash for a hire group (immediate payment choice)
+// Only payable while pending/approved and not already paid, so a paid,
+// collected, returned, cancelled or rejected request cannot be reset.
 router.post("/pay-cash/:reference", async (req, res) => {
   const { reference } = req.params;
 
@@ -267,6 +277,8 @@ router.post("/pay-cash/:reference", async (req, res) => {
         payment_method = 'cash',
         updated_at = CURRENT_TIMESTAMP
        WHERE hire_reference = $1
+         AND status IN ('pending', 'approved')
+         AND COALESCE(payment_status, '') NOT IN ('paid')
        RETURNING id, hire_reference, status, payment_status, payment_method`,
       [reference]
     );
@@ -284,8 +296,10 @@ router.post("/pay-cash/:reference", async (req, res) => {
 });
 
 // POST manually confirm M-Pesa payment for a hire request (fallback when callback fails)
-// Only allowed when an M-Pesa checkout was actually initiated and is still pending.
-router.post("/confirm-payment/:reference", async (req, res) => {
+// Officials only: anyone who knows a (sequential) hire reference could otherwise
+// mark a pending checkout as paid without paying. Admins already have PATCH
+// /hire/group/:reference for the same purpose.
+router.post("/confirm-payment/:reference", verifyToken, requireRole(...OFFICIAL_ROLES), async (req, res) => {
   const { reference } = req.params;
   const { mpesa_receipt } = req.body;
 
