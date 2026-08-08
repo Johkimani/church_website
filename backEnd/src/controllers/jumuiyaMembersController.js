@@ -1,5 +1,6 @@
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import bcrypt from "bcrypt";
 
 /**
  * Error carrying an HTTP status so route handlers can map it to a response.
@@ -403,9 +404,10 @@ export const updateJumuiyaMember = async (req, res) => {
       }
 
       // Also upsert into members table
+      const defaultPassword = await bcrypt.hash(effectiveId, 10);
       await client.query(`
-        INSERT INTO members (member_id, first_name, last_name, email, phone, gender, course, jumuiya_id, source, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'jum', 'valid')
+        INSERT INTO members (member_id, first_name, last_name, email, phone, gender, course, jumuiya_id, source, status, password)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'jum', 'valid', $9)
         ON CONFLICT (member_id) DO UPDATE SET
           first_name = COALESCE($2, members.first_name),
           last_name = COALESCE($3, members.last_name),
@@ -413,8 +415,9 @@ export const updateJumuiyaMember = async (req, res) => {
           phone = COALESCE($5, members.phone),
           gender = COALESCE($6, members.gender),
           course = COALESCE($7, members.course),
-          jumuiya_id = COALESCE($8, members.jumuiya_id)
-      `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, course || null, jumuiyaUuid]);
+          jumuiya_id = COALESCE($8, members.jumuiya_id),
+          password = COALESCE(members.password, $9)
+      `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, course || null, jumuiyaUuid, defaultPassword]);
 
       // Sync associates table
       {

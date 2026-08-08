@@ -1,16 +1,17 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import bcrypt from "bcrypt";
 
 const SYNC_INTERVAL = 5 * 60 * 1000;
 let intervalHandle = null;
 
-const syncNewImportRecords = async () => {
+export const syncNewImportRecords = async () => {
   try {
     const csaResult = await pool.query(`
       INSERT INTO members (
         member_id, first_name, last_name, phone, gender,
         source, status, import_batch_id, join_date, migrated_to_associates,
-        jumuiya_id, password
+        jumuiya_id
       )
       SELECT
         ir.cleaned_reg_number,
@@ -23,8 +24,7 @@ const syncNewImportRecords = async () => {
         mi.id,
         mi.created_at,
         COALESCE(ir.migrated_to_associates, false),
-        sg.group_id,
-        ir.cleaned_reg_number
+        sg.group_id
       FROM import_records ir
       JOIN member_imports mi ON mi.id = ir.import_id
       LEFT JOIN sub_groups sg ON sg.name = ir.cleaned_jumuiya
@@ -39,7 +39,7 @@ const syncNewImportRecords = async () => {
       INSERT INTO members (
         member_id, first_name, last_name, phone, gender,
         source, status, import_batch_id, join_date, migrated_to_associates,
-        jumuiya_id, password
+        jumuiya_id
       )
       SELECT
         ir.cleaned_reg_number,
@@ -52,8 +52,7 @@ const syncNewImportRecords = async () => {
         mi.id,
         mi.created_at,
         COALESCE(ir.migrated_to_associates, false),
-        sg.group_id,
-        ir.cleaned_reg_number
+        sg.group_id
       FROM import_records ir
       JOIN member_imports mi ON mi.id = ir.import_id
       LEFT JOIN sub_groups sg ON sg.name = ir.cleaned_jumuiya OR sg.group_id::text = ir.cleaned_jumuiya
@@ -89,6 +88,25 @@ const syncNewImportRecords = async () => {
 
     if (total > 0) {
       logger.info(`Sync: inserted ${total} new members from import_records`);
+    }
+
+    // Backfill bcrypt passwords for any member with a missing or plaintext
+    // password (default password = registration number). Fixes members created
+    // by earlier sync cycles that stored the reg number as plaintext, which
+    // broke bcrypt.compare() in the login flow.
+    const needHashing = await pool.query(
+      `SELECT member_id FROM members
+       WHERE password IS NULL OR password NOT LIKE '$2%'`
+    );
+    for (const row of needHashing.rows) {
+      const hash = await bcrypt.hash(row.member_id, 10);
+      await pool.query(
+        `UPDATE members SET password = $1 WHERE member_id = $2`,
+        [hash, row.member_id]
+      );
+    }
+    if (needHashing.rows.length > 0) {
+      logger.info(`Sync: hashed ${needHashing.rows.length} member password(s)`);
     }
   } catch (error) {
     logger.warn(`Import sync cycle failed: ${error.message}`);

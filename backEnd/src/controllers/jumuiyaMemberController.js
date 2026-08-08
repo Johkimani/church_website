@@ -2,6 +2,7 @@ import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { validateMemberRow, parseExcelRow } from "../utils/memberValidation.js";
 import { distributeMembers } from "../utils/distributionAlgorithm.js";
+import { syncNewImportRecords } from "../services/importSyncJob.js";
 import bcrypt from "bcrypt";
 
 /**
@@ -1172,6 +1173,10 @@ export const csaImportMembers = async (req, res) => {
       `UPDATE member_imports SET valid_records = $1, error_records = $2 WHERE id = $3`,
       [validCount, errorCount, importId]
     );
+
+    // Create valid/warning members immediately so they appear in the members
+    // table and can log in right away (no 5-minute sync job wait).
+    await syncNewImportRecords();
 
     res.status(201).json({
       status: "success",
