@@ -196,8 +196,13 @@ app.get("/diag/network", async (req, res) => {
   results.push({ label: "resolve4 smtp.gmail.com", ok: true, detail: smtpIps.join(", ") });
   results.push(await test("smtp.gmail.com:465 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 465, 12000));
   results.push(await test("smtp.gmail.com:587 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 587, 12000));
+  results.push(await test("smtp.gmail.com:25 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 25, 12000));
+  results.push(await test("smtp.gmail.com IP:993 (non-SMTP port)", smtpIps[0] || "smtp.gmail.com", 993, 12000));
+  results.push(await test("google.com:443", "google.com", 443, 12000));
+  results.push(await test("api.resend.com:443", "api.resend.com", 443, 12000));
+  results.push(await test("1.1.1.1:53", "1.1.1.1", 53, 12000));
+  results.push(await test("8.8.8.8:53", "8.8.8.8", 53, 12000));
   results.push(await test("smtp.gmail.com:465 (domain)", "smtp.gmail.com", 465, 12000));
-  results.push(await test("smtp.gmail.com:443 (HTTPS to Gmail)", smtpIps[0] || "smtp.gmail.com", 443, 12000));
   results.push(await test("imap.gmail.com:993", "imap.gmail.com", 993, 12000));
   results.push(await test("smtp.office365.com:587", "smtp.office365.com", 587, 12000));
   results.push(await test("smtp.sendgrid.net:587", "smtp.sendgrid.net", 587, 12000));
