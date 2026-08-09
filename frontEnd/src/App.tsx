@@ -5,7 +5,7 @@ import PageLoader from "./assets/Layouts/PageLoader";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
 import { Home } from "./pages/Landing/components/page/Home";
-import { PublicRoute, ProtectedRoute } from "./Regulator";
+import { PublicRoute, ProtectedRoute, AdminRoute } from "./Regulator";
 import { DataProvider } from "./pages/Jumuiya/context/DataContext";
 import Pageoulet from "./assets/Layouts/Pageoulet";
 import RafikiWidget from "./components/assistant/RafikiWidget";
@@ -151,9 +151,9 @@ const App: React.FC = () => {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <UniversalAdmin />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         >
           <Route index element={<AdminDashboard />} />

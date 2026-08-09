@@ -1,0 +1,154 @@
+// Single source of truth for /admin role-based access on the frontend.
+// Keep in sync with the backend's requireRole.js OFFICIAL_ROLES / routers.
+
+export const CHAIR_ROLE = "CSA_CHAIR";
+
+// Union of every role that grants any access to the /admin area. A logged-in
+// member holding none of these must never even see the admin shell.
+const KNOWN_ADMIN_ROLES = new Set([
+  CHAIR_ROLE,
+  "JUMUIYA_COORDINATOR",
+  "OS",
+  "JUMUIYA_OS",
+  "PROJECT_MANAGER",
+  "INSTRUMENT_MANAGER",
+  "TREASURER",
+  "CSA_VICE_CHAIR",
+  "LITURGIST",
+  "CSA_SECRETARY",
+  "JUMUIYA_CHAIRPERSON",
+  "JUMUIYA_SECRETARY",
+  "CHOIR_CHAIRPERSON",
+  "CHOIR_SECRETARY",
+  "CHOIR_PROJECT_COORDINATOR",
+  "ST_FRANCIS_CHAIR",
+  "CHARISMATIC_CHAIR",
+  "DANCE_CHAIR",
+  "MENTORSHIP_CHAIR",
+]);
+
+// Ordered list of admin destinations used to redirect a user to their first
+// reachable page when they land on a page they may not open.
+export const ALL_ADMIN_PATHS = [
+  "/admin/officials",
+  "/admin/jumuiya-members",
+  "/admin/attendance-tally",
+  "/admin/announcements",
+  "/admin/weekly-activities",
+  "/admin/semester-activities",
+  "/admin/bookings",
+  "/admin/gallery",
+  "/admin/secretary-dashboard",
+  "/admin/sacramentals-banners",
+  "/admin/products",
+  "/admin/orders",
+  "/admin/hire-requests",
+  "/admin/projects",
+  "/admin/donations",
+  "/admin/suggestions",
+  "/admin/devotions",
+  "/admin/registered-members",
+  "/admin/community-management",
+];
+
+export const normalizeRoles = (role: unknown): string[] => {
+  const roles = Array.isArray(role) ? role : role ? [role] : [];
+  return roles.map((r) => String(r).toUpperCase().trim());
+};
+
+export const isChair = (roles: string[]): boolean => roles.includes(CHAIR_ROLE);
+
+export const hasAnyAdminAccess = (roles: string[]): boolean =>
+  roles.some((r) => KNOWN_ADMIN_ROLES.has(r));
+
+export const getAllowedPrefixes = (roles: string[]): Set<string> => {
+  const prefixes = new Set<string>();
+  if (isChair(roles)) return prefixes;
+
+  roles.forEach((role) => {
+    switch (role) {
+      case "JUMUIYA_COORDINATOR":
+        prefixes.add("/admin/officials");
+        prefixes.add("/admin/jumuiya-members");
+        prefixes.add("/admin/attendance-tally");
+        break;
+      case "OS":
+        prefixes.add("/admin/announcements");
+        prefixes.add("/admin/weekly-activities");
+        prefixes.add("/admin/semester-activities");
+        prefixes.add("/admin/bookings");
+        prefixes.add("/admin/gallery");
+        break;
+      case "JUMUIYA_OS":
+        prefixes.add("/admin/secretary-dashboard");
+        prefixes.add("/admin/jumuiya-members");
+        break;
+      case "PROJECT_MANAGER":
+        prefixes.add("/admin/sacramentals-banners");
+        prefixes.add("/admin/products");
+        prefixes.add("/admin/orders");
+        prefixes.add("/admin/hire-requests");
+        prefixes.add("/admin/projects");
+        break;
+      case "INSTRUMENT_MANAGER":
+        prefixes.add("/admin/projects");
+        break;
+      case "TREASURER":
+        prefixes.add("/admin/donations");
+        break;
+      case "CSA_VICE_CHAIR":
+        prefixes.add("/admin/suggestions");
+        break;
+      case "LITURGIST":
+        prefixes.add("/admin/devotions");
+        break;
+      case "CSA_SECRETARY":
+        prefixes.add("/admin/registered-members");
+        break;
+      case "JUMUIYA_CHAIRPERSON":
+      case "JUMUIYA_SECRETARY":
+        prefixes.add("/admin/secretary-dashboard");
+        prefixes.add("/admin/jumuiya-members");
+        break;
+      case "CHOIR_CHAIRPERSON":
+      case "CHOIR_SECRETARY":
+      case "CHOIR_PROJECT_COORDINATOR":
+        prefixes.add("/admin/community-management");
+        prefixes.add("/admin/community-management/choir");
+        break;
+      case "ST_FRANCIS_CHAIR":
+        prefixes.add("/admin/community-management");
+        prefixes.add("/admin/community-management/st-francis");
+        break;
+      case "CHARISMATIC_CHAIR":
+        prefixes.add("/admin/community-management");
+        prefixes.add("/admin/community-management/charismatic");
+        break;
+      case "DANCE_CHAIR":
+        prefixes.add("/admin/community-management");
+        prefixes.add("/admin/community-management/dance");
+        break;
+      case "MENTORSHIP_CHAIR":
+        prefixes.add("/admin/community-management");
+        prefixes.add("/admin/community-management/mentorship");
+        break;
+    }
+  });
+
+  return prefixes;
+};
+
+export const checkAccess = (roles: string[], path: string): boolean => {
+  if (isChair(roles)) return true;
+  if (path === "/admin" || path === "/admin/") return false;
+
+  const prefixes = getAllowedPrefixes(roles);
+  for (const prefix of prefixes) {
+    if (path.startsWith(prefix)) return true;
+  }
+  return false;
+};
+
+// First reachable destination for a user who may not open the current page.
+export const getFirstAllowedPath = (roles: string[]): string | null =>
+  ALL_ADMIN_PATHS.find((p) => checkAccess(roles, p)) ?? null;
