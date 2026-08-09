@@ -64,10 +64,10 @@ const SUBGROUP_ROLES = ['choir_chairperson', 'choir_secretary', 'choir_project_c
 
 type TabKey = 'csa' | 'jumuiya' | 'subgroup';
 
-const SECTIONS: { key: TabKey; label: string; color: string }[] = [
-  { key: 'csa', label: 'CSA Officials', color: 'text-blue-600' },
-  { key: 'jumuiya', label: 'Jumuiya Officials', color: 'text-emerald-600' },
-  { key: 'subgroup', label: 'Sub-Group Officials', color: 'text-violet-600' },
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'csa', label: 'CSA' },
+  { key: 'jumuiya', label: 'Jumuiya' },
+  { key: 'subgroup', label: 'Sub Groups' },
 ];
 
 const getPagesForRole = (roleName: string): string[] => {
@@ -84,78 +84,43 @@ const roleBelongsToTab = (roleName: string, tab: TabKey): boolean => {
   }
 };
 
-/** Single assignment card – replaces a table row */
-function AssignmentCard({ a, actions }: { a: Assignment; actions: React.ReactNode }) {
-  const initials = `${a.first_name[0] ?? '?'}${(a.last_name?.[0]) ?? ''}`;
-  return (
-    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-3">
-      {/* Row 1: avatar + name + role badge */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
-          {initials}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-bold text-sm text-slate-900 truncate">{a.first_name} {a.last_name}</p>
-          <p className="text-[10px] text-slate-400 font-medium uppercase truncate">{a.member_id}</p>
-        </div>
-        <span className="shrink-0 px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-lg border border-blue-100 capitalize whitespace-nowrap">
-          {a.role_name.replace(/_/g, ' ')}
-        </span>
-      </div>
-
-      {/* Row 2: pages + scope + meta */}
-      <div className="flex flex-wrap gap-1.5 items-center">
-        {getPagesForRole(a.role_name).map((page) => (
-          <span key={page} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded-md border border-emerald-100">
-            {page}
-          </span>
-        ))}
-        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-semibold rounded-md border border-slate-200">
-          {a.jumuiya_name || 'Global'}
-        </span>
-      </div>
-
-      {/* Row 3: meta info + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[10px] text-slate-400">
-          {a.assigned_by_first
-            ? `Assigned by ${a.assigned_by_first} ${a.assigned_by_last}`
-            : a.approved_by_first
-            ? `Approved by ${a.approved_by_first} ${a.approved_by_last}`
-            : null}
-          {a.approved_at ? ` · ${new Date(a.approved_at).toLocaleDateString()}` :
-           a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString()}` : ''}
-        </span>
-        <div className="flex items-center gap-2">{actions}</div>
-      </div>
-    </div>
-  );
-}
-
 export default function Settings() {
+  const [activeTab, setActiveTab] = useState<TabKey>('csa');
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-          <Sliders className="w-8 h-8 text-blue-600" />
-          Approval Queue
-        </h1>
-        <p className="text-slate-500 font-medium mt-1">
-          Review and approve/reject role assignments. Roles are auto-assigned when the Jumuiya Coordinator adds officials.
-        </p>
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <Sliders className="w-8 h-8 text-blue-600" />
+            Approval Queue
+          </h1>
+          <p className="text-slate-500 font-medium mt-1">
+            Review and approve/reject role assignments. Roles are auto-assigned when the Jumuiya Coordinator adds officials.
+          </p>
+        </div>
       </div>
 
-      {SECTIONS.map((section) => (
-        <div key={section.key} className="space-y-4">
-          <h2 className={`text-base font-black uppercase tracking-widest ${section.color} flex items-center gap-2`}>
-            <span className="block w-4 h-[3px] rounded-full bg-current" />
-            {section.label}
-          </h2>
-          <ApprovalsPanel activeTab={section.key} />
-          <ActiveRolesPanel activeTab={section.key} />
-          <RevokedRolesPanel activeTab={section.key} />
-        </div>
-      ))}
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              activeTab === tab.key
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <ApprovalsPanel activeTab={activeTab} />
+      <ActiveRolesPanel activeTab={activeTab} />
+      <RevokedRolesPanel activeTab={activeTab} />
     </div>
   );
 }
@@ -225,57 +190,117 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-6 text-slate-400">
-        <div className="w-5 h-5 border-2 border-blue-100 border-t-blue-500 rounded-full animate-spin" />
-        <span className="text-sm font-medium">Loading pending approvals…</span>
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+        <p className="text-slate-500 font-medium animate-pulse">Loading approval queue...</p>
       </div>
     );
   }
 
   if (filtered.length === 0) {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-100">
-        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-        <p className="text-sm font-medium text-emerald-700">No pending approvals — all caught up!</p>
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-12 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="p-6 bg-emerald-50 rounded-full">
+            <CheckCircle className="w-10 h-10 text-emerald-500" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-900">All caught up!</h3>
+          <p className="text-slate-500">No pending {activeTab} role assignments need your approval.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-        <Clock className="w-4 h-4 text-amber-500" />
-        <span className="text-sm font-bold text-slate-900">Pending Approvals</span>
-        <span className="ml-1 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">{filtered.length}</span>
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-amber-500" />
+          Pending Approvals
+          <span className="ml-2 px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
+            {filtered.length}
+          </span>
+        </h2>
       </div>
-      <div className="p-4 grid gap-3">
-        {filtered.map((a) => (
-          <AssignmentCard
-            key={a.id}
-            a={a}
-            actions={
-              <>
-                <button
-                  onClick={() => handleApprove(a.id)}
-                  disabled={actionLoading === a.id}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1"
-                >
-                  {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                  Approve
-                </button>
-                <button
-                  onClick={() => handleReject(a.id)}
-                  disabled={actionLoading === a.id}
-                  className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1"
-                >
-                  <Ban size={12} />
-                  Reject
-                </button>
-              </>
-            }
-          />
-        ))}
-      </div>
+      <table className="w-full text-left border-collapse table-fixed">
+        <thead>
+          <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+            <th className="px-3 py-3 w-[22%]">Member</th>
+            <th className="px-3 py-3 w-[16%]">Role</th>
+            <th className="px-3 py-3 w-[24%]">Pages Access</th>
+            <th className="px-3 py-3 w-[10%]">Scope</th>
+            <th className="px-3 py-3 w-[13%]">Assigned By</th>
+            <th className="px-3 py-3 w-[8%]">Date</th>
+            <th className="px-3 py-3 w-[7%] text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {filtered.map((a) => (
+            <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+              <td className="px-3 py-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
+                    {a.first_name[0]}{a.last_name?.[0] ?? ''}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-slate-900 truncate">{a.first_name} {a.last_name}</p>
+                    <p className="text-[9px] text-slate-400 font-medium uppercase truncate">{a.member_id}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="px-3 py-3">
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-lg border border-blue-100 capitalize block truncate">
+                  {a.role_name.replace(/_/g, ' ')}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-wrap gap-1">
+                  {getPagesForRole(a.role_name).map((page) => (
+                    <span key={page} className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-semibold rounded border border-emerald-100 leading-tight">
+                      {page}
+                    </span>
+                  ))}
+                </div>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-500 font-medium truncate block">
+                  {a.jumuiya_name || 'Global'}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-600 font-medium truncate block">
+                  {a.assigned_by_first ? `${a.assigned_by_first} ${a.assigned_by_last}` : '—'}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-400">
+                  {new Date(a.created_at).toLocaleDateString()}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    onClick={() => handleApprove(a.id)}
+                    disabled={actionLoading === a.id}
+                    className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50"
+                    title="Approve"
+                  >
+                    {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                  </button>
+                  <button
+                    onClick={() => handleReject(a.id)}
+                    disabled={actionLoading === a.id}
+                    className="p-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-lg text-xs transition-all disabled:opacity-50"
+                    title="Reject"
+                  >
+                    <Ban size={12} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -316,33 +341,92 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
 
   const filtered = active.filter((a) => roleBelongsToTab(a.role_name, activeTab));
 
-  if (loading || filtered.length === 0) return null;
+  if (loading) return null;
+  if (filtered.length === 0) return null;
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-        <Shield className="w-4 h-4 text-emerald-500" />
-        <span className="text-sm font-bold text-slate-900">Active Role Assignments</span>
-        <span className="ml-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">{filtered.length}</span>
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-emerald-500" />
+          Active Role Assignments
+          <span className="ml-2 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">
+            {active.length}
+          </span>
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          Officials with approved access. You can revoke access at any time.
+        </p>
       </div>
-      <div className="p-4 grid gap-3">
-        {filtered.map((a) => (
-          <AssignmentCard
-            key={a.id}
-            a={a}
-            actions={
-              <button
-                onClick={() => handleRevoke(a.id)}
-                disabled={actionLoading === a.id}
-                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1"
-              >
-                {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <ShieldOff size={12} />}
-                Revoke
-              </button>
-            }
-          />
-        ))}
-      </div>
+      <table className="w-full text-left border-collapse table-fixed">
+        <thead>
+          <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+            <th className="px-3 py-3 w-[22%]">Member</th>
+            <th className="px-3 py-3 w-[16%]">Role</th>
+            <th className="px-3 py-3 w-[27%]">Pages Access</th>
+            <th className="px-3 py-3 w-[10%]">Scope</th>
+            <th className="px-3 py-3 w-[13%]">Approved By</th>
+            <th className="px-3 py-3 w-[8%]">Approved At</th>
+            <th className="px-3 py-3 w-[4%] text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {filtered.map((a) => (
+            <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+              <td className="px-3 py-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
+                    {a.first_name[0]}{a.last_name?.[0] ?? ''}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-slate-900 truncate">{a.first_name} {a.last_name}</p>
+                    <p className="text-[9px] text-slate-400 font-medium uppercase truncate">{a.member_id}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="px-3 py-3">
+                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-100 capitalize block truncate">
+                  {a.role_name.replace(/_/g, ' ')}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-wrap gap-1">
+                  {getPagesForRole(a.role_name).map((page) => (
+                    <span key={page} className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-semibold rounded border border-emerald-100 leading-tight">
+                      {page}
+                    </span>
+                  ))}
+                </div>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-500 font-medium truncate block">
+                  {a.jumuiya_name || 'Global'}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-600 font-medium truncate block">
+                  {a.approved_by_first ? `${a.approved_by_first} ${a.approved_by_last}` : '—'}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-400">
+                  {a.approved_at ? new Date(a.approved_at).toLocaleDateString() : '—'}
+                </span>
+              </td>
+              <td className="px-3 py-3 text-right">
+                <button
+                  onClick={() => handleRevoke(a.id)}
+                  disabled={actionLoading === a.id}
+                  className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50"
+                  title="Revoke"
+                >
+                  {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <ShieldOff size={12} />}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -398,55 +482,108 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
 
   const filteredRevoked = revoked.filter((a) => roleBelongsToTab(a.role_name, activeTab));
 
-  if (loading || filteredRevoked.length === 0) return null;
+  if (loading) return null;
+  if (filteredRevoked.length === 0) return null;
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-5 py-4 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-100/50 transition-colors text-left flex items-center justify-between"
+        className="w-full p-6 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-100/50 transition-colors text-left"
       >
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-rose-500" />
-          <span className="text-sm font-bold text-slate-900">Revoked Role Assignments</span>
-          <span className="ml-1 px-2 py-0.5 bg-rose-100 text-rose-800 text-xs font-bold rounded-full">{filteredRevoked.length}</span>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-rose-500" />
+            Revoked Role Assignments
+            <span className="ml-2 px-2.5 py-0.5 bg-rose-100 text-rose-800 text-xs font-bold rounded-full">
+              {filteredRevoked.length}
+            </span>
+          </h2>
+          <svg
+            className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
-        <svg
-          className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <p className="text-sm text-slate-500 mt-1">
+          Officials whose access was revoked. Reactivate to restore or delete permanently.
+        </p>
       </button>
       {expanded && (
-        <div className="p-4 grid gap-3">
-          {filteredRevoked.map((a) => (
-            <AssignmentCard
-              key={a.id}
-              a={a}
-              actions={
-                <>
-                  <button
-                    onClick={() => handleActivate(a.id)}
-                    disabled={actionLoading === a.id}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                    Activate
-                  </button>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    disabled={actionLoading === a.id}
-                    className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1"
-                  >
-                    <Trash2 size={12} />
-                    Delete
-                  </button>
-                </>
-              }
-            />
-          ))}
-        </div>
+        <table className="w-full text-left border-collapse table-fixed">
+          <thead>
+            <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+              <th className="px-3 py-3 w-[22%]">Member</th>
+              <th className="px-3 py-3 w-[16%]">Role</th>
+              <th className="px-3 py-3 w-[30%]">Pages Access</th>
+              <th className="px-3 py-3 w-[10%]">Scope</th>
+              <th className="px-3 py-3 w-[15%]">Previous Approval</th>
+              <th className="px-3 py-3 w-[7%] text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filteredRevoked.map((a) => (
+              <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-rose-50 to-red-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
+                      {a.first_name[0]}{a.last_name?.[0] ?? ''}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-slate-900 truncate">{a.first_name} {a.last_name}</p>
+                      <p className="text-[9px] text-slate-400 font-medium uppercase truncate">{a.member_id}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-3 py-3">
+                  <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-100 capitalize block truncate">
+                    {a.role_name.replace(/_/g, ' ')}
+                  </span>
+                </td>
+                <td className="px-3 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    {getPagesForRole(a.role_name).map((page) => (
+                      <span key={page} className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-semibold rounded border border-slate-200 leading-tight">
+                        {page}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3">
+                  <span className="text-[10px] text-slate-500 font-medium truncate block">
+                    {a.jumuiya_name || 'Global'}
+                  </span>
+                </td>
+                <td className="px-3 py-3">
+                  <span className="text-[10px] text-slate-600 font-medium truncate block">
+                    {a.approved_by_first ? `${a.approved_by_first} ${a.approved_by_last}` : '—'}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => handleActivate(a.id)}
+                      disabled={actionLoading === a.id}
+                      className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50"
+                      title="Activate"
+                    >
+                      {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(a.id)}
+                      disabled={actionLoading === a.id}
+                      className="p-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-lg text-xs transition-all disabled:opacity-50"
+                      title="Delete"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
