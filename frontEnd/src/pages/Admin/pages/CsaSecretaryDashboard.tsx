@@ -155,7 +155,12 @@ export default function CsaSecretaryDashboard() {
     setLoadingPending(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    const handleUpdated = () => fetchData();
+    window.addEventListener("csa_members_updated", handleUpdated);
+    return () => window.removeEventListener("csa_members_updated", handleUpdated);
+  }, [fetchData]);
   useEffect(() => { fetchPendingPayments(); }, []);
 
   const jumuiyaCounts = useMemo(() => {
@@ -272,6 +277,7 @@ export default function CsaSecretaryDashboard() {
       setShowRegister(false);
       resetRegisterForm();
       fetchData();
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Registration failed");
     }

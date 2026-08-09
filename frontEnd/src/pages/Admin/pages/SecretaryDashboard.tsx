@@ -238,7 +238,10 @@ export default function SecretaryDashboard() {
   useEffect(() => {
     fetchOverview();
     fetchMembers();
-  }, [jumuiyaId]);
+    const handleUpdated = () => fetchMembers();
+    window.addEventListener("csa_members_updated", handleUpdated);
+    return () => window.removeEventListener("csa_members_updated", handleUpdated);
+  }, [jumuiyaId, fetchMembers]);
 
   useEffect(() => {
     if (activeTab === "analytics") fetchAnalytics();

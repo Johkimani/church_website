@@ -330,7 +330,15 @@ export default function JumuiyaMembersAdmin() {
     };
     
     loadData();
-  }, [id, refreshKey]);
+
+    const handleMembersUpdated = () => {
+      clearCache();
+      fetchAllStats(true);
+      setRefreshKey(k => k + 1);
+    };
+    window.addEventListener("csa_members_updated", handleMembersUpdated);
+    return () => window.removeEventListener("csa_members_updated", handleMembersUpdated);
+  }, [id, refreshKey, fetchAllStats, fetchRejectedMembers]);
 
   const handleEditRejected = (m: any) => {
     setEditingRejected(m.id);

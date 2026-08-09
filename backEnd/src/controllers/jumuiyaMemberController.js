@@ -1979,7 +1979,8 @@ export const csaFinalizeDistribution = async (req, res) => {
       });
     }
 
-    for (const a of approved.rows) {
+    await Promise.all(
+      approved.rows.map(async (a) => {
       await pool.query(
         `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
         [a.target_jumuiya, a.member_id]
@@ -1990,7 +1991,8 @@ export const csaFinalizeDistribution = async (req, res) => {
          WHERE members.member_id = $1 AND sg.name = $2`,
         [a.member_id, a.target_jumuiya]
       );
-    }
+      })
+    );
 
     await pool.query(
       `UPDATE distribution_batches SET status = 'finalized', finalized_at = NOW() WHERE id = $1`,
