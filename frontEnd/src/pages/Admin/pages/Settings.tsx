@@ -225,12 +225,12 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
       <table className="w-full text-left border-collapse table-fixed">
         <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-            <th className="px-3 py-3 w-[25%]">Member</th>
-            <th className="px-3 py-3 w-[18%]">Role</th>
-            <th className="px-3 py-3 w-[32%]">Pages Access</th>
+            <th className="px-3 py-3 w-[23%]">Member</th>
+            <th className="px-3 py-3 w-[16%]">Role</th>
+            <th className="px-3 py-3 w-[30%]">Pages Access</th>
             <th className="px-3 py-3 w-[14%]">Assigned By</th>
             <th className="px-3 py-3 w-[8%]">Date</th>
-            <th className="px-3 py-3 w-[3%] text-right">Actions</th>
+            <th className="px-3 py-3 w-[9%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -355,12 +355,12 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
       <table className="w-full text-left border-collapse table-fixed">
         <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-            <th className="px-3 py-3 w-[25%]">Member</th>
-            <th className="px-3 py-3 w-[18%]">Role</th>
-            <th className="px-3 py-3 w-[34%]">Pages Access</th>
+            <th className="px-3 py-3 w-[23%]">Member</th>
+            <th className="px-3 py-3 w-[16%]">Role</th>
+            <th className="px-3 py-3 w-[32%]">Pages Access</th>
             <th className="px-3 py-3 w-[14%]">Approved By</th>
             <th className="px-3 py-3 w-[8%]">Approved At</th>
-            <th className="px-3 py-3 w-[1%] text-right">Actions</th>
+            <th className="px-3 py-3 w-[7%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -502,11 +502,11 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
         <table className="w-full text-left border-collapse table-fixed">
           <thead>
             <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-              <th className="px-3 py-3 w-[25%]">Member</th>
-              <th className="px-3 py-3 w-[18%]">Role</th>
-              <th className="px-3 py-3 w-[38%]">Pages Access</th>
-              <th className="px-3 py-3 w-[16%]">Previous Approval</th>
-              <th className="px-3 py-3 w-[3%] text-right">Actions</th>
+              <th className="px-3 py-3 w-[23%]">Member</th>
+              <th className="px-3 py-3 w-[16%]">Role</th>
+              <th className="px-3 py-3 w-[34%]">Pages Access</th>
+              <th className="px-3 py-3 w-[14%]">Previous Approval</th>
+              <th className="px-3 py-3 w-[13%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
