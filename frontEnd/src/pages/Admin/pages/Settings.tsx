@@ -225,12 +225,12 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
       <table className="w-full text-left border-collapse table-fixed">
         <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-            <th className="px-3 py-3 w-[23%]">Member</th>
-            <th className="px-3 py-3 w-[16%]">Role</th>
-            <th className="px-3 py-3 w-[30%]">Pages Access</th>
-            <th className="px-3 py-3 w-[14%]">Assigned By</th>
+            <th className="px-3 py-3 w-[17%]">Member</th>
+            <th className="pl-1 pr-2 py-3 w-[9%]">Role</th>
+            <th className="px-3 py-3 w-[21%]">Pages Access</th>
+            <th className="px-3 py-3 w-[12%]">Assigned By</th>
             <th className="px-3 py-3 w-[8%]">Date</th>
-            <th className="px-3 py-3 w-[9%] text-right">Actions</th>
+            <th className="px-3 py-3 w-[33%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -247,7 +247,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
                   </div>
                 </div>
               </td>
-              <td className="px-3 py-3">
+              <td className="pl-1 pr-2 py-3">
                 <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-lg border border-blue-100 capitalize block truncate">
                   {a.role_name.replace(/_/g, ' ')}
                 </span>
@@ -271,23 +271,23 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
                   {new Date(a.created_at).toLocaleDateString()}
                 </span>
               </td>
-              <td className="px-3 py-3">
-                <div className="flex items-center justify-end gap-1">
+              <td className="px-3 py-3 text-right">
+                <div className="flex items-center justify-end gap-1.5">
                   <button
                     onClick={() => handleApprove(a.id)}
                     disabled={actionLoading === a.id}
-                    className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50"
-                    title="Approve"
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
                   >
-                    {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                    {actionLoading === a.id ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
+                    Approve
                   </button>
                   <button
                     onClick={() => handleReject(a.id)}
                     disabled={actionLoading === a.id}
-                    className="p-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-lg text-xs transition-all disabled:opacity-50"
-                    title="Reject"
+                    className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
                   >
-                    <Ban size={12} />
+                    <Ban size={11} />
+                    Reject
                   </button>
                 </div>
               </td>
@@ -355,12 +355,12 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
       <table className="w-full text-left border-collapse table-fixed">
         <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-            <th className="px-3 py-3 w-[23%]">Member</th>
-            <th className="px-3 py-3 w-[16%]">Role</th>
-            <th className="px-3 py-3 w-[32%]">Pages Access</th>
-            <th className="px-3 py-3 w-[14%]">Approved By</th>
+            <th className="px-3 py-3 w-[17%]">Member</th>
+            <th className="pl-1 pr-2 py-3 w-[9%]">Role</th>
+            <th className="px-3 py-3 w-[21%]">Pages Access</th>
+            <th className="px-3 py-3 w-[12%]">Approved By</th>
             <th className="px-3 py-3 w-[8%]">Approved At</th>
-            <th className="px-3 py-3 w-[7%] text-right">Actions</th>
+            <th className="px-3 py-3 w-[33%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -377,7 +377,7 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
                   </div>
                 </div>
               </td>
-              <td className="px-3 py-3">
+              <td className="pl-1 pr-2 py-3">
                 <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-100 capitalize block truncate">
                   {a.role_name.replace(/_/g, ' ')}
                 </span>
@@ -405,10 +405,10 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
                 <button
                   onClick={() => handleRevoke(a.id)}
                   disabled={actionLoading === a.id}
-                  className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50"
-                  title="Revoke"
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1 ml-auto"
                 >
-                  {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <ShieldOff size={12} />}
+                  {actionLoading === a.id ? <Loader2 size={11} className="animate-spin" /> : <ShieldOff size={11} />}
+                  Revoke
                 </button>
               </td>
             </tr>
@@ -502,11 +502,11 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
         <table className="w-full text-left border-collapse table-fixed">
           <thead>
             <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-              <th className="px-3 py-3 w-[23%]">Member</th>
-              <th className="px-3 py-3 w-[16%]">Role</th>
-              <th className="px-3 py-3 w-[34%]">Pages Access</th>
-              <th className="px-3 py-3 w-[14%]">Previous Approval</th>
-              <th className="px-3 py-3 w-[13%] text-right">Actions</th>
+              <th className="px-3 py-3 w-[15%]">Member</th>
+              <th className="pl-1 pr-2 py-3 w-[9%]">Role</th>
+              <th className="px-3 py-3 w-[20%]">Pages Access</th>
+              <th className="px-3 py-3 w-[13%]">Previous Approval</th>
+              <th className="px-3 py-3 w-[43%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -523,7 +523,7 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-3">
+                <td className="pl-1 pr-2 py-3">
                   <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-100 capitalize block truncate">
                     {a.role_name.replace(/_/g, ' ')}
                   </span>
@@ -543,22 +543,22 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
                   </span>
                 </td>
                 <td className="px-3 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
+                  <div className="flex items-center justify-end gap-1.5">
                     <button
                       onClick={() => handleActivate(a.id)}
                       disabled={actionLoading === a.id}
-                      className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50"
-                      title="Activate"
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
                     >
-                      {actionLoading === a.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                      {actionLoading === a.id ? <Loader2 size={11} className="animate-spin" /> : <RotateCcw size={11} />}
+                      Activate
                     </button>
                     <button
                       onClick={() => handleDelete(a.id)}
                       disabled={actionLoading === a.id}
-                      className="p-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-lg text-xs transition-all disabled:opacity-50"
-                      title="Delete"
+                      className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={11} />
+                      Delete
                     </button>
                   </div>
                 </td>
