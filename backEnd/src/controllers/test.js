@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { testDb } from "./Configs/dbConfig.js";
 import verifyToken from "../middleWares/Tokens.js";
 import logger from "../logger/winston.js";
+import { signAccessToken } from "../utils/jwtConfig.js";
 
 
 
@@ -35,10 +35,8 @@ app.post("/user", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
+    const token = signAccessToken(
       { id: foundUser.member_id, username: foundUser.member_id, email: foundUser.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
     );
 
     res.json({

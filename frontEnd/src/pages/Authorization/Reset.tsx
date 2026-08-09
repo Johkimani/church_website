@@ -3,10 +3,7 @@ import { AxiosError } from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { resetEmailApi, resetPasswordApi } from "../../api/axiosInstance";
-
-interface ErrorResponse {
-  message: string;
-}
+import { validatePassword } from "../../utils/passwordPolicy";
 
 const Reset: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -36,6 +33,12 @@ const Reset: React.FC = () => {
       return;
     }
 
+    const policyError = validatePassword(password);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
+
     try {
       setLoading(true);
       let response;
@@ -55,7 +58,7 @@ const Reset: React.FC = () => {
       }
     } catch (err: unknown) {
       const axiosError = err as AxiosError;
-      const data = axiosError.response?.data as any;
+      const data = axiosError.response?.data as { error?: string; message?: string } | undefined;
       setError(data?.error || data?.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);

@@ -25,6 +25,12 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Trust exactly one proxy hop (Render). This makes req.ip reflect the real
+// client address parsed from the X-Forwarded-For chain added by Render's
+// proxy, instead of trusting a client-supplied X-Forwarded-For header that
+// would let attackers rotate IPs and bypass the rate limiters.
+app.set("trust proxy", 1);
+
 // Secure App with Helmet (Security Headers)
 app.use(helmet());
 
@@ -84,7 +90,7 @@ const isPaymentEndpoint = (req) =>
 // tries). Token refresh is exempt — it is already gated by a valid refresh token
 // and fires frequently for legitimate multi-tab users.
 const isAuthEndpoint = (req) =>
-  /\/api\/v1\/authentication\/(login|reset|otp|verify|first-login-setup)/i.test(req.path);
+  /\/api\/v1\/authentication\/(login|reset|otp|verify|first-login-setup|resend-otp)/i.test(req.path);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -92,7 +98,7 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req, res) => {
-    return req.clientIp;
+    return req.ip;
   },
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
@@ -108,7 +114,7 @@ const callbackLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipFailedRequests: true,
-  keyGenerator: (req, res) => req.clientIp,
+  keyGenerator: (req, res) => req.ip,
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
       error: `Too many callback requests from this IP`,
@@ -121,7 +127,7 @@ const paymentLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req, res) => req.clientIp,
+  keyGenerator: (req, res) => req.ip,
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
       error: `There are too many payment requests. You are only allowed ${options.max
@@ -135,7 +141,7 @@ const authLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req, res) => req.clientIp,
+  keyGenerator: (req, res) => req.ip,
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
       error: `Too many authentication attempts. You are only allowed ${options.max

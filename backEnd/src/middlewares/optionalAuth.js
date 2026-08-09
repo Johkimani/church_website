@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../utils/jwtConfig.js";
 
 // Like verifyToken, but never rejects: attaches req.user when a valid token
 // is present and otherwise continues unauthenticated. Used to make public
@@ -12,7 +12,7 @@ const optionalAuth = async (req, res, next) => {
   if (!token) return next();
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyAccessToken(token);
     req.user = {
       id: decoded.id,
       member_id: decoded.id,

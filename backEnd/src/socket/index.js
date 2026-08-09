@@ -1,8 +1,8 @@
 import cookie from "cookie";
-import jwt from "jsonwebtoken";
 import { ChatEventEnum } from "../constant.js";
 import { ApiError } from "../utils/ApiError.js";
 import { testDb } from "../Configs/dbConfig.js";
+import { verifyAccessToken } from "../utils/jwtConfig.js";
 
 // handle join to specific jumuia based on the users jumuia
 const HandleOnSpecificJumuiJoin = (socket, user) => {
@@ -47,7 +47,7 @@ const initializeSocketIO = (io) => {
         throw new ApiError(401, "Un-authorized handshake. Token is missing");
       }
 
-      const { id: member_id, jumuiya_id } = jwt.verify(token, process.env.JWT_SECRET);
+      const { id: member_id, jumuiya_id } = verifyAccessToken(token);
       // // reason why we are checking the database is to really indentify 
       // // the user and also to make sure that the token is not tampered with , because if the token is tampered with it will be decoded but the user will not be found in the database thus we can reject the connection  
       // // and be able to remove the disconnected socket from the room from the disconect event handler

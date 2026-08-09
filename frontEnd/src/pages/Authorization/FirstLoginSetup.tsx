@@ -6,6 +6,7 @@ import { apiClient } from "../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast";
 import OTPInput from "./OTPInput";
+import { validatePassword } from "../../utils/passwordPolicy";
 
 type ApiError = AxiosError<{ message?: string; error?: string }>;
 
@@ -68,8 +69,9 @@ export default function FirstLoginSetup() {
       setEmailError("Please enter a valid email address, e.g. example@gmail.com");
       return;
     }
-    if (!newPassword || newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+    const policyError = validatePassword(newPassword, member_id);
+    if (policyError) {
+      toast.error(policyError);
       return;
     }
     if (newPassword !== confirmPassword) {

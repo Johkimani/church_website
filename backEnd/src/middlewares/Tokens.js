@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
-import jwt from "jsonwebtoken";
 import logger from "../logger/winston.js";
+import { verifyAccessToken } from "../utils/jwtConfig.js";
 // import redisClient from "../Configs/redisConfig.js";
 
 const verifyToken = async (req, res, next) => {
@@ -16,7 +16,7 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ error: "Token required" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyAccessToken(token);
 
     req.user = {
       id: decoded.id,

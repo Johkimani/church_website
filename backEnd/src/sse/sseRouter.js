@@ -1,8 +1,8 @@
 import { Router } from "express";
-import jwt from "jsonwebtoken";
 import { db } from "../Configs/dbConfig.js";
 import { addSSEClient, removeSSEClient } from "./sseManager.js";
 import logger from "../logger/winston.js";
+import { verifyAccessToken } from "../utils/jwtConfig.js";
 
 const router = Router();
 
@@ -35,7 +35,7 @@ router.get("/", async (req, res) => {
   // ── 2. Verify JWT ────────────────────────────────────────────────────────
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    decoded = verifyAccessToken(token);
   } catch (err) {
     logger.warn(`[SSE] Token rejected: ${err.message}`);
     return res.status(401).json({ error: "Invalid or expired token" });
