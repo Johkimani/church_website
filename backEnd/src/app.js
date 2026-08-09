@@ -174,49 +174,6 @@ app.get("/health", (req, res) => {
   });
 });
 
-// TEMPORARY diagnostic: verify outbound TCP connectivity from the API host.
-app.get("/diag/network", async (req, res) => {
-  const net = await import("node:net");
-  const dns = await import("node:dns");
-  const results = [];
-  const test = (label, host, port, ms) =>
-    new Promise((resolve) => {
-      const started = Date.now();
-      const socket = new net.Socket();
-      socket.setTimeout(ms);
-      const done = (ok, detail) => {
-        socket.destroy();
-        resolve({ label, host, port, ok, detail, ms: Date.now() - started });
-      };
-      socket.once("connect", () => done(true, "connected"));
-      socket.once("timeout", () => done(false, "timeout"));
-      socket.once("error", (err) => done(false, err.code || err.message));
-      socket.connect(port, host);
-    });
-  let smtpIps = [];
-  try {
-    smtpIps = (await dns.promises.resolve4("smtp.gmail.com")) || [];
-  } catch (err) {
-    results.push({ label: "resolve4 smtp.gmail.com", ok: false, detail: err.code || err.message });
-  }
-  results.push({ label: "resolve4 smtp.gmail.com", ok: true, detail: smtpIps.join(", ") });
-  results.push(await test("smtp.gmail.com:465 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 465, 12000));
-  results.push(await test("smtp.gmail.com:587 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 587, 12000));
-  results.push(await test("smtp.gmail.com:25 (IPv4 literal)", smtpIps[0] || "smtp.gmail.com", 25, 12000));
-  results.push(await test("smtp.gmail.com IP:993 (non-SMTP port)", smtpIps[0] || "smtp.gmail.com", 993, 12000));
-  results.push(await test("google.com:443", "google.com", 443, 12000));
-  results.push(await test("api.resend.com:443", "api.resend.com", 443, 12000));
-  results.push(await test("1.1.1.1:53", "1.1.1.1", 53, 12000));
-  results.push(await test("8.8.8.8:53", "8.8.8.8", 53, 12000));
-  results.push(await test("smtp.gmail.com:465 (domain)", "smtp.gmail.com", 465, 12000));
-  results.push(await test("imap.gmail.com:993", "imap.gmail.com", 993, 12000));
-  results.push(await test("smtp.office365.com:587", "smtp.office365.com", 587, 12000));
-  results.push(await test("smtp.sendgrid.net:587", "smtp.sendgrid.net", 587, 12000));
-  results.push(await test("smtp-relay.brevo.com:587", "smtp-relay.brevo.com", 587, 12000));
-  results.push(await test("example.com:80", "example.com", 80, 12000));
-  res.status(200).json(results);
-});
-
 app.use("/api", apiRoutes)
 
 // Organized Static Routes for locally uploaded media files
