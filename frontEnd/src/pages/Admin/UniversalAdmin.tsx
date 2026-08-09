@@ -13,14 +13,12 @@ import {
   LayoutGrid,
   MessageSquare,
   Image as ImageIcon,
-  Images,
   UserPlus,
   ClipboardList,
   Trash2,
   Home,
   Shield,
   CalendarCheck,
-  Palette,
   Code2,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
@@ -49,8 +47,6 @@ const menuItems = [
   { id: 'community', name: 'Community Management', icon: LayoutGrid, path: '/admin/community-management' },
   { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations' },
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
-  { id: 'devotions-manager', name: 'Dashboard Manager', icon: Palette, path: '/admin/devotions-manager' },
-  { id: 'dashboard-assets', name: 'Dashboard Images', icon: Images, path: '/admin/dashboard-assets' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
