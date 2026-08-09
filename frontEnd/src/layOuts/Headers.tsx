@@ -89,36 +89,39 @@ const Headers = () => {
         </div>
 
         {/* Desktop Nav */}
-        <ul className="hidden md:flex items-center gap-1 h-full">
+        <ul className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
-              <li key={link.path} className="relative h-full flex items-center">
+              <li key={link.path}>
                 {link.path.includes("#") ? (
                   <a
                     href={link.path}
-                    className={`px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                     }`}
                   >
                     {link.name}
+                    {active && (
+                      <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full" />
+                    )}
                   </a>
                 ) : (
                   <Link
                     to={link.path}
-                    className={`px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                     }`}
                   >
                     {link.name}
+                    {active && (
+                      <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full" />
+                    )}
                   </Link>
-                )}
-                {active && (
-                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-t-full" />
                 )}
               </li>
             );
