@@ -266,7 +266,8 @@ export const importMembers = async (req, res) => {
       if (validated.cleaned.regNumber && (status === "valid" || status === "warning")) {
         const fullName = validated.cleaned.name || "";
         const firstName = fullName.split(" ")[0] || "";
-        const lastName = fullName.substring(firstName.length).trim() || null;
+        const lastName = fullName.substring(firstName.length).trim() || "";
+        const defaultPassword = await bcrypt.hash(validated.cleaned.regNumber, 10);
 
         let memberJumuiyaUuid = targetJumuiyaUuid;
         if (!memberJumuiyaUuid && validated.cleaned.jumuiya) {
@@ -277,8 +278,8 @@ export const importMembers = async (req, res) => {
         await pool.query(
           `INSERT INTO members (
              member_id, first_name, last_name, phone, gender, course, email,
-             source, status, import_batch_id, join_date, jumuiya_id
-           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11)
+             source, status, import_batch_id, join_date, jumuiya_id, password
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11, $12)
            ON CONFLICT (member_id) DO UPDATE SET
              first_name = EXCLUDED.first_name,
              last_name = EXCLUDED.last_name,
@@ -286,7 +287,8 @@ export const importMembers = async (req, res) => {
              gender = COALESCE(EXCLUDED.gender, members.gender),
              course = COALESCE(EXCLUDED.course, members.course),
              email = COALESCE(EXCLUDED.email, members.email),
-             jumuiya_id = COALESCE(EXCLUDED.jumuiya_id, members.jumuiya_id)`,
+             jumuiya_id = COALESCE(EXCLUDED.jumuiya_id, members.jumuiya_id),
+             password = COALESCE(members.password, EXCLUDED.password)`,
           [
             validated.cleaned.regNumber,
             firstName,
@@ -298,7 +300,8 @@ export const importMembers = async (req, res) => {
             jumuiya_id === 'csa' ? 'csa' : 'jum',
             status,
             importId,
-            memberJumuiyaUuid || null
+            memberJumuiyaUuid || null,
+            defaultPassword
           ]
         );
       }

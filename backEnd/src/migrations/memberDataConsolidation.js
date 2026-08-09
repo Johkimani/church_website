@@ -22,6 +22,12 @@ const consolidateMemberData = async () => {
     await pool.query(`
       ALTER TABLE members ALTER COLUMN jumuiaya_id DROP NOT NULL
     `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE members ALTER COLUMN last_name DROP NOT NULL
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE members ALTER COLUMN password DROP NOT NULL
+    `).catch(() => {});
 
     // 2. Mark existing members as legacy (only if source is not yet set)
     await pool.query(`
