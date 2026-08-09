@@ -39,6 +39,7 @@ const sendMail = async ({ to, subject, text, html, attachments }) => {
     text,
     html,
     attachments,
+    reply_to: process.env.RESEND_REPLY_TO,
   };
   Object.keys(body).forEach((key) => body[key] === undefined && delete body[key]);
 
