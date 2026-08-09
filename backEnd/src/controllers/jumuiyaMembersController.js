@@ -1090,7 +1090,7 @@ export const cancelPendingPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Pending payment not found or already settled" });
     }
     if (!isGlobal && String(existing.rows[0].jumuiya_id || "").toLowerCase() !== String(req.user?.jumuiya_id || "").toLowerCase()) {
-      return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+      return res.status(404).json({ success: false, message: "Resource not found" });
     }
     const result = await pool.query(
       `UPDATE pending_payments SET status = 'cancelled' WHERE id = $1 AND status = 'pending' RETURNING *`,

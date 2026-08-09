@@ -55,7 +55,7 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
     const targetId = getTargetJumuiyaId(req);
     const ownId = req.user.jumuiya_id;
     if (!targetId || !ownId) {
-      return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+      return res.status(404).json({ success: false, message: "Resource not found" });
     }
     if (normalizeKey(targetId) === normalizeKey(ownId)) return next();
     // Target may be a slug or name — resolve to group_id and compare
@@ -64,9 +64,10 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
       [String(targetId).toLowerCase()]
     );
     if (rows.length > 0 && normalizeKey(rows[0].group_id) === normalizeKey(ownId)) return next();
-    return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+    // 404 so a scoped user cannot discover whether another jumuiya/route exists.
+    return res.status(404).json({ success: false, message: "Resource not found" });
   } catch (error) {
-    return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+    return res.status(404).json({ success: false, message: "Resource not found" });
   }
 };
 

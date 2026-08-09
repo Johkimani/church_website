@@ -16,9 +16,9 @@ const rejectIfNotAdmin = (req, res) => {
     .map((r) => String(r).toLowerCase().trim());
   const hasAccess = normalized.some((r) => ADMIN_ROLES.includes(r));
   if (!hasAccess) {
-    res.status(403).json({
+    res.status(404).json({
       success: false,
-      message: "Access denied: administrative role required",
+      message: "Resource not found",
     });
     return false;
   }
