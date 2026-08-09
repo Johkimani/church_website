@@ -209,9 +209,14 @@ export const importMembers = async (req, res) => {
     }
 
     let targetJumuiyaName = null;
+    let targetJumuiyaUuid = null;
     if (jumuiya_id && jumuiya_id !== 'csa') {
       const resolved = await resolveJumuiyaInput(jumuiya_id);
-      if (resolved) targetJumuiyaName = resolved.name;
+      if (resolved) {
+        targetJumuiyaName = resolved.name;
+        const sgRes = await pool.query(`SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [resolved.name]);
+        if (sgRes.rows.length) targetJumuiyaUuid = sgRes.rows[0].group_id;
+      }
     }
 
     const nonEmpty = members.filter(m => m.regNumber?.trim() || m.name?.trim() || m.gender?.trim());
@@ -256,6 +261,47 @@ export const importMembers = async (req, res) => {
       if (status === "error") errorCount++;
       else validCount++;
       results.push(recordResult.rows[0]);
+
+      // Direct synchronous insert into members table (0ms delay - immediate appearance)
+      if (validated.cleaned.regNumber && (status === "valid" || status === "warning")) {
+        const fullName = validated.cleaned.name || "";
+        const firstName = fullName.split(" ")[0] || "";
+        const lastName = fullName.substring(firstName.length).trim() || null;
+
+        let memberJumuiyaUuid = targetJumuiyaUuid;
+        if (!memberJumuiyaUuid && validated.cleaned.jumuiya) {
+          const sgMatch = await pool.query(`SELECT group_id FROM sub_groups WHERE LOWER(name) = LOWER($1)`, [validated.cleaned.jumuiya]);
+          if (sgMatch.rows.length) memberJumuiyaUuid = sgMatch.rows[0].group_id;
+        }
+
+        await pool.query(
+          `INSERT INTO members (
+             member_id, first_name, last_name, phone, gender, course, email,
+             source, status, import_batch_id, join_date, jumuiya_id
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11)
+           ON CONFLICT (member_id) DO UPDATE SET
+             first_name = EXCLUDED.first_name,
+             last_name = EXCLUDED.last_name,
+             phone = COALESCE(EXCLUDED.phone, members.phone),
+             gender = COALESCE(EXCLUDED.gender, members.gender),
+             course = COALESCE(EXCLUDED.course, members.course),
+             email = COALESCE(EXCLUDED.email, members.email),
+             jumuiya_id = COALESCE(EXCLUDED.jumuiya_id, members.jumuiya_id)`,
+          [
+            validated.cleaned.regNumber,
+            firstName,
+            lastName,
+            validated.cleaned.phone || null,
+            validated.cleaned.gender ? validated.cleaned.gender.toLowerCase() : null,
+            validated.cleaned.course || null,
+            validated.cleaned.email || null,
+            jumuiya_id === 'csa' ? 'csa' : 'jum',
+            status,
+            importId,
+            memberJumuiyaUuid || null
+          ]
+        );
+      }
     }
 
     await pool.query(

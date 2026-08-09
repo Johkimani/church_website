@@ -118,27 +118,37 @@ const setupJumuiyaMemberSystem = async () => {
         academic_year VARCHAR(9),
         status VARCHAR(30) DEFAULT 'pending_approval'
           CHECK (status IN ('pending_approval', 'partially_approved', 'all_approved', 'finalized', 'cancelled')),
-        created_by INTEGER,
+        created_by VARCHAR(100),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         finalized_at TIMESTAMP WITH TIME ZONE
       );
     `);
 
     await pool.query(`
+      ALTER TABLE distribution_batches
+      ALTER COLUMN created_by TYPE VARCHAR(100) USING created_by::text;
+    `).catch(() => {});
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS allocation_approvals (
         id SERIAL PRIMARY KEY,
         distribution_batch_id INTEGER NOT NULL REFERENCES distribution_batches(id) ON DELETE CASCADE,
-        import_record_id INTEGER NOT NULL REFERENCES import_records(id) ON DELETE CASCADE,
+        member_id VARCHAR(30) NOT NULL REFERENCES members(member_id) ON DELETE CASCADE,
         target_jumuiya VARCHAR(100) NOT NULL,
         status VARCHAR(20) DEFAULT 'pending'
           CHECK (status IN ('pending', 'approved', 'rejected')),
-        reviewed_by INTEGER,
+        reviewed_by VARCHAR(100),
         reviewed_at TIMESTAMP WITH TIME ZONE,
         rejection_reason TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(import_record_id, distribution_batch_id)
+        UNIQUE(member_id, distribution_batch_id)
       );
     `);
+
+    await pool.query(`
+      ALTER TABLE allocation_approvals
+      ALTER COLUMN reviewed_by TYPE VARCHAR(100) USING reviewed_by::text;
+    `).catch(() => {});
 
     logger.info("Jumuiya Member Collection System tables created successfully");
   } catch (error) {
