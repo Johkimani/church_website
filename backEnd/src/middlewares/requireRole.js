@@ -31,7 +31,10 @@ const requireRole = (...allowedRoles) => {
     }
     const hasAccess = getUserRoles(req).some(r => allowed.includes(String(r).toLowerCase().trim()));
     if (!hasAccess) {
-      return res.status(403).json({ success: false, message: "Access denied: insufficient role" });
+      // Deliberately 404, not 403: an authenticated-but-unauthorized caller must
+      // not be able to distinguish "this admin endpoint exists" from "nothing
+      // here", so probes can't enumerate protected routes by status code.
+      return res.status(404).json({ success: false, message: "Resource not found" });
     }
     next();
   };

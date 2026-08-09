@@ -141,6 +141,10 @@ const authLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  // Only failed attempts consume the per-IP budget: brute-forcing still gets
+  // throttled, but legitimate users logging in from a shared IP aren't penalized
+  // for their successes (per-account DB lockout already handles repeat failures).
+  skipSuccessfulRequests: true,
   keyGenerator: (req, res) => req.ip,
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
@@ -175,6 +179,13 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api", apiRoutes)
+
+// Unmatched /api routes: clean JSON 404 so probing unknown endpoints returns the
+// same shape/status as the role-guarded 404s (requireRole) — no HTML, no stack,
+// nothing that confirms a hidden admin route exists.
+app.use("/api", (req, res) => {
+  res.status(404).json({ success: false, message: "Resource not found" });
+});
 
 // Organized Static Routes for locally uploaded media files
 app.use("/uploads", express.static(path.join(__dirname, "../localFileUploads")));
