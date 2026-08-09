@@ -114,7 +114,7 @@ const Community: React.FC = () => {
             return (
               <motion.article
                 key={mod.id}
-                variants={item}
+                variants={cardVariants}
                 onClick={() => navigate(`/community/${mod.id}`)}
                 className="group relative flex flex-col bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all duration-400 ease-out overflow-hidden cursor-pointer hover:-translate-y-1.5"
               >

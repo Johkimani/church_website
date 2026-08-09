@@ -10,6 +10,7 @@ import { SSEProvider } from './context/SSEContext.tsx'
 import { NotificationProvider } from './context/NotificationContext.tsx'
 import { AppProvider } from './context/AppContext.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
+import RouteErrorBoundary from './components/RouteErrorBoundary'
 
 const queryClient = new QueryClient()
 
@@ -23,7 +24,9 @@ createRoot(document.getElementById('root')!).render(
               <BrowserRouter>
                 <AppProvider>
                   <ScrollToTop />
-                  <App />
+                  <RouteErrorBoundary>
+                    <App />
+                  </RouteErrorBoundary>
                 </AppProvider>
               </BrowserRouter>
             </NotificationProvider>
