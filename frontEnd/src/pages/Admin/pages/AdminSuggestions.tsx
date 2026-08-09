@@ -43,7 +43,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function AdminSuggestions() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
-  const isVC = userRoles.some((r: string) => r === 'csa_vice_chair');
+  const isVC = userRoles.some((r: string) => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson'].includes(r));
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +116,7 @@ export default function AdminSuggestions() {
   };
 
   const handleRequestUnmask = async (id: number) => {
-    if (!window.confirm('Request to unmask this anonymous suggestion? Both CSA Chair and CSA Liturgist must approve.')) return;
+    if (!window.confirm('Request to unmask this anonymous suggestion? Both designated co-approvers must approve.')) return;
     setUnmaskLoading(id);
     try {
       const res = await apiClient.post(`/suggestions/${id}/request-unmask`);

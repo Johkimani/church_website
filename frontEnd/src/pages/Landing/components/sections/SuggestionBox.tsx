@@ -15,6 +15,8 @@ const SuggestionBox: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
+  const [targetScope, setTargetScope] = useState<'csa' | 'jumuiya'>('csa');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.suggestion.trim()) return;
@@ -22,7 +24,9 @@ const SuggestionBox: React.FC = () => {
     setStatus('submitting');
     
     const submissionData: Record<string, string> = {
-      suggestion: formData.suggestion.trim()
+      suggestion: formData.suggestion.trim(),
+      scope: targetScope,
+      jumuiya_id: targetScope === 'jumuiya' ? (user?.jumuiya_name || user?.jumuiya_id || 'jumuiya') : 'csa'
     };
     
     if (!anonymous) {
@@ -156,6 +160,37 @@ const SuggestionBox: React.FC = () => {
                       </div>
                     </div>
                     
+                    {/* Target Selector: CSA vs Jumuiya */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 tracking-wider ml-1 uppercase">
+                        RECIPIENT / TARGET
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setTargetScope('csa')}
+                          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border ${
+                            targetScope === 'csa'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          CSA Executives (General)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTargetScope('jumuiya')}
+                          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border ${
+                            targetScope === 'jumuiya'
+                              ? 'bg-primary text-white border-primary shadow-sm'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {user?.jumuiya_name ? `${user.jumuiya_name} Officials` : 'My Jumuiya Officials'}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <button
                         type="button"

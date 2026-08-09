@@ -1,7 +1,7 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import crypto from "crypto";
-import sendEmail from "../Configs/emailConfig.js";
+import { sendMail } from "../Configs/emailConfig.js";
 
 const SUGGESTION_WITH_MEMBER = `
   SELECT s.*,
@@ -14,10 +14,37 @@ const SUGGESTION_WITH_MEMBER = `
   LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
 `;
 
+const getUserRoles = (req) => {
+  if (!req.user) return [];
+  return Array.isArray(req.user.role)
+    ? req.user.role
+    : req.user.role ? [req.user.role] : [];
+};
+
 export const listSuggestions = async (req, res) => {
   try {
+    const roles = getUserRoles(req);
+    const { jumuiya_id } = req.query;
+
+    let whereClause = `WHERE s.deleted_at IS NULL`;
+    const params = [];
+
+    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+
+    if (!isGlobal && roles.includes('jumuiya_vice_chairperson')) {
+      const userJumuiya = req.user.jumuiya_id;
+      if (userJumuiya) {
+        whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
+        params.push(userJumuiya);
+      }
+    } else if (jumuiya_id && jumuiya_id !== 'all' && jumuiya_id !== 'csa') {
+      whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
+      params.push(jumuiya_id);
+    }
+
     const result = await pool.query(
-      `${SUGGESTION_WITH_MEMBER} WHERE s.deleted_at IS NULL ORDER BY s.created_at DESC`
+      `${SUGGESTION_WITH_MEMBER} ${whereClause} ORDER BY s.created_at DESC`,
+      params
     );
     res.json({ status: "success", data: result.rows });
   } catch (error) {
@@ -39,8 +66,8 @@ export const getBin = async (req, res) => {
 };
 
 const requireVcRole = (req, res) => {
-  const roles = Array.isArray(req.user.role) ? req.user.role : [req.user.role];
-  if (!roles.some(r => r === 'csa_vice_chair')) {
+  const roles = getUserRoles(req);
+  if (!roles.some(r => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson', 'jumuiya_coordinator'].includes(r))) {
     res.status(404).json({ success: false, message: "Resource not found" });
     return false;
   }
@@ -119,66 +146,147 @@ export const clearBin = async (req, res) => {
   }
 };
 
+const buildUnmaskEmailHtml = ({ roleLabel, requesterTitle, targetName, suggestionId, suggestionContent, category, reviewLink }) => {
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+      <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #ffffff; padding: 24px; text-align: center;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">Suggestion Box — Identity Unmask Request</h2>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: #dbeafe;">Official Action Card (${roleLabel})</p>
+      </div>
+      <div style="padding: 24px;">
+        <p style="margin-top: 0; color: #334155; font-size: 15px; line-height: 1.5;">
+          A <strong>${requesterTitle}</strong> has requested to reveal the identity of an anonymous suggestion submitted to <strong>${targetName}</strong>.
+        </p>
+
+        <div style="background-color: #ffffff; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 16px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 6px; letter-spacing: 0.5px;">
+            Suggestion Content (Ref #${suggestionId})
+          </div>
+          <div style="font-size: 15px; color: #1e293b; font-style: italic; line-height: 1.6;">
+            "${suggestionContent || "No message content"}"
+          </div>
+          <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+            Category: <strong>${category || "General"}</strong> • Target: <strong>${targetName}</strong>
+          </div>
+        </div>
+
+        <p style="color: #475569; font-size: 14px; line-height: 1.5;">
+          To protect member privacy, unmasking strictly requires independent dual approval. Please click below to open your decision card and cast your response.
+        </p>
+
+        <div style="margin: 28px 0 16px 0; text-align: center;">
+          <a href="${reviewLink}" style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+            Review & Respond to Request
+          </a>
+        </div>
+
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+          This link is unique to your role and valid for single use only.
+        </p>
+      </div>
+    </div>
+  `;
+};
+
 export const requestUnmask = async (req, res) => {
   if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
-    const chairToken = crypto.randomBytes(32).toString("hex");
-    const liturgistToken = crypto.randomBytes(32).toString("hex");
 
-    const result = await pool.query(
-      `UPDATE suggestions SET chair_unmask_token = $1, liturgist_unmask_token = $2, unmask_requested_at = CURRENT_TIMESTAMP, status = 'unmask_requested' WHERE id = $3 RETURNING *`,
-      [chairToken, liturgistToken, id]
+    const findResult = await pool.query(
+      `SELECT s.*, sg.name as jumuiya_name FROM suggestions s LEFT JOIN sub_groups sg ON sg.group_id::text = s.jumuiya_id OR sg.slug = s.jumuiya_id WHERE s.id = $1`,
+      [id]
     );
-
-    if (!result.rows.length) {
+    if (!findResult.rows.length) {
       return res.status(404).json({ error: "Suggestion not found" });
     }
+    const suggestion = findResult.rows[0];
+    const isJumuiyaScope = suggestion.scope === 'jumuiya' || (suggestion.jumuiya_id && suggestion.jumuiya_id !== 'csa');
 
-    // Look up CSA Chair and Liturgist emails
-    const roleQuery = `
-      SELECT m.member_id, m.first_name, m.last_name, m.email, r.role_name
-      FROM members m
-      JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
-      JOIN roles r ON mr.role_id = r.role_id
-      WHERE r.role_name IN ('csa_chair', 'liturgist')
-    `;
-    const roleResult = await pool.query(roleQuery);
+    const token1 = crypto.randomBytes(32).toString("hex");
+    const token2 = crypto.randomBytes(32).toString("hex");
+
+    let roleQuery = "";
+    let roleMap = {};
+
+    if (isJumuiyaScope) {
+      await pool.query(
+        `UPDATE suggestions SET jumuiya_chair_token = $1, jumuiya_secretary_token = $2, unmask_requested_at = CURRENT_TIMESTAMP, status = 'unmask_requested' WHERE id = $3`,
+        [token1, token2, id]
+      );
+      roleQuery = `
+        SELECT m.member_id, m.first_name, m.last_name, m.email, r.role_name
+        FROM members m
+        JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
+        JOIN roles r ON mr.role_id = r.role_id
+        WHERE r.role_name IN ('jumuiya_chairperson', 'jumuiya_secretary')
+          AND (mr.jumuiya_id::text = $1 OR mr.jumuiya_id IN (SELECT group_id FROM sub_groups WHERE slug = $1 OR name = $1))
+      `;
+      roleMap = {
+        'jumuiya_chairperson': { token: token1, roleParam: 'jumuiya_chair', label: 'Jumuiya Chairperson' },
+        'jumuiya_secretary': { token: token2, roleParam: 'jumuiya_secretary', label: 'Jumuiya Secretary' },
+      };
+    } else {
+      await pool.query(
+        `UPDATE suggestions SET chair_unmask_token = $1, liturgist_unmask_token = $2, unmask_requested_at = CURRENT_TIMESTAMP, status = 'unmask_requested' WHERE id = $3`,
+        [token1, token2, id]
+      );
+      roleQuery = `
+        SELECT m.member_id, m.first_name, m.last_name, m.email, r.role_name
+        FROM members m
+        JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
+        JOIN roles r ON mr.role_id = r.role_id
+        WHERE r.role_name IN ('csa_chair', 'liturgist')
+      `;
+      roleMap = {
+        'csa_chair': { token: token1, roleParam: 'chair', label: 'CSA Chairperson' },
+        'liturgist': { token: token2, roleParam: 'liturgist', label: 'CSA Liturgist' },
+      };
+    }
+
+    const queryArgs = isJumuiyaScope ? [suggestion.jumuiya_id] : [];
+    const roleResult = await pool.query(roleQuery, queryArgs);
 
     const origin = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
-    const chairLink = `${origin}/suggestions/unmask/chair/${chairToken}`;
-    const liturgistLink = `${origin}/suggestions/unmask/liturgist/${liturgistToken}`;
-
     let sent = 0;
     let failed = 0;
 
+    const requesterTitle = isJumuiyaScope ? 'Jumuiya Vice Chairperson' : 'CSA Vice Chairperson';
+    const targetName = suggestion.jumuiya_name || suggestion.jumuiya_id || 'CSA';
+
     for (const row of roleResult.rows) {
-      const link = row.role_name === 'csa_chair' ? chairLink : liturgistLink;
-      const roleLabel = row.role_name === 'csa_chair' ? 'CSA Chair' : 'CSA Liturgist';
-      const subject = `Suggestion Box – Unmask Request Requires Your ${roleLabel} Approval`;
-      const text = `A CSA Vice Chair has requested to unmask an anonymous suggestion.\n\n` +
-        `To review and respond, click the link below:\n${link}\n\n` +
-        `Both CSA Chair and CSA Liturgist must approve for the identity to be revealed.\n\n` +
-        `This link is unique and valid for one use only.`;
+      const config = roleMap[row.role_name];
+      if (!config) continue;
+
+      const link = `${origin}/suggestions/unmask/${config.roleParam}/${config.token}`;
+      const subject = `Unmask Request Card — ${config.label} Approval Required`;
+
+      const html = buildUnmaskEmailHtml({
+        roleLabel: config.label,
+        requesterTitle,
+        targetName,
+        suggestionId: suggestion.id,
+        suggestionContent: suggestion.suggestion,
+        category: suggestion.category,
+        reviewLink: link
+      });
+
+      const text = `An unmask request has been submitted for suggestion #${suggestion.id}.\nTo review and respond: ${link}`;
 
       if (row.email) {
         try {
-          await sendEmail(subject, text, row.email);
+          await sendMail({ to: row.email, subject, text, html });
           sent++;
         } catch (err) {
           failed++;
-          logger.error(`Failed to send unmask email to ${row.email} (${roleLabel}): ${err.message}`);
+          logger.error(`Failed to send unmask email to ${row.email} (${config.label}): ${err.message}`);
         }
       }
     }
 
-    if (failed > 0) {
-      logger.warn(`Unmask request #${id}: ${sent} email(s) sent, ${failed} failed`);
-    }
-
     const message = failed > 0
-      ? `Unmask request sent to ${sent} official(s), ${failed} failed — check server email config`
-      : `Unmask request sent to ${sent} official(s)`;
+      ? `Unmask request card sent to ${sent} official(s), ${failed} failed — check email setup`
+      : `Unmask request card sent to ${sent} official(s)`;
 
     res.json({ status: "success", message });
   } catch (error) {
@@ -187,22 +295,32 @@ export const requestUnmask = async (req, res) => {
   }
 };
 
-const unmaskColumn = (role) =>
-  role === "chair" ? "chair_unmask_token" : "liturgist_unmask_token";
-
-const approverColumn = (role) =>
-  role === "chair" ? "chair_approved" : "liturgist_approved";
+const resolveRoleColumns = (role) => {
+  if (role === "chair" || role === "csa_chair") {
+    return { tokenCol: "chair_unmask_token", approvedCol: "chair_approved" };
+  }
+  if (role === "liturgist") {
+    return { tokenCol: "liturgist_unmask_token", approvedCol: "liturgist_approved" };
+  }
+  if (role === "jumuiya_chair") {
+    return { tokenCol: "jumuiya_chair_token", approvedCol: "jumuiya_chair_approved" };
+  }
+  if (role === "jumuiya_secretary") {
+    return { tokenCol: "jumuiya_secretary_token", approvedCol: "jumuiya_secretary_approved" };
+  }
+  return null;
+};
 
 export const getRoleUnmaskRequest = async (req, res) => {
   try {
     const { role, token } = req.params;
-    if (!["chair", "liturgist"].includes(role)) {
-      return res.status(400).json({ error: "role must be 'chair' or 'liturgist'" });
+    const cols = resolveRoleColumns(role);
+    if (!cols) {
+      return res.status(400).json({ error: "Invalid role parameter" });
     }
 
-    const col = unmaskColumn(role);
     const result = await pool.query(
-      `${SUGGESTION_WITH_MEMBER} WHERE s.${col} = $1`,
+      `${SUGGESTION_WITH_MEMBER} WHERE s.${cols.tokenCol} = $1`,
       [token]
     );
 
@@ -222,50 +340,53 @@ export const respondRoleUnmask = async (req, res) => {
     const { role, token } = req.params;
     const { action } = req.body;
 
-    if (!["chair", "liturgist"].includes(role)) {
-      return res.status(400).json({ error: "role must be 'chair' or 'liturgist'" });
+    const cols = resolveRoleColumns(role);
+    if (!cols) {
+      return res.status(400).json({ error: "Invalid role parameter" });
     }
     if (!["approve", "reject"].includes(action)) {
       return res.status(400).json({ error: "action must be 'approve' or 'reject'" });
     }
 
-    const tokenCol = unmaskColumn(role);
-    const approvedCol = approverColumn(role);
-
     if (action === "reject") {
       const result = await pool.query(
-        `UPDATE suggestions SET status = 'rejected', chair_unmask_token = NULL, liturgist_unmask_token = NULL, chair_approved = FALSE, liturgist_approved = FALSE WHERE ${tokenCol} = $1 RETURNING *`,
+        `UPDATE suggestions SET status = 'rejected',
+                chair_unmask_token = NULL, liturgist_unmask_token = NULL, chair_approved = FALSE, liturgist_approved = FALSE,
+                jumuiya_chair_token = NULL, jumuiya_secretary_token = NULL, jumuiya_chair_approved = FALSE, jumuiya_secretary_approved = FALSE
+         WHERE ${cols.tokenCol} = $1 RETURNING *`,
         [token]
       );
       if (!result.rows.length) return res.status(404).json({ error: "Invalid or expired token" });
-      return res.json({ status: "success", message: `Unmask rejected by ${role}`, data: result.rows[0] });
+      return res.json({ status: "success", message: "Unmask request declined. Your decision has been recorded.", data: result.rows[0] });
     }
 
-    // Mark this role as approved
     const markResult = await pool.query(
-      `UPDATE suggestions SET ${approvedCol} = TRUE WHERE ${tokenCol} = $1 RETURNING *`,
+      `UPDATE suggestions SET ${cols.approvedCol} = TRUE WHERE ${cols.tokenCol} = $1 RETURNING *`,
       [token]
     );
     if (!markResult.rows.length) return res.status(404).json({ error: "Invalid or expired token" });
 
     const row = markResult.rows[0];
 
-    // Check if both have approved
-    if (row.chair_approved && row.liturgist_approved) {
-      // Both approved – fully unmask
+    const isCsaBoth = row.chair_approved && row.liturgist_approved;
+    const isJumBoth = row.jumuiya_chair_approved && row.jumuiya_secretary_approved;
+
+    if (isCsaBoth || isJumBoth) {
       await pool.query(
-        `UPDATE suggestions SET status = 'approved', chair_unmask_token = NULL, liturgist_unmask_token = NULL WHERE id = $1`,
+        `UPDATE suggestions SET status = 'approved',
+                chair_unmask_token = NULL, liturgist_unmask_token = NULL,
+                jumuiya_chair_token = NULL, jumuiya_secretary_token = NULL
+         WHERE id = $1`,
         [row.id]
       );
       const finalResult = await pool.query(
         `${SUGGESTION_WITH_MEMBER} WHERE s.id = $1`,
         [row.id]
       );
-      return res.json({ status: "success", message: "Unmask approved by both roles", data: finalResult.rows[0] });
+      return res.json({ status: "success", message: "Unmask decision recorded.", data: finalResult.rows[0] });
     }
 
-    // Only one so far – keep tokens active for the other
-    res.json({ status: "success", message: `${role} approved, waiting for the other role`, data: row });
+    res.json({ status: "success", message: "Your decision has been recorded.", data: row });
   } catch (error) {
     logger.error("respondRoleUnmask error:", error.message);
     res.status(500).json({ error: error.message });

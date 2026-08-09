@@ -10,6 +10,7 @@ const ROLES = [
   { name: "instrument_manager", description: "Manages Seats and Instruments" },
   { name: "os", description: "Overall Organizing Secretary — manages central Gallery and Daily Announcements" },
   { name: "jumuiya_chairperson", description: "Full admin access for their respective Jumuiya only + Jumuiya T-shirts" },
+  { name: "jumuiya_vice_chairperson", description: "Jumuiya Vice Chair — manages the Jumuiya Suggestion Box" },
   { name: "jumuiya_os", description: "Manages Gallery and Announcements for their specific Jumuiya" },
   { name: "jumuiya_secretary", description: "Handles member Registrations for their specific Jumuiya" },
   { name: "choir_chairperson", description: "Full admin access for all choir-related roles and features" },
@@ -124,9 +125,15 @@ const setupRoleSystem = async () => {
       ADD COLUMN IF NOT EXISTS chair_unmask_token VARCHAR(255),
       ADD COLUMN IF NOT EXISTS liturgist_unmask_token VARCHAR(255),
       ADD COLUMN IF NOT EXISTS chair_approved BOOLEAN DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS liturgist_approved BOOLEAN DEFAULT FALSE
+      ADD COLUMN IF NOT EXISTS liturgist_approved BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS jumuiya_id VARCHAR(100) DEFAULT 'csa',
+      ADD COLUMN IF NOT EXISTS scope VARCHAR(20) DEFAULT 'csa',
+      ADD COLUMN IF NOT EXISTS jumuiya_chair_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS jumuiya_secretary_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS jumuiya_chair_approved BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS jumuiya_secretary_approved BOOLEAN DEFAULT FALSE
     `);
-    logger.info("Ensured suggestion bin/unmask/reply/category columns on suggestions table");
+    logger.info("Ensured suggestion bin/unmask/reply/category/jumuiya columns on suggestions table");
 
     // 3. Remove deprecated roles (delete member_roles first to respect FK)
     await pool.query(`
