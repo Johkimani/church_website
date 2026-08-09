@@ -31,7 +31,7 @@ export const listSuggestions = async (req, res) => {
 
     const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
 
-    if (!isGlobal && roles.includes('jumuiya_vice_chairperson')) {
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
       const userJumuiya = req.user.jumuiya_id;
       if (userJumuiya) {
         whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
@@ -55,8 +55,23 @@ export const listSuggestions = async (req, res) => {
 
 export const getBin = async (req, res) => {
   try {
+    const roles = getUserRoles(req);
+    let whereClause = `WHERE deleted_at IS NOT NULL`;
+    const params = [];
+
+    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
+      const userJumuiya = req.user.jumuiya_id;
+      if (userJumuiya) {
+        whereClause += ` AND (jumuiya_id = $1 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
+        params.push(userJumuiya);
+      }
+    }
+
     const result = await pool.query(
-      `SELECT * FROM suggestions WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC`
+      `SELECT * FROM suggestions ${whereClause} ORDER BY deleted_at DESC`,
+      params
     );
     res.json({ status: "success", data: result.rows });
   } catch (error) {
@@ -99,13 +114,25 @@ export const softDelete = async (req, res) => {
 export const restoreFromBin = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query(
-      `UPDATE suggestions SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *`,
-      [id]
-    );
+    const roles = getUserRoles(req);
+    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+
+    let query = `UPDATE suggestions SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 AND deleted_at IS NOT NULL`;
+    const params = [id];
+
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
+      const userJumuiya = req.user.jumuiya_id;
+      if (userJumuiya) {
+        query += ` AND (jumuiya_id = $2 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $2))`;
+        params.push(userJumuiya);
+      }
+    }
+
+    query += ` RETURNING *`;
+    const result = await pool.query(query, params);
 
     if (!result.rows.length) {
-      return res.status(404).json({ error: "Suggestion not found in bin" });
+      return res.status(404).json({ error: "Suggestion not found in bin or insufficient permissions" });
     }
 
     res.json({ status: "success", data: result.rows[0] });
@@ -118,13 +145,25 @@ export const restoreFromBin = async (req, res) => {
 export const permanentDelete = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query(
-      `DELETE FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *`,
-      [id]
-    );
+    const roles = getUserRoles(req);
+    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+
+    let query = `DELETE FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL`;
+    const params = [id];
+
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson'].includes(r))) {
+      const userJumuiya = req.user.jumuiya_id;
+      if (userJumuiya) {
+        query += ` AND (jumuiya_id = $2 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $2))`;
+        params.push(userJumuiya);
+      }
+    }
+
+    query += ` RETURNING *`;
+    const result = await pool.query(query, params);
 
     if (!result.rows.length) {
-      return res.status(404).json({ error: "Suggestion not found in bin" });
+      return res.status(404).json({ error: "Suggestion not found in bin or insufficient permissions" });
     }
 
     res.json({ status: "success", message: "Permanently deleted" });
@@ -136,9 +175,21 @@ export const permanentDelete = async (req, res) => {
 
 export const clearBin = async (req, res) => {
   try {
-    const result = await pool.query(
-      `DELETE FROM suggestions WHERE deleted_at IS NOT NULL`
-    );
+    const roles = getUserRoles(req);
+    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+
+    let query = `DELETE FROM suggestions WHERE deleted_at IS NOT NULL`;
+    const params = [];
+
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson'].includes(r))) {
+      const userJumuiya = req.user.jumuiya_id;
+      if (userJumuiya) {
+        query += ` AND (jumuiya_id = $1 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
+        params.push(userJumuiya);
+      }
+    }
+
+    const result = await pool.query(query, params);
     res.json({ status: "success", message: `Cleared ${result.rowCount} suggestion(s) from bin` });
   } catch (error) {
     logger.error("clearBin error:", error.message);

@@ -175,7 +175,7 @@ const SuggestionBox: React.FC = () => {
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
-                          CSA Executives (General)
+                          CSA
                         </button>
                         <button
                           type="button"
@@ -186,7 +186,7 @@ const SuggestionBox: React.FC = () => {
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
-                          {user?.jumuiya_name ? `${user.jumuiya_name} Officials` : 'My Jumuiya Officials'}
+                          My Jumuiya
                         </button>
                       </div>
                     </div>
