@@ -1,5 +1,5 @@
-import axios from "axios";
-import { LocalStorage } from "../utils";
+﻿import axios from "axios";
+import { SessionStorage } from "../utils";
 import type { fileUpload } from "../interface/api";
 import { normalizeFiles } from "../pages/Devotions/utitlty";
 import { BASE_URL } from "./config";
@@ -36,14 +36,14 @@ export const getApiErrorMessageFromError = getApiErrorMessage;
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    const userdata = LocalStorage.get("userdata");
+    const userdata = SessionStorage.get("userdata");
     if (userdata?.accessToken) {
       const token = userdata.accessToken;
       if (typeof token === "string" && token.split(".").length === 3) {
         config.headers.Authorization = `Bearer ${token}`;
       } else {
         console.warn("Malformed access token detected; clearing it.");
-        LocalStorage.remove("userdata");
+        SessionStorage.remove("userdata");
       }
     }
     return config;
@@ -85,17 +85,16 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const userdata = LocalStorage.get("userdata");
-        if (!userdata?.refreshToken) throw new Error("No refresh token available");
+        const userdata = SessionStorage.get("userdata");
+        if (!userdata?.accessToken) throw new Error("No session available");
 
-        const { data } = await refreshAccessAndRefreshToken(userdata.refreshToken);
+        const { data } = await refreshAccessAndRefreshToken(userdata.accessToken);
 
         const updatedData = {
           ...userdata,
           accessToken: data.accessToken,
-          refreshToken: data.refreshToken || userdata.refreshToken,
         };
-        LocalStorage.set("userdata", updatedData);
+        SessionStorage.set("userdata", updatedData);
 
         processQueue(null, data.accessToken);
 
@@ -103,7 +102,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        LocalStorage.remove("userdata");
+        SessionStorage.remove("userdata");
         if (!window.location.pathname.includes("/login")) {
           window.location.href = "/login?expired=true";
         }
@@ -117,10 +116,13 @@ apiClient.interceptors.response.use(
   }
 );
 
-const refreshClient = axios.create({ baseURL: API_BASE_URL });
+const refreshClient = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
 
-const refreshAccessAndRefreshToken = (refreshToken: string) =>
-  refreshClient.post("authentication/refresh", { refreshToken });
+// The refresh token lives in an httpOnly cookie (sent automatically via
+// withCredentials). The current access token is passed as a binding so the
+// server can reject the request if the cookie belongs to a different member.
+const refreshAccessAndRefreshToken = (accessToken: string) =>
+  refreshClient.post("authentication/refresh", { accessToken });
 
 // --- Your API functions below ---
 export const generateAndSaveQuestions = (data: { topic: string }) =>

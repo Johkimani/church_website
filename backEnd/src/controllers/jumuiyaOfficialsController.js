@@ -10,6 +10,7 @@ import {
   syncCurrentTerm,
   formatPhoneForExcel 
 } from '../utils/helpers.js';
+import { isOfficial } from '../middlewares/requireRole.js';
 import { autoAssignRoleForOfficial, removeRoleForOfficial } from '../utils/positionToRole.js';
 import logger from "../logger/winston.js";
 import { emitSocketEvent } from "../socket/index.js";
@@ -123,7 +124,7 @@ export const getAllJumuiyaOfficials = async (req, res) => {
     let params = [];
 
     const SELECT_COLS = `o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
-               o.reg_number,
+               ${isOfficial(req) ? "o.reg_number," : ""}
                et.name as term_name, et.year as term_year`;
 
     if (termId) {
@@ -201,7 +202,10 @@ export const getJumuiyaOfficialById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Official not found' });
     }
 
-    res.json({ success: true, data: result.rows[0] });
+    const row = result.rows[0];
+    if (!isOfficial(req)) delete row.reg_number;
+
+    res.json({ success: true, data: row });
   } catch (error) {
     logger.error('Error fetching jumuiya official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch official' });
@@ -759,6 +763,10 @@ export const getJumuiyaOfficialsByTerm = async (req, res) => {
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
+
+    if (!isOfficial(req)) {
+      result.rows.forEach(r => delete r.reg_number);
+    }
 
     res.json({ 
       success: true, 

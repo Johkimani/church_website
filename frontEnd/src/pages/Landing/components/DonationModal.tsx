@@ -130,11 +130,14 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
                 )}
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Amount (KES)</label>
+                  <label htmlFor="donation-amount" className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1">Amount (KES)</label>
                   <div className="relative group">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">KSh</div>
                     <input
                       type="number"
+                      id="donation-amount"
+                      name="donation-amount"
+                      autoComplete="off"
                       placeholder="0.00"
                       value={amount}
                       onChange={(e) => {
@@ -147,11 +150,14 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1">M-Pesa Number</label>
+                  <label htmlFor="donation-phone" className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1">M-Pesa Number</label>
                   <div className="relative group">
                     <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
                     <input
                       type="text"
+                      id="donation-phone"
+                      name="donation-phone"
+                      autoComplete="tel-national"
                       placeholder="7XXXXXXXX"
                       value={phone}
                       onChange={(e) => {

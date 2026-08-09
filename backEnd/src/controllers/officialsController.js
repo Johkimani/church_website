@@ -13,6 +13,7 @@ import {
 import { autoAssignRoleForOfficial, removeRoleForOfficial } from '../utils/positionToRole.js';
 import logger from "../logger/winston.js";
 import { emitSocketEvent } from "../socket/index.js";
+import { isOfficial } from "../middlewares/requireRole.js";
 
 export const CATEGORY_LIMITS = {
   'Executive': 6,
@@ -347,6 +348,10 @@ export const getOfficialsByTerm = async (req, res) => {
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
 
+    if (!isOfficial(req)) {
+      result.rows.forEach(r => delete r.reg_number);
+    }
+
     res.json({ 
       success: true, 
       data: result.rows,
@@ -461,9 +466,11 @@ export const getAllOfficials = async (req, res) => {
     let query;
     let params = [];
 
-    const SELECT_COLS = `o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
-               o.reg_number,
+    const baseCols = `o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
                et.name as term_name, et.year as term_year`;
+    // reg_number links officials to the members table: only expose it to officials
+    const regCol = isOfficial(req) ? ", o.reg_number" : "";
+    const SELECT_COLS = baseCols + regCol;
 
     if (termId) {
       query = `
@@ -521,7 +528,10 @@ export const getOfficialById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Official not found' });
     }
 
-    res.json({ success: true, data: result.rows[0] });
+    const row = result.rows[0];
+    if (!isOfficial(req)) delete row.reg_number;
+
+    res.json({ success: true, data: row });
   } catch (error) {
     logger.error('Error fetching official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch official' });

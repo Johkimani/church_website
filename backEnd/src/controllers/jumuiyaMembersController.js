@@ -1,5 +1,6 @@
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import bcrypt from "bcrypt";
 
 /**
  * Error carrying an HTTP status so route handlers can map it to a response.
@@ -11,23 +12,7 @@ class HttpError extends Error {
   }
 }
 import { payAndWait } from "./stkPush/stkHelper.js";
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
-
-const mailTransporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-  tls: { rejectUnauthorized: false },
-});
+import { sendMail, isConfigured } from "../Configs/emailConfig.js";
 
 /**
  * Normalize year_of_study to a numeric year level (1-4).
@@ -403,9 +388,10 @@ export const updateJumuiyaMember = async (req, res) => {
       }
 
       // Also upsert into members table
+      const defaultPassword = await bcrypt.hash(effectiveId, 10);
       await client.query(`
-        INSERT INTO members (member_id, first_name, last_name, email, phone, gender, course, jumuiya_id, source, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'jum', 'valid')
+        INSERT INTO members (member_id, first_name, last_name, email, phone, gender, course, jumuiya_id, source, status, password)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'jum', 'valid', $9)
         ON CONFLICT (member_id) DO UPDATE SET
           first_name = COALESCE($2, members.first_name),
           last_name = COALESCE($3, members.last_name),
@@ -413,8 +399,9 @@ export const updateJumuiyaMember = async (req, res) => {
           phone = COALESCE($5, members.phone),
           gender = COALESCE($6, members.gender),
           course = COALESCE($7, members.course),
-          jumuiya_id = COALESCE($8, members.jumuiya_id)
-      `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, course || null, jumuiyaUuid]);
+          jumuiya_id = COALESCE($8, members.jumuiya_id),
+          password = COALESCE(members.password, $9)
+      `, [effectiveId, first_name || null, last_name || null, email || null, phone || null, gender || null, course || null, jumuiyaUuid, defaultPassword]);
 
       // Sync associates table
       {
@@ -1103,7 +1090,7 @@ export const cancelPendingPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: "Pending payment not found or already settled" });
     }
     if (!isGlobal && String(existing.rows[0].jumuiya_id || "").toLowerCase() !== String(req.user?.jumuiya_id || "").toLowerCase()) {
-      return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+      return res.status(404).json({ success: false, message: "Resource not found" });
     }
     const result = await pool.query(
       `UPDATE pending_payments SET status = 'cancelled' WHERE id = $1 AND status = 'pending' RETURNING *`,
@@ -1240,9 +1227,8 @@ export const registerWithPayment = async (req, res) => {
     const jumuiyaName = row.jumuiya_name || 'your community';
 
     // Send confirmation email (non-blocking)
-    if (row.email && process.env.MAIL_USER && process.env.MAIL_PASS) {
-      mailTransporter.sendMail({
-        from: process.env.MAIL_USER,
+    if (row.email && isConfigured()) {
+      sendMail({
         to: row.email,
         subject: `Registration Confirmed — ${jumuiyaName}`,
         html: `
@@ -1339,15 +1325,12 @@ export const sendStampCard = async (req, res) => {
       return res.status(400).json({ success: false, error: "Email and PDF data are required" });
     }
 
-    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-      logger.warn("Email not configured: MAIL_USER / MAIL_PASS missing in .env");
+    if (!isConfigured()) {
+      logger.warn("Email not configured: RESEND_API_KEY / RESEND_FROM missing in .env");
       return res.status(500).json({ success: false, error: "Email service is not configured. Please contact the admin." });
     }
 
-    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-
     const mailOptions = {
-      from: process.env.MAIL_USER,
       to: email,
       subject: `Your Semester Stamp Card - ${jumuiyaName || 'Community'}`,
       html: `
@@ -1372,12 +1355,12 @@ export const sendStampCard = async (req, res) => {
       `,
       attachments: [{
         filename: `Stamp_Card_${memberName ? memberName.replace(/\s+/g, '_') : 'member'}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf',
+        content: pdfBase64,
+        content_type: 'application/pdf',
       }],
     };
 
-    await mailTransporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     logger.info(`Stamp card emailed to ${email}`);
     res.json({ success: true, message: "Stamp card sent to your email" });
   } catch (error) {

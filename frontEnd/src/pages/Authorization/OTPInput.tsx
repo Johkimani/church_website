@@ -51,6 +51,8 @@ export default function OTPInput({
   };
 
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    // Extract digits only (works even when the email text like
+    // "Your OTP is 123456." is copied whole) and cap to the field length.
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, length);
     if (!pasted) return;
     e.preventDefault();
@@ -61,6 +63,7 @@ export default function OTPInput({
     }
     setOtp(newOtp);
 
+    // Leave focus on the next empty box (or the last box when full)
     const nextIndex = Math.min(pasted.length, length - 1);
     inputsRef.current[nextIndex]?.focus();
 
@@ -80,7 +83,7 @@ export default function OTPInput({
           ref={(el) => { inputsRef.current[index] = el }}
           onChange={(e) => handleInputChange(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
-          onPaste={index === 0 ? handlePaste : undefined}
+          onPaste={handlePaste}
           className="w-10 sm:w-12 h-11 sm:h-14 bg-gray-100 rounded-xl text-center text-xl font-black text-black focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all border border-gray-200 shadow-sm"
         />
       ))}

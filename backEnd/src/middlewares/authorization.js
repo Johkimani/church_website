@@ -10,17 +10,19 @@ export const authorize = (action, resource) => {
     if (!permissions.length) {
       const rolePerms = await getRolePermissions(testDb, role);
       if (!rolePerms.length) {
+        // 404, not 403: permission failures must not reveal that a protected
+        // admin route/resource exists.
         return res
-          .status(403)
-          .json({ message: "Access denied: no role or permissions found" });
+          .status(404)
+          .json({ success: false, message: "Resource not found" });
       }
       const isAuthorized = rolePerms.some(
         (perm) => perm.action === action && perm.resource === resource,
       );
       if (!isAuthorized) {
         return res
-          .status(403)
-          .json({ message: "Access denied: no permission for this resource" });
+          .status(404)
+          .json({ success: false, message: "Resource not found" });
       }
       return next();
     }
@@ -31,8 +33,8 @@ export const authorize = (action, resource) => {
 
     if (!isAuthorized) {
       return res
-        .status(403)
-        .json({ message: "Access denied: no permission for this resource" });
+        .status(404)
+        .json({ success: false, message: "Resource not found" });
     }
 
     next();

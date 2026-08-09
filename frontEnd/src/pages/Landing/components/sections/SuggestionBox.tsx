@@ -124,6 +124,8 @@ const SuggestionBox: React.FC = () => {
                         <input
                           type="text"
                           id="name"
+                          name="name"
+                          autoComplete="name"
                           placeholder="Your name"
                           className={`w-full px-5 py-3.5 rounded-xl bg-white border-2 outline-none transition-all duration-300 placeholder:text-slate-400 font-bold text-sm focus:shadow-sm ${
                             anonymous ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed' : 'border-slate-200 focus:border-primary/40 text-slate-900'
@@ -141,6 +143,8 @@ const SuggestionBox: React.FC = () => {
                         <input
                           type="email"
                           id="email"
+                          name="email"
+                          autoComplete="email"
                           placeholder="your@email.com"
                           className={`w-full px-5 py-3.5 rounded-xl bg-white border-2 outline-none transition-all duration-300 placeholder:text-slate-400 font-bold text-sm focus:shadow-sm ${
                             anonymous ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed' : 'border-slate-200 focus:border-primary/40 text-slate-900'
@@ -183,6 +187,8 @@ const SuggestionBox: React.FC = () => {
                       </label>
                       <textarea
                         id="suggestion"
+                        name="suggestion"
+                        autoComplete="off"
                         required
                         placeholder="Tell us what's on your mind..."
                         rows={4}

@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { get as httpGet } from "node:http";
 import logger from "../logger/winston.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,6 +11,7 @@ const LOCAL_DATA_DIR = join(__dirname, "..", "data");
 const CATHOLIC_READINGS_API =
   "https://cpbjr.github.io/catholic-readings-api";
 const BIBLE_TEXT_API = "https://bible-api.com";
+const CALENDAR_API = "http://calapi.inadiutorium.cz/api/v0/en/calendars/default/today";
 
 const REF_TYPES = {
   firstReading: "first-reading",
@@ -494,6 +496,43 @@ async function fetchJSON(url, timeout = 10000) {
   }
 }
 
+// ─── Liturgical calendar proxy ──────────────────────────────────────────
+// calapi.inadiutorium.cz is HTTP-only; browsers cannot fetch it from an
+// HTTPS page (mixed content / CSP), so we proxy it server-side. The host
+// resolves to both A and AAAA records, but its IPv6 route is unreachable
+// from many networks, so force IPv4 resolution.
+const calendarCache = { date: null, data: null, fetchedAt: 0 };
+const CALENDAR_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+function fetchCalendarJSON(timeout = 10000) {
+  return new Promise((resolve) => {
+    const req = httpGet(
+      CALENDAR_API,
+      {
+        family: 4,
+        headers: {
+          "User-Agent": "CSAKirinyaga/1.0",
+          Accept: "application/json",
+        },
+      },
+      (res) => {
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () => {
+          try {
+            resolve({ ok: res.statusCode === 200, data: JSON.parse(body) });
+          } catch {
+            resolve({ ok: false, data: null });
+          }
+        });
+      }
+    );
+    req.setTimeout(timeout, () => req.destroy(new Error("timeout")));
+    req.on("error", () => resolve({ ok: false, data: null }));
+  });
+}
+
 async function fetchBibleText(reference) {
   let urlRef = reference;
   const psalmMatch = reference.match(/^Psalm\s+(\d+)/i);
@@ -675,6 +714,40 @@ export const getReadings = async (req, res) => {
     return res.json(fallbackData);
   } catch (err) {
     logger.error(`Readings controller error: ${err.message}`);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getLiturgicalCalendar = async (_req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const now = Date.now();
+
+    if (
+      calendarCache.date === today &&
+      now - calendarCache.fetchedAt < CALENDAR_CACHE_TTL_MS &&
+      calendarCache.data
+    ) {
+      return res.json(calendarCache.data);
+    }
+
+    const result = await fetchCalendarJSON();
+    if (result.ok) {
+      calendarCache.date = today;
+      calendarCache.data = result.data;
+      calendarCache.fetchedAt = now;
+      return res.json(result.data);
+    }
+
+    if (calendarCache.data) {
+      logger.warn("Liturgical calendar upstream unreachable; serving stale cache");
+      return res.json(calendarCache.data);
+    }
+
+    logger.error("Liturgical calendar upstream unreachable and no cache available");
+    return res.status(502).json({ error: "Liturgical calendar unavailable" });
+  } catch (err) {
+    logger.error(`Liturgical calendar controller error: ${err.message}`);
     res.status(500).json({ error: "Internal server error" });
   }
 };

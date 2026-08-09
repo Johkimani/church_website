@@ -3,6 +3,13 @@ import sendMail from "../Configs/emailConfig.js";
 import bcrypt from "bcrypt";
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import {
+  validatePasswordPolicy,
+  assertNotRecentlyUsed,
+  recordPassword,
+  MAX_OTP_ATTEMPTS,
+  RESEND_OTP_COOLDOWN_SECONDS,
+} from "../utils/passwordPolicy.js";
 
 export const Reset = async (req, res) => {
   let { email, password, purpose } = req.body;
@@ -16,11 +23,6 @@ export const Reset = async (req, res) => {
   if (!email || !password || !purpose) {
     logger.warn("Reset attempt with missing fields");
     return res.status(400).send("Email, password, and purpose are required");
-  }
-
-  if (typeof password !== "string" || password.length < 8) {
-    logger.warn("Reset attempt with weak password");
-    return res.status(400).send("Password must be at least 8 characters");
   }
 
   try {
@@ -43,10 +45,27 @@ export const Reset = async (req, res) => {
         [email],
       );
       if (userCheck.rows.length === 0) {
-        logger.warn(`Password reset attempt for non-existent email: ${email}`);
-        return res.status(404).json({ error: "No account found with that email address." });
+        // Respond identically to success so the endpoint can't be used to
+        // enumerate which emails have accounts.
+        logger.warn(`Password reset attempted for unknown email (generic response)`);
+        return res.status(200).json({ status: "success", message: "Password reset initiated successfully" });
       }
       userName = userCheck.rows[0].member_id;
+    }
+
+    // Enforce the password policy before storing anything.
+    const policy = validatePasswordPolicy(password, { memberId: userName, email });
+    if (!policy.ok) {
+      return res.status(400).json({ error: policy.message });
+    }
+
+    // Reject recently-used passwords before staging an OTP.
+    if (userName) {
+      try {
+        await assertNotRecentlyUsed(pool, userName, password);
+      } catch (historyErr) {
+        return res.status(400).json({ error: historyErr.message });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -95,7 +114,11 @@ export const OTPverification = async (req, res) => {
   const reg = decodeURIComponent(req.params.regNo);
   const { otp } = req.body;
 
-  const hashedInputOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  if (!otp) {
+    return res.status(400).json({ error: "OTP is required" });
+  }
+
+  const hashedInputOtp = crypto.createHash("sha256").update(String(otp)).digest("hex");
 
   const client = await pool.connect();
 
@@ -115,13 +138,31 @@ export const OTPverification = async (req, res) => {
 
     const resetData = result.rows[0];
 
+    //   Brute-force guard: too many attempts invalidates the request entirely.
+    if ((resetData.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+      await client.query(`DELETE FROM password_resets WHERE id = $1`, [resetData.id]);
+      await client.query("COMMIT");
+      logger.warn(`OTP for ${reg} invalidated after too many attempts`);
+      return res.status(429).json({ error: "Too many attempts. Please request a new code." });
+    }
+
     //   Invalid or expired OTP
     if (
       resetData.otp !== hashedInputOtp ||
       new Date() > resetData.otp_expires
     ) {
-      await client.query("ROLLBACK");
-      logger.warn(`Invalid/expired OTP for user: ${reg}`);
+      const attempts = (resetData.attempts || 0) + 1;
+      if (attempts >= MAX_OTP_ATTEMPTS) {
+        await client.query(`DELETE FROM password_resets WHERE id = $1`, [resetData.id]);
+        logger.warn(`OTP for ${reg} invalidated after too many attempts`);
+      } else {
+        await client.query(
+          `UPDATE password_resets SET attempts = $1 WHERE id = $2`,
+          [attempts, resetData.id]
+        );
+      }
+      await client.query("COMMIT");
+      logger.warn(`Invalid/expired OTP for user: ${reg} (attempt ${attempts})`);
       return res.status(400).json({ error: "Invalid or expired OTP" });
     }
 
@@ -136,6 +177,9 @@ export const OTPverification = async (req, res) => {
        WHERE member_id = $3`,
       [resetData.temp_password, resetData.email, resetData.member_id],
     );
+
+    //  Record the committed password so it can't be reused in the near future.
+    await recordPassword(client, resetData.member_id, resetData.temp_password);
 
     //  Delete reset record
     await client.query(`DELETE FROM password_resets WHERE email = $1`, [
@@ -173,13 +217,22 @@ export const ResendOTP = async (req, res) => {
 
     const resetData = result.rows[0];
 
+    //   Cooldown so an attacker can't spam OTP emails (also stops mailbox flooding).
+    if (resetData.last_resend_at) {
+      const secondsSince = (Date.now() - new Date(resetData.last_resend_at).getTime()) / 1000;
+      if (secondsSince < RESEND_OTP_COOLDOWN_SECONDS) {
+        const wait = Math.ceil(RESEND_OTP_COOLDOWN_SECONDS - secondsSince);
+        return res.status(429).json({ error: `Please wait ${wait} second${wait === 1 ? "" : "s"} before requesting another code.` });
+      }
+    }
+
     const OTP = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash("sha256").update(OTP).digest("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await pool.query(
       `UPDATE password_resets 
-       SET otp = $1, otp_expires = $2 
+       SET otp = $1, otp_expires = $2, attempts = 0, last_resend_at = NOW()
        WHERE id = $3`,
       [hashedOtp, expiresAt, resetData.id]
     );

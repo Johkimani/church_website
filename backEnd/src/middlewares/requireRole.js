@@ -17,6 +17,12 @@ const getUserRoles = (req) => {
     : req.user.role ? [req.user.role] : [];
 };
 
+// True when the (optionally authenticated) caller holds any official role.
+// Used by controllers to decide whether to include sensitive fields such as
+// member reg_numbers in public GET responses.
+const isOfficial = (req) =>
+  getUserRoles(req).some(r => OFFICIAL_ROLES.includes(String(r).toLowerCase().trim()));
+
 const requireRole = (...allowedRoles) => {
   const allowed = allowedRoles.map(r => String(r).toLowerCase().trim());
   return (req, res, next) => {
@@ -25,7 +31,10 @@ const requireRole = (...allowedRoles) => {
     }
     const hasAccess = getUserRoles(req).some(r => allowed.includes(String(r).toLowerCase().trim()));
     if (!hasAccess) {
-      return res.status(403).json({ success: false, message: "Access denied: insufficient role" });
+      // Deliberately 404, not 403: an authenticated-but-unauthorized caller must
+      // not be able to distinguish "this admin endpoint exists" from "nothing
+      // here", so probes can't enumerate protected routes by status code.
+      return res.status(404).json({ success: false, message: "Resource not found" });
     }
     next();
   };
@@ -46,7 +55,7 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
     const targetId = getTargetJumuiyaId(req);
     const ownId = req.user.jumuiya_id;
     if (!targetId || !ownId) {
-      return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+      return res.status(404).json({ success: false, message: "Resource not found" });
     }
     if (normalizeKey(targetId) === normalizeKey(ownId)) return next();
     // Target may be a slug or name — resolve to group_id and compare
@@ -55,11 +64,12 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
       [String(targetId).toLowerCase()]
     );
     if (rows.length > 0 && normalizeKey(rows[0].group_id) === normalizeKey(ownId)) return next();
-    return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+    // 404 so a scoped user cannot discover whether another jumuiya/route exists.
+    return res.status(404).json({ success: false, message: "Resource not found" });
   } catch (error) {
-    return res.status(403).json({ success: false, message: "Access denied: not your jumuiya" });
+    return res.status(404).json({ success: false, message: "Resource not found" });
   }
 };
 
-export { requireRole, enforceJumuiyaScope, OFFICIAL_ROLES };
+export { requireRole, enforceJumuiyaScope, isOfficial, OFFICIAL_ROLES };
 export default requireRole;

@@ -1,12 +1,11 @@
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+﻿import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { LocalStorage } from '../utils';
+import { SessionStorage } from '../utils';
 import axios from 'axios';
 import { BASE_URL } from '../api/config';
 
 interface UserData {
   accessToken: string;
-  refreshToken: string;
   role: string | string[];
   name: string;
   email: string;
@@ -39,7 +38,7 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
   const [user, setUser] = useState<UserData | null>(() => {
-    const storedData = LocalStorage.get('userdata');
+    const storedData = SessionStorage.get('userdata');
     if (storedData && storedData.status === 'success') {
       return storedData;
     }
@@ -47,12 +46,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const refreshSession = useCallback(async (): Promise<string | null> => {
-    const storedData = LocalStorage.get('userdata');
+    const storedData = SessionStorage.get('userdata');
     if (!storedData || storedData.status !== 'success') return null;
 
     const token = storedData.accessToken;
     if (typeof token !== 'string' || token.split('.').length !== 3) {
-      LocalStorage.remove('userdata');
+      SessionStorage.remove('userdata');
       setUser(null);
       return null;
     }
@@ -68,23 +67,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return storedData.accessToken;
       }
 
-      if (!storedData.refreshToken) {
-        LocalStorage.remove('userdata');
-        setUser(null);
-        return null;
-      }
-
-      const { data } = await axios.post(`${BASE_URL}/authentication/refresh`, {
-        refreshToken: storedData.refreshToken,
-      });
+      // Access token expired: mint a new one from the httpOnly refresh cookie.
+      // The expired access token is sent as a binding so a shared cookie (open
+      // in another tab as another user) can't flip this tab's session.
+      const { data } = await axios.post(
+        `${BASE_URL}/authentication/refresh`,
+        { accessToken: token },
+        { withCredentials: true }
+      );
 
       const updated = {
         ...storedData,
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken || storedData.refreshToken,
       };
       setUser(updated);
-      LocalStorage.set('userdata', updated);
+      SessionStorage.set('userdata', updated);
       return updated.accessToken;
     } catch (err) {
       // Only end the session on a definitive auth rejection (4xx from the
@@ -96,7 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         err.response.status >= 400 &&
         err.response.status < 500;
       if (isRejected) {
-        LocalStorage.remove('userdata');
+        SessionStorage.remove('userdata');
         setUser(null);
       }
       return null;
@@ -116,12 +113,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = (data: UserData) => {
     setUser(data);
-    LocalStorage.set('userdata', data);
+    SessionStorage.set('userdata', data);
   };
 
   const logout = () => {
+    // Revoke the refresh token server-side and drop the httpOnly cookie.
+    axios.post(`${BASE_URL}/authentication/log-out`, {}, { withCredentials: true }).catch(() => {});
     setUser(null);
-    LocalStorage.remove('userdata');
+    SessionStorage.remove('userdata');
   };
 
   const register = () => {};

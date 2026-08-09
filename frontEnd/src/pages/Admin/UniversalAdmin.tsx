@@ -30,6 +30,7 @@ import apiService from '../Landing/services/api';
 import { useEffect, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
+import { checkAccess, normalizeRoles } from '../../utils/adminAccess';
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -155,115 +156,16 @@ export default function UniversalAdmin() {
 
   const { user, logout } = useAuth();
 
-  // ── Role Access Controls ──────────────────────────────────────────────────
-  const userRoles = Array.isArray(user?.role)
-    ? user.role
-    : user?.role
-    ? [user.role]
-    : [];
-  const normalized = userRoles.map((r) => String(r).toUpperCase().trim());
-  const isSuperAdmin = normalized.some((r) => r === "CSA_CHAIR");
+  // ── Role Access Controls (single source of truth: utils/adminAccess) ──────
+  const normalized = normalizeRoles(user?.role);
 
-  const checkAccess = (path: string): boolean => {
-    if (isSuperAdmin) return true;
-    if (path === "/admin" || path === "/admin/") return normalized.includes("CSA_CHAIR");
-
-    const allowedPrefixes = new Set<string>();
-
-    normalized.forEach((role) => {
-      switch (role) {
-        case "JUMUIYA_COORDINATOR":
-          allowedPrefixes.add("/admin/officials");
-          allowedPrefixes.add("/admin/jumuiya-members");
-          allowedPrefixes.add("/admin/attendance-tally");
-          break;
-        case "OS":
-          allowedPrefixes.add("/admin/announcements");
-          allowedPrefixes.add("/admin/weekly-activities");
-          allowedPrefixes.add("/admin/semester-activities");
-          allowedPrefixes.add("/admin/bookings");
-          allowedPrefixes.add("/admin/gallery");
-          break;
-        case "JUMUIYA_OS":
-          allowedPrefixes.add("/admin/secretary-dashboard");
-          allowedPrefixes.add("/admin/jumuiya-members");
-          break;
-        case "PROJECT_MANAGER":
-          allowedPrefixes.add("/admin/sacramentals-banners");
-          allowedPrefixes.add("/admin/products");
-          allowedPrefixes.add("/admin/orders");
-          allowedPrefixes.add("/admin/hire-requests");
-          allowedPrefixes.add("/admin/projects");
-          break;
-        case "INSTRUMENT_MANAGER":
-          allowedPrefixes.add("/admin/projects");
-          break;
-        case "TREASURER":
-          allowedPrefixes.add("/admin/donations");
-          break;
-        case "CSA_VICE_CHAIR":
-          allowedPrefixes.add("/admin/suggestions");
-          break;
-        case "LITURGIST":
-          allowedPrefixes.add("/admin/devotions");
-          break;
-        case "CSA_SECRETARY":
-          allowedPrefixes.add("/admin/registered-members");
-          break;
-        case "JUMUIYA_CHAIRPERSON":
-        case "JUMUIYA_SECRETARY":
-          allowedPrefixes.add("/admin/secretary-dashboard");
-          allowedPrefixes.add("/admin/jumuiya-members");
-          break;
-        case "CHOIR_CHAIRPERSON":
-        case "CHOIR_SECRETARY":
-        case "CHOIR_PROJECT_COORDINATOR":
-          allowedPrefixes.add("/admin/community-management");
-          allowedPrefixes.add("/admin/community-management/choir");
-          break;
-        case "ST_FRANCIS_CHAIR":
-          allowedPrefixes.add("/admin/community-management");
-          allowedPrefixes.add("/admin/community-management/st-francis");
-          break;
-        case "CHARISMATIC_CHAIR":
-          allowedPrefixes.add("/admin/community-management");
-          allowedPrefixes.add("/admin/community-management/charismatic");
-          break;
-        case "DANCE_CHAIR":
-          allowedPrefixes.add("/admin/community-management");
-          allowedPrefixes.add("/admin/community-management/dance");
-          break;
-        case "MENTORSHIP_CHAIR":
-          allowedPrefixes.add("/admin/community-management");
-          allowedPrefixes.add("/admin/community-management/mentorship");
-          break;
-      }
-    });
-
-    for (const prefix of allowedPrefixes) {
-      if (path.startsWith(prefix)) return true;
-    }
-
-    return false;
-  };
-
-  const hasAccess = checkAccess(location.pathname);
+  const hasAccess = checkAccess(normalized, location.pathname);
 
   const allowedMenuItems = menuItems.filter((item) => {
-    if (item.path) return checkAccess(item.path);
-    if (item.subItems) return item.subItems.some((child) => checkAccess(child.path));
+    if (item.path) return checkAccess(normalized, item.path);
+    if (item.subItems) return item.subItems.some((child) => checkAccess(normalized, child.path));
     return false;
   });
-
-  // ── Redirect non-chair users away from dashboard to their first allowed page ──
-  useEffect(() => {
-    if (location.pathname !== "/admin" && location.pathname !== "/admin/") return;
-    if (normalized.includes("CSA_CHAIR")) return;
-    const fallback = allowedMenuItems.find((i) => i.path && i.path !== "/admin");
-    if (fallback?.path) {
-      navigate(fallback.path, { replace: true });
-    }
-  }, [location.pathname, normalized, allowedMenuItems, navigate]);
 
   const handleLogout = () => {
     logout();

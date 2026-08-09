@@ -1,13 +1,8 @@
 import React, { useState } from "react";
-import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, ChevronLeft, User } from "lucide-react";
 import { loginApi } from "../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
-
-interface ErrorResponse {
-  message: string;
-}
 
 const Login: React.FC = () => {
   const [userReg, setUserReg] = useState("");
@@ -26,7 +21,9 @@ const Login: React.FC = () => {
       const response = await loginApi({ userReg: normalizedUserReg, password: normalizedPassword });
       if (response.data.status === "success") {
         if (response.data.forcePasswordChange) {
-          navigate("/login/first-login-setup", { state: { loginResponse: response.data } });
+          navigate("/login/first-login-setup", {
+            state: { loginResponse: response.data, currentPassword: normalizedPassword },
+          });
         } else {
           login(response.data);
           const role = response.data.role;
@@ -45,9 +42,10 @@ const Login: React.FC = () => {
         navigate("reset", { state: { purpose: "email" } });
         return;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Login failed:", error);
-      const errorMsg = error.response?.data?.message || "Login failed. Please check your credentials.";
+      const err = error as { response?: { data?: { message?: string } } };
+      const errorMsg = err.response?.data?.message || "Login failed. Please check your credentials.";
       alert(errorMsg);
     } finally {
       setLoading(false);
@@ -164,12 +162,8 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 accent-black cursor-pointer" />
-                <span className="text-xs font-bold text-gray-500">Remember me</span>
-              </label>
+            {/* Forgot Password */}
+            <div className="flex items-center justify-end pt-2">
               <button
                 type="button"
                 onClick={() => navigate("reset", { state: { purpose: "reset password" } })}

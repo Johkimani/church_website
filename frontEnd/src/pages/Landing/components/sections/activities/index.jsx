@@ -391,17 +391,17 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
               </p>
               {message && <div className="text-sm text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100">{message}</div>}
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">Amount (KES)</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                <label htmlFor="activity-amount" className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">Amount (KES)</label>
+                <input type="number" id="activity-amount" name="activity-amount" autoComplete="off" value={amount} onChange={(e) => setAmount(e.target.value)}
                   min="1" max={remaining}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-lg font-bold text-gray-900" />
                 <p className="text-[10px] text-slate-400 mt-1 ml-1">Enter any amount between 1 and {remaining.toLocaleString()} (you can pay later)</p>
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">M-Pesa Number</label>
+                <label htmlFor="activity-phone" className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">M-Pesa Number</label>
                 <div className="relative">
                   <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input type="text" value={phone} onChange={(e) => {
+                  <input type="text" id="activity-phone" name="activity-phone" autoComplete="tel-national" value={phone} onChange={(e) => {
                     let val = e.target.value.replace(/\D/g, '');
                     if (val.startsWith('254')) val = val.substring(3);
                     else if (val.startsWith('0')) val = val.substring(1);

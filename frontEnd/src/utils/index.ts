@@ -37,6 +37,41 @@ export class LocalStorage {
   }
 }
 
+export class SessionStorage {
+  // Get a value from session storage by key
+  static get(key: string) {
+    if (!isBrowser) return;
+    const value = sessionStorage.getItem(key);
+    if (value) {
+      try {
+        return JSON.parse(value);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (err) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Set a value in session storage by key
+  static set(key: string, value: unknown) {
+    if (!isBrowser) return;
+    sessionStorage.setItem(key, JSON.stringify(value));
+  }
+
+  // Remove a value from session storage by key
+  static remove(key: string) {
+    if (!isBrowser) return;
+    sessionStorage.removeItem(key);
+  }
+
+  // Clear all items from session storage
+  static clear() {
+    if (!isBrowser) return;
+    sessionStorage.clear();
+  }
+}
+
 // Converts a date to a human-readable relative time string, e.g. "2 hours ago"
 export function timeAgo(date: string | Date): string {
   const now = new Date();

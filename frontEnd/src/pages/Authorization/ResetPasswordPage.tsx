@@ -114,6 +114,10 @@ const ResetPasswordPage = () => {
             <OTPInput length={6} onComplete={handleOTPComplete} />
           </div>
 
+          <p className="text-xs text-gray-400 font-medium text-center lg:text-left -mt-3">
+            Tip: you can copy the code from your email and paste it directly into the boxes.
+          </p>
+
           {/* Resend OTP */}
           <div className="text-center lg:text-left mt-6">
             <p className="text-sm text-gray-500 font-medium">

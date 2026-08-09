@@ -3,9 +3,44 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import jwt from "jsonwebtoken";
 import sendMail from "../Configs/emailConfig.js";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  decodeRefreshToken,
+  decodeAccessToken,
+} from "../utils/jwtConfig.js";
+import {
+  validatePasswordPolicy,
+  assertNotRecentlyUsed,
+  recordPassword,
+  MAX_LOGIN_ATTEMPTS,
+  LOGIN_LOCK_MINUTES,
+} from "../utils/passwordPolicy.js";
 dotenv.config();
+
+// The refresh token lives in an httpOnly cookie so injected JS (XSS) can't read
+// it. SameSite=None is required because the frontend (Vercel) and API (Render)
+// are different sites; Secure is mandatory alongside it. When running over
+// plain http (local dev) the cookie is kept non-secure so the browser accepts
+// it. `req.secure` honors the X-Forwarded-Proto header via `trust proxy`.
+const refreshCookieOptions = (req) => {
+  const secure = Boolean(req.secure);
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? "none" : "lax",
+    path: "/",
+    maxAge: 20 * 60 * 60 * 1000,
+  };
+};
+
+const setRefreshTokenCookie = (res, req, refreshToken) =>
+  res.cookie("refreshToken", refreshToken, refreshCookieOptions(req));
+
+const clearRefreshTokenCookie = (res, req) =>
+  res.clearCookie("refreshToken", refreshCookieOptions(req));
 
 export const Login = async (req, res) => {
   let { userReg, password } = req.body ?? {};
@@ -19,13 +54,15 @@ export const Login = async (req, res) => {
   }
  try {
     const result = await pool.query(
-      `SELECT 
+      `      SELECT 
         m.member_id, 
         m.password, 
         m.jumuiya_id, 
         m.first_name, 
         m.last_name, 
         m.email,
+        m.failed_login_attempts,
+        m.locked_until,
         COALESCE(
           ARRAY_AGG(r.role_name) FILTER (WHERE r.role_name IS NOT NULL),
           ARRAY[]::text[]
@@ -34,7 +71,7 @@ export const Login = async (req, res) => {
       LEFT JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
       LEFT JOIN roles r ON mr.role_id = r.role_id 
       WHERE m.member_id = $1
-      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email`,
+      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.failed_login_attempts, m.locked_until`,
       [userReg],
     );
 
@@ -45,23 +82,63 @@ export const Login = async (req, res) => {
 
     const user = result.rows[0];
 
+    // Account lockout: reject before doing any password work.
+    const now = new Date();
+    if (user.locked_until && new Date(user.locked_until) > now) {
+      const minsLeft = Math.ceil((new Date(user.locked_until) - now) / 60000);
+      logger.warn(`Login blocked for locked account '${userReg}'`);
+      return res.status(429).json({
+        status: false,
+        message: `Too many failed attempts. Try again in about ${minsLeft} minute${minsLeft === 1 ? "" : "s"}.`,
+      });
+    }
+
     const storedHash = typeof user.password === 'string' ? user.password.trim() : user.password;
-    const match = await bcrypt.compare(password, storedHash);
+    let match = await bcrypt.compare(password, storedHash);
+    if (!match) {
+      // The default password is the member's registration number (stored in
+      // uppercase). Users often type it in lowercase — accept the uppercase
+      // form too. This only ever succeeds when the stored hash corresponds to
+      // an all-uppercase plaintext (i.e. the reg-number default).
+      match = await bcrypt.compare(password.toUpperCase(), storedHash);
+    }
 
     if (!match) {
       logger.error(`Invalid username or password for '${userReg}'`);
+      const attempts = (user.failed_login_attempts || 0) + 1;
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        await pool.query(
+          `UPDATE members SET failed_login_attempts = 0, locked_until = NOW() + ($2 || ' minutes')::interval WHERE member_id = $1`,
+          [userReg, LOGIN_LOCK_MINUTES]
+        );
+        logger.warn(`Account '${userReg}' locked after ${attempts} failed attempts`);
+        return res.status(429).json({
+          status: false,
+          message: `Too many failed attempts. Try again in ${LOGIN_LOCK_MINUTES} minutes.`,
+        });
+      }
+      await pool.query(
+        `UPDATE members SET failed_login_attempts = $2 WHERE member_id = $1`,
+        [userReg, attempts]
+      );
       return res.status(401).json({
         status: false,
         message: "Invalid username or password"
       });
     }
 
+    // Successful login clears any lockout state.
+    await pool.query(
+      `UPDATE members SET failed_login_attempts = 0, locked_until = NULL WHERE member_id = $1`,
+      [userReg]
+    );
+
     // Detect first login: password matches their reg number, or missing email
     const isDefaultPassword = await bcrypt.compare(userReg, storedHash);
     const forcePasswordChange = isDefaultPassword || !user.email;
 
-    const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
-    const refreshToken = generateRefreshtoken(user.member_id, user.roles);
+    const accessToken = signAccessToken({ id: user.member_id, role: user.roles, firstName: user.first_name, lastName: user.last_name, email: user.email, jumuiya_id: user.jumuiya_id });
+    const refreshToken = signRefreshToken({ id: user.member_id, role: user.roles });
 
     // Save hashed refresh token to database
     const hashedToken = await bcrypt.hash(refreshToken, 10);
@@ -73,11 +150,13 @@ export const Login = async (req, res) => {
       [user.member_id, hashedToken, expiresAt]
     );
 
+    // Only the access token is exposed to JS; the refresh token is httpOnly.
+    setRefreshTokenCookie(res, req, refreshToken);
+
     res.status(200).json({
       status: "success",
       member_id: user.member_id,
       accessToken,
-      refreshToken,
       role: user.roles,
       name: `${user.first_name} ${user.last_name}`.trim(),
       email: user.email,
@@ -96,18 +175,16 @@ export const Login = async (req, res) => {
   }
 };
 
-export const generateAccesstoken = (id, role, firstName, lastName, email, jumuiya_id) => {
-  return jwt.sign({ id, role, firstName, lastName, email, jumuiya_id }, process.env.JWT_SECRET, { expiresIn: "15min" });
-};
+export const generateAccesstoken = (id, role, firstName, lastName, email, jumuiya_id) =>
+  signAccessToken({ id, role, firstName, lastName, email, jumuiya_id });
 
-export const generateRefreshtoken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
-    expiresIn: "20h",
-  });
-};
+export const generateRefreshtoken = (id, role) => signRefreshToken({ id, role });
 
 export const refreshAccessToken = async (req, res) => {
-  const { refreshToken } = req.body;
+  const cookieToken = req.cookies?.refreshToken;
+  const bodyToken = req.body?.refreshToken;
+  const accessToken = req.body?.accessToken;
+  const refreshToken = cookieToken || bodyToken;
 
   if (!refreshToken) {
     return res.status(401).json({ error: "No refresh token provided" });
@@ -115,7 +192,20 @@ export const refreshAccessToken = async (req, res) => {
 
   try {
     // Verify token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const decoded = verifyRefreshToken(refreshToken);
+
+    // Tab-session binding: the tab must be refreshing for the SAME member the
+    // cookie was issued to. A refresh cookie is shared across tabs; without
+    // this check, tab B (kim) would silently become tab A's user (steve) when
+    // its access token expires. The binding uses the tab's current access
+    // token (already available to JS), compared unverified against the cookie's
+    // member so expired access tokens still work here.
+    if (typeof accessToken === "string") {
+      const payload = decodeAccessToken(accessToken);
+      if (payload?.id && payload.id !== decoded.id) {
+        return res.status(401).json({ error: "Session does not match the active session" });
+      }
+    }
 
     //  Check if any active tokens exist for this user in DB
     const result = await pool.query(
@@ -160,9 +250,8 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     const user = userResult.rows[0];
-    const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
+    const accessTokenNew = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
     const newRefreshToken = generateRefreshtoken(user.member_id, user.roles);
-
     // Save new hashed refresh token to database
     const hashedToken = await bcrypt.hash(newRefreshToken, 10);
     const expiresAt = new Date();
@@ -175,7 +264,8 @@ export const refreshAccessToken = async (req, res) => {
       [user.member_id, hashedToken, expiresAt]
     );
 
-    res.status(200).json({ accessToken, refreshToken: newRefreshToken });
+    setRefreshTokenCookie(res, req, newRefreshToken);
+    res.status(200).json({ accessToken: accessTokenNew });
   } catch (error) {
     logger.error("Refresh error:", error);
     console.error("Refresh Error Details:", error);
@@ -187,25 +277,31 @@ export const refreshAccessToken = async (req, res) => {
 };
 
 /**
- * First-login setup: force password change + optional email update.
- * Verifies current password (should be the default reg number) before
- * allowing the update.
+ * First-login setup: force password change + email recording.
+ *
+ * Verifies the current password before allowing any update, then:
+ *  - Email already recorded on the member  → change password directly.
+ *  - No email recorded but one is provided → stage the new password + email
+ *    in `password_resets` (temp_password) and email an OTP. NOTHING is
+ *    committed to `members` until the OTP is verified — so a failed OTP can
+ *    never record the password or a (possibly wrong) email. The member may
+ *    re-submit with a corrected email, which replaces the staged record.
  */
 export const firstLoginSetup = async (req, res) => {
   try {
-    const { member_id, currentPassword, newPassword, email } = req.body;
+    const { member_id, currentPassword, newPassword, email, firstLogin } = req.body;
 
     if (!member_id || !currentPassword || !newPassword) {
       return res.status(400).json({ status: false, message: "member_id, currentPassword, and newPassword are required" });
     }
 
-    if (newPassword.length < 8) {
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
       return res.status(400).json({ status: false, message: "New password must be at least 8 characters" });
     }
 
     // Fetch member
     const member = await pool.query(
-      "SELECT member_id, password, first_name, last_name FROM members WHERE member_id = $1",
+      "SELECT member_id, password, email FROM members WHERE member_id = $1",
       [member_id]
     );
     if (member.rows.length === 0) {
@@ -213,40 +309,122 @@ export const firstLoginSetup = async (req, res) => {
     }
 
     const storedHash = typeof member.rows[0].password === 'string' ? member.rows[0].password.trim() : member.rows[0].password;
-    const valid = await bcrypt.compare(currentPassword, storedHash);
+    let valid = await bcrypt.compare(currentPassword, storedHash);
+    if (!valid) {
+      // Match the login fallback: the default reg-number password may be typed
+      // in either case.
+      valid = await bcrypt.compare(currentPassword.toUpperCase(), storedHash);
+    }
     if (!valid) {
       return res.status(401).json({ status: false, message: "Current password is incorrect" });
     }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const existingEmail = (member.rows[0].email || "").trim();
+    const submittedEmail = (email || "").trim().toLowerCase();
 
-    // Update password and optionally email
-    if (email && email.trim()) {
-      const token = crypto.randomBytes(32).toString("hex");
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await pool.query(
-        `UPDATE members SET password = $1, email = $2, email_verified = FALSE,
-         email_verification_token = $4, email_verification_expires = $5 WHERE member_id = $3`,
-        [hashed, email.trim(), member_id, token, expires]
-      );
+    // Reject anything that isn't a real email address before staging an OTP.
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (submittedEmail && !EMAIL_REGEX.test(submittedEmail)) {
+      return res.status(400).json({ status: false, message: "Please enter a valid email address" });
+    }
+
+    // Enforce the password policy (complexity, not common, not the reg number).
+    const policy = validatePasswordPolicy(newPassword, {
+      memberId: member_id,
+      email: existingEmail || submittedEmail,
+    });
+    if (!policy.ok) {
+      return res.status(400).json({ status: false, message: policy.message });
+    }
+
+    // ── Case A: email already recorded → change password, no verification ──
+    if (existingEmail) {
       try {
-        const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-        await sendMail(
-          "Verify your email — CSA Kirinyaga",
-          `Hi ${member_id},\n\nPlease verify your email by clicking the link below:\n${FRONTEND_URL}/verify-email?token=${token}&reg=${encodeURIComponent(member_id)}\n\nThis link expires in 24 hours.\n\n— CSA Kirinyaga Chapter`,
-          email.trim()
-        );
-      } catch (mailErr) {
-        logger.error("Failed to send verification email:", mailErr.message);
+        await assertNotRecentlyUsed(pool, member_id, newPassword);
+      } catch (historyErr) {
+        return res.status(400).json({ status: false, message: historyErr.message });
       }
-    } else {
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await recordPassword(pool, member_id, hashed);
       await pool.query(
         "UPDATE members SET password = $1 WHERE member_id = $2",
         [hashed, member_id]
       );
+      return res.json({ status: "success", message: "Password updated successfully" });
     }
 
-    res.json({ status: true, message: "Password updated successfully" });
+    // No email on file and none provided.
+    if (!submittedEmail) {
+      if (firstLogin) {
+        return res.status(400).json({ status: false, message: "An email address is required to finish setting up your account" });
+      }
+      // Authenticated member changing their password from account settings.
+      try {
+        await assertNotRecentlyUsed(pool, member_id, newPassword);
+      } catch (historyErr) {
+        return res.status(400).json({ status: false, message: historyErr.message });
+      }
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await recordPassword(pool, member_id, hashed);
+      await pool.query(
+        "UPDATE members SET password = $1 WHERE member_id = $2",
+        [hashed, member_id]
+      );
+      return res.json({ status: "success", message: "Password updated successfully" });
+    }
+
+    // ── Case B: no email on file → MUST verify via OTP before committing ──
+    // Reject recently-used passwords up front so the user isn't told at the
+    // final OTP step.
+    try {
+      await assertNotRecentlyUsed(pool, member_id, newPassword);
+    } catch (historyErr) {
+      return res.status(400).json({ status: false, message: historyErr.message });
+    }
+
+    const emailTaken = await pool.query(
+      "SELECT 1 FROM members WHERE lower(email) = $1 AND member_id <> $2",
+      [submittedEmail, member_id]
+    );
+    if (emailTaken.rows.length > 0) {
+      return res.status(409).json({ status: false, message: "That email is already linked to another account" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    const OTP = crypto.randomInt(100000, 1000000).toString();
+    const hashedOtp = crypto.createHash("sha256").update(OTP).digest("hex");
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Replace any previous pending setup for this member/email (covers
+    // wrong-email correction: re-submitting with a new email swaps the stage).
+    await pool.query(
+      `DELETE FROM password_resets WHERE email = $1 OR member_id = $2`,
+      [submittedEmail, member_id]
+    );
+    await pool.query(
+      `INSERT INTO password_resets (member_id, email, otp, otp_expires, temp_password)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [member_id, submittedEmail, hashedOtp, expiresAt, hashed]
+    );
+
+    try {
+      await sendMail(
+        "Your verification code — CSA Kirinyaga",
+        `Hi ${member_id},\n\nUse the code below to verify your email and activate your account:\n\n${OTP}\n\nThis code expires in 10 minutes.\n\n— CSA Kirinyaga Chapter`,
+        submittedEmail
+      );
+    } catch (mailErr) {
+      // If the mail never went out, drop the staged record so nothing lingers.
+      await pool.query(`DELETE FROM password_resets WHERE email = $1`, [submittedEmail]);
+      logger.error(`Failed to send first-login OTP: ${mailErr.message}`);
+      return res.status(500).json({ status: false, message: `Could not send the verification code. (${mailErr.message})` });
+    }
+
+    return res.json({
+      status: "otp_required",
+      message: "A verification code has been sent to your email. Enter it to finish setting up your account.",
+      email: submittedEmail,
+    });
   } catch (error) {
     logger.error("firstLoginSetup error:", error.message);
     res.status(500).json({ status: false, message: "Server error" });
@@ -285,5 +463,46 @@ export const verifyEmail = async (req, res) => {
   } catch (error) {
     logger.error("verifyEmail error:", error.message);
     res.status(500).json({ status: false, message: "Server error" });
+  }
+};
+
+/**
+ * Server-side logout: revoke the member's refresh tokens so a leaked token
+ * cannot mint new access tokens after the user signs out.
+ *
+ * The provided refresh token is verified; if it has already expired, we still
+ * decode it to clean up the member's stored sessions. Logging out revokes all
+ * sessions for that member (this app has no per-device session ids).
+ */
+export const logout = async (req, res) => {
+  const cookieToken = req.cookies?.refreshToken;
+  const { refreshToken } = req.body ?? {};
+  const token = cookieToken || refreshToken;
+
+  // Always drop the cookie, even if nothing else can be revoked.
+  clearRefreshTokenCookie(res, req);
+
+  if (!token) {
+    return res.status(200).json({ message: "Logged out" });
+  }
+
+  try {
+    let memberId = null;
+    try {
+      memberId = verifyRefreshToken(token).id;
+    } catch {
+      memberId = decodeRefreshToken(token)?.id ?? null;
+    }
+
+    if (!memberId) {
+      return res.status(200).json({ message: "Logged out" });
+    }
+
+    await pool.query(`DELETE FROM refresh_tokens WHERE member_id = $1`, [memberId]);
+    logger.info(`Logout: revoked refresh tokens for ${memberId}`);
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    logger.error("Logout error:", error.message);
+    res.status(500).json({ error: "Internal server error" });
   }
 };

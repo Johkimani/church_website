@@ -41,7 +41,7 @@ export const getBin = async (req, res) => {
 const requireVcRole = (req, res) => {
   const roles = Array.isArray(req.user.role) ? req.user.role : [req.user.role];
   if (!roles.some(r => r === 'csa_vice_chair')) {
-    res.status(403).json({ error: 'Only CSA Vice Chair can perform this action' });
+    res.status(404).json({ success: false, message: "Resource not found" });
     return false;
   }
   return true;

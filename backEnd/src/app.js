@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
@@ -23,6 +24,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Trust exactly one proxy hop (Render). This makes req.ip reflect the real
+// client address parsed from the X-Forwarded-For chain added by Render's
+// proxy, instead of trusting a client-supplied X-Forwarded-For header that
+// would let attackers rotate IPs and bypass the rate limiters.
+app.set("trust proxy", 1);
 
 // Secure App with Helmet (Security Headers)
 app.use(helmet());
@@ -83,7 +90,7 @@ const isPaymentEndpoint = (req) =>
 // tries). Token refresh is exempt — it is already gated by a valid refresh token
 // and fires frequently for legitimate multi-tab users.
 const isAuthEndpoint = (req) =>
-  /\/api\/v1\/authentication\/(login|reset|otp|verify|first-login-setup)/i.test(req.path);
+  /\/api\/v1\/authentication\/(login|reset|otp|verify|first-login-setup|resend-otp)/i.test(req.path);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -91,7 +98,7 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req, res) => {
-    return req.clientIp;
+    return req.ip;
   },
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
@@ -107,7 +114,7 @@ const callbackLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipFailedRequests: true,
-  keyGenerator: (req, res) => req.clientIp,
+  keyGenerator: (req, res) => req.ip,
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
       error: `Too many callback requests from this IP`,
@@ -120,7 +127,7 @@ const paymentLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req, res) => req.clientIp,
+  keyGenerator: (req, res) => req.ip,
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
       error: `There are too many payment requests. You are only allowed ${options.max
@@ -134,7 +141,11 @@ const authLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req, res) => req.clientIp,
+  // Only failed attempts consume the per-IP budget: brute-forcing still gets
+  // throttled, but legitimate users logging in from a shared IP aren't penalized
+  // for their successes (per-account DB lockout already handles repeat failures).
+  skipSuccessfulRequests: true,
+  keyGenerator: (req, res) => req.ip,
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
       error: `Too many authentication attempts. You are only allowed ${options.max
@@ -163,10 +174,18 @@ app.get("/health", (req, res) => {
     status: "ok",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+    mailConfigured: Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM),
   });
 });
 
 app.use("/api", apiRoutes)
+
+// Unmatched /api routes: clean JSON 404 so probing unknown endpoints returns the
+// same shape/status as the role-guarded 404s (requireRole) — no HTML, no stack,
+// nothing that confirms a hidden admin route exists.
+app.use("/api", (req, res) => {
+  res.status(404).json({ success: false, message: "Resource not found" });
+});
 
 // Organized Static Routes for locally uploaded media files
 app.use("/uploads", express.static(path.join(__dirname, "../localFileUploads")));
@@ -176,14 +195,18 @@ app.use("/gallery-images", express.static(path.join(__dirname, "../galleryImages
 // Initialize Backend Data Service
 BackendDataService.init();
 
-// SPA: serve built frontend + fallback to index.html for non-API routes
+// SPA: serve built frontend + fallback to index.html for non-API routes.
+// Only when the build actually exists (the frontend normally deploys to
+// Vercel, so backEnd/frontEnd/dist is usually absent on the API host).
+// Uses an Express 5-compatible named wildcard — app.get('*') throws
+// "Missing parameter name at index 1: *" on boot in production.
 const frontendDistPath = path.join(__dirname, "../../frontEnd/dist");
 const indexHtmlPath = path.join(frontendDistPath, "index.html");
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && fs.existsSync(indexHtmlPath)) {
   app.use(express.static(frontendDistPath));
 
-  app.get('*', (req, res, next) => {
+  app.get('/{*splat}', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     if (req.path.startsWith('/uploads')) return next();
     if (req.path.startsWith('/gallery-images')) return next();

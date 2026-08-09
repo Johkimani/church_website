@@ -74,6 +74,8 @@ const PUBLIC_POST_TABLES = new Set([
 // Tables so sensitive (PII, password hashes, payment records) that only members
 // holding an approved official role may read them. orders/hire_requests contain
 // buyer PII (names, phones, addresses) and are therefore official-only too.
+// suggestions carries reporter PII (name, phone, email) and is only ever shown
+// inside the admin UI, so its reads are official-only as well.
 const SENSITIVE_ROLE_READ_TABLES = new Set([
   "members",
   "users",
@@ -81,6 +83,7 @@ const SENSITIVE_ROLE_READ_TABLES = new Set([
   "contributions",
   "orders",
   "hire_requests",
+  "suggestions",
 ]);
 
 // Authz: lock down reads of sensitive tables and ALL writes except public POSTs.
