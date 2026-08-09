@@ -1,5 +1,5 @@
-import axios from "axios";
-import { LocalStorage } from "../utils";
+﻿import axios from "axios";
+import { SessionStorage } from "../utils";
 import type { fileUpload } from "../interface/api";
 import { normalizeFiles } from "../pages/Devotions/utitlty";
 import { BASE_URL } from "./config";
@@ -36,14 +36,14 @@ export const getApiErrorMessageFromError = getApiErrorMessage;
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    const userdata = LocalStorage.get("userdata");
+    const userdata = SessionStorage.get("userdata");
     if (userdata?.accessToken) {
       const token = userdata.accessToken;
       if (typeof token === "string" && token.split(".").length === 3) {
         config.headers.Authorization = `Bearer ${token}`;
       } else {
         console.warn("Malformed access token detected; clearing it.");
-        LocalStorage.remove("userdata");
+        SessionStorage.remove("userdata");
       }
     }
     return config;
@@ -85,7 +85,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const userdata = LocalStorage.get("userdata");
+        const userdata = SessionStorage.get("userdata");
         if (!userdata?.refreshToken) throw new Error("No refresh token available");
 
         const { data } = await refreshAccessAndRefreshToken(userdata.refreshToken);
@@ -95,7 +95,7 @@ apiClient.interceptors.response.use(
           accessToken: data.accessToken,
           refreshToken: data.refreshToken || userdata.refreshToken,
         };
-        LocalStorage.set("userdata", updatedData);
+        SessionStorage.set("userdata", updatedData);
 
         processQueue(null, data.accessToken);
 
@@ -103,7 +103,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        LocalStorage.remove("userdata");
+        SessionStorage.remove("userdata");
         if (!window.location.pathname.includes("/login")) {
           window.location.href = "/login?expired=true";
         }
