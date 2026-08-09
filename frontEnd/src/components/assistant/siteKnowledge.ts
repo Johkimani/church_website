@@ -104,6 +104,11 @@ COMMUNITY GROUPS (each with its own detail page under /community):
 - Liturgical Dancers, Charismatic, and St. Francis groups (each has a Chairperson etc.).
 - Leadership roles per group: Choir (Secretary, Vice Secretary, Treasurer, Project Manager, Male/Female Representative, Choir Master, Choir Mistress), Dancers (Chairperson, Vice Chairperson), Charismatic (Chairperson, Vice Chairperson, Secretary, Treasurer), St. Francis (Chairperson, Vice Chairperson).`;
 
+const ADMIN_KNOWLEDGE = `
+ADMIN AREA (user is currently on /admin):
+- The admin panel is restricted to authorized CSA leaders (chairpersons, secretaries, coordinators and similar office bearers).
+- It provides management screens for officials, devotions, projects, jumuiya members, announcements, bookings, donations, gallery, suggestions, developers and settings.`;
+
 let cache: { knowledge: string; facts: SiteFacts } | null = null;
 
 export const loadSiteData = async (): Promise<{ knowledge: string; facts: SiteFacts }> => {
@@ -142,9 +147,6 @@ export const loadSiteData = async (): Promise<{ knowledge: string; facts: SiteFa
     "PAGES & PATHS:",
   );
   for (const r of ROUTE_MAP) lines.push(`- ${r.label}: ${r.href}`);
-  lines.push(
-    "- Admin panel (restricted to authorized leaders): /admin/* (officials, devotions, projects, jumuiya members, announcements, bookings, donations, gallery, suggestions, developers, settings)",
-  );
   lines.push("", "JUMUIYA (small Christian communities, each with a detail page at /jumuiya/<id>):");
   for (const j of jumuiya) {
     lines.push(`- ${j.fullName} (id: ${j.id})${j.description ? ` - ${j.description}` : ""}`);
@@ -162,3 +164,6 @@ export const loadSiteData = async (): Promise<{ knowledge: string; facts: SiteFa
   cache = { knowledge, facts };
   return cache;
 };
+
+export const buildKnowledgeForPath = (base: string, path: string): string =>
+  path.startsWith("/admin") ? `${base}\n${ADMIN_KNOWLEDGE}` : base;

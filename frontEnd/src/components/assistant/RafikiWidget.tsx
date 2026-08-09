@@ -9,7 +9,7 @@ import {
   SUGGESTIONS,
   type AssistantLink,
 } from "./localBrain";
-import { loadSiteData, type SiteFacts } from "./siteKnowledge";
+import { loadSiteData, buildKnowledgeForPath, type SiteFacts } from "./siteKnowledge";
 
 type Message = {
   role: "user" | "assistant";
@@ -93,7 +93,7 @@ export default function RafikiWidget() {
           path: location.pathname,
           name: user?.name,
           role: user?.role,
-          knowledge: knowledge ?? undefined,
+          knowledge: knowledge ? buildKnowledgeForPath(knowledge, location.pathname) : undefined,
         },
       });
       setMessages((prev) => [

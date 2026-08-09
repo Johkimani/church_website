@@ -47,7 +47,6 @@ export const SUGGESTIONS: string[] = [
   "Book an activity",
   "Meet our officials",
   "Buy a t-shirt or sacramentals",
-  "Who can access the admin panel?",
 ];
 
 const L = (text: string, links?: AssistantLink[]): LocalAnswer => ({ text, links });
@@ -302,15 +301,20 @@ const INTENTS: Intent[] = [
     id: "admin",
     words: ["admin", "administrator", "manage the site", "manage site", "dashboard", "permission", "who can access", "leadership access"],
     run: (c) => {
+      if (!c.path.startsWith("/admin")) {
+        return L(
+          "That area is reserved for the association's leadership. Is there anything else I can help you with on this page?",
+        );
+      }
       const isLeader = c.roles.some((r) => LEADER_ROLES.includes(r));
       return isLeader
         ? L(
-            "You have leadership access, so you can manage the site from the admin dashboard. Would you like to open it?",
+            "You're in the admin area and have leadership access, so you can manage the site from the dashboard. What would you like to do?",
             [{ label: "Admin dashboard", href: "/admin" }],
           )
         : L(
-            "The admin panel is restricted to authorized CSA leaders (chairpersons, secretaries, coordinators and similar office bearers). If you believe you should have access, please contact the association leadership.",
-            [{ label: "Login", href: "/login" }],
+            "This is a restricted area. If you believe you should have access, please contact the association leadership.",
+            [{ label: "Back to home", href: "/" }],
           );
     },
   },

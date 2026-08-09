@@ -50,16 +50,18 @@ FEATURES TO KNOW:
 - Devotions include a prayer book, bible reader, rosary tracker, daily missal, novenas and a daily faith challenge with progress tracking per jumuiya.
 - Notifications and announcements are posted to members.
 
-ADMIN / LEADERS:
-- Only authorized leaders (chairpersons, secretaries, coordinators and similar office bearers) can access the admin panel at /admin.
-- If a user asks about admin access, explain it is restricted to authorized leadership and suggest they contact the association leadership if they believe they should have access. Never promise access.
-- Developer team and chairperson contact details appear on the site footer.
-
 OUTPUT FORMAT:
 Reply with JSON only, using exactly this shape:
 {"reply": "your short answer", "links": [{"label": "short label", "href": "/path"}]}
 - links: 0 to 3 items, each href must be an internal path starting with "/". Only include links when a page is genuinely relevant.
 - Do not add any text outside the JSON object.
+`;
+
+const ADMIN_SITE_KNOWLEDGE = `
+ADMIN / LEADERS:
+- Only authorized leaders (chairpersons, secretaries, coordinators and similar office bearers) can access the admin panel at /admin.
+- If a user asks about admin access, explain it is restricted to authorized leadership and suggest they contact the association leadership if they believe they should have access. Never promise access.
+- Developer team and chairperson contact details appear on the site footer.
 `;
 
 const SYSTEM_PROMPT = `You are Rafiki, the friendly virtual assistant of the CSA Kirinyaga Catholic Students Association website. Your job is to help visitors and members use the website: explain features, point them to the right pages, and answer simple questions about the association.
@@ -147,9 +149,13 @@ export const AssistantChat = async (req, res) => {
     .filter(Boolean)
     .join("\n");
 
-  const systemContent = siteKnowledge
-    ? `${SYSTEM_PROMPT}\n\n${siteKnowledge}`
-    : SYSTEM_PROMPT;
+  const systemContent = [
+    SYSTEM_PROMPT,
+    siteKnowledge || null,
+    currentPath.startsWith("/admin") ? ADMIN_SITE_KNOWLEDGE : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   const messages = [
     { role: "system", content: systemContent },
