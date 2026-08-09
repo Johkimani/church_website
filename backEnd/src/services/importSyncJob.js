@@ -52,15 +52,22 @@ export const syncNewImportRecords = async () => {
         mi.id,
         mi.created_at,
         COALESCE(ir.migrated_to_associates, false),
-        sg.group_id
+        COALESCE(
+          sg.group_id,
+          sg2.group_id,
+          (SELECT group_id FROM sub_groups WHERE LOWER(name) = LOWER(ir.cleaned_jumuiya) LIMIT 1)
+        )
       FROM import_records ir
       JOIN member_imports mi ON mi.id = ir.import_id
       LEFT JOIN sub_groups sg ON sg.name = ir.cleaned_jumuiya OR sg.group_id::text = ir.cleaned_jumuiya
+      LEFT JOIN sub_groups sg2 ON sg2.slug = mi.jumuiya_id OR sg2.name ILIKE mi.jumuiya_id
       WHERE mi.jumuiya_id != 'csa'
         AND ir.status IN ('valid', 'warning')
         AND ir.cleaned_reg_number IS NOT NULL AND ir.cleaned_reg_number != ''
         AND NOT EXISTS (SELECT 1 FROM members WHERE member_id = ir.cleaned_reg_number)
-      ON CONFLICT (member_id) DO NOTHING
+      ON CONFLICT (member_id) DO UPDATE SET
+        jumuiya_id = COALESCE(EXCLUDED.jumuiya_id, members.jumuiya_id)
+      WHERE members.jumuiya_id IS NULL
     `);
 
     const total = (csaResult.rowCount || 0) + (directResult.rowCount || 0);
@@ -88,6 +95,37 @@ export const syncNewImportRecords = async () => {
 
     if (total > 0) {
       logger.info(`Sync: inserted ${total} new members from import_records`);
+    }
+
+    // Heal existing members that were previously synced with jumuiya_id = NULL
+    // (caused by cleaned_jumuiya not matching sub_groups.name at the time of import).
+    // This ensures they appear immediately in the members table without a hard refresh.
+    const healResult = await pool.query(`
+      UPDATE members m
+      SET jumuiya_id = COALESCE(
+        (SELECT sg.group_id FROM sub_groups sg
+          JOIN import_records ir ON sg.name = ir.cleaned_jumuiya
+          JOIN member_imports mi ON mi.id = ir.import_id
+          WHERE ir.cleaned_reg_number = m.member_id
+          LIMIT 1),
+        (SELECT sg.group_id FROM sub_groups sg
+          JOIN import_records ir ON LOWER(sg.name) = LOWER(ir.cleaned_jumuiya)
+          JOIN member_imports mi ON mi.id = ir.import_id
+          WHERE ir.cleaned_reg_number = m.member_id
+          LIMIT 1),
+        (SELECT sg.group_id FROM sub_groups sg
+          JOIN import_records ir ON sg.slug = (
+            SELECT mi2.jumuiya_id FROM member_imports mi2
+            JOIN import_records ir2 ON ir2.import_id = mi2.id
+            WHERE ir2.cleaned_reg_number = m.member_id
+            LIMIT 1)
+          LIMIT 1)
+      )
+      WHERE m.jumuiya_id IS NULL
+        AND m.source = 'jum'
+    `);
+    if (healResult.rowCount > 0) {
+      logger.info(`Sync: healed ${healResult.rowCount} member(s) with missing jumuiya_id`);
     }
 
     // Backfill bcrypt passwords for any member with a missing or plaintext

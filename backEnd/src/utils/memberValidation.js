@@ -9,13 +9,13 @@ const REG_NUM_PATTERN = /^[A-Za-z]+\d+\/[A-Za-z]+\/\d+\/\d{2}$/;
 const REG_NUM_LOOSE_PATTERN = /^[A-Za-z0-9\/.\-_]+\/\d{2}$/;
 
 const JUMUIYA_ALIASES = {
-  "anthony": "St. Anthony", "st anthony": "St. Anthony", "st. anthony": "St. Anthony",
-  "augustine": "St. Augustine", "st augustine": "St. Augustine", "st. augustine": "St. Augustine",
-  "catherine": "St. Catherine", "st catherine": "St. Catherine", "st. catherine": "St. Catherine",
-  "dominie": "St. Dominic", "st dominic": "St. Dominic", "st. dominic": "St. Dominic",
-  "elizabeth": "St. Elizabeth", "st elizabeth": "St. Elizabeth", "st. elizabeth": "St. Elizabeth",
-  "maria goretti": "St. Maria Goretti", "st maria goretti": "St. Maria Goretti",
-  "monica": "St. Monica", "st monica": "St. Monica", "st. monica": "St. Monica",
+  "anthony": "St. Anthony", "st anthony": "St. Anthony", "st. anthony": "St. Anthony", "st-anthony": "St. Anthony",
+  "augustine": "St. Augustine", "st augustine": "St. Augustine", "st. augustine": "St. Augustine", "st-augustine": "St. Augustine",
+  "catherine": "St. Catherine", "st catherine": "St. Catherine", "st. catherine": "St. Catherine", "st-catherine": "St. Catherine",
+  "dominic": "St. Dominic", "dominie": "St. Dominic", "st dominic": "St. Dominic", "st. dominic": "St. Dominic", "st-dominic": "St. Dominic",
+  "elizabeth": "St. Elizabeth", "st elizabeth": "St. Elizabeth", "st. elizabeth": "St. Elizabeth", "st-elizabeth": "St. Elizabeth",
+  "maria goretti": "St. Maria Goretti", "st maria goretti": "St. Maria Goretti", "st. maria goretti": "St. Maria Goretti", "st-maria-goretti": "St. Maria Goretti",
+  "monica": "St. Monica", "st monica": "St. Monica", "st. monica": "St. Monica", "st-monica": "St. Monica",
 };
 
 export const standardizeName = (name) => {
@@ -62,9 +62,9 @@ export const standardizeGender = (gender) => {
 
 export const matchJumuiya = (input) => {
   if (!input || typeof input !== "string") return { cleaned: null, errors: [], warnings: [] };
-  const key = input.trim().toLowerCase().replace(/\s+/g, " ");
+  const key = input.trim().toLowerCase().replace(/[\s_-]+/g, " ");
   if (VALID_JUMUIYAS.includes(input.trim())) return { cleaned: input.trim(), errors: [], warnings: [] };
-  const match = JUMUIYA_ALIASES[key];
+  const match = JUMUIYA_ALIASES[key] || JUMUIYA_ALIASES[input.trim().toLowerCase()];
   if (match) return { cleaned: match, errors: [], warnings: [] };
   for (const valid of VALID_JUMUIYAS) {
     if (valid.toLowerCase().includes(key) || key.includes(valid.toLowerCase().slice(0, 6))) {
