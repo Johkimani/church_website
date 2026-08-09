@@ -34,4 +34,7 @@ export const verifyRefreshToken = (token) => verify(token, refreshSecret);
 /** Unverified decode — only for read-only lookups like session cleanup on logout. */
 export const decodeRefreshToken = (token) => jwt.decode(token);
 
+/** Unverified decode of an access token's payload — for read-only lookups. */
+export const decodeAccessToken = (token) => jwt.decode(token);
+
 export { JWT_ISSUER, JWT_AUDIENCE };

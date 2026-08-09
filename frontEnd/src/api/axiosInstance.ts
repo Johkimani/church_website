@@ -86,14 +86,13 @@ apiClient.interceptors.response.use(
 
       try {
         const userdata = SessionStorage.get("userdata");
-        if (!userdata?.refreshToken) throw new Error("No refresh token available");
+        if (!userdata?.accessToken) throw new Error("No session available");
 
-        const { data } = await refreshAccessAndRefreshToken(userdata.refreshToken);
+        const { data } = await refreshAccessAndRefreshToken(userdata.accessToken);
 
         const updatedData = {
           ...userdata,
           accessToken: data.accessToken,
-          refreshToken: data.refreshToken || userdata.refreshToken,
         };
         SessionStorage.set("userdata", updatedData);
 
@@ -117,10 +116,13 @@ apiClient.interceptors.response.use(
   }
 );
 
-const refreshClient = axios.create({ baseURL: API_BASE_URL });
+const refreshClient = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
 
-const refreshAccessAndRefreshToken = (refreshToken: string) =>
-  refreshClient.post("authentication/refresh", { refreshToken });
+// The refresh token lives in an httpOnly cookie (sent automatically via
+// withCredentials). The current access token is passed as a binding so the
+// server can reject the request if the cookie belongs to a different member.
+const refreshAccessAndRefreshToken = (accessToken: string) =>
+  refreshClient.post("authentication/refresh", { accessToken });
 
 // --- Your API functions below ---
 export const generateAndSaveQuestions = (data: { topic: string }) =>

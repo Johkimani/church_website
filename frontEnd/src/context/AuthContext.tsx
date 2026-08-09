@@ -6,7 +6,6 @@ import { BASE_URL } from '../api/config';
 
 interface UserData {
   accessToken: string;
-  refreshToken: string;
   role: string | string[];
   name: string;
   email: string;
@@ -68,20 +67,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return storedData.accessToken;
       }
 
-      if (!storedData.refreshToken) {
-        SessionStorage.remove('userdata');
-        setUser(null);
-        return null;
-      }
-
-      const { data } = await axios.post(`${BASE_URL}/authentication/refresh`, {
-        refreshToken: storedData.refreshToken,
-      });
+      // Access token expired: mint a new one from the httpOnly refresh cookie.
+      // The expired access token is sent as a binding so a shared cookie (open
+      // in another tab as another user) can't flip this tab's session.
+      const { data } = await axios.post(
+        `${BASE_URL}/authentication/refresh`,
+        { accessToken: token },
+        { withCredentials: true }
+      );
 
       const updated = {
         ...storedData,
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken || storedData.refreshToken,
       };
       setUser(updated);
       SessionStorage.set('userdata', updated);
@@ -120,6 +117,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    // Revoke the refresh token server-side and drop the httpOnly cookie.
+    axios.post(`${BASE_URL}/authentication/log-out`, {}, { withCredentials: true }).catch(() => {});
     setUser(null);
     SessionStorage.remove('userdata');
   };

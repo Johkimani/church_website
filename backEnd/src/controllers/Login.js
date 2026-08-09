@@ -9,6 +9,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
   decodeRefreshToken,
+  decodeAccessToken,
 } from "../utils/jwtConfig.js";
 import {
   validatePasswordPolicy,
@@ -18,6 +19,28 @@ import {
   LOGIN_LOCK_MINUTES,
 } from "../utils/passwordPolicy.js";
 dotenv.config();
+
+// The refresh token lives in an httpOnly cookie so injected JS (XSS) can't read
+// it. SameSite=None is required because the frontend (Vercel) and API (Render)
+// are different sites; Secure is mandatory alongside it. When running over
+// plain http (local dev) the cookie is kept non-secure so the browser accepts
+// it. `req.secure` honors the X-Forwarded-Proto header via `trust proxy`.
+const refreshCookieOptions = (req) => {
+  const secure = Boolean(req.secure);
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? "none" : "lax",
+    path: "/",
+    maxAge: 20 * 60 * 60 * 1000,
+  };
+};
+
+const setRefreshTokenCookie = (res, req, refreshToken) =>
+  res.cookie("refreshToken", refreshToken, refreshCookieOptions(req));
+
+const clearRefreshTokenCookie = (res, req) =>
+  res.clearCookie("refreshToken", refreshCookieOptions(req));
 
 export const Login = async (req, res) => {
   let { userReg, password } = req.body ?? {};
@@ -127,11 +150,13 @@ export const Login = async (req, res) => {
       [user.member_id, hashedToken, expiresAt]
     );
 
+    // Only the access token is exposed to JS; the refresh token is httpOnly.
+    setRefreshTokenCookie(res, req, refreshToken);
+
     res.status(200).json({
       status: "success",
       member_id: user.member_id,
       accessToken,
-      refreshToken,
       role: user.roles,
       name: `${user.first_name} ${user.last_name}`.trim(),
       email: user.email,
@@ -156,7 +181,10 @@ export const generateAccesstoken = (id, role, firstName, lastName, email, jumuiy
 export const generateRefreshtoken = (id, role) => signRefreshToken({ id, role });
 
 export const refreshAccessToken = async (req, res) => {
-  const { refreshToken } = req.body;
+  const cookieToken = req.cookies?.refreshToken;
+  const bodyToken = req.body?.refreshToken;
+  const accessToken = req.body?.accessToken;
+  const refreshToken = cookieToken || bodyToken;
 
   if (!refreshToken) {
     return res.status(401).json({ error: "No refresh token provided" });
@@ -165,6 +193,19 @@ export const refreshAccessToken = async (req, res) => {
   try {
     // Verify token
     const decoded = verifyRefreshToken(refreshToken);
+
+    // Tab-session binding: the tab must be refreshing for the SAME member the
+    // cookie was issued to. A refresh cookie is shared across tabs; without
+    // this check, tab B (kim) would silently become tab A's user (steve) when
+    // its access token expires. The binding uses the tab's current access
+    // token (already available to JS), compared unverified against the cookie's
+    // member so expired access tokens still work here.
+    if (typeof accessToken === "string") {
+      const payload = decodeAccessToken(accessToken);
+      if (payload?.id && payload.id !== decoded.id) {
+        return res.status(401).json({ error: "Session does not match the active session" });
+      }
+    }
 
     //  Check if any active tokens exist for this user in DB
     const result = await pool.query(
@@ -209,7 +250,7 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     const user = userResult.rows[0];
-    const accessToken = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
+    const accessTokenNew = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
     const newRefreshToken = generateRefreshtoken(user.member_id, user.roles);
     // Save new hashed refresh token to database
     const hashedToken = await bcrypt.hash(newRefreshToken, 10);
@@ -223,7 +264,8 @@ export const refreshAccessToken = async (req, res) => {
       [user.member_id, hashedToken, expiresAt]
     );
 
-    res.status(200).json({ accessToken, refreshToken: newRefreshToken });
+    setRefreshTokenCookie(res, req, newRefreshToken);
+    res.status(200).json({ accessToken: accessTokenNew });
   } catch (error) {
     logger.error("Refresh error:", error);
     console.error("Refresh Error Details:", error);
@@ -433,18 +475,23 @@ export const verifyEmail = async (req, res) => {
  * sessions for that member (this app has no per-device session ids).
  */
 export const logout = async (req, res) => {
+  const cookieToken = req.cookies?.refreshToken;
   const { refreshToken } = req.body ?? {};
+  const token = cookieToken || refreshToken;
 
-  if (!refreshToken) {
-    return res.status(400).json({ error: "No refresh token provided" });
+  // Always drop the cookie, even if nothing else can be revoked.
+  clearRefreshTokenCookie(res, req);
+
+  if (!token) {
+    return res.status(200).json({ message: "Logged out" });
   }
 
   try {
     let memberId = null;
     try {
-      memberId = verifyRefreshToken(refreshToken).id;
+      memberId = verifyRefreshToken(token).id;
     } catch {
-      memberId = decodeRefreshToken(refreshToken)?.id ?? null;
+      memberId = decodeRefreshToken(token)?.id ?? null;
     }
 
     if (!memberId) {
