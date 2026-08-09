@@ -208,6 +208,12 @@ export const importMembers = async (req, res) => {
       return res.status(400).json({ error: "members array is required" });
     }
 
+    let targetJumuiyaName = null;
+    if (jumuiya_id && jumuiya_id !== 'csa') {
+      const resolved = await resolveJumuiyaInput(jumuiya_id);
+      if (resolved) targetJumuiyaName = resolved.name;
+    }
+
     const nonEmpty = members.filter(m => m.regNumber?.trim() || m.name?.trim() || m.gender?.trim());
     if (nonEmpty.length === 0) {
       return res.status(400).json({ error: "No valid data rows found — all rows were empty" });
@@ -228,7 +234,7 @@ export const importMembers = async (req, res) => {
 
     for (let i = 0; i < nonEmpty.length; i++) {
       const member = nonEmpty[i];
-      const validated = validateMemberRow(member);
+      const validated = validateMemberRow(member, targetJumuiyaName);
       const dupes = dupErrors[i] || [];
       const allErrors = [...validated.errors, ...dupes];
       let status = validated.status;

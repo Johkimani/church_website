@@ -51,7 +51,7 @@ export const standardizeRegNumber = (regNumber) => {
 };
 
 export const standardizeGender = (gender) => {
-  if (!gender || typeof gender !== "string") return { cleaned: null, errors: ["Gender is required"], warnings: [] };
+  if (!gender || typeof gender !== "string" || !gender.trim()) return { cleaned: null, errors: [], warnings: ["Gender not specified"] };
   const warnings = [];
   const g = gender.trim().toLowerCase();
   if (["m", "male", "man", "boy"].includes(g)) return { cleaned: "Male", warnings };
@@ -61,7 +61,7 @@ export const standardizeGender = (gender) => {
 };
 
 export const matchJumuiya = (input) => {
-  if (!input || typeof input !== "string") return { cleaned: null, errors: [], warnings: [] };
+  if (!input || typeof input !== "string" || !input.trim()) return { cleaned: null, errors: [], warnings: [] };
   const key = input.trim().toLowerCase().replace(/[\s_-]+/g, " ");
   if (VALID_JUMUIYAS.includes(input.trim())) return { cleaned: input.trim(), errors: [], warnings: [] };
   const match = JUMUIYA_ALIASES[key] || JUMUIYA_ALIASES[input.trim().toLowerCase()];
@@ -71,7 +71,7 @@ export const matchJumuiya = (input) => {
       return { cleaned: valid, errors: [], warnings: [`Auto-matched "${input}" to ${valid}`] };
     }
   }
-  return { cleaned: null, errors: [`"${input}" does not match any known Jumuiya`], warnings: [] };
+  return { cleaned: null, errors: [], warnings: [`"${input}" does not match known Jumuiya — will use active target Jumuiya`] };
 };
 
 export const validatePhone = (phone) => {
@@ -93,7 +93,7 @@ export const validateEmail = (email) => {
   return { cleaned, warnings: [] };
 };
 
-export const validateMemberRow = (row) => {
+export const validateMemberRow = (row, defaultJumuiya = null) => {
   const errors = [];
   const warnings = [];
 
@@ -108,7 +108,8 @@ export const validateMemberRow = (row) => {
   if (genderResult.errors) errors.push(...genderResult.errors);
   if (genderResult.warnings) warnings.push(...genderResult.warnings);
 
-  const jumuiyaResult = matchJumuiya(row.jumuiya || row.jumuiya_name || row.community);
+  const rawJumuiya = row.jumuiya || row.jumuiya_name || row.community || defaultJumuiya;
+  const jumuiyaResult = matchJumuiya(rawJumuiya);
   if (jumuiyaResult.errors) errors.push(...jumuiyaResult.errors);
   if (jumuiyaResult.warnings) warnings.push(...jumuiyaResult.warnings);
 
@@ -128,7 +129,7 @@ export const validateMemberRow = (row) => {
       regNumber: row.registrationNumber || row.regNumber || row.reg_number || row.registration_number || null,
       gender: row.gender || null,
       course: row.course || null,
-      jumuiya: row.jumuiya || row.jumuiya_name || row.community || null,
+      jumuiya: rawJumuiya || null,
       phone: row.phone || row.phoneNumber || row.phone_number || null,
       email: row.email || null,
     },
@@ -137,7 +138,7 @@ export const validateMemberRow = (row) => {
       regNumber: regResult.cleaned,
       gender: genderResult.cleaned,
       course: row.course || null,
-      jumuiya: jumuiyaResult.cleaned,
+      jumuiya: jumuiyaResult.cleaned || defaultJumuiya || null,
       phone: phoneResult.cleaned,
       email: emailResult.cleaned,
     },

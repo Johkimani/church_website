@@ -7,6 +7,15 @@ let intervalHandle = null;
 
 export const syncNewImportRecords = async () => {
   try {
+    // 0. Auto-heal any import_records trapped in 'error' status that have a valid reg number and name
+    await pool.query(`
+      UPDATE import_records
+      SET status = 'warning'
+      WHERE status = 'error'
+        AND cleaned_reg_number IS NOT NULL AND cleaned_reg_number != ''
+        AND cleaned_name IS NOT NULL AND cleaned_name != ''
+    `);
+
     const csaResult = await pool.query(`
       INSERT INTO members (
         member_id, first_name, last_name, phone, gender,
