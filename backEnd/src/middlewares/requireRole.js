@@ -62,8 +62,9 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
     }
     if (normalizeKey(targetId) === normalizeKey(ownId)) return next();
     // Target may be a slug or name — resolve to group_id and compare
+    // (group_id is a UUID column, so it must be cast to text before lower()).
     const { rows } = await db.query(
-      "SELECT group_id FROM sub_groups WHERE LOWER(slug) = $1 OR LOWER(group_id) = $1 OR LOWER(name) = $1",
+      "SELECT group_id FROM sub_groups WHERE LOWER(slug) = $1 OR LOWER(group_id::text) = $1 OR LOWER(name) = $1",
       [String(targetId).toLowerCase()]
     );
     if (rows.length > 0 && normalizeKey(rows[0].group_id) === normalizeKey(ownId)) return next();
