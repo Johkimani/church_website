@@ -71,12 +71,13 @@ export default function UniversalAdmin() {
   // ── Preserve sidebar nav scroll position across route changes ──
   const navRef = useRef<HTMLElement | null>(null);
   const NAV_SCROLL_KEY = 'admin_nav_scroll';
-  const savedNavScroll = useRef<number>(() => {
+  const loadSavedNavScroll = (): number => {
     try {
       const saved = Number(sessionStorage.getItem(NAV_SCROLL_KEY));
       return Number.isFinite(saved) && saved > 0 ? saved : 0;
     } catch { return 0; }
-  }());
+  };
+  const savedNavScroll = useRef<number>(loadSavedNavScroll());
 
   useEffect(() => {
     // Stop the browser from auto-restoring/resetting scroll positions during
