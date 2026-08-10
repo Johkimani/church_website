@@ -50,6 +50,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/devotions",
   "/admin/registered-members",
   "/admin/community-management",
+  "/admin/activity-log",
 ];
 
 export const normalizeRoles = (role: unknown): string[] => {
@@ -81,6 +82,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/officials");
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");
+        prefixes.add("/admin/activity-log");
         break;
       case "OS":
         prefixes.add("/admin/announcements");

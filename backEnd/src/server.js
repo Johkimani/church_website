@@ -31,6 +31,7 @@ import activityBookingMigration from "./migrations/activityBookingMigration.js";
 import { pendingPaymentsMigration } from "./migrations/pendingPaymentsMigration.js";
 import attendanceMigration from "./migrations/attendanceMigration.js";
 import jumuiyaAttendanceMigration from "./migrations/jumuiyaAttendanceMigration.js";
+import activityLogMigration from "./migrations/activityLogMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -179,6 +180,7 @@ const initServer = async () => {
     await pendingPaymentsMigration();
     await attendanceMigration();
     await jumuiyaAttendanceMigration();
+    await activityLogMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
