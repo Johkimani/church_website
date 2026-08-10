@@ -59,6 +59,15 @@ export const normalizeRoles = (role: unknown): string[] => {
 
 export const isChair = (roles: string[]): boolean => roles.includes(CHAIR_ROLE);
 
+// Pages the CSA chair may NOT open even though the chair otherwise has
+// universal admin access. They belong to specific officials only:
+//   - /admin/attendance-tally  -> jumuiya coordinator
+//   - /admin/secretary-dashboard -> jumuiya officials
+const CHAIR_FORBIDDEN_PATHS = [
+  "/admin/attendance-tally",
+  "/admin/secretary-dashboard",
+];
+
 export const hasAnyAdminAccess = (roles: string[]): boolean =>
   roles.some((r) => KNOWN_ADMIN_ROLES.has(r));
 
@@ -146,7 +155,9 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
 };
 
 export const checkAccess = (roles: string[], path: string): boolean => {
-  if (isChair(roles)) return true;
+  if (isChair(roles)) {
+    return !CHAIR_FORBIDDEN_PATHS.some((forbidden) => path.startsWith(forbidden));
+  }
   if (path === "/admin" || path === "/admin/") return false;
 
   const prefixes = getAllowedPrefixes(roles);

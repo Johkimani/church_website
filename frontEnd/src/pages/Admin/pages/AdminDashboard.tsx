@@ -16,10 +16,8 @@ import {
   Loader2,
   RefreshCcw,
   Clock,
-  LayoutDashboard,
   Megaphone,
   BookOpen,
-  CalendarCheck,
   MessageSquare,
   ShoppingCart,
   Wrench,
@@ -206,10 +204,8 @@ export default function AdminDashboard() {
   const quickActions = useMemo(
     () => [
       { label: 'Registered Members', desc: 'Manage members & payments', icon: ClipboardList, chip: 'from-blue-500 to-indigo-600', path: '/admin/registered-members' },
-      { label: 'My Jumuiya Dashboard', desc: 'Chairperson overview', icon: LayoutDashboard, chip: 'from-indigo-500 to-blue-600', path: '/admin/secretary-dashboard' },
       { label: 'Announcements', desc: 'Post CSA / Jumuiya notices', icon: Megaphone, chip: 'from-rose-500 to-pink-600', path: '/admin/announcements' },
       { label: 'Devotions & AI', desc: 'Liturgy & prayers', icon: BookOpen, chip: 'from-emerald-500 to-teal-600', path: '/admin/devotions' },
-      { label: 'Attendance Tally', desc: 'Sunday & novena attendance', icon: CalendarCheck, chip: 'from-amber-500 to-orange-600', path: '/admin/attendance-tally' },
       { label: 'User Suggestions', desc: `${data?.suggestions || 0} new suggestions`, icon: MessageSquare, chip: 'from-cyan-500 to-sky-600', path: '/admin/suggestions' },
     ],
     [data]
