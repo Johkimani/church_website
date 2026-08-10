@@ -42,7 +42,7 @@ export const getAllJumuiyaData = async (req, res) => {
                     FROM jumuiya_officials jo
                     LEFT JOIN election_terms et ON jo.election_term_id = et.id
                     WHERE jo.status = 'archived' AND jo.category = ANY($1)`, [jumuiyaNames]),
-        pool.query("SELECT et.year FROM election_terms WHERE is_current = TRUE ORDER BY id DESC LIMIT 1"),
+        pool.query("SELECT et.year FROM election_terms et WHERE is_current = TRUE ORDER BY et.id DESC LIMIT 1"),
         pool.query("SELECT * FROM jumuiya_social_media WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_gallery_albums WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_gallery_images ORDER BY sort_order ASC"), // images have album_id
