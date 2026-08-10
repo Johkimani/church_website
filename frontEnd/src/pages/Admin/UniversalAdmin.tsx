@@ -70,10 +70,41 @@ export default function UniversalAdmin() {
 
   // ── Preserve sidebar nav scroll position across route changes ──
   const navRef = useRef<HTMLElement | null>(null);
-  const savedNavScroll = useRef(0);
+  const NAV_SCROLL_KEY = 'admin_nav_scroll';
+  const savedNavScroll = useRef<number>(() => {
+    try {
+      const saved = Number(sessionStorage.getItem(NAV_SCROLL_KEY));
+      return Number.isFinite(saved) && saved > 0 ? saved : 0;
+    } catch { return 0; }
+  }());
+
+  useEffect(() => {
+    // Stop the browser from auto-restoring/resetting scroll positions during
+    // SPA navigation, which would yank the sidebar back to the top.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  }, []);
+
+  const rememberNavScroll = () => {
+    if (navRef.current) savedNavScroll.current = navRef.current.scrollTop;
+    try { sessionStorage.setItem(NAV_SCROLL_KEY, String(savedNavScroll.current)); } catch { /* ignore */ }
+  };
+
+  const restoreNavScroll = () => {
+    const el = navRef.current;
+    if (!el) return;
+    // .no-scrollbar has scroll-behavior:smooth, which turns programmatic
+    // restores into slow, interruptible animations. Force an instant jump.
+    const prev = el.style.scrollBehavior;
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = savedNavScroll.current;
+    el.style.scrollBehavior = prev;
+  };
 
   useLayoutEffect(() => {
-    if (navRef.current) navRef.current.scrollTop = savedNavScroll.current;
+    restoreNavScroll();
+    const frame = requestAnimationFrame(restoreNavScroll);
+    const timer = window.setTimeout(restoreNavScroll, 50);
+    return () => { cancelAnimationFrame(frame); clearTimeout(timer); };
   }, [location.pathname]);
 
   const toggleMenu = (id: string) => {
@@ -209,7 +240,7 @@ export default function UniversalAdmin() {
         {/* Navigation Links */}
         <nav
           ref={navRef}
-          onScroll={() => { if (navRef.current) savedNavScroll.current = navRef.current.scrollTop; }}
+          onScroll={rememberNavScroll}
           className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar"
         >
           {allowedMenuItems.map((item) => {
@@ -221,7 +252,10 @@ export default function UniversalAdmin() {
                 <Link
                   key={item.id}
                   to={item.path!}
-                  onClick={closeSidebarIfMobile}
+                  onClick={() => {
+                    rememberNavScroll();
+                    closeSidebarIfMobile();
+                  }}
                   className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isActive
                       ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30'
                       : 'text-slate-300 hover:bg-white/10 hover:text-white'
@@ -269,7 +303,10 @@ export default function UniversalAdmin() {
                         <Link
                           key={child.id}
                           to={child.path}
-                          onClick={closeSidebarIfMobile}
+                          onClick={() => {
+                            rememberNavScroll();
+                            closeSidebarIfMobile();
+                          }}
                           className={`flex items-center text-sm px-3 py-2 rounded-xl transition-colors ${
                             isSubActive ? 'bg-blue-500/95 text-white shadow-md shadow-blue-900/30' : 'text-slate-400 hover:text-white hover:bg-white/5'
                           }`}
