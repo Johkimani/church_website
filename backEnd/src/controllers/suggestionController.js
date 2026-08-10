@@ -3,8 +3,30 @@ import logger from "../logger/winston.js";
 import crypto from "crypto";
 import { sendMail } from "../Configs/emailConfig.js";
 
+// Secret per-role unmask tokens must never leave the server in API responses.
+const SUGGESTION_TOKEN_COLUMNS = [
+  "chair_unmask_token",
+  "liturgist_unmask_token",
+  "jumuiya_chair_token",
+  "jumuiya_secretary_token",
+];
+
+const sanitizeSuggestion = (row) => {
+  if (!row) return row;
+  const safe = { ...row };
+  for (const col of SUGGESTION_TOKEN_COLUMNS) delete safe[col];
+  return safe;
+};
+
+// Explicit column list — never `SELECT s.*` — so the per-role unmask tokens and
+// raw user_id never leak into responses. member identity fields stay gated on
+// the author having signed with a name or the request being fully approved.
 const SUGGESTION_WITH_MEMBER = `
-  SELECT s.*,
+  SELECT
+    s.id, s.suggestion, s.category, s.scope, s.jumuiya_id, s.status,
+    s.name, s.email, s.reply, s.replied_by, s.replied_at,
+    s.created_at, s.updated_at, s.deleted_at, s.deleted_by, s.unmask_requested_at,
+    CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN s.user_id END AS user_id,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.first_name END AS member_first_name,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.last_name END AS member_last_name,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.year_of_study END AS member_year_of_study,
@@ -30,8 +52,13 @@ export const listSuggestions = async (req, res) => {
     const params = [];
 
     const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+    const isJumuiyaOfficer = roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r));
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
+    if (!isGlobal && !isJumuiyaOfficer) {
+      return res.json({ status: "success", data: [] });
+    }
+
+    if (!isGlobal && isJumuiyaOfficer) {
       const userJumuiya = req.user.jumuiya_id;
       if (userJumuiya) {
         whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
@@ -56,21 +83,26 @@ export const listSuggestions = async (req, res) => {
 export const getBin = async (req, res) => {
   try {
     const roles = getUserRoles(req);
-    let whereClause = `WHERE deleted_at IS NOT NULL`;
+    let whereClause = `WHERE s.deleted_at IS NOT NULL`;
     const params = [];
 
     const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+    const isJumuiyaOfficer = roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r));
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
+    if (!isGlobal && !isJumuiyaOfficer) {
+      return res.json({ status: "success", data: [] });
+    }
+
+    if (!isGlobal && isJumuiyaOfficer) {
       const userJumuiya = req.user.jumuiya_id;
       if (userJumuiya) {
-        whereClause += ` AND (jumuiya_id = $1 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
+        whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
         params.push(userJumuiya);
       }
     }
 
     const result = await pool.query(
-      `SELECT * FROM suggestions ${whereClause} ORDER BY deleted_at DESC`,
+      `${SUGGESTION_WITH_MEMBER} ${whereClause} ORDER BY s.deleted_at DESC`,
       params
     );
     res.json({ status: "success", data: result.rows });
@@ -94,17 +126,28 @@ export const softDelete = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedBy = req.body?.deleted_by || req.user?.member_id || "unknown";
+    const roles = getUserRoles(req);
+    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
 
-    const result = await pool.query(
-      `UPDATE suggestions SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *`,
-      [deletedBy, id]
-    );
+    let query = `UPDATE suggestions SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $1 WHERE id = $2 AND deleted_at IS NULL`;
+    const params = [deletedBy, id];
+
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
+      const userJumuiya = req.user.jumuiya_id;
+      if (userJumuiya) {
+        query += ` AND (jumuiya_id = $3 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $3))`;
+        params.push(userJumuiya);
+      }
+    }
+
+    query += ` RETURNING *`;
+    const result = await pool.query(query, params);
 
     if (!result.rows.length) {
       return res.status(404).json({ error: "Suggestion not found or already deleted" });
     }
 
-    res.json({ status: "success", data: result.rows[0] });
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
   } catch (error) {
     logger.error("softDelete error:", error.message);
     res.status(500).json({ error: error.message });
@@ -135,7 +178,7 @@ export const restoreFromBin = async (req, res) => {
       return res.status(404).json({ error: "Suggestion not found in bin or insufficient permissions" });
     }
 
-    res.json({ status: "success", data: result.rows[0] });
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
   } catch (error) {
     logger.error("restoreFromBin error:", error.message);
     res.status(500).json({ error: error.message });
@@ -151,7 +194,7 @@ export const permanentDelete = async (req, res) => {
     let query = `DELETE FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL`;
     const params = [id];
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson'].includes(r))) {
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
       const userJumuiya = req.user.jumuiya_id;
       if (userJumuiya) {
         query += ` AND (jumuiya_id = $2 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $2))`;
@@ -181,7 +224,7 @@ export const clearBin = async (req, res) => {
     let query = `DELETE FROM suggestions WHERE deleted_at IS NOT NULL`;
     const params = [];
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson'].includes(r))) {
+    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
       const userJumuiya = req.user.jumuiya_id;
       if (userJumuiya) {
         query += ` AND (jumuiya_id = $1 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
@@ -298,7 +341,9 @@ export const requestUnmask = async (req, res) => {
     const queryArgs = isJumuiyaScope ? [suggestion.jumuiya_id] : [];
     const roleResult = await pool.query(roleQuery, queryArgs);
 
-    const origin = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    // Pin the origin to the configured frontend URL instead of trusting the
+    // Host header, so a malicious request can never forge email review links.
+    const origin = process.env.FRONTEND_URL || 'https://csakyu.com';
     let sent = 0;
     let failed = 0;
 
@@ -408,7 +453,7 @@ export const respondRoleUnmask = async (req, res) => {
         [token]
       );
       if (!result.rows.length) return res.status(404).json({ error: "Invalid or expired token" });
-      return res.json({ status: "success", message: "Unmask request declined. Your decision has been recorded.", data: result.rows[0] });
+      return res.json({ status: "success", message: "Unmask request declined. Your decision has been recorded.", data: sanitizeSuggestion(result.rows[0]) });
     }
 
     const markResult = await pool.query(
@@ -437,7 +482,7 @@ export const respondRoleUnmask = async (req, res) => {
       return res.json({ status: "success", message: "Unmask decision recorded.", data: finalResult.rows[0] });
     }
 
-    res.json({ status: "success", message: "Your decision has been recorded.", data: row });
+    res.json({ status: "success", message: "Your decision has been recorded.", data: sanitizeSuggestion(row) });
   } catch (error) {
     logger.error("respondRoleUnmask error:", error.message);
     res.status(500).json({ error: error.message });
@@ -445,6 +490,7 @@ export const respondRoleUnmask = async (req, res) => {
 };
 
 export const replyToSuggestion = async (req, res) => {
+  if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
     const { reply } = req.body;
@@ -463,9 +509,40 @@ export const replyToSuggestion = async (req, res) => {
       return res.status(404).json({ error: "Suggestion not found" });
     }
 
-    res.json({ status: "success", data: result.rows[0] });
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
   } catch (error) {
     logger.error("replyToSuggestion error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const VALID_CATEGORIES = [
+  'general', 'worship', 'progress', 'feedback', 'other',
+  'officials', 'jumuiya', 'members', 'ideas', 'requests', 'events',
+];
+
+export const updateSuggestionCategory = async (req, res) => {
+  if (!requireVcRole(req, res)) return;
+  try {
+    const { id } = req.params;
+    const { category } = req.body;
+
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: "Invalid category" });
+    }
+
+    const result = await pool.query(
+      `UPDATE suggestions SET category = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *`,
+      [category, id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Suggestion not found" });
+    }
+
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
+  } catch (error) {
+    logger.error("updateSuggestionCategory error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };

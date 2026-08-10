@@ -4,10 +4,13 @@ const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
 
 // Any approved official may manage the member/role directory, orders, payments
 // and other admin surfaces. Shared across routers that gate admin endpoints.
+// NOTE: jumuiya_vice_chairperson is intentionally NOT here — that role manages
+// only its own jumuiya's suggestion box (see suggestionRouter) and must not get
+// global PII / order / payment reads.
 const OFFICIAL_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
   "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
-  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_vice_chairperson", "jumuiya_os", "jumuiya_secretary",
+  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
 ];
 
 const getUserRoles = (req) => {

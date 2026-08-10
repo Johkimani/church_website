@@ -21,6 +21,25 @@ const TABLE_PRIMARY_KEYS = {
   jumuiya: "group_id",
 };
 
+// Unmask tokens on suggestions are single-use secrets that must never be
+// returned to any client through the generic API.
+const SUGGESTION_TOKEN_COLUMNS = [
+  "chair_unmask_token",
+  "liturgist_unmask_token",
+  "jumuiya_chair_token",
+  "jumuiya_secretary_token",
+];
+
+const sanitizeSuggestionRows = (rows) =>
+  rows.map((row) => {
+    const safe = { ...row };
+    for (const col of SUGGESTION_TOKEN_COLUMNS) delete safe[col];
+    return safe;
+  });
+
+const maybeSanitize = (tableName, rows) =>
+  tableName === 'suggestions' ? sanitizeSuggestionRows(rows) : rows;
+
 // Get all records from a table
 export const getTableData = async (tableName, queryParams = {}) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
@@ -49,14 +68,14 @@ export const getTableData = async (tableName, queryParams = {}) => {
     query += ` ORDER BY "${sortCol}" DESC`;
 
     const result = await pool.query(query, values);
-    return result.rows;
+    return maybeSanitize(tableName, result.rows);
   } catch (firstError) {
     // Fallback to unordered if ordering column is missing
     if (firstError.code === '42703') {
       logger.warn(`Falling back to unordered SELECT for "${dbTableName}" - column "${sortCol}" not found`);
       try {
         const fallback = await pool.query(`SELECT * FROM "${dbTableName}"`);
-        return fallback.rows;
+        return maybeSanitize(tableName, fallback.rows);
       } catch (fallbackError) {
         console.error(`Fallback SELECT also failed for "${dbTableName}":`, fallbackError.message);
         return [];
@@ -98,7 +117,7 @@ export const createRecord = async (tableName, data) => {
     `;
     
     const result = await pool.query(query, values);
-    return result.rows[0];
+    return maybeSanitize(tableName, result.rows)[0];
   } catch (error) {
     logger.error(`Error creating record in ${dbTableName}: ${error.message}`);
     console.error(`Error creating record in ${dbTableName}:`, error.message);
@@ -113,7 +132,7 @@ export const deleteRecord = async (tableName, id) => {
   try {
     const query = `DELETE FROM "${dbTableName}" WHERE "${pkName}" = $1 RETURNING *`;
     const result = await pool.query(query, [id]);
-    return result.rows[0];
+    return maybeSanitize(tableName, result.rows)[0];
   } catch (error) {
     console.error(`Error deleting record from ${dbTableName}:`, error.message);
     throw error;
@@ -153,7 +172,7 @@ export const updateRecord = async (tableName, id, data) => {
     `;
     
     const result = await pool.query(query, [...values, id]);
-    return result.rows[0];
+    return maybeSanitize(tableName, result.rows)[0];
   } catch (error) {
     console.error(`Error updating record in ${dbTableName}:`, error.message);
     throw error;

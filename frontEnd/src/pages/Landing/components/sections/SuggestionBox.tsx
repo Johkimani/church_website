@@ -22,18 +22,24 @@ const SuggestionBox: React.FC = () => {
     if (!formData.suggestion.trim()) return;
 
     setStatus('submitting');
-    
+
+    // Only send a jumuiya-scoped suggestion when the member actually belongs to
+    // a jumuiya; otherwise fall back to CSA scope (never send a bare 'jumuiya'
+    // literal that the backend cannot resolve).
+    const jumuiyaTarget = user?.jumuiya_id || '';
+    const useJumuiyaScope = targetScope === 'jumuiya' && !!jumuiyaTarget;
+
     const submissionData: Record<string, string> = {
       suggestion: formData.suggestion.trim(),
-      scope: targetScope,
-      jumuiya_id: targetScope === 'jumuiya' ? (user?.jumuiya_name || user?.jumuiya_id || 'jumuiya') : 'csa'
+      scope: useJumuiyaScope ? 'jumuiya' : 'csa',
+      jumuiya_id: useJumuiyaScope ? jumuiyaTarget : 'csa'
     };
-    
+
     if (!anonymous) {
       if (formData.name.trim()) submissionData.name = formData.name.trim();
       if (formData.email.trim()) submissionData.email = formData.email.trim();
     }
-    if (user?.member_id) submissionData.user_id = user.member_id;
+    // user_id is bound server-side from the verified token.
 
     try {
       await apiService.createRecord('suggestions', submissionData);
