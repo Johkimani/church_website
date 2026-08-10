@@ -25,7 +25,7 @@ import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationDropdown, { type Notification } from './components/NotificationDropdown';
 import apiService from '../Landing/services/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
 import { checkAccess, normalizeRoles } from '../../utils/adminAccess';
@@ -67,6 +67,14 @@ export default function UniversalAdmin() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [openMenus, setOpenMenus] = useState<string[]>(['activities']);
+
+  // ── Preserve sidebar nav scroll position across route changes ──
+  const navRef = useRef<HTMLElement | null>(null);
+  const savedNavScroll = useRef(0);
+
+  useLayoutEffect(() => {
+    if (navRef.current) navRef.current.scrollTop = savedNavScroll.current;
+  }, [location.pathname]);
 
   const toggleMenu = (id: string) => {
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
@@ -199,7 +207,11 @@ export default function UniversalAdmin() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar">
+        <nav
+          ref={navRef}
+          onScroll={() => { if (navRef.current) savedNavScroll.current = navRef.current.scrollTop; }}
+          className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar"
+        >
           {allowedMenuItems.map((item) => {
             const hasSub = !!item.subItems;
 
