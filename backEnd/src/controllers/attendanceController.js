@@ -1,6 +1,7 @@
 // src/controllers/attendanceController.js
 // Attendance Tally & Analytics (Jumuiya Coordinator role)
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
+import ExcelJS from "exceljs";
 
 // Tally days: Monday (rosary), Wednesday (bible study), Thursday (rosary).
 // JS getUTCDay(): 0=Sun ... 6=Sat
@@ -162,7 +163,7 @@ export const getSession = async (req, res) => {
     const date = normalizeDate(req.query.date) || todayStr();
     const result = await pool.query(
       `SELECT tally_id, to_char(tally_date, 'YYYY-MM-DD') AS tally_date, activity_type, activity_label, jumuiya_id, count,
-              recorded_by, updated_at
+              recorded_by, recorded_by_name, source, created_at, updated_at
        FROM attendance_tallies
        WHERE tally_date = $1
        ORDER BY jumuiya_id`,
@@ -244,6 +245,9 @@ export const saveSession = async (req, res) => {
     }
 
     const recordedBy = req.user?.id || req.user?.member_id || "";
+    const recordedByName =
+      [req.user?.firstName, req.user?.lastName].filter(Boolean).join(" ") ||
+      String(recordedBy || "");
     const registerMap = await getRegisterPresentMap(normalizedDate);
     let registerSourced = 0;
 
@@ -257,9 +261,9 @@ export const saveSession = async (req, res) => {
         if (source === "register") registerSourced += 1;
         await client.query(
           `INSERT INTO attendance_tallies
-             (tally_date, activity_type, activity_label, jumuiya_id, count, recorded_by, source)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [normalizedDate, ctx.activityType, ctx.activityLabel, c.jumuiya_id, count, recordedBy, source]
+             (tally_date, activity_type, activity_label, jumuiya_id, count, recorded_by, recorded_by_name, source)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [normalizedDate, ctx.activityType, ctx.activityLabel, c.jumuiya_id, count, recordedBy, recordedByName, source]
         );
       }
     });
@@ -299,20 +303,10 @@ export const deleteSession = async (req, res) => {
 };
 
 // ── GET /analytics?from=YYYY-MM-DD&to=YYYY-MM-DD ────────────────────────
-export const getAnalytics = async (req, res) => {
-  const from = normalizeDate(req.query.from);
-  const to = normalizeDate(req.query.to);
-  if (!from || !to) {
-    return res.status(400).json({ success: false, error: "Both from and to dates (YYYY-MM-DD) are required" });
-  }
-  if (from > to) {
-    return res.status(400).json({ success: false, error: "from date must be on or before to date" });
-  }
-
-  try {
-    const span = daysBetween(from, to);
-    const prevFrom = addDays(from, -(span + 1));
-    const prevTo = addDays(from, -1);
+const computeAnalytics = async (from, to) => {
+  const span = daysBetween(from, to);
+  const prevFrom = addDays(from, -(span + 1));
+  const prevTo = addDays(from, -1);
 
     const [
       sgResult,
@@ -321,6 +315,7 @@ export const getAnalytics = async (req, res) => {
       prevResult,
       currentDays,
       prevDays,
+      timelineRes,
     ] = await Promise.all([
       pool.query(`SELECT group_id, name, slug, color FROM sub_groups ORDER BY name`),
       getMemberCounts(),
@@ -352,6 +347,16 @@ export const getAnalytics = async (req, res) => {
       pool.query(
         `SELECT COUNT(DISTINCT tally_date)::int AS days FROM attendance_tallies WHERE tally_date BETWEEN $1 AND $2`,
         [prevFrom, prevTo]
+      ),
+      pool.query(
+        `SELECT to_char(tally_date, 'YYYY-MM-DD') AS tally_date,
+                COALESCE(SUM(count), 0)::int AS attendance,
+                MAX(activity_label) AS activity_label
+         FROM attendance_tallies
+         WHERE tally_date BETWEEN $1 AND $2
+         GROUP BY tally_date
+         ORDER BY tally_date`,
+        [from, to]
       ),
     ]);
 
@@ -432,33 +437,219 @@ export const getAnalytics = async (req, res) => {
     const prevRateTotal = safeRate(prevTallyTotal, totalMembers, prevTallyDays);
     const prevRateActive = safeRate(prevTallyTotal, activeMembers, prevTallyDays);
 
-    res.json({
-      success: true,
-      data: {
-        period: { from, to, calendar_days: span + 1, prev_from: prevFrom, prev_to: prevTo },
+    return {
+      period: { from, to, calendar_days: span + 1, prev_from: prevFrom, prev_to: prevTo },
+      tally_days: tallyDays,
+      timeline: timelineRes.rows.map((r) => ({
+        date: r.tally_date,
+        attendance: r.attendance,
+        activity_label: r.activity_label,
+      })),
+      cumulative: {
+        total_members: totalMembers,
+        active_members: activeMembers,
+        attendance_count: attendanceCount,
         tally_days: tallyDays,
-        cumulative: {
-          total_members: totalMembers,
-          active_members: activeMembers,
-          attendance_count: attendanceCount,
-          tally_days: tallyDays,
-          avg_per_session: tallyDays > 0 ? Math.round((attendanceCount / tallyDays) * 10) / 10 : 0,
-          rate_vs_total: Math.round(cumulativeRateTotal * 10000) / 10000,
-          rate_vs_active: Math.round(cumulativeRateActive * 10000) / 10000,
-          trend: {
-            prev_attendance_count: prevTallyTotal,
-            prev_tally_days: prevTallyDays,
-            prev_rate_vs_total: Math.round(prevRateTotal * 10000) / 10000,
-            prev_rate_vs_active: Math.round(prevRateActive * 10000) / 10000,
-            delta_vs_total: Math.round((cumulativeRateTotal - prevRateTotal) * 10000) / 10000,
-            delta_vs_active: Math.round((cumulativeRateActive - prevRateActive) * 10000) / 10000,
-          },
+        avg_per_session: tallyDays > 0 ? Math.round((attendanceCount / tallyDays) * 10) / 10 : 0,
+        rate_vs_total: Math.round(cumulativeRateTotal * 10000) / 10000,
+        rate_vs_active: Math.round(cumulativeRateActive * 10000) / 10000,
+        trend: {
+          prev_attendance_count: prevTallyTotal,
+          prev_tally_days: prevTallyDays,
+          prev_rate_vs_total: Math.round(prevRateTotal * 10000) / 10000,
+          prev_rate_vs_active: Math.round(prevRateActive * 10000) / 10000,
+          delta_vs_total: Math.round((cumulativeRateTotal - prevRateTotal) * 10000) / 10000,
+          delta_vs_active: Math.round((cumulativeRateActive - prevRateActive) * 10000) / 10000,
         },
-        by_jumuiya,
       },
-    });
+      by_jumuiya,
+    };
+};
+
+export const getAnalytics = async (req, res) => {
+  const from = normalizeDate(req.query.from);
+  const to = normalizeDate(req.query.to);
+  if (!from || !to) {
+    return res.status(400).json({ success: false, error: "Both from and to dates (YYYY-MM-DD) are required" });
+  }
+  if (from > to) {
+    return res.status(400).json({ success: false, error: "from date must be on or before to date" });
+  }
+  try {
+    const data = await computeAnalytics(from, to);
+    res.json({ success: true, data });
   } catch (error) {
     console.error("getAnalytics error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ── GET /analytics/export?from=YYYY-MM-DD&to=YYYY-MM-DD (styled .xlsx) ──
+export const exportAnalyticsExcel = async (req, res) => {
+  const from = normalizeDate(req.query.from);
+  const to = normalizeDate(req.query.to);
+  if (!from || !to) {
+    return res.status(400).json({ success: false, error: "Both from and to dates (YYYY-MM-DD) are required" });
+  }
+  if (from > to) {
+    return res.status(400).json({ success: false, error: "from date must be on or before to date" });
+  }
+  try {
+    const data = await computeAnalytics(from, to);
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("Attendance Analytics");
+
+    const title = ws.addRow(["Attendance Analytics Report"]);
+    title.font = { bold: true, size: 15, color: { argb: "FF1E293B" } };
+    const meta = [
+      `Period: ${data.period.from} → ${data.period.to}`,
+      `Previous period: ${data.period.prev_from} → ${data.period.prev_to}`,
+      `Tally sessions: ${data.tally_days}`,
+      `Generated: ${new Date().toLocaleString()}`,
+    ];
+    meta.forEach((m) => { ws.addRow([m]).font = { color: { argb: "FF64748B" } }; });
+    ws.addRow([]);
+
+    const sum = data.cumulative;
+    const summary = `Overall summary: ${sum.attendance_count} attendance across ${sum.tally_days} session(s), avg ${sum.avg_per_session}/session, rate vs active ${(sum.rate_vs_active * 100).toFixed(1)}% (${(sum.trend.delta_vs_active * 100).toFixed(1)} pts vs previous period)`;
+    ws.addRow([summary]).font = { bold: true, color: { argb: "FF1E293B" } };
+    ws.addRow([]);
+
+    const headers = [
+      "#", "Jumuiya", "Total Members", "Active Members", "Tally Days", "Attendance",
+      "Avg/Session", "Register Days", "Register Coverage", "Rate vs Total", "Rate vs Active",
+      "Prev Rate vs Active", "Delta (pts)",
+    ];
+    const headerRow = ws.addRow(headers);
+    headerRow.height = 22;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FF4F46E5" } },
+        left: { style: "thin", color: { argb: "FF4F46E5" } },
+        bottom: { style: "thin", color: { argb: "FF4F46E5" } },
+        right: { style: "thin", color: { argb: "FF4F46E5" } },
+      };
+    });
+
+    const pct = (n) => `${(n * 100).toFixed(1)}%`;
+    const rowValues = (j) => [
+      j.rank, j.name, j.total_members, j.active_members, j.tally_days, j.attendance_count,
+      j.avg_per_session, j.register_days, pct(j.register_coverage), pct(j.rate_vs_total),
+      pct(j.rate_vs_active), pct(j.trend.prev_rate_vs_active), pct(j.trend.delta_vs_active),
+    ];
+    data.by_jumuiya.forEach((j, i) => {
+      const row = ws.addRow(rowValues(j));
+      if (i % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
+        });
+      }
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE2E8F0" } },
+          left: { style: "thin", color: { argb: "FFE2E8F0" } },
+          bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+          right: { style: "thin", color: { argb: "FFE2E8F0" } },
+        };
+      });
+    });
+
+    ws.columns.forEach((column, idx) => {
+      const headerLength = headers[idx].length;
+      const maxContent = Math.max(
+        ...data.by_jumuiya.map((j) => String(rowValues(j)[idx] ?? "").length),
+        headerLength
+      );
+      column.width = Math.min(Math.max(maxContent + 3, 12), 40);
+    });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="attendance-analytics_${from}_${to}.xlsx"`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("exportAnalyticsExcel error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ── GET /history?from=&to=&jumuiya_id= — full tally log ────────────────
+export const getHistory = async (req, res) => {
+  try {
+    const where = [];
+    const params = [];
+    const push = (clause, value) => {
+      params.push(value);
+      where.push(clause.replace("?", `$${params.length}`));
+    };
+    const from = normalizeDate(req.query.from);
+    const to = normalizeDate(req.query.to);
+    if (from) push(`t.tally_date >= ?`, from);
+    if (to) push(`t.tally_date <= ?`, to);
+    if (req.query.jumuiya_id && UUID_RE.test(String(req.query.jumuiya_id))) {
+      push(`t.jumuiya_id = ?`, req.query.jumuiya_id);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+    const result = await pool.query(
+      `SELECT t.tally_id, to_char(t.tally_date, 'YYYY-MM-DD') AS tally_date, t.activity_type,
+              t.activity_label, t.jumuiya_id, sg.name AS jumuiya_name, sg.color AS jumuiya_color,
+              t.count, t.source, t.recorded_by, t.recorded_by_name, t.updated_at
+       FROM attendance_tallies t
+       LEFT JOIN sub_groups sg ON sg.group_id = t.jumuiya_id
+       ${whereSql}
+       ORDER BY t.tally_date DESC, sg.name ASC
+       LIMIT 500`,
+      params
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error("getHistory error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ── PATCH /history/:tallyId — correct a single manual tally count ──────
+export const updateTally = async (req, res) => {
+  const tallyId = Number(req.params.tallyId);
+  if (!Number.isInteger(tallyId) || tallyId <= 0) {
+    return res.status(400).json({ success: false, error: "Invalid tally id" });
+  }
+  const n = Number(req.body?.count);
+  if (!Number.isInteger(n) || n < 0 || n > 1000) {
+    return res.status(400).json({ success: false, error: "count must be an integer between 0 and 1000" });
+  }
+  try {
+    const existing = await pool.query(
+      `SELECT tally_id, source FROM attendance_tallies WHERE tally_id = $1`,
+      [tallyId]
+    );
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Tally not found" });
+    }
+    if (existing.rows[0].source === "register") {
+      return res.status(400).json({
+        success: false,
+        error: "This count came from the secretary register — correct it in the register, not here.",
+      });
+    }
+    const recordedByName =
+      [req.user?.firstName, req.user?.lastName].filter(Boolean).join(" ") ||
+      String(req.user?.id || "");
+    const result = await pool.query(
+      `UPDATE attendance_tallies
+       SET count = $1, recorded_by = $2, recorded_by_name = $3, updated_at = CURRENT_TIMESTAMP
+       WHERE tally_id = $4
+       RETURNING tally_id, count, updated_at`,
+      [n, req.user?.id || "", recordedByName, tallyId]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("updateTally error:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };

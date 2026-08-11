@@ -23,6 +23,10 @@ const migration = async () => {
     await pool.query(
       `ALTER TABLE attendance_tallies ADD COLUMN IF NOT EXISTS source VARCHAR(10) NOT NULL DEFAULT 'manual';`
     );
+    // Display name of the user who recorded/updated the tally (recorded_by keeps the id).
+    await pool.query(
+      `ALTER TABLE attendance_tallies ADD COLUMN IF NOT EXISTS recorded_by_name VARCHAR(120) DEFAULT '';`
+    );
     await pool.query(
       `CREATE INDEX IF NOT EXISTS idx_attendance_tallies_date ON attendance_tallies (tally_date);`
     );

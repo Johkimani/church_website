@@ -13,12 +13,14 @@ import {
   CalendarDays,
   Activity,
   RefreshCw,
-  Download,
   Lightbulb,
   History,
   CheckCircle2,
   Lock,
   Settings2,
+  AlertTriangle,
+  FileSpreadsheet,
+  Pencil,
 } from "lucide-react";
 import {
   BarChart,
@@ -30,6 +32,8 @@ import {
   Legend,
   CartesianGrid,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from "recharts";
 import { attendanceServices, getApiError } from "../../../api/attendanceServices";
 import { jumuiyaAttendanceService } from "../../../api/jumuiyaAttendanceService";
@@ -65,6 +69,8 @@ interface SessionRow {
   jumuiya_id: string;
   count: number;
   recorded_by: string;
+  recorded_by_name: string;
+  source: string;
   updated_at: string;
 }
 
@@ -115,6 +121,7 @@ interface MeetingConfigRow {
 interface AnalyticsData {
   period: { from: string; to: string; calendar_days: number; prev_from: string; prev_to: string };
   tally_days: number;
+  timeline: { date: string; attendance: number; activity_label: string | null }[];
   cumulative: {
     total_members: number;
     active_members: number;
@@ -126,6 +133,21 @@ interface AnalyticsData {
     trend: Trend;
   };
   by_jumuiya: JumuiyaStat[];
+}
+
+interface HistoryRow {
+  tally_id: number;
+  tally_date: string;
+  activity_type: string;
+  activity_label: string;
+  jumuiya_id: string;
+  jumuiya_name: string;
+  jumuiya_color: string;
+  count: number;
+  source: string;
+  recorded_by: string;
+  recorded_by_name: string;
+  updated_at: string;
 }
 
 // ── Date helpers ─────────────────────────────────────────────────────────
@@ -250,7 +272,7 @@ function TrendBadge({ delta }: { delta: number }) {
 
 export default function AttendanceTallyAdmin() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"tally" | "analytics" | "config">("tally");
+  const [tab, setTab] = useState<"tally" | "analytics" | "config" | "history">("tally");
 
   // Take Tally state
   const [date, setDate] = useState<string>(todayStr());
@@ -275,6 +297,15 @@ export default function AttendanceTallyAdmin() {
   const [configDrafts, setConfigDrafts] = useState<Record<string, string>>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState<Record<string, boolean>>({});
+
+  // History state
+  const [historyRows, setHistoryRows] = useState<HistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyFrom, setHistoryFrom] = useState("");
+  const [historyTo, setHistoryTo] = useState("");
+  const [historyJumuiya, setHistoryJumuiya] = useState("");
+  const [historyDrafts, setHistoryDrafts] = useState<Record<number, string>>({});
+  const [historySaving, setHistorySaving] = useState<Record<number, boolean>>({});
 
   const canEditConfig = useMemo(() => {
     const roles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
@@ -306,6 +337,50 @@ export default function AttendanceTallyAdmin() {
   useEffect(() => {
     if (tab === "config") loadConfig();
   }, [tab, loadConfig]);
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const rows = await attendanceServices.getHistory({
+        from: historyFrom || undefined,
+        to: historyTo || undefined,
+        jumuiya_id: historyJumuiya || undefined,
+      });
+      setHistoryRows(rows);
+      const drafts: Record<number, string> = {};
+      rows.forEach((r) => {
+        drafts[r.tally_id] = String(r.count);
+      });
+      setHistoryDrafts(drafts);
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [historyFrom, historyTo, historyJumuiya]);
+
+  useEffect(() => {
+    if (tab === "history") loadHistory();
+  }, [tab, loadHistory]);
+
+  const handleHistorySave = async (row: HistoryRow) => {
+    const n = Number(historyDrafts[row.tally_id]);
+    if (!Number.isInteger(n) || n < 0) {
+      toast.error("Enter a valid whole number");
+      return;
+    }
+    if (n === row.count) return;
+    setHistorySaving((prev) => ({ ...prev, [row.tally_id]: true }));
+    try {
+      await attendanceServices.updateHistoryRow(row.tally_id, n);
+      toast.success(`${row.jumuiya_name} count updated`);
+      loadHistory();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setHistorySaving((prev) => ({ ...prev, [row.tally_id]: false }));
+    }
+  };
 
   const handleConfigSave = async (row: MeetingConfigRow) => {
     const val = configDrafts[row.jumuiya_id];
@@ -454,6 +529,34 @@ export default function AttendanceTallyAdmin() {
     }));
   }, [analytics]);
 
+  const timelineData = useMemo(() => {
+    if (!analytics) return [];
+    return analytics.timeline.map((t) => ({
+      label: friendlyDate(t.date),
+      date: t.date,
+      attendance: t.attendance,
+      activity: t.activity_label || "",
+    }));
+  }, [analytics]);
+
+  const lastRecorded = useMemo(() => {
+    if (!sessionRows.length) return null;
+    return sessionRows.reduce((a, b) =>
+      (b.updated_at || "") > (a.updated_at || "") ? b : a
+    );
+  }, [sessionRows]);
+
+  const quickCheckIssues = useMemo(() => {
+    if (!context) return [];
+    return context.jumuiyas
+      .filter((j) => {
+        if (j.register_status === "recorded") return false;
+        const v = Number(counts[j.group_id] || 0) || 0;
+        return v > j.active_members;
+      })
+      .map((j) => j.name);
+  }, [context, counts]);
+
   const insights = useMemo(() => {
     if (!analytics) return null;
     const list = analytics.by_jumuiya;
@@ -471,59 +574,25 @@ export default function AttendanceTallyAdmin() {
     return { improving, dropping, stable, top, mostImproved, mostDropped };
   }, [analytics]);
 
-  const exportCsv = () => {
+  const exportXlsx = async () => {
     if (!analytics) return;
-    const q = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const lines: string[] = [];
-    lines.push(q("Attendance Analytics Report"));
-    lines.push(`"Filter",${q(preset === "custom" ? "Custom range" : PRESETS.find((p) => p.key === preset)?.label || preset)}`);
-    lines.push(`"Period",${q(analytics.period.from)},${q(analytics.period.to)}`);
-    lines.push(`"Previous period",${q(analytics.period.prev_from)},${q(analytics.period.prev_to)}`);
-    lines.push(`"Tally sessions",${q(analytics.tally_days)}`);
-    lines.push(`"Generated",${q(new Date().toLocaleString())}`);
-    lines.push("");
-    lines.push(q("Overall summary"));
-    lines.push(`"Total attendance",${q(analytics.cumulative.attendance_count)}`);
-    lines.push(`"Avg per session",${q(analytics.cumulative.avg_per_session)}`);
-    lines.push(`"Total members",${q(analytics.cumulative.total_members)}`);
-    lines.push(`"Active members",${q(analytics.cumulative.active_members)}`);
-    lines.push(`"Rate vs total",${q(pct(analytics.cumulative.rate_vs_total))}`);
-    lines.push(`"Rate vs active",${q(pct(analytics.cumulative.rate_vs_active))}`);
-    lines.push(`"Improvement vs prev period",${q(pts(analytics.cumulative.trend.delta_vs_active))}`);
-    lines.push("");
-    lines.push(
-      ["Rank", "Jumuiya", "Total Members", "Active Members", "Tally Days", "Attendance", "Avg/Session", "Rate vs Total", "Rate vs Active", "Prev Rate vs Active", "Delta (pts)"]
-        .map(q)
-        .join(",")
-    );
-    analytics.by_jumuiya.forEach((j) => {
-      lines.push(
-        [
-          j.rank,
-          j.name,
-          j.total_members,
-          j.active_members,
-          j.tally_days,
-          j.attendance_count,
-          j.avg_per_session,
-          pct(j.rate_vs_total),
-          pct(j.rate_vs_active),
-          pct(j.trend.prev_rate_vs_active),
-          pts(j.trend.delta_vs_active),
-        ]
-          .map(q)
-          .join(",")
+    try {
+      const blob = await attendanceServices.exportAnalyticsExcel(
+        analytics.period.from,
+        analytics.period.to
       );
-    });
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `attendance-analytics_${analytics.period.from}_${analytics.period.to}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `attendance-analytics_${analytics.period.from}_${analytics.period.to}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Excel report downloaded");
+    } catch (err) {
+      toast.error(getApiError(err));
+    }
   };
 
   const activityStyles =
@@ -567,6 +636,14 @@ export default function AttendanceTallyAdmin() {
             }`}
           >
             <Settings2 size={16} /> Meeting Days
+          </button>
+          <button
+            onClick={() => setTab("history")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              tab === "history" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-600 hover:text-slate-800"
+            }`}
+          >
+            <History size={16} /> History
           </button>
         </div>
       </div>
@@ -621,7 +698,20 @@ export default function AttendanceTallyAdmin() {
 
             {isSaved && !tallyLoading && (
               <div className="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg px-4 py-2.5 flex items-center justify-between gap-3">
-                <span>✓ Tally already recorded for this date — update the counts and save to overwrite.</span>
+                <div>
+                  <div>✓ Tally already recorded for this date — update the counts and save to overwrite.</div>
+                  {lastRecorded && (
+                    <div className="text-xs text-emerald-600 mt-1">
+                      Last recorded by <b>{lastRecorded.recorded_by_name || lastRecorded.recorded_by || "—"}</b>
+                      {lastRecorded.updated_at
+                        ? ` · ${new Date(lastRecorded.updated_at).toLocaleString()}`
+                        : ""}
+                      {lastRecorded.source === "register" && (
+                        <span className="ml-1">(from secretary register)</span>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleClear}
                   className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 bg-white border border-rose-200 rounded-lg px-3 py-1.5 hover:bg-rose-50 transition-colors shrink-0"
@@ -681,11 +771,18 @@ export default function AttendanceTallyAdmin() {
               {context?.jumuiyas.map((j) => {
                 const registerRecorded = j.register_status === "recorded";
                 const inputDisabled = !context?.isTallyDay || registerRecorded;
+                const entered = Number(counts[j.group_id] || 0) || 0;
+                const overActive = !registerRecorded && entered > j.active_members;
+                const overTotal = !registerRecorded && entered > j.total_members;
                 return (
                   <div
                     key={j.group_id}
                     className={`bg-white rounded-xl border p-4 ${
-                      registerRecorded ? "border-emerald-200" : "border-slate-200"
+                      registerRecorded
+                        ? "border-emerald-200"
+                        : overActive
+                        ? "border-amber-300 ring-1 ring-amber-200"
+                        : "border-slate-200"
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-3">
@@ -725,9 +822,19 @@ export default function AttendanceTallyAdmin() {
                         <Lock size={11} /> From secretary register — count set automatically
                       </p>
                     ) : (
-                      <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
-                        <Users size={11} /> {j.active_members} active / {j.total_members} total members
-                      </p>
+                      <>
+                        <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+                          <Users size={11} /> {j.active_members} active / {j.total_members} total members
+                        </p>
+                        {overActive && (
+                          <p className="text-[11px] text-amber-600 mt-1.5 flex items-center gap-1">
+                            <AlertTriangle size={11} />
+                            {overTotal
+                              ? `Looks high — only ${j.total_members} total members`
+                              : `Looks high — only ${j.active_members} active members`}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 );
@@ -742,6 +849,15 @@ export default function AttendanceTallyAdmin() {
               <span className="font-black text-slate-900 text-lg">{totalAttendance}</span>{" "}
               <span className="text-slate-400">across {context?.jumuiyas.length || 0} jumuiyas</span>
             </div>
+            {quickCheckIssues.length > 0 && (
+              <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2 max-w-md">
+                <AlertTriangle size={14} className="shrink-0" />
+                <span>
+                  <b>{quickCheckIssues.length}</b> count(s) exceed the active-member baseline (
+                  {quickCheckIssues.join(", ")}). Double-check before saving.
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadTally(date)}
@@ -773,6 +889,22 @@ export default function AttendanceTallyAdmin() {
           saving={configSaving}
           canEdit={canEditConfig}
           onSave={handleConfigSave}
+        />
+      ) : tab === "history" ? (
+        <HistoryTab
+          rows={historyRows}
+          loading={historyLoading}
+          from={historyFrom}
+          to={historyTo}
+          jumuiyaId={historyJumuiya}
+          setFrom={setHistoryFrom}
+          setTo={setHistoryTo}
+          setJumuiya={setHistoryJumuiya}
+          drafts={historyDrafts}
+          setDrafts={setHistoryDrafts}
+          saving={historySaving}
+          onReload={loadHistory}
+          onSave={handleHistorySave}
         />
       ) : (
         <div className="space-y-6">
@@ -812,7 +944,7 @@ export default function AttendanceTallyAdmin() {
               )}
 
               <button
-                onClick={exportCsv}
+                onClick={exportXlsx}
                 disabled={!analytics || analyticsLoading}
                 className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-lg transition-colors md:ml-auto ${
                   !analytics || analyticsLoading
@@ -820,7 +952,7 @@ export default function AttendanceTallyAdmin() {
                     : "text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100"
                 }`}
               >
-                <Download size={15} /> Export CSV
+                <FileSpreadsheet size={15} /> Export Excel
               </button>
             </div>
 
@@ -904,6 +1036,39 @@ export default function AttendanceTallyAdmin() {
                       </span>
                     </li>
                   </ul>
+                </div>
+              )}
+
+              {/* Week-by-week trend */}
+              {analytics.timeline.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                  <h3 className="font-semibold text-slate-800 mb-1">Week-by-Week Trend</h3>
+                  <p className="text-xs text-slate-400 mb-4">Total attendance per tally session in this period</p>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={timelineData}>
+                      <defs>
+                        <linearGradient id="attnGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#4f46e5" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} />
+                      <Tooltip
+                        formatter={(value: any) => [`${value} attendees`, "Attendance"]}
+                        labelFormatter={(label: any) => `${label}`}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="attendance"
+                        name="Attendance"
+                        stroke="#4f46e5"
+                        strokeWidth={2}
+                        fill="url(#attnGrad)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               )}
 
@@ -1175,6 +1340,198 @@ function MeetingDaysTab({
           <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400">
             St. Thomas Aquinas is intentionally left without a fixed day (register can be taken any day). Saving "No
             fixed day (any day)" removes the configured day.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistoryTab({
+  rows,
+  loading,
+  from,
+  to,
+  jumuiyaId,
+  setFrom,
+  setTo,
+  setJumuiya,
+  drafts,
+  setDrafts,
+  saving,
+  onReload,
+  onSave,
+}: {
+  rows: HistoryRow[];
+  loading: boolean;
+  from: string;
+  to: string;
+  jumuiyaId: string;
+  setFrom: (v: string) => void;
+  setTo: (v: string) => void;
+  setJumuiya: (v: string) => void;
+  drafts: Record<number, string>;
+  setDrafts: (updater: (prev: Record<number, string>) => Record<number, string>) => void;
+  saving: Record<number, boolean>;
+  onReload: () => void;
+  onSave: (row: HistoryRow) => void;
+}) {
+  const jumuiyaOptions = useMemo(() => {
+    const seen = new Map<string, { name: string; color: string }>();
+    rows.forEach((r) => {
+      if (!seen.has(r.jumuiya_id)) seen.set(r.jumuiya_id, { name: r.jumuiya_name, color: r.jumuiya_color });
+    });
+    return Array.from(seen.entries())
+      .map(([id, meta]) => ({ id, ...meta }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+          <History size={16} className="text-slate-400" /> Tally History
+        </h3>
+        <p className="text-sm text-slate-600 mt-1">
+          Full record of every tally count. Fix a manual entry by editing its count directly; register-sourced
+          counts are read-only (correct those in the secretary register).
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">From</label>
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">To</label>
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jumuiya</label>
+            <select value={jumuiyaId} onChange={(e) => setJumuiya(e.target.value)} className={inputCls}>
+              <option value="">All jumuiyas</option>
+              {jumuiyaOptions.map((j) => (
+                <option key={j.id} value={j.id}>{j.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={onReload}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            >
+              <RefreshCw size={15} /> Apply
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-slate-400 mt-3">
+          Showing up to the 500 most recent tally rows matching the filters.
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
+          <Loader2 size={18} className="animate-spin" /> Loading tally history…
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm">
+          No tally records match these filters.
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-3 py-3">Activity</th>
+                  <th className="px-3 py-3">Jumuiya</th>
+                  <th className="px-3 py-3 text-right">Count</th>
+                  <th className="px-3 py-3">Source</th>
+                  <th className="px-3 py-3">Recorded By</th>
+                  <th className="px-3 py-3">Updated</th>
+                  <th className="px-3 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row) => {
+                  const isSaving = saving[row.tally_id];
+                  const changed = drafts[row.tally_id] !== String(row.count);
+                  const readOnly = row.source === "register";
+                  return (
+                    <tr key={row.tally_id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-5 py-3 font-semibold text-slate-700 whitespace-nowrap">
+                        {friendlyDate(row.tally_date)}
+                      </td>
+                      <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{row.activity_label}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: row.jumuiya_color || "#64748b" }} />
+                          <span className="font-semibold text-slate-800 whitespace-nowrap">{row.jumuiya_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={drafts[row.tally_id] ?? ""}
+                          onChange={(e) =>
+                            setDrafts((prev) => ({ ...prev, [row.tally_id]: e.target.value }))
+                          }
+                          disabled={readOnly}
+                          className={`${inputCls} w-24 text-right font-bold ${
+                            readOnly ? "bg-slate-50 text-slate-400" : ""
+                          }`}
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        {readOnly ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                            <CheckCircle2 size={11} /> Register
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5">
+                            <Pencil size={10} /> Manual
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
+                        {row.recorded_by_name || row.recorded_by || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-500 whitespace-nowrap text-xs">
+                        {row.updated_at ? new Date(row.updated_at).toLocaleString() : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        {readOnly ? (
+                          <span className="text-[11px] text-slate-400">Read-only</span>
+                        ) : (
+                          <button
+                            onClick={() => onSave(row)}
+                            disabled={isSaving || !changed}
+                            className={`flex items-center gap-1.5 ml-auto px-4 py-2 rounded-lg text-xs font-bold text-white transition-colors ${
+                              isSaving || !changed
+                                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                                : "bg-indigo-600 hover:bg-indigo-700"
+                            }`}
+                          >
+                            {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                            {isSaving ? "Saving…" : "Save"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400">
+            Editing a manual count records who made the change and when. Register-sourced counts are locked to keep
+            them consistent with the secretary's per-member register.
           </div>
         </div>
       )}

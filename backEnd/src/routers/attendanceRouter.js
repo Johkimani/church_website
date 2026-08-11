@@ -8,6 +8,9 @@ import {
   saveSession,
   deleteSession,
   getAnalytics,
+  exportAnalyticsExcel,
+  getHistory,
+  updateTally,
 } from "../controllers/attendanceController.js";
 
 const router = Router();
@@ -21,6 +24,9 @@ router.get("/recent-status", getRecentStatus);
 router.get("/sessions", getSession);
 router.post("/sessions", saveSession);
 router.delete("/sessions/:date", deleteSession);
+router.get("/analytics/export", exportAnalyticsExcel);
 router.get("/analytics", getAnalytics);
+router.get("/history", getHistory);
+router.patch("/history/:tallyId", updateTally);
 
 export default router;

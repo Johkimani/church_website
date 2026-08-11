@@ -31,6 +31,19 @@ export const attendanceServices = {
     apiClient
       .get("/attendance/analytics", { params: { from, to } })
       .then((r) => r.data?.data || null),
+
+  exportAnalyticsExcel: (from: string, to: string) =>
+    apiClient
+      .get("/attendance/analytics/export", { params: { from, to }, responseType: "blob" })
+      .then((r) => r.data),
+
+  getHistory: (params: { from?: string; to?: string; jumuiya_id?: string }) =>
+    apiClient
+      .get("/attendance/history", { params })
+      .then((r) => r.data?.data || []),
+
+  updateHistoryRow: (tallyId: number, count: number) =>
+    apiClient.patch(`/attendance/history/${tallyId}`, { count }).then((r) => r.data),
 };
 
 export const getApiError = (err: any): string =>
