@@ -1,6 +1,8 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import { MpesaService } from "../services/mpesa.js";
+import ExcelJS from "exceljs";
 import logger from "../logger/winston.js";
+import { formatPhoneForExcel } from "../utils/helpers.js";
 
 // ─── Book an activity ──────────────────────────────────────────────────────────
 export const bookActivity = async (req, res) => {
@@ -159,32 +161,100 @@ export const getMyBookings = async (req, res) => {
   }
 };
 
-// ─── Admin: export CSV ─────────────────────────────────────────────────────────
-export const exportBookingsCSV = async (req, res) => {
+// ─── Admin: export bookings as a styled Excel workbook ─────────────────────────
+// Column order matches the admin bookings table (guest rows omit reg/jumuiya).
+export const exportBookingsExcel = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ab.id, ab.member_id AS reg_number, ab.member_name, ab.member_email,
-              sg.name AS jumuiya_name, ab.year_of_study, ab.phone,
-              ab.activity_type, ab.is_guest,
+      `SELECT ab.id, ab.member_id AS reg_number, ab.member_name, ab.is_guest,
+              COALESCE(NULLIF(ab.year_of_study, ''), m.year_of_study::text, '') AS year_of_study,
+              COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
+              sg.name AS jumuiya_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
-              ab.fare, ab.paid_amount, ab.status, ab.created_at
+              ab.paid_amount, ab.status, ab.created_at
        FROM activity_bookings ab
-       LEFT JOIN sub_groups sg ON sg.group_id::text = ab.jumuiya_id
+       LEFT JOIN members m ON m.member_id = ab.member_id
+       LEFT JOIN sub_groups sg ON sg.group_id::text = COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '')
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
        ORDER BY ab.created_at DESC`
     );
-    const rows = result.rows;
-    const header = "ID,Type,Reg Number,Member Name,Member Email,Jumuiya,Year of Study,Phone,Activity Type,Activity Name,Fare,Paid Amount,Status,Booking Date\n";
-    const csv = rows.map(r =>
-      `${r.id},${r.is_guest ? "Guest" : "Member"},"${r.is_guest ? "" : r.reg_number || ""}","${r.member_name || ""}","${r.member_email || ""}","${r.is_guest ? "" : r.jumuiya_name || r.jumuiya_id || ""}","${r.year_of_study || ""}","${r.phone || ""}",${r.activity_type},"${r.activity_name || ""}",${r.fare},${r.paid_amount},${r.status},${r.created_at}`
-    ).join("\n");
 
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", "attachment; filename=activity_bookings.csv");
-    res.send(header + csv);
+    const statusLabel = (s) =>
+      s === "paid" ? "Paid" : s === "partial" ? "Partial" : s === "cancelled" ? "Cancelled" : "Unpaid";
+    const fmtDate = (d) =>
+      d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "";
+
+    const headers = [
+      "#", "Type", "Registration", "Member Name", "Jumuiya",
+      "Year of Study", "Phone", "Activity", "Paid (KES)", "Status", "Booking Date",
+    ];
+    const data = result.rows.map((r) => [
+      r.id,
+      r.is_guest ? "Guest" : "Member",
+      r.is_guest ? "" : r.reg_number || "",
+      r.member_name || "",
+      r.is_guest ? "" : r.jumuiya_name || "",
+      r.year_of_study || "",
+      formatPhoneForExcel(r.phone),
+      r.activity_name || "",
+      Number(r.paid_amount) || 0,
+      statusLabel(r.status),
+      fmtDate(r.created_at),
+    ]);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Activity Bookings");
+
+    const headerRow = worksheet.addRow(headers);
+    headerRow.height = 22;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FF4F46E5" } },
+        left: { style: "thin", color: { argb: "FF4F46E5" } },
+        bottom: { style: "thin", color: { argb: "FF4F46E5" } },
+        right: { style: "thin", color: { argb: "FF4F46E5" } },
+      };
+    });
+
+    data.forEach((row) => worksheet.addRow(row));
+
+    worksheet.columns.forEach((column, idx) => {
+      const headerLength = headers[idx].length;
+      const maxContent = Math.max(...data.map((r) => String(r[idx] ?? "").length), headerLength);
+      column.width = Math.min(Math.max(maxContent + 3, 12), 40);
+    });
+
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    worksheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE2E8F0" } },
+          left: { style: "thin", color: { argb: "FFE2E8F0" } },
+          bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+          right: { style: "thin", color: { argb: "FFE2E8F0" } },
+        };
+        cell.alignment = { vertical: "middle", horizontal: cell.col === 9 ? "right" : "left" };
+      });
+      if (rowNumber % 2 === 0) {
+        row.eachCell((cell) => {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+        });
+      }
+    });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", 'attachment; filename="activity_bookings.xlsx"');
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.send(buffer);
   } catch (err) {
-    logger.error("exportBookingsCSV error:", err.message);
+    logger.error("exportBookingsExcel error:", err.message);
     res.status(500).json({ error: "Export failed" });
   }
 };

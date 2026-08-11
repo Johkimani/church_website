@@ -170,7 +170,7 @@ export const bookingService = {
     const res = await apiClient.get(`/jumuiya-members/lookup/reg-number/${encodeURIComponent(search)}`);
     return res.data.data || [];
   },
-  exportBookingsCSV: async () => {
+  exportBookingsExcel: async () => {
     const res = await apiClient.get("/admin/activities/bookings/export", { responseType: "blob" });
     return res.data;
   },

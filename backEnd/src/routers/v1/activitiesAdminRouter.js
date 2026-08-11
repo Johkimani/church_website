@@ -41,7 +41,7 @@ import {
 
 import {
   getBookings,
-  exportBookingsCSV,
+  exportBookingsExcel,
   createBookingForMember,
   recordCashPayment,
   cancelBooking,
@@ -201,7 +201,7 @@ router.post(
 
 // ── Bookings (admin) ────────────────────────────────
 router.get("/bookings", verifyToken, getBookings);
-router.get("/bookings/export", verifyToken, exportBookingsCSV);
+router.get("/bookings/export", verifyToken, exportBookingsExcel);
 // CSA OS (or chair) books an activity on a member's behalf when the member
 // approaches them in person. Non-member guests are also supported (event-only).
 router.post("/bookings", requireRole("os", "csa_chair"), createBookingForMember);

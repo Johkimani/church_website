@@ -193,14 +193,14 @@ export default function AdminBookings() {
 
   async function handleExport() {
     try {
-      const blob = await bookingService.exportBookingsCSV();
+      const blob = await bookingService.exportBookingsExcel();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "activity_bookings.csv";
+      a.download = "activity_bookings.xlsx";
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success("Bookings exported to CSV");
+      toast.success("Bookings exported to Excel");
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Export failed";
       setError(msg);
