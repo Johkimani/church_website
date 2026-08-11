@@ -40,6 +40,18 @@ const migration = async () => {
     await pool.query(`ALTER TABLE activity_bookings ADD COLUMN IF NOT EXISTS year_of_study VARCHAR DEFAULT ''`);
     await pool.query(`ALTER TABLE activity_bookings ADD COLUMN IF NOT EXISTS phone VARCHAR DEFAULT ''`);
     await pool.query(`ALTER TABLE activity_bookings ADD COLUMN IF NOT EXISTS guest_reg VARCHAR DEFAULT ''`);
+    // The original table's CHECK only allowed ('pending','paid','cancelled') and
+    // CREATE TABLE IF NOT EXISTS never rewrites it, so 'partial' (cash/M-Pesa
+    // top-ups) was rejected. Replace the constraint with one that includes it.
+    await pool.query(`
+      ALTER TABLE activity_bookings
+        DROP CONSTRAINT IF EXISTS activity_bookings_status_check;
+    `);
+    await pool.query(`
+      ALTER TABLE activity_bookings
+        ADD CONSTRAINT activity_bookings_status_check
+        CHECK (status IN ('pending', 'partial', 'paid', 'cancelled'));
+    `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS activity_payments (
         id SERIAL PRIMARY KEY,
