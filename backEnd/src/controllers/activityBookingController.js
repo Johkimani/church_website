@@ -104,12 +104,19 @@ export const payBooking = async (req, res) => {
 export const getBookings = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ab.*,
+      `SELECT ab.id, ab.activity_type, ab.activity_id, ab.member_id, ab.member_name,
+              ab.member_email,
+              COALESCE(NULLIF(ab.year_of_study, ''), m.year_of_study::text, '') AS year_of_study,
+              COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '') AS jumuiya_id,
               sg.name AS jumuiya_name,
+              COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
+              ab.fare, ab.paid_amount, ab.status,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
-              CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time
+              CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time,
+              ab.created_at, ab.updated_at
        FROM activity_bookings ab
-       LEFT JOIN sub_groups sg ON sg.group_id::text = ab.jumuiya_id
+       LEFT JOIN members m ON m.member_id = ab.member_id
+       LEFT JOIN sub_groups sg ON sg.group_id::text = COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '')
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
        ORDER BY ab.created_at DESC`
@@ -126,12 +133,19 @@ export const getMyBookings = async (req, res) => {
   const memberId = req.user.member_id || req.user.id;
   try {
     const result = await pool.query(
-      `SELECT ab.*,
+      `SELECT ab.id, ab.activity_type, ab.activity_id, ab.member_id, ab.member_name,
+              ab.member_email,
+              COALESCE(NULLIF(ab.year_of_study, ''), m.year_of_study::text, '') AS year_of_study,
+              COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '') AS jumuiya_id,
               sg.name AS jumuiya_name,
+              COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
+              ab.fare, ab.paid_amount, ab.status,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
-              CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time
+              CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time,
+              ab.created_at, ab.updated_at
        FROM activity_bookings ab
-       LEFT JOIN sub_groups sg ON sg.group_id::text = ab.jumuiya_id
+       LEFT JOIN members m ON m.member_id = ab.member_id
+       LEFT JOIN sub_groups sg ON sg.group_id::text = COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '')
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
        WHERE ab.member_id = $1
@@ -172,6 +186,79 @@ export const exportBookingsCSV = async (req, res) => {
   } catch (err) {
     logger.error("exportBookingsCSV error:", err.message);
     res.status(500).json({ error: "Export failed" });
+  }
+};
+
+// ─── Admin: book an activity on behalf of a member (e.g. CSA OS) ──────────────
+export const createBookingForMember = async (req, res) => {
+  const { activity_type, activity_id, member_id, phone, year_of_study } = req.body;
+
+  if (!activity_type || !activity_id || !member_id) {
+    return res.status(400).json({ error: "activity_type, activity_id and member_id (reg number) are required" });
+  }
+  if (!["weekly", "semester"].includes(activity_type)) {
+    return res.status(400).json({ error: "activity_type must be 'weekly' or 'semester'" });
+  }
+
+  try {
+    // 1. Find the member by reg number
+    const memberRes = await pool.query(
+      `SELECT member_id, first_name, last_name, phone, year_of_study, jumuiya_id
+       FROM members WHERE LOWER(member_id) = LOWER($1) LIMIT 1`,
+      [String(member_id).trim()]
+    );
+    if (memberRes.rows.length === 0) {
+      return res.status(404).json({ error: `No member found with reg number "${member_id}"` });
+    }
+    const member = memberRes.rows[0];
+
+    // 2. Validate the activity and its fare
+    const table = activity_type === "weekly" ? "weekly_activities" : "semester_activities";
+    const act = await pool.query(`SELECT id, fare FROM ${table} WHERE id = $1`, [activity_id]);
+    if (act.rows.length === 0) {
+      return res.status(404).json({ error: "Activity not found" });
+    }
+    const fare = Number(act.rows[0].fare) || 0;
+    if (fare <= 0) {
+      return res.status(400).json({ error: "This activity has no fare" });
+    }
+
+    // 3. Avoid duplicate active bookings for the same member + activity
+    const existing = await pool.query(
+      `SELECT id, status FROM activity_bookings
+       WHERE activity_type = $1 AND activity_id = $2 AND member_id = $3 AND status != 'cancelled'`,
+      [activity_type, activity_id, member.member_id]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(409).json({
+        error: "This member already has an active booking for this activity",
+        booking_id: existing.rows[0].id,
+      });
+    }
+
+    // 4. Member record is the source of truth; OS-provided values override.
+    const cleanedPhone = String(phone || "").trim();
+    const cleanedYos = String(year_of_study || "").trim();
+
+    const result = await pool.query(
+      `INSERT INTO activity_bookings (activity_type, activity_id, member_id, member_name, member_email, jumuiya_id, year_of_study, phone, fare, paid_amount, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'pending')
+       RETURNING *`,
+      [
+        activity_type, activity_id, member.member_id,
+        `${member.first_name || ""} ${member.last_name || ""}`.trim(),
+        "",
+        member.jumuiya_id || "",
+        cleanedYos || member.year_of_study || "",
+        cleanedPhone || member.phone || "",
+        fare,
+      ]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    logger.error("createBookingForMember error:", err.message);
+    res.status(500).json({ error: "Failed to create booking" });
   }
 };
 

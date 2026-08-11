@@ -61,6 +61,7 @@ const SPECIAL_ACTIONS = [
   { match: /\/jumuiya-members\/.*\/csa-allocations/, label: "Managed allocations", type: "member allocation" },
   { match: /\/attendance\//, label: "Updated attendance", type: "attendance tally" },
   { match: /\/publish-stats/, label: "Published statistics", type: "statistics" },
+  { match: /\/admin\/activities\/bookings/, label: "Created booking for member", type: "activity booking" },
 ];
 
 const isIdSegment = (seg) => /^\d+$/.test(seg) || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(seg);

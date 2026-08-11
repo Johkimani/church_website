@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { bookingService } from "../../../api/activitiesServices";
-import { RefreshCw, Download, Search, CalendarCheck2, Wallet, TrendingUp, Users } from "lucide-react";
+import { RefreshCw, Download, Search, CalendarCheck2, Wallet, TrendingUp, Users, UserPlus, X } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
 import toast from "react-hot-toast";
 
 interface Booking {
@@ -30,7 +31,93 @@ export default function AdminBookings() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [payFilter, setPayFilter] = useState<"all" | "paid" | "partial" | "unpaid">("all");
 
+  // Book-on-behalf modal (CSA OS / chair)
+  const { user } = useAuth();
+  const userRoles = Array.isArray(user?.role)
+    ? user.role.map((r: any) => String(r).toUpperCase())
+    : user?.role ? [String(user.role).toUpperCase()] : [];
+  const canBookForMember = userRoles.includes("OS") || userRoles.includes("CSA_CHAIR");
+
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [paidActivities, setPaidActivities] = useState<any[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<number>(0);
+  const [selectedActivityType, setSelectedActivityType] = useState<string>("weekly");
+  const [memberQuery, setMemberQuery] = useState("");
+  const [memberResults, setMemberResults] = useState<any[]>([]);
+  const [memberSearching, setMemberSearching] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [phoneOverride, setPhoneOverride] = useState("");
+  const [yearOverride, setYearOverride] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => { load(); }, []);
+
+  // Debounced member search inside the modal
+  useEffect(() => {
+    if (!showBookModal) return;
+    if (memberQuery.trim().length < 2) { setMemberResults([]); return; }
+    const t = setTimeout(async () => {
+      setMemberSearching(true);
+      try {
+        const res = await bookingService.lookupMemberByRegNumber(memberQuery.trim());
+        setMemberResults(res || []);
+      } catch {
+        setMemberResults([]);
+      } finally {
+        setMemberSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [memberQuery, showBookModal]);
+
+  async function openBookModal() {
+    setShowBookModal(true);
+    setMemberQuery("");
+    setSelectedMember(null);
+    setPhoneOverride("");
+    setYearOverride("");
+    try {
+      const acts = await bookingService.getPaidActivities();
+      setPaidActivities(acts || []);
+      if (acts?.length) {
+        setSelectedActivity(acts[0].id);
+        setSelectedActivityType(acts[0].activity_type);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "Failed to load activities");
+    }
+  }
+
+  function selectMember(m: any) {
+    setSelectedMember(m);
+    setPhoneOverride(m.phone || "");
+    setYearOverride(String(m.year_of_study ?? ""));
+    setMemberResults([]);
+    setMemberQuery("");
+  }
+
+  async function handleCreateBooking() {
+    if (!selectedMember) { toast.error("Search and select a member first"); return; }
+    if (!selectedActivity) { toast.error("Select an activity first"); return; }
+    setSubmitting(true);
+    try {
+      await bookingService.createBookingForMember({
+        activity_id: selectedActivity,
+        activity_type: selectedActivityType,
+        member_id: selectedMember.member_id,
+        phone: phoneOverride,
+        year_of_study: yearOverride,
+      });
+      toast.success(`Booking created for ${(selectedMember.first_name + " " + selectedMember.last_name).trim()}`);
+      setShowBookModal(false);
+      setSelectedMember(null);
+      await load();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "Failed to create booking");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -141,6 +228,12 @@ export default function AdminBookings() {
           <p className="text-sm text-slate-500 mt-1">View all member bookings and payments for paid activities.</p>
         </div>
         <div className="flex items-center gap-3">
+          {canBookForMember && (
+            <button onClick={openBookModal}
+              className="flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl transition-colors">
+              <UserPlus size={14} /> Book for Member
+            </button>
+          )}
           <button onClick={handleExport}
             className="flex items-center gap-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl transition-colors">
             <Download size={14} /> Export CSV
@@ -292,6 +385,137 @@ export default function AdminBookings() {
           ))}
           <div className="px-1 text-xs text-slate-400">
             Showing {filtered.length} of {bookings.length} bookings across {Object.keys(groupedBookings).length} activities
+          </div>
+        </div>
+      )}
+
+      {/* Book-for-Member modal */}
+      {showBookModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowBookModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-bold text-slate-800">Book Activity for Member</h3>
+                <p className="text-xs text-slate-500">For members who approach you in person.</p>
+              </div>
+              <button onClick={() => setShowBookModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* 1. Activity */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Activity</label>
+                <select
+                  value={selectedActivity}
+                  onChange={(e) => {
+                    const act = paidActivities.find((a) => a.id === Number(e.target.value));
+                    setSelectedActivity(Number(e.target.value));
+                    if (act) setSelectedActivityType(act.activity_type);
+                  }}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                >
+                  {paidActivities.length === 0 && <option value={0}>No paid activities available</option>}
+                  {paidActivities.map((a) => (
+                    <option key={`${a.activity_type}-${a.id}`} value={a.id}>
+                      {a.name} — KES {Number(a.fare).toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. Member search */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Member (search by reg number or name)</label>
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={memberQuery}
+                    onChange={(e) => { setMemberQuery(e.target.value); if (selectedMember) setSelectedMember(null); }}
+                    placeholder="Type at least 2 characters..."
+                    className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                  />
+                </div>
+                {memberSearching && <p className="text-xs text-slate-400 mt-1.5">Searching…</p>}
+                {memberResults.length > 0 && (
+                  <div className="mt-2 border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-44 overflow-y-auto">
+                    {memberResults.map((m) => (
+                      <button
+                        key={m.member_id}
+                        onClick={() => selectMember(m)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-800">
+                            {m.first_name} {m.last_name}
+                          </span>
+                          <span className="text-xs font-mono text-slate-500">{m.member_id}</span>
+                        </div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {m.jumuiya_name || "No jumuiya"}
+                          {m.year_of_study ? ` · Year ${m.year_of_study}` : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Selected member */}
+              {selectedMember && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">
+                        {selectedMember.first_name} {selectedMember.last_name}
+                      </p>
+                      <p className="text-xs font-mono text-slate-500 mt-0.5">{selectedMember.member_id}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-blue-700 bg-white border border-blue-200 rounded-full px-2.5 py-1">
+                      {selectedMember.jumuiya_name || "No jumuiya"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Phone</label>
+                      <input
+                        value={phoneOverride}
+                        onChange={(e) => setPhoneOverride(e.target.value)}
+                        placeholder={selectedMember.phone || "No phone on record"}
+                        className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Year of Study</label>
+                      <input
+                        value={yearOverride}
+                        onChange={(e) => setYearOverride(e.target.value)}
+                        placeholder="e.g. 2"
+                        className="w-full border border-blue-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Submit */}
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setShowBookModal(false)}
+                  className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateBooking}
+                  disabled={submitting || !selectedMember || !selectedActivity}
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <UserPlus size={15} /> {submitting ? "Booking…" : "Create Booking"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

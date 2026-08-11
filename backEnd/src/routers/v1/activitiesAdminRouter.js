@@ -42,7 +42,9 @@ import {
 import {
   getBookings,
   exportBookingsCSV,
+  createBookingForMember,
 } from "../../controllers/activityBookingController.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 
 const router = Router();
 
@@ -198,6 +200,9 @@ router.post(
 // ── Bookings (admin) ────────────────────────────────
 router.get("/bookings", verifyToken, getBookings);
 router.get("/bookings/export", verifyToken, exportBookingsCSV);
+// CSA OS (or chair) books an activity on a member's behalf when the member
+// approaches them in person.
+router.post("/bookings", requireRole("os", "csa_chair"), createBookingForMember);
 
 export default router;
 
