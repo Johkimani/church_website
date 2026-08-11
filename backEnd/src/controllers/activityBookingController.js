@@ -431,10 +431,13 @@ export const recordCashPayment = async (req, res) => {
         `UPDATE activity_bookings SET paid_amount = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
         [newPaid, newStatus, id]
       );
+      // checkout_id is UNIQUE in activity_payments, so each cash payment needs a
+      // distinct value (the constant 'cash' would collide on a second payment).
+      const cashRef = `cash-${id}-${Date.now().toString(36)}`;
       await client.query(
         `INSERT INTO activity_payments (booking_id, amount, checkout_id, mpesa_receipt, status)
-         VALUES ($1, $2, 'cash', 'CASH', 'paid')`,
-        [id, amount]
+         VALUES ($1, $2, $3, 'CASH', 'paid')`,
+        [id, amount, cashRef]
       );
       await client.query("COMMIT");
     } catch (err) {
@@ -446,7 +449,7 @@ export const recordCashPayment = async (req, res) => {
 
     res.json({ success: true, data: { id, paid_amount: newPaid, status: newStatus } });
   } catch (err) {
-    logger.error("recordCashPayment error:", err.message);
+    logger.error("recordCashPayment error:", err.message, err.detail ? `| detail: ${err.detail}` : "");
     res.status(500).json({ error: "Failed to record cash payment" });
   }
 };
