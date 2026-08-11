@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 interface Props {
   jumuiyaId: string;
   seasonId?: number;
+  onSuccess?: () => void;
 }
 
 const JUMUIYA_NAME_MAP: Record<string, string> = {
@@ -75,7 +76,7 @@ const ACADEMIC_YEARS = Array.from({ length: 10 }, (_, i) => {
   return s >= 2018 && s <= currentYear + 1;
 });
 
-const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
+const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) => {
   const jumuiyaName = JUMUIYA_NAME_MAP[jumuiyaId] || jumuiyaId;
 
   const [mode, setMode] = useState<"manual" | "upload">("manual");
@@ -201,6 +202,8 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
       });
       setImportResult(res.data);
       setValidationResults(null);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
+      if (onSuccess) onSuccess();
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || "Import failed");
     } finally {

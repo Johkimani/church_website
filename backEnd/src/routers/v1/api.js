@@ -8,6 +8,7 @@ import {
 } from "../../controllers/ApiController.js";
 import logger from "../../logger/winston.js";
 import verifyToken from "../../middlewares/Tokens.js";
+import optionalVerifyToken from "../../middlewares/optionalVerifyToken.js";
 import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 
 export const api = Router();
@@ -103,7 +104,14 @@ const authorizeTableAccess = (req, res, next) => {
     return next();
   }
 
-  if (method === "POST" && PUBLIC_POST_TABLES.has(table)) return next();
+  if (method === "POST" && PUBLIC_POST_TABLES.has(table)) {
+    // Public writes: for suggestions, still attach the caller identity when a
+    // (valid) token is present so user_id is trusted server-side.
+    if (table === "suggestions") {
+      return optionalVerifyToken(req, res, () => next());
+    }
+    return next();
+  }
   return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
 };
 
@@ -176,6 +184,26 @@ api.post("/:table", validateTable, authorizeTableAccess, async (req, res) => {
       };
       req.body = payload;
       logger.info(`Mapping ${targetModule} registration payload: ${JSON.stringify(payload)}`);
+    }
+
+    if (table === 'suggestions') {
+      // Column allowlist: public submitters can never set status, approval
+      // flags, tokens, replies or forge user_id / read-scoped fields.
+      const text = String(req.body?.suggestion || '').trim();
+      if (!text) return res.status(400).json({ error: "suggestion text is required" });
+      const allowedCategories = ['general', 'worship', 'progress', 'feedback', 'other', 'officials', 'jumuiya', 'members', 'ideas', 'requests', 'events'];
+      const scope = req.body?.scope === 'jumuiya' ? 'jumuiya' : 'csa';
+      req.body = {
+        suggestion: text.slice(0, 2000),
+        category: allowedCategories.includes(req.body?.category) ? req.body.category : 'general',
+        scope,
+        jumuiya_id: scope === 'jumuiya' ? String(req.body?.jumuiya_id || '').slice(0, 100) : 'csa',
+        name: String(req.body?.name || '').trim().slice(0, 255) || null,
+        email: String(req.body?.email || '').trim().slice(0, 255) || null,
+        user_id: req.user?.member_id || null,
+        status: 'pending',
+      };
+      logger.info(`Sanitized suggestions payload`);
     }
 
     const newRecord = await createRecord(table, req.body);

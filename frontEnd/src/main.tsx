@@ -10,8 +10,29 @@ import { SSEProvider } from './context/SSEContext.tsx'
 import { NotificationProvider } from './context/NotificationContext.tsx'
 import { AppProvider } from './context/AppContext.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
+import RouteErrorBoundary from './components/RouteErrorBoundary'
+import { isChunkLoadError, reloadForStaleChunk } from './utils/chunkReload'
 
 const queryClient = new QueryClient()
+
+// Auto-recover from stale chunks after a redeploy (see utils/chunkReload.ts).
+// This runs before React mounts so it covers every lazy import in the app.
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  reloadForStaleChunk();
+});
+window.addEventListener('error', (event) => {
+  if (isChunkLoadError(event.error) || isChunkLoadError(event.message)) {
+    event.preventDefault();
+    reloadForStaleChunk();
+  }
+}, { capture: true });
+window.addEventListener('unhandledrejection', (event) => {
+  if (isChunkLoadError(event.reason)) {
+    event.preventDefault();
+    reloadForStaleChunk();
+  }
+});
 
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
@@ -23,7 +44,9 @@ createRoot(document.getElementById('root')!).render(
               <BrowserRouter>
                 <AppProvider>
                   <ScrollToTop />
-                  <App />
+                  <RouteErrorBoundary>
+                    <App />
+                  </RouteErrorBoundary>
                 </AppProvider>
               </BrowserRouter>
             </NotificationProvider>

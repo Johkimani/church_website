@@ -17,6 +17,7 @@ const KNOWN_ADMIN_ROLES = new Set([
   "LITURGIST",
   "CSA_SECRETARY",
   "JUMUIYA_CHAIRPERSON",
+  "JUMUIYA_VICE_CHAIRPERSON",
   "JUMUIYA_SECRETARY",
   "CHOIR_CHAIRPERSON",
   "CHOIR_SECRETARY",
@@ -49,6 +50,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/devotions",
   "/admin/registered-members",
   "/admin/community-management",
+  "/admin/activity-log",
 ];
 
 export const normalizeRoles = (role: unknown): string[] => {
@@ -57,6 +59,15 @@ export const normalizeRoles = (role: unknown): string[] => {
 };
 
 export const isChair = (roles: string[]): boolean => roles.includes(CHAIR_ROLE);
+
+// Pages the CSA chair may NOT open even though the chair otherwise has
+// universal admin access. They belong to specific officials only:
+//   - /admin/attendance-tally  -> jumuiya coordinator
+//   - /admin/secretary-dashboard -> jumuiya officials
+const CHAIR_FORBIDDEN_PATHS = [
+  "/admin/attendance-tally",
+  "/admin/secretary-dashboard",
+];
 
 export const hasAnyAdminAccess = (roles: string[]): boolean =>
   roles.some((r) => KNOWN_ADMIN_ROLES.has(r));
@@ -71,6 +82,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/officials");
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");
+        prefixes.add("/admin/activity-log");
         break;
       case "OS":
         prefixes.add("/admin/announcements");
@@ -106,6 +118,12 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/registered-members");
         break;
       case "JUMUIYA_CHAIRPERSON":
+      case "JUMUIYA_VICE_CHAIRPERSON":
+        prefixes.add("/admin/suggestions");
+        prefixes.add("/admin/suggestion-bin");
+        prefixes.add("/admin/secretary-dashboard");
+        prefixes.add("/admin/jumuiya-members");
+        break;
       case "JUMUIYA_SECRETARY":
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
@@ -139,7 +157,9 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
 };
 
 export const checkAccess = (roles: string[], path: string): boolean => {
-  if (isChair(roles)) return true;
+  if (isChair(roles)) {
+    return !CHAIR_FORBIDDEN_PATHS.some((forbidden) => path.startsWith(forbidden));
+  }
   if (path === "/admin" || path === "/admin/") return false;
 
   const prefixes = getAllowedPrefixes(roles);

@@ -134,7 +134,7 @@ export default function CsaSecretaryDashboard() {
     setSelectedCols(availableColumns.map(c => c.key));
   }, [availableColumns]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await memberService.getAllRegisteredMembers();
@@ -144,19 +144,24 @@ export default function CsaSecretaryDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchPendingPayments = async (status?: string) => {
+  const fetchPendingPayments = useCallback(async (status?: string) => {
     setLoadingPending(true);
     try {
       const res = await memberService.getPendingPayments({ status: status || csaPaymentFilter });
       setPendingPayments(res.data || []);
     } catch { setPendingPayments([]); }
     setLoadingPending(false);
-  };
+  }, [csaPaymentFilter]);
 
-  useEffect(() => { fetchData(); }, []);
-  useEffect(() => { fetchPendingPayments(); }, []);
+  useEffect(() => {
+    fetchData();
+    const handleUpdated = () => fetchData();
+    window.addEventListener("csa_members_updated", handleUpdated);
+    return () => window.removeEventListener("csa_members_updated", handleUpdated);
+  }, [fetchData]);
+  useEffect(() => { fetchPendingPayments(); }, [fetchPendingPayments]);
 
   const jumuiyaCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -272,6 +277,7 @@ export default function CsaSecretaryDashboard() {
       setShowRegister(false);
       resetRegisterForm();
       fetchData();
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Registration failed");
     }

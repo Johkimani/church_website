@@ -75,7 +75,10 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
 
   useEffect(() => { 
     fetchMembers(); 
-  }, [jumuiyaId]);
+    const handleUpdated = () => fetchMembers();
+    window.addEventListener("csa_members_updated", handleUpdated);
+    return () => window.removeEventListener("csa_members_updated", handleUpdated);
+  }, [jumuiyaId, fetchMembers]);
 
   const yearOptions = useMemo(() => {
     const years = new Set<string>();

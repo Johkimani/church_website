@@ -40,6 +40,8 @@ export default function RafikiWidget() {
 
   const roles = normalizeRoles(user?.role);
   const hideOnLogin = location.pathname.startsWith("/login");
+  const hideOnAdmin = location.pathname.startsWith("/admin");
+  const widgetHidden = hideOnLogin || hideOnAdmin;
 
   useEffect(() => {
     loadSiteData()
@@ -132,7 +134,7 @@ export default function RafikiWidget() {
         .rafiki-panel { animation: rafiki-pop 0.25s ease-out; transform-origin: bottom left; }
       `}</style>
       {/* Bottom-left trigger pill */}
-      {!open && !hideOnLogin && (
+      {!open && !widgetHidden && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Open Rafiki assistant"
@@ -148,7 +150,7 @@ export default function RafikiWidget() {
       )}
 
       {/* Chat panel */}
-      {open && (
+      {open && !hideOnAdmin && (
         <div
           role="dialog"
           aria-label="Rafiki assistant"

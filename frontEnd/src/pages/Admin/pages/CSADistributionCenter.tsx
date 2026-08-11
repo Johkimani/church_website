@@ -325,6 +325,7 @@ export default function CSADistributionCenter() {
         setImportResult(res.data);
       }
       fetchData(filterYear, filterGender);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || "Import failed");
     } finally {
@@ -362,6 +363,7 @@ export default function CSADistributionCenter() {
       setDistributionDone(false);
       setActiveBatches(prev => [...prev, { ...res.data.batch, total_allocations: res.data.assignments?.length || 0 }]);
       fetchData(filterYear, filterGender);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
       setError(`Batch #${res.data.batch.id} created with ${res.data.summary.totalMembers} member(s). Click "Check Status" to review and finalize.`);
       // Switch to success-style message
     } catch (err: any) {
@@ -380,6 +382,7 @@ export default function CSADistributionCenter() {
       setActiveBatches(prev => prev.filter(b => b.id !== batchId));
       setDistributionDone(true);
       fetchData(filterYear, filterGender);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || "Finalize failed");
     } finally {

@@ -15,21 +15,31 @@ const SuggestionBox: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
+  const [targetScope, setTargetScope] = useState<'csa' | 'jumuiya'>('csa');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.suggestion.trim()) return;
 
     setStatus('submitting');
-    
+
+    // Only send a jumuiya-scoped suggestion when the member actually belongs to
+    // a jumuiya; otherwise fall back to CSA scope (never send a bare 'jumuiya'
+    // literal that the backend cannot resolve).
+    const jumuiyaTarget = user?.jumuiya_id || '';
+    const useJumuiyaScope = targetScope === 'jumuiya' && !!jumuiyaTarget;
+
     const submissionData: Record<string, string> = {
-      suggestion: formData.suggestion.trim()
+      suggestion: formData.suggestion.trim(),
+      scope: useJumuiyaScope ? 'jumuiya' : 'csa',
+      jumuiya_id: useJumuiyaScope ? jumuiyaTarget : 'csa'
     };
-    
+
     if (!anonymous) {
       if (formData.name.trim()) submissionData.name = formData.name.trim();
       if (formData.email.trim()) submissionData.email = formData.email.trim();
     }
-    if (user?.member_id) submissionData.user_id = user.member_id;
+    // user_id is bound server-side from the verified token.
 
     try {
       await apiService.createRecord('suggestions', submissionData);
@@ -156,6 +166,37 @@ const SuggestionBox: React.FC = () => {
                       </div>
                     </div>
                     
+                    {/* Target Selector: CSA vs Jumuiya */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-500 tracking-wider ml-1 uppercase">
+                        RECIPIENT / TARGET
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setTargetScope('csa')}
+                          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border ${
+                            targetScope === 'csa'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          CSA
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTargetScope('jumuiya')}
+                          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border ${
+                            targetScope === 'jumuiya'
+                              ? 'bg-primary text-white border-primary shadow-sm'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          My Jumuiya
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <button
                         type="button"

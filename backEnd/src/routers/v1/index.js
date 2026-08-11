@@ -15,6 +15,7 @@ import activitiesPublicRouter from "./activitiesPublicRouter.js";
 import activitiesAdminRouter from "./activitiesAdminRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
+import activityLogger from "../../middlewares/activityLogger.js"
 import jumuiyaMembersRouter from "../jumuiyaMembersRouter.js"
 import jumuiyaDataRouter from "../jumuiyaDataRouter.js"
 import attendanceRouter from "../attendanceRouter.js"
@@ -38,6 +39,12 @@ import statsPublishRoutes from "./statsPublishRoutes.js";
 import suggestionRouter from "./suggestionRouter.js";
 import bibleRouter from "./bibleRoutes.js";
 import assistantRoutes from "./assistantRoutes.js";
+import activityLogRouter from "./activityLogRouter.js";
+
+// Audit trail: records every authenticated admin mutation (who/what/when).
+// Mounted first so it wraps every request in this router; it only writes on
+// res 'finish' once req.user has been populated by the route's own auth.
+router.use(activityLogger);
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -79,6 +86,9 @@ router.use("/", categoryCardsRouter);
 
 // System settings (hire admin numbers, etc.)
 router.use("/settings", settingsRouter);
+
+// Admin audit log (CSA chair + jumuiya coordinator only)
+router.use("/activity-logs", activityLogRouter);
 
 // Jumuiya members endpoints (auth: member PII + management writes)
 router.use("/jumuiya-members", verifyToken, jumuiyaMembersRouter);

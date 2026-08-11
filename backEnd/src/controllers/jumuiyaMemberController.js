@@ -1,4 +1,4 @@
-import { db as pool } from "../Configs/dbConfig.js";
+import { db as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { validateMemberRow, parseExcelRow } from "../utils/memberValidation.js";
 import { distributeMembers } from "../utils/distributionAlgorithm.js";
@@ -208,6 +208,17 @@ export const importMembers = async (req, res) => {
       return res.status(400).json({ error: "members array is required" });
     }
 
+    let targetJumuiyaName = null;
+    let targetJumuiyaUuid = null;
+    if (jumuiya_id && jumuiya_id !== 'csa') {
+      const resolved = await resolveJumuiyaInput(jumuiya_id);
+      if (resolved) {
+        targetJumuiyaName = resolved.name;
+        const sgRes = await pool.query(`SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [resolved.name]);
+        if (sgRes.rows.length) targetJumuiyaUuid = sgRes.rows[0].group_id;
+      }
+    }
+
     const nonEmpty = members.filter(m => m.regNumber?.trim() || m.name?.trim() || m.gender?.trim());
     if (nonEmpty.length === 0) {
       return res.status(400).json({ error: "No valid data rows found — all rows were empty" });
@@ -228,7 +239,7 @@ export const importMembers = async (req, res) => {
 
     for (let i = 0; i < nonEmpty.length; i++) {
       const member = nonEmpty[i];
-      const validated = validateMemberRow(member);
+      const validated = validateMemberRow(member, targetJumuiyaName);
       const dupes = dupErrors[i] || [];
       const allErrors = [...validated.errors, ...dupes];
       let status = validated.status;
@@ -250,6 +261,45 @@ export const importMembers = async (req, res) => {
       if (status === "error") errorCount++;
       else validCount++;
       results.push(recordResult.rows[0]);
+
+      // Direct synchronous insert into members table (0ms delay - immediate appearance)
+      if (validated.cleaned.regNumber && (status === "valid" || status === "warning")) {
+        const fullName = validated.cleaned.name || "";
+        const firstName = fullName.split(" ")[0] || "";
+        const lastName = fullName.substring(firstName.length).trim() || "";
+
+        let memberJumuiyaUuid = targetJumuiyaUuid;
+        if (!memberJumuiyaUuid && validated.cleaned.jumuiya) {
+          const sgMatch = await pool.query(`SELECT group_id FROM sub_groups WHERE LOWER(name) = LOWER($1)`, [validated.cleaned.jumuiya]);
+          if (sgMatch.rows.length) memberJumuiyaUuid = sgMatch.rows[0].group_id;
+        }
+
+        // DO NOTHING on conflict: an existing member's live data (names, phone,
+        // email, password, jumuiya) must never be overwritten by an import.
+        // Duplicates are already recorded as 'warning' import_records above.
+        // Passwords are hashed asynchronously by syncNewImportRecords' backfill,
+        // so we never block the request with per-row bcrypt.
+        await pool.query(
+          `INSERT INTO members (
+             member_id, first_name, last_name, phone, gender, course, email,
+             source, status, import_batch_id, join_date, jumuiya_id
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11)
+           ON CONFLICT (member_id) DO NOTHING`,
+          [
+            validated.cleaned.regNumber,
+            firstName,
+            lastName,
+            validated.cleaned.phone || null,
+            validated.cleaned.gender ? validated.cleaned.gender.toLowerCase() : null,
+            validated.cleaned.course || null,
+            validated.cleaned.email || null,
+            jumuiya_id === 'csa' ? 'csa' : 'jum',
+            status,
+            importId,
+            memberJumuiyaUuid || null
+          ]
+        );
+      }
     }
 
     await pool.query(
@@ -1943,80 +1993,76 @@ export const csaFinalizeDistribution = async (req, res) => {
   try {
     const { batchId } = req.params;
 
-    const batch = await pool.query(`SELECT * FROM distribution_batches WHERE id = $1`, [batchId]);
-    if (!batch.rows.length) return res.status(404).json({ error: "Batch not found" });
-    if (batch.rows[0].status === "finalized") {
-      return res.status(400).json({ error: "Already finalized" });
-    }
+    const finalized = await withTransaction(async (tx) => {
+      const batch = await tx.query(`SELECT * FROM distribution_batches WHERE id = $1`, [batchId]);
+      if (!batch.rows.length) throw Object.assign(new Error("Batch not found"), { statusCode: 404 });
+      if (batch.rows[0].status === "finalized") throw Object.assign(new Error("Already finalized"), { statusCode: 400 });
 
-    // Auto-approve any remaining pending allocations so admin can finalize in one click
-    await pool.query(
-      `UPDATE allocation_approvals SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
-       WHERE distribution_batch_id = $2 AND status = 'pending'`,
-      [req.user?.id || null, batchId]
-    );
+      // Auto-approve any remaining pending allocations so admin can finalize in one click
+      await tx.query(
+        `UPDATE allocation_approvals SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
+         WHERE distribution_batch_id = $2 AND status = 'pending'`,
+        [req.user?.id || null, batchId]
+      );
 
-    // Get all approved allocations in this batch
-    const approved = await pool.query(
-      `SELECT aa.member_id, aa.target_jumuiya
-       FROM allocation_approvals aa
-       WHERE aa.distribution_batch_id = $1 AND aa.status = 'approved'`,
-      [batchId]
-    );
+      // Get all approved allocations in this batch
+      const approved = await tx.query(
+        `SELECT aa.member_id, aa.target_jumuiya
+         FROM allocation_approvals aa
+         WHERE aa.distribution_batch_id = $1 AND aa.status = 'approved'`,
+        [batchId]
+      );
 
-    if (approved.rows.length === 0) {
-      await pool.query(
+      const approvedRows = approved.rows;
+
+      // Sequential awaits on the SAME transaction client (Promise.all would
+      // interleave statements on a single connection and break atomicity).
+      for (const a of approvedRows) {
+        await tx.query(
+          `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
+          [a.target_jumuiya, a.member_id]
+        );
+        await tx.query(
+          `UPDATE members SET jumuiya_id = sg.group_id
+           FROM sub_groups sg
+           WHERE members.member_id = $1 AND sg.name = $2`,
+          [a.member_id, a.target_jumuiya]
+        );
+      }
+
+      await tx.query(
         `UPDATE distribution_batches SET status = 'finalized', finalized_at = NOW() WHERE id = $1`,
         [batchId]
       );
-      return res.json({
-        status: "success",
-        data: {
-          finalized: 0,
-          batch_id: parseInt(batchId),
-          message: "No approved allocations — batch finalized with 0 members",
-        },
-      });
-    }
 
-    for (const a of approved.rows) {
-      await pool.query(
-        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
-        [a.target_jumuiya, a.member_id]
+      // Record distribution history
+      const summary = {
+        totalMembers: approvedRows.length,
+        finalizedAt: new Date().toISOString(),
+      };
+      await tx.query(
+        `INSERT INTO distribution_history (jumuiya_id, algorithm_used, stats)
+         VALUES ($1, $2, $3)`,
+        ["csa", "coordinator-approval", JSON.stringify(summary)]
       );
-      await pool.query(
-        `UPDATE members SET jumuiya_id = sg.group_id
-         FROM sub_groups sg
-         WHERE members.member_id = $1 AND sg.name = $2`,
-        [a.member_id, a.target_jumuiya]
-      );
-    }
 
-    await pool.query(
-      `UPDATE distribution_batches SET status = 'finalized', finalized_at = NOW() WHERE id = $1`,
-      [batchId]
-    );
-
-    // Record distribution history
-    const summary = {
-      totalMembers: approved.rows.length,
-      finalizedAt: new Date().toISOString(),
-    };
-    await pool.query(
-      `INSERT INTO distribution_history (jumuiya_id, algorithm_used, stats)
-       VALUES ($1, $2, $3)`,
-      ["csa", "coordinator-approval", JSON.stringify(summary)]
-    );
+      return approvedRows.length;
+    });
 
     res.json({
       status: "success",
       data: {
-        finalized: approved.rows.length,
+        finalized,
         batch_id: parseInt(batchId),
-        message: `Finalized ${approved.rows.length} member(s) across Jumuiyas`,
+        message: finalized > 0
+          ? `Finalized ${finalized} member(s) across Jumuiyas`
+          : "No approved allocations — batch finalized with 0 members",
       },
     });
   } catch (error) {
+    if (error.statusCode === 404 || error.statusCode === 400) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     logger.error("csaFinalizeDistribution error:", error.message);
     res.status(500).json({ error: error.message });
   }

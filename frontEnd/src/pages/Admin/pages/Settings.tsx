@@ -222,91 +222,79 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
           </span>
         </h2>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">
-              <th className="px-6 py-4">Member</th>
-              <th className="px-6 py-4">Role</th>
-              <th className="px-6 py-4">Pages Access</th>
-              <th className="px-6 py-4">Scope</th>
-              <th className="px-6 py-4">Assigned By</th>
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4 text-right">Actions</th>
+      <table className="w-full text-left border-collapse table-fixed">
+        <thead>
+          <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+            <th className="px-3 py-3 w-[17%]">Member</th>
+            <th className="pl-1 pr-2 py-3 w-[9%]">Role</th>
+            <th className="px-3 py-3 w-[21%]">Pages Access</th>
+            <th className="px-3 py-3 w-[12%]">Assigned By</th>
+            <th className="px-3 py-3 w-[8%]">Date</th>
+            <th className="px-3 py-3 w-[33%] text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {filtered.map((a) => (
+            <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+              <td className="px-3 py-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
+                    {a.first_name[0]}{a.last_name?.[0] ?? ''}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-slate-900 truncate">{a.first_name} {a.last_name}</p>
+                    <p className="text-[9px] text-slate-400 font-medium uppercase truncate">{a.member_id}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="pl-1 pr-2 py-3">
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-lg border border-blue-100 capitalize block truncate">
+                  {a.role_name.replace(/_/g, ' ')}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-wrap gap-1">
+                  {getPagesForRole(a.role_name).map((page) => (
+                    <span key={page} className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-semibold rounded border border-emerald-100 leading-tight">
+                      {page}
+                    </span>
+                  ))}
+                </div>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-600 font-medium truncate block">
+                  {a.assigned_by_first ? `${a.assigned_by_first} ${a.assigned_by_last}` : '—'}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-400">
+                  {new Date(a.created_at).toLocaleDateString()}
+                </span>
+              </td>
+              <td className="px-3 py-3 text-right">
+                <div className="flex items-center justify-end gap-1.5">
+                  <button
+                    onClick={() => handleApprove(a.id)}
+                    disabled={actionLoading === a.id}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {actionLoading === a.id ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleReject(a.id)}
+                    disabled={actionLoading === a.id}
+                    className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <Ban size={11} />
+                    Reject
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.map((a) => (
-              <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
-                      {a.first_name[0]}{a.last_name[0]}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-900">{a.first_name} {a.last_name}</p>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase">{a.member_id}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 capitalize">
-                    {a.role_name.replace(/_/g, ' ')}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1 max-w-xs">
-                    {getPagesForRole(a.role_name).map((page) => (
-                      <span key={page} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded-md border border-emerald-100 whitespace-nowrap">
-                        {page}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs text-slate-500 font-medium">
-                    {a.jumuiya_name || 'Global'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs text-slate-600 font-medium">
-                    {a.assigned_by_first ? `${a.assigned_by_first} ${a.assigned_by_last}` : '—'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs text-slate-500">
-                    {new Date(a.created_at).toLocaleDateString()}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleApprove(a.id)}
-                      disabled={actionLoading === a.id}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      {actionLoading === a.id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <CheckCircle size={14} />
-                      )}
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleReject(a.id)}
-                      disabled={actionLoading === a.id}
-                      className="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      <Ban size={14} />
-                      Reject
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -347,13 +335,8 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
 
   const filtered = active.filter((a) => roleBelongsToTab(a.role_name, activeTab));
 
-  if (loading) {
-    return null;
-  }
-
-  if (filtered.length === 0) {
-    return null;
-  }
+  if (loading) return null;
+  if (filtered.length === 0) return null;
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -369,81 +352,69 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
           Officials with approved access. You can revoke access at any time.
         </p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">
-              <th className="px-6 py-4">Member</th>
-              <th className="px-6 py-4">Role</th>
-              <th className="px-6 py-4">Pages Access</th>
-              <th className="px-6 py-4">Scope</th>
-              <th className="px-6 py-4">Approved By</th>
-              <th className="px-6 py-4">Approved At</th>
-              <th className="px-6 py-4 text-right">Actions</th>
+      <table className="w-full text-left border-collapse table-fixed">
+        <thead>
+          <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+            <th className="px-3 py-3 w-[17%]">Member</th>
+            <th className="pl-1 pr-2 py-3 w-[9%]">Role</th>
+            <th className="px-3 py-3 w-[21%]">Pages Access</th>
+            <th className="px-3 py-3 w-[12%]">Approved By</th>
+            <th className="px-3 py-3 w-[8%]">Approved At</th>
+            <th className="px-3 py-3 w-[33%] text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {filtered.map((a) => (
+            <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+              <td className="px-3 py-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
+                    {a.first_name[0]}{a.last_name?.[0] ?? ''}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-slate-900 truncate">{a.first_name} {a.last_name}</p>
+                    <p className="text-[9px] text-slate-400 font-medium uppercase truncate">{a.member_id}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="pl-1 pr-2 py-3">
+                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-100 capitalize block truncate">
+                  {a.role_name.replace(/_/g, ' ')}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-wrap gap-1">
+                  {getPagesForRole(a.role_name).map((page) => (
+                    <span key={page} className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-semibold rounded border border-emerald-100 leading-tight">
+                      {page}
+                    </span>
+                  ))}
+                </div>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-600 font-medium truncate block">
+                  {a.approved_by_first ? `${a.approved_by_first} ${a.approved_by_last}` : '—'}
+                </span>
+              </td>
+              <td className="px-3 py-3">
+                <span className="text-[10px] text-slate-400">
+                  {a.approved_at ? new Date(a.approved_at).toLocaleDateString() : '—'}
+                </span>
+              </td>
+              <td className="px-3 py-3 text-right">
+                <button
+                  onClick={() => handleRevoke(a.id)}
+                  disabled={actionLoading === a.id}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1 ml-auto"
+                >
+                  {actionLoading === a.id ? <Loader2 size={11} className="animate-spin" /> : <ShieldOff size={11} />}
+                  Revoke
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.map((a) => (
-              <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
-                      {a.first_name[0]}{a.last_name[0]}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-900">{a.first_name} {a.last_name}</p>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase">{a.member_id}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-100 capitalize">
-                    {a.role_name.replace(/_/g, ' ')}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1 max-w-xs">
-                    {getPagesForRole(a.role_name).map((page) => (
-                      <span key={page} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded-md border border-emerald-100 whitespace-nowrap">
-                        {page}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs text-slate-500 font-medium">
-                    {a.jumuiya_name || 'Global'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs text-slate-600 font-medium">
-                    {a.approved_by_first ? `${a.approved_by_first} ${a.approved_by_last}` : '—'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs text-slate-500">
-                    {a.approved_at ? new Date(a.approved_at).toLocaleDateString() : '—'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button
-                    onClick={() => handleRevoke(a.id)}
-                    disabled={actionLoading === a.id}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {actionLoading === a.id ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <ShieldOff size={14} />
-                    )}
-                    Revoke
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -500,7 +471,6 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
   const filteredRevoked = revoked.filter((a) => roleBelongsToTab(a.role_name, activeTab));
 
   if (loading) return null;
-
   if (filteredRevoked.length === 0) return null;
 
   return (
@@ -529,85 +499,73 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
         </p>
       </button>
       {expanded && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">
-                <th className="px-6 py-4">Member</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Pages Access</th>
-                <th className="px-6 py-4">Scope</th>
-                <th className="px-6 py-4">Previous Approval</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+        <table className="w-full text-left border-collapse table-fixed">
+          <thead>
+            <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+              <th className="px-3 py-3 w-[15%]">Member</th>
+              <th className="pl-1 pr-2 py-3 w-[9%]">Role</th>
+              <th className="px-3 py-3 w-[20%]">Pages Access</th>
+              <th className="px-3 py-3 w-[13%]">Previous Approval</th>
+              <th className="px-3 py-3 w-[43%] text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filteredRevoked.map((a) => (
+              <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-rose-50 to-red-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
+                      {a.first_name[0]}{a.last_name?.[0] ?? ''}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-slate-900 truncate">{a.first_name} {a.last_name}</p>
+                      <p className="text-[9px] text-slate-400 font-medium uppercase truncate">{a.member_id}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="pl-1 pr-2 py-3">
+                  <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-100 capitalize block truncate">
+                    {a.role_name.replace(/_/g, ' ')}
+                  </span>
+                </td>
+                <td className="px-3 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    {getPagesForRole(a.role_name).map((page) => (
+                      <span key={page} className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-semibold rounded border border-slate-200 leading-tight">
+                        {page}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-3 py-3">
+                  <span className="text-[10px] text-slate-600 font-medium truncate block">
+                    {a.approved_by_first ? `${a.approved_by_first} ${a.approved_by_last}` : '—'}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <button
+                      onClick={() => handleActivate(a.id)}
+                      disabled={actionLoading === a.id}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {actionLoading === a.id ? <Loader2 size={11} className="animate-spin" /> : <RotateCcw size={11} />}
+                      Activate
+                    </button>
+                    <button
+                      onClick={() => handleDelete(a.id)}
+                      disabled={actionLoading === a.id}
+                      className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-[10px] transition-all disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <Trash2 size={11} />
+                      Delete
+                    </button>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredRevoked.map((a) => (
-                <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-50 to-red-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
-                        {a.first_name[0]}{a.last_name[0]}
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm text-slate-900">{a.first_name} {a.last_name}</p>
-                        <p className="text-[10px] text-slate-500 font-medium uppercase">{a.member_id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-2.5 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg border border-rose-100 capitalize">
-                      {a.role_name.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                      {getPagesForRole(a.role_name).map((page) => (
-                        <span key={page} className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-semibold rounded-md border border-slate-200 whitespace-nowrap">
-                          {page}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs text-slate-500 font-medium">
-                      {a.jumuiya_name || 'Global'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs text-slate-600 font-medium">
-                      {a.approved_by_first ? `${a.approved_by_first} ${a.approved_by_last}` : '—'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleActivate(a.id)}
-                        disabled={actionLoading === a.id}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1.5"
-                      >
-                        {actionLoading === a.id ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <RotateCcw size={14} />
-                        )}
-                        Activate
-                      </button>
-                      <button
-                        onClick={() => handleDelete(a.id)}
-                        disabled={actionLoading === a.id}
-                        className="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center gap-1.5"
-                      >
-                        <Trash2 size={14} />
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

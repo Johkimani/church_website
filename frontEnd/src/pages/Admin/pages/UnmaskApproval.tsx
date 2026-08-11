@@ -35,11 +35,14 @@ export default function UnmaskApproval() {
     }
   };
 
-  const roleLabel = role === 'chair' ? 'CSA Chair' : 'CSA Liturgist';
-  const otherApproved = role === 'chair'
-    ? request?.liturgist_approved
-    : request?.chair_approved;
-  const isFullyUnmasked = request?.chair_approved && request?.liturgist_approved;
+  const roleLabelMap: Record<string, string> = {
+    chair: 'CSA Chairperson',
+    liturgist: 'CSA Liturgist',
+    jumuiya_chair: 'Jumuiya Chairperson',
+    jumuiya_secretary: 'Jumuiya Secretary',
+  };
+  const roleLabel = roleLabelMap[role || ''] || 'Official Review';
+  const isFullyUnmasked = request?.status === 'approved' && request?.member_first_name;
 
   if (loading) {
     return (
@@ -64,24 +67,10 @@ export default function UnmaskApproval() {
   if (done) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full">
-          <div className="text-center">
-            <CheckCircle size={48} className="text-emerald-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Response Recorded</h2>
-            <p className="text-slate-500 mb-6">{message}</p>
-          </div>
-          {(resultData?.member_first_name || request?.member_first_name) && (
-            <div className="bg-slate-50 rounded-2xl p-5 mb-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Submitter Info</h3>
-              <div className="space-y-2">
-                <p className="text-slate-800 font-bold">{(resultData || request).member_first_name} {(resultData || request).member_last_name}</p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Year {(resultData || request).member_year_of_study}</span>
-                  <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{(resultData || request).member_jumuiya || 'No jumuiya'}</span>
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center">
+          <CheckCircle size={48} className="text-emerald-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Response Recorded</h2>
+          <p className="text-slate-500 mb-6">{message}</p>
           <button onClick={() => navigate('/')} className="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-colors">
             Go to Home
           </button>
@@ -98,9 +87,9 @@ export default function UnmaskApproval() {
             <Shield size={28} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-800">Unmask Request</h2>
+            <h2 className="text-xl font-black text-slate-800">Unmask Request Card</h2>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              {roleLabel} Review
+              {roleLabel}
             </p>
           </div>
         </div>
@@ -115,27 +104,9 @@ export default function UnmaskApproval() {
           </div>
         </div>
 
-        {isFullyUnmasked && request?.member_first_name ? (
-          <div className="mb-6 bg-emerald-50 rounded-2xl p-5 border border-emerald-200">
-            <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <CheckCircle size={14} /> Submitter Identity (Unmasked)
-            </h3>
-            <p className="text-slate-800 font-bold mb-1">{request.member_first_name} {request.member_last_name}</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Year {request.member_year_of_study}</span>
-              <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{request.member_jumuiya || 'No jumuiya'}</span>
-            </div>
-          </div>
-        ) : otherApproved && (
-          <div className="mb-6 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-700 text-sm font-bold">
-            <CheckCircle size={18} />
-            {role === 'chair' ? 'CSA Liturgist' : 'CSA Chair'} has already approved. Your approval will complete the unmask.
-          </div>
-        )}
-
         <p className="text-slate-600 text-sm mb-6">
-          The CSA Vice Chair has requested to view the identity of the person who submitted this anonymous suggestion.
-          Both CSA Chair and CSA Liturgist must approve for the identity to be revealed.
+          A Vice Chair official has requested to unmask the author's identity of this anonymous suggestion.
+          To protect member privacy, dual independent approval is required.
         </p>
 
         <div className="flex gap-3">

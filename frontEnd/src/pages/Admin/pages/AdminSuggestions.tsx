@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import apiService from '../../Landing/services/api';
 import { apiClient } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
 import { MessageSquare, Trash2, Search, Calendar, User, Mail, RefreshCcw, Loader2, Shield, Reply, CheckCircle, Check, Filter, Clock, XCircle } from 'lucide-react';
@@ -43,7 +42,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function AdminSuggestions() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
-  const isVC = userRoles.some((r: string) => r === 'csa_vice_chair');
+  const isVC = userRoles.some((r: string) => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson'].includes(r));
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +79,7 @@ export default function AdminSuggestions() {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this suggestion?')) {
       try {
-        await apiService.deleteRecord('suggestions', id);
+        await apiClient.delete(`/suggestions/${id}`);
         toast.success('Suggestion deleted');
         loadSuggestions();
       } catch (err: any) {
@@ -107,7 +106,7 @@ export default function AdminSuggestions() {
 
   const handleCategoryChange = async (id: number, category: string) => {
     try {
-      await apiService.updateRecord('suggestions', id, { category });
+      await apiClient.patch(`/suggestions/${id}/category`, { category });
       toast.success(`Categorized as ${category}`);
       loadSuggestions();
     } catch (err: any) {
@@ -116,7 +115,7 @@ export default function AdminSuggestions() {
   };
 
   const handleRequestUnmask = async (id: number) => {
-    if (!window.confirm('Request to unmask this anonymous suggestion? Both CSA Chair and CSA Liturgist must approve.')) return;
+    if (!window.confirm('Request to unmask this anonymous suggestion? Both designated co-approvers must approve.')) return;
     setUnmaskLoading(id);
     try {
       const res = await apiClient.post(`/suggestions/${id}/request-unmask`);

@@ -147,8 +147,31 @@ export const bookingService = {
     const res = await apiClient.get("/admin/activities/bookings");
     return res.data.data || [];
   },
-  exportBookingsCSV: async () => {
-    const res = await apiClient.get("/admin/activities/bookings/export", { responseType: "blob" });
+  createBookingForMember: async (payload: {
+    activity_id: number;
+    activity_type: string;
+    member_id?: string;
+    guest_name?: string;
+    phone?: string;
+    year_of_study?: string;
+  }) => {
+    const res = await apiClient.post("/admin/activities/bookings", payload);
+    return res.data.data;
+  },
+  recordCashPayment: async (bookingId: number, amount: number) => {
+    const res = await apiClient.patch(`/admin/activities/bookings/${bookingId}/payment`, { amount });
+    return res.data.data;
+  },
+  cancelBooking: async (bookingId: number) => {
+    const res = await apiClient.patch(`/admin/activities/bookings/${bookingId}/cancel`);
+    return res.data.data;
+  },
+  lookupMemberByRegNumber: async (search: string) => {
+    const res = await apiClient.get(`/jumuiya-members/lookup/reg-number/${encodeURIComponent(search)}`);
+    return res.data.data || [];
+  },
+  exportBookingsExcel: async (status: string = "all") => {
+    const res = await apiClient.get(`/admin/activities/bookings/export?status=${encodeURIComponent(status)}`, { responseType: "blob" });
     return res.data;
   },
   checkPaymentStatus: async (checkoutId: string) => {

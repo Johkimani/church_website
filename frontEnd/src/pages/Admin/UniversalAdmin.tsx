@@ -13,21 +13,20 @@ import {
   LayoutGrid,
   MessageSquare,
   Image as ImageIcon,
-  Images,
   UserPlus,
   ClipboardList,
   Trash2,
   Home,
   Shield,
   CalendarCheck,
-  Palette,
   Code2,
+  Activity,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationDropdown, { type Notification } from './components/NotificationDropdown';
 import apiService from '../Landing/services/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
 import { checkAccess, normalizeRoles } from '../../utils/adminAccess';
@@ -49,8 +48,6 @@ const menuItems = [
   { id: 'community', name: 'Community Management', icon: LayoutGrid, path: '/admin/community-management' },
   { id: 'donations', name: 'Donation Monitor', icon: Heart, path: '/admin/donations' },
   { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
-  { id: 'devotions-manager', name: 'Dashboard Manager', icon: Palette, path: '/admin/devotions-manager' },
-  { id: 'dashboard-assets', name: 'Dashboard Images', icon: Images, path: '/admin/dashboard-assets' },
   { id: 'suggestions', name: 'User Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
   { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
   { id: 'gallery', name: 'Gallery Manager', icon: ImageIcon, path: '/admin/gallery' },
@@ -58,6 +55,7 @@ const menuItems = [
   { id: 'jumuiya-members', name: 'Members', icon: UserPlus, path: '/admin/jumuiya-members' },
   { id: 'attendance-tally', name: 'Attendance Tally', icon: CalendarCheck, path: '/admin/attendance-tally' },
   { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
+  { id: 'activity-log', name: 'Activity Log', icon: Activity, path: '/admin/activity-log' },
   { id: 'projects', name: 'Project Management', icon: LayoutGrid, path: '/admin/projects' },
   { id: 'developers', name: 'Developer Team', icon: Code2, path: '/admin/developers' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' }
@@ -71,6 +69,46 @@ export default function UniversalAdmin() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [openMenus, setOpenMenus] = useState<string[]>(['activities']);
+
+  // ── Preserve sidebar nav scroll position across route changes ──
+  const navRef = useRef<HTMLElement | null>(null);
+  const NAV_SCROLL_KEY = 'admin_nav_scroll';
+  const loadSavedNavScroll = (): number => {
+    try {
+      const saved = Number(sessionStorage.getItem(NAV_SCROLL_KEY));
+      return Number.isFinite(saved) && saved > 0 ? saved : 0;
+    } catch { return 0; }
+  };
+  const savedNavScroll = useRef<number>(loadSavedNavScroll());
+
+  useEffect(() => {
+    // Stop the browser from auto-restoring/resetting scroll positions during
+    // SPA navigation, which would yank the sidebar back to the top.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  }, []);
+
+  const rememberNavScroll = () => {
+    if (navRef.current) savedNavScroll.current = navRef.current.scrollTop;
+    try { sessionStorage.setItem(NAV_SCROLL_KEY, String(savedNavScroll.current)); } catch { /* ignore */ }
+  };
+
+  const restoreNavScroll = () => {
+    const el = navRef.current;
+    if (!el) return;
+    // .no-scrollbar has scroll-behavior:smooth, which turns programmatic
+    // restores into slow, interruptible animations. Force an instant jump.
+    const prev = el.style.scrollBehavior;
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = savedNavScroll.current;
+    el.style.scrollBehavior = prev;
+  };
+
+  useLayoutEffect(() => {
+    restoreNavScroll();
+    const frame = requestAnimationFrame(restoreNavScroll);
+    const timer = window.setTimeout(restoreNavScroll, 50);
+    return () => { cancelAnimationFrame(frame); clearTimeout(timer); };
+  }, [location.pathname]);
 
   const toggleMenu = (id: string) => {
     setOpenMenus(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
@@ -203,7 +241,11 @@ export default function UniversalAdmin() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar">
+        <nav
+          ref={navRef}
+          onScroll={rememberNavScroll}
+          className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar"
+        >
           {allowedMenuItems.map((item) => {
             const hasSub = !!item.subItems;
 
@@ -213,7 +255,10 @@ export default function UniversalAdmin() {
                 <Link
                   key={item.id}
                   to={item.path!}
-                  onClick={closeSidebarIfMobile}
+                  onClick={() => {
+                    rememberNavScroll();
+                    closeSidebarIfMobile();
+                  }}
                   className={`flex items-center group transition-all duration-200 px-4 py-4 rounded-3xl ${isActive
                       ? 'bg-blue-500/95 text-white shadow-xl shadow-blue-900/30'
                       : 'text-slate-300 hover:bg-white/10 hover:text-white'
@@ -261,7 +306,10 @@ export default function UniversalAdmin() {
                         <Link
                           key={child.id}
                           to={child.path}
-                          onClick={closeSidebarIfMobile}
+                          onClick={() => {
+                            rememberNavScroll();
+                            closeSidebarIfMobile();
+                          }}
                           className={`flex items-center text-sm px-3 py-2 rounded-xl transition-colors ${
                             isSubActive ? 'bg-blue-500/95 text-white shadow-md shadow-blue-900/30' : 'text-slate-400 hover:text-white hover:bg-white/5'
                           }`}

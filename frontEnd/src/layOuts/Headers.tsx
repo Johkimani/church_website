@@ -93,11 +93,11 @@ const Headers = () => {
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
-              <li key={link.path}>
+              <li key={link.path} className="shrink-0">
                 {link.path.includes("#") ? (
                   <a
                     href={link.path}
-                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -105,13 +105,13 @@ const Headers = () => {
                   >
                     {link.name}
                     {active && (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-blue-600 rounded-full" />
+                      <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full" />
                     )}
                   </a>
                 ) : (
                   <Link
                     to={link.path}
-                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -119,7 +119,7 @@ const Headers = () => {
                   >
                     {link.name}
                     {active && (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-blue-600 rounded-full" />
+                      <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 rounded-full" />
                     )}
                   </Link>
                 )}

@@ -4,6 +4,9 @@ const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
 
 // Any approved official may manage the member/role directory, orders, payments
 // and other admin surfaces. Shared across routers that gate admin endpoints.
+// NOTE: jumuiya_vice_chairperson is intentionally NOT here — that role manages
+// only its own jumuiya's suggestion box (see suggestionRouter) and must not get
+// global PII / order / payment reads.
 const OFFICIAL_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
   "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
@@ -59,8 +62,9 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
     }
     if (normalizeKey(targetId) === normalizeKey(ownId)) return next();
     // Target may be a slug or name — resolve to group_id and compare
+    // (group_id is a UUID column, so it must be cast to text before lower()).
     const { rows } = await db.query(
-      "SELECT group_id FROM sub_groups WHERE LOWER(slug) = $1 OR LOWER(group_id) = $1 OR LOWER(name) = $1",
+      "SELECT group_id FROM sub_groups WHERE LOWER(slug) = $1 OR LOWER(group_id::text) = $1 OR LOWER(name) = $1",
       [String(targetId).toLowerCase()]
     );
     if (rows.length > 0 && normalizeKey(rows[0].group_id) === normalizeKey(ownId)) return next();

@@ -108,8 +108,6 @@ const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
 const AdminBookings = lazy(() => import("./pages/Admin/pages/AdminBookings"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
-const DevotionsManager = lazy(() => import("./pages/Admin/pages/DevotionsManager"));
-const DashboardAssetsManager = lazy(() => import("./pages/Admin/pages/DashboardAssetsManager"));
 const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
 
 // Sacramental / Community
@@ -162,8 +160,6 @@ const App: React.FC = () => {
           <Route path="announcements" element={<AnnouncementsAdmin />} />
           <Route path="officials" element={<AdminPanel />} />
           <Route path="devotions" element={<Appadmin />} />
-          <Route path="devotions-manager" element={<DevotionsManager />} />
-          <Route path="dashboard-assets" element={<DashboardAssetsManager />} />
           <Route path="donations" element={<DonationMonitor />} />
           <Route path="community-management" element={<CommunityManager />} />
           <Route path="community-management/:categoryId" element={<CommunityDetailEditor />} />

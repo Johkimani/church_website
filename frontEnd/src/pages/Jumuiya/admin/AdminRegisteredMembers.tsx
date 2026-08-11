@@ -45,12 +45,21 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const res = await memberService.csaGetJumuiyaMemberList(jumuiyaId);
-      setMembers(res.data || []);
+      const res = await memberService.getJumuiyaRoster(jumuiyaId);
+      if (res?.success) setMembers(res.data || []);
     } catch {
       try {
         const res = await memberService.exportMembers(jumuiyaId);
-        setMembers(res.data || []);
+        const raw = res?.data || [];
+        setMembers(raw.map((m: any) => ({
+          id: m.member_id || m.id,
+          name: m.Name || m.name,
+          reg_number: m.RegNo || m.reg_number || m.member_id || m.id,
+          gender: m.Gender || m.gender,
+          course: m.course,
+          year: m.Year || m.year,
+          join_date: m.Joined || m.join_date,
+        })));
       } catch (err) {
         console.error("Failed to load registered members:", err);
       }
@@ -81,7 +90,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
       const q = search.toLowerCase();
       result = result.filter(m =>
         (m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim()).toLowerCase().includes(q) ||
-        (m.reg_number || "").toLowerCase().includes(q) ||
+        (m.reg_number || m.member_id || "").toLowerCase().includes(q) ||
         (m.course || "").toLowerCase().includes(q)
       );
     }
@@ -103,11 +112,11 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
       const name = m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim();
       const row: Record<string, any> = {
         Name: name,
-        "Reg Number": m.reg_number || "—",
+        "Reg Number": m.reg_number || m.member_id || m.id || "—",
         Gender: m.gender || "—",
         Course: m.course || "—",
         "Year.Sem": m.year_sem || getYearSemLabel(m),
-        Registered: formatDate(m.registration_date),
+        Registered: formatDate(m.registration_date || m.join_date),
       };
       SEMESTERS.forEach(s => {
         row[`Sem ${s.label}`] = m[s.dbCol] ? "✓" : "—";
@@ -290,7 +299,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
                     {m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "—"}
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-secondary)", fontFamily: "monospace", fontSize: "0.8rem" }}>
-                    {m.reg_number || "—"}
+                    {m.reg_number || m.member_id || m.id || "—"}
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{
@@ -313,7 +322,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
                     </span>
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-secondary)", fontSize: "0.8rem" }}>
-                    {formatDate(m.registration_date)}
+                    {formatDate(m.registration_date || m.join_date)}
                   </td>
                 </tr>
               ))}
