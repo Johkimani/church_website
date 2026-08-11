@@ -7,7 +7,6 @@ interface Booking {
   id: number;
   member_id: string;
   member_name: string;
-  member_email: string;
   year_of_study: string;
   jumuiya_id: string;
   jumuiya_name: string | null;
@@ -102,7 +101,6 @@ export default function AdminBookings() {
       id: booking.id,
       member_id: booking.member_id || "-",
       member_name: booking.member_name,
-      member_email: booking.member_email,
       year_of_study: booking.year_of_study || "-",
       jumuiya_id: booking.jumuiya_id || "-",
       jumuiya_name: booking.jumuiya_name || null,
@@ -132,7 +130,7 @@ export default function AdminBookings() {
     } else if (numPaid > 0) {
       return "bg-amber-50 text-amber-700 border-amber-200 font-medium";
     }
-    return "bg-slate-50 text-slate-600 border-slate-200";
+    return "bg-rose-50 text-rose-600 border-rose-200 font-medium";
   };
 
   return (
@@ -248,6 +246,7 @@ export default function AdminBookings() {
                 <h3 className="text-base font-bold text-slate-800 mb-1">{group.activity_name}</h3>
                 <p className="text-sm text-slate-600">
                   <span className="font-medium">Type:</span> {group.activity_type} |
+                  <span className="font-medium ml-2">Fare @</span> KES {Number(group.bookings[0]?.fare || 0).toLocaleString()} |
                   <span className="font-medium ml-2">Total Bookings:</span> {group.bookings.length}
                 </p>
               </div>
@@ -258,9 +257,9 @@ export default function AdminBookings() {
                       <th className="text-left px-4 py-3 font-semibold text-slate-600">#</th>
                       <th className="text-left px-4 py-3 font-semibold text-slate-600">Member</th>
                       <th className="text-left px-4 py-3 font-semibold text-slate-600">Registration</th>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Year of Study</th>
                       <th className="text-left px-4 py-3 font-semibold text-slate-600">Jumuiya</th>
                       <th className="text-left px-4 py-3 font-semibold text-slate-600">Phone No</th>
-                      <th className="text-right px-4 py-3 font-semibold text-slate-600">Fare</th>
                       <th className="text-right px-4 py-3 font-semibold text-slate-600">Paid Amount</th>
                       <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
                     </tr>
@@ -271,17 +270,11 @@ export default function AdminBookings() {
                         <td className="px-4 py-3 text-slate-400 font-mono text-xs">{booking.id}</td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-slate-800">{booking.member_name}</div>
-                          <div className="text-xs text-slate-400">
-                            {booking.member_email}
-                            {booking.year_of_study !== "-" && booking.year_of_study && (
-                              <span> · Year {booking.year_of_study}</span>
-                            )}
-                          </div>
                         </td>
                         <td className="px-4 py-3 text-xs font-mono text-slate-600">{booking.member_id}</td>
+                        <td className="px-4 py-3 text-xs text-slate-600">{booking.year_of_study}</td>
                         <td className="px-4 py-3 text-xs text-slate-600">{booking.jumuiya_name || booking.jumuiya_id}</td>
                         <td className="px-4 py-3 text-xs text-slate-600">{booking.phone}</td>
-                        <td className="px-4 py-3 text-right font-mono text-slate-600">KES {Number(booking.fare).toLocaleString()}</td>
                         <td className="px-4 py-3 text-right font-mono font-semibold">
                           <span className={`inline-block px-2 py-1 rounded-lg border text-xs ${paidBadge(booking.paid_amount, booking.fare)}`}>
                             KES {Number(booking.paid_amount).toLocaleString()}
