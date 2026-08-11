@@ -324,12 +324,14 @@ export const getMeetingConfigs = async (req, res) => {
       `SELECT c.jumuiya_id, c.meeting_day, sg.name, sg.slug, sg.color
        FROM jumuiya_meeting_config c
        JOIN sub_groups sg ON sg.group_id = c.jumuiya_id
+       WHERE sg.slug <> 'st-thomas'
        ORDER BY sg.name`
     );
     const sgResult = await pool.query(
       `SELECT group_id, name, slug, color
        FROM sub_groups
-       WHERE group_id NOT IN (SELECT jumuiya_id FROM jumuiya_meeting_config)
+       WHERE slug <> 'st-thomas'
+         AND group_id NOT IN (SELECT jumuiya_id FROM jumuiya_meeting_config)
        ORDER BY name`
     );
     res.json({

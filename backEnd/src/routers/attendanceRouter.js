@@ -27,6 +27,6 @@ router.delete("/sessions/:date", deleteSession);
 router.get("/analytics/export", exportAnalyticsExcel);
 router.get("/analytics", getAnalytics);
 router.get("/history", getHistory);
-router.patch("/history/:tallyId", updateTally);
+router.patch("/history/:date", updateTally);
 
 export default router;

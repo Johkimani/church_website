@@ -20,7 +20,6 @@ import {
   Settings2,
   AlertTriangle,
   FileSpreadsheet,
-  Pencil,
 } from "lucide-react";
 import {
   BarChart,
@@ -70,6 +69,7 @@ interface SessionRow {
   count: number;
   recorded_by: string;
   recorded_by_name: string;
+  recorded_role: "coordinator" | "assistant";
   source: string;
   updated_at: string;
 }
@@ -135,19 +135,25 @@ interface AnalyticsData {
   by_jumuiya: JumuiyaStat[];
 }
 
-interface HistoryRow {
+type RecordedRole = "coordinator" | "assistant";
+
+interface HistoryCount {
   tally_id: number;
-  tally_date: string;
-  activity_type: string;
-  activity_label: string;
   jumuiya_id: string;
   jumuiya_name: string;
   jumuiya_color: string;
-  count: number;
   source: string;
-  recorded_by: string;
+  count: number;
+}
+
+interface HistoryRow {
+  date: string;
+  activity_type: string;
+  activity_label: string;
+  recorded_role: RecordedRole;
   recorded_by_name: string;
   updated_at: string;
+  counts: HistoryCount[];
 }
 
 // ── Date helpers ─────────────────────────────────────────────────────────
@@ -246,6 +252,11 @@ const inputCls =
 
 const DAY_OPTIONS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+const ROLE_LABEL: Record<RecordedRole, string> = {
+  coordinator: "Jumuiya Coordinator",
+  assistant: "Assistant Jumuiya Coordinator",
+};
+
 function TrendBadge({ delta }: { delta: number }) {
   if (delta > 0.0005) {
     return (
@@ -279,6 +290,7 @@ export default function AttendanceTallyAdmin() {
   const [context, setContext] = useState<TallyContext | null>(null);
   const [sessionRows, setSessionRows] = useState<SessionRow[]>([]);
   const [counts, setCounts] = useState<Record<string, string>>({});
+  const [recordedRole, setRecordedRole] = useState<RecordedRole>("coordinator");
   const [tallyLoading, setTallyLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [recentDays, setRecentDays] = useState<RecentTallyDay[]>([]);
@@ -303,9 +315,9 @@ export default function AttendanceTallyAdmin() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyFrom, setHistoryFrom] = useState("");
   const [historyTo, setHistoryTo] = useState("");
-  const [historyJumuiya, setHistoryJumuiya] = useState("");
-  const [historyDrafts, setHistoryDrafts] = useState<Record<number, string>>({});
-  const [historySaving, setHistorySaving] = useState<Record<number, boolean>>({});
+  const [historyDrafts, setHistoryDrafts] = useState<Record<string, string>>({});
+  const [historyRoles, setHistoryRoles] = useState<Record<string, RecordedRole>>({});
+  const [historySaving, setHistorySaving] = useState<Record<string, boolean>>({});
 
   const canEditConfig = useMemo(() => {
     const roles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
@@ -344,41 +356,54 @@ export default function AttendanceTallyAdmin() {
       const rows = await attendanceServices.getHistory({
         from: historyFrom || undefined,
         to: historyTo || undefined,
-        jumuiya_id: historyJumuiya || undefined,
       });
       setHistoryRows(rows);
-      const drafts: Record<number, string> = {};
+      const drafts: Record<string, string> = {};
+      const roles: Record<string, RecordedRole> = {};
       rows.forEach((r) => {
-        drafts[r.tally_id] = String(r.count);
+        r.counts.forEach((c) => {
+          drafts[`${r.date}:${c.jumuiya_id}`] = String(c.count);
+        });
+        roles[r.date] = r.recorded_role || "coordinator";
       });
       setHistoryDrafts(drafts);
+      setHistoryRoles(roles);
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
       setHistoryLoading(false);
     }
-  }, [historyFrom, historyTo, historyJumuiya]);
+  }, [historyFrom, historyTo]);
 
   useEffect(() => {
     if (tab === "history") loadHistory();
   }, [tab, loadHistory]);
 
   const handleHistorySave = async (row: HistoryRow) => {
-    const n = Number(historyDrafts[row.tally_id]);
-    if (!Number.isInteger(n) || n < 0) {
-      toast.error("Enter a valid whole number");
-      return;
+    const role = historyRoles[row.date] || "coordinator";
+    const changed: { jumuiya_id: string; count: number }[] = [];
+    for (const c of row.counts) {
+      const draft = Number(historyDrafts[`${row.date}:${c.jumuiya_id}`]);
+      if (!Number.isInteger(draft) || draft < 0) {
+        toast.error(`Enter a valid count for ${c.jumuiya_name}`);
+        return;
+      }
+      if (draft !== c.count) changed.push({ jumuiya_id: c.jumuiya_id, count: draft });
     }
-    if (n === row.count) return;
-    setHistorySaving((prev) => ({ ...prev, [row.tally_id]: true }));
+    if (changed.length === 0 && role === row.recorded_role) return;
+    setHistorySaving((prev) => ({ ...prev, [row.date]: true }));
     try {
-      await attendanceServices.updateHistoryRow(row.tally_id, n);
-      toast.success(`${row.jumuiya_name} count updated`);
+      const res = await attendanceServices.updateHistoryDate(row.date, changed, role);
+      const msg =
+        res?.data?.locked > 0
+          ? `${row.date} updated (${res.data.locked} register-sourced count(s) left unchanged)`
+          : `${row.date} tally updated`;
+      toast.success(msg);
       loadHistory();
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
-      setHistorySaving((prev) => ({ ...prev, [row.tally_id]: false }));
+      setHistorySaving((prev) => ({ ...prev, [row.date]: false }));
     }
   };
 
@@ -418,6 +443,12 @@ export default function AttendanceTallyAdmin() {
       });
       session.forEach((s: SessionRow) => { next[s.jumuiya_id] = String(s.count); });
       setCounts(next);
+      const anyRow = session[0];
+      setRecordedRole(
+        anyRow?.recorded_role === "assistant" || anyRow?.recorded_role === "coordinator"
+          ? anyRow.recorded_role
+          : "coordinator"
+      );
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
@@ -486,8 +517,10 @@ export default function AttendanceTallyAdmin() {
     }));
     setSaving(true);
     try {
-      await attendanceServices.saveSession(date, payload);
-      toast.success(`Tally for ${date} saved`);
+      await attendanceServices.saveSession(date, payload, recordedRole);
+      toast.success(
+        `Tally for ${date} saved by ${recordedRole === "assistant" ? "Assistant Jumuiya Coordinator" : "Jumuiya Coordinator"}`
+      );
       loadTally(date);
     } catch (err) {
       toast.error(getApiError(err));
@@ -545,6 +578,9 @@ export default function AttendanceTallyAdmin() {
       (b.updated_at || "") > (a.updated_at || "") ? b : a
     );
   }, [sessionRows]);
+
+  const roleLabel = (role: RecordedRole | undefined) =>
+    ROLE_LABEL[role === "assistant" ? "assistant" : "coordinator"];
 
   const quickCheckIssues = useMemo(() => {
     if (!context) return [];
@@ -702,7 +738,7 @@ export default function AttendanceTallyAdmin() {
                   <div>✓ Tally already recorded for this date — update the counts and save to overwrite.</div>
                   {lastRecorded && (
                     <div className="text-xs text-emerald-600 mt-1">
-                      Last recorded by <b>{lastRecorded.recorded_by_name || lastRecorded.recorded_by || "—"}</b>
+                      Last recorded by <b>{roleLabel(lastRecorded.recorded_role)}</b>
                       {lastRecorded.updated_at
                         ? ` · ${new Date(lastRecorded.updated_at).toLocaleString()}`
                         : ""}
@@ -843,40 +879,84 @@ export default function AttendanceTallyAdmin() {
           )}
 
           {/* Actions */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-slate-600">
-              Total attendance:{" "}
-              <span className="font-black text-slate-900 text-lg">{totalAttendance}</span>{" "}
-              <span className="text-slate-400">across {context?.jumuiyas.length || 0} jumuiyas</span>
-            </div>
-            {quickCheckIssues.length > 0 && (
-              <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2 max-w-md">
-                <AlertTriangle size={14} className="shrink-0" />
-                <span>
-                  <b>{quickCheckIssues.length}</b> count(s) exceed the active-member baseline (
-                  {quickCheckIssues.join(", ")}). Double-check before saving.
-                </span>
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-slate-600">
+                Total attendance:{" "}
+                <span className="font-black text-slate-900 text-lg">{totalAttendance}</span>{" "}
+                <span className="text-slate-400">across {context?.jumuiyas.length || 0} jumuiyas</span>
               </div>
-            )}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => loadTally(date)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                <RefreshCw size={15} /> Reset
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={tallyDisabled || saving}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-colors ${
-                  tallyDisabled || saving
-                    ? "bg-indigo-300 cursor-not-allowed"
-                    : "bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/30"
-                }`}
-              >
-                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                {saving ? "Saving…" : isSaved ? "Update Tally" : "Save Tally"}
-              </button>
+              {quickCheckIssues.length > 0 && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2 max-w-md">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  <span>
+                    <b>{quickCheckIssues.length}</b> count(s) exceed the active-member baseline (
+                    {quickCheckIssues.join(", ")}). Double-check before saving.
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => loadTally(date)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  <RefreshCw size={15} /> Reset
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={tallyDisabled || saving}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-colors ${
+                    tallyDisabled || saving
+                      ? "bg-indigo-300 cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/30"
+                  }`}
+                >
+                  {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                  {saving ? "Saving…" : isSaved ? "Update Tally" : "Save Tally"}
+                </button>
+              </div>
+            </div>
+
+            {/* Who took this tally? — the coordinator and their assistant share one login */}
+            <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Who took this tally?
+              </span>
+              <div className="flex items-center gap-3">
+                <label
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold cursor-pointer transition-colors ${
+                    recordedRole === "coordinator"
+                      ? "border-indigo-400 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
+                      : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={recordedRole === "coordinator"}
+                    onChange={() => setRecordedRole("coordinator")}
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/30"
+                  />
+                  Jumuiya Coordinator
+                </label>
+                <label
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold cursor-pointer transition-colors ${
+                    recordedRole === "assistant"
+                      ? "border-indigo-400 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
+                      : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={recordedRole === "assistant"}
+                    onChange={() => setRecordedRole("assistant")}
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/30"
+                  />
+                  Assistant Jumuiya Coordinator
+                </label>
+              </div>
+              <p className="text-xs text-slate-400 sm:ml-auto">
+                Check the assistant box when the assistant took this tally — this is saved as who recorded it.
+              </p>
             </div>
           </div>
         </div>
@@ -896,12 +976,12 @@ export default function AttendanceTallyAdmin() {
           loading={historyLoading}
           from={historyFrom}
           to={historyTo}
-          jumuiyaId={historyJumuiya}
           setFrom={setHistoryFrom}
           setTo={setHistoryTo}
-          setJumuiya={setHistoryJumuiya}
           drafts={historyDrafts}
           setDrafts={setHistoryDrafts}
+          roles={historyRoles}
+          setRoles={setHistoryRoles}
           saving={historySaving}
           onReload={loadHistory}
           onSave={handleHistorySave}
@@ -1338,8 +1418,7 @@ function MeetingDaysTab({
             </table>
           </div>
           <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400">
-            St. Thomas Aquinas is intentionally left without a fixed day (register can be taken any day). Saving "No
-            fixed day (any day)" removes the configured day.
+            Saving "No fixed day (any day)" removes the configured day, allowing a register to be taken any day.
           </div>
         </div>
       )}
@@ -1352,12 +1431,12 @@ function HistoryTab({
   loading,
   from,
   to,
-  jumuiyaId,
   setFrom,
   setTo,
-  setJumuiya,
   drafts,
   setDrafts,
+  roles,
+  setRoles,
   saving,
   onReload,
   onSave,
@@ -1366,25 +1445,45 @@ function HistoryTab({
   loading: boolean;
   from: string;
   to: string;
-  jumuiyaId: string;
   setFrom: (v: string) => void;
   setTo: (v: string) => void;
-  setJumuiya: (v: string) => void;
-  drafts: Record<number, string>;
-  setDrafts: (updater: (prev: Record<number, string>) => Record<number, string>) => void;
-  saving: Record<number, boolean>;
+  drafts: Record<string, string>;
+  setDrafts: (updater: (prev: Record<string, string>) => Record<string, string>) => void;
+  roles: Record<string, RecordedRole>;
+  setRoles: (updater: (prev: Record<string, RecordedRole>) => Record<string, RecordedRole>) => void;
+  saving: Record<string, boolean>;
   onReload: () => void;
   onSave: (row: HistoryRow) => void;
 }) {
-  const jumuiyaOptions = useMemo(() => {
-    const seen = new Map<string, { name: string; color: string }>();
-    rows.forEach((r) => {
-      if (!seen.has(r.jumuiya_id)) seen.set(r.jumuiya_id, { name: r.jumuiya_name, color: r.jumuiya_color });
-    });
-    return Array.from(seen.entries())
+  const jumuiyaColumns = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>();
+    rows.forEach((r) =>
+      r.counts.forEach((c) => {
+        if (!map.has(c.jumuiya_id)) {
+          map.set(c.jumuiya_id, { name: c.jumuiya_name, color: c.jumuiya_color });
+        }
+      })
+    );
+    return Array.from(map.entries())
       .map(([id, meta]) => ({ id, ...meta }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [rows]);
+
+  const hasChanges = (row: HistoryRow) => {
+    const roleChanged = (roles[row.date] || "coordinator") !== (row.recorded_role || "coordinator");
+    const countChanged = row.counts.some((c) => {
+      const draft = Number(drafts[`${row.date}:${c.jumuiya_id}`]);
+      return Number.isInteger(draft) && draft >= 0 && draft !== c.count;
+    });
+    return roleChanged || countChanged;
+  };
+
+  const rolePill = (active: boolean) =>
+    `px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+      active
+        ? "border-indigo-400 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
+        : "border-slate-200 text-slate-500 hover:border-indigo-300"
+    }`;
 
   return (
     <div className="space-y-6">
@@ -1393,14 +1492,15 @@ function HistoryTab({
           <History size={16} className="text-slate-400" /> Tally History
         </h3>
         <p className="text-sm text-slate-600 mt-1">
-          Full record of every tally count. Fix a manual entry by editing its count directly; register-sourced
-          counts are read-only (correct those in the secretary register).
+          One entry per tally day with all 7 jumuiya counts together, plus who recorded it (the coordinator or their
+          assistant). Edit any manual count directly; register-sourced counts are read-only (correct those in the
+          secretary register).
         </p>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">From</label>
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputCls} />
@@ -1408,15 +1508,6 @@ function HistoryTab({
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">To</label>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputCls} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jumuiya</label>
-            <select value={jumuiyaId} onChange={(e) => setJumuiya(e.target.value)} className={inputCls}>
-              <option value="">All jumuiyas</option>
-              {jumuiyaOptions.map((j) => (
-                <option key={j.id} value={j.id}>{j.name}</option>
-              ))}
-            </select>
           </div>
           <div className="flex items-end">
             <button
@@ -1428,7 +1519,7 @@ function HistoryTab({
           </div>
         </div>
         <p className="text-xs text-slate-400 mt-3">
-          Showing up to the 500 most recent tally rows matching the filters.
+          One row per tally day. Showing up to the 2,000 most recent tally rows matching the filters.
         </p>
       </div>
 
@@ -1448,9 +1539,14 @@ function HistoryTab({
                 <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
                   <th className="px-5 py-3">Date</th>
                   <th className="px-3 py-3">Activity</th>
-                  <th className="px-3 py-3">Jumuiya</th>
-                  <th className="px-3 py-3 text-right">Count</th>
-                  <th className="px-3 py-3">Source</th>
+                  {jumuiyaColumns.map((j) => (
+                    <th key={j.id} className="px-2 py-3 text-center min-w-[96px]">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: j.color || "#64748b" }} />
+                        {j.name.replace("St. ", "St ").replace(/^(St \w+).*$/, "$1")}
+                      </span>
+                    </th>
+                  ))}
                   <th className="px-3 py-3">Recorded By</th>
                   <th className="px-3 py-3">Updated</th>
                   <th className="px-3 py-3 text-right">Actions</th>
@@ -1458,70 +1554,72 @@ function HistoryTab({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {rows.map((row) => {
-                  const isSaving = saving[row.tally_id];
-                  const changed = drafts[row.tally_id] !== String(row.count);
-                  const readOnly = row.source === "register";
+                  const isSaving = saving[row.date];
+                  const changed = hasChanges(row);
                   return (
-                    <tr key={row.tally_id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={row.date} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-5 py-3 font-semibold text-slate-700 whitespace-nowrap">
-                        {friendlyDate(row.tally_date)}
+                        {friendlyDate(row.date)}
                       </td>
                       <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{row.activity_label}</td>
+                      {jumuiyaColumns.map((j) => {
+                        const c = row.counts.find((x) => x.jumuiya_id === j.id);
+                        if (!c) return <td key={j.id} className="px-2 py-3 text-center text-slate-300">—</td>;
+                        const readOnly = c.source === "register";
+                        return (
+                          <td key={j.id} className="px-2 py-3">
+                            <div className="flex items-center justify-center gap-1">
+                              <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={drafts[`${row.date}:${c.jumuiya_id}`] ?? ""}
+                                onChange={(e) =>
+                                  setDrafts((prev) => ({ ...prev, [`${row.date}:${c.jumuiya_id}`]: e.target.value }))
+                                }
+                                disabled={readOnly}
+                                title={readOnly ? "From secretary register — locked" : "Manual count"}
+                                className={`${inputCls} w-20 text-right font-bold ${
+                                  readOnly ? "bg-emerald-50 text-emerald-700" : ""
+                                }`}
+                              />
+                              {readOnly && <Lock size={11} className="text-emerald-500 shrink-0" />}
+                            </div>
+                          </td>
+                        );
+                      })}
                       <td className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: row.jumuiya_color || "#64748b" }} />
-                          <span className="font-semibold text-slate-800 whitespace-nowrap">{row.jumuiya_name}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setRoles((prev) => ({ ...prev, [row.date]: "coordinator" }))}
+                            className={rolePill((roles[row.date] || "coordinator") === "coordinator")}
+                          >
+                            Coordinator
+                          </button>
+                          <button
+                            onClick={() => setRoles((prev) => ({ ...prev, [row.date]: "assistant" }))}
+                            className={rolePill((roles[row.date] || "coordinator") === "assistant")}
+                          >
+                            Assistant
+                          </button>
                         </div>
-                      </td>
-                      <td className="px-3 py-3 text-right">
-                        <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={drafts[row.tally_id] ?? ""}
-                          onChange={(e) =>
-                            setDrafts((prev) => ({ ...prev, [row.tally_id]: e.target.value }))
-                          }
-                          disabled={readOnly}
-                          className={`${inputCls} w-24 text-right font-bold ${
-                            readOnly ? "bg-slate-50 text-slate-400" : ""
-                          }`}
-                        />
-                      </td>
-                      <td className="px-3 py-3">
-                        {readOnly ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-                            <CheckCircle2 size={11} /> Register
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5">
-                            <Pencil size={10} /> Manual
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-slate-600 whitespace-nowrap">
-                        {row.recorded_by_name || row.recorded_by || "—"}
                       </td>
                       <td className="px-3 py-3 text-slate-500 whitespace-nowrap text-xs">
                         {row.updated_at ? new Date(row.updated_at).toLocaleString() : "—"}
                       </td>
                       <td className="px-3 py-3 text-right">
-                        {readOnly ? (
-                          <span className="text-[11px] text-slate-400">Read-only</span>
-                        ) : (
-                          <button
-                            onClick={() => onSave(row)}
-                            disabled={isSaving || !changed}
-                            className={`flex items-center gap-1.5 ml-auto px-4 py-2 rounded-lg text-xs font-bold text-white transition-colors ${
-                              isSaving || !changed
-                                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                                : "bg-indigo-600 hover:bg-indigo-700"
-                            }`}
-                          >
-                            {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                            {isSaving ? "Saving…" : "Save"}
-                          </button>
-                        )}
+                        <button
+                          onClick={() => onSave(row)}
+                          disabled={isSaving || !changed}
+                          className={`flex items-center gap-1.5 ml-auto px-4 py-2 rounded-lg text-xs font-bold text-white transition-colors ${
+                            isSaving || !changed
+                              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                              : "bg-indigo-600 hover:bg-indigo-700"
+                          }`}
+                        >
+                          {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                          {isSaving ? "Saving…" : "Save"}
+                        </button>
                       </td>
                     </tr>
                   );
@@ -1530,8 +1628,8 @@ function HistoryTab({
             </table>
           </div>
           <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400">
-            Editing a manual count records who made the change and when. Register-sourced counts are locked to keep
-            them consistent with the secretary's per-member register.
+            A single save updates the whole day (all 7 jumuiyas + who recorded it). Register-sourced counts are locked
+            to keep them consistent with the secretary's per-member register.
           </div>
         </div>
       )}

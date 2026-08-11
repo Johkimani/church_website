@@ -21,8 +21,8 @@ export const attendanceServices = {
       .get("/attendance/recent-status", { params: { days } })
       .then((r) => r.data?.data || { today: "", tally_days: [] }),
 
-  saveSession: (date: string, counts: TallyCountInput[]) =>
-    apiClient.post("/attendance/sessions", { date, counts }).then((r) => r.data),
+  saveSession: (date: string, counts: TallyCountInput[], recordedBy: "coordinator" | "assistant" = "coordinator") =>
+    apiClient.post("/attendance/sessions", { date, counts, recordedBy }).then((r) => r.data),
 
   deleteSession: (date: string) =>
     apiClient.delete(`/attendance/sessions/${date}`).then((r) => r.data),
@@ -37,13 +37,17 @@ export const attendanceServices = {
       .get("/attendance/analytics/export", { params: { from, to }, responseType: "blob" })
       .then((r) => r.data),
 
-  getHistory: (params: { from?: string; to?: string; jumuiya_id?: string }) =>
+  getHistory: (params: { from?: string; to?: string }) =>
     apiClient
       .get("/attendance/history", { params })
       .then((r) => r.data?.data || []),
 
-  updateHistoryRow: (tallyId: number, count: number) =>
-    apiClient.patch(`/attendance/history/${tallyId}`, { count }).then((r) => r.data),
+  updateHistoryDate: (
+    date: string,
+    counts: TallyCountInput[],
+    recordedBy: "coordinator" | "assistant"
+  ) =>
+    apiClient.patch(`/attendance/history/${date}`, { counts, recordedBy }).then((r) => r.data),
 };
 
 export const getApiError = (err: any): string =>

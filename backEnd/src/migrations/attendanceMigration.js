@@ -27,6 +27,11 @@ const migration = async () => {
     await pool.query(
       `ALTER TABLE attendance_tallies ADD COLUMN IF NOT EXISTS recorded_by_name VARCHAR(120) DEFAULT '';`
     );
+    // Who recorded the tally: 'coordinator' (Jumuiya Coordinator) or 'assistant' (their assistant).
+    // Both share the coordinator's login, so a checkbox on the tally form records this instead of the person's name.
+    await pool.query(
+      `ALTER TABLE attendance_tallies ADD COLUMN IF NOT EXISTS recorded_role VARCHAR(20) NOT NULL DEFAULT 'coordinator';`
+    );
     await pool.query(
       `CREATE INDEX IF NOT EXISTS idx_attendance_tallies_date ON attendance_tallies (tally_date);`
     );

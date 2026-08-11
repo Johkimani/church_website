@@ -14,6 +14,10 @@ const NOVENA_DAYS = 9;
 const MS_PER_DAY = 86400000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// The tally module tracks the 7 SCC jumuiyas only. St. Thomas Aquinas is the 8th
+// sub_group but is intentionally excluded from tallies, analytics, and history.
+const EXCLUDED_JUMUIYA_SLUGS = ["st-thomas"];
+const RECORDED_ROLES = new Set(["coordinator", "assistant"]);
 
 // Local server date (not UTC) so late-evening/early-morning saves aren't misjudged.
 const todayStr = () => {
@@ -134,7 +138,12 @@ export const getTallyContext = async (req, res) => {
     const ctx = await getActivityForDate(date);
 
     const [sgResult, memberCounts, registerMap] = await Promise.all([
-      pool.query(`SELECT group_id, name, slug, color FROM sub_groups ORDER BY name`),
+      pool.query(
+        `SELECT group_id, name, slug, color FROM sub_groups
+         WHERE slug <> ALL($1)
+         ORDER BY name`,
+        [EXCLUDED_JUMUIYA_SLUGS]
+      ),
       getMemberCounts(),
       getRegisterPresentMap(date),
     ]);
@@ -163,7 +172,7 @@ export const getSession = async (req, res) => {
     const date = normalizeDate(req.query.date) || todayStr();
     const result = await pool.query(
       `SELECT tally_id, to_char(tally_date, 'YYYY-MM-DD') AS tally_date, activity_type, activity_label, jumuiya_id, count,
-              recorded_by, recorded_by_name, source, created_at, updated_at
+              recorded_by, recorded_by_name, recorded_role, source, created_at, updated_at
        FROM attendance_tallies
        WHERE tally_date = $1
        ORDER BY jumuiya_id`,
@@ -214,7 +223,7 @@ export const getRecentStatus = async (req, res) => {
 
 // ── POST /sessions ──────────────────────────────────────────────────────
 export const saveSession = async (req, res) => {
-  const { date, counts } = req.body || {};
+  const { date, counts, recordedBy } = req.body || {};
   const normalizedDate = normalizeDate(date);
   if (!normalizedDate) {
     return res.status(400).json({ success: false, error: "A valid date (YYYY-MM-DD) is required" });
@@ -222,6 +231,9 @@ export const saveSession = async (req, res) => {
   if (normalizedDate > todayStr()) {
     return res.status(400).json({ success: false, error: "Cannot record attendance for a future date" });
   }
+  const recordedRole = RECORDED_ROLES.has(String(recordedBy || "coordinator"))
+    ? String(recordedBy)
+    : "coordinator";
   if (!Array.isArray(counts) || counts.length > 20) {
     return res.status(400).json({ success: false, error: "counts array is required (max 20 jumuiyas)" });
   }
@@ -261,9 +273,9 @@ export const saveSession = async (req, res) => {
         if (source === "register") registerSourced += 1;
         await client.query(
           `INSERT INTO attendance_tallies
-             (tally_date, activity_type, activity_label, jumuiya_id, count, recorded_by, recorded_by_name, source)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [normalizedDate, ctx.activityType, ctx.activityLabel, c.jumuiya_id, count, recordedBy, recordedByName, source]
+             (tally_date, activity_type, activity_label, jumuiya_id, count, recorded_by, recorded_by_name, recorded_role, source)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [normalizedDate, ctx.activityType, ctx.activityLabel, c.jumuiya_id, count, recordedBy, recordedByName, recordedRole, source]
         );
       }
     });
@@ -274,6 +286,7 @@ export const saveSession = async (req, res) => {
         date: normalizedDate,
         activityType: ctx.activityType,
         activityLabel: ctx.activityLabel,
+        recorded_by: recordedRole,
         saved: counts.length,
         register_sourced: registerSourced,
       },
@@ -317,7 +330,12 @@ const computeAnalytics = async (from, to) => {
       prevDays,
       timelineRes,
     ] = await Promise.all([
-      pool.query(`SELECT group_id, name, slug, color FROM sub_groups ORDER BY name`),
+      pool.query(
+        `SELECT group_id, name, slug, color FROM sub_groups
+         WHERE slug <> ALL($1)
+         ORDER BY name`,
+        [EXCLUDED_JUMUIYA_SLUGS]
+      ),
       getMemberCounts(),
       pool.query(
         `SELECT jumuiya_id,
@@ -577,7 +595,8 @@ export const exportAnalyticsExcel = async (req, res) => {
   }
 };
 
-// ── GET /history?from=&to=&jumuiya_id= — full tally log ────────────────
+// ── GET /history?from=&to= — tally log grouped by date ────────────────
+// One row per date with all 7 jumuiya counts together (St. Thomas is excluded).
 export const getHistory = async (req, res) => {
   try {
     const where = [];
@@ -590,64 +609,124 @@ export const getHistory = async (req, res) => {
     const to = normalizeDate(req.query.to);
     if (from) push(`t.tally_date >= ?`, from);
     if (to) push(`t.tally_date <= ?`, to);
-    if (req.query.jumuiya_id && UUID_RE.test(String(req.query.jumuiya_id))) {
-      push(`t.jumuiya_id = ?`, req.query.jumuiya_id);
-    }
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
     const result = await pool.query(
       `SELECT t.tally_id, to_char(t.tally_date, 'YYYY-MM-DD') AS tally_date, t.activity_type,
               t.activity_label, t.jumuiya_id, sg.name AS jumuiya_name, sg.color AS jumuiya_color,
-              t.count, t.source, t.recorded_by, t.recorded_by_name, t.updated_at
+              sg.slug AS jumuiya_slug, t.count, t.source, t.recorded_by, t.recorded_by_name,
+              t.recorded_role, t.updated_at
        FROM attendance_tallies t
        LEFT JOIN sub_groups sg ON sg.group_id = t.jumuiya_id
        ${whereSql}
        ORDER BY t.tally_date DESC, sg.name ASC
-       LIMIT 500`,
+       LIMIT 2000`,
       params
     );
-    res.json({ success: true, data: result.rows });
+
+    const groups = new Map();
+    for (const r of result.rows) {
+      if (EXCLUDED_JUMUIYA_SLUGS.includes(r.jumuiya_slug)) continue;
+      let g = groups.get(r.tally_date);
+      if (!g) {
+        g = {
+          date: r.tally_date,
+          activity_type: r.activity_type,
+          activity_label: r.activity_label,
+          recorded_role: r.recorded_role || "coordinator",
+          recorded_by_name: r.recorded_by_name,
+          updated_at: r.updated_at,
+          counts: [],
+        };
+        groups.set(r.tally_date, g);
+      }
+      g.counts.push({
+        tally_id: r.tally_id,
+        jumuiya_id: r.jumuiya_id,
+        jumuiya_name: r.jumuiya_name,
+        jumuiya_color: r.jumuiya_color,
+        source: r.source,
+        count: r.count,
+      });
+    }
+
+    res.json({ success: true, data: Array.from(groups.values()) });
   } catch (error) {
     console.error("getHistory error:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// ── PATCH /history/:tallyId — correct a single manual tally count ──────
+// ── PATCH /history/:date — correct a whole day's tally at once ────────
+// Body: { counts: [{jumuiya_id, count}], recordedBy: 'coordinator'|'assistant' }.
+// Register-sourced counts are skipped (they are corrected in the secretary register).
 export const updateTally = async (req, res) => {
-  const tallyId = Number(req.params.tallyId);
-  if (!Number.isInteger(tallyId) || tallyId <= 0) {
-    return res.status(400).json({ success: false, error: "Invalid tally id" });
+  const date = normalizeDate(req.params.date);
+  if (!date) {
+    return res.status(400).json({ success: false, error: "A valid date (YYYY-MM-DD) is required" });
   }
-  const n = Number(req.body?.count);
-  if (!Number.isInteger(n) || n < 0 || n > 1000) {
-    return res.status(400).json({ success: false, error: "count must be an integer between 0 and 1000" });
+  const { counts, recordedBy } = req.body || {};
+  if (!Array.isArray(counts)) {
+    return res.status(400).json({ success: false, error: "counts array is required" });
   }
+  for (const c of counts) {
+    if (!c || typeof c.jumuiya_id !== "string" || !UUID_RE.test(c.jumuiya_id)) {
+      return res.status(400).json({ success: false, error: "Each count must include a valid jumuiya_id" });
+    }
+    const n = Number(c.count);
+    if (!Number.isInteger(n) || n < 0 || n > 1000) {
+      return res.status(400).json({ success: false, error: "Each count must be an integer between 0 and 1000" });
+    }
+  }
+  const recordedRole = RECORDED_ROLES.has(String(recordedBy || "coordinator"))
+    ? String(recordedBy)
+    : "coordinator";
+
   try {
     const existing = await pool.query(
-      `SELECT tally_id, source FROM attendance_tallies WHERE tally_id = $1`,
-      [tallyId]
+      `SELECT jumuiya_id, source FROM attendance_tallies WHERE tally_date = $1`,
+      [date]
     );
     if (existing.rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Tally not found" });
+      return res.status(404).json({ success: false, error: "No tally recorded for this date" });
     }
-    if (existing.rows[0].source === "register") {
-      return res.status(400).json({
-        success: false,
-        error: "This count came from the secretary register — correct it in the register, not here.",
-      });
+    const sourceById = new Map(existing.rows.map((r) => [r.jumuiya_id, r.source]));
+    const locked = [];
+    const updates = [];
+    for (const c of counts) {
+      if (sourceById.get(c.jumuiya_id) === "register") {
+        locked.push(c.jumuiya_id);
+        continue;
+      }
+      updates.push(c);
     }
+
     const recordedByName =
       [req.user?.firstName, req.user?.lastName].filter(Boolean).join(" ") ||
       String(req.user?.id || "");
-    const result = await pool.query(
-      `UPDATE attendance_tallies
-       SET count = $1, recorded_by = $2, recorded_by_name = $3, updated_at = CURRENT_TIMESTAMP
-       WHERE tally_id = $4
-       RETURNING tally_id, count, updated_at`,
-      [n, req.user?.id || "", recordedByName, tallyId]
-    );
-    res.json({ success: true, data: result.rows[0] });
+
+    await withTransaction(async (client) => {
+      for (const c of updates) {
+        await client.query(
+          `UPDATE attendance_tallies
+           SET count = $1, recorded_by = $2, recorded_by_name = $3, updated_at = CURRENT_TIMESTAMP
+           WHERE tally_date = $4 AND jumuiya_id = $5`,
+          [c.count, req.user?.id || "", recordedByName, date, c.jumuiya_id]
+        );
+      }
+      // The role applies to the whole day's tally (both coordinator & assistant share one login).
+      await client.query(
+        `UPDATE attendance_tallies
+         SET recorded_role = $1, updated_at = CURRENT_TIMESTAMP
+         WHERE tally_date = $2 AND source <> 'register'`,
+        [recordedRole, date]
+      );
+    });
+
+    res.json({
+      success: true,
+      data: { date, updated: updates.length, locked: locked.length, recorded_by: recordedRole },
+    });
   } catch (error) {
     console.error("updateTally error:", error.message);
     res.status(500).json({ success: false, error: error.message });
