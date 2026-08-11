@@ -204,11 +204,11 @@ router.get("/bookings", verifyToken, getBookings);
 router.get("/bookings/export", verifyToken, exportBookingsExcel);
 // CSA OS (or chair) books an activity on a member's behalf when the member
 // approaches them in person. Non-member guests are also supported (event-only).
-router.post("/bookings", requireRole("os", "csa_chair"), createBookingForMember);
+router.post("/bookings", verifyToken, requireRole("os", "csa_chair"), createBookingForMember);
 // OS (or chair) records cash taken in person toward a booking's fare.
-router.patch("/bookings/:id/payment", requireRole("os", "csa_chair"), recordCashPayment);
+router.patch("/bookings/:id/payment", verifyToken, requireRole("os", "csa_chair"), recordCashPayment);
 // OS (or chair) cancels a booking because the person couldn't make the event.
-router.patch("/bookings/:id/cancel", requireRole("os", "csa_chair"), cancelBooking);
+router.patch("/bookings/:id/cancel", verifyToken, requireRole("os", "csa_chair"), cancelBooking);
 
 export default router;
 
