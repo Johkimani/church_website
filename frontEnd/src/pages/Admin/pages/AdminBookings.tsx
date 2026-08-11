@@ -5,10 +5,12 @@ import toast from "react-hot-toast";
 
 interface Booking {
   id: number;
+  member_id: string;
   member_name: string;
   member_email: string;
   year_of_study: string;
   jumuiya_id: string;
+  jumuiya_name: string | null;
   phone: string;
   activity_type: string;
   activity_name: string;
@@ -75,7 +77,10 @@ export default function AdminBookings() {
     if (!search) {
       const termOk = true;
       if (!termOk) return false;
-    } else if (!b.member_name?.toLowerCase().includes(search.toLowerCase()) && !b.activity_name?.toLowerCase().includes(search.toLowerCase())) {
+    } else if (!b.member_name?.toLowerCase().includes(search.toLowerCase())
+      && !b.member_id?.toLowerCase().includes(search.toLowerCase())
+      && !(b.jumuiya_name || "").toLowerCase().includes(search.toLowerCase())
+      && !b.activity_name?.toLowerCase().includes(search.toLowerCase())) {
       return false;
     }
     if (typeFilter !== "all" && b.activity_type !== typeFilter) return false;
@@ -95,10 +100,12 @@ export default function AdminBookings() {
     }
     acc[key].bookings.push({
       id: booking.id,
+      member_id: booking.member_id || "-",
       member_name: booking.member_name,
       member_email: booking.member_email,
       year_of_study: booking.year_of_study || "-",
       jumuiya_id: booking.jumuiya_id || "-",
+      jumuiya_name: booking.jumuiya_name || null,
       phone: booking.phone || "-",
       activity_type: booking.activity_type,
       activity_name: booking.activity_name,
@@ -264,10 +271,15 @@ export default function AdminBookings() {
                         <td className="px-4 py-3 text-slate-400 font-mono text-xs">{booking.id}</td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-slate-800">{booking.member_name}</div>
-                          <div className="text-xs text-slate-400">{booking.member_email}</div>
+                          <div className="text-xs text-slate-400">
+                            {booking.member_email}
+                            {booking.year_of_study !== "-" && booking.year_of_study && (
+                              <span> · Year {booking.year_of_study}</span>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-600">{booking.year_of_study}</td>
-                        <td className="px-4 py-3 text-xs text-slate-600">{booking.jumuiya_id}</td>
+                        <td className="px-4 py-3 text-xs font-mono text-slate-600">{booking.member_id}</td>
+                        <td className="px-4 py-3 text-xs text-slate-600">{booking.jumuiya_name || booking.jumuiya_id}</td>
                         <td className="px-4 py-3 text-xs text-slate-600">{booking.phone}</td>
                         <td className="px-4 py-3 text-right font-mono text-slate-600">KES {Number(booking.fare).toLocaleString()}</td>
                         <td className="px-4 py-3 text-right font-mono font-semibold">

@@ -105,9 +105,11 @@ export const getBookings = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT ab.*,
+              sg.name AS jumuiya_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time
        FROM activity_bookings ab
+       LEFT JOIN sub_groups sg ON sg.group_id::text = ab.jumuiya_id
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
        ORDER BY ab.created_at DESC`
@@ -125,9 +127,11 @@ export const getMyBookings = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT ab.*,
+              sg.name AS jumuiya_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time
        FROM activity_bookings ab
+       LEFT JOIN sub_groups sg ON sg.group_id::text = ab.jumuiya_id
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
        WHERE ab.member_id = $1
@@ -145,19 +149,21 @@ export const getMyBookings = async (req, res) => {
 export const exportBookingsCSV = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ab.id, ab.member_name, ab.member_email, ab.jumuiya_id, ab.year_of_study, ab.phone,
+      `SELECT ab.id, ab.member_id AS reg_number, ab.member_name, ab.member_email,
+              sg.name AS jumuiya_name, ab.year_of_study, ab.phone,
               ab.activity_type,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               ab.fare, ab.paid_amount, ab.status, ab.created_at
        FROM activity_bookings ab
+       LEFT JOIN sub_groups sg ON sg.group_id::text = ab.jumuiya_id
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
        ORDER BY ab.created_at DESC`
     );
     const rows = result.rows;
-    const header = "ID,Member Name,Member Email,Jumuiya,Year of Study,Phone,Activity Type,Activity Name,Fare,Paid Amount,Status,Booking Date\n";
+    const header = "ID,Reg Number,Member Name,Member Email,Jumuiya,Year of Study,Phone,Activity Type,Activity Name,Fare,Paid Amount,Status,Booking Date\n";
     const csv = rows.map(r =>
-      `${r.id},"${r.member_name || ""}","${r.member_email || ""}","${r.jumuiya_id || ""}","${r.year_of_study || ""}","${r.phone || ""}",${r.activity_type},"${r.activity_name || ""}",${r.fare},${r.paid_amount},${r.status},${r.created_at}`
+      `${r.id},"${r.reg_number || ""}","${r.member_name || ""}","${r.member_email || ""}","${r.jumuiya_name || r.jumuiya_id || ""}","${r.year_of_study || ""}","${r.phone || ""}",${r.activity_type},"${r.activity_name || ""}",${r.fare},${r.paid_amount},${r.status},${r.created_at}`
     ).join("\n");
 
     res.setHeader("Content-Type", "text/csv");
