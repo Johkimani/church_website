@@ -33,6 +33,12 @@ const JUMUIYA_OFFICIAL_ROLES = [
   "jumuiya_os",
 ];
 
+// Read access to the per-jumuiya dashboards is also granted to CSA-wide
+// overseer roles because the frontend lets them open /admin/jumuiya-members
+// and the dashboard pages. enforceJumuiyaScope still lets those global roles
+// through for any jumuiya; writes remain scoped to JUMUIYA_ROLES.
+const JUMUIYA_READ_ROLES = [...JUMUIYA_OFFICIAL_ROLES, ...CSA_ROLES];
+
 // ── Batch (all jumuiya stats in one call) ──
 router.get("/stats/batch", verifyToken, requireRole(...OFFICIAL_ROLES), getBatchStatistics);
 
@@ -63,7 +69,7 @@ router.delete("/csa/rejected-members/:id", verifyToken, requireRole(...CSA_ROLES
 
 // Seasons
 router.post("/:jumuiya_id/seasons", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), createSeason);
-router.get("/:jumuiya_id/seasons", verifyToken, requireRole(...JUMUIYA_OFFICIAL_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getSeasons);
+router.get("/:jumuiya_id/seasons", verifyToken, requireRole(...JUMUIYA_READ_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getSeasons);
 router.patch("/:jumuiya_id/seasons/:id", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), updateSeason);
 router.delete("/:jumuiya_id/seasons/:id", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), deleteSeason);
 
@@ -90,15 +96,15 @@ router.patch("/:jumuiya_id/groups/:groupId/reassign", verifyToken, requireRole(.
 router.get("/:jumuiya_id/groups/:groupId/members", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getGroupMembers);
 
 // Statistics & Members
-router.get("/:jumuiya_id/statistics", verifyToken, requireRole(...JUMUIYA_OFFICIAL_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getStatistics);
+router.get("/:jumuiya_id/statistics", verifyToken, requireRole(...JUMUIYA_READ_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getStatistics);
 router.get("/:jumuiya_id/distribution-history", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getDistributionHistory);
-router.get("/:jumuiya_id/members", verifyToken, requireRole(...JUMUIYA_OFFICIAL_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getMembers);
+router.get("/:jumuiya_id/members", verifyToken, requireRole(...JUMUIYA_READ_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getMembers);
 
 // CSA Allocations (for jumuiya coordinators)
-router.get("/:jumuiya_id/csa-allocations", verifyToken, requireRole(...JUMUIYA_OFFICIAL_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getCsaAllocations);
+router.get("/:jumuiya_id/csa-allocations", verifyToken, requireRole(...JUMUIYA_READ_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), getCsaAllocations);
 
 // Export
-router.get("/:jumuiya_id/export/members", verifyToken, requireRole(...JUMUIYA_OFFICIAL_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), exportMembers);
+router.get("/:jumuiya_id/export/members", verifyToken, requireRole(...JUMUIYA_READ_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), exportMembers);
 router.get("/:jumuiya_id/export/assignments", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), exportAssignments);
 
 // Member lookup (by reg number — officials only)
