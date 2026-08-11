@@ -110,7 +110,7 @@ export const getBookings = async (req, res) => {
               COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '') AS jumuiya_id,
               sg.name AS jumuiya_name,
               COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
-              ab.fare, ab.paid_amount, ab.status,
+              ab.fare, ab.paid_amount, ab.status, ab.is_guest,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time,
               ab.created_at, ab.updated_at
@@ -139,7 +139,7 @@ export const getMyBookings = async (req, res) => {
               COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '') AS jumuiya_id,
               sg.name AS jumuiya_name,
               COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
-              ab.fare, ab.paid_amount, ab.status,
+              ab.fare, ab.paid_amount, ab.status, ab.is_guest,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time,
               ab.created_at, ab.updated_at
@@ -165,7 +165,7 @@ export const exportBookingsCSV = async (req, res) => {
     const result = await pool.query(
       `SELECT ab.id, ab.member_id AS reg_number, ab.member_name, ab.member_email,
               sg.name AS jumuiya_name, ab.year_of_study, ab.phone,
-              ab.activity_type,
+              ab.activity_type, ab.is_guest,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               ab.fare, ab.paid_amount, ab.status, ab.created_at
        FROM activity_bookings ab
@@ -175,9 +175,9 @@ export const exportBookingsCSV = async (req, res) => {
        ORDER BY ab.created_at DESC`
     );
     const rows = result.rows;
-    const header = "ID,Reg Number,Member Name,Member Email,Jumuiya,Year of Study,Phone,Activity Type,Activity Name,Fare,Paid Amount,Status,Booking Date\n";
+    const header = "ID,Type,Reg Number,Member Name,Member Email,Jumuiya,Year of Study,Phone,Activity Type,Activity Name,Fare,Paid Amount,Status,Booking Date\n";
     const csv = rows.map(r =>
-      `${r.id},"${r.reg_number || ""}","${r.member_name || ""}","${r.member_email || ""}","${r.jumuiya_name || r.jumuiya_id || ""}","${r.year_of_study || ""}","${r.phone || ""}",${r.activity_type},"${r.activity_name || ""}",${r.fare},${r.paid_amount},${r.status},${r.created_at}`
+      `${r.id},${r.is_guest ? "Guest" : "Member"},"${r.is_guest ? "" : r.reg_number || ""}","${r.member_name || ""}","${r.member_email || ""}","${r.is_guest ? "" : r.jumuiya_name || r.jumuiya_id || ""}","${r.year_of_study || ""}","${r.phone || ""}",${r.activity_type},"${r.activity_name || ""}",${r.fare},${r.paid_amount},${r.status},${r.created_at}`
     ).join("\n");
 
     res.setHeader("Content-Type", "text/csv");
@@ -189,30 +189,27 @@ export const exportBookingsCSV = async (req, res) => {
   }
 };
 
-// ─── Admin: book an activity on behalf of a member (e.g. CSA OS) ──────────────
+// ─── Admin: book an activity on behalf of a member OR a non-member guest ───────
+// Non-members (people not in the members table) can be added to a single event
+// only — this never creates/alters any member record. The OS/chair provides
+// guest_name (required) and optionally phone / year_of_study.
 export const createBookingForMember = async (req, res) => {
-  const { activity_type, activity_id, member_id, phone, year_of_study } = req.body;
+  const { activity_type, activity_id, member_id, guest_name, phone, year_of_study } = req.body;
 
-  if (!activity_type || !activity_id || !member_id) {
-    return res.status(400).json({ error: "activity_type, activity_id and member_id (reg number) are required" });
+  if (!activity_type || !activity_id) {
+    return res.status(400).json({ error: "activity_type and activity_id are required" });
   }
   if (!["weekly", "semester"].includes(activity_type)) {
     return res.status(400).json({ error: "activity_type must be 'weekly' or 'semester'" });
   }
 
-  try {
-    // 1. Find the member by reg number
-    const memberRes = await pool.query(
-      `SELECT member_id, first_name, last_name, phone, year_of_study, jumuiya_id
-       FROM members WHERE LOWER(member_id) = LOWER($1) LIMIT 1`,
-      [String(member_id).trim()]
-    );
-    if (memberRes.rows.length === 0) {
-      return res.status(404).json({ error: `No member found with reg number "${member_id}"` });
-    }
-    const member = memberRes.rows[0];
+  const isGuest = Boolean(String(guest_name || "").trim());
+  if (!isGuest && !member_id) {
+    return res.status(400).json({ error: "Provide a guest name or a member reg number (member_id)" });
+  }
 
-    // 2. Validate the activity and its fare
+  try {
+    // 1. Validate the activity and its fare (shared by member + guest flows)
     const table = activity_type === "weekly" ? "weekly_activities" : "semester_activities";
     const act = await pool.query(`SELECT id, fare FROM ${table} WHERE id = $1`, [activity_id]);
     if (act.rows.length === 0) {
@@ -223,35 +220,86 @@ export const createBookingForMember = async (req, res) => {
       return res.status(400).json({ error: "This activity has no fare" });
     }
 
-    // 3. Avoid duplicate active bookings for the same member + activity
-    const existing = await pool.query(
-      `SELECT id, status FROM activity_bookings
-       WHERE activity_type = $1 AND activity_id = $2 AND member_id = $3 AND status != 'cancelled'`,
-      [activity_type, activity_id, member.member_id]
-    );
-    if (existing.rows.length > 0) {
-      return res.status(409).json({
-        error: "This member already has an active booking for this activity",
-        booking_id: existing.rows[0].id,
-      });
+    let target = {};
+
+    if (isGuest) {
+      const gname = String(guest_name).trim();
+      const gphone = String(phone || "").trim();
+      const gyos = String(year_of_study || "").trim();
+
+      // Guest bookings get a pseudo key; they are event-only and do NOT touch members.
+      const guestKey = `GUEST-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
+      target = {
+        member_id: guestKey,
+        member_name: gname,
+        jumuiya_id: "guest",
+        year_of_study: gyos,
+        phone: gphone,
+        is_guest: true,
+      };
+
+      // If the OS supplied a phone, avoid duplicate guest bookings for the same event.
+      if (gphone) {
+        const existing = await pool.query(
+          `SELECT id, status FROM activity_bookings
+           WHERE activity_type = $1 AND activity_id = $2 AND phone = $3
+             AND is_guest = true AND status != 'cancelled'`,
+          [activity_type, activity_id, gphone]
+        );
+        if (existing.rows.length > 0) {
+          return res.status(409).json({
+            error: `A guest with phone "${gphone}" is already booked for this activity`,
+            booking_id: existing.rows[0].id,
+          });
+        }
+      }
+    } else {
+      // 2. Find the member by reg number
+      const memberRes = await pool.query(
+        `SELECT member_id, first_name, last_name, phone, year_of_study, jumuiya_id
+         FROM members WHERE LOWER(member_id) = LOWER($1) LIMIT 1`,
+        [String(member_id).trim()]
+      );
+      if (memberRes.rows.length === 0) {
+        return res.status(404).json({ error: `No member found with reg number "${member_id}"` });
+      }
+      const member = memberRes.rows[0];
+
+      // 3. Avoid duplicate active bookings for the same member + activity
+      const existing = await pool.query(
+        `SELECT id, status FROM activity_bookings
+         WHERE activity_type = $1 AND activity_id = $2 AND member_id = $3 AND status != 'cancelled'`,
+        [activity_type, activity_id, member.member_id]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(409).json({
+          error: "This member already has an active booking for this activity",
+          booking_id: existing.rows[0].id,
+        });
+      }
+
+      // 4. Member record is the source of truth; OS-provided values override.
+      const cleanedPhone = String(phone || "").trim();
+      const cleanedYos = String(year_of_study || "").trim();
+
+      target = {
+        member_id: member.member_id,
+        member_name: `${member.first_name || ""} ${member.last_name || ""}`.trim(),
+        jumuiya_id: member.jumuiya_id || "",
+        year_of_study: cleanedYos || member.year_of_study || "",
+        phone: cleanedPhone || member.phone || "",
+        is_guest: false,
+      };
     }
 
-    // 4. Member record is the source of truth; OS-provided values override.
-    const cleanedPhone = String(phone || "").trim();
-    const cleanedYos = String(year_of_study || "").trim();
-
     const result = await pool.query(
-      `INSERT INTO activity_bookings (activity_type, activity_id, member_id, member_name, member_email, jumuiya_id, year_of_study, phone, fare, paid_amount, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'pending')
+      `INSERT INTO activity_bookings (activity_type, activity_id, member_id, member_name, member_email, jumuiya_id, year_of_study, phone, fare, paid_amount, status, is_guest)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'pending', $10)
        RETURNING *`,
       [
-        activity_type, activity_id, member.member_id,
-        `${member.first_name || ""} ${member.last_name || ""}`.trim(),
-        "",
-        member.jumuiya_id || "",
-        cleanedYos || member.year_of_study || "",
-        cleanedPhone || member.phone || "",
-        fare,
+        activity_type, activity_id, target.member_id, target.member_name,
+        "", target.jumuiya_id, target.year_of_study, target.phone, fare,
+        target.is_guest,
       ]
     );
 
@@ -259,6 +307,84 @@ export const createBookingForMember = async (req, res) => {
   } catch (err) {
     logger.error("createBookingForMember error:", err.message);
     res.status(500).json({ error: "Failed to create booking" });
+  }
+};
+
+// ─── Admin: record a cash payment taken in person by the OS ────────────────────
+// Members may book online (M-Pesa) and later top up part of the fare in cash.
+export const recordCashPayment = async (req, res) => {
+  const { id } = req.params;
+  const amount = Number(req.body.amount);
+
+  if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+    return res.status(400).json({ error: "amount must be a positive number" });
+  }
+
+  try {
+    const book = await pool.query(`SELECT * FROM activity_bookings WHERE id = $1`, [id]);
+    if (book.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+    const booking = book.rows[0];
+    if (booking.status === "cancelled") {
+      return res.status(400).json({ error: "Cannot record payment on a cancelled booking" });
+    }
+    if (booking.status === "paid") {
+      return res.status(400).json({ error: "Booking is already fully paid" });
+    }
+
+    const paid = Number(booking.paid_amount) || 0;
+    const fare = Number(booking.fare) || 0;
+    const remaining = fare - paid;
+    if (amount > remaining) {
+      return res.status(400).json({ error: `Amount exceeds the remaining balance of ${remaining}` });
+    }
+
+    const newPaid = paid + amount;
+    const newStatus = newPaid >= fare ? "paid" : "partial";
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `UPDATE activity_bookings SET paid_amount = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+        [newPaid, newStatus, id]
+      );
+      await client.query(
+        `INSERT INTO activity_payments (booking_id, amount, checkout_id, mpesa_receipt, status)
+         VALUES ($1, $2, 'cash', 'CASH', 'paid')`,
+        [id, amount]
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    res.json({ success: true, data: { id, paid_amount: newPaid, status: newStatus } });
+  } catch (err) {
+    logger.error("recordCashPayment error:", err.message);
+    res.status(500).json({ error: "Failed to record cash payment" });
+  }
+};
+
+// ─── Admin: cancel a booking (member could not make it to the event) ───────────
+export const cancelBooking = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `UPDATE activity_bookings SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    logger.error("cancelBooking error:", err.message);
+    res.status(500).json({ error: "Failed to cancel booking" });
   }
 };
 

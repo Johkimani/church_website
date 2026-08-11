@@ -25,12 +25,14 @@ const migration = async () => {
         fare NUMERIC NOT NULL DEFAULT 0,
         paid_amount NUMERIC NOT NULL DEFAULT 0,
         status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'partial', 'paid', 'cancelled')),
+        is_guest BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
     // Ensure columns exist on pre-existing tables (idempotent backfill)
+    await pool.query(`ALTER TABLE activity_bookings ADD COLUMN IF NOT EXISTS is_guest BOOLEAN NOT NULL DEFAULT FALSE`);
     await pool.query(`ALTER TABLE activity_bookings ADD COLUMN IF NOT EXISTS member_name VARCHAR NOT NULL DEFAULT ''`);
     await pool.query(`ALTER TABLE activity_bookings ADD COLUMN IF NOT EXISTS member_email VARCHAR DEFAULT ''`);
     await pool.query(`ALTER TABLE activity_bookings ADD COLUMN IF NOT EXISTS jumuiya_id VARCHAR DEFAULT ''`);

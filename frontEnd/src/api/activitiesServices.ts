@@ -150,11 +150,20 @@ export const bookingService = {
   createBookingForMember: async (payload: {
     activity_id: number;
     activity_type: string;
-    member_id: string;
+    member_id?: string;
+    guest_name?: string;
     phone?: string;
     year_of_study?: string;
   }) => {
     const res = await apiClient.post("/admin/activities/bookings", payload);
+    return res.data.data;
+  },
+  recordCashPayment: async (bookingId: number, amount: number) => {
+    const res = await apiClient.patch(`/admin/activities/bookings/${bookingId}/payment`, { amount });
+    return res.data.data;
+  },
+  cancelBooking: async (bookingId: number) => {
+    const res = await apiClient.patch(`/admin/activities/bookings/${bookingId}/cancel`);
     return res.data.data;
   },
   lookupMemberByRegNumber: async (search: string) => {

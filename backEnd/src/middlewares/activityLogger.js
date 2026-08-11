@@ -61,6 +61,8 @@ const SPECIAL_ACTIONS = [
   { match: /\/jumuiya-members\/.*\/csa-allocations/, label: "Managed allocations", type: "member allocation" },
   { match: /\/attendance\//, label: "Updated attendance", type: "attendance tally" },
   { match: /\/publish-stats/, label: "Published statistics", type: "statistics" },
+  { match: /\/admin\/activities\/bookings\/\d+\/payment$/, label: "Recorded cash payment", type: "activity payment" },
+  { match: /\/admin\/activities\/bookings\/\d+\/cancel$/, label: "Cancelled booking", type: "activity booking" },
   { match: /\/admin\/activities\/bookings/, label: "Created booking for member", type: "activity booking" },
 ];
 
