@@ -158,6 +158,11 @@ export const fetchPublishedJumuiyaDashboard = (jumuiyaId: string) =>
 
 export const fetchGalleryTeaser = () => apiClient.get("/gallery/teaser");
 
+export const fetchSystemSettings = () => apiClient.get("/settings");
+
+export const updateSystemSettings = (settings: Record<string, string>) =>
+  apiClient.put("/settings", settings);
+
 export const memberProgressData = () => apiClient.get("/member/progress");
 
 export const memberSummaryData = () => apiClient.get("/member/summary");

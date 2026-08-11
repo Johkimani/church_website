@@ -3,7 +3,9 @@ import { FaPhoneAlt, FaTimes, FaUsers, FaExpand } from "react-icons/fa";
 import {
   type Developer,
   type ChairpersonContact,
+  type DeveloperTeamSettings,
   loadDeveloperSettings,
+  loadDeveloperSettingsFromServer,
 } from "./developerTeamStore";
 
 interface DeveloperModalProps {
@@ -53,9 +55,10 @@ export default function DeveloperModal({
   onCloseRef.current = onClose;
 
   const saved = loadDeveloperSettings();
-  const devs = developers ?? saved.developers;
-  const chair = chairperson ?? saved.chairperson;
-  const teamPhoto = saved.teamPhoto;
+  const [serverSettings, setServerSettings] = useState<DeveloperTeamSettings | null>(null);
+  const devs = developers ?? serverSettings?.developers ?? saved.developers;
+  const chair = chairperson ?? serverSettings?.chairperson ?? saved.chairperson;
+  const teamPhoto = serverSettings?.teamPhoto ?? saved.teamPhoto;
   const [showDevs, setShowDevs] = useState(false);
   const [viewPhoto, setViewPhoto] = useState(false);
   const viewPhotoRef = useRef(false);
@@ -66,6 +69,11 @@ export default function DeveloperModal({
 
   useEffect(() => {
     if (!open) return;
+
+    let cancelled = false;
+    loadDeveloperSettingsFromServer().then((settings) => {
+      if (!cancelled && settings) setServerSettings(settings);
+    });
 
     const dialog = dialogRef.current;
     previouslyFocused.current = document.activeElement as HTMLElement;
@@ -116,6 +124,7 @@ export default function DeveloperModal({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       previouslyFocused.current?.focus?.();

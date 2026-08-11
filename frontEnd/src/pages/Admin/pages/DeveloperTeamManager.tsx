@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Code2, Plus, Trash2, Save, RotateCcw, Phone, ShieldCheck, Users } from "lucide-react";
 import PanelHeader from "../components/PanelHeader";
 import { toast } from "react-hot-toast";
@@ -11,6 +11,9 @@ import {
   saveDeveloperSettings,
   resetDeveloperSettings,
   DEFAULT_SETTINGS,
+  loadDeveloperSettingsFromServer,
+  saveDeveloperSettingsToServer,
+  resetDeveloperSettingsOnServer,
 } from "../../../layOuts/developerTeamStore";
 
 const GRADIENT_PALETTE = [
@@ -113,6 +116,21 @@ export default function DeveloperTeamManager() {
   const [developers, setDevelopers] = useState<Developer[]>(() => loadDeveloperSettings().developers);
   const [chair, setChair] = useState<ChairpersonContact>(() => loadDeveloperSettings().chairperson);
   const [teamPhoto, setTeamPhoto] = useState<string>(() => loadDeveloperSettings().teamPhoto ?? "");
+  const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadDeveloperSettingsFromServer().then((settings) => {
+      if (cancelled || !settings) return;
+      setDevelopers(settings.developers);
+      setChair(settings.chairperson);
+      setTeamPhoto(settings.teamPhoto ?? "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
   const isChair = userRoles.some((r: string) => String(r).toUpperCase().trim() === "CSA_CHAIR");
@@ -154,17 +172,34 @@ export default function DeveloperTeamManager() {
     setDevelopers((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
-    saveDeveloperSettings({ developers, chairperson: chair, teamPhoto });
-    toast.success("Development team details saved");
+  const handleSave = async () => {
+    const settings = { developers, chairperson: chair, teamPhoto };
+    saveDeveloperSettings(settings);
+    setSaving(true);
+    try {
+      await saveDeveloperSettingsToServer(settings);
+      toast.success("Development team details saved and published");
+    } catch {
+      toast.error("Saved on this device, but failed to publish to the site");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     resetDeveloperSettings();
     setDevelopers(DEFAULT_SETTINGS.developers);
     setChair(DEFAULT_SETTINGS.chairperson);
     setTeamPhoto("");
-    toast.success("Restored default details");
+    setResetting(true);
+    try {
+      await resetDeveloperSettingsOnServer();
+      toast.success("Restored default details");
+    } catch {
+      toast.error("Defaults restored on this device, but failed to publish to the site");
+    } finally {
+      setResetting(false);
+    }
   };
 
   const inputCls =
@@ -180,17 +215,19 @@ export default function DeveloperTeamManager() {
           <>
             <button
               onClick={handleReset}
-              className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-all shadow-sm"
+              disabled={resetting}
+              className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RotateCcw size={14} />
-              Reset Defaults
+              {resetting ? "Resetting..." : "Reset Defaults"}
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-bold text-white transition-all shadow-md shadow-blue-600/20"
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-bold text-white transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={14} />
-              Save Changes
+              {saving ? "Publishing..." : "Save Changes"}
             </button>
           </>
         }

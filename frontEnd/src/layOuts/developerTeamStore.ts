@@ -17,6 +17,8 @@ export interface DeveloperTeamSettings {
   teamPhoto?: string;
 }
 
+const SETTINGS_KEY = "developer_team";
+
 export const DEFAULT_DEVELOPERS: Developer[] = [
   { name: "Lead Developer", role: "Full-Stack Development", gradient: "linear-gradient(135deg, #2563EB, #7C3AED)" },
   { name: "Frontend Developer", role: "UI / UX & Interactions", gradient: "linear-gradient(135deg, #0EA5E9, #2563EB)" },
@@ -70,4 +72,44 @@ export function resetDeveloperSettings() {
   } catch (err) {
     console.error("Failed to reset developer team settings:", err);
   }
+}
+
+function parseSettings(raw: string | undefined): DeveloperTeamSettings | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<DeveloperTeamSettings>;
+    return {
+      developers:
+        Array.isArray(parsed.developers) && parsed.developers.length > 0
+          ? parsed.developers
+          : DEFAULT_DEVELOPERS,
+      chairperson: parsed.chairperson
+        ? { ...DEFAULT_CHAIRPERSON, ...parsed.chairperson }
+        : DEFAULT_CHAIRPERSON,
+      teamPhoto: typeof parsed.teamPhoto === "string" ? parsed.teamPhoto : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function loadDeveloperSettingsFromServer(): Promise<DeveloperTeamSettings | null> {
+  try {
+    const { fetchSystemSettings } = await import("../api/axiosInstance");
+    const { data } = await fetchSystemSettings();
+    const raw = data?.[SETTINGS_KEY];
+    return parseSettings(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveDeveloperSettingsToServer(settings: DeveloperTeamSettings): Promise<void> {
+  const { updateSystemSettings } = await import("../api/axiosInstance");
+  await updateSystemSettings({ [SETTINGS_KEY]: JSON.stringify(settings) });
+}
+
+export async function resetDeveloperSettingsOnServer(): Promise<void> {
+  const { updateSystemSettings } = await import("../api/axiosInstance");
+  await updateSystemSettings({ [SETTINGS_KEY]: JSON.stringify(DEFAULT_SETTINGS) });
 }
