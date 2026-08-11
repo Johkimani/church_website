@@ -1,7 +1,10 @@
 import { apiClient } from "./axiosInstance";
 
+export type TallyDimension = "jumuiya" | "year";
+
 export interface TallyCountInput {
-  jumuiya_id: string;
+  jumuiya_id?: string;
+  year?: string;
   count: number;
 }
 
@@ -21,20 +24,24 @@ export const attendanceServices = {
       .get("/attendance/recent-status", { params: { days } })
       .then((r) => r.data?.data || { today: "", tally_days: [] }),
 
-  saveSession: (date: string, counts: TallyCountInput[], recordedBy: "coordinator" | "assistant" = "coordinator") =>
-    apiClient.post("/attendance/sessions", { date, counts, recordedBy }).then((r) => r.data),
+  saveSession: (
+    date: string,
+    counts: TallyCountInput[],
+    recordedBy: "coordinator" | "assistant" = "coordinator",
+    dimension: TallyDimension = "jumuiya"
+  ) => apiClient.post("/attendance/sessions", { date, counts, recordedBy, dimension }).then((r) => r.data),
 
   deleteSession: (date: string) =>
     apiClient.delete(`/attendance/sessions/${date}`).then((r) => r.data),
 
-  getAnalytics: (from: string, to: string) =>
+  getAnalytics: (from: string, to: string, dimension: TallyDimension = "jumuiya") =>
     apiClient
-      .get("/attendance/analytics", { params: { from, to } })
+      .get("/attendance/analytics", { params: { from, to, dimension } })
       .then((r) => r.data?.data || null),
 
-  exportAnalyticsExcel: (from: string, to: string) =>
+  exportAnalyticsExcel: (from: string, to: string, dimension: TallyDimension = "jumuiya") =>
     apiClient
-      .get("/attendance/analytics/export", { params: { from, to }, responseType: "blob" })
+      .get("/attendance/analytics/export", { params: { from, to, dimension }, responseType: "blob" })
       .then((r) => r.data),
 
   getHistory: (params: { from?: string; to?: string }) =>

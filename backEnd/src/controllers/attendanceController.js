@@ -19,6 +19,55 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const EXCLUDED_JUMUIYA_SLUGS = ["st-thomas"];
 const RECORDED_ROLES = new Set(["coordinator", "assistant"]);
 
+// Year-of-study tallies (alternative to per-jumuiya tallies).
+const YEARS = ["1", "2", "3", "4"];
+const YEAR_COLORS = { 1: "#0ea5e9", 2: "#10b981", 3: "#f59e0b", 4: "#8b5cf6" };
+const YEAR_WORDS = { one: 1, two: 2, three: 3, four: 4, first: 1, second: 2, third: 3, fourth: 4 };
+const DIMENSIONS = new Set(["jumuiya", "year"]);
+const yearLabel = (y) => `Year ${y}`;
+
+// Normalize an incoming year-of-study value to "1".."4" (or null).
+const normalizeYear = (v) => {
+  if (v == null) return null;
+  const s = String(v).trim().toLowerCase();
+  if (/^[1-4]$/.test(s)) return s;
+  if (YEAR_WORDS[s]) return String(YEAR_WORDS[s]);
+  return null;
+};
+
+// Current academic start year (Sept-based, matching the members table logic).
+const academicStartYear = () => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
+// Bucket a member into Year 1-4 using their stored year_of_study
+// (number, word, or "YYYY-YYYY" admission range) or, as a fallback, the
+// admission year embedded in their registration number.
+const deriveYearOfStudy = (memberId, stored) => {
+  const fromAdmission = (admission) => {
+    const n = academicStartYear() - admission + 1;
+    return n >= 1 ? (n > 4 ? "4" : String(n)) : null;
+  };
+  if (stored != null) {
+    const s = String(stored).trim().toLowerCase();
+    if (/^[1-4]$/.test(s)) return s;
+    if (YEAR_WORDS[s]) return String(YEAR_WORDS[s]);
+    const range = s.match(/^(\d{4})\s*-\s*(\d{4})$/);
+    if (range) {
+      const n = fromAdmission(parseInt(range[1], 10));
+      if (n) return n;
+    }
+  }
+  const rm = String(memberId || "").match(/(\d{2})\s*$/);
+  if (rm) {
+    const admission = 2000 + parseInt(rm[1], 10);
+    const n = fromAdmission(admission);
+    if (n) return n;
+  }
+  return null;
+};
+
 // Local server date (not UTC) so late-evening/early-morning saves aren't misjudged.
 const todayStr = () => {
   const d = new Date();
@@ -112,6 +161,29 @@ const getMemberCounts = async () => {
   return map;
 };
 
+// Active/total members per Year of Study (1-4), restricted to the 7 SCC
+// jumuiyas (same universe as the tally module).
+const getYearCounts = async () => {
+  const result = await pool.query(
+    `SELECT m.member_id, m.year_of_study, m.flagged_inactive
+     FROM members m
+     WHERE m.jumuiya_id IN (SELECT group_id FROM sub_groups WHERE slug <> ALL($1))
+       AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)`,
+    [EXCLUDED_JUMUIYA_SLUGS]
+  );
+  const map = { 1: { total_members: 0, active_members: 0 }, 2: { total_members: 0, active_members: 0 }, 3: { total_members: 0, active_members: 0 }, 4: { total_members: 0, active_members: 0 } };
+  for (const row of result.rows) {
+    const y = deriveYearOfStudy(row.member_id, row.year_of_study);
+    if (y && map[y]) {
+      map[y].total_members += 1;
+      if (row.flagged_inactive == null || row.flagged_inactive === false) {
+        map[y].active_members += 1;
+      }
+    }
+  }
+  return map;
+};
+
 // Secretary register is the authoritative per-member source: present count per jumuiya for a date.
 const getRegisterPresentMap = async (date) => {
   const result = await pool.query(
@@ -137,7 +209,7 @@ export const getTallyContext = async (req, res) => {
     const date = normalizeDate(req.query.date) || todayStr();
     const ctx = await getActivityForDate(date);
 
-    const [sgResult, memberCounts, registerMap] = await Promise.all([
+    const [sgResult, memberCounts, yearCounts, registerMap] = await Promise.all([
       pool.query(
         `SELECT group_id, name, slug, color FROM sub_groups
          WHERE slug <> ALL($1)
@@ -145,6 +217,7 @@ export const getTallyContext = async (req, res) => {
         [EXCLUDED_JUMUIYA_SLUGS]
       ),
       getMemberCounts(),
+      getYearCounts(),
       getRegisterPresentMap(date),
     ]);
 
@@ -159,7 +232,12 @@ export const getTallyContext = async (req, res) => {
       };
     });
 
-    res.json({ success: true, data: { date, ...ctx, jumuiyas } });
+    const years = YEARS.map((y) => {
+      const counts = yearCounts[y] || { total_members: 0, active_members: 0 };
+      return { year: y, label: yearLabel(y), color: YEAR_COLORS[y], ...counts };
+    });
+
+    res.json({ success: true, data: { date, ...ctx, jumuiyas, years } });
   } catch (error) {
     console.error("getTallyContext error:", error.message);
     res.status(500).json({ success: false, error: error.message });
@@ -171,11 +249,12 @@ export const getSession = async (req, res) => {
   try {
     const date = normalizeDate(req.query.date) || todayStr();
     const result = await pool.query(
-      `SELECT tally_id, to_char(tally_date, 'YYYY-MM-DD') AS tally_date, activity_type, activity_label, jumuiya_id, count,
+      `SELECT tally_id, to_char(tally_date, 'YYYY-MM-DD') AS tally_date, activity_type, activity_label, jumuiya_id,
+              year_of_study, dimension, count,
               recorded_by, recorded_by_name, recorded_role, source, created_at, updated_at
        FROM attendance_tallies
        WHERE tally_date = $1
-       ORDER BY jumuiya_id`,
+       ORDER BY dimension, jumuiya_id NULLS LAST, year_of_study`,
       [date]
     );
     res.json({ success: true, data: result.rows });
@@ -223,7 +302,7 @@ export const getRecentStatus = async (req, res) => {
 
 // ── POST /sessions ──────────────────────────────────────────────────────
 export const saveSession = async (req, res) => {
-  const { date, counts, recordedBy } = req.body || {};
+  const { date, counts, recordedBy, dimension = "jumuiya" } = req.body || {};
   const normalizedDate = normalizeDate(date);
   if (!normalizedDate) {
     return res.status(400).json({ success: false, error: "A valid date (YYYY-MM-DD) is required" });
@@ -231,14 +310,25 @@ export const saveSession = async (req, res) => {
   if (normalizedDate > todayStr()) {
     return res.status(400).json({ success: false, error: "Cannot record attendance for a future date" });
   }
+  const dim = DIMENSIONS.has(String(dimension)) ? String(dimension) : "jumuiya";
   const recordedRole = RECORDED_ROLES.has(String(recordedBy || "coordinator"))
     ? String(recordedBy)
     : "coordinator";
   if (!Array.isArray(counts) || counts.length > 20) {
-    return res.status(400).json({ success: false, error: "counts array is required (max 20 jumuiyas)" });
+    return res.status(400).json({ success: false, error: "counts array is required (max 20 entries)" });
   }
+  const yearEntries = dim === "year" ? [] : null;
   for (const c of counts) {
-    if (!c || typeof c.jumuiya_id !== "string" || !UUID_RE.test(c.jumuiya_id)) {
+    if (dim === "year") {
+      const y = normalizeYear(c?.year);
+      if (!y) {
+        return res.status(400).json({ success: false, error: "Each count must include a valid year of study (1-4)" });
+      }
+      if (yearEntries.some((e) => e.year === y)) {
+        return res.status(400).json({ success: false, error: `Duplicate count for ${yearLabel(y)}` });
+      }
+      yearEntries.push({ year: y });
+    } else if (!c || typeof c.jumuiya_id !== "string" || !UUID_RE.test(c.jumuiya_id)) {
       return res.status(400).json({ success: false, error: "Each count must include a valid jumuiya_id" });
     }
     const n = Number(c.count);
@@ -260,23 +350,35 @@ export const saveSession = async (req, res) => {
     const recordedByName =
       [req.user?.firstName, req.user?.lastName].filter(Boolean).join(" ") ||
       String(recordedBy || "");
-    const registerMap = await getRegisterPresentMap(normalizedDate);
+    const registerMap = dim === "jumuiya" ? await getRegisterPresentMap(normalizedDate) : {};
     let registerSourced = 0;
 
     await withTransaction(async (client) => {
       await client.query(`DELETE FROM attendance_tallies WHERE tally_date = $1`, [normalizedDate]);
       for (const c of counts) {
-        const registerCount = registerMap[c.jumuiya_id];
-        // The secretary register is authoritative when it exists for this jumuiya + date.
-        const count = registerCount != null ? registerCount : Number(c.count);
-        const source = registerCount != null ? "register" : "manual";
-        if (source === "register") registerSourced += 1;
-        await client.query(
-          `INSERT INTO attendance_tallies
-             (tally_date, activity_type, activity_label, jumuiya_id, count, recorded_by, recorded_by_name, recorded_role, source)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [normalizedDate, ctx.activityType, ctx.activityLabel, c.jumuiya_id, count, recordedBy, recordedByName, recordedRole, source]
-        );
+        if (dim === "year") {
+          const y = normalizeYear(c.year);
+          await client.query(
+            `INSERT INTO attendance_tallies
+               (tally_date, activity_type, activity_label, jumuiya_id, year_of_study, dimension, count,
+                recorded_by, recorded_by_name, recorded_role, source)
+             VALUES ($1, $2, $3, NULL, $4, 'year', $5, $6, $7, $8, 'manual')`,
+            [normalizedDate, ctx.activityType, ctx.activityLabel, y, Number(c.count), recordedBy, recordedByName, recordedRole]
+          );
+        } else {
+          const registerCount = registerMap[c.jumuiya_id];
+          // The secretary register is authoritative when it exists for this jumuiya + date.
+          const count = registerCount != null ? registerCount : Number(c.count);
+          const source = registerCount != null ? "register" : "manual";
+          if (source === "register") registerSourced += 1;
+          await client.query(
+            `INSERT INTO attendance_tallies
+               (tally_date, activity_type, activity_label, jumuiya_id, year_of_study, dimension, count,
+                recorded_by, recorded_by_name, recorded_role, source)
+             VALUES ($1, $2, $3, $4, NULL, 'jumuiya', $5, $6, $7, $8, $9)`,
+            [normalizedDate, ctx.activityType, ctx.activityLabel, c.jumuiya_id, count, recordedBy, recordedByName, recordedRole, source]
+          );
+        }
       }
     });
 
@@ -286,6 +388,7 @@ export const saveSession = async (req, res) => {
         date: normalizedDate,
         activityType: ctx.activityType,
         activityLabel: ctx.activityLabel,
+        dimension: dim,
         recorded_by: recordedRole,
         saved: counts.length,
         register_sourced: registerSourced,
@@ -315,173 +418,202 @@ export const deleteSession = async (req, res) => {
   }
 };
 
-// ── GET /analytics?from=YYYY-MM-DD&to=YYYY-MM-DD ────────────────────────
-const computeAnalytics = async (from, to) => {
+// ── GET /analytics?from=YYYY-MM-DD&to=YYYY-MM-DD&dimension=jumuiya|year ──
+const computeAnalytics = async (from, to, dimension = "jumuiya") => {
   const span = daysBetween(from, to);
   const prevFrom = addDays(from, -(span + 1));
   const prevTo = addDays(from, -1);
+  const isYear = dimension === "year";
 
-    const [
-      sgResult,
-      memberCounts,
-      currentResult,
-      prevResult,
-      currentDays,
-      prevDays,
-      timelineRes,
-    ] = await Promise.all([
-      pool.query(
-        `SELECT group_id, name, slug, color FROM sub_groups
-         WHERE slug <> ALL($1)
-         ORDER BY name`,
-        [EXCLUDED_JUMUIYA_SLUGS]
-      ),
-      getMemberCounts(),
-      pool.query(
-        `SELECT jumuiya_id,
-                COUNT(DISTINCT tally_date)::int AS tally_days,
-                COALESCE(SUM(count), 0)::int AS attendance_count,
-                COALESCE(AVG(count), 0)::numeric AS avg_per_session,
-                COUNT(*) FILTER (WHERE source = 'register')::int AS register_days
-         FROM attendance_tallies
-         WHERE tally_date BETWEEN $1 AND $2
-         GROUP BY jumuiya_id`,
-        [from, to]
-      ),
-      pool.query(
-        `SELECT jumuiya_id,
-                COUNT(DISTINCT tally_date)::int AS tally_days,
-                COALESCE(SUM(count), 0)::int AS attendance_count,
-                COALESCE(AVG(count), 0)::numeric AS avg_per_session
-         FROM attendance_tallies
-         WHERE tally_date BETWEEN $1 AND $2
-         GROUP BY jumuiya_id`,
-        [prevFrom, prevTo]
-      ),
-      pool.query(
-        `SELECT COUNT(DISTINCT tally_date)::int AS days FROM attendance_tallies WHERE tally_date BETWEEN $1 AND $2`,
-        [from, to]
-      ),
-      pool.query(
-        `SELECT COUNT(DISTINCT tally_date)::int AS days FROM attendance_tallies WHERE tally_date BETWEEN $1 AND $2`,
-        [prevFrom, prevTo]
-      ),
-      pool.query(
-        `SELECT to_char(tally_date, 'YYYY-MM-DD') AS tally_date,
-                COALESCE(SUM(count), 0)::int AS attendance,
-                MAX(activity_label) AS activity_label
-         FROM attendance_tallies
-         WHERE tally_date BETWEEN $1 AND $2
-         GROUP BY tally_date
-         ORDER BY tally_date`,
-        [from, to]
-      ),
-    ]);
+  const currentGroupSql = isYear
+    ? `SELECT year_of_study AS group_key,
+              COUNT(DISTINCT tally_date)::int AS tally_days,
+              COALESCE(SUM(count), 0)::int AS attendance_count,
+              COALESCE(AVG(count), 0)::numeric AS avg_per_session
+       FROM attendance_tallies
+       WHERE tally_date BETWEEN $1 AND $2 AND dimension = 'year' AND year_of_study IS NOT NULL
+       GROUP BY year_of_study`
+    : `SELECT jumuiya_id AS group_key,
+              COUNT(DISTINCT tally_date)::int AS tally_days,
+              COALESCE(SUM(count), 0)::int AS attendance_count,
+              COALESCE(AVG(count), 0)::numeric AS avg_per_session,
+              COUNT(*) FILTER (WHERE source = 'register')::int AS register_days
+       FROM attendance_tallies
+       WHERE tally_date BETWEEN $1 AND $2 AND dimension = 'jumuiya'
+       GROUP BY jumuiya_id`;
+  const prevGroupSql = currentGroupSql;
 
-    const buildMap = (rows) => {
-      const map = {};
-      for (const row of rows) {
-        map[row.jumuiya_id] = {
-          tally_days: row.tally_days,
-          attendance_count: row.attendance_count,
-          avg_per_session: Number(row.avg_per_session),
-          register_days: row.register_days || 0,
-        };
-      }
-      return map;
-    };
+  const [
+    sgResult,
+    memberCounts,
+    currentResult,
+    prevResult,
+    currentDays,
+    prevDays,
+    timelineRes,
+  ] = await Promise.all([
+    pool.query(
+      `SELECT group_id, name, slug, color FROM sub_groups
+       WHERE slug <> ALL($1)
+       ORDER BY name`,
+      [EXCLUDED_JUMUIYA_SLUGS]
+    ),
+    isYear ? getYearCounts() : getMemberCounts(),
+    pool.query(currentGroupSql, [from, to]),
+    pool.query(prevGroupSql, [prevFrom, prevTo]),
+    pool.query(
+      `SELECT COUNT(DISTINCT tally_date)::int AS days FROM attendance_tallies
+       WHERE tally_date BETWEEN $1 AND $2 AND dimension = $3`,
+      [from, to, dimension]
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT tally_date)::int AS days FROM attendance_tallies
+       WHERE tally_date BETWEEN $1 AND $2 AND dimension = $3`,
+      [prevFrom, prevTo, dimension]
+    ),
+    pool.query(
+      `SELECT to_char(tally_date, 'YYYY-MM-DD') AS tally_date,
+              COALESCE(SUM(count), 0)::int AS attendance,
+              MAX(activity_label) AS activity_label
+       FROM attendance_tallies
+       WHERE tally_date BETWEEN $1 AND $2 AND dimension = $3
+       GROUP BY tally_date
+       ORDER BY tally_date`,
+      [from, to, dimension]
+    ),
+  ]);
 
-    const currentMap = buildMap(currentResult.rows);
-    const prevMap = buildMap(prevResult.rows);
-    const tallyDays = currentDays.rows[0]?.days || 0;
-    const prevTallyDays = prevDays.rows[0]?.days || 0;
-
-    const by_jumuiya = sgResult.rows.map((sg) => {
-      const counts = memberCounts[sg.group_id] || { total_members: 0, active_members: 0 };
-      const cur = currentMap[sg.group_id] || { tally_days: 0, attendance_count: 0, avg_per_session: 0, register_days: 0 };
-      const prev = prevMap[sg.group_id] || { tally_days: 0, attendance_count: 0, avg_per_session: 0 };
-
-      const rate_vs_total = safeRate(cur.attendance_count, counts.total_members, cur.tally_days);
-      const rate_vs_active = safeRate(cur.attendance_count, counts.active_members, cur.tally_days);
-      const prev_rate_vs_total = safeRate(prev.attendance_count, counts.total_members, prev.tally_days);
-      const prev_rate_vs_active = safeRate(prev.attendance_count, counts.active_members, prev.tally_days);
-
-      return {
-        jumuiya_id: sg.group_id,
-        name: sg.name,
-        slug: sg.slug,
-        color: sg.color || "#64748b",
-        total_members: counts.total_members,
-        active_members: counts.active_members,
-        tally_days: cur.tally_days,
-        attendance_count: cur.attendance_count,
-        avg_per_session: Math.round(cur.avg_per_session * 10) / 10,
-        register_days: cur.register_days,
-        manual_days: Math.max(0, cur.tally_days - cur.register_days),
-        register_coverage: cur.tally_days > 0 ? Math.round((cur.register_days / cur.tally_days) * 10000) / 10000 : 0,
-        rate_vs_total: Math.round(rate_vs_total * 10000) / 10000,
-        rate_vs_active: Math.round(rate_vs_active * 10000) / 10000,
-        trend: {
-          prev_attendance_count: prev.attendance_count,
-          prev_tally_days: prev.tally_days,
-          prev_rate_vs_total: Math.round(prev_rate_vs_total * 10000) / 10000,
-          prev_rate_vs_active: Math.round(prev_rate_vs_active * 10000) / 10000,
-          delta_vs_total: Math.round((rate_vs_total - prev_rate_vs_total) * 10000) / 10000,
-          delta_vs_active: Math.round((rate_vs_active - prev_rate_vs_active) * 10000) / 10000,
-        },
+  const buildMap = (rows) => {
+    const map = {};
+    for (const row of rows) {
+      map[row.group_key] = {
+        tally_days: row.tally_days,
+        attendance_count: row.attendance_count,
+        avg_per_session: Number(row.avg_per_session),
+        register_days: row.register_days || 0,
       };
-    });
-
-    by_jumuiya.sort((a, b) => {
-      const rateDiff = b.rate_vs_total - a.rate_vs_total;
-      if (rateDiff !== 0) return rateDiff;
-      return b.attendance_count - a.attendance_count;
-    });
-    by_jumuiya.forEach((j, i) => { j.rank = i + 1; });
-
-    let totalMembers = 0;
-    let activeMembers = 0;
-    let attendanceCount = 0;
-    for (const j of by_jumuiya) {
-      totalMembers += j.total_members;
-      activeMembers += j.active_members;
-      attendanceCount += j.attendance_count;
     }
+    return map;
+  };
 
-    const cumulativeRateTotal = safeRate(attendanceCount, totalMembers, tallyDays);
-    const cumulativeRateActive = safeRate(attendanceCount, activeMembers, tallyDays);
+  const currentMap = buildMap(currentResult.rows);
+  const prevMap = buildMap(prevResult.rows);
+  const tallyDays = currentDays.rows[0]?.days || 0;
+  const prevTallyDays = prevDays.rows[0]?.days || 0;
 
-    const prevTallyTotal = Object.values(prevMap).reduce((s, p) => s + p.attendance_count, 0);
-    const prevRateTotal = safeRate(prevTallyTotal, totalMembers, prevTallyDays);
-    const prevRateActive = safeRate(prevTallyTotal, activeMembers, prevTallyDays);
+  const groupList = isYear
+    ? YEARS.map((y) => ({
+        group_key: y,
+        name: yearLabel(y),
+        color: YEAR_COLORS[y],
+        memberCounts: memberCounts[y] || { total_members: 0, active_members: 0 },
+      }))
+    : sgResult.rows.map((sg) => ({
+        group_key: sg.group_id,
+        name: sg.name,
+        color: sg.color || "#64748b",
+        memberCounts: memberCounts[sg.group_id] || { total_members: 0, active_members: 0 },
+      }));
+
+  const rows = groupList.map((g) => {
+    const counts = g.memberCounts;
+    const cur = currentMap[g.group_key] || { tally_days: 0, attendance_count: 0, avg_per_session: 0, register_days: 0 };
+    const prev = prevMap[g.group_key] || { tally_days: 0, attendance_count: 0, avg_per_session: 0 };
+
+    const rate_vs_total = safeRate(cur.attendance_count, counts.total_members, cur.tally_days);
+    const rate_vs_active = safeRate(cur.attendance_count, counts.active_members, cur.tally_days);
+    const prev_rate_vs_total = safeRate(prev.attendance_count, counts.total_members, prev.tally_days);
+    const prev_rate_vs_active = safeRate(prev.attendance_count, counts.active_members, prev.tally_days);
 
     return {
-      period: { from, to, calendar_days: span + 1, prev_from: prevFrom, prev_to: prevTo },
-      tally_days: tallyDays,
-      timeline: timelineRes.rows.map((r) => ({
-        date: r.tally_date,
-        attendance: r.attendance,
-        activity_label: r.activity_label,
-      })),
-      cumulative: {
-        total_members: totalMembers,
-        active_members: activeMembers,
-        attendance_count: attendanceCount,
-        tally_days: tallyDays,
-        avg_per_session: tallyDays > 0 ? Math.round((attendanceCount / tallyDays) * 10) / 10 : 0,
-        rate_vs_total: Math.round(cumulativeRateTotal * 10000) / 10000,
-        rate_vs_active: Math.round(cumulativeRateActive * 10000) / 10000,
-        trend: {
-          prev_attendance_count: prevTallyTotal,
-          prev_tally_days: prevTallyDays,
-          prev_rate_vs_total: Math.round(prevRateTotal * 10000) / 10000,
-          prev_rate_vs_active: Math.round(prevRateActive * 10000) / 10000,
-          delta_vs_total: Math.round((cumulativeRateTotal - prevRateTotal) * 10000) / 10000,
-          delta_vs_active: Math.round((cumulativeRateActive - prevRateActive) * 10000) / 10000,
-        },
+      group_key: g.group_key,
+      name: g.name,
+      color: g.color,
+      total_members: counts.total_members,
+      active_members: counts.active_members,
+      tally_days: cur.tally_days,
+      attendance_count: cur.attendance_count,
+      avg_per_session: Math.round(cur.avg_per_session * 10) / 10,
+      register_days: cur.register_days,
+      manual_days: Math.max(0, cur.tally_days - cur.register_days),
+      register_coverage: cur.tally_days > 0 ? Math.round((cur.register_days / cur.tally_days) * 10000) / 10000 : 0,
+      rate_vs_total: Math.round(rate_vs_total * 10000) / 10000,
+      rate_vs_active: Math.round(rate_vs_active * 10000) / 10000,
+      trend: {
+        prev_attendance_count: prev.attendance_count,
+        prev_tally_days: prev.tally_days,
+        prev_rate_vs_total: Math.round(prev_rate_vs_total * 10000) / 10000,
+        prev_rate_vs_active: Math.round(prev_rate_vs_active * 10000) / 10000,
+        delta_vs_total: Math.round((rate_vs_total - prev_rate_vs_total) * 10000) / 10000,
+        delta_vs_active: Math.round((rate_vs_active - prev_rate_vs_active) * 10000) / 10000,
       },
-      by_jumuiya,
     };
+  });
+
+  rows.sort((a, b) => {
+    const rateDiff = b.rate_vs_total - a.rate_vs_total;
+    if (rateDiff !== 0) return rateDiff;
+    return b.attendance_count - a.attendance_count;
+  });
+  rows.forEach((j, i) => { j.rank = i + 1; });
+
+  let totalMembers = 0;
+  let activeMembers = 0;
+  let attendanceCount = 0;
+  for (const j of rows) {
+    totalMembers += j.total_members;
+    activeMembers += j.active_members;
+    attendanceCount += j.attendance_count;
+  }
+
+  const cumulativeRateTotal = safeRate(attendanceCount, totalMembers, tallyDays);
+  const cumulativeRateActive = safeRate(attendanceCount, activeMembers, tallyDays);
+
+  const prevTallyTotal = Object.values(prevMap).reduce((s, p) => s + p.attendance_count, 0);
+  const prevRateTotal = safeRate(prevTallyTotal, totalMembers, prevTallyDays);
+  const prevRateActive = safeRate(prevTallyTotal, activeMembers, prevTallyDays);
+
+  const base = {
+    period: { from, to, calendar_days: span + 1, prev_from: prevFrom, prev_to: prevTo },
+    tally_days: tallyDays,
+    timeline: timelineRes.rows.map((r) => ({
+      date: r.tally_date,
+      attendance: r.attendance,
+      activity_label: r.activity_label,
+    })),
+    cumulative: {
+      total_members: totalMembers,
+      active_members: activeMembers,
+      attendance_count: attendanceCount,
+      tally_days: tallyDays,
+      avg_per_session: tallyDays > 0 ? Math.round((attendanceCount / tallyDays) * 10) / 10 : 0,
+      rate_vs_total: Math.round(cumulativeRateTotal * 10000) / 10000,
+      rate_vs_active: Math.round(cumulativeRateActive * 10000) / 10000,
+      trend: {
+        prev_attendance_count: prevTallyTotal,
+        prev_tally_days: prevTallyDays,
+        prev_rate_vs_total: Math.round(prevRateTotal * 10000) / 10000,
+        prev_rate_vs_active: Math.round(prevRateActive * 10000) / 10000,
+        delta_vs_total: Math.round((cumulativeRateTotal - prevRateTotal) * 10000) / 10000,
+        delta_vs_active: Math.round((cumulativeRateActive - prevRateActive) * 10000) / 10000,
+      },
+    },
+  };
+
+  if (isYear) {
+    return {
+      ...base,
+      dimension: "year",
+      by_jumuiya: [],
+      by_year: rows,
+    };
+  }
+  return {
+    ...base,
+    dimension: "jumuiya",
+    by_jumuiya: rows,
+    by_year: [],
+  };
 };
 
 export const getAnalytics = async (req, res) => {
@@ -493,8 +625,9 @@ export const getAnalytics = async (req, res) => {
   if (from > to) {
     return res.status(400).json({ success: false, error: "from date must be on or before to date" });
   }
+  const dimension = DIMENSIONS.has(String(req.query.dimension)) ? String(req.query.dimension) : "jumuiya";
   try {
-    const data = await computeAnalytics(from, to);
+    const data = await computeAnalytics(from, to, dimension);
     res.json({ success: true, data });
   } catch (error) {
     console.error("getAnalytics error:", error.message);
@@ -512,13 +645,14 @@ export const exportAnalyticsExcel = async (req, res) => {
   if (from > to) {
     return res.status(400).json({ success: false, error: "from date must be on or before to date" });
   }
+  const dimension = DIMENSIONS.has(String(req.query.dimension)) ? String(req.query.dimension) : "jumuiya";
   try {
-    const data = await computeAnalytics(from, to);
+    const data = await computeAnalytics(from, to, dimension);
 
     const workbook = new ExcelJS.Workbook();
-    const ws = workbook.addWorksheet("Attendance Analytics");
+    const ws = workbook.addWorksheet(dimension === "year" ? "Year Analytics" : "Attendance Analytics");
 
-    const title = ws.addRow(["Attendance Analytics Report"]);
+    const title = ws.addRow([dimension === "year" ? "Year of Study Attendance Report" : "Attendance Analytics Report"]);
     title.font = { bold: true, size: 15, color: { argb: "FF1E293B" } };
     const meta = [
       `Period: ${data.period.from} → ${data.period.to}`,
@@ -534,8 +668,9 @@ export const exportAnalyticsExcel = async (req, res) => {
     ws.addRow([summary]).font = { bold: true, color: { argb: "FF1E293B" } };
     ws.addRow([]);
 
+    const groupHeader = dimension === "year" ? "Year of Study" : "Jumuiya";
     const headers = [
-      "#", "Jumuiya", "Total Members", "Active Members", "Tally Days", "Attendance",
+      "#", groupHeader, "Total Members", "Active Members", "Tally Days", "Attendance",
       "Avg/Session", "Register Days", "Register Coverage", "Rate vs Total", "Rate vs Active",
       "Prev Rate vs Active", "Delta (pts)",
     ];
@@ -559,7 +694,8 @@ export const exportAnalyticsExcel = async (req, res) => {
       j.avg_per_session, j.register_days, pct(j.register_coverage), pct(j.rate_vs_total),
       pct(j.rate_vs_active), pct(j.trend.prev_rate_vs_active), pct(j.trend.delta_vs_active),
     ];
-    data.by_jumuiya.forEach((j, i) => {
+    const dimRows = dimension === "year" ? data.by_year : data.by_jumuiya;
+    dimRows.forEach((j, i) => {
       const row = ws.addRow(rowValues(j));
       if (i % 2 === 1) {
         row.eachCell((cell) => {
@@ -579,14 +715,14 @@ export const exportAnalyticsExcel = async (req, res) => {
     ws.columns.forEach((column, idx) => {
       const headerLength = headers[idx].length;
       const maxContent = Math.max(
-        ...data.by_jumuiya.map((j) => String(rowValues(j)[idx] ?? "").length),
+        ...dimRows.map((j) => String(rowValues(j)[idx] ?? "").length),
         headerLength
       );
       column.width = Math.min(Math.max(maxContent + 3, 12), 40);
     });
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="attendance-analytics_${from}_${to}.xlsx"`);
+    res.setHeader("Content-Disposition", `attachment; filename="attendance-analytics-${dimension}_${from}_${to}.xlsx"`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
@@ -613,26 +749,29 @@ export const getHistory = async (req, res) => {
 
     const result = await pool.query(
       `SELECT t.tally_id, to_char(t.tally_date, 'YYYY-MM-DD') AS tally_date, t.activity_type,
-              t.activity_label, t.jumuiya_id, sg.name AS jumuiya_name, sg.color AS jumuiya_color,
+              t.activity_label, t.jumuiya_id, t.year_of_study, t.dimension,
+              sg.name AS jumuiya_name, sg.color AS jumuiya_color,
               sg.slug AS jumuiya_slug, t.count, t.source, t.recorded_by, t.recorded_by_name,
               t.recorded_role, t.updated_at
        FROM attendance_tallies t
        LEFT JOIN sub_groups sg ON sg.group_id = t.jumuiya_id
        ${whereSql}
-       ORDER BY t.tally_date DESC, sg.name ASC
+       ORDER BY t.tally_date DESC, sg.name ASC NULLS LAST, t.year_of_study ASC
        LIMIT 2000`,
       params
     );
 
     const groups = new Map();
     for (const r of result.rows) {
-      if (EXCLUDED_JUMUIYA_SLUGS.includes(r.jumuiya_slug)) continue;
+      const isYearRow = r.dimension === "year";
+      if (!isYearRow && EXCLUDED_JUMUIYA_SLUGS.includes(r.jumuiya_slug)) continue;
       let g = groups.get(r.tally_date);
       if (!g) {
         g = {
           date: r.tally_date,
           activity_type: r.activity_type,
           activity_label: r.activity_label,
+          dimension: isYearRow ? "year" : "jumuiya",
           recorded_role: r.recorded_role || "coordinator",
           recorded_by_name: r.recorded_by_name,
           updated_at: r.updated_at,
@@ -640,14 +779,27 @@ export const getHistory = async (req, res) => {
         };
         groups.set(r.tally_date, g);
       }
-      g.counts.push({
-        tally_id: r.tally_id,
-        jumuiya_id: r.jumuiya_id,
-        jumuiya_name: r.jumuiya_name,
-        jumuiya_color: r.jumuiya_color,
-        source: r.source,
-        count: r.count,
-      });
+      if (isYearRow) {
+        g.counts.push({
+          kind: "year",
+          tally_id: r.tally_id,
+          year: r.year_of_study,
+          label: yearLabel(r.year_of_study),
+          color: YEAR_COLORS[r.year_of_study],
+          source: r.source,
+          count: r.count,
+        });
+      } else {
+        g.counts.push({
+          kind: "jumuiya",
+          tally_id: r.tally_id,
+          jumuiya_id: r.jumuiya_id,
+          jumuiya_name: r.jumuiya_name,
+          jumuiya_color: r.jumuiya_color,
+          source: r.source,
+          count: r.count,
+        });
+      }
     }
 
     res.json({ success: true, data: Array.from(groups.values()) });
@@ -669,36 +821,46 @@ export const updateTally = async (req, res) => {
   if (!Array.isArray(counts)) {
     return res.status(400).json({ success: false, error: "counts array is required" });
   }
-  for (const c of counts) {
-    if (!c || typeof c.jumuiya_id !== "string" || !UUID_RE.test(c.jumuiya_id)) {
-      return res.status(400).json({ success: false, error: "Each count must include a valid jumuiya_id" });
-    }
-    const n = Number(c.count);
-    if (!Number.isInteger(n) || n < 0 || n > 1000) {
-      return res.status(400).json({ success: false, error: "Each count must be an integer between 0 and 1000" });
-    }
-  }
   const recordedRole = RECORDED_ROLES.has(String(recordedBy || "coordinator"))
     ? String(recordedBy)
     : "coordinator";
 
   try {
     const existing = await pool.query(
-      `SELECT jumuiya_id, source FROM attendance_tallies WHERE tally_date = $1`,
+      `SELECT dimension, jumuiya_id, year_of_study, source FROM attendance_tallies WHERE tally_date = $1`,
       [date]
     );
     if (existing.rows.length === 0) {
       return res.status(404).json({ success: false, error: "No tally recorded for this date" });
     }
-    const sourceById = new Map(existing.rows.map((r) => [r.jumuiya_id, r.source]));
+    const isYear = existing.rows[0].dimension === "year";
+    const keyOf = (row) => (isYear ? row.year_of_study : row.jumuiya_id);
+    const sourceByKey = new Map();
+    for (const row of existing.rows) sourceByKey.set(keyOf(row), row.source);
+
+    for (const c of counts) {
+      if (isYear) {
+        if (!normalizeYear(c?.year)) {
+          return res.status(400).json({ success: false, error: "Each count must include a valid year of study (1-4)" });
+        }
+      } else if (!c || typeof c.jumuiya_id !== "string" || !UUID_RE.test(c.jumuiya_id)) {
+        return res.status(400).json({ success: false, error: "Each count must include a valid jumuiya_id" });
+      }
+      const n = Number(c.count);
+      if (!Number.isInteger(n) || n < 0 || n > 1000) {
+        return res.status(400).json({ success: false, error: "Each count must be an integer between 0 and 1000" });
+      }
+    }
+
     const locked = [];
     const updates = [];
     for (const c of counts) {
-      if (sourceById.get(c.jumuiya_id) === "register") {
-        locked.push(c.jumuiya_id);
+      const key = isYear ? normalizeYear(c.year) : c.jumuiya_id;
+      if (sourceByKey.get(key) === "register") {
+        locked.push(key);
         continue;
       }
-      updates.push(c);
+      updates.push({ key, count: Number(c.count) });
     }
 
     const recordedByName =
@@ -706,13 +868,22 @@ export const updateTally = async (req, res) => {
       String(req.user?.id || "");
 
     await withTransaction(async (client) => {
-      for (const c of updates) {
-        await client.query(
-          `UPDATE attendance_tallies
-           SET count = $1, recorded_by = $2, recorded_by_name = $3, updated_at = CURRENT_TIMESTAMP
-           WHERE tally_date = $4 AND jumuiya_id = $5`,
-          [c.count, req.user?.id || "", recordedByName, date, c.jumuiya_id]
-        );
+      for (const u of updates) {
+        if (isYear) {
+          await client.query(
+            `UPDATE attendance_tallies
+             SET count = $1, recorded_by = $2, recorded_by_name = $3, updated_at = CURRENT_TIMESTAMP
+             WHERE tally_date = $4 AND year_of_study = $5`,
+            [u.count, req.user?.id || "", recordedByName, date, u.key]
+          );
+        } else {
+          await client.query(
+            `UPDATE attendance_tallies
+             SET count = $1, recorded_by = $2, recorded_by_name = $3, updated_at = CURRENT_TIMESTAMP
+             WHERE tally_date = $4 AND jumuiya_id = $5`,
+            [u.count, req.user?.id || "", recordedByName, date, u.key]
+          );
+        }
       }
       // The role applies to the whole day's tally (both coordinator & assistant share one login).
       await client.query(
@@ -725,7 +896,7 @@ export const updateTally = async (req, res) => {
 
     res.json({
       success: true,
-      data: { date, updated: updates.length, locked: locked.length, recorded_by: recordedRole },
+      data: { date, dimension: isYear ? "year" : "jumuiya", updated: updates.length, locked: locked.length, recorded_by: recordedRole },
     });
   } catch (error) {
     console.error("updateTally error:", error.message);

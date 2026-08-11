@@ -34,7 +34,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { attendanceServices, getApiError } from "../../../api/attendanceServices";
+import { attendanceServices, getApiError, TallyDimension, TallyCountInput } from "../../../api/attendanceServices";
 import { jumuiyaAttendanceService } from "../../../api/jumuiyaAttendanceService";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -51,6 +51,14 @@ interface JumuiyaContext {
   register_count: number | null;
 }
 
+interface YearContext {
+  year: string;
+  label: string;
+  color: string;
+  total_members: number;
+  active_members: number;
+}
+
 interface TallyContext {
   date: string;
   isTallyDay: boolean;
@@ -58,6 +66,7 @@ interface TallyContext {
   activityLabel: string | null;
   novena: { id: number; start_date: string; end_date: string; day: number; total_days: number } | null;
   jumuiyas: JumuiyaContext[];
+  years: YearContext[];
 }
 
 interface SessionRow {
@@ -65,7 +74,9 @@ interface SessionRow {
   tally_date: string;
   activity_type: string;
   activity_label: string;
-  jumuiya_id: string;
+  jumuiya_id: string | null;
+  year_of_study: string | null;
+  dimension: TallyDimension;
   count: number;
   recorded_by: string;
   recorded_by_name: string;
@@ -90,10 +101,9 @@ interface Trend {
   delta_vs_active: number;
 }
 
-interface JumuiyaStat {
-  jumuiya_id: string;
+interface DimStat {
+  group_key: string;
   name: string;
-  slug: string;
   color: string;
   rank: number;
   total_members: number;
@@ -119,6 +129,7 @@ interface MeetingConfigRow {
 }
 
 interface AnalyticsData {
+  dimension: TallyDimension;
   period: { from: string; to: string; calendar_days: number; prev_from: string; prev_to: string };
   tally_days: number;
   timeline: { date: string; attendance: number; activity_label: string | null }[];
@@ -132,16 +143,21 @@ interface AnalyticsData {
     rate_vs_active: number;
     trend: Trend;
   };
-  by_jumuiya: JumuiyaStat[];
+  by_jumuiya: DimStat[];
+  by_year: DimStat[];
 }
 
 type RecordedRole = "coordinator" | "assistant";
 
 interface HistoryCount {
   tally_id: number;
-  jumuiya_id: string;
-  jumuiya_name: string;
-  jumuiya_color: string;
+  kind: "jumuiya" | "year";
+  jumuiya_id?: string;
+  jumuiya_name?: string;
+  jumuiya_color?: string;
+  year?: string;
+  label?: string;
+  color?: string;
   source: string;
   count: number;
 }
@@ -150,6 +166,7 @@ interface HistoryRow {
   date: string;
   activity_type: string;
   activity_label: string;
+  dimension: TallyDimension;
   recorded_role: RecordedRole;
   recorded_by_name: string;
   updated_at: string;
@@ -257,6 +274,47 @@ const ROLE_LABEL: Record<RecordedRole, string> = {
   assistant: "Assistant Jumuiya Coordinator",
 };
 
+const YEARS = ["1", "2", "3", "4"];
+const YEAR_COLORS: Record<string, string> = {
+  "1": "#0ea5e9",
+  "2": "#10b981",
+  "3": "#f59e0b",
+  "4": "#8b5cf6",
+};
+const yearKey = (y: string) => `y:${y}`;
+const yearLabel = (y: string) => `Year ${y}`;
+
+function DimToggle({
+  value,
+  onChange,
+  leftLabel = "Jumuiya",
+  rightLabel = "Year of Study",
+  size = "md",
+}: {
+  value: TallyDimension;
+  onChange: (v: TallyDimension) => void;
+  leftLabel?: string;
+  rightLabel?: string;
+  size?: "md" | "sm";
+}) {
+  const base =
+    size === "sm"
+      ? "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+      : "px-4 py-2 rounded-lg text-sm font-bold transition-colors";
+  const active = "bg-indigo-600 text-white shadow-sm";
+  const idle = "text-slate-600 hover:text-slate-900";
+  return (
+    <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit">
+      <button onClick={() => onChange("jumuiya")} className={`${base} ${value === "jumuiya" ? active : idle}`}>
+        {leftLabel}
+      </button>
+      <button onClick={() => onChange("year")} className={`${base} ${value === "year" ? active : idle}`}>
+        {rightLabel}
+      </button>
+    </div>
+  );
+}
+
 function TrendBadge({ delta }: { delta: number }) {
   if (delta > 0.0005) {
     return (
@@ -290,6 +348,7 @@ export default function AttendanceTallyAdmin() {
   const [context, setContext] = useState<TallyContext | null>(null);
   const [sessionRows, setSessionRows] = useState<SessionRow[]>([]);
   const [counts, setCounts] = useState<Record<string, string>>({});
+  const [tallyDim, setTallyDim] = useState<TallyDimension>("jumuiya");
   const [recordedRole, setRecordedRole] = useState<RecordedRole>("coordinator");
   const [tallyLoading, setTallyLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -300,6 +359,7 @@ export default function AttendanceTallyAdmin() {
   const [preset, setPreset] = useState<PresetKey>("thisWeek");
   const [customFrom, setCustomFrom] = useState<string>("");
   const [customTo, setCustomTo] = useState<string>("");
+  const [analyticsDim, setAnalyticsDim] = useState<TallyDimension>("jumuiya");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
@@ -315,6 +375,7 @@ export default function AttendanceTallyAdmin() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyFrom, setHistoryFrom] = useState("");
   const [historyTo, setHistoryTo] = useState("");
+  const [historyDim, setHistoryDim] = useState<"all" | TallyDimension>("all");
   const [historyDrafts, setHistoryDrafts] = useState<Record<string, string>>({});
   const [historyRoles, setHistoryRoles] = useState<Record<string, RecordedRole>>({});
   const [historySaving, setHistorySaving] = useState<Record<string, boolean>>({});
@@ -362,7 +423,8 @@ export default function AttendanceTallyAdmin() {
       const roles: Record<string, RecordedRole> = {};
       rows.forEach((r) => {
         r.counts.forEach((c) => {
-          drafts[`${r.date}:${c.jumuiya_id}`] = String(c.count);
+          const key = c.kind === "year" ? yearKey(c.year!) : c.jumuiya_id!;
+          drafts[`${r.date}:${key}`] = String(c.count);
         });
         roles[r.date] = r.recorded_role || "coordinator";
       });
@@ -381,14 +443,20 @@ export default function AttendanceTallyAdmin() {
 
   const handleHistorySave = async (row: HistoryRow) => {
     const role = historyRoles[row.date] || "coordinator";
-    const changed: { jumuiya_id: string; count: number }[] = [];
+    const isYear = row.dimension === "year";
+    const changed: TallyCountInput[] = [];
     for (const c of row.counts) {
-      const draft = Number(historyDrafts[`${row.date}:${c.jumuiya_id}`]);
+      const key = isYear ? yearKey(c.year!) : c.jumuiya_id!;
+      const draft = Number(historyDrafts[`${row.date}:${key}`]);
       if (!Number.isInteger(draft) || draft < 0) {
-        toast.error(`Enter a valid count for ${c.jumuiya_name}`);
+        toast.error(`Enter a valid count for ${isYear ? c.label : c.jumuiya_name}`);
         return;
       }
-      if (draft !== c.count) changed.push({ jumuiya_id: c.jumuiya_id, count: draft });
+      if (draft !== c.count) {
+        changed.push(
+          isYear ? { year: c.year, count: draft } : { jumuiya_id: c.jumuiya_id, count: draft }
+        );
+      }
     }
     if (changed.length === 0 && role === row.recorded_role) return;
     setHistorySaving((prev) => ({ ...prev, [row.date]: true }));
@@ -441,8 +509,15 @@ export default function AttendanceTallyAdmin() {
         next[j.group_id] =
           j.register_status === "recorded" && j.register_count != null ? String(j.register_count) : "";
       });
-      session.forEach((s: SessionRow) => { next[s.jumuiya_id] = String(s.count); });
+      session.forEach((s: SessionRow) => {
+        if (s.dimension === "year" && s.year_of_study) {
+          next[yearKey(s.year_of_study)] = String(s.count);
+        } else if (s.jumuiya_id) {
+          next[s.jumuiya_id] = String(s.count);
+        }
+      });
       setCounts(next);
+      setTallyDim(session[0]?.dimension === "year" ? "year" : "jumuiya");
       const anyRow = session[0];
       setRecordedRole(
         anyRow?.recorded_role === "assistant" || anyRow?.recorded_role === "coordinator"
@@ -477,11 +552,11 @@ export default function AttendanceTallyAdmin() {
     };
   }, []);
 
-  const loadAnalytics = useCallback(async (from: string, to: string) => {
+  const loadAnalytics = useCallback(async (from: string, to: string, dimension: TallyDimension = analyticsDim) => {
     setAnalyticsLoading(true);
     setAnalyticsError(null);
     try {
-      const data = await attendanceServices.getAnalytics(from, to);
+      const data = await attendanceServices.getAnalytics(from, to, dimension);
       setAnalytics(data);
     } catch (err) {
       setAnalyticsError(getApiError(err));
@@ -489,35 +564,40 @@ export default function AttendanceTallyAdmin() {
     } finally {
       setAnalyticsLoading(false);
     }
-  }, []);
+  }, [analyticsDim]);
 
   useEffect(() => {
     if (preset === "custom") return;
     const { from, to } = presetRange(preset, new Date());
-    loadAnalytics(from, to);
-  }, [preset, loadAnalytics]);
+    loadAnalytics(from, to, analyticsDim);
+  }, [preset, analyticsDim, loadAnalytics]);
 
-  const totalAttendance = useMemo(
-    () =>
-      Object.values(counts).reduce(
-        (sum, v) => sum + (Number(v) > 0 ? Number(v) : 0),
-        0
-      ),
-    [counts]
-  );
+  const totalAttendance = useMemo(() => {
+    const keys =
+      tallyDim === "year"
+        ? (context?.years || []).map((yr) => yearKey(yr.year))
+        : (context?.jumuiyas || []).map((j) => j.group_id);
+    return keys.reduce((sum, k) => sum + (Number(counts[k]) > 0 ? Number(counts[k]) : 0), 0);
+  }, [counts, context, tallyDim]);
 
   const isSaved = sessionRows.length > 0;
   const tallyDisabled = !context?.isTallyDay || tallyLoading;
 
   const handleSave = async () => {
     if (!context || !context.isTallyDay) return;
-    const payload = context.jumuiyas.map((j) => ({
-      jumuiya_id: j.group_id,
-      count: Number(counts[j.group_id] || 0) || 0,
-    }));
+    const payload: TallyCountInput[] =
+      tallyDim === "year"
+        ? context.years.map((yr) => ({
+            year: yr.year,
+            count: Number(counts[yearKey(yr.year)] || 0) || 0,
+          }))
+        : context.jumuiyas.map((j) => ({
+            jumuiya_id: j.group_id,
+            count: Number(counts[j.group_id] || 0) || 0,
+          }));
     setSaving(true);
     try {
-      await attendanceServices.saveSession(date, payload, recordedRole);
+      await attendanceServices.saveSession(date, payload, recordedRole, tallyDim);
       toast.success(
         `Tally for ${date} saved by ${recordedRole === "assistant" ? "Assistant Jumuiya Coordinator" : "Jumuiya Coordinator"}`
       );
@@ -552,15 +632,19 @@ export default function AttendanceTallyAdmin() {
     loadAnalytics(customFrom, customTo);
   };
 
+  const dimRows = useMemo(
+    () => (analytics ? (analytics.dimension === "year" ? analytics.by_year : analytics.by_jumuiya) : []),
+    [analytics]
+  );
+
   const chartData = useMemo(() => {
-    if (!analytics) return [];
-    return analytics.by_jumuiya.map((j) => ({
+    return dimRows.map((j) => ({
       name: j.name.split(/\s+/).slice(0, 2).join(" "),
       current: j.attendance_count,
       previous: j.trend.prev_attendance_count,
       rate: Math.round(j.rate_vs_active * 1000) / 10,
     }));
-  }, [analytics]);
+  }, [dimRows]);
 
   const timelineData = useMemo(() => {
     if (!analytics) return [];
@@ -584,6 +668,14 @@ export default function AttendanceTallyAdmin() {
 
   const quickCheckIssues = useMemo(() => {
     if (!context) return [];
+    if (tallyDim === "year") {
+      return context.years
+        .filter((yr) => {
+          const v = Number(counts[yearKey(yr.year)] || 0) || 0;
+          return v > yr.active_members;
+        })
+        .map((yr) => yr.label);
+    }
     return context.jumuiyas
       .filter((j) => {
         if (j.register_status === "recorded") return false;
@@ -591,11 +683,10 @@ export default function AttendanceTallyAdmin() {
         return v > j.active_members;
       })
       .map((j) => j.name);
-  }, [context, counts]);
+  }, [context, counts, tallyDim]);
 
   const insights = useMemo(() => {
-    if (!analytics) return null;
-    const list = analytics.by_jumuiya;
+    const list = dimRows;
     if (!list.length) return null;
     const improving = list.filter((j) => j.trend.delta_vs_active > 0.0005);
     const dropping = list.filter((j) => j.trend.delta_vs_active < -0.0005);
@@ -608,19 +699,20 @@ export default function AttendanceTallyAdmin() {
       (a, b) => a.trend.delta_vs_active - b.trend.delta_vs_active
     )[0];
     return { improving, dropping, stable, top, mostImproved, mostDropped };
-  }, [analytics]);
+  }, [dimRows]);
 
   const exportXlsx = async () => {
     if (!analytics) return;
     try {
       const blob = await attendanceServices.exportAnalyticsExcel(
         analytics.period.from,
-        analytics.period.to
+        analytics.period.to,
+        analyticsDim
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `attendance-analytics_${analytics.period.from}_${analytics.period.to}.xlsx`;
+      a.download = `attendance-analytics-${analyticsDim}_${analytics.period.from}_${analytics.period.to}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -797,10 +889,74 @@ export default function AttendanceTallyAdmin() {
             </div>
           )}
 
-          {/* Jumuiya count inputs */}
+          {/* Group-by toggle + count inputs */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-slate-800">Count Attendance</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {tallyDim === "year"
+                    ? "Tally by Year of Study (Year 1-4) to see how members progress as years go by."
+                    : "Tally per jumuiya. Register-sourced counts are set automatically from the secretary register."}
+                </p>
+              </div>
+              <DimToggle value={tallyDim} onChange={setTallyDim} />
+            </div>
+          </div>
+
           {tallyLoading ? (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
-              <Loader2 size={18} className="animate-spin" /> Loading jumuiya roster…
+              <Loader2 size={18} className="animate-spin" /> Loading roster…
+            </div>
+          ) : tallyDim === "year" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              {context?.years.map((yr) => {
+                const entered = Number(counts[yearKey(yr.year)] || 0) || 0;
+                const overActive = entered > yr.active_members;
+                const overTotal = entered > yr.total_members;
+                return (
+                  <div
+                    key={yr.year}
+                    className={`bg-white rounded-xl border p-4 ${
+                      overActive ? "border-amber-300 ring-1 ring-amber-200" : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: yr.color }} />
+                      <h4 className="font-semibold text-slate-800 text-sm">{yr.label}</h4>
+                      <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5 shrink-0">
+                        Manual count
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={1000}
+                      step={1}
+                      value={counts[yearKey(yr.year)] ?? ""}
+                      onChange={(e) =>
+                        setCounts((prev) => ({ ...prev, [yearKey(yr.year)]: e.target.value }))
+                      }
+                      placeholder="0"
+                      disabled={!context?.isTallyDay}
+                      className={`${inputCls} text-lg font-bold ${
+                        !context?.isTallyDay ? "bg-slate-50 text-slate-300" : ""
+                      }`}
+                    />
+                    <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+                      <Users size={11} /> {yr.active_members} active / {yr.total_members} total members
+                    </p>
+                    {overActive && (
+                      <p className="text-[11px] text-amber-600 mt-1.5 flex items-center gap-1">
+                        <AlertTriangle size={11} />
+                        {overTotal
+                          ? `Looks high — only ${yr.total_members} total members in ${yr.label}`
+                          : `Looks high — only ${yr.active_members} active members in ${yr.label}`}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -884,7 +1040,10 @@ export default function AttendanceTallyAdmin() {
               <div className="text-sm text-slate-600">
                 Total attendance:{" "}
                 <span className="font-black text-slate-900 text-lg">{totalAttendance}</span>{" "}
-                <span className="text-slate-400">across {context?.jumuiyas.length || 0} jumuiyas</span>
+                <span className="text-slate-400">
+                  across {tallyDim === "year" ? context?.years.length || 0 : context?.jumuiyas.length || 0}{" "}
+                  {tallyDim === "year" ? "years of study" : "jumuiyas"}
+                </span>
               </div>
               {quickCheckIssues.length > 0 && (
                 <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2 max-w-md">
@@ -978,6 +1137,8 @@ export default function AttendanceTallyAdmin() {
           to={historyTo}
           setFrom={setHistoryFrom}
           setTo={setHistoryTo}
+          dim={historyDim}
+          setDim={setHistoryDim}
           drafts={historyDrafts}
           setDrafts={setHistoryDrafts}
           roles={historyRoles}
@@ -1022,6 +1183,11 @@ export default function AttendanceTallyAdmin() {
                   </button>
                 </>
               )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Breakdown</label>
+                <DimToggle value={analyticsDim} onChange={setAnalyticsDim} />
+              </div>
 
               <button
                 onClick={exportXlsx}
@@ -1088,7 +1254,7 @@ export default function AttendanceTallyAdmin() {
                   </p>
                   <ul className="mt-3 space-y-2 text-sm text-slate-600">
                     <li>
-                      <span className="font-semibold text-slate-800">Top jumuiya:</span> <b>{insights.top.name}</b> with{" "}
+                      <span className="font-semibold text-slate-800">Top {analyticsDim === "year" ? "year" : "jumuiya"}:</span> <b>{insights.top.name}</b> with{" "}
                       {pct(insights.top.rate_vs_active)} attendance rate ({insights.top.attendance_count} across{" "}
                       {insights.top.tally_days} session(s)).
                     </li>
@@ -1195,7 +1361,7 @@ export default function AttendanceTallyAdmin() {
                       <Tooltip cursor={{ fill: "#f1f5f9" }} formatter={(value: any) => [`${value}%`, "Rate vs active"]} />
                       <Bar dataKey="rate" name="Rate vs active" radius={[4, 4, 0, 0]}>
                         {chartData.map((d, i) => (
-                          <Cell key={i} fill={analytics.by_jumuiya[i]?.color || "#4f46e5"} />
+                          <Cell key={i} fill={dimRows[i]?.color || "#4f46e5"} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -1206,7 +1372,7 @@ export default function AttendanceTallyAdmin() {
               {/* Ranking table */}
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-800">Jumuiya Ranking</h3>
+                  <h3 className="font-semibold text-slate-800">{analyticsDim === "year" ? "Year of Study Ranking" : "Jumuiya Ranking"}</h3>
                   <span className="text-[11px] text-slate-400">
                     Ranked by attendance rate vs total members
                   </span>
@@ -1216,7 +1382,7 @@ export default function AttendanceTallyAdmin() {
                     <thead>
                       <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
                         <th className="px-5 py-3">#</th>
-                        <th className="px-3 py-3">Jumuiya</th>
+                        <th className="px-3 py-3">{analyticsDim === "year" ? "Year of Study" : "Jumuiya"}</th>
                         <th className="px-3 py-3 text-right">Members (act/total)</th>
                         <th className="px-3 py-3 text-right">Tally Days</th>
                         <th className="px-3 py-3 text-right">Attendance</th>
@@ -1228,8 +1394,8 @@ export default function AttendanceTallyAdmin() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {analytics.by_jumuiya.map((j) => (
-                        <tr key={j.jumuiya_id} className="hover:bg-slate-50/60 transition-colors">
+                      {dimRows.map((j) => (
+                        <tr key={j.group_key} className="hover:bg-slate-50/60 transition-colors">
                           <td className="px-5 py-3">
                             <span
                               className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black ${
@@ -1433,6 +1599,8 @@ function HistoryTab({
   to,
   setFrom,
   setTo,
+  dim,
+  setDim,
   drafts,
   setDrafts,
   roles,
@@ -1447,6 +1615,8 @@ function HistoryTab({
   to: string;
   setFrom: (v: string) => void;
   setTo: (v: string) => void;
+  dim: "all" | TallyDimension;
+  setDim: (v: "all" | TallyDimension) => void;
   drafts: Record<string, string>;
   setDrafts: (updater: (prev: Record<string, string>) => Record<string, string>) => void;
   roles: Record<string, RecordedRole>;
@@ -1455,12 +1625,17 @@ function HistoryTab({
   onReload: () => void;
   onSave: (row: HistoryRow) => void;
 }) {
+  const visibleRows = useMemo(
+    () => rows.filter((r) => dim === "all" || r.dimension === dim),
+    [rows, dim]
+  );
+
   const jumuiyaColumns = useMemo(() => {
     const map = new Map<string, { name: string; color: string }>();
     rows.forEach((r) =>
       r.counts.forEach((c) => {
-        if (!map.has(c.jumuiya_id)) {
-          map.set(c.jumuiya_id, { name: c.jumuiya_name, color: c.jumuiya_color });
+        if (c.kind === "jumuiya" && c.jumuiya_id && !map.has(c.jumuiya_id)) {
+          map.set(c.jumuiya_id, { name: c.jumuiya_name || "", color: c.jumuiya_color || "" });
         }
       })
     );
@@ -1469,10 +1644,22 @@ function HistoryTab({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [rows]);
 
+  const yearColumns = YEARS.map((y) => ({ id: y, name: yearLabel(y), color: YEAR_COLORS[y] }));
+
+  const columns = useMemo(() => {
+    const cols: { kind: "jumuiya" | "year"; id: string; name: string; color: string }[] = [];
+    if (dim !== "year") jumuiyaColumns.forEach((j) => cols.push({ kind: "jumuiya", id: j.id, name: j.name, color: j.color }));
+    if (dim !== "jumuiya") yearColumns.forEach((y) => cols.push({ kind: "year", id: y.id, name: y.name, color: y.color }));
+    return cols;
+  }, [jumuiyaColumns, yearColumns, dim]);
+
+  const countKey = (row: HistoryRow, c: HistoryCount) =>
+    `${row.date}:${c.kind === "year" ? yearKey(c.year!) : c.jumuiya_id!}`;
+
   const hasChanges = (row: HistoryRow) => {
     const roleChanged = (roles[row.date] || "coordinator") !== (row.recorded_role || "coordinator");
     const countChanged = row.counts.some((c) => {
-      const draft = Number(drafts[`${row.date}:${c.jumuiya_id}`]);
+      const draft = Number(drafts[countKey(row, c)]);
       return Number.isInteger(draft) && draft >= 0 && draft !== c.count;
     });
     return roleChanged || countChanged;
@@ -1485,6 +1672,11 @@ function HistoryTab({
         : "border-slate-200 text-slate-500 hover:border-indigo-300"
     }`;
 
+  const dimFilterCls = (active: boolean) =>
+    `px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+      active ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+    }`;
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -1492,15 +1684,15 @@ function HistoryTab({
           <History size={16} className="text-slate-400" /> Tally History
         </h3>
         <p className="text-sm text-slate-600 mt-1">
-          One entry per tally day with all 7 jumuiya counts together, plus who recorded it (the coordinator or their
-          assistant). Edit any manual count directly; register-sourced counts are read-only (correct those in the
-          secretary register).
+          One entry per tally day — either the 7 jumuiya counts together or the Year of Study counts (Year 1-4), plus
+          who recorded it (the coordinator or their assistant). Edit any manual count directly; register-sourced counts
+          are read-only (correct those in the secretary register).
         </p>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">From</label>
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputCls} />
@@ -1508,6 +1700,14 @@ function HistoryTab({
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">To</label>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">View</label>
+            <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 w-fit">
+              <button onClick={() => setDim("all")} className={dimFilterCls(dim === "all")}>All</button>
+              <button onClick={() => setDim("jumuiya")} className={dimFilterCls(dim === "jumuiya")}>Jumuiya</button>
+              <button onClick={() => setDim("year")} className={dimFilterCls(dim === "year")}>Year</button>
+            </div>
           </div>
           <div className="flex items-end">
             <button
@@ -1527,7 +1727,7 @@ function HistoryTab({
         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
           <Loader2 size={18} className="animate-spin" /> Loading tally history…
         </div>
-      ) : rows.length === 0 ? (
+      ) : visibleRows.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm">
           No tally records match these filters.
         </div>
@@ -1539,11 +1739,13 @@ function HistoryTab({
                 <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
                   <th className="px-5 py-3">Date</th>
                   <th className="px-3 py-3">Activity</th>
-                  {jumuiyaColumns.map((j) => (
-                    <th key={j.id} className="px-2 py-3 text-center min-w-[96px]">
+                  {columns.map((j) => (
+                    <th key={`${j.kind}:${j.id}`} className="px-2 py-3 text-center min-w-[96px]">
                       <span className="inline-flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: j.color || "#64748b" }} />
-                        {j.name.replace("St. ", "St ").replace(/^(St \w+).*$/, "$1")}
+                        {j.kind === "year"
+                          ? j.name
+                          : j.name.replace("St. ", "St ").replace(/^(St \w+).*$/, "$1")}
                       </span>
                     </th>
                   ))}
@@ -1553,7 +1755,7 @@ function HistoryTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {rows.map((row) => {
+                {visibleRows.map((row) => {
                   const isSaving = saving[row.date];
                   const changed = hasChanges(row);
                   return (
@@ -1562,20 +1764,25 @@ function HistoryTab({
                         {friendlyDate(row.date)}
                       </td>
                       <td className="px-3 py-3 text-slate-600 whitespace-nowrap">{row.activity_label}</td>
-                      {jumuiyaColumns.map((j) => {
-                        const c = row.counts.find((x) => x.jumuiya_id === j.id);
-                        if (!c) return <td key={j.id} className="px-2 py-3 text-center text-slate-300">—</td>;
+                      {columns.map((j) => {
+                        const c = row.counts.find(
+                          (x) =>
+                            j.kind === "year"
+                              ? x.kind === "year" && x.year === j.id
+                              : x.kind === "jumuiya" && x.jumuiya_id === j.id
+                        );
+                        if (!c) return <td key={`${j.kind}:${j.id}`} className="px-2 py-3 text-center text-slate-300">—</td>;
                         const readOnly = c.source === "register";
                         return (
-                          <td key={j.id} className="px-2 py-3">
+                          <td key={`${j.kind}:${j.id}`} className="px-2 py-3">
                             <div className="flex items-center justify-center gap-1">
                               <input
                                 type="number"
                                 min={0}
                                 step={1}
-                                value={drafts[`${row.date}:${c.jumuiya_id}`] ?? ""}
+                                value={drafts[countKey(row, c)] ?? ""}
                                 onChange={(e) =>
-                                  setDrafts((prev) => ({ ...prev, [`${row.date}:${c.jumuiya_id}`]: e.target.value }))
+                                  setDrafts((prev) => ({ ...prev, [countKey(row, c)]: e.target.value }))
                                 }
                                 disabled={readOnly}
                                 title={readOnly ? "From secretary register — locked" : "Manual count"}
@@ -1628,8 +1835,8 @@ function HistoryTab({
             </table>
           </div>
           <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400">
-            A single save updates the whole day (all 7 jumuiyas + who recorded it). Register-sourced counts are locked
-            to keep them consistent with the secretary's per-member register.
+            A single save updates the whole day (all counts in the day's mode + who recorded it). Register-sourced
+            counts are locked to keep them consistent with the secretary's per-member register.
           </div>
         </div>
       )}

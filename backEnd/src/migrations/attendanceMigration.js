@@ -38,6 +38,30 @@ const migration = async () => {
     await pool.query(
       `CREATE INDEX IF NOT EXISTS idx_attendance_tallies_jumuiya ON attendance_tallies (jumuiya_id);`
     );
+    // ── Year-of-study tallies ───────────────────────────────────────────
+    // Coordinators may take attendance by Year of Study (Year 1-4) instead of
+    // by jumuiya. Year rows keep jumuiya_id NULL and store year_of_study +
+    // dimension='year' (jumuiya rows store dimension='jumuiya', year_of_study NULL).
+    await pool.query(
+      `ALTER TABLE attendance_tallies ALTER COLUMN jumuiya_id DROP NOT NULL;`
+    );
+    await pool.query(
+      `ALTER TABLE attendance_tallies ADD COLUMN IF NOT EXISTS year_of_study VARCHAR(10) DEFAULT NULL;`
+    );
+    await pool.query(
+      `ALTER TABLE attendance_tallies ADD COLUMN IF NOT EXISTS dimension VARCHAR(10) NOT NULL DEFAULT 'jumuiya';`
+    );
+    await pool.query(
+      `UPDATE attendance_tallies SET dimension = 'jumuiya' WHERE dimension IS NULL;`
+    );
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance_tallies_year_date
+         ON attendance_tallies (tally_date, year_of_study)
+       WHERE year_of_study IS NOT NULL;`
+    );
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_attendance_tallies_dimension ON attendance_tallies (dimension);`
+    );
 
     // ── Novena tables (missing in DB but referenced by activities system) ──
     await pool.query(`
