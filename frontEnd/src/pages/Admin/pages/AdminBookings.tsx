@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { bookingService } from "../../../api/activitiesServices";
-import { RefreshCw, Download, Search, CalendarCheck2, Wallet, TrendingUp, Users, UserPlus, X, Coins, Ban } from "lucide-react";
+import { RefreshCw, Download, Search, CalendarCheck2, Wallet, TrendingUp, Users, UserPlus, X, Coins, Ban, Trash2 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -457,17 +457,17 @@ export default function AdminBookings() {
                                 onClick={() => { setPayForId(booking.id); setCashAmount(""); }}
                                 disabled={booking.status === "cancelled" || booking.status === "paid"}
                                 title={booking.status === "paid" ? "Already fully paid" : booking.status === "cancelled" ? "Cancelled" : "Record cash payment"}
-                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="p-1.5 rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               >
-                                <Coins size={13} /> Cash
+                                <Wallet size={14} />
                               </button>
                               <button
                                 onClick={() => setCancelForId(booking.id)}
                                 disabled={booking.status === "cancelled"}
                                 title={booking.status === "cancelled" ? "Already cancelled" : "Cancel booking"}
-                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="p-1.5 rounded-lg text-rose-500 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               >
-                                <Ban size={13} /> Cancel
+                                <Trash2 size={14} />
                               </button>
                             </div>
                           </td>
