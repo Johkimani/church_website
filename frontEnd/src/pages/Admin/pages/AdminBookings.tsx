@@ -20,6 +20,7 @@ interface Booking {
   paid_amount: string;
   status: string;
   is_guest: boolean;
+  guest_reg: string;
 
   created_at: string;
   updated_at: string;
@@ -55,6 +56,10 @@ export default function AdminBookings() {
   // Book mode: registered member vs guest (non-member, event-only)
   const [bookMode, setBookMode] = useState<"member" | "guest">("member");
   const [guestName, setGuestName] = useState("");
+  const [guestReg, setGuestReg] = useState("");
+
+  // Export status filter (OS picks what to export)
+  const [exportStatus, setExportStatus] = useState("all");
 
   // Cash payment + cancel
   const [payForId, setPayForId] = useState<number | null>(null);
@@ -89,6 +94,7 @@ export default function AdminBookings() {
     setMemberQuery("");
     setSelectedMember(null);
     setGuestName("");
+    setGuestReg("");
     setPhoneOverride("");
     setYearOverride("");
     try {
@@ -125,7 +131,7 @@ export default function AdminBookings() {
       await bookingService.createBookingForMember({
         activity_id: selectedActivity,
         activity_type: selectedActivityType,
-        ...(isGuestMode ? { guest_name: guestName.trim() } : { member_id: selectedMember.member_id }),
+        ...(isGuestMode ? { guest_name: guestName.trim(), guest_reg: guestReg.trim() } : { member_id: selectedMember.member_id }),
         phone: phoneOverride,
         year_of_study: yearOverride,
       });
@@ -135,6 +141,7 @@ export default function AdminBookings() {
       setShowBookModal(false);
       setSelectedMember(null);
       setGuestName("");
+      setGuestReg("");
       await load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || err?.message || "Failed to create booking");
@@ -193,14 +200,14 @@ export default function AdminBookings() {
 
   async function handleExport() {
     try {
-      const blob = await bookingService.exportBookingsExcel();
+      const blob = await bookingService.exportBookingsExcel(exportStatus);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "activity_bookings.xlsx";
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success("Bookings exported to Excel");
+      toast.success(`Exported ${exportStatus === "all" ? "all bookings" : exportStatus + " bookings"} to Excel`);
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Export failed";
       setError(msg);
@@ -256,6 +263,7 @@ export default function AdminBookings() {
       paid_amount: booking.paid_amount,
       status: booking.status,
       is_guest: booking.is_guest,
+      guest_reg: booking.guest_reg,
       created_at: booking.created_at
     });
     return acc;
@@ -298,9 +306,20 @@ export default function AdminBookings() {
               <UserPlus size={14} /> Book for Member
             </button>
           )}
+          <select
+            value={exportStatus}
+            onChange={(e) => setExportStatus(e.target.value)}
+            className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+          >
+            <option value="all">All statuses</option>
+            <option value="paid">Paid</option>
+            <option value="partial">Partial</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
           <button onClick={handleExport}
             className="flex items-center gap-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl transition-colors">
-            <Download size={14} /> Export CSV
+            <Download size={14} /> Export Excel
           </button>
           <button onClick={load}
             className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
@@ -425,7 +444,7 @@ export default function AdminBookings() {
                   <tbody>
                     {group.bookings.map((booking: any, i: number) => (
                       <tr key={booking.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3 text-slate-400 font-mono text-xs">{booking.id}</td>
+                        <td className="px-4 py-3 text-slate-400 font-mono text-xs">{i + 1}</td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-slate-800">{booking.member_name}</div>
                           {booking.status === "cancelled" && (
@@ -434,7 +453,10 @@ export default function AdminBookings() {
                         </td>
                         <td className="px-4 py-3">
                           {booking.is_guest ? (
-                            <span className="inline-block px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold uppercase tracking-wide">Guest</span>
+                            <div className="space-y-0.5">
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold uppercase tracking-wide">Guest</span>
+                              {booking.guest_reg && <div className="text-xs font-mono text-slate-600">{booking.guest_reg}</div>}
+                            </div>
                           ) : (
                             <span className="text-xs font-mono text-slate-600">{booking.member_id}</span>
                           )}
@@ -629,6 +651,15 @@ export default function AdminBookings() {
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
                       placeholder="e.g. Jane Wanjiru"
+                      className="w-full border border-violet-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Registration number (optional)</label>
+                    <input
+                      value={guestReg}
+                      onChange={(e) => setGuestReg(e.target.value)}
+                      placeholder="e.g. CS-12345"
                       className="w-full border border-violet-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                     />
                   </div>

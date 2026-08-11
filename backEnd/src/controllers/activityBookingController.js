@@ -112,7 +112,7 @@ export const getBookings = async (req, res) => {
               COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '') AS jumuiya_id,
               sg.name AS jumuiya_name,
               COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
-              ab.fare, ab.paid_amount, ab.status, ab.is_guest,
+              ab.fare, ab.paid_amount, ab.status, ab.is_guest, ab.guest_reg,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time,
               ab.created_at, ab.updated_at
@@ -141,7 +141,7 @@ export const getMyBookings = async (req, res) => {
               COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '') AS jumuiya_id,
               sg.name AS jumuiya_name,
               COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
-              ab.fare, ab.paid_amount, ab.status, ab.is_guest,
+              ab.fare, ab.paid_amount, ab.status, ab.is_guest, ab.guest_reg,
               CASE WHEN ab.activity_type = 'weekly' THEN w.day ELSE s.title END AS activity_name,
               CASE WHEN ab.activity_type = 'weekly' THEN w.time ELSE NULL END AS activity_time,
               ab.created_at, ab.updated_at
@@ -165,8 +165,15 @@ export const getMyBookings = async (req, res) => {
 // Column order matches the admin bookings table (guest rows omit reg/jumuiya).
 export const exportBookingsExcel = async (req, res) => {
   try {
+    // Optional status filter so the OS can export e.g. only paid or partial bookings.
+    const rawStatus = String(req.query.status || "all").toLowerCase();
+    const statusFilter = rawStatus === "unpaid" ? "pending" : rawStatus;
+    const validStatus = ["all", "pending", "paid", "partial", "cancelled"];
+    const statusClause = validStatus.includes(statusFilter) && statusFilter !== "all" ? "WHERE ab.status = $1" : "";
+    const params = validStatus.includes(statusFilter) && statusFilter !== "all" ? [statusFilter] : [];
+
     const result = await pool.query(
-      `SELECT ab.id, ab.member_id AS reg_number, ab.member_name, ab.is_guest,
+      `SELECT ab.id, ab.member_id AS reg_number, ab.member_name, ab.is_guest, ab.guest_reg,
               COALESCE(NULLIF(ab.year_of_study, ''), m.year_of_study::text, '') AS year_of_study,
               COALESCE(NULLIF(ab.phone, ''), m.phone, '') AS phone,
               sg.name AS jumuiya_name,
@@ -177,7 +184,9 @@ export const exportBookingsExcel = async (req, res) => {
        LEFT JOIN sub_groups sg ON sg.group_id::text = COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '')
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
-       ORDER BY ab.created_at DESC`
+       ${statusClause}
+       ORDER BY ab.created_at DESC`,
+      params
     );
 
     const statusLabel = (s) =>
@@ -185,14 +194,14 @@ export const exportBookingsExcel = async (req, res) => {
     const fmtDate = (d) =>
       d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "";
 
+    // Excel numbers rows on its own, so no "#" column here.
     const headers = [
-      "#", "Type", "Registration", "Member Name", "Jumuiya",
+      "Type", "Registration", "Member Name", "Jumuiya",
       "Year of Study", "Phone", "Activity", "Paid (KES)", "Status", "Booking Date",
     ];
     const data = result.rows.map((r) => [
-      r.id,
       r.is_guest ? "Guest" : "Member",
-      r.is_guest ? "" : r.reg_number || "",
+      r.is_guest ? r.guest_reg || "" : r.reg_number || "",
       r.member_name || "",
       r.is_guest ? "" : r.jumuiya_name || "",
       r.year_of_study || "",
@@ -240,7 +249,7 @@ export const exportBookingsExcel = async (req, res) => {
           bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
           right: { style: "thin", color: { argb: "FFE2E8F0" } },
         };
-        cell.alignment = { vertical: "middle", horizontal: cell.col === 9 ? "right" : "left" };
+        cell.alignment = { vertical: "middle", horizontal: cell.col === 8 ? "right" : "left" };
       });
       if (rowNumber % 2 === 0) {
         row.eachCell((cell) => {
@@ -264,7 +273,7 @@ export const exportBookingsExcel = async (req, res) => {
 // only — this never creates/alters any member record. The OS/chair provides
 // guest_name (required) and optionally phone / year_of_study.
 export const createBookingForMember = async (req, res) => {
-  const { activity_type, activity_id, member_id, guest_name, phone, year_of_study } = req.body;
+  const { activity_type, activity_id, member_id, guest_name, guest_reg, phone, year_of_study } = req.body;
 
   if (!activity_type || !activity_id) {
     return res.status(400).json({ error: "activity_type and activity_id are required" });
@@ -296,6 +305,7 @@ export const createBookingForMember = async (req, res) => {
       const gname = String(guest_name).trim();
       const gphone = String(phone || "").trim();
       const gyos = String(year_of_study || "").trim();
+      const greg = String(guest_reg || "").trim().slice(0, 50);
 
       // Guest bookings get a pseudo key; they are event-only and do NOT touch members.
       const guestKey = `GUEST-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
@@ -305,6 +315,7 @@ export const createBookingForMember = async (req, res) => {
         jumuiya_id: "guest",
         year_of_study: gyos,
         phone: gphone,
+        guest_reg: greg,
         is_guest: true,
       };
 
@@ -363,13 +374,13 @@ export const createBookingForMember = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO activity_bookings (activity_type, activity_id, member_id, member_name, member_email, jumuiya_id, year_of_study, phone, fare, paid_amount, status, is_guest)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'pending', $10)
+      `INSERT INTO activity_bookings (activity_type, activity_id, member_id, member_name, member_email, jumuiya_id, year_of_study, phone, guest_reg, fare, paid_amount, status, is_guest)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, 'pending', $11)
        RETURNING *`,
       [
         activity_type, activity_id, target.member_id, target.member_name,
-        "", target.jumuiya_id, target.year_of_study, target.phone, fare,
-        target.is_guest,
+        "", target.jumuiya_id, target.year_of_study, target.phone,
+        target.guest_reg || "", fare, target.is_guest,
       ]
     );
 
