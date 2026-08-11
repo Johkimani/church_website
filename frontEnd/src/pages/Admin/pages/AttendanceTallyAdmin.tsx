@@ -20,6 +20,7 @@ import {
   Settings2,
   AlertTriangle,
   FileSpreadsheet,
+  ArrowUpDown,
 } from "lucide-react";
 import {
   BarChart,
@@ -363,6 +364,7 @@ export default function AttendanceTallyAdmin() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [rankOrder, setRankOrder] = useState<"desc" | "asc">("desc");
 
   // Meeting days config state
   const [configRows, setConfigRows] = useState<MeetingConfigRow[]>([]);
@@ -636,6 +638,12 @@ export default function AttendanceTallyAdmin() {
     () => (analytics ? (analytics.dimension === "year" ? analytics.by_year : analytics.by_jumuiya) : []),
     [analytics]
   );
+
+  const sortedDimRows = useMemo(() => {
+    const list = [...dimRows];
+    list.sort((a, b) => (rankOrder === "asc" ? b.rank - a.rank : a.rank - b.rank));
+    return list;
+  }, [dimRows, rankOrder]);
 
   const chartData = useMemo(() => {
     return dimRows.map((j) => ({
@@ -1371,11 +1379,21 @@ export default function AttendanceTallyAdmin() {
 
               {/* Ranking table */}
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                   <h3 className="font-semibold text-slate-800">{analyticsDim === "year" ? "Year of Study Ranking" : "Jumuiya Ranking"}</h3>
-                  <span className="text-[11px] text-slate-400">
-                    Ranked by attendance rate vs total members
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400">
+                      Ranked by attendance rate vs total members
+                    </span>
+                    <button
+                      onClick={() => setRankOrder(rankOrder === "desc" ? "asc" : "desc")}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2.5 py-1 hover:bg-indigo-100 transition-colors"
+                      title="Toggle ranking order"
+                    >
+                      <ArrowUpDown size={11} />
+                      {rankOrder === "desc" ? "Top first" : "Bottom first"}
+                    </button>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -1387,14 +1405,13 @@ export default function AttendanceTallyAdmin() {
                         <th className="px-3 py-3 text-right">Tally Days</th>
                         <th className="px-3 py-3 text-right">Attendance</th>
                         <th className="px-3 py-3 text-right">Avg/Session</th>
-                        <th className="px-3 py-3 text-right">Register Days</th>
                         <th className="px-3 py-3 text-right">Rate vs Total</th>
                         <th className="px-3 py-3 text-right">Rate vs Active</th>
                         <th className="px-3 py-3 text-right">vs Prev Period</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {dimRows.map((j) => (
+                      {sortedDimRows.map((j) => (
                         <tr key={j.group_key} className="hover:bg-slate-50/60 transition-colors">
                           <td className="px-5 py-3">
                             <span
@@ -1421,18 +1438,6 @@ export default function AttendanceTallyAdmin() {
                           <td className="px-3 py-3 text-right text-slate-600">{j.tally_days}</td>
                           <td className="px-3 py-3 text-right font-bold text-slate-800">{j.attendance_count}</td>
                           <td className="px-3 py-3 text-right text-slate-600">{j.avg_per_session}</td>
-                          <td className="px-3 py-3 text-right">
-                            <span className="text-slate-700 font-semibold">{j.register_days}</span>
-                            <span className="text-slate-400"> / {j.tally_days}</span>
-                            <div className="mt-1 flex justify-end">
-                              <div className="w-14 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-emerald-400 rounded-full"
-                                  style={{ width: `${Math.round(j.register_coverage * 100)}%` }}
-                                />
-                              </div>
-                            </div>
-                          </td>
                           <td className="px-3 py-3 text-right text-slate-600">{pct(j.rate_vs_total)}</td>
                           <td className="px-3 py-3 text-right font-semibold text-slate-700">{pct(j.rate_vs_active)}</td>
                           <td className="px-3 py-3 text-right">
@@ -1445,8 +1450,7 @@ export default function AttendanceTallyAdmin() {
                 </div>
                 <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400">
                   Rate vs total = attendance ÷ (total members × tally days) · Rate vs active = attendance ÷ (active
-                  members × tally days) · Active members = roster minus flagged-inactive members · Register days = tally
-                  sessions whose counts came from the secretary's per-member register (authoritative source) · Trend
+                  members × tally days) · Active members = roster minus flagged-inactive members · Trend
                   compares the current period against the equal-length period before it.
                 </div>
               </div>

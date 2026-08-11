@@ -671,8 +671,7 @@ export const exportAnalyticsExcel = async (req, res) => {
     const groupHeader = dimension === "year" ? "Year of Study" : "Jumuiya";
     const headers = [
       "#", groupHeader, "Total Members", "Active Members", "Tally Days", "Attendance",
-      "Avg/Session", "Register Days", "Register Coverage", "Rate vs Total", "Rate vs Active",
-      "Prev Rate vs Active", "Delta (pts)",
+      "Avg/Session", "Rate vs Total", "Rate vs Active", "Prev Rate vs Active", "Delta (pts)",
     ];
     const headerRow = ws.addRow(headers);
     headerRow.height = 22;
@@ -691,7 +690,7 @@ export const exportAnalyticsExcel = async (req, res) => {
     const pct = (n) => `${(n * 100).toFixed(1)}%`;
     const rowValues = (j) => [
       j.rank, j.name, j.total_members, j.active_members, j.tally_days, j.attendance_count,
-      j.avg_per_session, j.register_days, pct(j.register_coverage), pct(j.rate_vs_total),
+      j.avg_per_session, pct(j.rate_vs_total),
       pct(j.rate_vs_active), pct(j.trend.prev_rate_vs_active), pct(j.trend.delta_vs_active),
     ];
     const dimRows = dimension === "year" ? data.by_year : data.by_jumuiya;
