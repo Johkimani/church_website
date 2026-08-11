@@ -102,9 +102,24 @@ export const payBooking = async (req, res) => {
   }
 };
 
-// ─── Admin: list all bookings ──────────────────────────────────────────────────
+// ─── Admin: list all bookings (paginated) ─────────────────────────────────────
 export const getBookings = async (req, res) => {
   try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+    // Aggregate stats are computed over ALL bookings, not just the current page,
+    // so the dashboard numbers stay correct at scale.
+    const statsRes = await pool.query(`
+      SELECT COUNT(*) FILTER (WHERE status <> 'cancelled')::int AS total_bookings,
+             COUNT(*) FILTER (WHERE status <> 'cancelled' AND paid_amount >= fare)::int AS fully_paid,
+             COALESCE(SUM(paid_amount) FILTER (WHERE status <> 'cancelled'), 0)::numeric AS total_collected,
+             COALESCE(SUM(fare) FILTER (WHERE status <> 'cancelled'), 0)::numeric AS total_expected
+      FROM activity_bookings
+    `);
+
+    const countRes = await pool.query(`SELECT COUNT(*)::int AS total FROM activity_bookings`);
+
     const result = await pool.query(
       `SELECT ab.id, ab.activity_type, ab.activity_id, ab.member_id, ab.member_name,
               ab.member_email,
@@ -121,9 +136,25 @@ export const getBookings = async (req, res) => {
        LEFT JOIN sub_groups sg ON sg.group_id::text = COALESCE(NULLIF(ab.jumuiya_id, ''), m.jumuiya_id::text, '')
        LEFT JOIN weekly_activities w ON ab.activity_type = 'weekly' AND ab.activity_id = w.id
        LEFT JOIN semester_activities s ON ab.activity_type = 'semester' AND ab.activity_id = s.id
-       ORDER BY ab.created_at DESC`
+       ORDER BY ab.created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
     );
-    res.json({ success: true, data: result.rows });
+
+    const stats = statsRes.rows[0];
+    res.json({
+      success: true,
+      data: result.rows,
+      total: countRes.rows[0].total,
+      limit,
+      offset,
+      stats: {
+        totalBookings: stats.total_bookings,
+        fullyPaid: stats.fully_paid,
+        totalCollected: stats.total_collected,
+        totalExpected: stats.total_expected,
+      },
+    });
   } catch (err) {
     logger.error("getBookings error:", err.message);
     res.status(500).json({ error: "Failed to load bookings" });
@@ -387,6 +418,15 @@ export const createBookingForMember = async (req, res) => {
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     logger.error("createBookingForMember error:", err.message);
+    // A concurrent request may have created the same booking between our
+    // duplicate check and the INSERT — surface the unique-index violation as 409.
+    if (err.code === "23505") {
+      return res.status(409).json({
+        error: isGuest
+          ? "A guest with this phone is already booked for this activity"
+          : "This member already has an active booking for this activity",
+      });
+    }
     res.status(500).json({ error: "Failed to create booking" });
   }
 };

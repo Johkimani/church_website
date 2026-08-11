@@ -143,9 +143,9 @@ export const bookingService = {
     return res.data.data || [];
   },
   // admin
-  getBookings: async () => {
-    const res = await apiClient.get("/admin/activities/bookings");
-    return res.data.data || [];
+  getBookings: async (page: number = 1, pageSize: number = 100) => {
+    const res = await apiClient.get(`/admin/activities/bookings?page=${page}&limit=${pageSize}`);
+    return res.data;
   },
   createBookingForMember: async (payload: {
     activity_id: number;

@@ -34,6 +34,12 @@ export default function AdminBookings() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [payFilter, setPayFilter] = useState<"all" | "paid" | "partial" | "unpaid">("all");
 
+  // Pagination (server-side)
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(100);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState({ totalBookings: 0, fullyPaid: 0, totalCollected: 0, totalExpected: 0 });
+
   // Book-on-behalf modal (CSA OS / chair)
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role)
@@ -68,7 +74,10 @@ export default function AdminBookings() {
   const [cancelForId, setCancelForId] = useState<number | null>(null);
   const [submittingCancel, setSubmittingCancel] = useState(false);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [page]);
+
+  // Reset to the first page when the filters change
+  useEffect(() => { setPage(1); }, [search, typeFilter, payFilter]);
 
   // Debounced member search inside the modal
   useEffect(() => {
@@ -187,8 +196,10 @@ export default function AdminBookings() {
     setLoading(true);
     setError(null);
     try {
-      const data = await bookingService.getBookings();
-      setBookings(data || []);
+      const res = await bookingService.getBookings(page, pageSize);
+      setBookings(res?.data || []);
+      setTotal(res?.total ?? 0);
+      if (res?.stats) setStats(res.stats);
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.message || "Failed to load bookings";
       setError(msg);
@@ -271,12 +282,11 @@ export default function AdminBookings() {
 
   const activityTypes = Array.from(new Set(bookings.map((b) => b.activity_type)));
 
-  const activeBookings = bookings.filter((b) => b.status !== "cancelled");
-  const totalBookings = activeBookings.length;
-  const totalCollected = activeBookings.reduce((sum, b) => sum + Number(b.paid_amount || 0), 0);
-  const totalExpected = activeBookings.reduce((sum, b) => sum + Number(b.fare || 0), 0);
+  const totalBookings = stats.totalBookings;
+  const totalCollected = Number(stats.totalCollected || 0);
+  const totalExpected = Number(stats.totalExpected || 0);
   const outstanding = totalExpected - totalCollected;
-  const fullyPaid = activeBookings.filter((b) => payStatus(b) === "paid").length;
+  const fullyPaid = stats.fullyPaid;
 
   const paidBadge = (b: Booking) => {
     if (b.status === "cancelled") {
@@ -501,8 +511,29 @@ export default function AdminBookings() {
               </div>
             </div>
           ))}
-          <div className="px-1 text-xs text-slate-400">
-            Showing {filtered.length} of {bookings.length} bookings across {Object.keys(groupedBookings).length} activities
+          <div className="flex items-center justify-between px-1 py-2">
+            <div className="text-xs text-slate-400">
+              Showing {filtered.length} on page {page} of {total} total bookings
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                disabled={page <= 1 || loading}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Prev
+              </button>
+              <span className="text-xs text-slate-500 font-medium">
+                {page} / {Math.max(Math.ceil(total / pageSize), 1)}
+              </span>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page * pageSize >= total || loading}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next →
+              </button>
+            </div>
           </div>
         </div>
       )}
