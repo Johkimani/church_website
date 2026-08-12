@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { FaUserCircle, FaCheckCircle, FaUsers, FaTrash, FaEdit, FaSearch, FaSparkles } from "react-icons/fa";
+import { FaUserCircle, FaCheckCircle, FaUsers, FaTrash, FaEdit, FaSearch } from "react-icons/fa";
+import { Sparkles } from "lucide-react";
 import {
   generateAndSaveQuestions,
   fetchTable,
@@ -9,6 +10,7 @@ import {
   deleteQuestionApi,
 } from "../../../api/axiosInstance";
 import JumuiyaDashboard from "../jumuiyaStatus/JumuiyaDashboard";
+
 
 interface JumuiyaRow {
   group_id: string;
@@ -118,9 +120,10 @@ function AIEngine({ onGenerated }: { onGenerated?: () => void }) {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center shadow-sm text-white">
-          <FaSparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4" />
         </div>
         <div>
+
           <h2 className="text-base font-bold text-stone-800">
             AI Question Generator Engine
           </h2>
