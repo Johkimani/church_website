@@ -58,74 +58,104 @@ function OfficialCard({ off, cat, navigate }: OfficialCardProps) {
   }, [off.photo, cat, defaultAvatar]);
 
   return (
-    <article
-      onClick={() => navigate(`/officials/${off.id}`)}
-      className="group bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between cursor-pointer hover:-translate-y-1 transform-gpu"
-      title={`View ${off.name}'s profile`}
-    >
-      {/* Top Gradient Accent Line */}
-      <div className={`h-1.5 w-full bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`} />
+    <>
+      {/* ── MOBILE CARD (hidden on sm+): portrait aspect, object-top, bottom badge ── */}
+      <article
+        onClick={() => navigate(`/officials/${off.id}`)}
+        className="sm:hidden group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer active:scale-95 transform-gpu"
+        title={`View ${off.name}'s profile`}
+      >
+        {/* Top Gradient Accent Line */}
+        <div className={`h-1.5 w-full bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`} />
 
-      {/* Image Container with aspect-[4/5] and top focal alignment */}
-      <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
-        <img
-          src={imgSrc}
-          onError={() => setImgSrc(defaultAvatar)}
-          alt={off.name}
-          loading="lazy"
-          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
-        />
-        
-        {/* Soft bottom vignette overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-300" />
-        
-        {/* Subtle position badge over photo on mobile/desktop */}
-        <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
-          <span className="truncate max-w-[85%] text-[0.68rem] sm:text-xs font-bold text-white/95 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm">
-            {off.position || off.category}
-          </span>
-          <span className="w-5 h-5 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-[10px] group-hover:bg-white group-hover:text-slate-950 transition-colors">
-            <ChevronRight className="w-3 h-3" />
-          </span>
+        {/* Portrait image — aspect 4:5, aligned to top so faces aren't cropped */}
+        <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
+          <img
+            src={imgSrc}
+            onError={() => setImgSrc(defaultAvatar)}
+            alt={off.name}
+            loading="lazy"
+            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
+          />
+          {/* Bottom vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+          {/* Position badge */}
+          <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
+            <span className="truncate max-w-[85%] text-[0.68rem] font-bold text-white/95 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm">
+              {off.position || off.category}
+            </span>
+            <span className="w-5 h-5 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+              <ChevronRight className="w-3 h-3" />
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Card Content Details */}
-      <div className="p-3 sm:p-4 text-center flex-1 flex flex-col justify-between bg-white">
-        <div>
-          <h3 className="font-bold text-slate-950 text-sm sm:text-base group-hover:text-purple-700 transition-colors line-clamp-1">
+        {/* Name + contact */}
+        <div className="p-3 text-center flex flex-col gap-2 bg-white">
+          <h3 className="font-bold text-slate-950 text-sm line-clamp-1">{off.name}</h3>
+          {off.contact ? (
+            <div className="pt-1.5 border-t border-slate-100 flex justify-center gap-2">
+              <a
+                href={`tel:${off.contact.replace(/[^+0-9]/g, '')}`}
+                onClick={(e) => e.stopPropagation()}
+                className="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                title="Call"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover/btn:opacity-100 transition-opacity z-0`} />
+                <FaPhoneAlt size={13} className="z-10 relative" />
+              </a>
+              <a
+                href={`https://wa.me/${off.contact.replace(/[^+0-9]/g, '')}`}
+                target="_blank" rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-9 h-9 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                title="WhatsApp"
+              >
+                <FaWhatsapp size={17} />
+              </a>
+            </div>
+          ) : (
+            <div className="text-[0.7rem] text-slate-400 font-medium">Tap to view info</div>
+          )}
+        </div>
+      </article>
+
+      {/* ── DESKTOP CARD (hidden on mobile, shown sm+): original design ── */}
+      <article
+        onClick={() => navigate(`/officials/${off.id}`)}
+        className="hidden sm:block group bg-white border border-slate-200 rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+        style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
+        title={`View ${off.name}'s profile`}
+      >
+        <div className="relative h-44 md:h-52 bg-slate-100 overflow-hidden">
+          <img
+            src={imgSrc}
+            onError={() => setImgSrc(defaultAvatar)}
+            alt={off.name}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          {/* Colour tint overlay on hover */}
+          <div className={`absolute inset-0 bg-gradient-to-t ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-25 transition-opacity duration-300`} />
+          {/* "View profile" pill that slides in on hover */}
+          <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="mx-auto max-w-fit rounded-full bg-slate-950/80 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.05em] text-white shadow-lg backdrop-blur-md">
+              View profile
+            </div>
+          </div>
+        </div>
+
+        {/* Name below the image */}
+        <div className="p-4 text-center">
+          <h3 className="font-bold text-slate-950 text-sm group-hover:text-purple-700 transition-colors line-clamp-2 leading-snug">
             {off.name}
           </h3>
+          {off.position && (
+            <p className="text-slate-500 text-xs mt-1 line-clamp-1">{off.position}</p>
+          )}
         </div>
-
-        {/* Action Buttons for Call & WhatsApp */}
-        {off.contact ? (
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-center gap-2.5">
-            <a
-              href={`tel:${off.contact.replace(/[^+0-9]/g, '')}`}
-              onClick={(e) => e.stopPropagation()}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 text-slate-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm active:scale-95"
-              title="Call Official"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover/btn:opacity-100 transition-opacity z-0`} />
-              <FaPhoneAlt size={13} className="z-10 relative" />
-            </a>
-            <a
-              href={`https://wa.me/${off.contact.replace(/[^+0-9]/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm active:scale-95"
-              title="WhatsApp"
-            >
-              <FaWhatsapp size={17} />
-            </a>
-          </div>
-        ) : (
-          <div className="mt-2 text-[0.7rem] text-slate-400 font-medium">Tap to view info</div>
-        )}
-      </div>
-    </article>
+      </article>
+    </>
   );
 }
 
@@ -348,7 +378,15 @@ export default function PublicView() {
     }
 
     const renderGrid = (items: any[]) => (
-      <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-6 justify-center">
+      <div className="grid grid-cols-2 gap-3.5 sm:hidden">
+        {items.map((off) => (
+          <OfficialCard key={off.id} off={off} cat={cat} navigate={navigate} />
+        ))}
+      </div>
+    );
+
+    const renderDesktopFlex = (items: any[]) => (
+      <div className="hidden sm:flex flex-wrap justify-center gap-4 sm:gap-6">
         {items.map((off) => (
           <OfficialCard key={off.id} off={off} cat={cat} navigate={navigate} />
         ))}
@@ -362,6 +400,7 @@ export default function PublicView() {
       return (
         <div className="space-y-6">
           {renderGrid(topRow)}
+          {renderDesktopFlex(topRow)}
           {remaining.length > 0 && (
             <div className="pt-2">
               <div className="flex items-center gap-3 mb-4">
@@ -370,13 +409,19 @@ export default function PublicView() {
                 <div className="h-px flex-1 bg-slate-200" />
               </div>
               {renderGrid(remaining)}
+              {renderDesktopFlex(remaining)}
             </div>
           )}
         </div>
       );
     }
 
-    return renderGrid(list);
+    return (
+      <>
+        {renderGrid(list)}
+        {renderDesktopFlex(list)}
+      </>
+    );
   };
 
   return (
