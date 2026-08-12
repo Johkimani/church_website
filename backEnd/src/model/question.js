@@ -35,6 +35,71 @@ const Question = {
       createdAt: r.created_at,
     }));
   },
+
+  getAllQuestions: async (page = 1, limit = 20, search = "") => {
+    const offset = (page - 1) * limit;
+    let query = `SELECT id, question_text, answers, correct_answer, created_at FROM questions`;
+    let countQuery = `SELECT COUNT(*) FROM questions`;
+    const params = [];
+
+    if (search && search.trim()) {
+      query += ` WHERE question_text ILIKE $1`;
+      countQuery += ` WHERE question_text ILIKE $1`;
+      params.push(`%${search.trim()}%`);
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    const queryParams = [...params, limit, offset];
+
+    const { rows } = await db.query(query, queryParams);
+    const countRes = await db.query(countQuery, params);
+    const total = parseInt(countRes.rows[0]?.count || "0", 10);
+
+    return {
+      questions: rows.map((r) => ({
+        _id: r.id,
+        questionText: r.question_text,
+        answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
+        correctAnswer: typeof r.correct_answer === "string" ? JSON.parse(r.correct_answer) : r.correct_answer,
+        createdAt: r.created_at,
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
+  },
+
+  updateQuestion: async (id, { questionText, answers, correctAnswer }) => {
+    const { rows } = await db.query(
+      `UPDATE questions
+       SET question_text = COALESCE($1, question_text),
+           answers = COALESCE($2, answers),
+           correct_answer = COALESCE($3, correct_answer)
+       WHERE id = $4
+       RETURNING id, question_text, answers, correct_answer, created_at`,
+      [
+        questionText || null,
+        answers ? JSON.stringify(answers) : null,
+        correctAnswer ? JSON.stringify(correctAnswer) : null,
+        id,
+      ]
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    return {
+      _id: r.id,
+      questionText: r.question_text,
+      answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
+      correctAnswer: typeof r.correct_answer === "string" ? JSON.parse(r.correct_answer) : r.correct_answer,
+      createdAt: r.created_at,
+    };
+  },
+
+  deleteQuestion: async (id) => {
+    const { rowCount } = await db.query(`DELETE FROM questions WHERE id = $1`, [id]);
+    return rowCount > 0;
+  },
 };
 
 export default Question;
+

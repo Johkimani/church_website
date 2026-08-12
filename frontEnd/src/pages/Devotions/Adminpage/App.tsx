@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { FaUserCircle, FaCheckCircle, FaUsers } from "react-icons/fa";
-import { generateAndSaveQuestions, fetchTable, publishStats } from "../../../api/axiosInstance";
+import { FaUserCircle, FaCheckCircle, FaUsers, FaTrash, FaEdit, FaSearch, FaSparkles } from "react-icons/fa";
+import {
+  generateAndSaveQuestions,
+  fetchTable,
+  publishStats,
+  fetchManageQuestions,
+  updateQuestionApi,
+  deleteQuestionApi,
+} from "../../../api/axiosInstance";
 import JumuiyaDashboard from "../jumuiyaStatus/JumuiyaDashboard";
 
 interface JumuiyaRow {
@@ -52,23 +59,25 @@ const carouselSlides = [
   },
 ];
 
-function AIEngine() {
+function AIEngine({ onGenerated }: { onGenerated?: () => void }) {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("Generating...");
   const [recentTopics, setRecentTopics] = useState([
     "Sermon on the Mount",
     "St. Francis of Assisi",
+    "Book of Daniel",
+    "Parable of Prodigal Son",
   ]);
-  const [success, setSuccess] = useState(false); // track success state
-  const [errorMessage, setErrorMessage] = useState(""); // track error state
+  const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const generate = async () => {
     const messages = [
       "Getting questions ready...",
-      "Combining the questions...",
-      "Almost there...",
-      "Questions ready in 3 seconds...",
+      "Combining scripture context...",
+      "Structuring options and explanations...",
+      "Saving to question bank...",
     ];
     let i = 0;
     const interval = setInterval(() => {
@@ -79,24 +88,23 @@ function AIEngine() {
 
     if (!topic.trim()) return;
     setLoading(true);
+    setErrorMessage("");
 
     try {
       const response = await generateAndSaveQuestions({ topic });
-      if (response.status === 201) {
+      if (response.status === 201 || response.status === 200) {
         setSuccess(true);
+        if (onGenerated) onGenerated();
       } else {
-        setErrorMessage(
-          "Unexpected response . Please try again. or find attachment ",
-        );
+        setErrorMessage("Unexpected response from question generator. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating insights:", error);
       setErrorMessage(
-        "Sorry, something went wrong while generating questions. Please check your connection or try again later.",
+        error?.response?.data?.error || "Sorry, something went wrong while generating questions. Please try again."
       );
     } finally {
       setLoading(false);
-      setTopic("");
       setLoadingText("Generated..");
       if (!recentTopics.includes(topic)) {
         const updated = [topic, ...recentTopics].slice(0, 5);
@@ -106,19 +114,18 @@ function AIEngine() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-stone-200 p-4 w-full">
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 w-full">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center shadow-sm">
-          <FaUserCircle className="w-5 h-5 text-white" />
+        <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center shadow-sm text-white">
+          <FaSparkles className="w-4 h-4" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-stone-800">
-            AI Question Engine : Ai generates questions based on your insights
+          <h2 className="text-base font-bold text-stone-800">
+            AI Question Generator Engine
           </h2>
           <p className="text-stone-500 text-xs">
-            Generate thoughtful discussion questions only one simple step ,
-            prompt , and see the magic
+            Generate multiple-choice liturgical & scripture questions powered by Ascension AI.
           </p>
         </div>
       </div>
@@ -126,54 +133,39 @@ function AIEngine() {
       {/* Main flex area */}
       <div className="flex flex-col md:flex-row gap-6 items-start">
         {/* Left side */}
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-3 w-full">
           {!success ? (
             <>
               <textarea
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="E.g., lets talk about The Parable of the Prodigal Son..."
-                className="w-full h-24 border border-stone-200 rounded-lg p-2 text-sm text-stone-700 placeholder-stone-400 resize-none focus:outline-none focus:ring-1 focus:ring-green-400 bg-stone-50"
+                placeholder="E.g., Let's talk about the Parable of the Prodigal Son or Catholic Marian Devotions..."
+                className="w-full h-28 border border-stone-200 rounded-xl p-3 text-sm text-stone-800 placeholder-stone-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-stone-50"
               />
-              <p className="text-right text-xs text-stone-400">
-                Suggested length: 1–2 sentences Example : "let the members know
-                about the book of Daniel"
-              </p>
+              <div className="flex justify-between items-center text-xs text-stone-400">
+                <span>Prompt Topic</span>
+                <span>Example: "Book of Romans & Grace"</span>
+              </div>
               <button
                 onClick={generate}
                 disabled={loading || !topic.trim()}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-all text-sm"
+                className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-sm"
               >
                 {loading ? (
                   <>
-                    <svg
-                      className="animate-spin w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v8z"
-                      />
+                    <svg className="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                     </svg>
                     {loadingText}
                   </>
                 ) : (
-                  "✦ Generate Questions"
+                  "✦ Generate Question Batch"
                 )}
               </button>
 
               {errorMessage && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 mt-2">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600 mt-2">
                   {errorMessage}
                 </div>
               )}
@@ -181,60 +173,42 @@ function AIEngine() {
           ) : (
             <>
               {/* Success container */}
-              <div className="flex flex-col items-center gap-3 bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-5 shadow-sm">
-                <FaCheckCircle className="w-10 h-10 text-green-500 animate-bounce" />
-                <h3 className="text-lg font-semibold text-green-700">
-                  🎉 Questions Generated Successfully!
+              <div className="flex flex-col items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-5 shadow-sm">
+                <FaCheckCircle className="w-10 h-10 text-emerald-500 animate-bounce" />
+                <h3 className="text-base font-bold text-emerald-800">
+                  Questions Generated Successfully!
                 </h3>
-                <p className="text-sm text-green-600 text-center leading-relaxed">
-                  Your questions are ready and saved. Come back in{" "}
-                  <span className="font-bold">3 days</span> to generate more.
-                  Meanwhile, explore them in the{" "}
-                  <span className="underline">Jumuiya section</span>.
+                <p className="text-xs text-emerald-700 text-center leading-relaxed">
+                  Your new batch of daily challenge questions has been processed and added to the question bank below.
                 </p>
+                <button
+                  onClick={() => { setSuccess(false); setTopic(""); }}
+                  className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  + Generate Another Topic
+                </button>
               </div>
-
-              {/* Disabled button */}
-              <button
-                disabled
-                className="w-full bg-gray-300 text-gray-600 font-medium py-2 rounded-lg flex items-center justify-center gap-2 text-sm cursor-not-allowed mt-2"
-              >
-                ⏳ Come back in 3 days
-              </button>
             </>
           )}
-        </div>
-
-        {/* Right side */}
-        <div className="flex-1 flex justify-center items-center ">
-          <img
-            src="../src/assets/images/ai-chatboot.png"
-            alt="Generate AI Questions Made Easy"
-            className="w-24 sm:w-32 md:w-40 lg:w-48 object-contain drop-shadow-lg"
-          />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex flex-wrap items-center gap-3 mt-4 border-t border-stone-200 pt-3">
-        <span className="text-sm font-medium text-stone-500">
-          Recent Topics:
+      <div className="flex flex-wrap items-center gap-2 mt-4 border-t border-stone-100 pt-3">
+        <span className="text-xs font-bold text-stone-500">
+          Suggested Topics:
         </span>
         {recentTopics.map((t) => (
           <button
             key={t}
             onClick={() => setTopic(t)}
-            className="px-2 py-1 text-xs rounded-md bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 transition-colors"
+            className="px-2.5 py-1 text-xs rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
           >
             {t}
           </button>
         ))}
-        <span className="ml-auto flex items-center text-xs text-stone-400 italic">
-          Powered by{" "}
-          <span className="ml-1 font-semibold text-green-600">
-            Ascension AI
-          </span>
-          <span className="ml-1 inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        <span className="ml-auto flex items-center text-[10px] text-stone-400 italic">
+          Powered by <span className="ml-1 font-bold text-amber-600 not-italic">Groq Llama-3</span>
         </span>
       </div>
     </div>
@@ -267,7 +241,7 @@ function Carousel() {
   const cur = carouselSlides[slide];
 
   return (
-    <div className="relative rounded-2xl overflow-hidden h-52 md:h-60 shadow-lg">
+    <div className="relative rounded-2xl overflow-hidden h-48 md:h-56 shadow-md">
       <img
         key={slide}
         src={cur.image}
@@ -279,27 +253,19 @@ function Carousel() {
 
       {/* Badge */}
       <div className="absolute top-4 left-4">
-        <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-widest uppercase">
-          ★ New Feature
+        <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full tracking-widest uppercase shadow-sm">
+          ★ Liturgical Portal
         </span>
       </div>
 
-      {/* Text container with margin from nav buttons */}
-      <div className="absolute inset-y-0 left-14 right-14 flex flex-col justify-center px-6 py-6">
-        <h1 className="text-white font-black text-xl md:text-3xl leading-tight drop-shadow-lg max-w-xs">
+      {/* Text container */}
+      <div className="absolute inset-y-0 left-6 right-14 flex flex-col justify-center px-4 py-6">
+        <h1 className="text-white font-black text-xl md:text-2xl leading-tight drop-shadow-md max-w-md">
           {cur.title}
         </h1>
-        <p className="text-white/80 text-xs md:text-sm mt-2 max-w-xs leading-relaxed">
+        <p className="text-white/80 text-xs md:text-sm mt-1.5 max-w-md leading-relaxed">
           {cur.subtitle}
         </p>
-        <div className="flex gap-3 mt-5 flex-wrap">
-          <button className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-5 py-2 rounded-lg transition-all">
-            Get Started
-          </button>
-          <button className="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-5 py-2 rounded-lg backdrop-blur-sm transition-all">
-            Learn More
-          </button>
-        </div>
       </div>
 
       {/* Dots */}
@@ -309,29 +275,11 @@ function Carousel() {
             key={i}
             onClick={() => goTo(i)}
             className={`h-2 rounded-full transition-all duration-300 ${
-              i === slide ? "bg-orange-400 w-5" : "bg-white/50 w-2"
+              i === slide ? "bg-amber-400 w-6" : "bg-white/50 w-2"
             }`}
           />
         ))}
       </div>
-
-      {/* Back button */}
-      <button
-        onClick={() =>
-          goTo((slide - 1 + carouselSlides.length) % carouselSlides.length)
-        }
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white text-lg leading-none transition-all duration-300 shadow-md"
-      >
-        ‹
-      </button>
-
-      {/* Forward button */}
-      <button
-        onClick={() => goTo((slide + 1) % carouselSlides.length)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white text-lg leading-none transition-all duration-300 shadow-md"
-      >
-        ›
-      </button>
     </div>
   );
 }
@@ -357,20 +305,20 @@ function PublishProgress() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-stone-200 p-5">
-      <div className="flex items-center justify-between">
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h3 className="font-bold text-stone-800">Progress Snapshots</h3>
-          <p className="text-xs text-stone-500 mt-1">
+          <h3 className="font-bold text-stone-800 text-base">Publish Progress Snapshots</h3>
+          <p className="text-xs text-stone-500 mt-0.5">
             {lastPublished
-              ? `Last published: ${lastPublished}`
-              : "Publish latest attempt data so users see updated stats."}
+              ? `Last published snapshot: ${lastPublished}`
+              : "Sync and lock official Jumuiya performance standings for all members."}
           </p>
         </div>
         <button
           onClick={handlePublish}
           disabled={publishing}
-          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2"
+          className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-2 shadow-sm"
         >
           {publishing ? (
             <>
@@ -381,14 +329,182 @@ function PublishProgress() {
               Publishing...
             </>
           ) : (
-            "Publish Progress"
+            "Publish Progress Snapshots"
           )}
         </button>
       </div>
       {published && (
-        <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
-          <span>Published successfully — users will now see the latest stats.</span>
+        <p className="text-xs font-semibold text-emerald-600 mt-3 flex items-center gap-1">
+          <FaCheckCircle /> Snapshots updated successfully! Member dashboards are now in sync.
         </p>
+      )}
+    </div>
+  );
+}
+
+function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [editingQuestion, setEditingQuestion] = useState<any | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const loadQuestions = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchManageQuestions({ page, limit: 10, search });
+      setQuestions(res.data?.questions || []);
+      setTotal(res.data?.total || 0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestions();
+  }, [page, search, refreshTrigger]);
+
+  const handleDelete = async (id: number | string) => {
+    if (!window.confirm("Are you sure you want to delete this question?")) return;
+    try {
+      await deleteQuestionApi(id);
+      loadQuestions();
+    } catch {
+      alert("Failed to delete question");
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingQuestion) return;
+    setSaving(true);
+    try {
+      await updateQuestionApi(editingQuestion._id, {
+        questionText: editingQuestion.questionText,
+        answers: editingQuestion.answers,
+        correctAnswer: editingQuestion.correctAnswer,
+      });
+      setEditingQuestion(null);
+      loadQuestions();
+    } catch {
+      alert("Failed to update question");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 mt-5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
+        <div>
+          <h3 className="font-bold text-stone-800 text-base">Question Bank Manager</h3>
+          <p className="text-xs text-stone-500">Manage and refine AI-generated questions in the database ({total} total questions)</p>
+        </div>
+        <div className="relative w-full sm:w-64">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search questions..."
+            className="w-full pl-9 pr-3 py-2 text-xs border border-stone-200 rounded-xl bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+          />
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs" />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="py-12 text-center text-xs text-stone-400">Loading Question Bank...</div>
+      ) : questions.length === 0 ? (
+        <div className="py-12 text-center text-xs text-stone-400">No questions found matching search criteria.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-stone-100 text-stone-600 uppercase text-[10px] font-bold">
+              <tr>
+                <th className="py-3 px-3"># ID</th>
+                <th className="py-3 px-3">Question Prompt</th>
+                <th className="py-3 px-3">Options</th>
+                <th className="py-3 px-3">Correct Choice</th>
+                <th className="py-3 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100 text-stone-700">
+              {questions.map((q) => {
+                const options = Array.isArray(q.answers) ? q.answers.map((a: any) => a.text || a) : [];
+                return (
+                  <tr key={q._id} className="hover:bg-stone-50/80">
+                    <td className="py-3 px-3 font-semibold text-stone-400">#{q._id}</td>
+                    <td className="py-3 px-3 font-semibold max-w-xs truncate" title={q.questionText}>
+                      {q.questionText}
+                    </td>
+                    <td className="py-3 px-3 max-w-xs truncate text-stone-500">
+                      {options.join(" | ")}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded-md">
+                        {q.correctAnswer?.option || q.correctAnswer?.text || "Choice"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setEditingQuestion(q)}
+                          className="p-1.5 text-stone-600 hover:text-amber-600 transition-colors"
+                          title="Edit Question"
+                        >
+                          <FaEdit size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(q._id)}
+                          className="p-1.5 text-stone-400 hover:text-red-600 transition-colors"
+                          title="Delete Question"
+                        >
+                          <FaTrash size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingQuestion && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl space-y-4">
+            <h3 className="font-bold text-stone-800 text-base">Edit Question</h3>
+            <div>
+              <label className="text-xs font-bold text-stone-600 block mb-1">Question Prompt</label>
+              <textarea
+                value={editingQuestion.questionText}
+                onChange={(e) => setEditingQuestion({ ...editingQuestion, questionText: e.target.value })}
+                className="w-full border border-stone-200 rounded-xl p-2.5 text-xs bg-stone-50"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setEditingQuestion(null)}
+                className="px-4 py-2 text-xs font-semibold text-stone-600 bg-stone-100 rounded-xl hover:bg-stone-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="px-4 py-2 text-xs font-semibold text-white bg-amber-600 rounded-xl hover:bg-amber-700"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -397,17 +513,12 @@ function PublishProgress() {
 function MemberProfile({ member }: { member: JumuiyaRow }) {
   return (
     <div className="p-4 space-y-5">
-      <div
-        className="flex items-center gap-4 bg-white rounded-2xl p-5 shadow-sm border border-stone-100 
-                   transition transform hover:bg-stone-50 hover:scale-[1.02] hover:shadow-md"
-      >
-        <div className="w-16 h-16 flex items-center justify-center text-orange-500">
+      <div className="flex items-center gap-4 bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+        <div className="w-16 h-16 flex items-center justify-center text-amber-600">
           <FaUserCircle className="w-14 h-14" />
         </div>
         <div>
-          <h2 className="text-xl font-black text-stone-800">
-            {member.name}
-          </h2>
+          <h2 className="text-xl font-black text-stone-800">{member.name}</h2>
           <p className="text-stone-400 text-sm">{member.slug || member.name}</p>
         </div>
       </div>
@@ -419,6 +530,7 @@ function MemberProfile({ member }: { member: JumuiyaRow }) {
 export default function Appadmin() {
   const [view, setView] = useState<string>("dashboard");
   const [members, setMembers] = useState<JumuiyaRow[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     fetchTable("sub_groups", { limit: "50" })
@@ -432,157 +544,47 @@ export default function Appadmin() {
   }, []);
 
   const activeMember = members.find((m) => m.group_id === view);
-  
 
   return (
-    <div className="min-h-screen bg-stone-100 flex font-sans">
-      {/* Sidebar desktop */}
-      <aside className="hidden md:flex flex-col w-56 bg-white border-r border-stone-100 fixed left-0 top-0 bottom-0 z-20">
-        <div className="px-4 py-4 border-b border-stone-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <svg
-                className="w-4 h-4 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
-              </svg>
-            </div>
-            <span className="font-black text-stone-800">csk Admin</span>
-          </div>
-        </div>
-        <nav className="px-3 py-4">
+    <div className="min-h-screen bg-stone-50 p-4 sm:p-6 font-sans">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Navigation Tab selection inside UniversalAdmin */}
+        <div className="flex items-center gap-2 border-b border-stone-200 pb-3 overflow-x-auto">
           <button
             onClick={() => setView("dashboard")}
-            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${view === "dashboard" ? "bg-orange-500 text-white shadow" : "text-stone-600 hover:bg-stone-50"}`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              view === "dashboard" ? "bg-amber-600 text-white shadow-sm" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100"
+            }`}
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            AI Engine & Question Bank
+          </button>
+          {members.map((m) => (
+            <button
+              key={m.group_id}
+              onClick={() => setView(m.group_id)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                view === m.group_id ? "bg-amber-600 text-white shadow-sm" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100"
+              }`}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"
-              />
-            </svg>
-            Dashboard
-          </button>
-        </nav>
-        <div className="px-3 flex-1 overflow-y-auto">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-              Members
-            </span>
-            <div className="w-4 h-4 text-stone-400">⊕</div>
-          </div>
-          <ul className="space-y-0.5">
-            <ul className="space-y-1">
-              {members.map((m) => (
-                <li key={m.group_id}>
-                  <button
-                    onClick={() => setView(m.group_id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all duration-200 ease-in-out
-          ${
-            view === m.group_id
-              ? "bg-orange-50 text-orange-600 font-semibold shadow-sm"
-              : "text-stone-600 hover:bg-stone-100 hover:text-orange-500 hover:shadow"
-          }`}
-                  >
-                    <FaUsers className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">{m.name}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </ul>
+              {m.name}
+            </button>
+          ))}
         </div>
-        <div className="px-4 py-3 border-t border-stone-100 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-white text-xs font-bold">
-            AU
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-stone-700 truncate">
-              Admin User
-            </p>
-            <p className="text-[10px] text-stone-400 truncate">
-              admin@faithascension.org
-            </p>
-          </div>
-          <span className="text-stone-400 text-lg">⚙</span>
-        </div>
-      </aside>
 
-      {/* Main */}
-      <main className="flex-1 md:ml-56 overflow-y-auto pb-20 md:pb-6">
-        <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-stone-100 px-4 py-3 flex items-center justify-between md:hidden">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
-              <svg
-                className="w-3 h-3 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
-              </svg>
-            </div>
-            <span className="font-black text-stone-800 text-sm">
-              {view === "dashboard" ? "Dashboard" : activeMember?.name}
-            </span>
-          </div>
-          <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-white text-xs font-bold">
-            AU
-          </div>
-        </header>
-
-         {view === "dashboard" ? (
-          <div className="p-4 space-y-5">
+        {view === "dashboard" ? (
+          <div className="space-y-6">
             <Carousel />
-            <AIEngine />
+            <AIEngine onGenerated={() => setRefreshTrigger((prev) => prev + 1)} />
             <PublishProgress />
+            <QuestionBankManager refreshTrigger={refreshTrigger} />
           </div>
-        ) : activeMember ? ( <MemberProfile member={activeMember} /> ) : (
-          <div className="p-8 text-center text-stone-400 text-sm">Select a jumuiya from the sidebar</div>
+        ) : activeMember ? (
+          <MemberProfile member={activeMember} />
+        ) : (
+          <div className="p-8 text-center text-stone-400 text-sm">Select a Jumuiya tab above</div>
         )}
-      </main>
-
-      {/* Bottom nav mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 z-30 flex shadow-lg overflow-x-auto">
-        <button
-          onClick={() => setView("dashboard")}
-          className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-2.5 text-[9px] font-bold transition-all ${view === "dashboard" ? "text-orange-500" : "text-stone-400"}`}
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"
-            />
-          </svg>
-          Home
-        </button>
-        {members.map((m) => (
-          <button
-            key={m.group_id}
-            onClick={() => setView(m.group_id)}
-            className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 py-2.5 text-[9px] font-bold transition-all ${view === m.group_id ? "text-orange-500" : "text-stone-400"}`}
-          >
-            <span className="truncate w-10 text-center">
-              {m.name.split(" ")[0]}
-            </span>
-          </button>
-        ))}
-      </nav>
+      </div>
     </div>
   );
 }
+

@@ -6,11 +6,11 @@ import {
 } from "../data/questions";
 import type { Question } from "../data/questions";
 import { LocalStorage } from "../../../utils";
-import { fetchDailyQuestions } from "../../../api/axiosInstance"; // ✅ your API
-import { parseQuestionsFromText, mapDbQuestions } from "../utitlty";
+import { fetchDailyQuestions, recordAttemptApi, fetchTodayChallengeStatus } from "../../../api/axiosInstance";
+import { mapDbQuestions } from "../utitlty";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, CheckCircle2 } from "lucide-react";
 
 // 🔁 TOGGLE HERE
 const USE_DB = true;
@@ -21,7 +21,11 @@ export default function Challenge() {
 
   const today = new Date().toDateString();
 
-  const [portalStatus, setPortalStatus] = useState<"welcome" | "portal" | "closed" | "completed" >("welcome");
+  const memberId = user?.member_id || user?.id || user?.user_id || "guest";
+  const jumuiyaId = user?.jumuiya_id || user?.jumuiyaId || "general";
+
+  const [portalStatus, setPortalStatus] = useState<"welcome" | "portal" | "closed" | "completed">("welcome");
+  const [completedToday, setCompletedToday] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
@@ -30,6 +34,23 @@ export default function Challenge() {
   const [timeLeft, setTimeLeft] = useState(60 * 60); // 1 hour
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // CHECK TODAY COMPLETION STATUS
+  useEffect(() => {
+    async function checkStatus() {
+      try {
+        if (user) {
+          const res = await fetchTodayChallengeStatus();
+          if (res.data?.completedToday) {
+            setCompletedToday(true);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check challenge completion status", err);
+      }
+    }
+    checkStatus();
+  }, [user]);
 
   //  LOAD QUESTIONS
   useEffect(() => {
@@ -52,8 +73,6 @@ export default function Challenge() {
           setQuestions(parsed);
           localStorage.setItem(`questions_${today}`, JSON.stringify(parsed));
         } else {
-          // if the flag is false, use local utility to get questions (could be static or from local JSON)
-          //  This allows you to easily switch between a dynamic API source and a static local source for testing or fallback
           const local = getQuestionsForToday();
           if (!local.length) {
             setPortalStatus("closed");
@@ -99,27 +118,42 @@ export default function Challenge() {
   };
 
   //  EXAM MODE (NO GOING BACK)
-  const handleNextQuestion = (selectedIndex: number) => {
+  const handleNextQuestion = async (selectedIndex: number) => {
     const current = questions[currentQuestionIndex];
     const isCorrect = selectedIndex === current.correctAnswer;
+    const selectedOption = current.options[selectedIndex];
 
     setUserAnswers((prev) => [...prev, selectedIndex]);
 
-    //  SOCKET EMIT --this is what we will emit to the database and listen at our admin side to update real-time stats
-    //  and track user progress. You can expand the payload with more user info or question details as needed.
-    socket?.emit("attempt", {
-      questionId: current.id,
-      memberId: user?.member_id || "unknown",
-      jumuiyaId: user?.jumuiya_id || "unknown",
-      selectedOption: current.options[selectedIndex],
-      isCorrect,
-    });
+    //  1. SOCKET EMIT (Real-time admin dashboard stream)
+    if (socket && socket.connected) {
+      socket.emit("attempt", {
+        questionId: current.id,
+        memberId,
+        jumuiyaId,
+        selectedOption,
+        isCorrect,
+      });
+    }
 
+    //  2. HTTP REST FALLBACK (Guaranteed DB Persistence)
+    try {
+      await recordAttemptApi({
+        questionId: current.id,
+        memberId,
+        jumuiyaId,
+        selectedOption,
+        isCorrect,
+      });
+    } catch (err) {
+      console.warn("HTTP attempt fallback failed:", err);
+    }
 
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
       setPortalStatus("completed");
+      setCompletedToday(true);
     }
   };
 
@@ -134,6 +168,7 @@ export default function Challenge() {
   const score = userAnswers.filter(
     (ans, i) => ans === questions[i]?.correctAnswer,
   ).length;
+
 
   // ================= UI =================
 

@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import { SessionStorage } from "../utils";
 import type { fileUpload } from "../interface/api";
 import { normalizeFiles } from "../pages/Devotions/utitlty";
@@ -130,6 +130,26 @@ export const generateAndSaveQuestions = (data: { topic: string }) =>
 
 export const fetchDailyQuestions = (limit: number = 10) =>
   apiClient.get(`/questions/?limit=${limit}`);
+
+export const fetchManageQuestions = (params?: { page?: number; limit?: number; search?: string }) =>
+  apiClient.get("/questions/manage", { params });
+
+export const updateQuestionApi = (id: string | number, payload: any) =>
+  apiClient.put(`/questions/${id}`, payload);
+
+export const deleteQuestionApi = (id: string | number) =>
+  apiClient.delete(`/questions/${id}`);
+
+export const recordAttemptApi = (payload: {
+  questionId: number | string;
+  memberId?: string;
+  jumuiyaId?: string;
+  selectedOption: string;
+  isCorrect: boolean;
+}) => apiClient.post("/questions/attempt", payload);
+
+export const fetchTodayChallengeStatus = () => apiClient.get("/questions/today-status");
+
 
 export type AssistantChatHistoryItem = {
   role: "user" | "assistant";

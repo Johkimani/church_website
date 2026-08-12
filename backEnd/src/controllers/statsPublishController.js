@@ -91,8 +91,14 @@ export const getPublishedComparison = async (req, res) => {
     const result = await pool.query(
       `SELECT stat_data, published_at FROM published_stats WHERE stat_type = 'comparison' ORDER BY published_at DESC`
     );
-    const data = result.rows.map((r) => r.stat_data);
-    const publishedAt = result.rows[0]?.published_at || null;
+    let data = result.rows.map((r) => r.stat_data);
+    let publishedAt = result.rows[0]?.published_at || null;
+
+    if (data.length === 0) {
+      // Fallback to live attempts calculation if no snapshot exists yet
+      data = await getComparisonAll();
+    }
+
     res.json({ data, publishedAt });
   } catch (err) {
     logger.error("Failed to fetch published comparison:", err);
@@ -103,21 +109,31 @@ export const getPublishedComparison = async (req, res) => {
 // GET /published/member-progress — user-facing, reads from snapshot
 export const getPublishedMemberProgress = async (req, res) => {
   try {
-    const memberId = req.user.memberId;
+    const memberId = req.user?.memberId || req.user?.id;
 
-    const summary = await pool.query(
+    const summaryRes = await pool.query(
       `SELECT stat_data FROM published_stats WHERE stat_type = 'member_summary' AND member_id = $1 ORDER BY published_at DESC LIMIT 1`,
       [memberId]
     );
 
-    const weeks = await pool.query(
+    const weeksRes = await pool.query(
       `SELECT stat_data FROM published_stats WHERE stat_type = 'member_progress' AND member_id = $1 ORDER BY stat_data->>'week' ASC`,
       [memberId]
     );
 
+    let summary = summaryRes.rows[0]?.stat_data || null;
+    let weeks = weeksRes.rows.map((r) => r.stat_data);
+
+    if (!summary || weeks.length === 0) {
+      // Import live queries fallback
+      const { getMemberSummary, getMemberProgress } = await import("../model/attemptSchema.js");
+      summary = await getMemberSummary(memberId);
+      weeks = await getMemberProgress(memberId);
+    }
+
     res.json({
-      summary: summary.rows[0]?.stat_data || { totalAttempts: 0, correctAttempts: 0 },
-      weeks: weeks.rows.map((r) => r.stat_data),
+      summary: summary || { totalAttempts: 0, correctAttempts: 0 },
+      weeks,
     });
   } catch (err) {
     logger.error("Failed to fetch published member progress:", err);
@@ -133,9 +149,32 @@ export const getPublishedJumuiyaDashboard = async (req, res) => {
       `SELECT stat_data FROM published_stats WHERE stat_type = 'comparison' AND jumuiya_id = $1 ORDER BY published_at DESC LIMIT 1`,
       [jumuiyaId]
     );
-    res.json(result.rows[0]?.stat_data || { totalAttempts: 0, correctAttempts: 0, accuracy: 0 });
+    let data = result.rows[0]?.stat_data;
+
+    if (!data) {
+      // Fallback to live attempts query for this jumuiya
+      const { rows } = await pool.query(
+        `SELECT
+           COUNT(*) AS total_attempts,
+           COUNT(*) FILTER (WHERE is_correct) AS correct_attempts,
+           CASE WHEN COUNT(*) = 0 THEN 0
+             ELSE ROUND(COUNT(*) FILTER (WHERE is_correct) * 100.0 / COUNT(*), 2)
+           END AS accuracy
+         FROM attempts
+         WHERE jumuiya_id = $1`,
+        [jumuiyaId]
+      );
+      data = {
+        totalAttempts: Number(rows[0]?.total_attempts || 0),
+        correctAttempts: Number(rows[0]?.correct_attempts || 0),
+        accuracy: Number(rows[0]?.accuracy || 0),
+      };
+    }
+
+    res.json(data);
   } catch (err) {
     logger.error("Failed to fetch published jumuiya dashboard:", err);
     res.status(500).json({ status: false, message: "Failed to fetch dashboard" });
   }
 };
+
