@@ -1345,7 +1345,11 @@ export default function AttendanceTallyAdmin() {
                       <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} />
                       <Tooltip cursor={{ fill: "#f1f5f9" }} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="current" name="Current period" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="current" name="Current period" radius={[4, 4, 0, 0]}>
+                        {chartData.map((d, i) => (
+                          <Cell key={i} fill={dimRows[i]?.color || "#4f46e5"} />
+                        ))}
+                      </Bar>
                       <Bar dataKey="previous" name="Previous period" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1399,21 +1403,21 @@ export default function AttendanceTallyAdmin() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
-                        <th className="px-5 py-3">#</th>
-                        <th className="px-3 py-3">{analyticsDim === "year" ? "Year of Study" : "Jumuiya"}</th>
-                        <th className="px-3 py-3 text-right">Members (act/total)</th>
-                        <th className="px-3 py-3 text-right">Tally Days</th>
-                        <th className="px-3 py-3 text-right">Attendance</th>
-                        <th className="px-3 py-3 text-right">Avg/Session</th>
-                        <th className="px-3 py-3 text-right">Rate vs Total</th>
-                        <th className="px-3 py-3 text-right">Rate vs Active</th>
-                        <th className="px-3 py-3 text-right">vs Prev Period</th>
+                        <th className="px-5 py-3.5">#</th>
+                        <th className="px-4 py-3.5">{analyticsDim === "year" ? "Year of Study" : "Jumuiya"}</th>
+                        <th className="px-4 py-3.5 text-right">Members (act/total)</th>
+                        <th className="px-4 py-3.5 text-right">Tally Days</th>
+                        <th className="px-4 py-3.5 text-right">Attendance</th>
+                        <th className="px-4 py-3.5 text-right">Avg/Session</th>
+                        <th className="px-4 py-3.5 text-right">Rate vs Total</th>
+                        <th className="px-4 py-3.5 text-right">Rate vs Active</th>
+                        <th className="px-4 py-3.5 text-right">vs Prev Period</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {sortedDimRows.map((j) => (
                         <tr key={j.group_key} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="px-5 py-3">
+                          <td className="px-5 py-3.5">
                             <span
                               className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black ${
                                 j.rank === 1
@@ -1426,21 +1430,21 @@ export default function AttendanceTallyAdmin() {
                               {j.rank}
                             </span>
                           </td>
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-2">
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2.5">
                               <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: j.color || "#64748b" }} />
                               <span className="font-semibold text-slate-800 whitespace-nowrap">{j.name}</span>
                             </div>
                           </td>
-                          <td className="px-3 py-3 text-right text-slate-600 whitespace-nowrap">
+                          <td className="px-4 py-3.5 text-right text-slate-600 whitespace-nowrap tabular-nums">
                             {j.active_members}<span className="text-slate-400"> / {j.total_members}</span>
                           </td>
-                          <td className="px-3 py-3 text-right text-slate-600">{j.tally_days}</td>
-                          <td className="px-3 py-3 text-right font-bold text-slate-800">{j.attendance_count}</td>
-                          <td className="px-3 py-3 text-right text-slate-600">{j.avg_per_session}</td>
-                          <td className="px-3 py-3 text-right text-slate-600">{pct(j.rate_vs_total)}</td>
-                          <td className="px-3 py-3 text-right font-semibold text-slate-700">{pct(j.rate_vs_active)}</td>
-                          <td className="px-3 py-3 text-right">
+                          <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.tally_days}</td>
+                          <td className="px-4 py-3.5 text-right font-bold text-slate-800 tabular-nums">{j.attendance_count}</td>
+                          <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.avg_per_session}</td>
+                          <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{pct(j.rate_vs_total)}</td>
+                          <td className="px-4 py-3.5 text-right font-semibold text-slate-700 tabular-nums">{pct(j.rate_vs_active)}</td>
+                          <td className="px-4 py-3.5 text-right">
                             <TrendBadge delta={j.trend.delta_vs_active} />
                           </td>
                         </tr>
