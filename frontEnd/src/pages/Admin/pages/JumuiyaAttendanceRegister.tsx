@@ -308,6 +308,11 @@ export default function JumuiyaAttendanceRegister({
                     but a register already exists here — you can still edit it.
                   </div>
                 ) : (
+                  <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg px-4 py-2.5">
+                    {date} is not a {jumuiyaName} meeting day. {jumuiyaName} meets every{" "}
+                    <b>{ctx?.meeting_label}</b> — the register is for the weekly meeting.
+                  </div>
+                )}
 
                 {!loading && ctx?.session_exists && (
                   <div className="mt-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg px-4 py-2.5 flex items-center justify-between gap-3">
