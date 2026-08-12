@@ -408,9 +408,7 @@ export default function AttendanceTallyAdmin() {
 
   const canEditConfig = useMemo(() => {
     const roles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
-    return roles.some((r) =>
-      ["csa_secretary", "csa_chair", "jumuiya_coordinator"].includes(String(r).toLowerCase())
-    );
+    return roles.some((r) => String(r).toLowerCase().trim() === "jumuiya_coordinator");
   }, [user]);
 
   const loadConfig = useCallback(async () => {
@@ -1580,7 +1578,7 @@ function MeetingDaysTab({
         </p>
         {!canEdit && (
           <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Read-only — only the CSA Secretary, CSA Chairperson, or Jumuiya Coordinator can change meeting days.
+            Read-only — only the Jumuiya Coordinator can change meeting days.
           </p>
         )}
       </div>

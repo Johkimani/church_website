@@ -56,23 +56,25 @@ router.delete(
   deleteRegister
 );
 
-// Meeting-day config: CSA/coordinator manage it, all attendance roles can view.
+// Meeting-day config powers the Attendance Tally page's "Meeting Days" tab,
+// which is exclusively the Jumuiya Coordinator's surface (frontend page access
+// is coordinator-only), so all reads/writes here are coordinator-only too.
 router.get(
   '/meeting-config',
   verifyToken,
-  requireRole(...JUMUIYA_ROLES),
+  requireRole('jumuiya_coordinator'),
   getMeetingConfigs
 );
 router.put(
   '/meeting-config/:jumuiya_id',
   verifyToken,
-  requireRole(...CSA_ROLES),
+  requireRole('jumuiya_coordinator'),
   updateMeetingConfig
 );
 router.delete(
   '/meeting-config/:jumuiya_id',
   verifyToken,
-  requireRole(...CSA_ROLES),
+  requireRole('jumuiya_coordinator'),
   deleteMeetingConfig
 );
 
