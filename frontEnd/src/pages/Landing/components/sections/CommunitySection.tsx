@@ -13,6 +13,7 @@ const CommunitySection: React.FC = () => {
       icon: <Grid size={22} />,
       accent: '#2563eb',
       link: '/jumuiya',
+      image: '/images/biblestudy.webp',
     },
     {
       title: 'Activities',
@@ -21,6 +22,7 @@ const CommunitySection: React.FC = () => {
       icon: <Activity size={22} />,
       accent: '#059669',
       link: '/activities',
+      image: '/images/eucharist.jpg',
     },
     {
       title: 'Projects',
@@ -29,6 +31,7 @@ const CommunitySection: React.FC = () => {
       icon: <Layers size={22} />,
       accent: '#d97706',
       link: '/projects',
+      image: '/images/church.jpg',
     },
     {
       title: 'Officials',
@@ -37,6 +40,7 @@ const CommunitySection: React.FC = () => {
       icon: <Users size={22} />,
       accent: '#7c3aed',
       link: '/officials',
+      image: '/images/st-thomas-icon.jpg',
     },
   ];
 
@@ -67,35 +71,50 @@ const CommunitySection: React.FC = () => {
             <button
               key={item.title}
               onClick={() => navigate(item.link)}
-              className="group relative text-left bg-white rounded-3xl p-7 border border-stone-100 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+              className="group relative text-left bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden"
             >
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 text-white transition-transform duration-300 group-hover:scale-110"
-                style={{ backgroundColor: item.accent }}
-              >
-                {item.icon}
+              {/* Themed image header */}
+              <div className="relative h-44 overflow-hidden">
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-900/70 via-stone-900/10 to-transparent" />
+
+                {/* Accent icon chip */}
+                <div
+                  className="absolute top-4 right-4 w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                  style={{ backgroundColor: item.accent }}
+                >
+                  {item.icon}
+                </div>
               </div>
 
-              <span
-                className="inline-block px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase mb-3"
-                style={{ backgroundColor: `${item.accent}14`, color: item.accent }}
-              >
-                {item.label}
-              </span>
+              {/* Body */}
+              <div className="p-7">
+                <span
+                  className="inline-block px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.18em] uppercase mb-3"
+                  style={{ backgroundColor: `${item.accent}14`, color: item.accent }}
+                >
+                  {item.label}
+                </span>
 
-              <h3 className="text-xl font-bold text-stone-800 mb-2 tracking-tight">
-                {item.title}
-              </h3>
-              <p className="text-stone-500 font-medium text-sm leading-relaxed">
-                {item.description}
-              </p>
+                <h3 className="text-xl font-bold text-stone-800 mb-2 tracking-tight">
+                  {item.title}
+                </h3>
+                <p className="text-stone-500 font-medium text-sm leading-relaxed">
+                  {item.description}
+                </p>
 
-              <div
-                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold transition-colors"
-                style={{ color: item.accent }}
-              >
-                View Details
-                <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
+                <div
+                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold transition-colors"
+                  style={{ color: item.accent }}
+                >
+                  View Details
+                  <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
               </div>
             </button>
           ))}
