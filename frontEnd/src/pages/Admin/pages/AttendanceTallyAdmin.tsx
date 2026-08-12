@@ -610,7 +610,7 @@ export default function AttendanceTallyAdmin() {
   const todayIso = todayStr();
   const semesterActive = !!(semester && todayIso >= semester.start_date && todayIso <= semester.end_date);
   const dateInSemester = !!(semester && date >= semester.start_date && date <= semester.end_date);
-  const tallyDisabled = !context?.isTallyDay || tallyLoading || (semester ? !dateInSemester : false);
+  const tallyDisabled = !context?.isTallyDay || tallyLoading || (semester ? !dateInSemester && !isSaved : false);
 
   const handleSave = async () => {
     if (!context || !context.isTallyDay) return;
@@ -1119,7 +1119,9 @@ export default function AttendanceTallyAdmin() {
                   <Lock size={14} className="shrink-0" />
                   <span>
                     {date} is outside the current semester ({semester.start_date} → {semester.end_date}).
-                    Tallies are only recorded within the semester window.
+                    {isSaved
+                      ? " You can still edit this tally recorded during the semester."
+                      : " New tallies are only recorded within the semester window."}
                   </span>
                 </div>
               )}

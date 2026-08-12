@@ -164,31 +164,38 @@ export const saveRegister = async (req, res) => {
   }
 
   try {
-    // New register saves are only allowed within the current semester window.
-    // Historical registers stay readable, and the meeting-day schedule only
-    // applies inside the window (special gatherings/retreats are not falsely
-    // rejected during the break).
-    const semester = await getCurrentSemester();
-    const inSemester = isDateInSemester(normalizedDate, semester);
-
-    if (!inSemester) {
-      const window = semester
-        ? ` (${semester.start_date} → ${semester.end_date})`
-        : "";
-      return res.status(400).json({
-        success: false,
-        error: `Register saves are closed for the semester break. Registers can only be recorded within the current semester${window}.`,
-      });
-    }
-
     const jumuiya = await getJumuiya(jumuiya_id);
     if (!jumuiya) {
       return res.status(404).json({ success: false, error: "Jumuiya not found" });
     }
 
-    // Meeting-day validation (skip only when no meeting day is configured).
+    // Register saves are only allowed within the current semester window, EXCEPT
+    // that an existing register for this jumuiya + date (recorded during the
+    // semester) may still be edited during the break. The meeting-day schedule
+    // only applies inside the window (special gatherings/retreats are not
+    // falsely rejected during the break).
+    const semester = await getCurrentSemester();
+    const inSemester = isDateInSemester(normalizedDate, semester);
+
+    if (!inSemester) {
+      const existing = await pool.query(
+        `SELECT 1 FROM jumuiya_attendance WHERE jumuiya_id = $1 AND attendance_date = $2 LIMIT 1`,
+        [jumuiya.group_id, normalizedDate]
+      );
+      if (existing.rows.length === 0) {
+        const window = semester
+          ? ` (${semester.start_date} → ${semester.end_date})`
+          : "";
+        return res.status(400).json({
+          success: false,
+          error: `Register saves are closed for the semester break. New registers can only be recorded within the current semester${window}.`,
+        });
+      }
+    }
+
+    // Meeting-day validation (applies only inside the semester window).
     const meetingDay = await getMeetingConfig(jumuiya.group_id);
-    if (meetingDay != null && dowOf(normalizedDate) !== meetingDay) {
+    if (inSemester && meetingDay != null && dowOf(normalizedDate) !== meetingDay) {
       return res.status(400).json({
         success: false,
         error: `${normalizedDate} is not a ${jumuiya.name} meeting day. ${jumuiya.name} meets every ${DAY_NAMES[meetingDay]}.`,

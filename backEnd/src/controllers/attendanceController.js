@@ -348,15 +348,23 @@ export const saveSession = async (req, res) => {
     }
 
     // Tallies may only be recorded within the current semester window.
+    // A tally already recorded for this date (during the semester) may still be
+    // edited during the break — only brand-new tallies are blocked.
     const semester = await getCurrentSemester();
     if (!isDateInSemester(normalizedDate, semester)) {
-      const window = semester
-        ? ` (${semester.start_date} → ${semester.end_date})`
-        : "";
-      return res.status(400).json({
-        success: false,
-        error: `Attendance tallies are closed for the semester break. Tallies can only be recorded within the current semester${window}.`,
-      });
+      const existing = await pool.query(
+        `SELECT 1 FROM attendance_tallies WHERE tally_date = $1 LIMIT 1`,
+        [normalizedDate]
+      );
+      if (existing.rows.length === 0) {
+        const window = semester
+          ? ` (${semester.start_date} → ${semester.end_date})`
+          : "";
+        return res.status(400).json({
+          success: false,
+          error: `Attendance tallies are closed for the semester break. New tallies can only be recorded within the current semester${window}.`,
+        });
+      }
     }
 
     const recordedBy = req.user?.id || req.user?.member_id || "";
