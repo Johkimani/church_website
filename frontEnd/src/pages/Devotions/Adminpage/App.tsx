@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { FaUserCircle, FaCheckCircle, FaUsers, FaTrash, FaEdit, FaSearch } from "react-icons/fa";
-import { Sparkles } from "lucide-react";
+import { Sparkles, TrendingUp, Award, BarChart3, PieChart as PieIcon, RefreshCw, Users, ShieldCheck } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend
+} from "recharts";
 import {
   generateAndSaveQuestions,
   fetchTable,
@@ -8,9 +11,9 @@ import {
   fetchManageQuestions,
   updateQuestionApi,
   deleteQuestionApi,
+  fetchPublishedComparison,
 } from "../../../api/axiosInstance";
 import JumuiyaDashboard from "../jumuiyaStatus/JumuiyaDashboard";
-
 
 interface JumuiyaRow {
   group_id: string;
@@ -513,6 +516,214 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
   );
 }
 
+const JUMUIYA_NAMES: Record<string, string> = {
+  "st-anthony": "St. Anthony of Padua",
+  "st-augustine": "St. Augustine",
+  "st-catherine": "St. Catherine of Alexandria",
+  "st-dominic": "St. Dominic",
+  "st-elizabeth": "St. Elizabeth of Hungary",
+  "st-maria-goretti": "St. Maria Goretti",
+  "st-monica": "St. Monica",
+};
+
+const JUMUIYA_COLORS: Record<string, string> = {
+  "st-anthony": "#8b5cf6",
+  "st-augustine": "#3b82f6",
+  "st-catherine": "#b91c1c",
+  "st-dominic": "#64748b",
+  "st-elizabeth": "#16a34a",
+  "st-maria-goretti": "#0ea5e9",
+  "st-monica": "#ea580c",
+};
+
+function formatJumuiyaSlug(slug: string): string {
+  if (JUMUIYA_NAMES[slug]) return JUMUIYA_NAMES[slug];
+  if (!slug) return "General Jumuiya";
+  return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function JumuiyaAnalyticsOverview() {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchPublishedComparison();
+      const raw = Array.isArray(res.data?.data) ? res.data.data : [];
+      setData(raw);
+    } catch (err) {
+      console.error("Failed to load analytics:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const totalParishAttempts = data.reduce((sum, item) => sum + (item.totalAttempts || 0), 0);
+  const totalParishCorrect = data.reduce((sum, item) => sum + (item.correctAttempts || 0), 0);
+  const avgAccuracy = totalParishAttempts ? (totalParishCorrect / totalParishAttempts) * 100 : 0;
+
+  const sortedData = [...data].sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0));
+  const topJumuiya = sortedData[0] ? formatJumuiyaSlug(sortedData[0]._id) : "N/A";
+
+  const chartData = sortedData.map((j) => ({
+    name: formatJumuiyaSlug(j._id),
+    accuracy: j.accuracy || 0,
+    attempts: j.totalAttempts || 0,
+    correct: j.correctAttempts || 0,
+    color: JUMUIYA_COLORS[j._id] || "#f59e0b",
+  }));
+
+  return (
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-stone-900 via-amber-950 to-stone-900 rounded-2xl p-6 text-white shadow-md border border-stone-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-extrabold uppercase tracking-widest mb-2">
+              <BarChart3 size={12} /> Liturgist Analytics Dashboard
+            </div>
+            <h2 className="text-2xl font-black tracking-tight">7 Jumuiyas Performance Over Time</h2>
+            <p className="text-xs text-stone-300 mt-1 max-w-xl">
+              Track parish-wide participation, liturgical accuracy, and spiritual engagement across all seven Jumuiya communities.
+            </p>
+          </div>
+          <button
+            onClick={loadAnalytics}
+            disabled={loading}
+            className="self-start md:self-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold rounded-xl transition-all flex items-center gap-2 shadow-sm"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            Refresh Analytics
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total Attempts</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Users size={16} />
+            </div>
+          </div>
+          <p className="text-2xl font-black text-stone-800 mt-2">{totalParishAttempts}</p>
+          <p className="text-[10px] text-stone-400 mt-1">Parish-wide challenge responses</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Parish Avg Accuracy</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <TrendingUp size={16} />
+            </div>
+          </div>
+          <p className="text-2xl font-black text-emerald-600 mt-2">{avgAccuracy.toFixed(1)}%</p>
+          <p className="text-[10px] text-stone-400 mt-1">Overall correct answer rate</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Leading Jumuiya</span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Award size={16} />
+            </div>
+          </div>
+          <p className="text-lg font-bold text-indigo-950 truncate mt-2">{topJumuiya}</p>
+          <p className="text-[10px] text-stone-400 mt-1">Highest accuracy leader</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Active Communities</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+              <ShieldCheck size={16} />
+            </div>
+          </div>
+          <p className="text-2xl font-black text-stone-800 mt-2">7 / 7</p>
+          <p className="text-[10px] text-stone-400 mt-1">Monitored Jumuiya groups</p>
+        </div>
+      </div>
+
+      {/* Chart: Accuracy Comparison */}
+      <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+        <h3 className="font-bold text-stone-800 text-sm mb-4">Accuracy Comparison Across 7 Jumuiyas (%)</h3>
+        {loading ? (
+          <div className="h-64 flex items-center justify-center text-xs text-stone-400">Loading performance chart...</div>
+        ) : chartData.length === 0 ? (
+          <div className="h-48 flex items-center justify-center text-xs text-stone-400">No attempt data recorded yet.</div>
+        ) : (
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10, fontWeight: 600 }} interval={0} angle={-15} textAnchor="end" />
+                <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#1e293b", borderRadius: "12px", color: "#fff", fontSize: "12px" }}
+                  formatter={(val: number) => [`${val.toFixed(1)}% Accuracy`, "Accuracy"]}
+                />
+                <Bar dataKey="accuracy" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* Detailed Jumuiya Performance Table */}
+      <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+        <h3 className="font-bold text-stone-800 text-sm mb-3">Liturgical Performance Standings</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-stone-100 text-stone-600 uppercase text-[10px] font-bold">
+              <tr>
+                <th className="py-3 px-3">Rank</th>
+                <th className="py-3 px-3">Jumuiya Name</th>
+                <th className="py-3 px-3 text-center">Total Attempts</th>
+                <th className="py-3 px-3 text-center">Correct Hits</th>
+                <th className="py-3 px-3 text-center">Accuracy (%)</th>
+                <th className="py-3 px-3 text-right">Engagement Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100 text-stone-700">
+              {chartData.map((row, idx) => {
+                const statusTag = row.accuracy >= 75 ? "Excellent" : row.accuracy >= 50 ? "Moderate" : "Needs Growth";
+                const statusColor = row.accuracy >= 75 ? "bg-emerald-50 text-emerald-700" : row.accuracy >= 50 ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700";
+                return (
+                  <tr key={row.name} className="hover:bg-stone-50">
+                    <td className="py-3 px-3 font-bold text-stone-400">#{idx + 1}</td>
+                    <td className="py-3 px-3 font-bold text-stone-800 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.color }} />
+                      {row.name}
+                    </td>
+                    <td className="py-3 px-3 text-center font-semibold text-stone-600">{row.attempts}</td>
+                    <td className="py-3 px-3 text-center font-semibold text-emerald-600">{row.correct}</td>
+                    <td className="py-3 px-3 text-center font-black text-amber-700">{row.accuracy.toFixed(1)}%</td>
+                    <td className="py-3 px-3 text-right">
+                      <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${statusColor}`}>
+                        {statusTag}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MemberProfile({ member }: { member: JumuiyaRow }) {
   return (
     <div className="p-4 space-y-5">
@@ -561,6 +772,15 @@ export default function Appadmin() {
           >
             AI Engine & Question Bank
           </button>
+          <button
+            onClick={() => setView("analytics")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              view === "analytics" ? "bg-amber-600 text-white shadow-sm" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100"
+            }`}
+          >
+            <BarChart3 size={13} />
+            7 Jumuiyas Performance Analytics
+          </button>
           {members.map((m) => (
             <button
               key={m.group_id}
@@ -581,6 +801,8 @@ export default function Appadmin() {
             <PublishProgress />
             <QuestionBankManager refreshTrigger={refreshTrigger} />
           </div>
+        ) : view === "analytics" ? (
+          <JumuiyaAnalyticsOverview />
         ) : activeMember ? (
           <MemberProfile member={activeMember} />
         ) : (
@@ -590,4 +812,5 @@ export default function Appadmin() {
     </div>
   );
 }
+
 
