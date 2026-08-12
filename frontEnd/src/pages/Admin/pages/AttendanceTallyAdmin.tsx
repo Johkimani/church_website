@@ -1540,7 +1540,7 @@ function SummaryCard({
 }) {
   return (
     <div className={`bg-white rounded-xl border p-4 ${accent ? "border-indigo-200 bg-indigo-50/40" : "border-slate-200"}`}>
-      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1 whitespace-nowrap">
         {icon} {label}
       </p>
       <p className={`text-2xl font-black ${accent ? "text-indigo-700" : "text-slate-800"}`}>{value}</p>
