@@ -181,7 +181,7 @@ export default function JumuiyaAttendanceRegister({
   const canSave =
     !!ctx &&
     !ctx.is_future &&
-    (ctx.meeting_day == null || isMeetingDay) &&
+    (ctx.meeting_day == null || isMeetingDay || ctx.session_exists) &&
     roster.length > 0 &&
     !saving;
 
@@ -200,7 +200,7 @@ export default function JumuiyaAttendanceRegister({
       toast.error("Cannot record attendance for a future date");
       return;
     }
-    if (ctx.meeting_day != null && !isMeetingDay) {
+    if (ctx.meeting_day != null && !isMeetingDay && !ctx.session_exists) {
       toast.error(`${jumuiyaName} meets every ${ctx.meeting_label}`);
       return;
     }
@@ -302,12 +302,12 @@ export default function JumuiyaAttendanceRegister({
                   <div className="flex flex-wrap items-center gap-2 text-sm font-bold rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 px-4 py-2">
                     <CalendarCheck size={15} /> Meeting day — {ctx?.meeting_label}
                   </div>
-                ) : (
+                ) : ctx?.session_exists ? (
                   <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg px-4 py-2.5">
-                    {date} is not a {jumuiyaName} meeting day. {jumuiyaName} meets every{" "}
-                    <b>{ctx?.meeting_label}</b> — the register is for the weekly meeting.
+                    {date} is not a {jumuiyaName} meeting day ({jumuiyaName} meets every <b>{ctx?.meeting_label}</b>),
+                    but a register already exists here — you can still edit it.
                   </div>
-                )}
+                ) : (
 
                 {!loading && ctx?.session_exists && (
                   <div className="mt-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg px-4 py-2.5 flex items-center justify-between gap-3">
