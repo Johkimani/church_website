@@ -1,6 +1,7 @@
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import bcrypt from "bcrypt";
+import { getCurrentSemester } from "../utils/semesterConfig.js";
 
 /**
  * Error carrying an HTTP status so route handlers can map it to a response.
@@ -597,7 +598,12 @@ export const bulkRegisterWithPayment = async (req, res) => {
 
     // 2. If payment success, proceed with bulk registration logic
     const updateResult = await withTransaction(async (client) => {
-      const isSecondSem = new Date().getMonth() >= 5 ? 1 : 0;
+      // Which semester column to flag comes from the CSA-configured current
+      // semester; fall back to the historical month rule if none is set.
+      const semester = await getCurrentSemester(client);
+      const isSecondSem = semester
+        ? (semester.semester_number === 2 ? 1 : 0)
+        : (new Date().getMonth() >= 5 ? 1 : 0);
 
       // Update members table — normalize year_of_study and set the correct sem_*_reg
       const result = await client.query(
@@ -1185,8 +1191,13 @@ export const registerWithPayment = async (req, res) => {
       if (memberInfo.rows.length > 0) {
         normalizedYos = normalizeYearOfStudy(memberInfo.rows[0].year_of_study);
         if (normalizedYos) {
-          const month = new Date().getMonth();
-          const isSecondSem = month >= 5;
+          // Which semester number (1 or 2) we are in comes from the CSA chair's
+          // configured current semester; fall back to the historical month rule
+          // only if no config exists yet.
+          const semester = await getCurrentSemester(client);
+          const isSecondSem = semester
+            ? semester.semester_number === 2
+            : new Date().getMonth() >= 5;
           const semIndex = (parseInt(normalizedYos) - 1) * 2 + (isSecondSem ? 1 : 0);
           semCol = SEMESTER_COLS[semIndex];
         }

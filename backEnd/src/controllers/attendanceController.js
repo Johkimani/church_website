@@ -2,6 +2,7 @@
 // Attendance Tally & Analytics (Jumuiya Coordinator role)
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
 import ExcelJS from "exceljs";
+import { getCurrentSemester, isDateInSemester } from "../utils/semesterConfig.js";
 
 // Tally days: Monday (rosary), Wednesday (bible study), Thursday (rosary).
 // JS getUTCDay(): 0=Sun ... 6=Sat
@@ -343,6 +344,18 @@ export const saveSession = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: `${normalizedDate} is not a tally day. Tally days are Monday (Rosary), Wednesday (Bible Study), Thursday (Rosary), or any day of an active novena.`,
+      });
+    }
+
+    // Tallies may only be recorded within the current semester window.
+    const semester = await getCurrentSemester();
+    if (!isDateInSemester(normalizedDate, semester)) {
+      const window = semester
+        ? ` (${semester.start_date} → ${semester.end_date})`
+        : "";
+      return res.status(400).json({
+        success: false,
+        error: `Attendance tallies are closed for the semester break. Tallies can only be recorded within the current semester${window}.`,
       });
     }
 

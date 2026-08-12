@@ -2,6 +2,7 @@
 // Per-member attendance register for a jumuiya (used by the jumuiya secretary
 // on the jumuiya's weekly meeting day, with backfill support for missed days).
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
+import { getCurrentSemester, isDateInSemester } from "../utils/semesterConfig.js";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -163,6 +164,23 @@ export const saveRegister = async (req, res) => {
   }
 
   try {
+    // New register saves are only allowed within the current semester window.
+    // Historical registers stay readable, and the meeting-day schedule only
+    // applies inside the window (special gatherings/retreats are not falsely
+    // rejected during the break).
+    const semester = await getCurrentSemester();
+    const inSemester = isDateInSemester(normalizedDate, semester);
+
+    if (!inSemester) {
+      const window = semester
+        ? ` (${semester.start_date} → ${semester.end_date})`
+        : "";
+      return res.status(400).json({
+        success: false,
+        error: `Register saves are closed for the semester break. Registers can only be recorded within the current semester${window}.`,
+      });
+    }
+
     const jumuiya = await getJumuiya(jumuiya_id);
     if (!jumuiya) {
       return res.status(404).json({ success: false, error: "Jumuiya not found" });

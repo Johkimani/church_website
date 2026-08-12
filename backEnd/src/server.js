@@ -32,6 +32,7 @@ import { pendingPaymentsMigration } from "./migrations/pendingPaymentsMigration.
 import attendanceMigration from "./migrations/attendanceMigration.js";
 import jumuiyaAttendanceMigration from "./migrations/jumuiyaAttendanceMigration.js";
 import activityLogMigration from "./migrations/activityLogMigration.js";
+import semesterConfigMigration from "./migrations/semesterConfigMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -181,6 +182,7 @@ const initServer = async () => {
     await attendanceMigration();
     await jumuiyaAttendanceMigration();
     await activityLogMigration();
+    await semesterConfigMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

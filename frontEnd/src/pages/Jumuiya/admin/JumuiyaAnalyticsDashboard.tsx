@@ -9,6 +9,8 @@ import {
   Check, DollarSign, Clock
 } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { semesterServices } from "../../../api/semesterServices";
+import { semNumFromConfig, semColForYearSem, yearSemLabel } from "../../../utils/semester";
 import toast from "react-hot-toast";
 
 interface Props {
@@ -55,23 +57,8 @@ function formatDate(d: string | null | undefined): string {
   } catch { return d; }
 }
 
-function getCurrentSemesterCol(year_of_study: string | number): string | null {
-  const yos = parseInt(String(year_of_study));
-  if (!yos || yos < 1 || yos > 4) return null;
-  const isSecondSem = new Date().getMonth() >= 5;
-  const semIndex = (yos - 1) * 2 + (isSecondSem ? 2 : 1);
-  return `sem_${semIndex}_reg`;
-}
-
-function getCurrentSemesterLabel(year_of_study: string | number): string {
-  const yos = parseInt(String(year_of_study));
-  if (!yos || yos < 1 || yos > 4) return "—";
-  const isSecondSem = new Date().getMonth() >= 5;
-  return `${yos}.${isSecondSem ? 2 : 1}`;
-}
-
-function isRegisteredForCurrentSem(m: any): boolean {
-  const col = getCurrentSemesterCol(m.year_of_study);
+function isRegisteredForCurrentSem(m: any, semNum: 1 | 2): boolean {
+  const col = semColForYearSem(m.year_of_study, semNum);
   if (!col) return false;
   return m[col] === true || m[col] === 1 || m[col] === "1" || m[col] === "true";
 }
@@ -80,6 +67,16 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   const resolvedColor = resolveColor(jumuiyaName, resolveColor(jumuiyaId, jumuiyaColor));
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "yearly">("overview");
   const [genderModal, setGenderModal] = useState<"male" | "female" | null>(null);
+
+  // ── Current semester (CSA-configured window) ──
+  const [semester, setSemester] = useState<any>(null);
+  useEffect(() => {
+    semesterServices
+      .getCurrent()
+      .then((data) => setSemester(data || null))
+      .catch(() => setSemester(null));
+  }, []);
+  const semNum: 1 | 2 = semNumFromConfig(semester);
 
   // ── Manual Registration State ──
   const [showManualReg, setShowManualReg] = useState(false);
@@ -271,24 +268,23 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
 
   const registrationStats = useMemo(() => {
     const total = members.length;
-    const registered = members.filter(isRegisteredForCurrentSem).length;
+    const registered = members.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
     const maleMembers = members.filter((m: any) => m.gender === "male");
     const femaleMembers = members.filter((m: any) => m.gender === "female");
     const maleTotal = maleMembers.length;
-    const maleRegistered = maleMembers.filter(isRegisteredForCurrentSem).length;
+    const maleRegistered = maleMembers.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
     const femaleTotal = femaleMembers.length;
-    const femaleRegistered = femaleMembers.filter(isRegisteredForCurrentSem).length;
+    const femaleRegistered = femaleMembers.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
 
     const byYear: { label: string; total: number; registered: number }[] = [];
     const years = [...new Set(members.map((m: any) => m.year_of_study).filter(Boolean))].sort();
     years.forEach((y) => {
       const yMembers = members.filter((m: any) => m.year_of_study === y);
-      const regd = yMembers.filter(isRegisteredForCurrentSem).length;
+      const regd = yMembers.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
       byYear.push({ label: `Year ${y}`, total: yMembers.length, registered: regd });
     });
 
-    const semLabel = new Date().getMonth() >= 5 ? "2" : "1";
-    const currentSemRange = ["1", "2", "3", "4"].map(y => `${y}.${semLabel}`).join(" / ");
+    const currentSemRange = ["1", "2", "3", "4"].map(y => yearSemLabel(y, semNum)).join(" / ");
 
     return {
       total, registered, rate: total ? Math.round((registered / total) * 100) : 0,
@@ -296,11 +292,11 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
       femaleTotal, femaleRegistered, femaleRate: femaleTotal ? Math.round((femaleRegistered / femaleTotal) * 100) : 0,
       byYear, currentSemRange,
     };
-  }, [members]);
+  }, [members, semNum]);
 
   const unregisteredMembers = useMemo(
-    () => members.filter((m: any) => !isRegisteredForCurrentSem(m)),
-    [members]
+    () => members.filter((m: any) => !isRegisteredForCurrentSem(m, semNum)),
+    [members, semNum]
   );
 
   const genderData = genderBreakdown.filter(g => g.value > 0);
@@ -592,7 +588,7 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
                         </td>
                         <td className="py-2 px-3">
                           {(() => {
-                            const col = getCurrentSemesterCol(m.year_of_study);
+                            const col = semColForYearSem(m.year_of_study, semNum);
                             const regd = col ? (m[col] === true || m[col] === 1 || m[col] === "1" || m[col] === "true") : false;
                             return regd
                               ? <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Registered</span>

@@ -37,6 +37,7 @@ import {
 } from "recharts";
 import { attendanceServices, getApiError, TallyDimension, TallyCountInput } from "../../../api/attendanceServices";
 import { jumuiyaAttendanceService } from "../../../api/jumuiyaAttendanceService";
+import { semesterServices, SemesterConfig } from "../../../api/semesterServices";
 import { useAuth } from "../../../context/AuthContext";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -225,7 +226,7 @@ const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "custom", label: "Custom Range" },
 ];
 
-function presetRange(key: PresetKey, now: Date): { from: string; to: string } {
+function presetRange(key: PresetKey, now: Date, semester?: SemesterConfig | null): { from: string; to: string } {
   switch (key) {
     case "thisWeek": {
       const m = mondayOf(now);
@@ -240,12 +241,25 @@ function presetRange(key: PresetKey, now: Date): { from: string; to: string } {
     case "lastMonth":
       return { from: fmt(new Date(now.getFullYear(), now.getMonth() - 1, 1)), to: fmt(new Date(now.getFullYear(), now.getMonth(), 0)) };
     case "thisSemester": {
+      // Prefer the CSA-configured semester window; fall back to the historical month rule.
+      if (semester?.start_date && semester?.end_date) {
+        return { from: semester.start_date, to: semester.end_date };
+      }
       const m = now.getMonth() + 1;
       const y = now.getFullYear();
       if (m >= 6) return { from: fmt(new Date(y, 5, 1)), to: fmt(new Date(y, 11, 31)) };
       return { from: fmt(new Date(y, 0, 1)), to: fmt(new Date(y, 4, 31)) };
     }
     case "lastSemester": {
+      if (semester?.start_date && semester?.end_date) {
+        // Semester before the configured one, under the same academic model:
+        // Sem 2 → Jan–May of the same year; Sem 1 → Jun–Dec of the previous year.
+        const start = new Date(semester.start_date + "T00:00:00Z");
+        const isSecond = start.getUTCMonth() + 1 >= 6;
+        const y = start.getUTCFullYear();
+        if (isSecond) return { from: fmt(new Date(y, 0, 1)), to: fmt(new Date(y, 4, 31)) };
+        return { from: fmt(new Date(y - 1, 5, 1)), to: fmt(new Date(y - 1, 11, 31)) };
+      }
       const m = now.getMonth() + 1;
       const y = now.getFullYear();
       if (m >= 6) return { from: fmt(new Date(y, 0, 1)), to: fmt(new Date(y, 4, 31)) };
@@ -365,6 +379,16 @@ export default function AttendanceTallyAdmin() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [rankOrder, setRankOrder] = useState<"desc" | "asc">("desc");
+
+  // Current semester window (CSA-configured)
+  const [semester, setSemester] = useState<SemesterConfig | null>(null);
+
+  useEffect(() => {
+    semesterServices
+      .getCurrent()
+      .then((data) => setSemester(data || null))
+      .catch(() => setSemester(null));
+  }, []);
 
   // Meeting days config state
   const [configRows, setConfigRows] = useState<MeetingConfigRow[]>([]);
@@ -570,9 +594,9 @@ export default function AttendanceTallyAdmin() {
 
   useEffect(() => {
     if (preset === "custom") return;
-    const { from, to } = presetRange(preset, new Date());
+    const { from, to } = presetRange(preset, new Date(), semester);
     loadAnalytics(from, to, analyticsDim);
-  }, [preset, analyticsDim, loadAnalytics]);
+  }, [preset, analyticsDim, loadAnalytics, semester]);
 
   const totalAttendance = useMemo(() => {
     const keys =
@@ -583,7 +607,10 @@ export default function AttendanceTallyAdmin() {
   }, [counts, context, tallyDim]);
 
   const isSaved = sessionRows.length > 0;
-  const tallyDisabled = !context?.isTallyDay || tallyLoading;
+  const todayIso = todayStr();
+  const semesterActive = !!(semester && todayIso >= semester.start_date && todayIso <= semester.end_date);
+  const dateInSemester = !!(semester && date >= semester.start_date && date <= semester.end_date);
+  const tallyDisabled = !context?.isTallyDay || tallyLoading || (semester ? !dateInSemester : false);
 
   const handleSave = async () => {
     if (!context || !context.isTallyDay) return;
@@ -783,6 +810,31 @@ export default function AttendanceTallyAdmin() {
           </button>
         </div>
       </div>
+
+      {/* Current semester window banner */}
+      {semester && (
+        <div
+          className={`mb-6 rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 text-sm ${
+            semesterActive
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-amber-300 bg-amber-50 text-amber-800"
+          }`}
+        >
+          <span className="flex items-center gap-2 font-bold">
+            <CalendarDays size={16} className="shrink-0" />
+            {semester.label || "Current Semester"}
+          </span>
+          <span className="font-medium">
+            {semester.start_date} → {semester.end_date}
+          </span>
+          {!semesterActive && (
+            <span className="flex items-center gap-1.5 font-semibold sm:ml-auto">
+              <AlertTriangle size={14} className="shrink-0" />
+              Semester break — new tallies are locked until the window opens.
+            </span>
+          )}
+        </div>
+      )}
 
       {tab === "tally" ? (
         <div className="space-y-6">
@@ -1059,6 +1111,15 @@ export default function AttendanceTallyAdmin() {
                   <span>
                     <b>{quickCheckIssues.length}</b> count(s) exceed the active-member baseline (
                     {quickCheckIssues.join(", ")}). Double-check before saving.
+                  </span>
+                </div>
+              )}
+              {semester && !dateInSemester && (
+                <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex items-center gap-2 max-w-md">
+                  <Lock size={14} className="shrink-0" />
+                  <span>
+                    {date} is outside the current semester ({semester.start_date} → {semester.end_date}).
+                    Tallies are only recorded within the semester window.
                   </span>
                 </div>
               )}

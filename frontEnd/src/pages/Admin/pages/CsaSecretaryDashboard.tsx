@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { semesterServices } from "../../../api/semesterServices";
+import { semNumFromConfig, semColForYearSem } from "../../../utils/semester";
 import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
@@ -54,23 +56,6 @@ function getYearSemLabel(m: any): string {
   return "—";
 }
 
-function getMemberCurrentSemCol(m: any): string | null {
-  const yos = parseInt(m.year_of_study);
-  if (!yos || yos < 1 || yos > 4) return null;
-  const month = new Date().getMonth();
-  const isSecondSem = month >= 5;
-  const semIndex = (yos - 1) * 2 + (isSecondSem ? 2 : 1);
-  return `sem_${semIndex}_reg`;
-}
-
-function getMemberCurrentYearSem(m: any): string {
-  const yos = parseInt(m.year_of_study);
-  if (!yos || yos < 1 || yos > 4) return "—";
-  const month = new Date().getMonth();
-  const isSecondSem = month >= 5;
-  return `${yos}.${isSecondSem ? 2 : 1}`;
-}
-
 export default function CsaSecretaryDashboard() {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +81,18 @@ export default function CsaSecretaryDashboard() {
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [csaPaymentFilter, setCsaPaymentFilter] = useState<"pending" | "all">("pending");
+
+  // ── Current semester (CSA-configured window) ──
+  const [semester, setSemester] = useState<any>(null);
+
+  useEffect(() => {
+    semesterServices
+      .getCurrent()
+      .then((data) => setSemester(data || null))
+      .catch(() => setSemester(null));
+  }, []);
+
+  const semNum: 1 | 2 = semNumFromConfig(semester);
 
   const EXPORT_COLUMNS = [
     { key: "serial_no", label: "Serial No" },
@@ -179,7 +176,7 @@ export default function CsaSecretaryDashboard() {
     }
     if (filterSemester === "current") {
       result = result.filter(m => {
-        const col = getMemberCurrentSemCol(m);
+        const col = semColForYearSem(m.year_of_study, semNum);
         return col && (m[col] === true || m[col] === "true" || m[col] === 1 || m[col] === "1");
       });
     } else if (filterSemester !== "all") {
@@ -202,7 +199,7 @@ export default function CsaSecretaryDashboard() {
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     });
     return result;
-  }, [members, search, sortKey, sortDir, filterJumuiya, filterSemester]);
+  }, [members, search, sortKey, sortDir, filterJumuiya, filterSemester, semNum]);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");

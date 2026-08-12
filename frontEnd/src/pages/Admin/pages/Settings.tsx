@@ -10,9 +10,14 @@ import {
   Trash2,
   RotateCcw,
   AlertTriangle,
+  CalendarDays,
+  Lock,
+  Save,
 } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { apiClient } from '../../../api/axiosInstance';
+import { semesterServices, SemesterConfig } from '../../../api/semesterServices';
+import { useAuth } from '../../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 interface Assignment {
@@ -118,9 +123,149 @@ export default function Settings() {
         ))}
       </div>
 
+      {activeTab === 'csa' && <SemesterConfigPanel />}
       <ApprovalsPanel activeTab={activeTab} />
       <ActiveRolesPanel activeTab={activeTab} />
       <RevokedRolesPanel activeTab={activeTab} />
+    </div>
+  );
+}
+
+function SemesterConfigPanel() {
+  const { user } = useAuth();
+  const isChair = (Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [])
+    .some((r) => String(r).toLowerCase().trim() === 'csa_chair');
+
+  const [semester, setSemester] = useState<SemesterConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [label, setLabel] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await semesterServices.getCurrent();
+        setSemester(data);
+        if (data) {
+          setLabel(data.label || '');
+          setStartDate(data.start_date);
+          setEndDate(data.end_date);
+        }
+      } catch {
+        toast.error('Failed to load semester configuration');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    if (!startDate || !endDate) {
+      toast.error('Set both the start and end date');
+      return;
+    }
+    if (startDate > endDate) {
+      toast.error('Start date must be on or before the end date');
+      return;
+    }
+    setSaving(true);
+    try {
+      const data = await semesterServices.setCurrent({ label, start_date: startDate, end_date: endDate });
+      setSemester(data);
+      setLabel(data.label || '');
+      setStartDate(data.start_date);
+      setEndDate(data.end_date);
+      toast.success('Current semester updated');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to update semester');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500 font-medium">
+          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+          Loading semester configuration...
+        </div>
+      </div>
+    );
+  }
+
+  const displayLabel = semester ? (semester.label || 'Current Semester') : 'No semester configured';
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-indigo-500" />
+          Current Semester
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          The semester window drives attendance tally periods, member semester registration, and jumuiya meeting days.
+          {!isChair && <span className="flex items-center gap-1 mt-1 text-xs font-semibold text-amber-600"><Lock className="w-3 h-3" /> Only the CSA Chairperson can change this.</span>}
+        </p>
+      </div>
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Label</label>
+            <input
+              type="text"
+              value={label}
+              disabled={!isChair}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="e.g. 2025/2026 Semester 1"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              disabled={!isChair}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              disabled={!isChair}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+            />
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <span className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-100">
+            {displayLabel}
+          </span>
+          {semester && (
+            <span className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg">
+              {semester.start_date} → {semester.end_date}
+            </span>
+          )}
+          {isChair && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="ml-auto flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold rounded-xl text-xs transition-all shadow-sm shadow-indigo-200 disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              Save Semester
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
