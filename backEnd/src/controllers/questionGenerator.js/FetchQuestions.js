@@ -61,7 +61,7 @@ export const deleteQuestionController = async (req, res) => {
 export const recordAttemptHttp = async (req, res) => {
   try {
     const { questionId, selectedOption, isCorrect } = req.body;
-    const memberId = req.user?.memberId || req.user?.id || req.body.memberId;
+    const memberId = req.user?.member_id || req.user?.memberId || req.user?.id || req.body.memberId;
     const jumuiyaId = req.user?.jumuiya_id || req.user?.jumuiyaId || req.body.jumuiyaId;
 
     if (!questionId || !memberId || !jumuiyaId) {

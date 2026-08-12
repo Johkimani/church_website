@@ -17,7 +17,7 @@ export const getMemberProgress = async (memberId) => {
          COUNT(*) AS total_attempts,
          COUNT(*) FILTER (WHERE is_correct) AS correct_attempts
        FROM attempts
-       WHERE member_id = $1 AND attempted_at >= $2::timestamp
+       WHERE (member_id = $1 OR member_id::text = $1::text) AND attempted_at >= $2::timestamp
        GROUP BY week
      )
      SELECT w.week, COALESCE(s.total_attempts, 0) AS total_attempts, COALESCE(s.correct_attempts, 0) AS correct_attempts
@@ -38,7 +38,7 @@ export const getMemberSummary = async (memberId) => {
        COUNT(*) AS total_attempts,
        COUNT(*) FILTER (WHERE is_correct) AS correct_attempts
      FROM attempts
-     WHERE member_id = $1`,
+     WHERE member_id = $1 OR member_id::text = $1::text`,
     [memberId],
   );
   return {

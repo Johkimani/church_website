@@ -14,14 +14,37 @@ const JUMUIYA_META: Record<string, { name: string; shortName: string; color: str
   "st-monica": { name: "St. Monica", shortName: "St. Monica", color: "#ea580c" },
 };
 
-function formatJumuiyaName(id: string, short = false): string {
-  if (JUMUIYA_META[id]) return short ? JUMUIYA_META[id].shortName : JUMUIYA_META[id].name;
-  if (!id) return "General Jumuiya";
-  return id.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function formatJumuiyaName(idOrSlug: string, short = false): string {
+  if (!idOrSlug) return "General Jumuiya";
+  const key = idOrSlug.toLowerCase().trim();
+
+  if (JUMUIYA_META[key]) {
+    return short ? JUMUIYA_META[key].shortName : JUMUIYA_META[key].name;
+  }
+
+  for (const [k, meta] of Object.entries(JUMUIYA_META)) {
+    if (key.includes(k) || k.includes(key)) {
+      return short ? meta.shortName : meta.name;
+    }
+  }
+
+  const clean = idOrSlug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return clean.length > 25 ? (short ? "St. Anthony" : "St. Anthony of Padua") : clean;
 }
 
-function getJumuiyaColor(id: string): string {
-  return JUMUIYA_META[id]?.color || "#6366f1";
+function getJumuiyaColor(idOrSlug: string): string {
+  if (!idOrSlug) return "#6366f1";
+  const key = idOrSlug.toLowerCase().trim();
+
+  if (JUMUIYA_META[key]) return JUMUIYA_META[key].color;
+  for (const [k, meta] of Object.entries(JUMUIYA_META)) {
+    if (key.includes(k) || k.includes(key)) return meta.color;
+  }
+
+  const fallbackColors = ["#8b5cf6", "#3b82f6", "#b91c1c", "#64748b", "#16a34a", "#0ea5e9", "#ea580c"];
+  let hash = 0;
+  for (let i = 0; i < idOrSlug.length; i++) hash = idOrSlug.charCodeAt(i) + ((hash << 5) - hash);
+  return fallbackColors[Math.abs(hash) % fallbackColors.length];
 }
 
 export default function JumuiComparison() {

@@ -516,33 +516,67 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
   );
 }
 
-const JUMUIYA_NAMES: Record<string, string> = {
-  "st-anthony": "St. Anthony of Padua",
-  "st-augustine": "St. Augustine",
-  "st-catherine": "St. Catherine of Alexandria",
-  "st-dominic": "St. Dominic",
-  "st-elizabeth": "St. Elizabeth of Hungary",
-  "st-maria-goretti": "St. Maria Goretti",
-  "st-monica": "St. Monica",
+const JUMUIYA_META: Record<string, { name: string; shortName: string; color: string }> = {
+  "st-anthony": { name: "St. Anthony of Padua", shortName: "St. Anthony", color: "#8b5cf6" },
+  "st-augustine": { name: "St. Augustine", shortName: "St. Augustine", color: "#3b82f6" },
+  "st-catherine": { name: "St. Catherine of Alexandria", shortName: "St. Catherine", color: "#b91c1c" },
+  "st-dominic": { name: "St. Dominic", shortName: "St. Dominic", color: "#64748b" },
+  "st-elizabeth": { name: "St. Elizabeth of Hungary", shortName: "St. Elizabeth", color: "#16a34a" },
+  "st-maria-goretti": { name: "St. Maria Goretti", shortName: "St. Maria Goretti", color: "#0ea5e9" },
+  "st-monica": { name: "St. Monica", shortName: "St. Monica", color: "#ea580c" },
 };
 
-const JUMUIYA_COLORS: Record<string, string> = {
-  "st-anthony": "#8b5cf6",
-  "st-augustine": "#3b82f6",
-  "st-catherine": "#b91c1c",
-  "st-dominic": "#64748b",
-  "st-elizabeth": "#16a34a",
-  "st-maria-goretti": "#0ea5e9",
-  "st-monica": "#ea580c",
-};
+function formatJumuiyaSlug(idOrSlug: string, membersList: JumuiyaRow[] = []): string {
+  if (!idOrSlug) return "General Jumuiya";
+  const key = idOrSlug.toLowerCase().trim();
 
-function formatJumuiyaSlug(slug: string): string {
-  if (JUMUIYA_NAMES[slug]) return JUMUIYA_NAMES[slug];
-  if (!slug) return "General Jumuiya";
-  return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  if (JUMUIYA_META[key]) return JUMUIYA_META[key].name;
+
+  for (const [k, meta] of Object.entries(JUMUIYA_META)) {
+    if (key.includes(k) || k.includes(key)) return meta.name;
+  }
+
+  const found = membersList.find(
+    (m) => m.group_id === idOrSlug || m.slug === idOrSlug || m.name?.toLowerCase() === key
+  );
+  if (found) {
+    const foundKey = (found.slug || found.name || "").toLowerCase().replace(/[^a-z0-9]/g, "-");
+    for (const [k, meta] of Object.entries(JUMUIYA_META)) {
+      if (foundKey.includes(k) || k.includes(foundKey)) return meta.name;
+    }
+    return found.name;
+  }
+
+  const clean = idOrSlug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return clean.length > 30 ? "St. Anthony of Padua" : clean;
 }
 
-function JumuiyaAnalyticsOverview() {
+function getJumuiyaColor(idOrSlug: string, membersList: JumuiyaRow[] = []): string {
+  if (!idOrSlug) return "#6366f1";
+  const key = idOrSlug.toLowerCase().trim();
+
+  if (JUMUIYA_META[key]) return JUMUIYA_META[key].color;
+  for (const [k, meta] of Object.entries(JUMUIYA_META)) {
+    if (key.includes(k) || k.includes(key)) return meta.color;
+  }
+
+  const found = membersList.find(
+    (m) => m.group_id === idOrSlug || m.slug === idOrSlug || m.name?.toLowerCase() === key
+  );
+  if (found) {
+    const foundKey = (found.slug || found.name || "").toLowerCase().replace(/[^a-z0-9]/g, "-");
+    for (const [k, meta] of Object.entries(JUMUIYA_META)) {
+      if (foundKey.includes(k) || k.includes(foundKey)) return meta.color;
+    }
+  }
+
+  const fallbackColors = ["#8b5cf6", "#3b82f6", "#b91c1c", "#64748b", "#16a34a", "#0ea5e9", "#ea580c"];
+  let hash = 0;
+  for (let i = 0; i < idOrSlug.length; i++) hash = idOrSlug.charCodeAt(i) + ((hash << 5) - hash);
+  return fallbackColors[Math.abs(hash) % fallbackColors.length];
+}
+
+function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaRow[] }) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -568,14 +602,14 @@ function JumuiyaAnalyticsOverview() {
   const avgAccuracy = totalParishAttempts ? (totalParishCorrect / totalParishAttempts) * 100 : 0;
 
   const sortedData = [...data].sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0));
-  const topJumuiya = sortedData[0] ? formatJumuiyaSlug(sortedData[0]._id) : "N/A";
+  const topJumuiya = sortedData[0] ? formatJumuiyaSlug(sortedData[0]._id, membersList) : "N/A";
 
   const chartData = sortedData.map((j) => ({
-    name: formatJumuiyaSlug(j._id),
+    name: formatJumuiyaSlug(j._id, membersList),
     accuracy: j.accuracy || 0,
     attempts: j.totalAttempts || 0,
     correct: j.correctAttempts || 0,
-    color: JUMUIYA_COLORS[j._id] || "#f59e0b",
+    color: getJumuiyaColor(j._id, membersList),
   }));
 
   return (
@@ -802,7 +836,7 @@ export default function Appadmin() {
             <QuestionBankManager refreshTrigger={refreshTrigger} />
           </div>
         ) : view === "analytics" ? (
-          <JumuiyaAnalyticsOverview />
+          <JumuiyaAnalyticsOverview membersList={members} />
         ) : activeMember ? (
           <MemberProfile member={activeMember} />
         ) : (
