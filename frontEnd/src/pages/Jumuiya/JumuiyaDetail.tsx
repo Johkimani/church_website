@@ -40,6 +40,18 @@ const JumuiyaDetail: React.FC = () => {
     const { officials: dynamicOfficials } = useJumuiyaOfficials({ category: jumuiya?.name });
     const { currentTerm } = useTerms();
 
+    // Lock background page scroll when mobile menu is open
+    useEffect(() => {
+        if (isSidebarOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isSidebarOpen]);
+
     // Derive term info dynamically
     const dynamicTerm = (() => {
         // Preference 1: Explicitly set term in the first official's record from backend
