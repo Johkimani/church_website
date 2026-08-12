@@ -67,6 +67,13 @@ export default function RafikiWidget() {
     return () => io.disconnect();
   }, []);
 
+  // Listen for the custom event fired by the inline footer "Ask Rafiki" button on mobile
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    document.addEventListener("rafiki:open", handler);
+    return () => document.removeEventListener("rafiki:open", handler);
+  }, []);
+
   useEffect(() => {
     loadSiteData()
       .then(({ knowledge: k, facts: f }) => {
@@ -157,13 +164,13 @@ export default function RafikiWidget() {
         }
         .rafiki-panel { animation: rafiki-pop 0.25s ease-out; transform-origin: bottom right; }
       `}</style>
-      {/* Bottom-right trigger pill */}
+      {/* Bottom-right trigger pill — hidden on mobile (inline footer button used instead), visible md+ */}
       {!open && !widgetHidden && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Open Rafiki assistant"
           style={{ bottom: footerLift ? `${footerLift + 20}px` : undefined }}
-          className="fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[9999] inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-transform"
+          className="hidden md:inline-flex fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[9999] items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-transform"
         >
           <Sparkles className="w-4 h-4" />
           Ask Rafiki
