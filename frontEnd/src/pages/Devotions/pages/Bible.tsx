@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import toast from "react-hot-toast";
 import {
   FaArrowLeft,
@@ -13,7 +13,8 @@ import {
   FaBookmark as FaBookmarkSolid,
   FaBars,
 } from "react-icons/fa";
-import { BIBLE_BOOKS, BIBLE_VERSIONS, STATIC_CHAPTERS, getStaticChapter, getStaticBooks, getStaticVersions } from "../data/bibleData";
+import { getStaticChapter, getStaticBooks, getStaticVersions } from "../data/bibleData";
+import { apiClient } from "../../../api/axiosInstance";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -189,6 +190,33 @@ export default function Bible(): JSX.Element {
 
   const verseOfDay = useMemo(() => getVerseOfTheDay(), []);
 
+  // ── Load versions & books from backend API (static fallback) ──
+  useEffect(() => {
+    let mounted = true;
+    const loadVersions = async () => {
+      try {
+        const res = await apiClient.get("/bible/versions");
+        if (mounted && res.data?.versions?.length > 0) setVersions(res.data.versions);
+      } catch {}
+    };
+    loadVersions();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadBooks = async () => {
+      try {
+        const res = await apiClient.get("/bible/books", { params: { version } });
+        if (mounted && res.data?.books?.length > 0) {
+          setAllBooks(res.data.books.map((b) => ({ code: b.code, name: b.name, testament: b.testament, chapters: b.chapters })));
+        }
+      } catch {}
+    };
+    loadBooks();
+    return () => { mounted = false; };
+  }, [version]);
+
   // ── Load persisted data ──
   useEffect(() => {
     try {
@@ -242,17 +270,18 @@ export default function Bible(): JSX.Element {
   }, [selectedBook, selectedChapter, verses]);
 
   // ── Load chapter ──
-  const loadChapter = useCallback((bookCode: string, chapter: number) => {
+  const loadChapter = useCallback(async (bookCode: string, chapter: number) => {
     setLoading(true);
     setError(null);
     setSelectedVerseNum(null);
     try {
-      const staticVerses = getStaticChapter(bookCode, chapter);
-      if (staticVerses) {
-        setVerses(staticVerses);
-      } else {
-        setVerses([]);
-      }
+      let verses: Verse[] | null = null;
+      try {
+        const res = await apiClient.get("/bible/chapter", { params: { book: bookCode, chapter, version } });
+        if (res.data?.verses?.length > 0) verses = res.data.verses;
+      } catch {}
+      if (!verses) verses = getStaticChapter(bookCode, chapter) || [];
+      setVerses(verses);
       const book = allBooks.find((b) => b.code === bookCode) || null;
       setSelectedBook(book);
       setSelectedChapter(chapter);
