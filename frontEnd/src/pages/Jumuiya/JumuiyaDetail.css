@@ -382,7 +382,7 @@
         left: 16px !important;
         right: 16px !important;
         top: auto !important;
-        bottom: 108px !important;
+        bottom: 70px !important;
         width: auto !important;
         height: min(60vh, 520px) !important;
         max-height: min(60vh, 520px) !important;
@@ -427,7 +427,7 @@
     }
     
     .notif-fab-container {
-        bottom: 370px !important;
+        bottom: 340px !important;
         right: 20px !important;
         z-index: 10000;
     }
