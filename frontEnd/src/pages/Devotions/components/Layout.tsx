@@ -78,7 +78,7 @@ export default function Layout() {
 
           {/* Mobile drawer — the exact same sidebar as desktop */}
           <div
-            className={`md:hidden fixed left-0 top-16 bottom-0 z-50 w-[75%] max-w-[300px] transition-transform duration-300 ease-out ${
+            className={`md:hidden fixed left-0 top-16 bottom-0 z-50 w-60 max-w-[80vw] transition-transform duration-300 ease-out ${
               mobileNavOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             style={{ boxShadow: "8px 0 40px rgba(0,0,0,0.12)" }}
