@@ -222,11 +222,12 @@
     gap: 10px;
     padding: 8px 10px;
     border-radius: 10px;
-    background: rgba(248, 250, 252, 0.9);
-    color: var(--text-primary);
+    background: rgba(248, 250, 252, 1);
+    color: #0f172a !important;
     font-size: 0.82rem;
     line-height: 1.5;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    font-weight: 700 !important;
 }
 
 .activity-card-premium .activity-meta-item svg {
@@ -236,8 +237,8 @@
 }
 
 .activity-card-premium .activity-meta-item span {
-    color: var(--text-primary);
-    font-weight: 600;
+    color: #0f172a !important;
+    font-weight: 700 !important;
 }
 
 .activities-countdown {

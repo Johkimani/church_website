@@ -276,8 +276,9 @@
     bottom: 80px;
     right: 0;
     width: 400px;
-    max-height: 600px;
-    background: white;
+    height: min(72vh, 560px);
+    max-height: 560px;
+    background: white !important;
     border-radius: var(--rl);
     box-shadow: var(--shadow-2xl);
     display: flex;
@@ -285,6 +286,9 @@
     overflow: hidden;
     z-index: 1000;
     border: 1px solid var(--border-light);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
 }
 
 .notif-panel-header {
@@ -319,8 +323,27 @@
 
 .notif-panel-content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--space-md);
+    background: #ffffff;
+    -webkit-overflow-scrolling: touch;
+}
+
+.notif-panel-content .tab-system-content,
+.notif-panel-content .tab-card,
+.notif-panel-content .glass-card,
+.notif-panel-content .empty-tab-state {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+}
+
+.notif-panel-content .tab-card {
+    border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 /* Hide some overhead in the floating panel version */
