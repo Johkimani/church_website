@@ -427,7 +427,7 @@
     }
     
     .notif-fab-container {
-        bottom: 20px !important;
+        bottom: 550px !important;
         right: 20px !important;
         z-index: 10000;
     }
