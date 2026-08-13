@@ -21,7 +21,7 @@ const Footers = () => {
             </p>
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.6, maxWidth: 280, fontWeight: 500, color: "#9CA3AF", margin: 0 }}>
-            Empowering students through spiritual guidance and community.
+            Empowering students through spiritual guidance and community embrace.
           </p>
         </section>
 

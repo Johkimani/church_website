@@ -348,8 +348,9 @@
     }
     
     .notif-fab-container {
-        bottom: var(--space-lg);
+        bottom: 92px;
         right: var(--space-lg);
+        z-index: 12;
     }
 }
 

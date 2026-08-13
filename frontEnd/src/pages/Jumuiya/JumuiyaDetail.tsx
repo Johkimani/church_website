@@ -39,6 +39,7 @@ const JumuiyaDetail: React.FC = () => {
 
     const setTabWithUrl = (tab: TabType) => {
         setActiveTab(tab);
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
 
         const params = new URLSearchParams(location.search);
         params.set('tab', tab);
@@ -69,6 +70,8 @@ const JumuiyaDetail: React.FC = () => {
         if (validTab) {
             setActiveTab(tabFromUrl);
         }
+
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }, [location.search]);
 
     // Fetch dynamic officials from backend
