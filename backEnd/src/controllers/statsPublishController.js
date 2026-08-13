@@ -1,5 +1,5 @@
 import { testDb as pool } from "../Configs/dbConfig.js";
-import { getComparisonAll, getAllMemberSummaries, getAllMemberProgress } from "../model/attemptSchema.js";
+import { getComparisonAll, getComparisonByRange, getAllMemberSummaries, getAllMemberProgress } from "../model/attemptSchema.js";
 import logger from "../logger/winston.js";
 
 /*
@@ -87,9 +87,20 @@ export const publishStats = async (req, res) => {
 
 // GET /published/comparison — user-facing, reads from snapshot.
 // Prefers the latest published week snapshot; falls back to the legacy
-// (week-less) snapshot, then to live attempts.
+// (week-less) snapshot, then to live attempts. When `from`/`to` are supplied,
+// returns a live per-jumuiya aggregate over that exact date range instead.
 export const getPublishedComparison = async (req, res) => {
   try {
+    const { from, to } = req.query;
+
+    if (from || to) {
+      if (!from || !to) {
+        return res.status(400).json({ status: false, message: "Both from and to are required" });
+      }
+      const data = await getComparisonByRange(from, to);
+      return res.json({ data, publishedAt: null, weekStart: null, range: { from, to } });
+    }
+
     let weekStart = req.query.week || null;
 
     if (!weekStart) {
@@ -140,6 +151,58 @@ export const getPublishedComparison = async (req, res) => {
   } catch (err) {
     logger.error("Failed to fetch published comparison:", err);
     res.status(500).json({ status: false, message: "Failed to fetch comparison" });
+  }
+};
+
+// GET /published/comparison/options — filter options (weeks, semesters,
+// academic years) for the Accuracy Comparison filter module.
+export const getComparisonOptions = async (req, res) => {
+  try {
+    const weeksRes = await pool.query(
+      `SELECT DISTINCT
+         (date_trunc('week', attempted_at))::date AS week_start,
+         ((date_trunc('week', attempted_at))::date + 6) AS week_end
+       FROM attempts
+       WHERE attempted_at IS NOT NULL
+       ORDER BY week_start DESC`
+    );
+    const weeks = weeksRes.rows.map((r) => ({
+      weekStart: r.week_start,
+      weekEnd: r.week_end,
+    }));
+
+    const semestersRes = await pool.query(
+      `SELECT id,
+              label,
+              to_char(start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(end_date, 'YYYY-MM-DD') AS end_date,
+              is_current
+       FROM semester_configs
+       ORDER BY start_date DESC`
+    );
+    const semesters = semestersRes.rows.map((r) => ({
+      id: r.id,
+      label: r.label,
+      startDate: r.start_date,
+      endDate: r.end_date,
+      isCurrent: r.is_current,
+    }));
+
+    // Academic years grouped from the semester rows (calendar-year window,
+    // matching how semesters 1 & 2 are numbered in this app).
+    const years = [...new Set(
+      semestersRes.rows.map((r) => new Date(r.start_date + "T00:00:00").getUTCFullYear())
+    )];
+    const academicYears = years.sort((a, b) => b - a).map((y) => ({
+      year: `${y}/${y + 1}`,
+      startDate: `${y}-01-01`,
+      endDate: `${y}-12-31`,
+    }));
+
+    res.json({ weeks, semesters, academicYears });
+  } catch (err) {
+    logger.error("Failed to fetch comparison options:", err);
+    res.status(500).json({ status: false, message: "Failed to fetch comparison options" });
   }
 };
 

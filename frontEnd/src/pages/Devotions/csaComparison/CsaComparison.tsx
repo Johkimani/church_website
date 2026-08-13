@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { fetchPublishedComparison } from "../../../api/axiosInstance";
+import { fetchPublishedComparison, fetchComparisonOptions } from "../../../api/axiosInstance";
 import type { JumuiData } from "../../../interface/api";
-import { Trophy, Award, Medal, Activity, Sparkles } from "lucide-react";
+import { Trophy, Award, Medal, Activity, Sparkles, CalendarRange } from "lucide-react";
 
 const JUMUIYA_META: Record<string, { name: string; shortName: string; color: string }> = {
   "st-anthony": { name: "St. Anthony of Padua", shortName: "St. Anthony", color: "#8b5cf6" },
@@ -33,19 +33,45 @@ function formatJumuiyaName(idOrSlug: string, short = false, apiName?: string): s
   return clean.length > 25 ? "Jumuiya" : clean;
 }
 
-function getJumuiyaColor(idOrSlug: string): string {
-  if (!idOrSlug) return "#6366f1";
-  const key = idOrSlug.toLowerCase().trim();
-
-  if (JUMUIYA_META[key]) return JUMUIYA_META[key].color;
-  for (const [k, meta] of Object.entries(JUMUIYA_META)) {
-    if (key.includes(k) || k.includes(key)) return meta.color;
+function getJumuiyaColor(idOrSlug: string, apiName?: string): string {
+  const candidates = [idOrSlug, apiName].filter(Boolean);
+  for (const c of candidates) {
+    const key = String(c).toLowerCase().trim();
+    if (JUMUIYA_META[key]) return JUMUIYA_META[key].color;
+    for (const [k, meta] of Object.entries(JUMUIYA_META)) {
+      if (key.includes(k) || k.includes(key)) return meta.color;
+      if (key.includes(meta.name.toLowerCase())) return meta.color;
+      if (key.includes(meta.shortName.toLowerCase())) return meta.color;
+    }
   }
 
   const fallbackColors = ["#8b5cf6", "#3b82f6", "#b91c1c", "#64748b", "#16a34a", "#0ea5e9", "#ea580c"];
   let hash = 0;
-  for (let i = 0; i < idOrSlug.length; i++) hash = idOrSlug.charCodeAt(i) + ((hash << 5) - hash);
+  const src = String(idOrSlug || "");
+  for (let i = 0; i < src.length; i++) hash = src.charCodeAt(i) + ((hash << 5) - hash);
   return fallbackColors[Math.abs(hash) % fallbackColors.length];
+}
+
+const fmtDate = (d: string) =>
+  new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
+type FilterMode = "all" | "week" | "semester" | "year";
+
+interface WeekOption {
+  weekStart: string;
+  weekEnd: string;
+}
+interface SemesterOption {
+  id: number;
+  label: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+}
+interface YearOption {
+  year: string;
+  startDate: string;
+  endDate: string;
 }
 
 export default function JumuiComparison() {
@@ -54,10 +80,53 @@ export default function JumuiComparison() {
   const [weekStart, setWeekStart] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [options, setOptions] = useState<{
+    weeks: WeekOption[];
+    semesters: SemesterOption[];
+    academicYears: YearOption[];
+  }>({ weeks: [], semesters: [], academicYears: [] });
+
+  const [mode, setMode] = useState<FilterMode>("all");
+  const [weekFilter, setWeekFilter] = useState("");
+  const [semesterFilter, setSemesterFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+
+  useEffect(() => {
+    fetchComparisonOptions()
+      .then((res) => {
+        setOptions({
+          weeks: res.data?.weeks || [],
+          semesters: res.data?.semesters || [],
+          academicYears: res.data?.academicYears || [],
+        });
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const activeRange = useCallback((): { from: string; to: string } | null => {
+    if (mode === "week" && weekFilter) {
+      const w = options.weeks.find((x) => x.weekStart === weekFilter);
+      return w ? { from: w.weekStart, to: w.weekEnd } : null;
+    }
+    if (mode === "semester" && semesterFilter) {
+      const s = options.semesters.find((x) => String(x.id) === String(semesterFilter));
+      return s ? { from: s.startDate, to: s.endDate } : null;
+    }
+    if (mode === "year" && yearFilter) {
+      const y = options.academicYears.find((x) => x.year === yearFilter);
+      return y ? { from: y.startDate, to: y.endDate } : null;
+    }
+    return null;
+  }, [mode, weekFilter, semesterFilter, yearFilter, options]);
+
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const res = await fetchPublishedComparison();
+        const range = activeRange();
+        const res = range
+          ? await fetchPublishedComparison({ from: range.from, to: range.to })
+          : await fetchPublishedComparison();
         const raw = Array.isArray(res.data?.data) ? res.data.data : [];
         setData(raw);
         setPublishedAt(res.data?.publishedAt || null);
@@ -69,19 +138,49 @@ export default function JumuiComparison() {
       }
     };
     fetchData();
-  }, []);
+  }, [activeRange]);
 
-  const weekLabel = weekStart
-    ? `Week of ${new Date(weekStart + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
-    : publishedAt
-      ? `Snapshot: ${new Date(publishedAt).toLocaleDateString()}`
-      : "Live Data Active";
+  const selectMode = (m: FilterMode) => {
+    setMode(m);
+    if (m === "week" && !weekFilter && options.weeks[0]) setWeekFilter(options.weeks[0].weekStart);
+    if (m === "semester" && !semesterFilter && options.semesters[0]) setSemesterFilter(String(options.semesters[0].id));
+    if (m === "year" && !yearFilter && options.academicYears[0]) setYearFilter(options.academicYears[0].year);
+  };
+
+  const clearFilters = () => {
+    setMode("all");
+    setWeekFilter("");
+    setSemesterFilter("");
+    setYearFilter("");
+  };
+
+  const activeSemester = options.semesters.find((s) => String(s.id) === String(semesterFilter));
+
+  const rangeLabel = (() => {
+    if (mode === "week" && weekFilter) {
+      const w = options.weeks.find((x) => x.weekStart === weekFilter);
+      return w ? `Week of ${fmtDate(w.weekStart)} – ${fmtDate(w.weekEnd)}` : null;
+    }
+    if (mode === "semester" && activeSemester) {
+      return activeSemester.label || `Semester ${fmtDate(activeSemester.startDate)} – ${fmtDate(activeSemester.endDate)}`;
+    }
+    if (mode === "year" && yearFilter) return `Academic Year ${yearFilter}`;
+    return null;
+  })();
+
+  const weekLabel = rangeLabel
+    ? `${rangeLabel} · Live`
+    : weekStart
+      ? `Week of ${fmtDate(weekStart)}`
+      : publishedAt
+        ? `Snapshot: ${new Date(publishedAt).toLocaleDateString()}`
+        : "Live Data Active";
 
   const formattedChartData = data.map((j) => ({
     ...j,
     displayName: formatJumuiyaName(j._id, true, j.name),
     fullName: formatJumuiyaName(j._id, false, j.name),
-    color: getJumuiyaColor(j._id),
+    color: getJumuiyaColor(j._id, j.name || undefined),
   }));
 
   if (isLoading) {
@@ -95,11 +194,24 @@ export default function JumuiComparison() {
     );
   }
 
+  const filterButton = (m: FilterMode, label: string) => (
+    <button
+      onClick={() => selectMode(m)}
+      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+        mode === m
+          ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+          : "bg-white text-stone-600 border-stone-200 hover:border-amber-400"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-stone-900 p-6 sm:p-10 font-sans pb-32">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 text-[10px] font-bold uppercase tracking-widest mb-2">
               <Sparkles size={12} />
@@ -117,11 +229,85 @@ export default function JumuiComparison() {
           </div>
         </div>
 
+        {/* Filter module */}
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
+              <CalendarRange size={15} className="text-amber-600" />
+              <span className="text-xs font-black text-stone-600 uppercase tracking-widest">Filter</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {filterButton("all", "All Time")}
+              {filterButton("week", "Week")}
+              {filterButton("semester", "Semester")}
+              {filterButton("year", "Academic Year")}
+            </div>
+            <div className="flex-1 flex items-center gap-2 min-w-[220px] lg:justify-end">
+              {mode === "week" && (
+                <select
+                  value={weekFilter}
+                  onChange={(e) => setWeekFilter(e.target.value)}
+                  className="w-full lg:w-64 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                >
+                  {options.weeks.length === 0 && <option value="">No weeks with attempts yet</option>}
+                  {options.weeks.map((w) => (
+                    <option key={w.weekStart} value={w.weekStart}>
+                      Week of {fmtDate(w.weekStart)} – {fmtDate(w.weekEnd)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {mode === "semester" && (
+                <select
+                  value={semesterFilter}
+                  onChange={(e) => setSemesterFilter(e.target.value)}
+                  className="w-full lg:w-64 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                >
+                  {options.semesters.length === 0 && <option value="">No semesters configured yet</option>}
+                  {options.semesters.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label || `${fmtDate(s.startDate)} – ${fmtDate(s.endDate)}`}
+                      {s.isCurrent ? " (Current)" : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {mode === "year" && (
+                <select
+                  value={yearFilter}
+                  onChange={(e) => setYearFilter(e.target.value)}
+                  className="w-full lg:w-64 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                >
+                  {options.academicYears.length === 0 && <option value="">No academic years yet</option>}
+                  {options.academicYears.map((y) => (
+                    <option key={y.year} value={y.year}>
+                      {y.year}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {mode !== "all" && (
+                <button
+                  onClick={clearFilters}
+                  className="text-[10px] font-bold text-amber-700 hover:text-amber-900 whitespace-nowrap"
+                >
+                  Clear filter
+                </button>
+              )}
+            </div>
+          </div>
+          {mode !== "all" && (
+            <p className="text-[10px] text-stone-400 mt-2 ml-[22px]">
+              Showing live per-jumuiya accuracy for {rangeLabel || "the selected period"}. Adjusts automatically as members answer.
+            </p>
+          )}
+        </div>
+
         {formattedChartData.length === 0 ? (
           <div className="text-stone-500 text-center py-24 bg-white rounded-3xl border border-stone-200">
             <Activity className="w-10 h-10 mx-auto mb-3 text-stone-500" />
-            <p className="text-sm font-semibold">No Jumuiya attempt stats recorded yet.</p>
-            <p className="text-xs text-stone-500 mt-1">Complete this week's liturgical challenge to see standings update.</p>
+            <p className="text-sm font-semibold">No Jumuiya attempt stats recorded for this period.</p>
+            <p className="text-xs text-stone-500 mt-1">Pick another period, or complete this week's liturgical challenge to see standings update.</p>
           </div>
         ) : (
           <>
@@ -157,7 +343,7 @@ export default function JumuiComparison() {
 
             {/* Recharts Bar Chart */}
             <div className="bg-white p-6 rounded-3xl border border-stone-200 mb-8">
-              <h3 className="text-sm font-bold text-stone-600 mb-6 uppercase tracking-wider">Overall Accuracy Comparison</h3>
+              <h3 className="text-sm font-bold text-stone-600 mb-6 uppercase tracking-wider">Accuracy Comparison Across 7 Jumuiyas (%)</h3>
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={formattedChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                   <XAxis
@@ -214,4 +400,3 @@ export default function JumuiComparison() {
     </div>
   );
 }
-

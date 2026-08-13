@@ -101,6 +101,35 @@ export const getComparisonAll = async () => {
   }));
 };
 
+// Live per-jumuiya accuracy over an explicit [startDate, endDate] range.
+// Used by the Accuracy Comparison page filters (week / semester / year).
+export const getComparisonByRange = async (startDate, endDate) => {
+  const { rows } = await db.query(
+    `SELECT
+       a.jumuiya_id,
+       sg.name,
+       COUNT(*) AS total_attempts,
+       COUNT(*) FILTER (WHERE is_correct) AS correct_attempts,
+       CASE WHEN COUNT(*) = 0 THEN 0
+         ELSE ROUND(COUNT(*) FILTER (WHERE is_correct) * 100.0 / COUNT(*), 2)
+       END AS accuracy
+     FROM attempts a
+     LEFT JOIN sub_groups sg ON sg.group_id::text = a.jumuiya_id OR sg.slug = a.jumuiya_id
+     WHERE a.attempted_at >= $1::timestamp
+       AND a.attempted_at < ($2::date + interval '1 day')
+     GROUP BY a.jumuiya_id, sg.name
+     ORDER BY accuracy DESC`,
+    [startDate, endDate]
+  );
+  return rows.map((r) => ({
+    _id: r.jumuiya_id,
+    name: r.name || null,
+    totalAttempts: Number(r.total_attempts),
+    correctAttempts: Number(r.correct_attempts),
+    accuracy: Number(r.accuracy),
+  }));
+};
+
 export const getAllMemberSummaries = async () => {
   const { rows } = await db.query(
     `SELECT
@@ -143,6 +172,7 @@ export default {
   getMemberSummary,
   getJumuiComparison,
   getComparisonAll,
+  getComparisonByRange,
   getAllMemberSummaries,
   getAllMemberProgress,
 };

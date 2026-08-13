@@ -194,7 +194,9 @@ export const fetchJumuiyaComparisonData = () => apiClient.get("/csa/jumuiya-comp
 
 // Published stats (admin-controlled snapshots)
 export const publishStats = () => apiClient.post("/publish-stats");
-export const fetchPublishedComparison = () => apiClient.get("/published/comparison");
+export const fetchPublishedComparison = (params?: { week?: string; from?: string; to?: string }) =>
+  apiClient.get("/published/comparison", { params });
+export const fetchComparisonOptions = () => apiClient.get("/published/comparison/options");
 export const fetchPublishedMemberProgress = () => apiClient.get("/published/member-progress");
 export const fetchPublishedJumuiyaDashboard = (jumuiyaId: string) =>
   apiClient.get(`/published/jumuiya-dashboard/${jumuiyaId}`);

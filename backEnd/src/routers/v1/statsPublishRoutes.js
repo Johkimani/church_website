@@ -4,6 +4,7 @@ import { requireRole } from "../../middlewares/requireRole.js";
 import {
   publishStats,
   getPublishedComparison,
+  getComparisonOptions,
   getPublishedMemberProgress,
   getPublishedJumuiyaDashboard,
 } from "../../controllers/statsPublishController.js";
@@ -15,6 +16,7 @@ router.post("/publish-stats", verifyToken, requireRole("liturgist"), publishStat
 
 // User-facing — read from published snapshots
 router.get("/published/comparison", getPublishedComparison);
+router.get("/published/comparison/options", getComparisonOptions);
 router.get("/published/member-progress", verifyToken, getPublishedMemberProgress);
 router.get("/published/jumuiya-dashboard/:jumuiyaId", getPublishedJumuiyaDashboard);
 
