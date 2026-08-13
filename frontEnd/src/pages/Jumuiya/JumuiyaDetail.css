@@ -120,8 +120,9 @@
 .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(15, 23, 42, 0.48);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     z-index: 99;
     touch-action: none;
     overscroll-behavior: contain;

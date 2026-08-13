@@ -209,9 +209,9 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor }) => {
                                 </div>
                                 <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{activity.title}</h3>
                                 <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px', flex: 1 }}>{activity.description}</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-light)', paddingTop: '12px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FaClock /> {activity.time}</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><FaMapMarkerAlt /> {activity.location}</span>
+                                <div className="activity-meta-list">
+                                    <span className="activity-meta-item"><FaClock /> <span>{activity.time}</span></span>
+                                    <span className="activity-meta-item"><FaMapMarkerAlt /> <span>{activity.location}</span></span>
                                 </div>
                             </div>
                         );
