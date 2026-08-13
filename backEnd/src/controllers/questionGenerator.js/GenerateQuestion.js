@@ -95,7 +95,10 @@ export const GenerateQuestion = async (req, res) => {
     }
 
     try {
-      const insertedDocs = await Question.insertMany(questionsArray);
+      const insertedDocs = await Question.insertMany(questionsArray, {
+        topic,
+        generatedBy: req.user?.member_id || req.user?.id || req.user?.memberId || "admin",
+      });
       return res.status(201).json({
         message: "Questions generated and saved successfully",
         count: insertedDocs.length,

@@ -8,6 +8,7 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_RECORDS = 300;
+const STALE_REGISTER_DAYS = 14;
 
 // Local server date (not UTC) so late-evening/early-morning saves aren't misjudged.
 const todayStr = () => {
@@ -359,25 +360,87 @@ export const getMeetingConfigs = async (req, res) => {
          AND group_id NOT IN (SELECT jumuiya_id FROM jumuiya_meeting_config)
        ORDER BY name`
     );
+    const jumuiyaIds = [
+      ...result.rows.map((r) => r.jumuiya_id),
+      ...sgResult.rows.map((r) => r.group_id),
+    ];
+    const recentsByJumuiya = {};
+    const lastDateByJumuiya = {};
+    if (jumuiyaIds.length > 0) {
+      const recentsResult = await pool.query(
+        `WITH ranked AS (
+           SELECT jumuiya_id,
+                  to_char(attendance_date, 'YYYY-MM-DD') AS date,
+                  COUNT(*) FILTER (WHERE present)::int AS present_count,
+                  COUNT(*)::int AS total_count,
+                  ROW_NUMBER() OVER (PARTITION BY jumuiya_id ORDER BY attendance_date DESC) AS rn
+           FROM jumuiya_attendance
+           WHERE jumuiya_id = ANY($1::uuid[])
+           GROUP BY jumuiya_id, attendance_date
+         )
+         SELECT jumuiya_id, date, present_count, total_count
+         FROM ranked
+         WHERE rn <= 5
+         ORDER BY jumuiya_id, date DESC`,
+        [jumuiyaIds]
+      );
+      for (const row of recentsResult.rows) {
+        if (!recentsByJumuiya[row.jumuiya_id]) recentsByJumuiya[row.jumuiya_id] = [];
+        recentsByJumuiya[row.jumuiya_id].push({
+          date: row.date,
+          present_count: row.present_count,
+          total_count: row.total_count,
+        });
+      }
+      const lastResult = await pool.query(
+        `SELECT jumuiya_id, MAX(attendance_date) AS last_date
+         FROM jumuiya_attendance
+         WHERE jumuiya_id = ANY($1::uuid[])
+         GROUP BY jumuiya_id`,
+        [jumuiyaIds]
+      );
+      for (const row of lastResult.rows) {
+        lastDateByJumuiya[row.jumuiya_id] = row.last_date;
+      }
+    }
+    const fmtDate = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const withRecents = (id, extra) => {
+      const last = lastDateByJumuiya[id];
+      const lastDate = last instanceof Date ? last : last ? new Date(`${String(last).slice(0, 10)}T00:00:00`) : null;
+      const daysSince = lastDate ? Math.round((today.getTime() - lastDate.getTime()) / 86400000) : null;
+      return {
+        ...extra,
+        recent_registers: recentsByJumuiya[id] || [],
+        last_register_date: lastDate ? fmtDate(lastDate) : null,
+        stale: daysSince === null || daysSince > STALE_REGISTER_DAYS,
+      };
+    };
     res.json({
       success: true,
       data: {
-        configured: result.rows.map((r) => ({
-          jumuiya_id: r.jumuiya_id,
-          name: r.name,
-          slug: r.slug,
-          color: r.color || "#6b7280",
-          meeting_day: r.meeting_day,
-          meeting_label: DAY_NAMES[r.meeting_day],
-        })),
-        unconfigured: sgResult.rows.map((r) => ({
-          jumuiya_id: r.group_id,
-          name: r.name,
-          slug: r.slug,
-          color: r.color || "#6b7280",
-          meeting_day: null,
-          meeting_label: null,
-        })),
+        configured: result.rows.map((r) =>
+          withRecents(r.jumuiya_id, {
+            jumuiya_id: r.jumuiya_id,
+            name: r.name,
+            slug: r.slug,
+            color: r.color || "#6b7280",
+            meeting_day: r.meeting_day,
+            meeting_label: DAY_NAMES[r.meeting_day],
+          })
+        ),
+        unconfigured: sgResult.rows.map((r) =>
+          withRecents(r.group_id, {
+            jumuiya_id: r.group_id,
+            name: r.name,
+            slug: r.slug,
+            color: r.color || "#6b7280",
+            meeting_day: null,
+            meeting_label: null,
+          })
+        ),
       },
     });
   } catch (error) {

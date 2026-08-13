@@ -142,13 +142,34 @@ export const deleteQuestionApi = (id: string | number) =>
 
 export const recordAttemptApi = (payload: {
   questionId: number | string;
-  memberId?: string;
-  jumuiyaId?: string;
-  selectedOption: string;
-  isCorrect: boolean;
+  selectedOption: number;
 }) => apiClient.post("/questions/attempt", payload);
 
 export const fetchTodayChallengeStatus = () => apiClient.get("/questions/today-status");
+
+export const setQuestionStatusApi = (id: number | string, status: "approved" | "rejected") =>
+  apiClient.put(`/questions/${id}/status`, { status });
+
+// Weekly challenge (member-facing)
+export const fetchCurrentWeeklyChallenge = () => apiClient.get("/weekly-challenge/current");
+
+// Weekly challenge (liturgist-facing)
+export const listWeeklyChallenges = () => apiClient.get("/weekly-challenge/challenges");
+export const createWeeklyChallenge = (payload: {
+  weekStart: string;
+  topic: string;
+  questionIds: number[];
+}) => apiClient.post("/weekly-challenge/challenges", payload);
+export const fetchWeeklyChallengeDetail = (id: number | string) =>
+  apiClient.get(`/weekly-challenge/challenges/${id}`);
+export const updateWeeklyChallengeApi = (id: number | string, payload: any) =>
+  apiClient.put(`/weekly-challenge/challenges/${id}`, payload);
+export const activateWeeklyChallengeApi = (id: number | string) =>
+  apiClient.post(`/weekly-challenge/challenges/${id}/activate`);
+export const publishWeeklyChallengeApi = (id: number | string) =>
+  apiClient.post(`/weekly-challenge/challenges/${id}/publish`);
+export const reviewWeeklyChallengeApi = (id: number | string) =>
+  apiClient.get(`/weekly-challenge/challenges/${id}/review`);
 
 
 export type AssistantChatHistoryItem = {

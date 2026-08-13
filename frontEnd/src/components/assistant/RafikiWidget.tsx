@@ -39,6 +39,7 @@ export default function RafikiWidget() {
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const [footerLift, setFooterLift] = useState(0);
+  const [atFooter, setAtFooter] = useState(false);
 
   const roles = normalizeRoles(user?.role);
   const hideOnLogin = location.pathname.startsWith("/login");
@@ -56,8 +57,10 @@ export default function RafikiWidget() {
           if (entry.isIntersecting) {
             const rect = footer.getBoundingClientRect();
             setFooterLift(Math.max(0, window.innerHeight - rect.top));
+            setAtFooter(rect.top <= window.innerHeight + 10);
           } else {
             setFooterLift(0);
+            setAtFooter(false);
           }
         });
       },
@@ -65,6 +68,13 @@ export default function RafikiWidget() {
     );
     io.observe(footer);
     return () => io.disconnect();
+  }, []);
+
+  // Listen for the custom event fired by the inline footer "Ask Rafiki" button on mobile
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    document.addEventListener("rafiki:open", handler);
+    return () => document.removeEventListener("rafiki:open", handler);
   }, []);
 
   useEffect(() => {
@@ -157,13 +167,15 @@ export default function RafikiWidget() {
         }
         .rafiki-panel { animation: rafiki-pop 0.25s ease-out; transform-origin: bottom right; }
       `}</style>
-      {/* Bottom-right trigger pill */}
+      {/* Bottom-right trigger pill — floats on top sections; on mobile, hides when scrolled to bottom footer */}
       {!open && !widgetHidden && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Open Rafiki assistant"
           style={{ bottom: footerLift ? `${footerLift + 20}px` : undefined }}
-          className="fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[9999] inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-transform"
+          className={`${
+            atFooter ? "hidden md:inline-flex" : "inline-flex"
+          } fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[9999] items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-all duration-300`}
         >
           <Sparkles className="w-4 h-4" />
           Ask Rafiki

@@ -75,21 +75,9 @@ const initializeSocketIO = (io) => {
       handleNotifyCSA(socket, io);
       handleNotifyJumuia(socket, io);
 
-      // Handle quiz attempt persistence
-      socket.on("attempt", async (data) => {
-        try {
-          const { questionId, memberId, jumuiyaId, selectedOption, isCorrect } = data;
-          if (!questionId || !memberId || !jumuiyaId) return;
-          await testDb.query(
-            `INSERT INTO attempts (question_id, member_id, jumuiya_id, selected_option, is_correct)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [questionId, memberId, jumuiyaId, selectedOption, isCorrect],
-          );
-        } catch (err) {
-          console.error("Failed to persist attempt:", err);
-        }
-      });
-
+      // Handle quiz attempts exclusively via the HTTP API (server-scored,
+      // identity from JWT). The socket "attempt" handler was removed because
+      // it trusted client-sent memberId/jumuiyaId/isCorrect.
       // ?this handle disconnection , incase of wifi disconnects , or the serve is unhealthy/crushes or close the browser , thus not reachable this will definetly run 
       socket.on(ChatEventEnum.DISCONNECT_EVENT, () => {
         console.log("user has disconnected 🚫. socketId: " + socket.id);

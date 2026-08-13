@@ -1,17 +1,19 @@
 import { testDb as db } from "../Configs/dbConfig.js";
 
 const Question = {
-  insertMany: async (questions) => {
+  insertMany: async (questions, { topic = null, generatedBy = null } = {}) => {
     const inserted = [];
     for (const q of questions) {
       const { rows } = await db.query(
-        `INSERT INTO questions (question_text, answers, correct_answer)
-         VALUES ($1, $2, $3)
+        `INSERT INTO questions (question_text, answers, correct_answer, topic, status, generated_by)
+         VALUES ($1, $2, $3, $4, 'draft', $5)
          RETURNING id`,
         [
           q.questionText,
           JSON.stringify(q.answers),
           JSON.stringify(q.correctAnswer),
+          topic,
+          generatedBy,
         ],
       );
       inserted.push({ id: rows[0].id, ...q });
@@ -19,10 +21,50 @@ const Question = {
     return inserted;
   },
 
+  findById: async (id) => {
+    const { rows } = await db.query(
+      `SELECT id, question_text, answers, correct_answer, status, topic, created_at
+       FROM questions
+       WHERE id = $1`,
+      [id],
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    return {
+      _id: r.id,
+      questionText: r.question_text,
+      answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
+      correctAnswer: typeof r.correct_answer === "string" ? JSON.parse(r.correct_answer) : r.correct_answer,
+      status: r.status,
+      topic: r.topic,
+      createdAt: r.created_at,
+    };
+  },
+
+  findByIds: async (ids) => {
+    if (!ids || ids.length === 0) return [];
+    const { rows } = await db.query(
+      `SELECT id, question_text, answers, correct_answer, status, topic, created_at
+       FROM questions
+       WHERE id = ANY($1)`,
+      [ids],
+    );
+    return rows.map((r) => ({
+      _id: r.id,
+      questionText: r.question_text,
+      answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
+      correctAnswer: typeof r.correct_answer === "string" ? JSON.parse(r.correct_answer) : r.correct_answer,
+      status: r.status,
+      topic: r.topic,
+      createdAt: r.created_at,
+    }));
+  },
+
   aggregateRandom: async (limit) => {
     const { rows } = await db.query(
-      `SELECT id, question_text, answers, correct_answer, created_at
+      `SELECT id, question_text, answers, correct_answer, status, topic, created_at
        FROM questions
+       WHERE status = 'approved'
        ORDER BY RANDOM()
        LIMIT $1`,
       [limit],
@@ -32,13 +74,33 @@ const Question = {
       questionText: r.question_text,
       answers: r.answers,
       correctAnswer: r.correct_answer,
+      status: r.status,
+      topic: r.topic,
       createdAt: r.created_at,
     }));
   },
 
+  setStatus: async (id, status) => {
+    const { rows } = await db.query(
+      `UPDATE questions
+       SET status = $1
+       WHERE id = $2
+       RETURNING id, question_text, status, topic`,
+      [status, id],
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    return {
+      _id: r.id,
+      questionText: r.question_text,
+      status: r.status,
+      topic: r.topic,
+    };
+  },
+
   getAllQuestions: async (page = 1, limit = 20, search = "") => {
     const offset = (page - 1) * limit;
-    let query = `SELECT id, question_text, answers, correct_answer, created_at FROM questions`;
+    let query = `SELECT id, question_text, answers, correct_answer, status, topic, created_at FROM questions`;
     let countQuery = `SELECT COUNT(*) FROM questions`;
     const params = [];
 
@@ -61,6 +123,8 @@ const Question = {
         questionText: r.question_text,
         answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
         correctAnswer: typeof r.correct_answer === "string" ? JSON.parse(r.correct_answer) : r.correct_answer,
+        status: r.status,
+        topic: r.topic,
         createdAt: r.created_at,
       })),
       total,

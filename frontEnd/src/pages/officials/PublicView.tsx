@@ -2,12 +2,12 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { FaPhoneAlt, FaWhatsapp } from 'react-icons/fa'
+import { Users, ChevronRight } from 'lucide-react'
 import { useSocket } from '../../context/SocketContext'
 
 import apiService from '../../pages/Landing/services/api'
 import { getSafeImageUrl } from '../../api/config'
 import { getAvatarForCategory } from './constants/positionInfo'
-import OfficialsCardsBackground from '../../components/OfficialsCardsBackground'
 
 const CATEGORY_ORDER = [
   'Executive','Jumuiya Coordinators','Bible Coordinators','Rosary',
@@ -15,21 +15,149 @@ const CATEGORY_ORDER = [
   'Choir Officials','Liturgical Dancers','Liturgist','Catechist'
 ]
 
+const CATEGORY_ALIAS_MAP: Record<string, string> = {
+  'Bible Coordinator': 'Bible Coordinators',
+  'Bible Study Coordinator': 'Bible Coordinators',
+  'Rosary Coordinator': 'Rosary',
+  'Pamphlet Manager': 'Pamphlet Managers',
+  'Jumuiya Coordinator': 'Jumuiya Coordinators',
+  'Project Manager': 'Project Managers',
+  'Instrument Manager': 'Instrument Managers',
+  'Choir Official': 'Choir Officials',
+  'Liturgical Dance': 'Liturgical Dancers',
+  'Liturgical Dancer': 'Liturgical Dancers',
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   'Executive': 'from-purple-600 to-purple-700',
   'Jumuiya Coordinators': 'from-blue-600 to-blue-700',
-  'Bible Coordinators': 'from-green-600 to-green-700',
-  'Rosary': 'from-pink-600 to-pink-700',
-  'Pamphlet Managers': 'from-orange-600 to-orange-700',
+  'Bible Coordinators': 'from-emerald-600 to-emerald-700',
+  'Rosary': 'from-pink-600 to-rose-700',
+  'Pamphlet Managers': 'from-amber-600 to-orange-700',
   'Project Managers': 'from-indigo-600 to-indigo-700',
   'Liturgist': 'from-cyan-600 to-cyan-700',
   'Choir Officials': 'from-red-600 to-red-700',
-  'Instrument Managers': 'from-blue-600 to-blue-700',
-  'Liturgical Dancers': 'from-violet-600 to-violet-700',
-  'Catechist': 'from-yellow-600 to-yellow-700',
+  'Instrument Managers': 'from-sky-600 to-blue-700',
+  'Liturgical Dancers': 'from-violet-600 to-purple-700',
+  'Catechist': 'from-yellow-600 to-amber-700',
 }
 
+interface OfficialCardProps {
+  off: any;
+  cat: string;
+  navigate: (path: string) => void;
+}
 
+function OfficialCard({ off, cat, navigate }: OfficialCardProps) {
+  const defaultAvatar = getAvatarForCategory(cat);
+  const initialPhotoUrl = off.photo ? getSafeImageUrl(off.photo) : defaultAvatar;
+  const [imgSrc, setImgSrc] = React.useState(initialPhotoUrl);
+
+  React.useEffect(() => {
+    setImgSrc(off.photo ? getSafeImageUrl(off.photo) : defaultAvatar);
+  }, [off.photo, cat, defaultAvatar]);
+
+  return (
+    <>
+      {/* ── MOBILE CARD (hidden on sm+): portrait aspect, object-top, bottom badge ── */}
+      <article
+        onClick={() => navigate(`/officials/${off.id}`)}
+        className="sm:hidden group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer active:scale-95 transform-gpu"
+        title={`View ${off.name}'s profile`}
+      >
+        {/* Top Gradient Accent Line */}
+        <div className={`h-1.5 w-full bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`} />
+
+        {/* Portrait image — aspect 4:5, aligned to top so faces aren't cropped */}
+        <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
+          <img
+            src={imgSrc}
+            onError={() => setImgSrc(defaultAvatar)}
+            alt={off.name}
+            loading="lazy"
+            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
+          />
+          {/* Bottom vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+          {/* Position badge */}
+          <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
+            <span className="truncate max-w-[85%] text-[0.68rem] font-bold text-white/95 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm">
+              {off.position || off.category}
+            </span>
+            <span className="w-5 h-5 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+              <ChevronRight className="w-3 h-3" />
+            </span>
+          </div>
+        </div>
+
+        {/* Name + contact */}
+        <div className="p-3 text-center flex flex-col gap-2 bg-white">
+          <h3 className="font-bold text-slate-950 text-sm line-clamp-1">{off.name}</h3>
+          {off.contact ? (
+            <div className="pt-1.5 border-t border-slate-100 flex justify-center gap-2">
+              <a
+                href={`tel:${off.contact.replace(/[^+0-9]/g, '')}`}
+                onClick={(e) => e.stopPropagation()}
+                className="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                title="Call"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover/btn:opacity-100 transition-opacity z-0`} />
+                <FaPhoneAlt size={13} className="z-10 relative" />
+              </a>
+              <a
+                href={`https://wa.me/${off.contact.replace(/[^+0-9]/g, '')}`}
+                target="_blank" rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-9 h-9 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                title="WhatsApp"
+              >
+                <FaWhatsapp size={17} />
+              </a>
+            </div>
+          ) : (
+            <div className="text-[0.7rem] text-slate-400 font-medium">Tap to view info</div>
+          )}
+        </div>
+      </article>
+
+      {/* ── DESKTOP CARD (hidden on mobile, shown sm+): original design ── */}
+      <article
+        onClick={() => navigate(`/officials/${off.id}`)}
+        className="hidden sm:block group bg-white border border-slate-200 rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+        style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
+        title={`View ${off.name}'s profile`}
+      >
+        <div className="relative h-44 md:h-52 bg-slate-100 overflow-hidden">
+          <img
+            src={imgSrc}
+            onError={() => setImgSrc(defaultAvatar)}
+            alt={off.name}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          {/* Colour tint overlay on hover */}
+          <div className={`absolute inset-0 bg-gradient-to-t ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-25 transition-opacity duration-300`} />
+          {/* "View profile" pill that slides in on hover */}
+          <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="mx-auto max-w-fit rounded-full bg-slate-950/80 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.05em] text-white shadow-lg backdrop-blur-md">
+              View profile
+            </div>
+          </div>
+        </div>
+
+        {/* Name below the image */}
+        <div className="p-4 text-center">
+          <h3 className="font-bold text-slate-950 text-sm group-hover:text-purple-700 transition-colors line-clamp-2 leading-snug">
+            {off.name}
+          </h3>
+          {off.position && (
+            <p className="text-slate-500 text-xs mt-1 line-clamp-1">{off.position}</p>
+          )}
+        </div>
+      </article>
+    </>
+  );
+}
 
 export default function PublicView() {
   const { user } = useAuth()
@@ -38,20 +166,20 @@ export default function PublicView() {
   const [data, setData]             = React.useState<any[]>([])
   const [loading, setLoading]       = React.useState(true)
   const [fetchError, setFetchError] = React.useState('')
+  const [activeCategory, setActiveCategory] = React.useState<string>('Executive')
 
   React.useEffect(() => { fetchOfficials() }, [])
 
   React.useEffect(() => {
     if (!socket) {
-      // Fallback: poll every 15s for unauthorized/guest viewers
       const interval = setInterval(() => {
-        fetchOfficials(true) // bypass cache on poll
+        fetchOfficials(true)
       }, 15000)
       return () => clearInterval(interval)
     }
 
     const handleUpdate = () => {
-      fetchOfficials(true) // bypass cache so new photos/data show immediately
+      fetchOfficials(true)
     }
 
     socket.on('officialsUpdated', handleUpdate)
@@ -66,7 +194,6 @@ export default function PublicView() {
 
     const cached = localStorage.getItem('csa_cache_officials');
     
-    // Only show loading spinner on initial load (no cache) or on retry/forced user actions where cache is missing
     if (!actualBypass || !cached) {
       if (cached) {
         try {
@@ -111,9 +238,16 @@ export default function PublicView() {
 
   const grouped = React.useMemo(() => {
     const map: Record<string, any[]> = {}
+    CATEGORY_ORDER.forEach(cat => { map[cat] = []; });
+
     data
       .filter(d => d.status !== 'archived')
-      .forEach(d => { const c = d.category || 'Other'; (map[c] ||= []).push(d) })
+      .forEach(d => {
+        let c = d.category || 'Other';
+        if (CATEGORY_ALIAS_MAP[c]) c = CATEGORY_ALIAS_MAP[c];
+        if (!map[c]) map[c] = [];
+        map[c].push(d);
+      })
     
     Object.keys(map).forEach(c => {
       map[c].sort((a, b) => getPositionRank(a.position) - getPositionRank(b.position));
@@ -150,7 +284,8 @@ export default function PublicView() {
             currentSmallRow = [];
           }
           rows.push({ type: 'large', category: cat });
-        } else if (members.length > 0) {
+        } else {
+          // Always add small category section so section ID element is rendered in DOM
           currentSmallRow.push(cat);
           if (currentSmallRow.length === 2) {
             rows.push({ type: 'small-group', categories: currentSmallRow });
@@ -166,6 +301,44 @@ export default function PublicView() {
 
     return rows;
   }, [grouped]);
+
+  // Scroll observer to update active category button as user scrolls
+  React.useEffect(() => {
+    if (loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            const matchCat = CATEGORY_ORDER.find(
+              (cat) => `category-${cat.replace(/\s+/g, '-')}` === id
+            );
+            if (matchCat) {
+              setActiveCategory(matchCat);
+            }
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -50% 0px', threshold: 0 }
+    );
+
+    CATEGORY_ORDER.forEach((cat) => {
+      const el = document.getElementById(`category-${cat.replace(/\s+/g, '-')}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [groupedCategories, loading]);
+
+  const scrollToCategory = (cat: string) => {
+    setActiveCategory(cat);
+    const el = document.getElementById(`category-${cat.replace(/\s+/g, '-')}`);
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.pageYOffset - 90;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
 
   const EXECUTIVE_TOP_ROW_TITLES = ['chairperson', 'vice chairperson', 'organizing secretary', 'organising secretary', 'treasurer'];
 
@@ -189,76 +362,34 @@ export default function PublicView() {
     return topRow;
   };
 
-  const renderOfficialCard = (off: any, cat: string) => (
-    <article
-      key={off.id}
-      onClick={() => navigate(`/officials/${off.id}`)}
-      className="group bg-white border border-slate-200 rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
-      style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
-      title={`View ${off.name}'s profile`}
-    >
-      <div className="relative h-36 sm:h-44 md:h-52 bg-slate-100 overflow-hidden">
-        <img
-          src={off.photo ? getSafeImageUrl(off.photo) : getAvatarForCategory(cat)}
-          alt={off.name}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className={`absolute inset-0 bg-gradient-to-t ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-25 transition-opacity duration-300`}></div>
-        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="mx-auto max-w-fit rounded-full bg-slate-950/80 px-4 py-2 text-[0.72rem] font-bold uppercase tracking-[0.05em] text-white shadow-lg backdrop-blur-md">
-            View profile
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-5 text-center">
-        <h3 className="font-bold text-slate-950 text-base sm:text-lg group-hover:text-slate-950 transition-colors truncate">
-          {off.name}
-        </h3>
-        <p className="text-sm font-semibold text-slate-700 mt-2">
-          {off.position || off.category}
-        </p>
-
-        {off.contact && (
-          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100 flex justify-center gap-3">
-            <a
-              href={`tel:${off.contact.replace(/[^+0-9]/g,'')}`}
-              onClick={e => e.stopPropagation()}
-              className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group flex items-center justify-center transition-all shadow-sm"
-              title="Call Official"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} opacity-0 group-hover:opacity-100 transition-opacity z-0`}></div>
-              <FaPhoneAlt size={14} className="z-10 relative" />
-            </a>
-            <a
-              href={`https://wa.me/${off.contact.replace(/[^+0-9]/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm z-10"
-              title="WhatsApp"
-            >
-              <FaWhatsapp size={18} />
-            </a>
-          </div>
-        )}
-      </div>
-    </article>
-  );
-
   const renderOfficialsSection = (cat: string, list: any[]) => {
     if (list.length === 0) {
       return (
-        <div className="w-full flex justify-center py-8">
-          <p className="text-gray-400 text-lg">No members in this category yet.</p>
+        <div className="w-full bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-2xl p-6 sm:p-8 text-center shadow-sm">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
+            <Users className="w-6 h-6" />
+          </div>
+          <h4 className="text-slate-900 font-bold text-base mb-1">No officials assigned yet</h4>
+          <p className="text-slate-500 text-sm max-w-sm mx-auto">
+            Official details for {cat} will be published once updated by leadership.
+          </p>
         </div>
       );
     }
 
-    const renderRow = (items: any[]) => (
-      <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-        {items.map((off) => renderOfficialCard(off, cat))}
+    const renderGrid = (items: any[]) => (
+      <div className="grid grid-cols-2 gap-3.5 sm:hidden">
+        {items.map((off) => (
+          <OfficialCard key={off.id} off={off} cat={cat} navigate={navigate} />
+        ))}
+      </div>
+    );
+
+    const renderDesktopFlex = (items: any[]) => (
+      <div className="hidden sm:flex flex-wrap justify-center gap-4 sm:gap-6">
+        {items.map((off) => (
+          <OfficialCard key={off.id} off={off} cat={cat} navigate={navigate} />
+        ))}
       </div>
     );
 
@@ -267,20 +398,36 @@ export default function PublicView() {
       const remaining = list.filter((off) => !topRow.some((top) => top.id === off.id));
 
       return (
-        <>
-          {renderRow(topRow)}
-          {remaining.length > 0 && <div className="mt-4">{renderRow(remaining)}</div>}
-        </>
+        <div className="space-y-6">
+          {renderGrid(topRow)}
+          {renderDesktopFlex(topRow)}
+          {remaining.length > 0 && (
+            <div className="pt-2">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs uppercase font-bold tracking-wider text-slate-400">Additional Executive Leadership</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+              {renderGrid(remaining)}
+              {renderDesktopFlex(remaining)}
+            </div>
+          )}
+        </div>
       );
     }
 
-    return renderRow(list);
+    return (
+      <>
+        {renderGrid(list)}
+        {renderDesktopFlex(list)}
+      </>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-indigo-50/20 pb-16">
       {/* Hero Header Section */}
-      <div className="relative bg-slate-950 text-white overflow-hidden border-b border-slate-900/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.12)] mb-12">
+      <div className="relative bg-slate-950 text-white overflow-hidden border-b border-slate-900/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.12)] mb-10">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute inset-x-0 bottom-0 h-72 hero-wave hero-wave-1" />
           <div className="absolute inset-x-0 bottom-8 h-80 hero-wave hero-wave-2" />
@@ -292,45 +439,85 @@ export default function PublicView() {
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:24px_24px]" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-6 py-16 sm:py-20 text-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-10 sm:py-16 text-center">
           
           <h1
-            className="font-bold mb-4 relative z-10 text-white"
+            className="font-bold mb-3 relative z-10 text-white tracking-tight"
             style={{
-              fontSize: 'clamp(2rem, 4vw, 3rem)',
-              lineHeight: 1.1,
-              fontFamily: "'Outfit', sans-serif",
-              letterSpacing: '-0.03em'
+              fontSize: 'clamp(1.85rem, 4vw, 3rem)',
+              lineHeight: 1.15,
+              fontFamily: "'Outfit', sans-serif"
             }}
           >
             Our CSA Officials
           </h1>
-          <p className="text-slate-200 text-lg max-w-2xl mx-auto relative z-10">
+          <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto relative z-10 font-normal">
             Discover the dedicated leaders guiding our Catholic Students Association through faith, service, and spiritual growth.
           </p>
 
-          <div className="mt-10 flex flex-wrap justify-center gap-2 relative z-10 max-w-4xl mx-auto">
-             {CATEGORY_ORDER.map(cat => (
-               <button 
-                  key={`nav-${cat}`}
-                  onClick={() => {
-                     const el = document.getElementById(`category-${cat.replace(/\s+/g, '-')}`);
-                     if(el) {
-                       const y = el.getBoundingClientRect().top + window.pageYOffset - 100;
-                       window.scrollTo({top: y, behavior: 'smooth'});
-                     }
-                  }}
-                  className="px-4 py-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-700/60 text-white text-sm font-semibold rounded-full hover:border-slate-200 hover:text-white hover:bg-slate-800 transition-all shadow-lg"
-               >
-                 {cat}
-               </button>
-             ))}
+          {/* Desktop Category Navigation Ribbon (sm:flex) */}
+          <div className="hidden sm:flex flex-wrap justify-center gap-2 mt-8 relative z-10 max-w-5xl mx-auto">
+             {CATEGORY_ORDER.map(cat => {
+               const count = (grouped[cat] || []).length;
+               const isActive = activeCategory === cat;
+
+               return (
+                 <button 
+                    key={`nav-desktop-${cat}`}
+                    onClick={() => scrollToCategory(cat)}
+                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 shadow-md flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-white text-slate-950 shadow-white/10 scale-105'
+                        : 'bg-slate-900/90 text-slate-300 border border-slate-700/60 hover:bg-slate-800 hover:text-white'
+                    }`}
+                 >
+                   <span>{cat}</span>
+                   {count > 0 && (
+                     <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${isActive ? 'bg-purple-100 text-purple-900 font-extrabold' : 'bg-slate-800 text-slate-300'}`}>
+                       {count}
+                     </span>
+                   )}
+                 </button>
+               );
+             })}
+          </div>
+
+          {/* Mobile Horizontal Touch Ribbon Navigation (sm:hidden) */}
+          <div className="sm:hidden relative w-full mt-6 z-10">
+            <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-slate-950 to-transparent z-20 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-slate-950 to-transparent z-20 pointer-events-none" />
+            
+            <div className="flex overflow-x-auto no-scrollbar gap-2 px-3 py-1.5 scroll-smooth">
+              {CATEGORY_ORDER.map(cat => {
+                const count = (grouped[cat] || []).length;
+                const isActive = activeCategory === cat;
+
+                return (
+                  <button 
+                    key={`nav-mobile-${cat}`}
+                    onClick={() => scrollToCategory(cat)}
+                    className={`whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-bold transition-all duration-200 shadow-sm flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-white text-slate-950 shadow-md scale-105'
+                        : 'bg-slate-900/90 text-slate-300 border border-slate-700/60 active:bg-slate-800'
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    {count > 0 && (
+                      <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${isActive ? 'bg-purple-100 text-purple-900 font-extrabold' : 'bg-slate-800 text-slate-300'}`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="relative">
-        <div className="relative max-w-7xl mx-auto px-6 text-slate-800">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 text-slate-800">
 
           {fetchError ? (
           <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-xl flex items-center justify-center gap-4">
@@ -342,65 +529,71 @@ export default function PublicView() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
           </div>
         ) : (
-          groupedCategories.map((row, index) => {
-            if (row.type === 'large') {
-              const cat = row.category;
-              return (
-                <section key={cat} id={`category-${cat.replace(/\s+/g, '-')}`} className="mb-16 scroll-mt-24">
-                  {/* Category Header */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-center gap-3 mb-6">
-                      <div className={`h-1 w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
-                      <h2 className="text-2xl font-bold text-slate-950">{cat}</h2>
-                      <div className={`h-1 w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
-                    </div>
-                    <div className="flex justify-center">
-                      <span className={`inline-block px-4 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`}>
-                        {(grouped[cat] || []).length} member{(grouped[cat] || []).length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Cards */}
-                  {renderOfficialsSection(cat, grouped[cat] || [])}
-                </section>
-              );
-            } else {
-              return (
-                <div key={`small-group-${index}`} className="flex flex-col md:flex-row gap-8 mb-16 items-start justify-center">
-                  {row.categories.map((cat: string) => (
-                    <section key={cat} id={`category-${cat.replace(/\s+/g, '-')}`} className="flex-1 scroll-mt-24 w-full">
-                      {/* Category Header */}
-                      <div className="mb-8">
-                        <div className="flex items-center justify-center gap-3 mb-6">
-                          <div className={`h-1 w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
-                          <h2 className="text-2xl font-bold text-slate-950 text-center">{cat}</h2>
-                          <div className={`h-1 w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded`}></div>
-                        </div>
-                        <div className="flex justify-center">
-                          <span className={`inline-block px-4 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'}`}>
-                            {(grouped[cat] || []).length} member{(grouped[cat] || []).length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
+          <>
+            {groupedCategories.map((row, index) => {
+              if (row.type === 'large') {
+                const cat = row.category;
+                const members = grouped[cat] || [];
+                return (
+                  <section key={cat} id={`category-${cat.replace(/\s+/g, '-')}`} className="mb-14 sm:mb-16 scroll-mt-24">
+                    {/* Category Header */}
+                    <div className="mb-6 sm:mb-8 text-center">
+                      <div className="flex items-center justify-center gap-3 mb-3">
+                        <div className={`h-1 w-8 sm:w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded-full`}></div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-950 tracking-tight">{cat}</h2>
+                        <div className={`h-1 w-8 sm:w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded-full`}></div>
                       </div>
+                      <div className="flex justify-center">
+                        <span className={`inline-block px-3.5 py-0.5 rounded-full text-xs font-bold text-white bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} shadow-sm`}>
+                          {members.length} member{members.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* Cards */}
-                      {renderOfficialsSection(cat, grouped[cat] || [])}
-                    </section>
-                  ))}
-                </div>
-              );
-            }
-          })
+                    {/* Cards */}
+                    {renderOfficialsSection(cat, members)}
+                  </section>
+                );
+              } else {
+                return (
+                  <div key={`small-group-${index}`} className="flex flex-col md:flex-row gap-10 md:gap-8 mb-14 sm:mb-16 items-start justify-center">
+                    {row.categories.map((cat: string) => {
+                      const members = grouped[cat] || [];
+                      return (
+                        <section key={cat} id={`category-${cat.replace(/\s+/g, '-')}`} className="flex-1 scroll-mt-24 w-full">
+                          {/* Category Header */}
+                          <div className="mb-6 sm:mb-8 text-center">
+                            <div className="flex items-center justify-center gap-3 mb-3">
+                              <div className={`h-1 w-8 sm:w-12 bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded-full`}></div>
+                              <h2 className="text-xl sm:text-2xl font-bold text-slate-950 tracking-tight">{cat}</h2>
+                              <div className={`h-1 w-8 sm:w-12 bg-gradient-to-l ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} rounded-full`}></div>
+                            </div>
+                            <div className="flex justify-center">
+                              <span className={`inline-block px-3.5 py-0.5 rounded-full text-xs font-bold text-white bg-gradient-to-r ${CATEGORY_COLORS[cat] || 'from-gray-600 to-gray-700'} shadow-sm`}>
+                                {members.length} member{members.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Cards */}
+                          {renderOfficialsSection(cat, members)}
+                        </section>
+                      );
+                    })}
+                  </div>
+                );
+              }
+            })}
+          </>
         )}
 
         {/* View Past Officials */}
-        <div className="mt-20 mb-12 flex flex-col items-center">
-          <div className="w-full max-w-lg h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-8"></div>
-          <p className="text-slate-400 text-sm font-medium mb-6">Want to see our leadership history?</p>
+        <div className="mt-16 mb-10 flex flex-col items-center">
+          <div className="w-full max-w-lg h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent mb-8"></div>
+          <p className="text-slate-500 text-sm font-medium mb-4">Want to see our leadership history?</p>
           <button
             onClick={() => navigate('/officials/history')}
-            className="group flex items-center gap-3 px-8 py-4 bg-slate-950 text-white border border-slate-900/40 rounded-2xl shadow-lg hover:shadow-2xl hover:border-slate-200 hover:-translate-y-1 transition-all duration-300 font-bold"
+            className="group flex items-center gap-3 px-6 py-3.5 sm:px-8 sm:py-4 bg-slate-950 text-white border border-slate-900/40 rounded-2xl shadow-md hover:shadow-xl hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-300 font-bold text-sm sm:text-base active:scale-95"
           >
             <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,5 +609,7 @@ export default function PublicView() {
       </div>
     </div>
   </div>
-  )
+)
 }
+
+

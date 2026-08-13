@@ -47,6 +47,17 @@ const Headers = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -227,8 +238,8 @@ const Headers = () => {
         />
 
         <div
-          className={`absolute top-0 right-0 w-[75%] max-w-[300px] h-full bg-white shadow-2xl transition-transform duration-400 ease-out ${
-            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          className={`absolute top-0 left-0 w-[75%] max-w-[300px] h-full bg-white shadow-2xl transition-transform duration-400 ease-out ${
+            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           {/* Header */}

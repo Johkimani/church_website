@@ -50,6 +50,7 @@ function getJumuiyaColor(idOrSlug: string): string {
 export default function JumuiComparison() {
   const [data, setData] = useState<JumuiData[]>([]);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
+  const [weekStart, setWeekStart] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function JumuiComparison() {
         const raw = Array.isArray(res.data?.data) ? res.data.data : [];
         setData(raw);
         setPublishedAt(res.data?.publishedAt || null);
+        setWeekStart(res.data?.weekStart || null);
       } catch (err) {
         console.error(err);
       } finally {
@@ -67,6 +69,12 @@ export default function JumuiComparison() {
     };
     fetchData();
   }, []);
+
+  const weekLabel = weekStart
+    ? `Week of ${new Date(weekStart + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
+    : publishedAt
+      ? `Snapshot: ${new Date(publishedAt).toLocaleDateString()}`
+      : "Live Data Active";
 
   const formattedChartData = data.map((j) => ({
     ...j,
@@ -103,7 +111,7 @@ export default function JumuiComparison() {
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-stone-200">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="text-xs text-stone-600 font-medium">
-              {publishedAt ? `Snapshot: ${new Date(publishedAt).toLocaleDateString()}` : "Live Data Active"}
+              {weekLabel}
             </span>
           </div>
         </div>
@@ -112,7 +120,7 @@ export default function JumuiComparison() {
           <div className="text-stone-500 text-center py-24 bg-white rounded-3xl border border-stone-200">
             <Activity className="w-10 h-10 mx-auto mb-3 text-stone-500" />
             <p className="text-sm font-semibold">No Jumuiya attempt stats recorded yet.</p>
-            <p className="text-xs text-stone-500 mt-1">Complete daily liturgical challenges to see standings update.</p>
+            <p className="text-xs text-stone-500 mt-1">Complete this week's liturgical challenge to see standings update.</p>
           </div>
         ) : (
           <>

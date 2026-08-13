@@ -84,7 +84,7 @@ const Footers = () => {
       </div>
 
       {/* Copyright Bar */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", paddingTop: 40, marginTop: 24, borderTop: "1px solid #374151", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", paddingTop: 40, marginTop: 24, borderTop: "1px solid #374151" }} className="footer-bottom-bar">
         <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9CA3AF", margin: 0 }}>
           &copy; {currentYear} St. Thomas Aquinas CSA &mdash; Crafted for the Catholic Community.
         </p>
@@ -111,12 +111,42 @@ const Footers = () => {
             onMouseEnter={(e) => { e.currentTarget.style.color = "#D1D5DB"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "#9CA3AF"; }}
           >Developers</button>
+          {/* Ask Rafiki — inline on mobile, hidden on md+ (desktop has floating pill) */}
+          <span className="footer-rafiki-sep" style={{ color: "#4B5563" }}>&middot;</span>
+          <button
+            id="footer-rafiki-trigger"
+            className="footer-rafiki-btn"
+            onClick={() => document.dispatchEvent(new CustomEvent("rafiki:open"))}
+            style={{
+              color: "#F59E0B", background: "none", border: "none", padding: 0, margin: 0,
+              font: "inherit", textTransform: "inherit", letterSpacing: "inherit", fontWeight: "inherit",
+              fontSize: "inherit", cursor: "pointer", transition: "color 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#FBBF24"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#F59E0B"; }}
+          >Ask Rafiki</button>
         </div>
       </div>
 
       <DeveloperModal open={devModalOpen} onClose={() => setDevModalOpen(false)} />
 
       <style>{`
+        .footer-bottom-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        /* On mobile: stack copyright above links, hide Rafiki sep+btn (shown inline below) */
+        @media (max-width: 767px) {
+          .footer-bottom-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+          .footer-rafiki-sep, .footer-rafiki-btn { display: inline !important; }
+        }
+        /* On md+: hide the inline footer rafiki button (floating pill handles it) */
+        @media (min-width: 768px) {
+          .footer-rafiki-sep, .footer-rafiki-btn { display: none !important; }
+        }
         @media (max-width: 768px) {
           footer > div { grid-template-columns: 1fr 1fr !important; }
         }
