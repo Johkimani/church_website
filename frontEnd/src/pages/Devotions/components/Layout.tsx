@@ -41,7 +41,7 @@ export default function Layout() {
          
           {/* Mobile left navigation rail */}
           <nav
-            className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-14 py-4 flex flex-col items-center justify-center gap-2"
+            className="md:hidden fixed left-0 top-16 bottom-0 z-50 w-14 py-4 flex flex-col items-center justify-center gap-2"
             style={{
               background: "rgba(250, 248, 245, 0.9)",
               backdropFilter: "blur(20px) saturate(1.8)",
