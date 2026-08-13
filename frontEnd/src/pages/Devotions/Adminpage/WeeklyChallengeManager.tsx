@@ -30,7 +30,8 @@ const STATUS_STYLES: Record<string, string> = {
   published: "bg-indigo-50 text-indigo-700",
 };
 
-const formatJumuiyaName = (idOrSlug: string): string => {
+const formatJumuiyaName = (idOrSlug: string, apiName?: string | null): string => {
+  if (apiName) return apiName;
   if (!idOrSlug) return "General Jumuiya";
   const key = idOrSlug.toLowerCase().trim();
   if (JUMUIYA_META[key]) return JUMUIYA_META[key].name;
@@ -38,7 +39,7 @@ const formatJumuiyaName = (idOrSlug: string): string => {
     if (key.includes(k) || k.includes(key)) return meta.name;
   }
   const clean = idOrSlug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return clean.length > 30 ? "St. Anthony of Padua" : clean;
+  return clean.length > 30 ? "Jumuiya" : clean;
 };
 
 const formatWeek = (d: string) =>
@@ -58,6 +59,9 @@ export default function WeeklyChallengeManager() {
   // Review state
   const [reviewChallenge, setReviewChallenge] = useState<any>(null);
   const [reviewDetail, setReviewDetail] = useState<any>(null);
+
+  // Member participation filter
+  const [memberJumuiyaFilter, setMemberJumuiyaFilter] = useState("all");
 
   // Create form state
   const [form, setForm] = useState({
@@ -205,6 +209,19 @@ export default function WeeklyChallengeManager() {
   const filteredQuestions = approvedQuestions.filter((q: any) =>
     q.questionText?.toLowerCase().includes(form.questionSearch.toLowerCase())
   );
+
+  const members = reviewDetail?.members || [];
+  const memberJumuiyas = Array.from(
+    new Map(
+      members
+        .filter((m: any) => m.jumuiyaId)
+        .map((m: any) => [m.jumuiyaId, m.jumuiyaName || formatJumuiyaName(m.jumuiyaId)])
+    ).entries()
+  ).map(([id, name]) => ({ id, name }));
+  const filteredMembers =
+    memberJumuiyaFilter === "all"
+      ? members
+      : members.filter((m: any) => m.jumuiyaId === memberJumuiyaFilter);
 
   const QuestionPicker = ({ value, onChange }: { value: number[]; onChange: (id: number) => void }) => (
     <div className="border border-stone-200 rounded-xl bg-stone-50 p-3 space-y-3">
@@ -508,7 +525,7 @@ export default function WeeklyChallengeManager() {
                     {reviewDetail.jumuiyas.map((j: any, idx: number) => (
                       <tr key={j._id} className="hover:bg-stone-50">
                         <td className="py-2.5 px-3 font-bold text-stone-400">#{idx + 1}</td>
-                        <td className="py-2.5 px-3 font-semibold">{formatJumuiyaName(j._id)}</td>
+                        <td className="py-2.5 px-3 font-semibold">{formatJumuiyaName(j._id, j.name)}</td>
                         <td className="py-2.5 px-3 text-center font-semibold text-stone-600">{j.participatingMembers}</td>
                         <td className="py-2.5 px-3 text-center font-semibold text-stone-600">{j.totalAttempts}</td>
                         <td className="py-2.5 px-3 text-center font-black text-amber-700">{j.avgMemberAccuracy}%</td>
@@ -563,31 +580,58 @@ export default function WeeklyChallengeManager() {
             <h4 className="text-xs font-black text-stone-500 uppercase tracking-widest mb-3 flex items-center gap-2">
               <FaCheckCircle size={12} /> Member Participation
             </h4>
-            {(reviewDetail?.members || []).length === 0 ? (
+            {members.length === 0 ? (
               <p className="text-xs text-stone-400">No members attempted this week yet.</p>
             ) : (
-              <div className="overflow-x-auto border border-stone-100 rounded-xl">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-100 text-stone-600 uppercase text-[10px] font-bold">
-                    <tr>
-                      <th className="py-2.5 px-3">Member</th>
-                      <th className="py-2.5 px-3">Jumuiya</th>
-                      <th className="py-2.5 px-3 text-center">Answered</th>
-                      <th className="py-2.5 px-3 text-center">Correct</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100 text-stone-700">
-                    {reviewDetail.members.map((m: any) => (
-                      <tr key={m.memberId} className="hover:bg-stone-50">
-                        <td className="py-2.5 px-3 font-semibold">{m.name}</td>
-                        <td className="py-2.5 px-3 text-stone-500">{formatJumuiyaName(m.jumuiyaId)}</td>
-                        <td className="py-2.5 px-3 text-center font-semibold text-stone-600">{m.answered}</td>
-                        <td className="py-2.5 px-3 text-center font-semibold text-emerald-600">{m.correct}</td>
-                      </tr>
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-bold text-stone-600">Filter by Jumuiya:</span>
+                  <select
+                    value={memberJumuiyaFilter}
+                    onChange={(e) => setMemberJumuiyaFilter(e.target.value)}
+                    className="border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                  >
+                    <option value="all">All Jumuiyas ({members.length})</option>
+                    {memberJumuiyas.map((j) => (
+                      <option key={String(j.id)} value={String(j.id)}>
+                        {j.name}
+                      </option>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </select>
+                  {memberJumuiyaFilter !== "all" && (
+                    <button
+                      onClick={() => setMemberJumuiyaFilter("all")}
+                      className="text-[10px] font-bold text-amber-700 hover:text-amber-900"
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </div>
+                <div className="overflow-x-auto border border-stone-100 rounded-xl">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-stone-100 text-stone-600 uppercase text-[10px] font-bold">
+                      <tr>
+                        <th className="py-2.5 px-3">Member</th>
+                        <th className="py-2.5 px-3">Jumuiya</th>
+                        <th className="py-2.5 px-3 text-center">Answered</th>
+                        <th className="py-2.5 px-3 text-center">Correct</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 text-stone-700">
+                      {filteredMembers.map((m: any) => (
+                        <tr key={m.memberId} className="hover:bg-stone-50">
+                          <td className="py-2.5 px-3 font-semibold">{m.name}</td>
+                          <td className="py-2.5 px-3 text-stone-500">
+                            {formatJumuiyaName(m.jumuiyaId, m.jumuiyaName)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-semibold text-stone-600">{m.answered}</td>
+                          <td className="py-2.5 px-3 text-center font-semibold text-emerald-600">{m.correct}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>

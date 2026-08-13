@@ -14,7 +14,8 @@ const JUMUIYA_META: Record<string, { name: string; shortName: string; color: str
   "st-monica": { name: "St. Monica", shortName: "St. Monica", color: "#ea580c" },
 };
 
-function formatJumuiyaName(idOrSlug: string, short = false): string {
+function formatJumuiyaName(idOrSlug: string, short = false, apiName?: string): string {
+  if (apiName) return short ? apiName.split(" of ")[0] : apiName;
   if (!idOrSlug) return "General Jumuiya";
   const key = idOrSlug.toLowerCase().trim();
 
@@ -29,7 +30,7 @@ function formatJumuiyaName(idOrSlug: string, short = false): string {
   }
 
   const clean = idOrSlug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return clean.length > 25 ? (short ? "St. Anthony" : "St. Anthony of Padua") : clean;
+  return clean.length > 25 ? "Jumuiya" : clean;
 }
 
 function getJumuiyaColor(idOrSlug: string): string {
@@ -78,8 +79,8 @@ export default function JumuiComparison() {
 
   const formattedChartData = data.map((j) => ({
     ...j,
-    displayName: formatJumuiyaName(j._id, true),
-    fullName: formatJumuiyaName(j._id, false),
+    displayName: formatJumuiyaName(j._id, true, j.name),
+    fullName: formatJumuiyaName(j._id, false, j.name),
     color: getJumuiyaColor(j._id),
   }));
 

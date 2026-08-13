@@ -287,19 +287,22 @@ export const reviewWeeklyChallenge = async (req, res) => {
          WHERE week_start = $1
          GROUP BY member_id, jumuiya_id
        )
-       SELECT jumuiya_id,
+       SELECT pm.jumuiya_id,
+              MAX(sg.name) AS jumuiya_name,
               COUNT(*) AS participating_members,
-              COALESCE(SUM(answered), 0) AS total_attempts,
-              COALESCE(SUM(correct), 0) AS correct_attempts,
-              ROUND(COALESCE(SUM(correct) * 100.0 / NULLIF(SUM(answered), 0), 0), 2) AS overall_accuracy,
-              ROUND(COALESCE(AVG(correct::numeric * 100.0 / NULLIF(answered, 0)), 0), 2) AS avg_member_accuracy
-       FROM per_member
-       GROUP BY jumuiya_id
+              COALESCE(SUM(pm.answered), 0) AS total_attempts,
+              COALESCE(SUM(pm.correct), 0) AS correct_attempts,
+              ROUND(COALESCE(SUM(pm.correct) * 100.0 / NULLIF(SUM(pm.answered), 0), 0), 2) AS overall_accuracy,
+              ROUND(COALESCE(AVG(pm.correct::numeric * 100.0 / NULLIF(pm.answered, 0)), 0), 2) AS avg_member_accuracy
+       FROM per_member pm
+       LEFT JOIN sub_groups sg ON sg.group_id::text = pm.jumuiya_id OR sg.slug = pm.jumuiya_id
+       GROUP BY pm.jumuiya_id
        ORDER BY avg_member_accuracy DESC NULLS LAST, participating_members DESC`,
       [weekStart],
     );
     const jumuiyas = jumuiyasRes.rows.map((r) => ({
       _id: r.jumuiya_id,
+      name: r.jumuiya_name || null,
       participatingMembers: Number(r.participating_members),
       totalAttempts: Number(r.total_attempts),
       correctAttempts: Number(r.correct_attempts),
@@ -326,19 +329,21 @@ export const reviewWeeklyChallenge = async (req, res) => {
     }));
 
     const membersRes = await db.query(
-      `SELECT a.member_id, a.jumuiya_id, m.first_name, m.last_name,
+      `SELECT a.member_id, a.jumuiya_id, m.first_name, m.last_name, sg.name AS jumuiya_name,
               COUNT(*) AS answered,
               COUNT(*) FILTER (WHERE a.is_correct) AS correct
        FROM attempts a
        LEFT JOIN members m ON m.member_id = a.member_id
+       LEFT JOIN sub_groups sg ON sg.group_id::text = a.jumuiya_id OR sg.slug = a.jumuiya_id
        WHERE a.week_start = $1
-       GROUP BY a.member_id, a.jumuiya_id, m.first_name, m.last_name
+       GROUP BY a.member_id, a.jumuiya_id, m.first_name, m.last_name, sg.name
        ORDER BY a.jumuiya_id, correct DESC`,
       [weekStart],
     );
     const members = membersRes.rows.map((r) => ({
       memberId: r.member_id,
       jumuiyaId: r.jumuiya_id,
+      jumuiyaName: r.jumuiya_name || null,
       name: [r.first_name, r.last_name].filter(Boolean).join(" ") || "Unknown",
       answered: Number(r.answered),
       correct: Number(r.correct),
@@ -373,14 +378,16 @@ export const publishWeeklyChallenge = async (req, res) => {
            WHERE week_start = $1
            GROUP BY member_id, jumuiya_id
          )
-         SELECT jumuiya_id,
+         SELECT pm.jumuiya_id,
+                MAX(sg.name) AS jumuiya_name,
                 COUNT(*) AS participating_members,
-                COALESCE(SUM(answered), 0) AS total_attempts,
-                COALESCE(SUM(correct), 0) AS correct_attempts,
-                ROUND(COALESCE(SUM(correct) * 100.0 / NULLIF(SUM(answered), 0), 0), 2) AS overall_accuracy,
-                ROUND(COALESCE(AVG(correct::numeric * 100.0 / NULLIF(answered, 0)), 0), 2) AS avg_member_accuracy
-         FROM per_member
-         GROUP BY jumuiya_id
+                COALESCE(SUM(pm.answered), 0) AS total_attempts,
+                COALESCE(SUM(pm.correct), 0) AS correct_attempts,
+                ROUND(COALESCE(SUM(pm.correct) * 100.0 / NULLIF(SUM(pm.answered), 0), 0), 2) AS overall_accuracy,
+                ROUND(COALESCE(AVG(pm.correct::numeric * 100.0 / NULLIF(pm.answered, 0)), 0), 2) AS avg_member_accuracy
+         FROM per_member pm
+         LEFT JOIN sub_groups sg ON sg.group_id::text = pm.jumuiya_id OR sg.slug = pm.jumuiya_id
+         GROUP BY pm.jumuiya_id
          ORDER BY avg_member_accuracy DESC NULLS LAST, participating_members DESC`,
         [weekStart],
       );
@@ -396,6 +403,7 @@ export const publishWeeklyChallenge = async (req, res) => {
           [
             JSON.stringify({
               _id: r.jumuiya_id,
+              name: r.jumuiya_name || null,
               participatingMembers: Number(r.participating_members),
               totalAttempts: Number(r.total_attempts),
               correctAttempts: Number(r.correct_attempts),

@@ -591,7 +591,7 @@ function formatJumuiyaSlug(idOrSlug: string, membersList: JumuiyaRow[] = []): st
   }
 
   const clean = idOrSlug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return clean.length > 30 ? "St. Anthony of Padua" : clean;
+  return clean.length > 30 ? "Jumuiya" : clean;
 }
 
 function getJumuiyaColor(idOrSlug: string, membersList: JumuiyaRow[] = []): string {

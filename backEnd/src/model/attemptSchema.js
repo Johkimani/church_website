@@ -50,21 +50,24 @@ export const getMemberSummary = async (memberId) => {
 export const getJumuiComparison = async () => {
   const { rows } = await db.query(
     `SELECT
-       jumuiya_id,
+       a.jumuiya_id,
+       sg.name,
        COUNT(*) AS total_attempts,
        COUNT(*) FILTER (WHERE is_correct) AS correct_attempts,
        CASE WHEN COUNT(*) = 0 THEN 0
          ELSE ROUND(COUNT(*) FILTER (WHERE is_correct) * 100.0 / COUNT(*), 2)
        END AS accuracy
-     FROM attempts
-     WHERE attempted_at >= $1::timestamp
-     GROUP BY jumuiya_id
+     FROM attempts a
+     LEFT JOIN sub_groups sg ON sg.group_id::text = a.jumuiya_id OR sg.slug = a.jumuiya_id
+     WHERE a.attempted_at >= $1::timestamp
+     GROUP BY a.jumuiya_id, sg.name
      ORDER BY accuracy DESC
      LIMIT 7`,
     [threeWeeksAgo()],
   );
   return rows.map((r) => ({
     _id: r.jumuiya_id,
+    name: r.name || null,
     totalAttempts: Number(r.total_attempts),
     correctAttempts: Number(r.correct_attempts),
     accuracy: Number(r.accuracy),
@@ -74,21 +77,24 @@ export const getJumuiComparison = async () => {
 export const getComparisonAll = async () => {
   const { rows } = await db.query(
     `SELECT
-       jumuiya_id,
+       a.jumuiya_id,
+       sg.name,
        COUNT(*) AS total_attempts,
        COUNT(*) FILTER (WHERE is_correct) AS correct_attempts,
        CASE WHEN COUNT(*) = 0 THEN 0
          ELSE ROUND(COUNT(*) FILTER (WHERE is_correct) * 100.0 / COUNT(*), 2)
        END AS accuracy
-     FROM attempts
-     WHERE attempted_at >= $1::timestamp
-     GROUP BY jumuiya_id
+     FROM attempts a
+     LEFT JOIN sub_groups sg ON sg.group_id::text = a.jumuiya_id OR sg.slug = a.jumuiya_id
+     WHERE a.attempted_at >= $1::timestamp
+     GROUP BY a.jumuiya_id, sg.name
      ORDER BY accuracy DESC
      LIMIT 50`,
     [threeWeeksAgo()],
   );
   return rows.map((r) => ({
     _id: r.jumuiya_id,
+    name: r.name || null,
     totalAttempts: Number(r.total_attempts),
     correctAttempts: Number(r.correct_attempts),
     accuracy: Number(r.accuracy),
