@@ -27,6 +27,7 @@ import { startKeepAliveWorker } from "./services/keep-alive.js";
 import { startImportSyncWorker } from "./services/importSyncJob.js";
 import questionsMigration from "./migrations/questionsMigration.js";
 import publishStatsMigration from "./migrations/publishStatsMigration.js";
+import weeklyChallengeMigration from "./migrations/weeklyChallengeMigration.js";
 import activityBookingMigration from "./migrations/activityBookingMigration.js";
 import { pendingPaymentsMigration } from "./migrations/pendingPaymentsMigration.js";
 import attendanceMigration from "./migrations/attendanceMigration.js";
@@ -177,6 +178,7 @@ const initServer = async () => {
     await backfillSemRegMigration();
     await questionsMigration();
     await publishStatsMigration();
+    await weeklyChallengeMigration();
     await activityBookingMigration();
     await pendingPaymentsMigration();
     await attendanceMigration();

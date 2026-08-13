@@ -142,14 +142,10 @@ export const deleteQuestionApi = (id: string | number) =>
 
 export const recordAttemptApi = (payload: {
   questionId: number | string;
-  memberId?: string;
-  jumuiyaId?: string;
-  selectedOption: string;
-  isCorrect: boolean;
+  selectedOption: number;
 }) => apiClient.post("/questions/attempt", payload);
 
 export const fetchTodayChallengeStatus = () => apiClient.get("/questions/today-status");
-
 
 export type AssistantChatHistoryItem = {
   role: "user" | "assistant";

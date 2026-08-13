@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireRole } from "../../middlewares/requireRole.js";
 import { GenerateQuestion } from "../../controllers/questionGenerator.js/GenerateQuestion.js";
 import {
   getDailyQuestions,
@@ -11,13 +12,15 @@ import {
 
 const route = Router();
 
-route.post("/", GenerateQuestion);
+// Liturgist-only admin routes (already behind verifyToken via the mount)
+route.post("/", requireRole("liturgist"), GenerateQuestion);
+route.get("/manage", requireRole("liturgist"), getManageQuestions);
+route.put("/:id", requireRole("liturgist"), updateQuestionController);
+route.delete("/:id", requireRole("liturgist"), deleteQuestionController);
+
+// Member-facing routes
 route.get("/", getDailyQuestions);
-route.get("/manage", getManageQuestions);
-route.put("/:id", updateQuestionController);
-route.delete("/:id", deleteQuestionController);
 route.post("/attempt", recordAttemptHttp);
 route.get("/today-status", getTodayChallengeStatus);
 
 export default route;
-

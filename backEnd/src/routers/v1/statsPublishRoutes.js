@@ -1,5 +1,6 @@
 import { Router } from "express";
 import verifyToken from "../../middlewares/Tokens.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 import {
   publishStats,
   getPublishedComparison,
@@ -9,8 +10,8 @@ import {
 
 const router = Router();
 
-// Admin-triggered publish (requires auth)
-router.post("/publish-stats", verifyToken, publishStats);
+// Liturgist-triggered publish (requires liturgist role)
+router.post("/publish-stats", verifyToken, requireRole("liturgist"), publishStats);
 
 // User-facing — read from published snapshots
 router.get("/published/comparison", getPublishedComparison);

@@ -19,6 +19,24 @@ const Question = {
     return inserted;
   },
 
+  findById: async (id) => {
+    const { rows } = await db.query(
+      `SELECT id, question_text, answers, correct_answer, created_at
+       FROM questions
+       WHERE id = $1`,
+      [id],
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    return {
+      _id: r.id,
+      questionText: r.question_text,
+      answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
+      correctAnswer: typeof r.correct_answer === "string" ? JSON.parse(r.correct_answer) : r.correct_answer,
+      createdAt: r.created_at,
+    };
+  },
+
   aggregateRandom: async (limit) => {
     const { rows } = await db.query(
       `SELECT id, question_text, answers, correct_answer, created_at
@@ -102,4 +120,3 @@ const Question = {
 };
 
 export default Question;
-
