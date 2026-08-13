@@ -69,12 +69,12 @@ function AccuracyRing({ accuracy }: { accuracy: number }) {
 }
 
 // Week bar entry
-function WeekBar({ week, accuracy, maxAcc }: { week: number; accuracy: number; maxAcc: number }) {
+function WeekBar({ label, accuracy, maxAcc }: { label: string; accuracy: number; maxAcc: number }) {
   const pct = maxAcc > 0 ? (accuracy / maxAcc) * 100 : 0;
   const color = accuracy >= 70 ? "#22c55e" : accuracy >= 45 ? "#f59e0b" : "#f87171";
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs font-bold text-slate-400 w-10 shrink-0 text-right">Wk {week}</span>
+      <span className="text-xs font-bold text-slate-400 w-14 shrink-0 text-right">{label}</span>
       <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700"
@@ -109,7 +109,7 @@ export default function MemberDashboard() {
   const firstName = user?.name?.split(" ")[0] || "Pilgrim";
 
   const chartData = weeks.map((w) => ({
-    name: `Week ${w.week}`,
+    name: weeks.length <= 1 ? "This Week" : `Week ${w.week}`,
     accuracy: w.totalAttempts ? Math.round((w.correctAttempts / w.totalAttempts) * 100) : 0,
     attempts: w.totalAttempts,
     correct: w.correctAttempts,
@@ -183,10 +183,10 @@ export default function MemberDashboard() {
             <div className="text-5xl mb-5">📖</div>
             <h3 className="text-xl font-black text-slate-800 mb-2">No Progress Recorded Yet</h3>
             <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-              Complete daily liturgical challenges and the admin will publish your progress here.
+              Complete the weekly liturgical challenge and the liturgist will publish your progress here.
             </p>
             <div className="mt-6 inline-block px-5 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-700">
-              🌟 Start today's challenge to begin your journey
+              🌟 Start this week's challenge to begin your journey
             </div>
           </div>
         ) : (
@@ -228,7 +228,7 @@ export default function MemberDashboard() {
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Weekly Breakdown</p>
                 {chartData.length > 0 ? (
                   chartData.map((d) => (
-                    <WeekBar key={d.name} week={parseInt(d.name.replace("Week ", ""))} accuracy={d.accuracy} maxAcc={maxAcc} />
+                    <WeekBar key={d.name} label={d.name} accuracy={d.accuracy} maxAcc={maxAcc} />
                   ))
                 ) : (
                   <p className="text-sm text-slate-400 italic">No weekly data yet.</p>
@@ -245,7 +245,7 @@ export default function MemberDashboard() {
                     <p className="text-xs text-slate-400 font-medium mt-0.5">Your journey week by week</p>
                   </div>
                   <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full font-bold">
-                    Last 3 Weeks
+                    Latest Published Week
                   </span>
                 </div>
                 <div className="h-52">

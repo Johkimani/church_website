@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { FaUserCircle, FaCheckCircle, FaUsers, FaTrash, FaEdit, FaSearch } from "react-icons/fa";
-import { Sparkles, TrendingUp, Award, BarChart3, PieChart as PieIcon, RefreshCw, Users, ShieldCheck } from "lucide-react";
+import { Sparkles, TrendingUp, Award, BarChart3, PieChart as PieIcon, RefreshCw, Users, ShieldCheck, CalendarDays } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend
 } from "recharts";
@@ -11,9 +11,11 @@ import {
   fetchManageQuestions,
   updateQuestionApi,
   deleteQuestionApi,
+  setQuestionStatusApi,
   fetchPublishedComparison,
 } from "../../../api/axiosInstance";
 import JumuiyaDashboard from "../jumuiyaStatus/JumuiyaDashboard";
+import WeeklyChallengeManager from "./WeeklyChallengeManager";
 
 interface JumuiyaRow {
   group_id: string;
@@ -384,6 +386,15 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
     }
   };
 
+  const handleSetStatus = async (id: number | string, status: "approved" | "rejected") => {
+    try {
+      await setQuestionStatusApi(id, status);
+      loadQuestions();
+    } catch {
+      alert("Failed to update question status");
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!editingQuestion) return;
     setSaving(true);
@@ -434,6 +445,7 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
                 <th className="py-3 px-3">Question Prompt</th>
                 <th className="py-3 px-3">Options</th>
                 <th className="py-3 px-3">Correct Choice</th>
+                <th className="py-3 px-3 text-center">Status</th>
                 <th className="py-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -454,8 +466,39 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
                         {q.correctAnswer?.option || q.correctAnswer?.text || "Choice"}
                       </span>
                     </td>
+                    <td className="py-3 px-3 text-center">
+                      <span
+                        className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide ${
+                          q.status === "approved"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : q.status === "rejected"
+                              ? "bg-red-50 text-red-600"
+                              : "bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        {q.status || "draft"}
+                      </span>
+                    </td>
                     <td className="py-3 px-3 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {q.status !== "approved" && (
+                          <button
+                            onClick={() => handleSetStatus(q._id, "approved")}
+                            className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 font-bold text-[10px] hover:bg-emerald-100"
+                            title="Approve question"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {q.status !== "rejected" && (
+                          <button
+                            onClick={() => handleSetStatus(q._id, "rejected")}
+                            className="px-2 py-1 rounded-md bg-red-50 text-red-600 font-bold text-[10px] hover:bg-red-100"
+                            title="Reject question"
+                          >
+                            Reject
+                          </button>
+                        )}
                         <button
                           onClick={() => setEditingQuestion(q)}
                           className="p-1.5 text-stone-600 hover:text-amber-600 transition-colors"
@@ -815,6 +858,15 @@ export default function Appadmin() {
             <BarChart3 size={13} />
             7 Jumuiyas Performance Analytics
           </button>
+          <button
+            onClick={() => setView("weekly")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              view === "weekly" ? "bg-amber-600 text-white shadow-sm" : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100"
+            }`}
+          >
+            <CalendarDays size={13} />
+            Weekly Challenge
+          </button>
           {members.map((m) => (
             <button
               key={m.group_id}
@@ -837,6 +889,8 @@ export default function Appadmin() {
           </div>
         ) : view === "analytics" ? (
           <JumuiyaAnalyticsOverview membersList={members} />
+        ) : view === "weekly" ? (
+          <WeeklyChallengeManager />
         ) : activeMember ? (
           <MemberProfile member={activeMember} />
         ) : (
