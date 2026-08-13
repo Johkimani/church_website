@@ -506,13 +506,26 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
     isYear
       ? Promise.resolve(null)
       : pool.query(
-          `SELECT jumuiya_id AS group_key,
-                  COUNT(DISTINCT attendance_date)::int AS register_sessions,
-                  COUNT(DISTINCT member_id) FILTER (WHERE present)::int AS register_attendees,
-                  COALESCE(SUM(CASE WHEN present THEN 1 ELSE 0 END), 0)::int AS register_attendance
-           FROM jumuiya_attendance
-           WHERE attendance_date BETWEEN $1 AND $2
-           GROUP BY jumuiya_id`,
+          `SELECT group_key,
+                  COUNT(*)::int AS register_sessions,
+                  COALESCE(SUM(present_count), 0)::int AS register_attendance,
+                  COALESCE(MAX(present_count), 0)::int AS register_peak,
+                  COALESCE((
+                    SELECT COUNT(DISTINCT a.member_id)
+                    FROM jumuiya_attendance a
+                    WHERE a.jumuiya_id = daily.group_key
+                      AND a.present
+                      AND a.attendance_date BETWEEN $1 AND $2
+                  ), 0)::int AS register_attendees
+           FROM (
+             SELECT jumuiya_id AS group_key,
+                    attendance_date,
+                    COUNT(*) FILTER (WHERE present)::int AS present_count
+             FROM jumuiya_attendance
+             WHERE attendance_date BETWEEN $1 AND $2
+             GROUP BY jumuiya_id, attendance_date
+           ) daily
+           GROUP BY group_key`,
           [from, to]
         ),
   ]);
@@ -541,6 +554,7 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
       register_sessions: row.register_sessions,
       register_attendees: row.register_attendees,
       register_attendance: row.register_attendance,
+      register_peak: row.register_peak,
     };
   }
 
@@ -562,7 +576,7 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
     const counts = g.memberCounts;
     const cur = currentMap[g.group_key] || { tally_days: 0, attendance_count: 0, avg_per_session: 0, register_days: 0 };
     const prev = prevMap[g.group_key] || { tally_days: 0, attendance_count: 0, avg_per_session: 0 };
-    const reg = registerMap[g.group_key] || { register_sessions: 0, register_attendees: 0, register_attendance: 0 };
+    const reg = registerMap[g.group_key] || { register_sessions: 0, register_attendees: 0, register_attendance: 0, register_peak: 0 };
 
     const rate_vs_total = safeRate(cur.attendance_count, counts.total_members, cur.tally_days);
     const rate_vs_active = safeRate(cur.attendance_count, counts.active_members, cur.tally_days);
@@ -585,6 +599,7 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
       register_attendance: reg.register_attendance,
       register_avg: reg.register_sessions > 0 ? Math.round((reg.register_attendance / reg.register_sessions) * 10) / 10 : 0,
       register_attendees: reg.register_attendees,
+      register_peak: reg.register_peak,
       rate_vs_total: Math.round(rate_vs_total * 10000) / 10000,
       rate_vs_active: Math.round(rate_vs_active * 10000) / 10000,
       trend: {
@@ -610,12 +625,14 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
   let attendanceCount = 0;
   let registerSessionsTotal = 0;
   let registerAttendanceTotal = 0;
+  let registerPeakMax = 0;
   for (const j of rows) {
     totalMembers += j.total_members;
     activeMembers += j.active_members;
     attendanceCount += j.attendance_count;
     registerSessionsTotal += j.register_sessions;
     registerAttendanceTotal += j.register_attendance;
+    registerPeakMax = Math.max(registerPeakMax, j.register_peak);
   }
 
   const cumulativeRateTotal = safeRate(attendanceCount, totalMembers, tallyDays);
@@ -644,6 +661,7 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
       register_sessions: registerSessionsTotal,
       register_attendance: registerAttendanceTotal,
       register_avg: registerSessionsTotal > 0 ? Math.round((registerAttendanceTotal / registerSessionsTotal) * 10) / 10 : 0,
+      register_peak: registerPeakMax,
       trend: {
         prev_attendance_count: prevTallyTotal,
         prev_tally_days: prevTallyDays,
@@ -729,7 +747,7 @@ export const exportAnalyticsExcel = async (req, res) => {
       "Avg/Session", "Rate vs Total", "Rate vs Active", "Prev Rate vs Active", "Delta (pts)",
     ];
     if (dimension !== "year") {
-      headers.push("Register Meetings", "Avg/Register Meeting", "Distinct Attendees");
+      headers.push("Register Meetings", "Avg Active (Reg.)", "Peak Active (Reg.)", "Distinct Attendees");
     }
     const headerRow = ws.addRow(headers);
     headerRow.height = 22;
@@ -753,7 +771,7 @@ export const exportAnalyticsExcel = async (req, res) => {
         pct(j.rate_vs_active), pct(j.trend.prev_rate_vs_active), pct(j.trend.delta_vs_active),
       ];
       if (dimension !== "year") {
-        values.push(j.register_sessions || 0, j.register_avg || 0, j.register_attendees || 0);
+        values.push(j.register_sessions || 0, j.register_avg || 0, j.register_peak || 0, j.register_attendees || 0);
       }
       return values;
     };

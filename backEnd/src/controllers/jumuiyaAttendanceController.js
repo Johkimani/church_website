@@ -8,6 +8,7 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_RECORDS = 300;
+const STALE_REGISTER_DAYS = 14;
 
 // Local server date (not UTC) so late-evening/early-morning saves aren't misjudged.
 const todayStr = () => {
@@ -364,6 +365,7 @@ export const getMeetingConfigs = async (req, res) => {
       ...sgResult.rows.map((r) => r.group_id),
     ];
     const recentsByJumuiya = {};
+    const lastDateByJumuiya = {};
     if (jumuiyaIds.length > 0) {
       const recentsResult = await pool.query(
         `WITH ranked AS (
@@ -390,11 +392,32 @@ export const getMeetingConfigs = async (req, res) => {
           total_count: row.total_count,
         });
       }
+      const lastResult = await pool.query(
+        `SELECT jumuiya_id, MAX(attendance_date) AS last_date
+         FROM jumuiya_attendance
+         WHERE jumuiya_id = ANY($1::uuid[])
+         GROUP BY jumuiya_id`,
+        [jumuiyaIds]
+      );
+      for (const row of lastResult.rows) {
+        lastDateByJumuiya[row.jumuiya_id] = row.last_date;
+      }
     }
-    const withRecents = (id, extra) => ({
-      ...extra,
-      recent_registers: recentsByJumuiya[id] || [],
-    });
+    const fmtDate = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const withRecents = (id, extra) => {
+      const last = lastDateByJumuiya[id];
+      const lastDate = last instanceof Date ? last : last ? new Date(`${String(last).slice(0, 10)}T00:00:00`) : null;
+      const daysSince = lastDate ? Math.round((today.getTime() - lastDate.getTime()) / 86400000) : null;
+      return {
+        ...extra,
+        recent_registers: recentsByJumuiya[id] || [],
+        last_register_date: lastDate ? fmtDate(lastDate) : null,
+        stale: daysSince === null || daysSince > STALE_REGISTER_DAYS,
+      };
+    };
     res.json({
       success: true,
       data: {

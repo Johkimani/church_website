@@ -120,6 +120,7 @@ interface DimStat {
   register_attendance: number;
   register_avg: number;
   register_attendees: number;
+  register_peak: number;
   rate_vs_total: number;
   rate_vs_active: number;
   trend: Trend;
@@ -133,6 +134,8 @@ interface MeetingConfigRow {
   meeting_day: number | null;
   meeting_label: string | null;
   recent_registers: { date: string; present_count: number; total_count: number }[];
+  last_register_date: string | null;
+  stale: boolean;
 }
 
 interface AnalyticsData {
@@ -151,6 +154,7 @@ interface AnalyticsData {
     register_sessions: number;
     register_attendance: number;
     register_avg: number;
+    register_peak: number;
     trend: Trend;
   };
   by_jumuiya: DimStat[];
@@ -1482,7 +1486,8 @@ export default function AttendanceTallyAdmin() {
                         {analyticsDim !== "year" && (
                           <>
                             <th className="px-4 py-3.5 text-right">Reg. Meetings</th>
-                            <th className="px-4 py-3.5 text-right">Avg/Meeting</th>
+                            <th className="px-4 py-3.5 text-right">Avg Active (Reg.)</th>
+                            <th className="px-4 py-3.5 text-right">Peak Active (Reg.)</th>
                             <th className="px-4 py-3.5 text-right">Distinct Attended</th>
                           </>
                         )}
@@ -1522,7 +1527,8 @@ export default function AttendanceTallyAdmin() {
                           {analyticsDim !== "year" && (
                             <>
                               <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.register_sessions ?? 0}</td>
-                              <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.register_avg ?? 0}</td>
+                              <td className="px-4 py-3.5 text-right font-semibold text-slate-700 tabular-nums">{j.register_avg ?? 0}</td>
+                              <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.register_peak ?? 0}</td>
                               <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.register_attendees ?? 0}</td>
                             </>
                           )}
@@ -1542,7 +1548,9 @@ export default function AttendanceTallyAdmin() {
                   compares the current period against the equal-length period before it.
                   {analyticsDim !== "year" && (
                     <span className="block mt-1">
-                      Reg. Meetings / Avg / Distinct Attended come from the secretary registers saved within the period.
+                      Reg. columns come from the secretary registers saved within the period: Avg Active (Reg.) = average
+                      present per recorded jumuiya meeting, Peak Active (Reg.) = highest attendance on a single recorded
+                      meeting day — compare these with the roster-based Active Members.
                     </span>
                   )}
                 </div>
@@ -1612,6 +1620,17 @@ function MeetingDaysTab({
         )}
       </div>
 
+      {rows.some((r) => r.stale) && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <div>
+            <b>Register follow-up needed:</b>{" "}
+            {rows.filter((r) => r.stale).map((r) => r.name).join(", ")} — no attendance register captured in the last 14
+            days. Follow up with the respective jumuiya secretaries.
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
           <Loader2 size={18} className="animate-spin" /> Loading meeting days…
@@ -1661,6 +1680,12 @@ function MeetingDaysTab({
                         )}
                       </td>
                       <td className="px-3 py-3">
+                        {row.stale && (
+                          <div className="mb-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                            <AlertTriangle size={11} />
+                            No register in 14+ days
+                          </div>
+                        )}
                         {row.recent_registers && row.recent_registers.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5 max-w-[300px]">
                             {row.recent_registers.map((r) => {
