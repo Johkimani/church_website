@@ -1,8 +1,11 @@
-import { Outlet, NavLink } from 'react-router-dom'
-import { useEffect } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Sidebar from './Sidebar'
 
 export default function Layout() {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation();
+
   useEffect(() => {
     const saved = localStorage.getItem('devotions-bg-image');
     if (saved) {
@@ -12,6 +15,11 @@ export default function Layout() {
       }
     }
   }, []);
+
+  // Close the drawer whenever the route changes (link tapped inside it).
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
    return (
      <div className="devotions-view-container relative" style={{ minHeight: '100vh', width: '100%', background: '#FAF8F5', display: 'flex' }}>
@@ -29,51 +37,54 @@ export default function Layout() {
 
        {/* ═══════════════ CONTENT LAYER ═══════════════ */}
         <div className="relative z-10 flex w-full" style={{ flex: 1, minHeight: '100vh', color: '#1C1917' }}>
-          {/* Sidebar - hidden on mobile, fixed column on desktop */}
+          {/* Sidebar - fixed column on desktop, inside drawer on mobile */}
           <div className="hidden md:flex flex-shrink-0 sticky top-16 lg:top-20 self-start z-30 h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)]">
             <Sidebar />
           </div>
-         
+
          {/* Main content */}
-         <main className="flex-1 min-w-0 overflow-y-auto pb-8 pl-14 md:pl-0">
+         <main className="flex-1 min-w-0 overflow-y-auto pb-8">
            <Outlet />
          </main>
-         
-          {/* Mobile left navigation rail */}
-          <nav
-            className="md:hidden fixed left-0 top-16 bottom-0 z-50 w-14 py-4 flex flex-col items-center justify-center gap-2"
+
+          {/* Mobile: hamburger to open the same sidebar in a left drawer */}
+          <button
+            onClick={() => setMobileNavOpen(!mobileNavOpen)}
+            aria-label="Toggle Devotions navigation"
+            className="md:hidden fixed left-3 top-20 z-50 w-11 h-11 rounded-xl flex items-center justify-center transition-transform active:scale-95"
             style={{
-              background: "rgba(250, 248, 245, 0.9)",
+              background: "rgba(250, 248, 245, 0.95)",
               backdropFilter: "blur(20px) saturate(1.8)",
               WebkitBackdropFilter: "blur(20px) saturate(1.8)",
-              borderRight: "1px solid rgba(28, 25, 23, 0.08)",
-              boxShadow: "4px 0 20px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(28, 25, 23, 0.08)",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.1)",
+              color: "#B45309",
             }}
           >
-             {[
-               { to: "/devotions", label: "Home", icon: "\u2302", key: "home" },
-               { to: "/devotions/readings", label: "Prayers", icon: "\uD83D\uDCD6", key: "book" },
-               { to: "/devotions/prayer-module", label: "Novenas", icon: "\uD83D\uDD6F\uFE0F", key: "novena" },
-               { to: "/devotions/daily-liturgy", label: "Missal", icon: "\u271D", key: "missal" },
-             ].map((item) => (
-              <NavLink
-                key={item.key}
-                to={item.to}
-                end={item.to === "/devotions"}
-                className={({ isActive }) => `
-                  flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all w-11
-                  ${isActive 
-                    ? "text-amber-600 bg-amber-600/10" 
-                    : "text-stone-500 hover:text-stone-800 hover:bg-stone-900/5"
-                  }
-                  min-h-[52px] justify-center
-                `}
-              >
-               <span className="text-xl leading-none">{item.icon}</span>
-               <span className="text-[9px] font-medium tracking-wide">{item.label}</span>
-             </NavLink>
-           ))}
-         </nav>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+
+          {/* Mobile drawer overlay */}
+          {mobileNavOpen && (
+            <div
+              className="md:hidden fixed inset-0 top-16 bg-black/30 backdrop-blur-sm z-40"
+              onClick={() => setMobileNavOpen(false)}
+            />
+          )}
+
+          {/* Mobile drawer — the exact same sidebar as desktop */}
+          <div
+            className={`md:hidden fixed left-0 top-16 bottom-0 z-50 w-[75%] max-w-[300px] transition-transform duration-300 ease-out ${
+              mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+            style={{ boxShadow: "8px 0 40px rgba(0,0,0,0.12)" }}
+          >
+            <Sidebar />
+          </div>
        </div>
      </div>
    )

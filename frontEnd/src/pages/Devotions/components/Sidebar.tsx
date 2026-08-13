@@ -108,9 +108,9 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Sidebar - shown as fixed column on desktop (via Layout), slide-in drawer on mobile */}
       <aside
-        className="hidden md:flex flex-col w-60 h-full flex-shrink-0"
+        className="flex flex-col w-60 h-full flex-shrink-0"
         style={{
           background: "rgba(255, 255, 255, 0.7)",
           backdropFilter: "blur(24px) saturate(1.5)",
