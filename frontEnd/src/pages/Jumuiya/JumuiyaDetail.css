@@ -379,24 +379,28 @@
 @media (max-width: 768px) {
     .notif-panel-floating {
         position: fixed !important;
-        left: var(--space-lg) !important;
-        right: var(--space-lg) !important;
+        left: 16px !important;
+        right: 16px !important;
         top: auto !important;
-        bottom: 110px !important;
+        bottom: 88px !important;
         width: auto !important;
-        height: min(58dvh, 420px) !important;
-        max-height: min(58dvh, 420px) !important;
+        max-height: 52vh !important;
+        height: auto !important;
+        min-height: 220px !important;
         background: #ffffff !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         filter: none !important;
-        box-shadow: 0 28px 60px rgba(15, 23, 42, 0.18) !important;
+        box-shadow: 0 24px 52px rgba(15, 23, 42, 0.18) !important;
         border: 1px solid rgba(148, 163, 184, 0.25) !important;
         border-radius: 22px !important;
     }
 
     .notif-panel-content {
-        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 28%, #ffffff 100%) !important;
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: calc(52vh - 64px);
+        background: #ffffff !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         filter: none !important;
@@ -420,8 +424,8 @@
     }
     
     .notif-fab-container {
-        bottom: 92px;
-        right: var(--space-lg);
+        bottom: 18px !important;
+        right: 18px !important;
         z-index: 12;
     }
 }
