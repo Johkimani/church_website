@@ -364,11 +364,37 @@
 
 @media (max-width: 768px) {
     .notif-panel-floating {
-        position: fixed;
-        inset: var(--space-lg);
-        width: auto;
-        max-height: none;
-        bottom: 100px;
+        position: fixed !important;
+        left: var(--space-lg) !important;
+        right: var(--space-lg) !important;
+        top: auto !important;
+        bottom: 110px !important;
+        width: auto !important;
+        height: min(58dvh, 420px) !important;
+        max-height: min(58dvh, 420px) !important;
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+        box-shadow: 0 28px 60px rgba(15, 23, 42, 0.18) !important;
+    }
+
+    .notif-panel-content {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    .notif-panel-content .tab-card,
+    .notif-panel-content .empty-tab-state,
+    .notif-panel-content .tab-system-content,
+    .notif-panel-content .glass-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+        box-shadow: none !important;
     }
     
     .notif-fab-container {
