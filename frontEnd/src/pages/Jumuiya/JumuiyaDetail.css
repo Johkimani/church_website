@@ -384,9 +384,9 @@
         top: auto !important;
         bottom: 348px !important;
         width: auto !important;
-        height: min(60vh, 520px) !important;
-        max-height: min(60vh, 520px) !important;
-        min-height: 260px !important;
+        height: min(40vh, 280px) !important;
+        max-height: min(40vh, 280px) !important;
+        min-height: 200px !important;
         background: #ffffff !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
@@ -401,7 +401,7 @@
         flex: 1 1 auto;
         min-height: 0;
         height: auto;
-        max-height: calc(60vh - 64px);
+        max-height: calc(40vh - 64px);
         overflow-y: auto;
         background: #ffffff !important;
         backdrop-filter: none !important;
