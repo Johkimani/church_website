@@ -472,6 +472,7 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
     currentDays,
     prevDays,
     timelineRes,
+    registerResult,
   ] = await Promise.all([
     pool.query(
       `SELECT group_id, name, slug, color FROM sub_groups
@@ -502,6 +503,18 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
        ORDER BY tally_date`,
       [from, to, dimension]
     ),
+    isYear
+      ? Promise.resolve(null)
+      : pool.query(
+          `SELECT jumuiya_id AS group_key,
+                  COUNT(DISTINCT attendance_date)::int AS register_sessions,
+                  COUNT(DISTINCT member_id) FILTER (WHERE present)::int AS register_attendees,
+                  COALESCE(SUM(CASE WHEN present THEN 1 ELSE 0 END), 0)::int AS register_attendance
+           FROM jumuiya_attendance
+           WHERE attendance_date BETWEEN $1 AND $2
+           GROUP BY jumuiya_id`,
+          [from, to]
+        ),
   ]);
 
   const buildMap = (rows) => {
@@ -522,6 +535,15 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
   const tallyDays = currentDays.rows[0]?.days || 0;
   const prevTallyDays = prevDays.rows[0]?.days || 0;
 
+  const registerMap = {};
+  for (const row of registerResult?.rows || []) {
+    registerMap[row.group_key] = {
+      register_sessions: row.register_sessions,
+      register_attendees: row.register_attendees,
+      register_attendance: row.register_attendance,
+    };
+  }
+
   const groupList = isYear
     ? YEARS.map((y) => ({
         group_key: y,
@@ -540,6 +562,7 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
     const counts = g.memberCounts;
     const cur = currentMap[g.group_key] || { tally_days: 0, attendance_count: 0, avg_per_session: 0, register_days: 0 };
     const prev = prevMap[g.group_key] || { tally_days: 0, attendance_count: 0, avg_per_session: 0 };
+    const reg = registerMap[g.group_key] || { register_sessions: 0, register_attendees: 0, register_attendance: 0 };
 
     const rate_vs_total = safeRate(cur.attendance_count, counts.total_members, cur.tally_days);
     const rate_vs_active = safeRate(cur.attendance_count, counts.active_members, cur.tally_days);
@@ -558,6 +581,10 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
       register_days: cur.register_days,
       manual_days: Math.max(0, cur.tally_days - cur.register_days),
       register_coverage: cur.tally_days > 0 ? Math.round((cur.register_days / cur.tally_days) * 10000) / 10000 : 0,
+      register_sessions: reg.register_sessions,
+      register_attendance: reg.register_attendance,
+      register_avg: reg.register_sessions > 0 ? Math.round((reg.register_attendance / reg.register_sessions) * 10) / 10 : 0,
+      register_attendees: reg.register_attendees,
       rate_vs_total: Math.round(rate_vs_total * 10000) / 10000,
       rate_vs_active: Math.round(rate_vs_active * 10000) / 10000,
       trend: {
@@ -581,10 +608,14 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
   let totalMembers = 0;
   let activeMembers = 0;
   let attendanceCount = 0;
+  let registerSessionsTotal = 0;
+  let registerAttendanceTotal = 0;
   for (const j of rows) {
     totalMembers += j.total_members;
     activeMembers += j.active_members;
     attendanceCount += j.attendance_count;
+    registerSessionsTotal += j.register_sessions;
+    registerAttendanceTotal += j.register_attendance;
   }
 
   const cumulativeRateTotal = safeRate(attendanceCount, totalMembers, tallyDays);
@@ -610,6 +641,9 @@ const computeAnalytics = async (from, to, dimension = "jumuiya") => {
       avg_per_session: tallyDays > 0 ? Math.round((attendanceCount / tallyDays) * 10) / 10 : 0,
       rate_vs_total: Math.round(cumulativeRateTotal * 10000) / 10000,
       rate_vs_active: Math.round(cumulativeRateActive * 10000) / 10000,
+      register_sessions: registerSessionsTotal,
+      register_attendance: registerAttendanceTotal,
+      register_avg: registerSessionsTotal > 0 ? Math.round((registerAttendanceTotal / registerSessionsTotal) * 10) / 10 : 0,
       trend: {
         prev_attendance_count: prevTallyTotal,
         prev_tally_days: prevTallyDays,
@@ -694,6 +728,9 @@ export const exportAnalyticsExcel = async (req, res) => {
       "#", groupHeader, "Total Members", "Active Members", "Tally Days", "Attendance",
       "Avg/Session", "Rate vs Total", "Rate vs Active", "Prev Rate vs Active", "Delta (pts)",
     ];
+    if (dimension !== "year") {
+      headers.push("Register Meetings", "Avg/Register Meeting", "Distinct Attendees");
+    }
     const headerRow = ws.addRow(headers);
     headerRow.height = 22;
     headerRow.eachCell((cell) => {
@@ -709,11 +746,17 @@ export const exportAnalyticsExcel = async (req, res) => {
     });
 
     const pct = (n) => `${(n * 100).toFixed(1)}%`;
-    const rowValues = (j) => [
-      j.rank, j.name, j.total_members, j.active_members, j.tally_days, j.attendance_count,
-      j.avg_per_session, pct(j.rate_vs_total),
-      pct(j.rate_vs_active), pct(j.trend.prev_rate_vs_active), pct(j.trend.delta_vs_active),
-    ];
+    const rowValues = (j) => {
+      const values = [
+        j.rank, j.name, j.total_members, j.active_members, j.tally_days, j.attendance_count,
+        j.avg_per_session, pct(j.rate_vs_total),
+        pct(j.rate_vs_active), pct(j.trend.prev_rate_vs_active), pct(j.trend.delta_vs_active),
+      ];
+      if (dimension !== "year") {
+        values.push(j.register_sessions || 0, j.register_avg || 0, j.register_attendees || 0);
+      }
+      return values;
+    };
     const dimRows = dimension === "year" ? data.by_year : data.by_jumuiya;
     dimRows.forEach((j, i) => {
       const row = ws.addRow(rowValues(j));

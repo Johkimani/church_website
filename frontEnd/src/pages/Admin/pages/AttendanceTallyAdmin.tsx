@@ -116,6 +116,10 @@ interface DimStat {
   register_days: number;
   manual_days: number;
   register_coverage: number;
+  register_sessions: number;
+  register_attendance: number;
+  register_avg: number;
+  register_attendees: number;
   rate_vs_total: number;
   rate_vs_active: number;
   trend: Trend;
@@ -128,6 +132,7 @@ interface MeetingConfigRow {
   color: string;
   meeting_day: number | null;
   meeting_label: string | null;
+  recent_registers: { date: string; present_count: number; total_count: number }[];
 }
 
 interface AnalyticsData {
@@ -143,6 +148,9 @@ interface AnalyticsData {
     avg_per_session: number;
     rate_vs_total: number;
     rate_vs_active: number;
+    register_sessions: number;
+    register_attendance: number;
+    register_avg: number;
     trend: Trend;
   };
   by_jumuiya: DimStat[];
@@ -283,6 +291,7 @@ const inputCls =
   "w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400";
 
 const DAY_OPTIONS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const ROLE_LABEL: Record<RecordedRole, string> = {
   coordinator: "Jumuiya Coordinator",
@@ -1470,6 +1479,13 @@ export default function AttendanceTallyAdmin() {
                         <th className="px-4 py-3.5 text-right">Tally Days</th>
                         <th className="px-4 py-3.5 text-right">Attendance</th>
                         <th className="px-4 py-3.5 text-right">Avg/Session</th>
+                        {analyticsDim !== "year" && (
+                          <>
+                            <th className="px-4 py-3.5 text-right">Reg. Meetings</th>
+                            <th className="px-4 py-3.5 text-right">Avg/Meeting</th>
+                            <th className="px-4 py-3.5 text-right">Distinct Attended</th>
+                          </>
+                        )}
                         <th className="px-4 py-3.5 text-right">Rate vs Total</th>
                         <th className="px-4 py-3.5 text-right">Rate vs Active</th>
                         <th className="px-4 py-3.5 text-right">vs Prev Period</th>
@@ -1503,6 +1519,13 @@ export default function AttendanceTallyAdmin() {
                           <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.tally_days}</td>
                           <td className="px-4 py-3.5 text-right font-bold text-slate-800 tabular-nums">{j.attendance_count}</td>
                           <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.avg_per_session}</td>
+                          {analyticsDim !== "year" && (
+                            <>
+                              <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.register_sessions ?? 0}</td>
+                              <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.register_avg ?? 0}</td>
+                              <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{j.register_attendees ?? 0}</td>
+                            </>
+                          )}
                           <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{pct(j.rate_vs_total)}</td>
                           <td className="px-4 py-3.5 text-right font-semibold text-slate-700 tabular-nums">{pct(j.rate_vs_active)}</td>
                           <td className="px-4 py-3.5 text-right">
@@ -1517,6 +1540,11 @@ export default function AttendanceTallyAdmin() {
                   Rate vs total = attendance ÷ (total members × tally days) · Rate vs active = attendance ÷ (active
                   members × tally days) · Active members = roster minus flagged-inactive members · Trend
                   compares the current period against the equal-length period before it.
+                  {analyticsDim !== "year" && (
+                    <span className="block mt-1">
+                      Reg. Meetings / Avg / Distinct Attended come from the secretary registers saved within the period.
+                    </span>
+                  )}
                 </div>
               </div>
             </>
@@ -1574,7 +1602,8 @@ function MeetingDaysTab({
         <p className="text-sm text-slate-600 mt-1">
           These days drive the <b>secretary attendance register</b>: a register can only be saved on a jumuiya's
           meeting day, and saved registers automatically feed this page's tallies. Jumuiyas with no fixed day accept
-          registers on any day.
+          registers on any day. The <b>Recorded Meetings</b> column lists each jumuiya's latest register dates with
+          present/total counts.
         </p>
         {!canEdit && (
           <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -1595,6 +1624,7 @@ function MeetingDaysTab({
                 <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
                   <th className="px-5 py-3">Jumuiya</th>
                   <th className="px-3 py-3">Meeting Day</th>
+                  <th className="px-3 py-3">Recorded Meetings</th>
                   {canEdit && <th className="px-3 py-3 text-right">Actions</th>}
                 </tr>
               </thead>
@@ -1628,6 +1658,29 @@ function MeetingDaysTab({
                         </select>
                         {row.meeting_day != null && changed && (
                           <p className="text-[11px] text-slate-400 mt-1">Currently: every {DAY_OPTIONS[row.meeting_day]}</p>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        {row.recent_registers && row.recent_registers.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 max-w-[300px]">
+                            {row.recent_registers.map((r) => {
+                              const [y, m, d] = r.date.split("-");
+                              const label = `${MONTH_ABBR[Number(m) - 1]} ${Number(d)}`;
+                              return (
+                                <span
+                                  key={r.date}
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5"
+                                  title={`${label} ${y} · ${r.present_count}/${r.total_count} present`}
+                                >
+                                  {label}
+                                  <span className="text-slate-400 font-normal">·</span>
+                                  {r.present_count}/{r.total_count}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">No registers yet</span>
                         )}
                       </td>
                       {canEdit && (
