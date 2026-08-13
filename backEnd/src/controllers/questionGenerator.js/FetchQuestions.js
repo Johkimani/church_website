@@ -1,5 +1,6 @@
 
 
+
 import Question from "../../model/question.js";
 import { testDb as db } from "../../Configs/dbConfig.js";
 
@@ -56,10 +57,29 @@ export const deleteQuestionController = async (req, res) => {
   }
 };
 
+// PUT /questions/:id/status (Liturgist) — approve/reject generated questions
+export const setQuestionStatusController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "status must be 'approved' or 'rejected'" });
+    }
+    const updated = await Question.setStatus(id, status);
+    if (!updated) return res.status(404).json({ message: "Question not found" });
+    return res.json({ message: `Question ${status}`, question: updated });
+  } catch (err) {
+    console.error("Error updating question status:", err);
+    return res.status(500).json({ message: "Failed to update question status" });
+  }
+};
+
 // POST /questions/attempt — server-scored attempt recording.
 // Identity comes from the JWT only (never from the body). Correctness is
 // recomputed against the stored correct_answer. One attempt per question per
 // calendar week is enforced by a partial unique index -> 409 on duplicates.
+// When a weekly challenge is active for the current week, only questions that
+// are part of that challenge may be answered.
 export const recordAttemptHttp = async (req, res) => {
   try {
     const { questionId, selectedOption } = req.body;
@@ -73,6 +93,23 @@ export const recordAttemptHttp = async (req, res) => {
     const selectedIndex = Number(selectedOption);
     if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex > 3) {
       return res.status(400).json({ message: "selectedOption must be an option index 0-3" });
+    }
+
+    const activeRes = await db.query(
+      `SELECT id, week_start FROM weekly_challenges
+       WHERE week_start = (date_trunc('week', NOW()))::date AND status = 'active'`
+    );
+    const activeChallenge = activeRes.rows[0];
+
+    if (activeChallenge) {
+      const inChallenge = await db.query(
+        `SELECT 1 FROM weekly_challenge_questions
+         WHERE challenge_id = $1 AND question_id = $2`,
+        [activeChallenge.id, questionId]
+      );
+      if (inChallenge.rows.length === 0) {
+        return res.status(400).json({ message: "This question is not part of this week's challenge" });
+      }
     }
 
     const question = await Question.findById(questionId);
@@ -147,4 +184,4 @@ export const getTodayChallengeStatus = async (req, res) => {
     console.error("Failed to fetch today status:", err);
     return res.status(500).json({ message: "Failed to fetch status" });
   }
-};
+};

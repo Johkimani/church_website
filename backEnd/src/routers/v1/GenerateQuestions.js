@@ -6,6 +6,7 @@ import {
   getManageQuestions,
   updateQuestionController,
   deleteQuestionController,
+  setQuestionStatusController,
   recordAttemptHttp,
   getTodayChallengeStatus,
 } from "../../controllers/questionGenerator.js/FetchQuestions.js";
@@ -16,6 +17,7 @@ const route = Router();
 route.post("/", requireRole("liturgist"), GenerateQuestion);
 route.get("/manage", requireRole("liturgist"), getManageQuestions);
 route.put("/:id", requireRole("liturgist"), updateQuestionController);
+route.put("/:id/status", requireRole("liturgist"), setQuestionStatusController);
 route.delete("/:id", requireRole("liturgist"), deleteQuestionController);
 
 // Member-facing routes
@@ -24,3 +26,4 @@ route.post("/attempt", recordAttemptHttp);
 route.get("/today-status", getTodayChallengeStatus);
 
 export default route;
+

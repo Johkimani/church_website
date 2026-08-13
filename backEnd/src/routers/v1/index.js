@@ -36,6 +36,7 @@ import hireAvailabilityRouter from "./hireAvailability.js";
 import hireSubmitRouter from "./hireSubmit.js";
 import hireStatusRouter from "./hireStatus.js";
 import statsPublishRoutes from "./statsPublishRoutes.js";
+import weeklyChallengeRoutes from "./weeklyChallengeRoutes.js";
 import suggestionRouter from "./suggestionRouter.js";
 import bibleRouter from "./bibleRoutes.js";
 import assistantRoutes from "./assistantRoutes.js";
@@ -125,6 +126,9 @@ router.use("/", testimonialsRouter);
 
 // Stats publish (admin trigger + user-facing published endpoints)
 router.use("/", statsPublishRoutes);
+
+// Weekly challenge (member current + liturgist build/review/publish)
+router.use("/weekly-challenge", verifyToken, weeklyChallengeRoutes);
 
 // Suggestion-specific routes (bin, unmask, soft-delete)
 router.use("/suggestions", suggestionRouter);

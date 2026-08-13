@@ -14,7 +14,7 @@ export const publishStats = async (req, res) => {
     const comparison = await getComparisonAll();
 
     await pool.query(
-      `DELETE FROM published_stats WHERE stat_type = 'comparison'`
+      `DELETE FROM published_stats WHERE stat_type = 'comparison' AND week_start IS NULL`
     );
     for (const row of comparison) {
       await pool.query(
@@ -33,7 +33,7 @@ export const publishStats = async (req, res) => {
     const memberSummaries = await getAllMemberSummaries();
 
     await pool.query(
-      `DELETE FROM published_stats WHERE stat_type = 'member_summary'`
+      `DELETE FROM published_stats WHERE stat_type = 'member_summary' AND week_start IS NULL`
     );
     for (const row of memberSummaries) {
       await pool.query(
@@ -51,7 +51,7 @@ export const publishStats = async (req, res) => {
 
     // 3. Per-member weekly progress (last 3 weeks)
     await pool.query(
-      `DELETE FROM published_stats WHERE stat_type = 'member_progress'`
+      `DELETE FROM published_stats WHERE stat_type = 'member_progress' AND week_start IS NULL`
     );
     const memberProgress = await getAllMemberProgress();
 
@@ -85,44 +85,111 @@ export const publishStats = async (req, res) => {
   }
 };
 
-// GET /published/comparison — user-facing, reads from snapshot
+// GET /published/comparison — user-facing, reads from snapshot.
+// Prefers the latest published week snapshot; falls back to the legacy
+// (week-less) snapshot, then to live attempts.
 export const getPublishedComparison = async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT stat_data, published_at FROM published_stats WHERE stat_type = 'comparison' ORDER BY published_at DESC`
+    let weekStart = req.query.week || null;
+
+    if (!weekStart) {
+      const latest = await pool.query(
+        `SELECT MAX(week_start) AS week_start
+         FROM published_stats
+         WHERE stat_type = 'comparison' AND week_start IS NOT NULL`
+      );
+      weekStart = latest.rows[0]?.week_start || null;
+    }
+
+    if (weekStart) {
+      const monday = await pool.query(
+        `SELECT (date_trunc('week', $1::date))::date AS m`,
+        [weekStart]
+      );
+      const m = monday.rows[0]?.m;
+      if (!m) return res.status(400).json({ status: false, message: "Invalid week" });
+      const snap = await pool.query(
+        `SELECT stat_data, published_at FROM published_stats
+         WHERE stat_type = 'comparison' AND week_start = $1
+         ORDER BY published_at DESC`,
+        [m]
+      );
+      if (snap.rows.length > 0) {
+        return res.json({
+          data: snap.rows.map((r) => r.stat_data),
+          publishedAt: snap.rows[0].published_at,
+          weekStart: m,
+        });
+      }
+    }
+
+    // Fallback to legacy snapshot (no week), then to live attempts
+    const legacy = await pool.query(
+      `SELECT stat_data, published_at FROM published_stats
+       WHERE stat_type = 'comparison' AND week_start IS NULL
+       ORDER BY published_at DESC`
     );
-    let data = result.rows.map((r) => r.stat_data);
-    let publishedAt = result.rows[0]?.published_at || null;
+    let data = legacy.rows.map((r) => r.stat_data);
+    let publishedAt = legacy.rows[0]?.published_at || null;
 
     if (data.length === 0) {
-      // Fallback to live attempts calculation if no snapshot exists yet
       data = await getComparisonAll();
     }
 
-    res.json({ data, publishedAt });
+    res.json({ data, publishedAt, weekStart: null });
   } catch (err) {
     logger.error("Failed to fetch published comparison:", err);
     res.status(500).json({ status: false, message: "Failed to fetch comparison" });
   }
 };
 
-// GET /published/member-progress — user-facing, reads from snapshot
+// GET /published/member-progress — user-facing, reads from snapshot.
+// Prefers the latest published week; falls back to legacy, then live.
 export const getPublishedMemberProgress = async (req, res) => {
   try {
     const memberId = req.user?.memberId || req.user?.id;
 
-    const summaryRes = await pool.query(
-      `SELECT stat_data FROM published_stats WHERE stat_type = 'member_summary' AND member_id = $1 ORDER BY published_at DESC LIMIT 1`,
-      [memberId]
+    const latest = await pool.query(
+      `SELECT MAX(week_start) AS week_start FROM published_stats WHERE week_start IS NOT NULL`
     );
+    const weekStart = latest.rows[0]?.week_start || null;
 
-    const weeksRes = await pool.query(
-      `SELECT stat_data FROM published_stats WHERE stat_type = 'member_progress' AND member_id = $1 ORDER BY stat_data->>'week' ASC`,
-      [memberId]
-    );
+    let summary = null;
+    let weeks = [];
 
-    let summary = summaryRes.rows[0]?.stat_data || null;
-    let weeks = weeksRes.rows.map((r) => r.stat_data);
+    if (weekStart) {
+      const summaryRes = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_summary' AND member_id = $1 AND week_start = $2
+         ORDER BY published_at DESC LIMIT 1`,
+        [memberId, weekStart]
+      );
+      const weeksRes = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_progress' AND member_id = $1 AND week_start = $2
+         ORDER BY stat_data->>'week' ASC`,
+        [memberId, weekStart]
+      );
+      summary = summaryRes.rows[0]?.stat_data || null;
+      weeks = weeksRes.rows.map((r) => r.stat_data);
+    }
+
+    if (!summary || weeks.length === 0) {
+      const legacySummary = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_summary' AND member_id = $1 AND week_start IS NULL
+         ORDER BY published_at DESC LIMIT 1`,
+        [memberId]
+      );
+      const legacyWeeks = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_progress' AND member_id = $1 AND week_start IS NULL
+         ORDER BY stat_data->>'week' ASC`,
+        [memberId]
+      );
+      if (legacySummary.rows[0]?.stat_data) summary = legacySummary.rows[0].stat_data;
+      if (legacyWeeks.rows.length > 0) weeks = legacyWeeks.rows.map((r) => r.stat_data);
+    }
 
     if (!summary || weeks.length === 0) {
       // Import live queries fallback
