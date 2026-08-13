@@ -40,13 +40,6 @@ const otherItems = [
 // Personal tabs — only visible to authenticated members.
 const PROTECTED_ITEM_TO = new Set(["challenge", "comparison", "progress"]);
 
-const mobileNavItems = [
-  { to: "/devotions", label: "Home", icon: <FaHome size={16} /> },
-  { to: "readings", label: "Prayers", icon: <FaBook size={16} /> },
-  { to: "prayer-module", label: "Novenas", icon: <FaBookOpen size={16} /> },
-  { to: "daily-liturgy", label: "Missal", icon: <FaCross size={16} /> },
-];
-
 const quickLinks = [
   { title: "Explore the Mass", description: "Deepen your understanding", link: "/devotions/liturgy", icon: <FaChurch size={14} /> },
   { title: "Catholic Prayers", description: "Browse all prayers", link: "/devotions/readings", icon: <FaBook size={14} /> },
@@ -84,10 +77,10 @@ function QuickLinks() {
             {item.icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white truncate">{item.title}</p>
-            <p className="text-[10px] text-slate-400 truncate">{item.description}</p>
+            <p className="text-xs font-semibold text-stone-800 truncate">{item.title}</p>
+            <p className="text-[10px] text-stone-500 truncate">{item.description}</p>
           </div>
-          <span className="text-[10px] text-amber-400/60 group-hover:text-amber-400 transition-colors">→</span>
+          <span className="text-[10px] text-amber-600/70 group-hover:text-amber-600 transition-colors">→</span>
         </div>
         <div className="flex gap-1.5">
           {quickLinks.map((_, i) => (
@@ -119,10 +112,10 @@ export default function Sidebar() {
       <aside
         className="hidden md:flex flex-col w-60 h-full flex-shrink-0"
         style={{
-          background: "rgba(11, 15, 27, 0.6)",
+          background: "rgba(255, 255, 255, 0.7)",
           backdropFilter: "blur(24px) saturate(1.5)",
           WebkitBackdropFilter: "blur(24px) saturate(1.5)",
-          borderRight: "1px solid rgba(217, 119, 6, 0.08)",
+          borderRight: "1px solid rgba(28, 25, 23, 0.08)",
         }}
       >
         {/* Logo */}
@@ -139,12 +132,12 @@ export default function Sidebar() {
             </div>
             <div>
               <h1
-                className="text-sm font-bold tracking-wide text-white"
+                className="text-sm font-bold tracking-wide text-stone-900"
                 style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}
               >
                 SPIRITUAL
               </h1>
-              <p className="text-[10px] tracking-[0.2em] text-amber-400/70 uppercase">Dashboard</p>
+              <p className="text-[10px] tracking-[0.2em] text-amber-600/80 uppercase">Dashboard</p>
             </div>
           </div>
         </div>
@@ -160,21 +153,21 @@ export default function Sidebar() {
             end
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group ${
-                isActive ? "" : "text-slate-400 hover:text-slate-200"
+                isActive ? "" : "text-stone-500 hover:text-stone-800"
               }`
             }
             style={({ isActive }) =>
               isActive
                 ? {
                     background: "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))",
-                    color: "#FCD34D",
-                    boxShadow: "inset 0 0 0 1px rgba(217, 119, 6, 0.2)",
+                    color: "#B45309",
+                    boxShadow: "inset 0 0 0 1px rgba(217, 119, 6, 0.25)",
                   }
                 : undefined
             }
           >
             <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
-              style={{ background: "rgba(255,255,255,0.04)" }}
+              style={{ background: "rgba(217, 119, 6, 0.08)" }}
             >
               <FaHome size={16} />
             </span>
@@ -190,16 +183,16 @@ export default function Sidebar() {
                 background: prayersOpen
                   ? "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))"
                   : "transparent",
-                color: prayersOpen ? "#FCD34D" : "#94A3B8",
+                color: prayersOpen ? "#B45309" : "#78716C",
                 border: "none",
                 cursor: "pointer",
-                boxShadow: prayersOpen ? "inset 0 0 0 1px rgba(217, 119, 6, 0.2)" : "none",
+                boxShadow: prayersOpen ? "inset 0 0 0 1px rgba(217, 119, 6, 0.25)" : "none",
               }}
-              onMouseEnter={(e) => { if (!prayersOpen) e.currentTarget.style.color = "#CBD5E1"; }}
-              onMouseLeave={(e) => { if (!prayersOpen) e.currentTarget.style.color = "#94A3B8"; }}
+              onMouseEnter={(e) => { if (!prayersOpen) e.currentTarget.style.color = "#44403C"; }}
+              onMouseLeave={(e) => { if (!prayersOpen) e.currentTarget.style.color = "#78716C"; }}
             >
               <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
-                style={{ background: "rgba(255,255,255,0.04)" }}
+                style={{ background: "rgba(217, 119, 6, 0.08)" }}
               >
                 <FaPrayingHands size={16} />
               </span>
@@ -223,20 +216,20 @@ export default function Sidebar() {
                     to={sub.to}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-200 ${
-                        isActive ? "" : "text-slate-500 hover:text-slate-300"
+                        isActive ? "" : "text-stone-500 hover:text-stone-800"
                       }`
                     }
                     style={({ isActive }) =>
                       isActive
                         ? {
                             background: "rgba(217, 119, 6, 0.1)",
-                            color: "#FBBF24",
+                            color: "#B45309",
                           }
                         : undefined
                     }
                   >
                     <span className="w-6 h-6 rounded-md flex items-center justify-center"
-                      style={{ background: "rgba(255,255,255,0.03)" }}
+                      style={{ background: "rgba(217, 119, 6, 0.06)" }}
                     >
                       {sub.icon}
                     </span>
@@ -256,16 +249,16 @@ export default function Sidebar() {
                 background: liturgyOpen
                   ? "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))"
                   : "transparent",
-                color: liturgyOpen ? "#FCD34D" : "#94A3B8",
+                color: liturgyOpen ? "#B45309" : "#78716C",
                 border: "none",
                 cursor: "pointer",
-                boxShadow: liturgyOpen ? "inset 0 0 0 1px rgba(217, 119, 6, 0.2)" : "none",
+                boxShadow: liturgyOpen ? "inset 0 0 0 1px rgba(217, 119, 6, 0.25)" : "none",
               }}
-              onMouseEnter={(e) => { if (!liturgyOpen) e.currentTarget.style.color = "#CBD5E1"; }}
-              onMouseLeave={(e) => { if (!liturgyOpen) e.currentTarget.style.color = "#94A3B8"; }}
+              onMouseEnter={(e) => { if (!liturgyOpen) e.currentTarget.style.color = "#44403C"; }}
+              onMouseLeave={(e) => { if (!liturgyOpen) e.currentTarget.style.color = "#78716C"; }}
             >
               <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
-                style={{ background: "rgba(255,255,255,0.04)" }}
+                style={{ background: "rgba(217, 119, 6, 0.08)" }}
               >
                 <FaChurch size={16} />
               </span>
@@ -289,20 +282,20 @@ export default function Sidebar() {
                     to={sub.to}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-200 ${
-                        isActive ? "" : "text-slate-500 hover:text-slate-300"
+                        isActive ? "" : "text-stone-500 hover:text-stone-800"
                       }`
                     }
                     style={({ isActive }) =>
                       isActive
                         ? {
                             background: "rgba(217, 119, 6, 0.1)",
-                            color: "#FBBF24",
+                            color: "#B45309",
                           }
                         : undefined
                     }
                   >
                     <span className="w-6 h-6 rounded-md flex items-center justify-center"
-                      style={{ background: "rgba(255,255,255,0.03)" }}
+                      style={{ background: "rgba(217, 119, 6, 0.06)" }}
                     >
                       {sub.icon}
                     </span>
@@ -320,21 +313,21 @@ export default function Sidebar() {
               to={it.to}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group ${
-                  isActive ? "" : "text-slate-400 hover:text-slate-200"
+                  isActive ? "" : "text-stone-500 hover:text-stone-800"
                 }`
               }
               style={({ isActive }) =>
                 isActive
                   ? {
                       background: "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))",
-                      color: "#FCD34D",
-                      boxShadow: "inset 0 0 0 1px rgba(217, 119, 6, 0.2)",
+                      color: "#B45309",
+                      boxShadow: "inset 0 0 0 1px rgba(217, 119, 6, 0.25)",
                     }
                   : undefined
               }
             >
               <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
-                style={{ background: "rgba(255,255,255,0.04)" }}
+                style={{ background: "rgba(217, 119, 6, 0.08)" }}
               >
                 {it.icon}
               </span>
@@ -362,9 +355,9 @@ export default function Sidebar() {
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{
                 background: "linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(217, 119, 6, 0.1))",
               }}>
-                <FaHome size={12} className="text-amber-400" />
+                <FaHome size={12} className="text-amber-600" />
               </div>
-              <span className="text-[11px] font-bold text-amber-400" style={{ fontFamily: "'Cinzel', serif" }}>
+              <span className="text-[11px] font-bold text-amber-700" style={{ fontFamily: "'Cinzel', serif" }}>
                 Dashboard
               </span>
             </div>
@@ -372,43 +365,14 @@ export default function Sidebar() {
               <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
             </svg>
           </NavLink>
-          <p className="text-[10px] text-center text-slate-500 tracking-wider mt-3">
+          <p className="text-[10px] text-center text-stone-400 tracking-wider mt-3">
             ✦ DEVS: SACRED SPACE ✦
           </p>
         </div>
       </aside>
 
-       {/* Mobile Bottom Navigation */}
-       <nav
-         className="fixed bottom-0 left-0 right-0 md:hidden flex justify-around py-2 z-50"
-         style={{
-           background: "rgba(11, 15, 27, 0.85)",
-           backdropFilter: "blur(20px) saturate(1.8)",
-           WebkitBackdropFilter: "blur(20px) saturate(1.8)",
-           borderTop: "1px solid rgba(217, 119, 6, 0.1)",
-           boxShadow: "0 -4px 20px rgba(0,0,0,0.4)",
-         }}
-       >
-         {mobileNavItems.map((it) => (
-           <NavLink
-             key={it.to}
-             to={it.to}
-             end={it.to === "/devotions"}
-             className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-200 hover:bg-white/5 min-h-[48px] justify-center"
-             style={({ isActive }) =>
-               isActive
-                 ? {
-                     color: "#D97706",
-                     background: "rgba(217, 119, 6, 0.08)",
-                   }
-                 : undefined
-             }
-           >
-             <span className="text-xl">{it.icon}</span>
-             <span className="text-[8px] font-medium tracking-wide">{it.label.split(" ")[0]}</span>
-           </NavLink>
-         ))}
-       </nav>
+       {/* Mobile Bottom Navigation is provided by Layout's left rail on mobile.
+           The desktop sidebar wrapper is hidden below md, so this nav is removed to avoid duplicate navigation. */}
 
       <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }`}</style>
     </>

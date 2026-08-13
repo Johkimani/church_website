@@ -12,10 +12,10 @@ interface PrayerListProps {
 }
 
 const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  litanies: { bg: 'bg-blue-500/10', text: 'text-blue-300', border: 'border-blue-500/30' },
-  saints: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
-  healing: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  daily: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
+  litanies: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  saints: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  healing: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  daily: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -283,64 +283,64 @@ function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: No
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/20 cursor-pointer group"
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-amber-200 cursor-pointer group"
       onClick={onStart}
     >
       <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(201,168,76,0.3), transparent 60%), radial-gradient(circle at 70% 50%, rgba(201,168,76,0.15), transparent 60%)'
+        backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(217,119,6,0.15), transparent 60%), radial-gradient(circle at 70% 50%, rgba(217,119,6,0.08), transparent 60%)'
       }} />
       <div className="relative p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <div className="flex items-center gap-2 mb-3">
               {active ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold uppercase tracking-wide border border-emerald-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wide border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Praying Now
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-bold uppercase tracking-wide border border-amber-500/30">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wide border border-amber-200">
                   Starting {status.daysUntil === 0 ? 'Today' : status.daysUntil === 1 ? 'Tomorrow' : `in ${status.daysUntil} days`}
                 </span>
               )}
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1">{novena.title}</h2>
-            {intention && <p className="text-sm text-amber-400/80 font-medium">{intention}</p>}
+            <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-1">{novena.title}</h2>
+            {intention && <p className="text-sm text-amber-700/80 font-medium">{intention}</p>}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onStart(); }}
             className={`flex-shrink-0 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
               active
-                ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20'
-                : 'bg-amber-500 text-slate-900 hover:bg-amber-400 shadow-lg shadow-amber-500/20'
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-600/20'
+                : 'bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-600/20'
             }`}
           >
             {active ? 'Pray Now' : 'Begin Novena'}
           </button>
         </div>
 
-        <p className="text-sm text-slate-400 leading-relaxed mb-5 max-w-2xl">{novena.description}</p>
+        <p className="text-sm text-stone-500 leading-relaxed mb-5 max-w-2xl">{novena.description}</p>
 
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <span className={`flex items-center gap-1.5 font-bold ${
-            active ? 'text-emerald-400' : 'text-amber-400'
+            active ? 'text-emerald-700' : 'text-amber-700'
           }`}>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             {formatNovenaDates(status.entry.startDate, status.entry.endDate)}
           </span>
           {status.entry.feastDay && (
-            <span className="flex items-center gap-1.5 text-amber-400 font-medium">
+            <span className="flex items-center gap-1.5 text-amber-700 font-medium">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
               {status.entry.feastDay}
             </span>
           )}
           {active && (
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+            <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
               Day {status.currentDay} of 9 — {Math.round(status.progress)}%
             </span>
           )}
           {!active && upcoming && 'daysUntil' in status && (
-            <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+            <span className="flex items-center gap-1.5 text-amber-700 font-semibold">
               Starts {status.daysUntil === 0 ? 'today' : status.daysUntil === 1 ? 'tomorrow' : `in ${status.daysUntil} days`}
             </span>
           )}
@@ -348,7 +348,7 @@ function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: No
 
         {active && (
           <div className="mt-4">
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
                 style={{ width: `${status.progress}%` }}
@@ -372,7 +372,7 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 hover:border-amber-500/30 transition-all duration-300 cursor-pointer group backdrop-blur-sm"
+      className="relative overflow-hidden rounded-xl border border-stone-200 bg-white hover:border-amber-500/40 transition-all duration-300 cursor-pointer group"
       onClick={onStart}
     >
       <div className={`h-1 bg-gradient-to-r ${jumuiya.color}`} />
@@ -383,21 +383,21 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
             {jumuiya.shortName.split(' ').map(w => w[0]).join('').substring(0, 2)}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-white truncate group-hover:text-amber-400 transition-colors">{jumuiya.name}</h3>
-            <p className="text-[10px] text-slate-500 truncate">{novena.title.replace('Novena to ', '')}</p>
+            <h3 className="text-sm font-bold text-stone-900 truncate group-hover:text-amber-700 transition-colors">{jumuiya.name}</h3>
+            <p className="text-[10px] text-stone-500 truncate">{novena.title.replace('Novena to ', '')}</p>
           </div>
           {active && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/30 animate-pulse">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold border border-emerald-200 animate-pulse">
               Active
             </span>
           )}
           {upcoming && status && 'daysUntil' in status && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-[10px] font-bold border border-amber-500/30">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[10px] font-bold border border-amber-200">
               {status.daysUntil === 0 ? 'Today' : `In ${status.daysUntil}d`}
             </span>
           )}
           {past && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-slate-700/50 text-slate-500 rounded-full text-[10px] font-bold border border-slate-600/30">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-stone-100 text-stone-500 rounded-full text-[10px] font-bold border border-stone-200">
               Completed
             </span>
           )}
@@ -406,36 +406,36 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
         {/* Date banner — prominent */}
         {status?.entry && (
           <div className={`rounded-lg p-3 mb-3 border ${
-            active ? 'bg-emerald-500/10 border-emerald-500/20' :
-            upcoming ? 'bg-amber-500/10 border-amber-500/20' :
-            'bg-slate-700/30 border-slate-600/30'
+            active ? 'bg-emerald-50 border-emerald-200' :
+            upcoming ? 'bg-amber-50 border-amber-200' :
+            'bg-stone-100 border-stone-200'
           }`}>
             <div className="flex items-center gap-2">
               <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
-                active ? 'text-emerald-400' : upcoming ? 'text-amber-400' : 'text-slate-500'
+                active ? 'text-emerald-700' : upcoming ? 'text-amber-700' : 'text-stone-500'
               }`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               <span className={`text-[11px] font-bold ${
-                active ? 'text-emerald-400' : upcoming ? 'text-amber-400' : 'text-slate-400'
+                active ? 'text-emerald-700' : upcoming ? 'text-amber-700' : 'text-stone-600'
               }`}>
                 {formatDate(status.entry.startDate)} — {formatDate(status.entry.endDate)}
               </span>
             </div>
             {status.entry.feastDay && (
-              <p className="text-[10px] text-amber-400/60 mt-1.5 ml-5.5">{status.entry.feastDay}</p>
+              <p className="text-[10px] text-amber-700/60 mt-1.5 ml-5.5">{status.entry.feastDay}</p>
             )}
           </div>
         )}
 
-        {intention && <p className="text-[11px] text-amber-400/60 mb-2">{intention}</p>}
+        {intention && <p className="text-[11px] text-amber-700/60 mb-2">{intention}</p>}
 
         {/* Progress for active */}
         {active && status && 'currentDay' in status && (
           <div className="mb-3">
-            <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-              <span className="font-semibold text-emerald-400">Day {status.currentDay} of 9</span>
+            <div className="flex items-center justify-between text-[10px] text-stone-500 mb-1">
+              <span className="font-semibold text-emerald-700">Day {status.currentDay} of 9</span>
               <span>{Math.round(status.progress)}%</span>
             </div>
-            <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+            <div className="w-full h-1 bg-stone-200 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${status.progress}%` }} />
             </div>
           </div>
@@ -443,14 +443,14 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
 
         {/* Countdown for upcoming */}
         {upcoming && status && 'daysUntil' in status && (
-          <p className="text-[11px] text-amber-400/70 mb-3">
+          <p className="text-[11px] text-amber-700/70 mb-3">
             Starts {status.daysUntil === 0 ? 'today' : status.daysUntil === 1 ? 'tomorrow' : `in ${status.daysUntil} days`} — {formatFullDate(status.entry.startDate)}
           </p>
         )}
 
         {/* Days completed for past */}
         {past && (
-          <p className="text-[11px] text-slate-500 mb-3">
+          <p className="text-[11px] text-stone-500 mb-3">
             Novena completed — {formatFullDate(status.entry.startDate)}
           </p>
         )}
@@ -464,7 +464,7 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
                 return (
                   <div
                     key={i}
-                    className={`w-1.5 h-1.5 rounded-full ${completed ? 'bg-emerald-500/40' : 'bg-slate-700'}`}
+                    className={`w-1.5 h-1.5 rounded-full ${completed ? 'bg-emerald-500/40' : 'bg-stone-300'}`}
                     title={`Day ${dayNum}${completed ? ' — completed' : ''}`}
                   />
                 );
@@ -472,7 +472,7 @@ function JumuiyaCard({ jumuiya, novena, status, onStart }: { jumuiya: Jumuiya; n
             </div>
           )}
           {(active || upcoming) && <div />}
-          <span className="text-[11px] font-semibold text-amber-400 group-hover:text-amber-300 flex items-center gap-1">
+          <span className="text-[11px] font-semibold text-amber-700 group-hover:text-amber-600 flex items-center gap-1">
             {active ? 'Pray Now' : past ? 'Read Again' : 'Start'}
             <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -495,29 +495,29 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
 
   return (
     <div
-      className="bg-[#0a0f1c] rounded-xl overflow-hidden border border-slate-800/50 hover:shadow-lg hover:border-amber-600/50 transition-all duration-300 group cursor-pointer"
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+      className="bg-white rounded-xl overflow-hidden border border-stone-200 hover:shadow-lg hover:border-amber-600/50 transition-all duration-300 group cursor-pointer"
+      style={{ boxShadow: '0 2px 8px rgba(28,25,23,0.08)' }}
       onClick={onStart}
     >
       <div className={`h-1 bg-gradient-to-r ${novena.color}`} />
       <div className="p-5">
         {/* Title + Status */}
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-bold text-white group-hover:text-amber-400 transition-colors leading-tight text-sm">
+          <h3 className="font-bold text-stone-900 group-hover:text-amber-700 transition-colors leading-tight text-sm">
             {novena.title}
           </h3>
           {active && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full text-[10px] font-bold uppercase tracking-wide animate-pulse">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide animate-pulse">
               Active
             </span>
           )}
           {upcoming && calendarStatus && 'daysUntil' in calendarStatus && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-full text-[10px] font-bold">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-[10px] font-bold">
               {calendarStatus.daysUntil === 0 ? 'Today' : calendarStatus.daysUntil === 1 ? 'Tomorrow' : `In ${calendarStatus.daysUntil}d`}
             </span>
           )}
           {past && (
-            <span className="flex-shrink-0 px-2 py-0.5 bg-slate-700/50 text-slate-400 rounded-full text-[10px] font-bold">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-stone-100 text-stone-500 rounded-full text-[10px] font-bold">
               Completed
             </span>
           )}
@@ -526,38 +526,38 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
         {/* Date banner — prominent */}
         {calendarStatus?.entry && (
           <div className={`rounded-lg p-3 mb-3 border ${
-            active ? 'bg-emerald-500/10 border-emerald-500/20' :
-            upcoming ? 'bg-amber-500/10 border-amber-500/20' :
-            'bg-slate-800/50 border-slate-700'
+            active ? 'bg-emerald-50 border-emerald-200' :
+            upcoming ? 'bg-amber-50 border-amber-200' :
+            'bg-stone-100 border-stone-200'
           }`}>
             <div className="flex items-center gap-2">
               <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
-                active ? 'text-emerald-400' : upcoming ? 'text-amber-400' : 'text-slate-400'
+                active ? 'text-emerald-700' : upcoming ? 'text-amber-700' : 'text-stone-600'
               }`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               <span className={`text-[11px] font-bold ${
-                active ? 'text-emerald-400' : upcoming ? 'text-amber-400' : 'text-slate-400'
+                active ? 'text-emerald-700' : upcoming ? 'text-amber-700' : 'text-stone-600'
               }`}>
                 {formatDate(calendarStatus.entry.startDate)} — {formatDate(calendarStatus.entry.endDate)}
               </span>
             </div>
             {calendarStatus.entry.feastDay && (
-              <p className="text-[10px] text-amber-400/60 mt-1.5 ml-5.5">{calendarStatus.entry.feastDay}</p>
+              <p className="text-[10px] text-amber-700/60 mt-1.5 ml-5.5">{calendarStatus.entry.feastDay}</p>
             )}
           </div>
         )}
 
-        {intention && <p className="text-xs text-amber-400 font-medium mb-1.5">{intention}</p>}
+        {intention && <p className="text-xs text-amber-700 font-medium mb-1.5">{intention}</p>}
 
-        <p className="text-sm text-slate-300 line-clamp-2 mb-3" title={novena.description}>{novena.description}</p>
+        <p className="text-sm text-stone-600 line-clamp-2 mb-3" title={novena.description}>{novena.description}</p>
 
         {/* Progress for active */}
         {active && calendarStatus && 'currentDay' in calendarStatus && (
           <div className="mb-3">
-            <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-              <span className="font-semibold text-emerald-400">Day {calendarStatus.currentDay} of 9</span>
+            <div className="flex items-center justify-between text-[10px] text-stone-500 mb-1">
+              <span className="font-semibold text-emerald-700">Day {calendarStatus.currentDay} of 9</span>
               <span>{Math.round(calendarStatus.progress)}%</span>
             </div>
-            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${calendarStatus.progress}%` }} />
             </div>
           </div>
@@ -565,14 +565,14 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
 
         {/* Countdown for upcoming */}
         {upcoming && calendarStatus && 'daysUntil' in calendarStatus && (
-          <p className="text-[11px] text-amber-400 mb-3">
+          <p className="text-[11px] text-amber-700 mb-3">
             Starts {calendarStatus.daysUntil === 0 ? 'today' : calendarStatus.daysUntil === 1 ? 'tomorrow' : `in ${calendarStatus.daysUntil} days`} — {formatFullDate(calendarStatus.entry.startDate)}
           </p>
         )}
 
         {/* Completed note for past */}
         {past && (
-          <p className="text-[11px] text-slate-400 mb-3">
+          <p className="text-[11px] text-stone-500 mb-3">
             Novena completed — {formatFullDate(calendarStatus.entry.startDate)}
           </p>
         )}
@@ -586,7 +586,7 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
                 return (
                   <div
                     key={i}
-                    className={`w-2 h-2 rounded-full ${completed ? 'bg-emerald-400' : 'bg-slate-700'}`}
+                    className={`w-2 h-2 rounded-full ${completed ? 'bg-emerald-500' : 'bg-stone-300'}`}
                     title={`Day ${dayNum}${completed ? ' — completed' : ''}`}
                   />
                 );
@@ -594,7 +594,7 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
             </div>
           )}
           {active && <div />}
-          <span className="text-xs font-semibold text-amber-400 group-hover:text-amber-300 flex items-center gap-1">
+          <span className="text-xs font-semibold text-amber-700 group-hover:text-amber-600 flex items-center gap-1">
             {active ? 'Pray Now' : past ? 'Read Again' : 'Start'}
             <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -632,19 +632,19 @@ function LitanyPreview({ prayer }: { prayer: Prayer }) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-3">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-700/50 text-slate-300 rounded-md text-[10px] font-bold">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-stone-100 text-stone-700 rounded-md text-[10px] font-bold">
           {totalCount} invocations
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-800/50 text-slate-400 rounded-md text-[10px] font-medium">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-stone-100 text-stone-500 rounded-md text-[10px] font-medium">
           ~{readMin} min read
         </span>
       </div>
-      <div className="space-y-0 bg-slate-800/40 rounded-lg p-3">
+      <div className="space-y-0 bg-stone-50 rounded-lg p-3 border border-stone-200">
         {invocations.map((inv, i) => (
           <div key={i} className="flex items-center gap-2 py-1">
-            <span className="w-1 h-1 rounded-full bg-slate-600 flex-shrink-0" />
-            <span className="text-xs text-slate-200 font-medium flex-1 truncate">{inv.name}</span>
-            <span className="text-[11px] text-emerald-400 italic whitespace-nowrap">{inv.response}</span>
+            <span className="w-1 h-1 rounded-full bg-stone-300 flex-shrink-0" />
+            <span className="text-xs text-stone-700 font-medium flex-1 truncate">{inv.name}</span>
+            <span className="text-[11px] text-emerald-700 italic whitespace-nowrap">{inv.response}</span>
           </div>
         ))}
       </div>
@@ -662,8 +662,8 @@ function PrayerCard({ prayer, onClick, compact = false }: { prayer: Prayer; onCl
 
   return (
     <div
-      className="bg-[#0a0f1c] rounded-xl border border-slate-800/50 hover:shadow-md hover:border-amber-600/40 transition-all duration-200 cursor-pointer group overflow-hidden"
-      style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
+      className="bg-white rounded-xl border border-stone-200 hover:shadow-md hover:border-amber-600/40 transition-all duration-200 cursor-pointer group overflow-hidden"
+      style={{ boxShadow: '0 1px 4px rgba(28,25,23,0.06)' }}
       onClick={() => onClick?.(prayer)}
     >
       {(isHealing || isDaily) && (
@@ -671,28 +671,28 @@ function PrayerCard({ prayer, onClick, compact = false }: { prayer: Prayer; onCl
       )}
       <div className={compact ? 'p-4' : 'p-5'}>
         <div className="flex items-start justify-between gap-3 mb-2">
-          <h3 className={`font-semibold text-white group-hover:text-amber-400 transition-colors ${compact ? 'text-sm' : ''}`}>
+          <h3 className={`font-semibold text-stone-900 group-hover:text-amber-700 transition-colors ${compact ? 'text-sm' : ''}`}>
             {prayer.title}
           </h3>
           <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${style.bg} ${style.text} ${style.border}`}>
             {isLitany ? 'Litany' : prayer.category.charAt(0).toUpperCase() + prayer.category.slice(1)}
           </span>
         </div>
-        {prayer.intention && <p className="text-xs text-slate-500 mb-2">{prayer.intention}</p>}
+        {prayer.intention && <p className="text-xs text-stone-500 mb-2">{prayer.intention}</p>}
         {isLitany && !compact ? (
           <LitanyPreview prayer={prayer} />
         ) : (
           <>
-            <p className={`text-sm text-slate-300 leading-relaxed ${compact ? 'line-clamp-2' : 'line-clamp-3'}`}>
+            <p className={`text-sm text-stone-600 leading-relaxed ${compact ? 'line-clamp-2' : 'line-clamp-3'}`}>
               {prayer.text.substring(0, compact ? 120 : 200)}{prayer.text.length > (compact ? 120 : 200) ? '...' : ''}
             </p>
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-800/50">
-              <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-stone-200">
+              <span className="inline-flex items-center gap-1 text-[10px] text-stone-500 font-medium">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 ~{readMin} min
               </span>
-              <span className="text-slate-600">|</span>
-              <span className="text-[10px] text-slate-500 font-medium">{wordCount} words</span>
+              <span className="text-stone-400">|</span>
+              <span className="text-[10px] text-stone-500 font-medium">{wordCount} words</span>
             </div>
           </>
         )}
@@ -784,9 +784,9 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
 
   if (!hasResults) {
     return (
-      <div className="text-center py-16 bg-[#0a0f1c] rounded-2xl border border-slate-800/50" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-        <h3 className="text-lg font-semibold text-white mb-2">No prayers found</h3>
-        <p className="text-sm text-slate-400 max-w-sm mx-auto">Try adjusting your search or category filter.</p>
+      <div className="text-center py-16 bg-white rounded-2xl border border-stone-200" style={{ boxShadow: '0 1px 3px rgba(28,25,23,0.06)' }}>
+        <h3 className="text-lg font-semibold text-stone-900 mb-2">No prayers found</h3>
+        <p className="text-sm text-stone-500 max-w-sm mx-auto">Try adjusting your search or category filter.</p>
       </div>
     );
   }
@@ -796,14 +796,14 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {/* ═══════════════════════════════════════════════════════ */}
       {/* HERO                                                   */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/10">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-amber-200">
         <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(201,168,76,0.05) 40px, rgba(201,168,76,0.05) 41px)'
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(217,119,6,0.08) 40px, rgba(217,119,6,0.08) 41px)'
         }} />
         <div className="relative px-6 sm:px-8 py-8 text-center">
-          <p className="text-[10px] font-bold text-amber-500/60 uppercase tracking-[0.3em] mb-3">Devotiones Ecclesiae</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Novenas &amp; Litanies</h1>
-          <p className="text-sm text-slate-400 max-w-lg mx-auto">
+          <p className="text-[10px] font-bold text-amber-700/70 uppercase tracking-[0.3em] mb-3">Devotiones Ecclesiae</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">Novenas &amp; Litanies</h1>
+          <p className="text-sm text-stone-500 max-w-lg mx-auto">
             Nine-day prayers of faith and intercession, with solemn litanies and daily devotions
           </p>
         </div>
@@ -813,18 +813,18 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {/* JUMUIYA (PARISH GROUPS) — DARK SECTION                 */}
       {/* ═══════════════════════════════════════════════════════ */}
       {jumuiyaData.length > 0 && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-stone-200 p-6 sm:p-8">
           <div className="absolute inset-0 opacity-5" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(201,168,76,0.2), transparent 50%), radial-gradient(circle at 80% 50%, rgba(201,168,76,0.1), transparent 50%)'
+            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(217,119,6,0.15), transparent 50%), radial-gradient(circle at 80% 50%, rgba(217,119,6,0.08), transparent 50%)'
           }} />
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
-                <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center border border-amber-200">
+                <svg className="w-4 h-4 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">Our Jumuiyas</h2>
-                <p className="text-[11px] text-slate-500">Seven parish groups with their patron saints</p>
+                <h2 className="text-base font-bold text-stone-900">Our Jumuiyas</h2>
+                <p className="text-[11px] text-stone-500">Seven parish groups with their patron saints</p>
               </div>
             </div>
 
@@ -834,8 +834,8 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
                 onClick={() => setActiveJumuiya('all')}
                 className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
                   activeJumuiya === 'all'
-                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                    : 'bg-transparent text-slate-500 border-slate-700/50 hover:border-slate-600'
+                    ? 'bg-amber-500/10 text-amber-700 border-amber-300'
+                    : 'bg-transparent text-stone-500 border-stone-200 hover:border-amber-500/40'
                 }`}
               >
                 All Groups
@@ -849,11 +849,11 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
                     onClick={() => setActiveJumuiya(j.id)}
                     className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1.5 ${
                       activeJumuiya === j.id
-                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                        : 'bg-transparent text-slate-500 border-slate-700/50 hover:border-slate-600'
+                        ? 'bg-amber-500/10 text-amber-700 border-amber-300'
+                        : 'bg-transparent text-stone-500 border-stone-200 hover:border-amber-500/40'
                     }`}
                   >
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                     {j.shortName}
                   </button>
                 );
@@ -883,15 +883,15 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && (
         <details className="group">
-          <summary className="flex items-center gap-2 cursor-pointer text-sm text-slate-400 hover:text-amber-400 transition-colors select-none">
+          <summary className="flex items-center gap-2 cursor-pointer text-sm text-stone-500 hover:text-amber-700 transition-colors select-none">
             <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             What is a Novena?
           </summary>
-          <div className="mt-3 bg-[#0a0f1c] rounded-xl border border-slate-800/50 p-5 text-sm text-slate-300 leading-relaxed" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+          <div className="mt-3 bg-white rounded-xl border border-stone-200 p-5 text-sm text-stone-600 leading-relaxed" style={{ boxShadow: '0 1px 4px rgba(28,25,23,0.06)' }}>
             <p className="mb-2">
-              A <strong className="text-white">novena</strong> is a nine-day period of prayer rooted in Catholic tradition,
+              A <strong className="text-stone-900">novena</strong> is a nine-day period of prayer rooted in Catholic tradition,
               modeled after the Apostles' nine days of prayer between Ascension and Pentecost. The word comes from the
-              Latin <em className="text-amber-400">novem</em>, meaning nine.
+              Latin <em className="text-amber-700">novem</em>, meaning nine.
             </p>
             <p className="mb-2">
               Each day carries a specific prayer and intention, building toward a spiritual goal — healing, conversion,
@@ -930,21 +930,21 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border ${
                 statusFilter === pill.key
                   ? pill.key === 'active'
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-sm'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
                     : pill.key === 'upcoming'
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-sm'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm'
                       : pill.key === 'past'
-                        ? 'bg-slate-800/50 text-slate-300 border-slate-700 shadow-sm'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-sm'
-                  : 'bg-[#0a0f1c] text-slate-400 border-slate-700 hover:border-slate-600 hover:text-slate-200'
+                        ? 'bg-stone-100 text-stone-700 border-stone-200 shadow-sm'
+                        : 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm'
+                  : 'bg-white text-stone-500 border-stone-200 hover:border-amber-500/40 hover:text-amber-700'
               }`}
             >
               {pill.key === 'active' && pill.count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
               {pill.label}
               <span className={`ml-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
                 statusFilter === pill.key
-                  ? 'bg-white/10 text-inherit'
-                  : 'bg-slate-700/50 text-slate-400'
+                  ? 'bg-white/50 text-inherit'
+                  : 'bg-stone-100 text-stone-500'
               }`}>{pill.count}</span>
             </button>
           ))}
@@ -965,10 +965,10 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
             return (
               <section key={type}>
                 <div className="mb-4">
-                  <h2 className="text-base font-bold text-white">{labels[type]}</h2>
-                  <p className="text-xs text-slate-400">
+                  <h2 className="text-base font-bold text-stone-900">{labels[type]}</h2>
+                  <p className="text-xs text-stone-500">
                     {desc[type]}
-                    {activeInGroup > 0 && <span className="ml-2 text-emerald-400 font-semibold">{activeInGroup} active</span>}
+                    {activeInGroup > 0 && <span className="ml-2 text-emerald-700 font-semibold">{activeInGroup} active</span>}
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -988,8 +988,8 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {litanyPrayers.length > 0 && (
         <section>
           <div className="mb-4">
-            <h2 className="text-base font-bold text-white">Litanies</h2>
-            <p className="text-xs text-slate-400">Solemn prayers of invocation and response — {litanyPrayers.length} litanies</p>
+            <h2 className="text-base font-bold text-stone-900">Litanies</h2>
+            <p className="text-xs text-stone-500">Solemn prayers of invocation and response — {litanyPrayers.length} litanies</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {litanyPrayers.map((prayer) => (
@@ -1005,8 +1005,8 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {saintsPrayers.length > 0 && (
         <section>
           <div className="mb-4">
-            <h2 className="text-base font-bold text-white">Prayers to Saints</h2>
-            <p className="text-xs text-slate-400">Ask the saints to intercede for us — {saintsPrayers.length} prayers</p>
+            <h2 className="text-base font-bold text-stone-900">Prayers to Saints</h2>
+            <p className="text-xs text-stone-500">Ask the saints to intercede for us — {saintsPrayers.length} prayers</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {saintsPrayers.map((prayer) => (
@@ -1022,8 +1022,8 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {healingPrayers.length > 0 && (
         <section>
           <div className="mb-4">
-            <h2 className="text-base font-bold text-white">Healing Prayers</h2>
-            <p className="text-xs text-slate-400">Prayers for body, mind, and spirit — {healingPrayers.length} prayers</p>
+            <h2 className="text-base font-bold text-stone-900">Healing Prayers</h2>
+            <p className="text-xs text-stone-500">Prayers for body, mind, and spirit — {healingPrayers.length} prayers</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {healingPrayers.map((prayer) => (
@@ -1039,8 +1039,8 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
       {dailyPrayers.length > 0 && (
         <section>
           <div className="mb-4">
-            <h2 className="text-base font-bold text-white">Daily Catholic Prayers</h2>
-            <p className="text-xs text-slate-400">Essential prayers for every day — {dailyPrayers.length} prayers</p>
+            <h2 className="text-base font-bold text-stone-900">Daily Catholic Prayers</h2>
+            <p className="text-xs text-stone-500">Essential prayers for every day — {dailyPrayers.length} prayers</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {dailyPrayers.map((prayer) => (

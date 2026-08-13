@@ -142,10 +142,10 @@ export default function PrayersOfTheMass() {
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <span className="text-white text-xl">✝</span>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>
+          <h1 className="text-3xl font-bold text-stone-900 tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>
             Prayers of the Mass
           </h1>
-          <p className="text-sm text-slate-400 mt-2 max-w-lg mx-auto leading-relaxed">
+          <p className="text-sm text-stone-500 mt-2 max-w-lg mx-auto leading-relaxed">
             The Ordinary of the Mass consists of the parts that remain the same every day. The Propers change with each day's celebration. Below are the full texts of the principal prayers that every Catholic should know by heart.
           </p>
         </div>
@@ -221,11 +221,11 @@ export default function PrayersOfTheMass() {
 
         {/* Penitential Acts */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-sm">§</span>
+          <h2 className="text-xl font-bold text-stone-900 mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 font-bold text-sm">§</span>
             The Four Forms of the Penitential Act
           </h2>
-          <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+          <p className="text-sm text-stone-500 mb-6 leading-relaxed">
             The priest may choose from four forms at the beginning of Mass. The choice depends on the liturgical season and the type of celebration. All are followed by the absolution and the Kyrie.
           </p>
           <div className="space-y-3">
@@ -246,11 +246,11 @@ export default function PrayersOfTheMass() {
 
         {/* Eucharistic Prayers */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+          <h2 className="text-xl font-bold text-stone-900 mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
             <span className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-300 font-bold text-sm">EP</span>
             The Four Eucharistic Prayers
           </h2>
-          <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+          <p className="text-sm text-stone-500 mb-6 leading-relaxed">
             The Roman Missal provides four main Eucharistic Prayers, each with its own character and theological emphasis. All share the same structure: Preface Dialogue, Preface, Sanctus, Epiclesis, Institution Narrative, Memorial Acclamation, Anamnesis, Intercessions, and Final Doxology.
           </p>
           <div className="space-y-3">
@@ -271,19 +271,19 @@ export default function PrayersOfTheMass() {
 
         {/* Proper Prefaces */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold text-sm">PF</span>
+          <h2 className="text-xl font-bold text-stone-900 mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">PF</span>
             Proper Prefaces
           </h2>
-          <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+          <p className="text-sm text-stone-500 mb-6 leading-relaxed">
             Each liturgical season and major feast has its own Proper Preface, which is the opening part of the Eucharistic Prayer. The Preface gives thanks to God for the specific mystery being celebrated. The Preface always ends with the Sanctus.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {PROPER_PREFACES.map((pf) => (
-              <div key={pf.season} className="p-4 rounded-xl bg-[#0a0f1c] border border-amber-500/20">
-                <div className="text-sm font-bold text-amber-400 mb-2">{pf.season}</div>
-                <p className="text-xs text-slate-400 mb-2 leading-relaxed italic">"{pf.text}"</p>
-                <p className="text-[10px] text-slate-500 leading-relaxed">{pf.note}</p>
+              <div key={pf.season} className="p-4 rounded-xl bg-white border border-amber-200">
+                <div className="text-sm font-bold text-amber-700 mb-2">{pf.season}</div>
+                <p className="text-xs text-stone-500 mb-2 leading-relaxed italic">"{pf.text}"</p>
+                <p className="text-[10px] text-stone-500 leading-relaxed">{pf.note}</p>
               </div>
             ))}
           </div>
@@ -291,31 +291,31 @@ export default function PrayersOfTheMass() {
 
         {/* Ordinary vs Proper */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-300 font-bold text-sm">OP</span>
+          <h2 className="text-xl font-bold text-stone-900 mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold text-sm">OP</span>
             Ordinary vs. Proper of the Mass
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-xl bg-[#0a0f1c] border border-sky-500/20">
-              <div className="text-base font-bold text-sky-300 mb-1">{ORDINARY_VS_PROPER.ordinary.title}</div>
-              <div className="text-[10px] text-slate-500 italic mb-3">{ORDINARY_VS_PROPER.ordinary.latin}</div>
-              <p className="text-xs text-slate-400 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.ordinary.description}</p>
+            <div className="p-5 rounded-xl bg-white border border-sky-200">
+              <div className="text-base font-bold text-sky-700 mb-1">{ORDINARY_VS_PROPER.ordinary.title}</div>
+              <div className="text-[10px] text-stone-500 italic mb-3">{ORDINARY_VS_PROPER.ordinary.latin}</div>
+              <p className="text-xs text-stone-500 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.ordinary.description}</p>
               <div className="space-y-1">
                 {ORDINARY_VS_PROPER.ordinary.parts.map((p) => (
-                  <div key={p} className="text-xs text-slate-300 py-1 flex items-center gap-2">
-                    <span className="text-sky-400 flex-shrink-0">•</span> {p}
+                  <div key={p} className="text-xs text-stone-600 py-1 flex items-center gap-2">
+                    <span className="text-sky-700 flex-shrink-0">•</span> {p}
                   </div>
                 ))}
               </div>
             </div>
-            <div className="p-5 rounded-xl bg-[#0a0f1c] border border-amber-500/20">
-              <div className="text-base font-bold text-amber-400 mb-1">{ORDINARY_VS_PROPER.proper.title}</div>
-              <div className="text-[10px] text-slate-500 italic mb-3">{ORDINARY_VS_PROPER.proper.latin}</div>
-              <p className="text-xs text-slate-400 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.proper.description}</p>
+            <div className="p-5 rounded-xl bg-white border border-amber-200">
+              <div className="text-base font-bold text-amber-700 mb-1">{ORDINARY_VS_PROPER.proper.title}</div>
+              <div className="text-[10px] text-stone-500 italic mb-3">{ORDINARY_VS_PROPER.proper.latin}</div>
+              <p className="text-xs text-stone-500 mb-3 leading-relaxed">{ORDINARY_VS_PROPER.proper.description}</p>
               <div className="space-y-1">
                 {ORDINARY_VS_PROPER.proper.parts.map((p) => (
-                  <div key={p} className="text-xs text-slate-300 py-1 flex items-center gap-2">
-                    <span className="text-amber-400 flex-shrink-0">•</span> {p}
+                  <div key={p} className="text-xs text-stone-600 py-1 flex items-center gap-2">
+                    <span className="text-amber-700 flex-shrink-0">•</span> {p}
                   </div>
                 ))}
               </div>
@@ -325,20 +325,20 @@ export default function PrayersOfTheMass() {
 
         {/* Mass Intentions */}
         <div className="mt-10 mb-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
-            <span className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-300 font-bold text-sm">MI</span>
+          <h2 className="text-xl font-bold text-stone-900 mb-4 flex items-center gap-3" style={{ fontFamily: "'Cinzel', serif" }}>
+            <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm">MI</span>
             Mass Intentions
           </h2>
-          <div className="p-5 rounded-xl bg-[#0a0f1c] border border-purple-500/20">
-            <p className="text-xs text-slate-300 mb-3 leading-relaxed">{MASS_INTENTIONS.description}</p>
+          <div className="p-5 rounded-xl bg-white border border-purple-200">
+            <p className="text-xs text-stone-600 mb-3 leading-relaxed">{MASS_INTENTIONS.description}</p>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {MASS_INTENTIONS.types.map((t) => (
-                <div key={t} className="text-xs text-slate-400 py-1 flex items-center gap-2">
-                  <span className="text-purple-300 flex-shrink-0">•</span> {t}
+                <div key={t} className="text-xs text-stone-500 py-1 flex items-center gap-2">
+                  <span className="text-purple-700 flex-shrink-0">•</span> {t}
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-slate-500 italic leading-relaxed">{MASS_INTENTIONS.practice}</p>
+            <p className="text-[10px] text-stone-500 italic leading-relaxed">{MASS_INTENTIONS.practice}</p>
           </div>
         </div>
       </div>
@@ -350,24 +350,24 @@ function PrayerCard({ title, subtitle, color, latin, text, explanation, expanded
   title: string; subtitle: string; color: string; latin: string; text: string; explanation: string; expanded: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="mb-4 rounded-2xl overflow-hidden bg-[#0a0f1c] border border-slate-800/50 shadow-sm transition-all duration-300">
+    <div className="mb-4 rounded-2xl overflow-hidden bg-white border border-stone-200 shadow-sm transition-all duration-300">
       <button onClick={onToggle} className="w-full flex items-center gap-4 p-5 text-left">
         <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow" style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)` }}>
           <span className="text-white text-base font-bold" style={{ filter: "brightness(10)" }}>{title.charAt(0)}</span>
         </div>
         <div className="flex-1">
-          <div className="text-sm font-bold text-white">{title}</div>
-          <div className="text-xs text-slate-400 italic">{subtitle}</div>
+          <div className="text-sm font-bold text-stone-900">{title}</div>
+          <div className="text-xs text-stone-500 italic">{subtitle}</div>
         </div>
-        <span className="text-slate-500 text-sm transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
+        <span className="text-stone-500 text-sm transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
       </button>
       {expanded && (
         <div className="px-5 pb-5 pt-0 ml-[52px]">
           {latin && (
-            <div className="p-4 rounded-xl mb-4 bg-amber-500/10 border border-amber-500/20 italic text-sm text-slate-300 leading-relaxed">{latin}</div>
+            <div className="p-4 rounded-xl mb-4 bg-amber-50 border border-amber-200 italic text-sm text-stone-700 leading-relaxed">{latin}</div>
           )}
-          <div className="p-4 rounded-xl mb-4 bg-slate-800/40 border border-slate-800/50 text-sm text-slate-300 leading-relaxed whitespace-pre-line">{text}</div>
-          <p className="text-xs text-slate-500 leading-relaxed pl-4 border-l-2" style={{ borderColor: `${color}40` }}>{explanation}</p>
+          <div className="p-4 rounded-xl mb-4 bg-stone-100 border border-stone-200 text-sm text-stone-700 leading-relaxed whitespace-pre-line">{text}</div>
+          <p className="text-xs text-stone-500 leading-relaxed pl-4 border-l-2" style={{ borderColor: `${color}40` }}>{explanation}</p>
         </div>
       )}
     </div>
@@ -378,19 +378,19 @@ function PenitentialActCard({ name, description, text, absolution, index, expand
   name: string; description: string; text: string; absolution: string; index: number; expanded: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-[#0a0f1c] border border-slate-800/50 transition-all duration-300">
+    <div className="rounded-2xl overflow-hidden bg-white border border-stone-200 transition-all duration-300">
       <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 text-left">
-        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-300">{index}</span>
+        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500">{index}</span>
         <div className="flex-1">
-          <div className="text-sm font-semibold text-slate-200">{name}</div>
-          <div className="text-[10px] text-slate-400 mt-0.5">{description}</div>
+          <div className="text-sm font-semibold text-stone-700">{name}</div>
+          <div className="text-[10px] text-stone-500 mt-0.5">{description}</div>
         </div>
-        <span className="text-slate-500 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
+        <span className="text-stone-500 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
       </button>
       {expanded && (
         <div className="px-4 pb-4 pt-0 ml-12">
-          <div className="p-3 rounded-lg mb-3 bg-slate-800/40 border border-slate-800/50 text-xs text-slate-300 leading-relaxed whitespace-pre-line">{text}</div>
-          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 leading-relaxed">
+          <div className="p-3 rounded-lg mb-3 bg-stone-100 border border-stone-200 text-xs text-stone-700 leading-relaxed whitespace-pre-line">{text}</div>
+          <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 leading-relaxed">
             <strong>Absolution:</strong> {absolution}
           </div>
         </div>
@@ -403,27 +403,27 @@ function EucharisticPrayerCard({ name, description, keyElements, whenToUse, inde
   name: string; description: string; keyElements: string[]; whenToUse: string; index: number; expanded: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-[#0a0f1c] border border-rose-500/20 transition-all duration-300">
+    <div className="rounded-2xl overflow-hidden bg-white border border-rose-200 transition-all duration-300">
       <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 text-left">
-        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-xs font-bold text-rose-300">EP{index}</span>
+        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center text-xs font-bold text-rose-700">EP{index}</span>
         <div className="flex-1">
-          <div className="text-sm font-semibold text-slate-200">{name}</div>
-          <div className="text-[10px] text-slate-400 mt-0.5 truncate">{description}</div>
+          <div className="text-sm font-semibold text-stone-700">{name}</div>
+          <div className="text-[10px] text-stone-500 mt-0.5 truncate">{description}</div>
         </div>
-        <span className="text-slate-500 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
+        <span className="text-stone-500 text-xs transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)" }}>▾</span>
       </button>
       {expanded && (
         <div className="px-4 pb-4 pt-0 ml-12">
-          <p className="text-xs text-slate-400 mb-3 leading-relaxed">{description}</p>
+          <p className="text-xs text-stone-500 mb-3 leading-relaxed">{description}</p>
           <div className="mb-3">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Key Elements</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-2">Key Elements</div>
             {keyElements.map((ke) => (
-              <div key={ke} className="text-xs text-slate-300 py-1 flex items-center gap-2">
-                <span className="text-rose-300 flex-shrink-0">•</span> {ke}
+              <div key={ke} className="text-xs text-stone-600 py-1 flex items-center gap-2">
+                <span className="text-rose-700 flex-shrink-0">•</span> {ke}
               </div>
             ))}
           </div>
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 leading-relaxed">
+          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800 leading-relaxed">
             <strong>When to use:</strong> {whenToUse}
           </div>
         </div>

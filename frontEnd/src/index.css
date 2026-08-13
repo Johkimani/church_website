@@ -556,7 +556,7 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.35;
+  opacity: 0.15;
   filter: blur(8px) saturate(120%);
   pointer-events: none;
 }
@@ -566,7 +566,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(9, 13, 22, 0.75) 0%, rgba(9, 13, 22, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(250, 248, 245, 0.82) 0%, rgba(250, 248, 245, 0.96) 100%);
   pointer-events: none;
 }
 
@@ -574,10 +574,10 @@
 .devotions-view-container .prayer-card,
 .devotions-view-container .sidebar-navigation,
 .devotions-view-container aside {
-  background: rgba(17, 24, 39, 0.75) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(28, 25, 23, 0.08) !important;
 }
 
 /* ── Override any conflicting background styles on child pages ── */

@@ -15,29 +15,19 @@ const SUB_TABS: { key: SubTab; label: string; icon: string; desc: string }[] = [
 ];
 
 const GOLD = "#D97706";
-const AMBER = "#FBBF24";
+const AMBER = "#B45309";
 
 export default function AllPrayers() {
   const [activeTab, setActiveTab] = useState<SubTab>("book");
 
   return (
-    <div style={{ minHeight: "100vh", color: "#E2E8F0", position: "relative", background: "#050810" }}>
+    <div style={{ minHeight: "100vh", color: "#57534E", position: "relative", background: "#FAF8F5" }}>
       {/* CELESTIAL BACKGROUND */}
       <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(217,119,6,0.08), transparent 70%)" }} />
-        <div style={{ position: "absolute", top: "20%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(217,119,6,0.06) 0%, transparent 70%)", filter: "blur(80px)" }} />
-        <div style={{ position: "absolute", bottom: "10%", right: "5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(180,83,9,0.05) 0%, transparent 70%)", filter: "blur(90px)" }} />
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `
-          radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
-          radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.3) 0%, transparent 100%),
-          radial-gradient(1.5px 1.5px at 40% 10%, rgba(217,119,6,0.4) 0%, transparent 100%),
-          radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
-          radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,0.35) 0%, transparent 100%),
-          radial-gradient(1.5px 1.5px at 85% 55%, rgba(217,119,6,0.3) 0%, transparent 100%),
-          radial-gradient(1px 1px at 15% 65%, rgba(255,255,255,0.25) 0%, transparent 100%),
-          radial-gradient(1px 1px at 35% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
-          radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.25) 0%, transparent 100%)
-        ` }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(217,119,6,0.05), transparent 70%)" }} />
+        <div style={{ position: "absolute", top: "20%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(217,119,6,0.04) 0%, transparent 70%)", filter: "blur(80px)" }} />
+        <div style={{ position: "absolute", bottom: "10%", right: "5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(217,119,6,0.03) 0%, transparent 70%)", filter: "blur(90px)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "transparent" }} />
       </div>
 
       <style>{`
@@ -45,11 +35,11 @@ export default function AllPrayers() {
         @keyframes tabSlide { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         .ap-tab { transition: all 0.25s cubic-bezier(.4,0,.2,1); }
         .ap-tab:hover { transform: translateY(-2px); }
-        @keyframes glowPulse { 0%,100%{box-shadow:0 0 8px #D9770680} 50%{box-shadow:0 0 16px #D9770640} }
+        @keyframes glowPulse { 0%,100%{box-shadow:0 0 8px rgba(217,119,6,0.3)} 50%{box-shadow:0 0 14px rgba(217,119,6,0.2)} }
       `}</style>
 
       {/* HEADER */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(5,8,16,0.85)", backdropFilter: "blur(16px) saturate(1.5)", borderBottom: "1px solid rgba(217,119,6,0.1)" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(250,248,245,0.85)", backdropFilter: "blur(16px) saturate(1.5)", borderBottom: "1px solid rgba(28,25,23,0.08)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", gap: 12 }}>
           <Link to="/devotions" style={{
             padding: "8px 18px", borderRadius: 10,
@@ -58,14 +48,14 @@ export default function AllPrayers() {
             color: "#D97706", display: "inline-flex", alignItems: "center", gap: 8,
             transition: "all 0.2s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(217,119,6,0.15)"; e.currentTarget.style.color = "#FBBF24"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(217,119,6,0.15)"; e.currentTarget.style.color = "#B45309"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(217,119,6,0.08)"; e.currentTarget.style.color = "#D97706"; }}
           >
             <span style={{ fontSize: 16 }}>&larr;</span> Dashboard
           </Link>
           <div style={{ flex: 1 }} />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 6, height: 6, borderRadius: 999, background: GOLD, boxShadow: "0 0 8px #D9770680", animation: "glowPulse 3s ease-in-out infinite" }} />
+            <div style={{ width: 6, height: 6, borderRadius: 999, background: GOLD, boxShadow: "0 0 8px rgba(217,119,6,0.3)", animation: "glowPulse 3s ease-in-out infinite" }} />
             <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD }}>Ora Pro Nobis</span>
           </div>
         </div>
@@ -73,10 +63,10 @@ export default function AllPrayers() {
 
       {/* HERO */}
       <div style={{ position: "relative", zIndex: 5, maxWidth: 1400, margin: "0 auto", padding: "32px 24px 0" }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#FFFFFF", margin: 0, lineHeight: 1.15, letterSpacing: "-0.02em", fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+        <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#1C1917", margin: 0, lineHeight: 1.15, letterSpacing: "-0.02em", fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
           All Prayers
         </h1>
-        <p style={{ fontSize: 15, color: "#94A3B8", margin: "8px 0 0", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 15, color: "#78716C", margin: "8px 0 0", lineHeight: 1.5 }}>
           Explore our complete collection of Catholic prayers, novenas, rosary, and liturgy guides
         </p>
       </div>
@@ -95,13 +85,13 @@ export default function AllPrayers() {
                   flex: "0 0 auto", padding: "14px 22px", borderRadius: 14,
                   cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
                   textAlign: "left", position: "relative", overflow: "hidden",
-                  background: isActive ? "rgba(217,119,6,0.12)" : "rgba(255,255,255,0.03)",
-                  border: isActive ? `1px solid rgba(217,119,6,0.3)` : "1px solid rgba(255,255,255,0.06)",
-                  boxShadow: isActive ? "0 4px 20px rgba(217,119,6,0.15)" : "0 2px 8px rgba(0,0,0,0.15)",
+                  background: isActive ? "rgba(217,119,6,0.08)" : "#FFFFFF",
+                  border: isActive ? `1px solid rgba(217,119,6,0.3)` : "1px solid #E7E5E4",
+                  boxShadow: isActive ? "0 4px 20px rgba(217,119,6,0.15)" : "0 2px 8px rgba(28,25,23,0.05)",
                   minWidth: 180,
                 }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "#F5F5F4"; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "#FFFFFF"; }}
               >
                 {isActive && (
                   <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 30% 50%, rgba(217,119,6,0.08) 0%, transparent 60%)", pointerEvents: "none" }} />
@@ -109,12 +99,12 @@ export default function AllPrayers() {
                 <div style={{
                   width: 42, height: 42, borderRadius: 12, flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 18, background: isActive ? `linear-gradient(135deg, ${GOLD}, #B45309)` : "rgba(255,255,255,0.06)",
+                  fontSize: 18, background: isActive ? `linear-gradient(135deg, ${GOLD}, #B45309)` : "#F5F5F4",
                   boxShadow: isActive ? "0 4px 12px rgba(217,119,6,0.3)" : "none",
                 }}>{tab.icon}</div>
                 <div style={{ position: "relative", zIndex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: isActive ? 700 : 500, color: isActive ? "#FCD34D" : "#CBD5E1" }}>{tab.label}</div>
-                  <div style={{ fontSize: 10, color: "#64748B", marginTop: 2 }}>{tab.desc}</div>
+                  <div style={{ fontSize: 14, fontWeight: isActive ? 700 : 500, color: isActive ? "#B45309" : "#57534E" }}>{tab.label}</div>
+                  <div style={{ fontSize: 10, color: "#78716C", marginTop: 2 }}>{tab.desc}</div>
                 </div>
                 {isActive && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${GOLD}, ${AMBER})` }} />}
               </button>

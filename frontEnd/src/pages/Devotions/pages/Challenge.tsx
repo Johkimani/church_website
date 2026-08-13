@@ -246,22 +246,22 @@ if (portalStatus === "welcome") {
             </h1>
 
             {/* Subtitle */}
-            <p className="italic text-slate-300 text-base sm:text-lg mb-6 max-w-xl mx-auto leading-relaxed">
+            <p className="italic text-stone-600 text-base sm:text-lg mb-6 max-w-xl mx-auto leading-relaxed">
               Stay consistent. Grow your knowledge. Earn your rewards.
             </p>
 
             {/* Achievement Cards - Stacked on mobile, Grid on desktop */}
             <div className="flex flex-col sm:grid sm:grid-cols-3 gap-6 sm:gap-4 mb-10 items-center">
               {[
-                { icon: "🔥", title: "Consistency", desc: "Build a daily streak", badge: "Streak Master", color: "bg-[#0a0f1c] text-slate-300 border border-slate-800/50" },
-                { icon: "🧠", title: "Knowledge", desc: "Learn something new", badge: "Thinker", color: "bg-[#0f1526] text-white border border-amber-600/40" },
-                { icon: "🏆", title: "Rewards", desc: "Earn recognition", badge: "Champion", color: "bg-[#0a0f1c] text-slate-300 border border-slate-800/50" }
+                { icon: "🔥", title: "Consistency", desc: "Build a daily streak", badge: "Streak Master", color: "bg-white text-stone-600 border border-stone-200" },
+                { icon: "🧠", title: "Knowledge", desc: "Learn something new", badge: "Thinker", color: "bg-white text-stone-900 border border-amber-600/30" },
+                { icon: "🏆", title: "Rewards", desc: "Earn recognition", badge: "Champion", color: "bg-white text-stone-600 border border-stone-200" }
               ].map((item, idx) => (
                 <div
                   key={idx}
                   className={`flex flex-col justify-center items-center rounded-2xl w-full h-40 sm:h-44 shadow-lg transition-all duration-300
                     ${idx === 1 
-                      ? "sm:scale-110 sm:-translate-y-2 z-20 animate-float shadow-2xl border-2 border-amber-600/40" 
+                      ? "sm:scale-110 sm:-translate-y-2 z-20 animate-float shadow-2xl border-2 border-amber-600/30" 
                       : ""} ${item.color}`}
                 >
                   <div className="text-4xl animate-bounce mb-2">{item.icon}</div>
@@ -275,7 +275,7 @@ if (portalStatus === "welcome") {
             </div>
 
             {/* Info Row */}
-            <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm text-slate-400 italic">
+            <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm text-stone-500 italic">
               <span>{questions.length} Questions</span>
               <span>⏱ 1 Hour</span>
             </div>
@@ -294,7 +294,7 @@ if (portalStatus === "welcome") {
             </button>
 
             {/* Footer */}
-            <p className="italic text-xs text-slate-500 mt-6">
+            <p className="italic text-xs text-stone-500 mt-6">
               Come back daily to maintain your streak
             </p>
           </div>
@@ -322,23 +322,23 @@ if (portalStatus === "welcome") {
         <div className={`w-16 h-16 mx-auto flex items-center justify-center rounded-full mb-4 
           ${isTimeout ? "bg-red-500/10" : "bg-amber-500/10"}`}>
           {isTimeout ? (
-            <FaLock className="text-2xl text-red-400" />
+            <FaLock className="text-2xl text-red-600" />
           ) : (
-            <FaInbox className="text-2xl text-amber-400" />
+            <FaInbox className="text-2xl text-amber-700" />
           )}
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-white mb-2">
+        <h2 className="text-2xl font-bold text-stone-900 mb-2">
           {title}
         </h2>
 
         {/* Message */}
-        <p className="text-slate-300 mb-6">{message}</p>
+        <p className="text-stone-600 mb-6">{message}</p>
 
         {/* Motivation Box */}
-        <div className="bg-[#0a0f1c] border border-slate-800/50 rounded-lg p-4 mb-6 text-sm text-slate-300">
-          <p className="font-medium text-slate-200 mb-1">
+        <div className="bg-white border border-stone-200 rounded-lg p-4 mb-6 text-sm text-stone-600">
+          <p className="font-medium text-stone-900 mb-1">
             🚀 Keep the momentum going
           </p>
           <p>
@@ -358,7 +358,7 @@ if (portalStatus === "welcome") {
         </button>
 
         {/* Footer hint */}
-        <p className="text-xs text-slate-500 mt-4">
+        <p className="text-xs text-stone-500 mt-4">
           New challenges unlock every day
         </p>
       </div>
@@ -377,17 +377,17 @@ if (portalStatus === "welcome") {
         <div className="w-full max-w-2xl p-6">
           {/* Top Bar */}
           <div className="flex justify-between items-center mb-4">
-            <span className="text-sm text-slate-300 font-medium">
+            <span className="text-sm text-stone-600 font-medium">
               Question {currentQuestionIndex + 1} of {questions.length}
             </span>
 
-            <span className="px-3 py-1 text-sm rounded-full bg-red-500/10 text-red-400 font-semibold">
+            <span className="px-3 py-1 text-sm rounded-full bg-red-500/10 text-red-600 font-semibold">
               ⏱ {timeLeft}s
             </span>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-slate-800 h-2 rounded-full mb-6">
+          <div className="w-full bg-stone-200 h-2 rounded-full mb-6">
             <div
               className="h-2 bg-amber-600 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
@@ -395,7 +395,7 @@ if (portalStatus === "welcome") {
           </div>
 
           {/* Question */}
-          <h3 className="text-xl font-semibold text-white mb-6 leading-relaxed">
+          <h3 className="text-xl font-semibold text-stone-900 mb-6 leading-relaxed">
             {currentQuestion.question}
           </h3>
 
@@ -405,11 +405,11 @@ if (portalStatus === "welcome") {
               <button
                 key={index}
                 onClick={() => handleNextQuestion(index)}
-                className="w-full text-left p-4 rounded-xl border border-slate-800/50 bg-[#0a0f1c] 
-                hover:bg-[#0f1526] hover:border-amber-600/50 
+                className="w-full text-left p-4 rounded-xl border border-stone-200 bg-white 
+                hover:bg-stone-50 hover:border-amber-600 
                 transition-all duration-200 shadow-sm"
               >
-                <span className="font-medium text-slate-200">{option}</span>
+                <span className="font-medium text-stone-700">{option}</span>
               </button>
             ))}
           </div>
@@ -429,11 +429,11 @@ if (portalStatus === "welcome") {
             <div className="flex items-center gap-5">
               <div className="text-4xl sm:text-5xl animate-bounce">🏆</div>
               <div>
-                <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.3em] italic">Devotion Milestone</p>
-                <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tighter leading-none mb-1">
-                  Score: {score}<span className="text-slate-500">/{questions.length}</span>
+                <p className="text-[9px] font-black text-amber-700 uppercase tracking-[0.3em] italic">Devotion Milestone</p>
+                <h2 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tighter leading-none mb-1">
+                  Score: {score}<span className="text-stone-500">/{questions.length}</span>
                 </h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] italic">Know the Church</p>
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-[0.2em] italic">Know the Church</p>
               </div>
             </div>
 
@@ -463,17 +463,17 @@ if (portalStatus === "welcome") {
                 >
                   {/* Vertical Question ID Indicator */}
                   <div className="flex items-center gap-3 mb-6">
-                     <span className="text-xs font-black text-slate-400 italic tracking-tighter">QUESTION {String(i + 1).padStart(2, '0')}</span>
+                     <span className="text-xs font-black text-stone-500 italic tracking-tighter">QUESTION {String(i + 1).padStart(2, '0')}</span>
                      <div className={`h-[1px] flex-1 ${isCorrect ? 'bg-green-500/20' : 'bg-red-500/20'}`}></div>
                      {isCorrect ? (
-                       <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Mastered</span>
+                       <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Mastered</span>
                      ) : (
-                       <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">Incomplete</span>
+                       <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">Incomplete</span>
                      )}
                   </div>
                   
                   {/* Question Title */}
-                  <h3 className="font-bold text-xl text-white mb-8 leading-snug max-w-xl">
+                  <h3 className="font-bold text-xl text-stone-900 mb-8 leading-snug max-w-xl">
                     {q.question}
                   </h3>
 
@@ -493,27 +493,27 @@ if (portalStatus === "welcome") {
                             isCorrectAnswer 
                               ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" 
                               : isUserChoice && !isCorrectAnswer
-                                ? "bg-red-400"
-                                : "bg-slate-600"
+                                ? "bg-red-500"
+                                : "bg-stone-300"
                           }`}></div>
 
                           <div className="flex flex-col">
                             <span className={`text-sm font-medium transition-colors ${
                               isCorrectAnswer 
-                                ? "text-white font-bold" 
+                                ? "text-stone-900 font-bold" 
                                 : isUserChoice && !isCorrectAnswer
-                                  ? "text-red-400"
-                                  : "text-slate-300"
+                                  ? "text-red-600"
+                                  : "text-stone-500"
                             }`}>
                               {opt}
                             </span>
                             
                             {/* Sub-label */}
                             {isCorrectAnswer && (
-                              <span className="text-[8px] font-black text-green-400 uppercase tracking-widest mt-1">Correct Answer</span>
+                              <span className="text-[8px] font-black text-green-600 uppercase tracking-widest mt-1">Correct Answer</span>
                             )}
                             {isUserChoice && !isCorrectAnswer && (
-                              <span className="text-[8px] font-black text-red-400 uppercase tracking-widest mt-1">Your Selection</span>
+                              <span className="text-[8px] font-black text-red-600 uppercase tracking-widest mt-1">Your Selection</span>
                             )}
                           </div>
                         </div>
@@ -523,8 +523,8 @@ if (portalStatus === "welcome") {
 
                   {/* Minimal Reflection */}
                   {q.explanation && (
-                    <div className="mt-8 pl-6 border-l-2 border-slate-800/50">
-                      <p className="text-xs text-slate-400 italic leading-relaxed font-semibold">
+                    <div className="mt-8 pl-6 border-l-2 border-stone-200">
+                      <p className="text-xs text-stone-500 italic leading-relaxed font-semibold">
                         {q.explanation}
                       </p>
                     </div>

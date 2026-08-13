@@ -469,24 +469,24 @@ function SeasonCard({ season }: { season: typeof SEASONS[0] }) {
 
 export default function LiturgicalSeasons() {
   return (
-    <div className="w-full min-h-screen bg-[#050810] relative flex flex-col">
+    <div className="w-full min-h-screen bg-[#FAF8F5] relative flex flex-col">
       {/* Spiritual Header */}
-      <div className="flex flex-col items-center pt-16 pb-8 bg-gradient-to-b from-[#0a0f1c] to-[#050810] shadow-lg shrink-0">
+      <div className="flex flex-col items-center pt-16 pb-8 bg-gradient-to-b from-white to-[#FAF8F5] shadow-lg shrink-0">
         <div className="relative mb-6">
           <div className="absolute -top-8 -left-8 w-24 h-24 rounded-full bg-amber-500/10 blur-3xl" />
           <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-blue-500/10 blur-2xl" />
-          <h1 className="relative text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tighter uppercase italic drop-shadow-2xl text-center">
+          <h1 className="relative text-4xl sm:text-5xl md:text-6xl font-black text-stone-900 tracking-tighter uppercase italic drop-shadow-2xl text-center">
             Holy Liturgical Seasons
           </h1>
         </div>
         <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap px-4 text-center">
           <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          <p className="text-sm sm:text-base text-amber-300 font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em] italic">
+          <p className="text-sm sm:text-base text-amber-700 font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em] italic">
             Journey Through the Christian Year
           </p>
           <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
         </div>
-        <p className="text-sm text-slate-400 mt-4 max-w-3xl text-center font-light leading-relaxed">
+        <p className="text-sm text-stone-500 mt-4 max-w-3xl text-center font-light leading-relaxed">
           The Liturgical Year is the heart of Catholic worship, guiding the faithful through the mysteries of salvation history from Advent to Ordinary Time. Each season carries unique spiritual gifts, practices, and sacred traditions that prepare us to encounter Christ more deeply.
         </p>
       </div>

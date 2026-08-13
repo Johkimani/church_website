@@ -27,22 +27,22 @@ const GOLD = "#D97706";
 const AMBER = "#FBBF24";
 
 const CARD_STYLE = {
-  background: "linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))",
-  border: "1px solid rgba(217,119,6,0.15)",
+  background: "#FFFFFF",
+  border: "1px solid rgba(28, 25, 23, 0.08)",
 } as const;
 
 const TAB_STYLE = (active: boolean): CSSProperties =>
   active
     ? {
-        background: "linear-gradient(135deg, rgba(217,119,6,0.22), rgba(217,119,6,0.08))",
-        color: "#FCD34D",
+        background: "linear-gradient(135deg, rgba(217,119,6,0.16), rgba(217,119,6,0.06))",
+        color: "#B45309",
         border: "1px solid rgba(217,119,6,0.35)",
-        boxShadow: "0 4px 16px rgba(217,119,6,0.15)",
+        boxShadow: "0 2px 10px rgba(217,119,6,0.1)",
       }
     : {
-        background: "rgba(255,255,255,0.03)",
-        color: "#94A3B8",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "#FFFFFF",
+        color: "#78716C",
+        border: "1px solid rgba(28, 25, 23, 0.08)",
       };
 
 const ROSARY_PRAYERS: RosaryPrayer[] = [
@@ -223,7 +223,7 @@ const MYSTERY_SETS: {
     key: "glorious",
     label: "Glorious Mysteries",
     days: "Wednesday & Sunday",
-    color: "#FCD34D",
+    color: "#D97706",
     theme: "From the Resurrection to the Coronation of Mary — our hope of glory.",
   },
   {
@@ -262,7 +262,7 @@ const OTHER_DEVOTIONS: { title: string; description: string; color: string; data
   {
     title: "The Chaplet of St. Michael",
     description: "A nine-decade chaplet honoring St. Michael the Archangel and the nine choirs of angels, prayed in confidence of their protection.",
-    color: "#FBBF24",
+    color: "#B45309",
     data: archangelMichaelMysteries,
   },
   {
@@ -280,13 +280,13 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
         <div className="w-6 h-[2px]" style={{ background: `linear-gradient(90deg, ${GOLD}, transparent)` }} />
         <h2
           className="text-sm font-bold tracking-[0.25em] uppercase"
-          style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", color: "#D1D5DB" }}
+          style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", color: "#57534E" }}
         >
           {title}
         </h2>
-        <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.06), transparent)" }} />
+        <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
       </div>
-      {subtitle && <p className="text-sm text-slate-400 ml-9 max-w-2xl">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-stone-500 ml-9 max-w-2xl">{subtitle}</p>}
     </div>
   );
 }
@@ -318,7 +318,7 @@ function BeadDiagram() {
 
   return (
     <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8">
-      <svg viewBox="0 0 420 640" className="w-full max-w-md h-auto" style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.35))" }}>
+      <svg viewBox="0 0 420 640" className="w-full max-w-md h-auto" style={{ filter: "drop-shadow(0 4px 12px rgba(28,25,23,0.15))" }}>
         {/* Cross */}
         <g style={{ transform: "translate(200px, 40px)" }}>
           <rect x="-4" y="-14" width="8" height="52" rx="3" fill={AMBER} />
@@ -328,7 +328,7 @@ function BeadDiagram() {
         <line x1="210" y1="60" x2="210" y2="252" stroke="rgba(217,119,6,0.3)" strokeWidth="2" />
         {/* Tail beads */}
         {tail.map((b) => (
-          <circle key={b.y} cx="210" cy={b.y} r={b.r} fill={b.r === 10 ? AMBER : "#475569"} stroke="rgba(255,255,255,0.15)" strokeWidth="1">
+          <circle key={b.y} cx="210" cy={b.y} r={b.r} fill={b.r === 10 ? AMBER : "#D6D3D1"} stroke="rgba(28,25,23,0.15)" strokeWidth="1">
             <title>{b.label}</title>
           </circle>
         ))}
@@ -343,8 +343,8 @@ function BeadDiagram() {
             cx={b.x}
             cy={b.y}
             r={b.big ? 10 : 7}
-            fill={b.big ? AMBER : "#475569"}
-            stroke="rgba(255,255,255,0.15)"
+            fill={b.big ? AMBER : "#D6D3D1"}
+            stroke="rgba(28,25,23,0.15)"
             strokeWidth="1"
             style={{ cursor: "pointer" }}
           >
@@ -355,22 +355,22 @@ function BeadDiagram() {
 
       <div className="w-full lg:w-80 space-y-3">
         <div className="rounded-xl p-4" style={CARD_STYLE}>
-          <p className="text-[10px] tracking-[0.2em] uppercase font-bold text-amber-400 mb-2">Parts of the Rosary</p>
-          <ul className="space-y-2 text-sm text-slate-300">
+          <p className="text-[10px] tracking-[0.2em] uppercase font-bold text-amber-700 mb-2">Parts of the Rosary</p>
+          <ul className="space-y-2 text-sm text-stone-700">
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: AMBER }} /> Large beads — Our Father</li>
-            <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: "#475569" }} /> Small beads — Hail Mary</li>
+            <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: "#D6D3D1" }} /> Small beads — Hail Mary</li>
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: GOLD }} /> Centerpiece — Glory Be</li>
-            <li className="flex items-center gap-2"><span className="text-amber-400">✝</span> Crucifix — Sign of the Cross & Creed</li>
+            <li className="flex items-center gap-2"><span className="text-amber-700">✝</span> Crucifix — Sign of the Cross & Creed</li>
           </ul>
         </div>
         <div className="rounded-xl p-4" style={CARD_STYLE}>
-          <p className="text-[10px] tracking-[0.2em] uppercase font-bold text-amber-400 mb-2">One Decade</p>
-          <p className="text-sm text-slate-300 leading-relaxed">
+          <p className="text-[10px] tracking-[0.2em] uppercase font-bold text-amber-700 mb-2">One Decade</p>
+          <p className="text-sm text-stone-700 leading-relaxed">
             1 Our Father · 10 Hail Marys · 1 Glory Be · 1 Fatima Prayer
-            <span className="block mt-2 text-xs text-slate-400">Five decades make one full Rosary of the twenty mysteries.</span>
+            <span className="block mt-2 text-xs text-stone-500">Five decades make one full Rosary of the twenty mysteries.</span>
           </p>
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed">Hover any bead above to see which prayer is prayed on it.</p>
+        <p className="text-xs text-stone-500 leading-relaxed">Hover any bead above to see which prayer is prayed on it.</p>
       </div>
     </div>
   );
@@ -500,30 +500,30 @@ function PrayGuide() {
 
        {/* Beginner Guide */}
        <div className="rounded-2xl p-5" style={{ background: "rgba(217,119,6,0.06)", border: "1px solid rgba(217,119,6,0.15)" }}>
-         <p className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-3">How to Use This Guide</p>
-         <div className="grid sm:grid-cols-2 gap-3 text-xs text-slate-300 leading-relaxed">
+         <p className="text-xs font-bold uppercase tracking-wider text-amber-700 mb-3">How to Use This Guide</p>
+         <div className="grid sm:grid-cols-2 gap-3 text-xs text-stone-700 leading-relaxed">
            <div className="flex items-start gap-2">
-             <span className="text-amber-400 mt-0.5">1.</span>
+             <span className="text-amber-700 mt-0.5">1.</span>
              <span>Hold the rosary in your left hand, draped over your fingers.</span>
            </div>
            <div className="flex items-start gap-2">
-             <span className="text-amber-400 mt-0.5">2.</span>
+             <span className="text-amber-700 mt-0.5">2.</span>
              <span>Start at the crucifix. Make the Sign of the Cross.</span>
            </div>
            <div className="flex items-start gap-2">
-             <span className="text-amber-400 mt-0.5">3.</span>
+             <span className="text-amber-700 mt-0.5">3.</span>
              <span>Move to the next large bead for the Our Father.</span>
            </div>
            <div className="flex items-start gap-2">
-             <span className="text-amber-400 mt-0.5">4.</span>
+             <span className="text-amber-700 mt-0.5">4.</span>
              <span>Move to each small bead for a Hail Mary. Touch each bead.</span>
            </div>
            <div className="flex items-start gap-2">
-             <span className="text-amber-400 mt-0.5">5.</span>
+             <span className="text-amber-700 mt-0.5">5.</span>
              <span>At the centerpiece, pray the Glory Be and Fatima Prayer.</span>
            </div>
            <div className="flex items-start gap-2">
-             <span className="text-amber-400 mt-0.5">6.</span>
+             <span className="text-amber-700 mt-0.5">6.</span>
              <span>Repeat for each decade. Move to the next large bead for the next Our Father.</span>
            </div>
          </div>
@@ -550,12 +550,12 @@ function PrayGuide() {
       {/* Progress Bar */}
       <div className="rounded-2xl p-5" style={CARD_STYLE}>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] font-bold tracking-widest uppercase text-slate-400">
+          <span className="text-[11px] font-bold tracking-widest uppercase text-stone-500">
             Step {currentStep + 1} of {steps.length}
           </span>
-          <span className="text-[11px] font-bold text-amber-400">{Math.round(progress)}%</span>
+          <span className="text-[11px] font-bold text-amber-700">{Math.round(progress)}%</span>
         </div>
-        <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+        <div className="h-2 rounded-full bg-stone-200 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-300"
             style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${setColor}, ${GOLD})` }}
@@ -569,35 +569,35 @@ function PrayGuide() {
            <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: `${setColor}22`, color: setColor }}>
              {currentStep + 1}
            </span>
-           <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
-             {steps[currentStep]?.title}
-           </h3>
+            <h3 className="text-lg font-bold text-stone-900" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+              {steps[currentStep]?.title}
+            </h3>
          </div>
 
          {/* Instruction */}
          {steps[currentStep]?.instruction && (
            <div className="rounded-xl p-3 mb-3 flex items-start gap-3" style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.15)" }}>
-             <span className="text-amber-400 text-lg flex-shrink-0">✋</span>
-             <p className="text-xs text-slate-300 leading-relaxed">{steps[currentStep].instruction}</p>
+<span className="text-amber-700 text-lg flex-shrink-0">✋</span>
+              <p className="text-xs text-stone-700 leading-relaxed">{steps[currentStep].instruction}</p>
            </div>
          )}
 
          {steps[currentStep]?.isMysteryAnnouncement && (
            <div className="rounded-xl p-4 mb-4" style={{ background: `${setColor}11`, border: `1px solid ${setColor}30` }}>
              <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: setColor }}>Mystery</p>
-             <p className="text-sm text-slate-200 leading-relaxed">{steps[currentStep].prayer}</p>
+             <p className="text-sm text-stone-700 leading-relaxed">{steps[currentStep].prayer}</p>
              {steps[currentStep].contemplation && (
                <div className="mt-3 pt-3 border-t" style={{ borderColor: "rgba(217,119,6,0.15)" }}>
-                 <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-1">Contemplate</p>
-                 <p className="text-xs text-slate-400 leading-relaxed">{steps[currentStep].contemplation}</p>
+<p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-1">Contemplate</p>
+                  <p className="text-xs text-stone-500 leading-relaxed">{steps[currentStep].contemplation}</p>
                </div>
              )}
            </div>
          )}
 
          {!steps[currentStep]?.isMysteryAnnouncement && (
-           <div className="rounded-xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-             <p className="text-sm text-slate-200 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "16px" }}>
+<div className="rounded-xl p-5 mb-4" style={{ background: "#FAF8F5", border: "1px solid rgba(28,25,23,0.06)" }}>
+              <p className="text-sm text-stone-700 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "16px" }}>
                {steps[currentStep]?.prayer}
              </p>
            </div>
@@ -609,7 +609,7 @@ function PrayGuide() {
             onClick={handlePrev}
             disabled={currentStep === 0}
             className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-25 disabled:cursor-not-allowed"
-            style={{ background: "rgba(255,255,255,0.05)", color: "#CBD5E1", border: "1px solid rgba(255,255,255,0.1)" }}
+            style={{ background: "#FFFFFF", color: "#57534E", border: "1px solid rgba(28,25,23,0.15)" }}
           >
             ← Previous
           </button>
@@ -618,8 +618,8 @@ function PrayGuide() {
             className="px-6 py-3 rounded-xl text-sm font-bold transition-all"
             style={{
               background: `linear-gradient(135deg, ${setColor}, ${GOLD})`,
-              color: "#050810",
-              boxShadow: `0 4px 16px ${setColor}33`,
+              color: "#FFFFFF",
+              boxShadow: `0 4px 16px ${setColor}22`,
             }}
           >
             {isPlaying && !isPaused ? "⏸ Pause" : isPaused ? "▶ Resume" : "▶ Play"}
@@ -628,14 +628,14 @@ function PrayGuide() {
             onClick={handleNext}
             disabled={currentStep === steps.length - 1}
             className="px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-25 disabled:cursor-not-allowed"
-            style={{ background: "rgba(255,255,255,0.05)", color: "#CBD5E1", border: "1px solid rgba(255,255,255,0.1)" }}
+            style={{ background: "#FFFFFF", color: "#57534E", border: "1px solid rgba(28,25,23,0.15)" }}
           >
             Next →
           </button>
           <button
             onClick={stopSpeaking}
             className="px-3 py-2 rounded-xl text-sm transition-all"
-            style={{ background: "rgba(255,255,255,0.05)", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)" }}
+            style={{ background: "#FFFFFF", color: "#78716C", border: "1px solid rgba(28,25,23,0.15)" }}
             title="Stop"
           >
             ⏹
@@ -643,7 +643,7 @@ function PrayGuide() {
           <button
             onClick={handleReset}
             className="px-3 py-2 rounded-xl text-sm transition-all"
-            style={{ background: "rgba(255,255,255,0.05)", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)" }}
+            style={{ background: "#FFFFFF", color: "#78716C", border: "1px solid rgba(28,25,23,0.15)" }}
             title="Reset"
           >
             ↺
@@ -653,7 +653,7 @@ function PrayGuide() {
 
       {/* Step List */}
       <div className="rounded-2xl p-5" style={CARD_STYLE}>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-4">All Steps</p>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-4">All Steps</p>
         <div className="space-y-1 max-h-96 overflow-y-auto scrollbar-hide">
           {steps.map((step, i) => {
             const isActive = i === currentStep;
@@ -668,15 +668,15 @@ function PrayGuide() {
                   setTimeout(() => speak(step.prayer), 300);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
-                  isActive ? "bg-amber-500/10 border border-amber-500/30" : isPast ? "opacity-50" : "hover:bg-white/5"
+                  isActive ? "bg-amber-500/10 border border-amber-500/30" : isPast ? "opacity-50" : "hover:bg-stone-100"
                 }`}
               >
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                  isActive ? "bg-amber-500 text-black" : isPast ? "bg-amber-500/30 text-amber-400" : "bg-slate-800 text-slate-500"
+                  isActive ? "bg-amber-500 text-white" : isPast ? "bg-amber-500/30 text-amber-700" : "bg-stone-100 text-stone-500"
                 }`}>
                   {isPast ? "✓" : i + 1}
                 </span>
-                <span className={`text-xs ${isActive ? "text-amber-400" : "text-slate-400"}`}>
+                <span className={`text-xs ${isActive ? "text-amber-700" : "text-stone-500"}`}>
                   {step.title}
                 </span>
               </button>
@@ -712,22 +712,22 @@ export default function Rosary() {
       <div
         className="rounded-3xl relative overflow-hidden mb-8"
         style={{
-          background: "linear-gradient(135deg, rgba(217,119,6,0.14), rgba(9,13,22,0.5))",
+          background: "linear-gradient(135deg, rgba(217,119,6,0.1), rgba(217,119,6,0.03))",
           border: "1px solid rgba(217,119,6,0.2)",
         }}
       >
         <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
-        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.2), transparent 70%)" }} />
-        <div className="absolute right-8 bottom-2 text-[120px] leading-none select-none" style={{ color: "rgba(255,255,255,0.05)", fontFamily: "'Cinzel', serif" }}>✝</div>
+        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.12), transparent 70%)" }} />
+        <div className="absolute right-8 bottom-2 text-[120px] leading-none select-none" style={{ color: "rgba(28,25,23,0.05)", fontFamily: "'Cinzel', serif" }}>✝</div>
         <div className="relative z-10 p-8 sm:p-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5" style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.25)" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            <span className="text-[11px] font-bold tracking-[0.15em] text-amber-400 uppercase">Marian Devotion</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+            <span className="text-[11px] font-bold tracking-[0.15em] text-amber-700 uppercase">Marian Devotion</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold text-white mb-4" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+          <h1 className="text-3xl sm:text-5xl font-bold text-stone-900 mb-4" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
             The Holy Rosary
           </h1>
-          <p className="max-w-2xl text-slate-300 leading-relaxed">
+          <p className="max-w-2xl text-stone-600 leading-relaxed">
             The Rosary is a school of prayer. Beholding the face of Christ through the eyes of his Mother, we meditate upon the mysteries of our redemption — and learn to pray with Mary's faith, hope, and love.
           </p>
         </div>
@@ -748,11 +748,11 @@ export default function Rosary() {
           <section>
             <SectionHeader title="What is the Rosary" subtitle="A meditation on the life of Christ, prayed with Mary." />
             <div className="rounded-2xl p-6" style={CARD_STYLE}>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                The word <em className="text-amber-300">rosary</em> means "a crown of roses," for every Hail Mary offered is a spiritual rose laid before our Lady. Praying the Rosary is not mere repetition: with each decade we contemplate a mystery of the life, death, and resurrection of Jesus Christ, while reciting the Our Father, the Hail Mary, and the Glory Be.
+              <p className="text-sm text-stone-700 leading-relaxed">
+                The word <em className="text-amber-700">rosary</em> means "a crown of roses," for every Hail Mary offered is a spiritual rose laid before our Lady. Praying the Rosary is not mere repetition: with each decade we contemplate a mystery of the life, death, and resurrection of Jesus Christ, while reciting the Our Father, the Hail Mary, and the Glory Be.
               </p>
-              <p className="text-sm text-slate-300 leading-relaxed mt-3">
-                In his apostolic letter <em className="text-amber-300">Rosarium Virginis Mariae</em> (2002), Pope St. John Paul II called the Rosary "a compendium of the Gospel." With the addition of the Luminous Mysteries, the Church presents twenty mysteries for our meditation — Joyful, Sorrowful, Glorious, and Luminous — that together tell the whole story of our salvation.
+              <p className="text-sm text-stone-700 leading-relaxed mt-3">
+                In his apostolic letter <em className="text-amber-700">Rosarium Virginis Mariae</em> (2002), Pope St. John Paul II called the Rosary "a compendium of the Gospel." With the addition of the Luminous Mysteries, the Church presents twenty mysteries for our meditation — Joyful, Sorrowful, Glorious, and Luminous — that together tell the whole story of our salvation.
               </p>
             </div>
           </section>
@@ -762,12 +762,12 @@ export default function Rosary() {
             <div className="grid sm:grid-cols-2 gap-4">
               {HOW_TO_PRAY.map((step, i) => (
                 <div key={step.title} className="rounded-2xl p-5 flex gap-4 transition-all duration-300 hover:-translate-y-0.5" style={CARD_STYLE}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, rgba(217,119,6,0.3), rgba(217,119,6,0.1))", color: "#FBBF24", fontFamily: "'Cinzel', serif" }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, rgba(217,119,6,0.3), rgba(217,119,6,0.1))", color: "#B45309", fontFamily: "'Cinzel', serif" }}>
                     {i + 1}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white mb-1">{step.title}</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">{step.detail}</p>
+                    <h3 className="text-sm font-bold text-stone-900 mb-1">{step.title}</h3>
+                    <p className="text-xs text-stone-500 leading-relaxed">{step.detail}</p>
                   </div>
                 </div>
               ))}
@@ -780,8 +780,8 @@ export default function Rosary() {
               {OTHER_DEVOTIONS.map((d) => (
                 <div key={d.title} className="rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5" style={CARD_STYLE}>
                   <span className="inline-block w-2 h-2 rounded-full mb-3" style={{ background: d.color }} />
-                  <h3 className="text-sm font-bold text-white mb-1">{d.title}</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">{d.description}</p>
+                  <h3 className="text-sm font-bold text-stone-900 mb-1">{d.title}</h3>
+                  <p className="text-xs text-stone-500 leading-relaxed">{d.description}</p>
                 </div>
               ))}
             </div>
@@ -797,20 +797,20 @@ export default function Rosary() {
             {ROSARY_PRAYERS.map((p, i) => (
               <div key={p.title} className="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 md:col-span-1" style={CARD_STYLE}>
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-[11px] font-bold tracking-widest text-amber-400" style={{ fontFamily: "'Cinzel', serif" }}>{String(i + 1).padStart(2, "0")}</span>
-                  <h3 className="text-base font-bold text-white" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>{p.title}</h3>
+                  <span className="text-[11px] font-bold tracking-widest text-amber-700" style={{ fontFamily: "'Cinzel', serif" }}>{String(i + 1).padStart(2, "0")}</span>
+                  <h3 className="text-base font-bold text-stone-900" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>{p.title}</h3>
                 </div>
-                {p.scripture && <p className="text-[11px] text-slate-500 mb-3 tracking-wide uppercase">— {p.scripture}</p>}
+                {p.scripture && <p className="text-[11px] text-stone-500 mb-3 tracking-wide uppercase">— {p.scripture}</p>}
                 <div className="space-y-3 mb-3">
                   {p.lines.map((line) => (
-                    <p key={line.slice(0, 24)} className="text-sm text-slate-200 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "15px" }}>
+                    <p key={line.slice(0, 24)} className="text-sm text-stone-600 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "15px" }}>
                       {line}
                     </p>
                   ))}
                 </div>
                 {p.note && (
-                  <p className="text-xs text-slate-500 border-t pt-3" style={{ borderColor: "rgba(217,119,6,0.15)" }}>
-                    <span className="text-amber-400/80 font-semibold">Note · </span>{p.note}
+                  <p className="text-xs text-stone-500 border-t pt-3" style={{ borderColor: "rgba(217,119,6,0.15)" }}>
+                    <span className="text-amber-700/80 font-semibold">Note · </span>{p.note}
                   </p>
                 )}
               </div>
@@ -844,19 +844,19 @@ export default function Rosary() {
           <div className="rounded-2xl p-5" style={{ ...CARD_STYLE, border: `1px solid ${activeSet.color}30` }}>
             <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
               <div>
-                <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>{activeSet.label}</h3>
-                <p className="text-xs text-slate-400 mt-1">{activeSet.theme}</p>
+                <h3 className="text-lg font-bold text-stone-900" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>{activeSet.label}</h3>
+                <p className="text-xs text-stone-500 mt-1">{activeSet.theme}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] tracking-widest uppercase font-bold text-slate-500">Traditionally prayed:</span>
+                <span className="text-[10px] tracking-widest uppercase font-bold text-stone-500">Traditionally prayed:</span>
                 <span className="text-[11px] font-bold px-3 py-1 rounded-full" style={{ background: `${activeSet.color}1a`, color: activeSet.color }}>{activeSet.days}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 mb-5">
-              <span className="text-[10px] tracking-widest uppercase font-bold text-slate-500">Language:</span>
-              <button onClick={() => setLang("english")} className="text-[11px] font-bold px-3 py-1 rounded-full transition-all" style={{ background: lang === "english" ? "rgba(217,119,6,0.2)" : "rgba(255,255,255,0.05)", color: lang === "english" ? "#FBBF24" : "#94A3B8", border: `1px solid ${lang === "english" ? "rgba(217,119,6,0.3)" : "rgba(255,255,255,0.1)"}` }}>English</button>
-              <button onClick={() => setLang("kiswahili")} className="text-[11px] font-bold px-3 py-1 rounded-full transition-all" style={{ background: lang === "kiswahili" ? "rgba(217,119,6,0.2)" : "rgba(255,255,255,0.05)", color: lang === "kiswahili" ? "#FBBF24" : "#94A3B8", border: `1px solid ${lang === "kiswahili" ? "rgba(217,119,6,0.3)" : "rgba(255,255,255,0.1)"}` }}>Kiswahili</button>
+              <span className="text-[10px] tracking-widest uppercase font-bold text-stone-500">Language:</span>
+              <button onClick={() => setLang("english")} className="text-[11px] font-bold px-3 py-1 rounded-full transition-all" style={{ background: lang === "english" ? "rgba(217,119,6,0.15)" : "#F5F5F4", color: lang === "english" ? "#B45309" : "#78716C", border: `1px solid ${lang === "english" ? "rgba(217,119,6,0.35)" : "rgba(28,25,23,0.08)"}` }}>English</button>
+              <button onClick={() => setLang("kiswahili")} className="text-[11px] font-bold px-3 py-1 rounded-full transition-all" style={{ background: lang === "kiswahili" ? "rgba(217,119,6,0.15)" : "#F5F5F4", color: lang === "kiswahili" ? "#B45309" : "#78716C", border: `1px solid ${lang === "kiswahili" ? "rgba(217,119,6,0.35)" : "rgba(28,25,23,0.08)"}` }}>Kiswahili</button>
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -868,19 +868,19 @@ export default function Rosary() {
                     onClick={() => setMysteryOpen(open ? null : m.title)}
                     className="rounded-2xl p-4 text-left transition-all duration-300 text-center sm:text-left"
                     style={{
-                      background: open ? `linear-gradient(135deg, ${activeSet.color}14, rgba(255,255,255,0.02))` : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${open ? `${activeSet.color}50` : "rgba(255,255,255,0.08)"}`,
+                      background: open ? `linear-gradient(135deg, ${activeSet.color}14, rgba(250,248,245,0.02))` : "#F5F5F4",
+                      border: `1px solid ${open ? `${activeSet.color}50` : "rgba(28,25,23,0.08)"}`,
                     }}
                   >
                     <div className="text-[10px] tracking-widest uppercase font-bold mb-2" style={{ color: activeSet.color }}>Mystery {i + 1}</div>
-                    <h4 className="text-sm font-bold text-white leading-snug mb-2">{m.title}</h4>
+                    <h4 className="text-sm font-bold text-stone-900 leading-snug mb-2">{m.title}</h4>
                     <div className="flex flex-col items-center sm:items-start gap-2 mb-2">
                       <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${activeSet.color}1a`, color: activeSet.color }}>Fruit: {m.fruit}</span>
                     </div>
                     {open && (
-                      <div className="mt-3 pt-3 border-t text-left" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-                        {m.scripture && <p className="text-[11px] text-slate-400 italic mb-2">Scripture — {m.scripture}</p>}
-                        <p className="text-xs text-slate-300 leading-relaxed">
+                      <div className="mt-3 pt-3 border-t text-left" style={{ borderColor: "rgba(28,25,23,0.08)" }}>
+                        {m.scripture && <p className="text-[11px] text-stone-500 italic mb-2">Scripture — {m.scripture}</p>}
+                        <p className="text-xs text-stone-600 leading-relaxed">
                           {lang === "english" ? m.english : m.kiswahili}
                         </p>
                       </div>
@@ -915,23 +915,23 @@ export default function Rosary() {
                       <div className="flex items-center gap-3">
                         <span className="inline-block w-2 h-2 rounded-full" style={{ background: d.color }} />
                         <div>
-                          <h3 className="text-sm font-bold text-white">{d.title}</h3>
-                          <p className="text-xs text-slate-400 mt-0.5">{d.description}</p>
+                          <h3 className="text-sm font-bold text-stone-900">{d.title}</h3>
+                          <p className="text-xs text-stone-500 mt-0.5">{d.description}</p>
                         </div>
                       </div>
-                      <span className="text-amber-400 text-lg flex-shrink-0" style={{ transform: open ? "rotate(45deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>+</span>
+                      <span className="text-amber-700 text-lg flex-shrink-0" style={{ transform: open ? "rotate(45deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>+</span>
                     </button>
                     {open && (
                       <div className="px-5 pb-5">
                         <div className="grid sm:grid-cols-2 gap-3">
                           {d.data.map((m, i) => (
-                            <div key={m.title} className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                            <div key={m.title} className="rounded-xl p-4" style={{ background: "#F5F5F4", border: "1px solid rgba(28,25,23,0.08)" }}>
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-[10px] tracking-widest font-bold" style={{ color: d.color }}>{String(i + 1).padStart(2, "0")}</span>
-                                <h4 className="text-xs font-bold text-white">{m.title}</h4>
+                                <h4 className="text-xs font-bold text-stone-900">{m.title}</h4>
                               </div>
-                              {m.fruit && <p className="text-[10px] text-slate-500 mb-2">Fruit: {m.fruit}</p>}
-                              <p className="text-xs text-slate-400 leading-relaxed">{lang === "english" ? m.english : m.kiswahili}</p>
+                              {m.fruit && <p className="text-[10px] text-stone-500 mb-2">Fruit: {m.fruit}</p>}
+                              <p className="text-xs text-stone-600 leading-relaxed">{lang === "english" ? m.english : m.kiswahili}</p>
                             </div>
                           ))}
                         </div>

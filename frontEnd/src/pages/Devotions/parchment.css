@@ -6,22 +6,22 @@
    ══════════════════════════════════════════════════════════════ */
 
 .parchment {
-  /* ── Sacred Obsidian & Gold — obsidian, slate ink, amber gold ── */
-  --p-bg: #050810;
-  --p-paper: #0a0f1c;
-  --p-paper-2: #0d1424;
-  --p-wash: #0a0f1c;
-  --p-ink: #f1f5f9;
-  --p-muted: #94a3b8;
-  --p-faint: #64748b;
+  /* ── Light Parchment & Gold — warm ivory paper, brown ink, amber gold ── */
+  --p-bg: #faf8f5;
+  --p-paper: #ffffff;
+  --p-paper-2: #f5f2ec;
+  --p-wash: #faf8f5;
+  --p-ink: #292524;
+  --p-muted: #78716c;
+  --p-faint: #a8a29e;
   --p-gold: #d97706;
   --p-gold-deep: #b45309;
   --p-gold-soft: rgba(217, 119, 6, 0.1);
-  --p-gold-line: rgba(217, 119, 6, 0.35);
-  --p-rule: #1e2536;
-  --p-rule-strong: #2d3750;
-  --p-shadow: rgba(0, 0, 0, 0.55);
-  --p-overlay: rgba(5, 8, 16, 0.75);
+  --p-gold-line: rgba(217, 119, 6, 0.3);
+  --p-rule: #e7e5e4;
+  --p-rule-strong: #d6d3d1;
+  --p-shadow: rgba(0, 0, 0, 0.18);
+  --p-overlay: rgba(28, 25, 23, 0.55);
 
   --p-serif: "Cormorant Garamond", "Times New Roman", Georgia, serif;
   --p-body: "Lora", Georgia, serif;

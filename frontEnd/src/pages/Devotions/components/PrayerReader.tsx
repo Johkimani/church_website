@@ -103,8 +103,8 @@ function LitanyBody({ prayer }: { prayer: Prayer }) {
       {blocks.map((block, bi) => {
         if (block.type === 'heading') {
           return (
-            <div key={bi} className="pt-2 pb-1 border-b border-slate-800/50">
-              <h3 className="text-[11px] font-bold text-amber-400 uppercase tracking-widest">{block.text}</h3>
+            <div key={bi} className="pt-2 pb-1 border-b border-stone-200">
+              <h3 className="text-[11px] font-bold text-amber-700 uppercase tracking-widest">{block.text}</h3>
             </div>
           );
         }
@@ -115,13 +115,13 @@ function LitanyBody({ prayer }: { prayer: Prayer }) {
               {block.items.map((item, ii) => (
                 <div
                   key={ii}
-                  className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-slate-800/40 transition-colors group"
+                  className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-stone-100 transition-colors group"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400/40 group-hover:bg-amber-400 flex-shrink-0 transition-colors" />
-                  <span className="text-[13px] text-slate-200 font-medium leading-snug flex-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600/40 group-hover:bg-amber-600 flex-shrink-0 transition-colors" />
+                  <span className="text-[13px] text-stone-700 font-medium leading-snug flex-1">
                     {item.name}
                   </span>
-                  <span className="text-[13px] text-emerald-400 font-semibold italic whitespace-nowrap">
+                  <span className="text-[13px] text-emerald-700 font-semibold italic whitespace-nowrap">
                     {item.response}
                   </span>
                 </div>
@@ -132,8 +132,8 @@ function LitanyBody({ prayer }: { prayer: Prayer }) {
 
         if (block.type === 'closing') {
           return (
-            <div key={bi} className="bg-slate-800/40 rounded-xl px-5 py-4 border border-slate-800/50">
-              <p className="text-[13px] text-slate-300 leading-relaxed italic">{block.text}</p>
+            <div key={bi} className="bg-stone-50 rounded-xl px-5 py-4 border border-stone-200">
+              <p className="text-[13px] text-stone-600 leading-relaxed italic">{block.text}</p>
             </div>
           );
         }
@@ -152,7 +152,7 @@ function GenericBody({ prayer }: { prayer: Prayer }) {
       {prayer.text.split('\n').map((paragraph, i) => {
         if (!paragraph.trim()) return <div key={i} className="h-3" />;
         return (
-          <p key={i} className="text-sm text-slate-300 leading-relaxed">
+          <p key={i} className="text-sm text-stone-600 leading-relaxed">
             {paragraph}
           </p>
         );
@@ -170,8 +170,8 @@ export default function PrayerReader({ prayer, onClose }: PrayerReaderProps) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div
-        className="bg-[#0a0f1c] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-        style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.6)' }}
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        style={{ boxShadow: '0 25px 60px rgba(28,25,23,0.15)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -198,10 +198,10 @@ export default function PrayerReader({ prayer, onClose }: PrayerReaderProps) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-800/50 p-4 flex justify-center">
+        <div className="border-t border-stone-200 p-4 flex justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-sm font-semibold text-slate-300 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"
+            className="px-6 py-2.5 text-sm font-semibold text-stone-700 bg-stone-100 rounded-xl hover:bg-stone-200 transition-colors"
           >
             Close
           </button>

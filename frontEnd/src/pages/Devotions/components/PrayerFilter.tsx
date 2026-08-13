@@ -27,7 +27,7 @@ export default function PrayerFilter({
     <div className={`space-y-5 ${className}`}>
       {/* Search */}
       <div className="relative">
-        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -35,15 +35,15 @@ export default function PrayerFilter({
           placeholder="Search prayers, litanies, intentions..."
           value={filters.searchQuery}
           onChange={(e) => onFilterChange('searchQuery', e.target.value)}
-          className="w-full pl-11 pr-4 py-3 bg-[#0a0f1c] border border-slate-700 rounded-xl text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
-          style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+          className="w-full pl-11 pr-4 py-3 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+          style={{ boxShadow: '0 1px 3px rgba(28,25,23,0.06)' }}
         />
         {filters.searchQuery && (
           <button
             onClick={() => onFilterChange('searchQuery', '')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-700 rounded-full transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-stone-100 rounded-full transition-colors"
           >
-            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -56,8 +56,8 @@ export default function PrayerFilter({
           onClick={() => onFilterChange('selectedCategory', 'all')}
           className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
             filters.selectedCategory === 'all'
-              ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-900/30'
-              : 'bg-[#0a0f1c] text-slate-300 border-slate-700 hover:border-amber-500/50 hover:text-amber-400'
+              ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-600/20'
+              : 'bg-white text-stone-700 border-stone-200 hover:border-amber-500/50 hover:text-amber-700'
           }`}
         >
           All ({categoryCounts.all || 0})
@@ -68,8 +68,8 @@ export default function PrayerFilter({
             onClick={() => onFilterChange('selectedCategory', key)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
               filters.selectedCategory === key
-                ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-900/30'
-                : 'bg-[#0a0f1c] text-slate-300 border-slate-700 hover:border-amber-500/50 hover:text-amber-400'
+                ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-600/20'
+                : 'bg-white text-stone-700 border-stone-200 hover:border-amber-500/50 hover:text-amber-700'
             }`}
           >
             {cfg.label} ({categoryCounts[key] || 0})
@@ -82,7 +82,7 @@ export default function PrayerFilter({
         <select
           value={filters.selectedIntention || ''}
           onChange={(e) => onFilterChange('selectedIntention', e.target.value || undefined)}
-          className="w-full sm:w-auto px-4 py-2.5 bg-[#0a0f1c] border border-slate-700 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all"
+          className="w-full sm:w-auto px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500/40 transition-all"
         >
           <option value="">All Intentions</option>
           {intentions.map((int) => (
@@ -93,12 +93,12 @@ export default function PrayerFilter({
 
       {/* Active filters */}
       {filters.searchQuery || filters.selectedCategory !== 'all' || filters.selectedIntention ? (
-        <div className="flex items-center justify-between gap-3 bg-[#0a0f1c] border border-slate-800/50 rounded-xl px-4 py-2.5">
+        <div className="flex items-center justify-between gap-3 bg-white border border-stone-200 rounded-xl px-4 py-2.5">
           <div className="flex flex-wrap gap-2">
             {filters.searchQuery && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-full text-xs font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
                 "{filters.searchQuery}"
-                <button onClick={() => onFilterChange('searchQuery', '')} className="hover:text-amber-300">
+                <button onClick={() => onFilterChange('searchQuery', '')} className="hover:text-amber-600">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -106,9 +106,9 @@ export default function PrayerFilter({
               </span>
             )}
             {filters.selectedCategory !== 'all' && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-500/10 text-purple-300 rounded-full text-xs font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">
                 {categories[filters.selectedCategory as Prayer['category']]?.label}
-                <button onClick={() => onFilterChange('selectedCategory', 'all')} className="hover:text-purple-200">
+                <button onClick={() => onFilterChange('selectedCategory', 'all')} className="hover:text-purple-600">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -116,9 +116,9 @@ export default function PrayerFilter({
               </span>
             )}
             {filters.selectedIntention && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-full text-xs font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
                 {filters.selectedIntention}
-                <button onClick={() => onFilterChange('selectedIntention', undefined)} className="hover:text-amber-300">
+                <button onClick={() => onFilterChange('selectedIntention', undefined)} className="hover:text-amber-600">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -126,7 +126,7 @@ export default function PrayerFilter({
               </span>
             )}
           </div>
-          <button onClick={onClearFilters} className="text-xs font-medium text-amber-400 hover:text-amber-300 whitespace-nowrap">
+          <button onClick={onClearFilters} className="text-xs font-medium text-amber-700 hover:text-amber-600 whitespace-nowrap">
             Clear all
           </button>
         </div>

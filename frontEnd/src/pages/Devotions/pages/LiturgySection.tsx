@@ -458,8 +458,8 @@ export default function LiturgySection() {
       {/* ═══════════ TAB BAR ═══════════ */}
       <div style={{
         display: "flex", gap: 6, marginBottom: 28, flexWrap: "wrap",
-        background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: 5,
-        border: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(12px)",
+        background: "#FFFFFF", borderRadius: 14, padding: 5,
+        border: "1px solid rgba(28,25,23,0.08)", backdropFilter: "blur(12px)",
       }}>
         {TABS.map((tab) => {
           const isActive = activeTab === tab.key;
@@ -467,10 +467,10 @@ export default function LiturgySection() {
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
               padding: "10px 18px", borderRadius: 10, border: "none", cursor: "pointer",
               fontSize: 13, fontWeight: isActive ? 700 : 500, flex: "1 1 0", minWidth: 120,
-              background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
-              color: isActive ? "#FFFFFF" : "#94A3B8", transition: "all 0.25s",
+              background: isActive ? "#1C1917" : "transparent",
+              color: isActive ? "#FFFFFF" : "#78716C", transition: "all 0.25s",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              boxShadow: isActive ? "0 2px 12px rgba(255,255,255,0.06)" : "none",
+              boxShadow: isActive ? "0 2px 12px rgba(28,25,23,0.06)" : "none",
             }}>
               <span style={{ fontSize: 16 }}>{tab.icon}</span>
               <span>{tab.label}</span>
@@ -484,19 +484,19 @@ export default function LiturgySection() {
          <div>
            {/* Intro card */}
            <div style={{
-             background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+             background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)",
              borderRadius: 16, padding: "28px 32px", marginBottom: 24,
              backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
            }}>
-             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(139,92,246,0.06) 0%, transparent 50%)" }} />
+             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(124,58,237,0.07) 0%, transparent 50%)" }} />
              <div style={{ position: "relative", zIndex: 1 }}>
-               <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#FFFFFF", margin: 0, marginBottom: 8 }}>
+               <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1C1917", margin: 0, marginBottom: 8 }}>
                  Structure of the Holy Mass
                </h2>
-               <p style={{ fontSize: 14, color: "#94A3B8", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
+               <p style={{ fontSize: 14, color: "#57534E", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
                  The Mass is the source and summit of the Christian life (<em>Lumen Gentium</em>, 11).
-                 It is divided into two main parts: the <strong style={{ color: "#A78BFA" }}>Liturgy of the Word</strong> and the
-                 {" "}<strong style={{ color: "#FB7185" }}>Liturgy of the Eucharist</strong>, joined by the Introductory Rites
+                 It is divided into two main parts: the <strong style={{ color: "#7C3AED" }}>Liturgy of the Word</strong> and the
+                 {" "}<strong style={{ color: "#E11D48" }}>Liturgy of the Eucharist</strong>, joined by the Introductory Rites
                  and concluded by the Concluding Rites. Each part contains specific elements that have been celebrated
                  since the earliest centuries of the Church.
                </p>
@@ -512,26 +512,26 @@ export default function LiturgySection() {
               <div style={{
                 display: "flex", alignItems: "center", gap: 14, marginBottom: 14,
                 padding: "14px 20px", borderRadius: 14,
-                background: `linear-gradient(135deg, ${section.color}15 0%, ${section.color}08 100%)`,
+                background: `linear-gradient(135deg, ${section.color}10 0%, ${section.color}10 100%)`,
                 border: `1px solid ${section.color}25`,
               }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: 12,
                   background: `linear-gradient(135deg, ${section.color}, ${section.color}CC)`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: `0 4px 16px ${section.color}35`,
+                  boxShadow: `0 4px 16px rgba(28,25,23,0.06)`,
                   flexShrink: 0,
                 }}>
                   <span style={{ fontSize: 20, filter: "brightness(10)" }}>{section.icon}</span>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: 0 }}>{section.section}</h3>
-                  <p style={{ fontSize: 12, color: "#94A3B8", margin: "2px 0 0", fontStyle: "italic" }}>{section.latin}</p>
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: 0 }}>{section.section}</h3>
+                  <p style={{ fontSize: 12, color: "#78716C", margin: "2px 0 0", fontStyle: "italic" }}>{section.latin}</p>
                 </div>
               </div>
 
               {/* Purpose */}
-              <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 12px 58px", lineHeight: 1.7 }}>
+              <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 12px 58px", lineHeight: 1.7 }}>
                 {section.purpose}
               </p>
 
@@ -542,40 +542,40 @@ export default function LiturgySection() {
                   return (
                     <div key={part.name} style={{
                       borderRadius: 10, overflow: "hidden",
-                      background: isOpen ? "rgba(255,255,255,0.04)" : "transparent",
-                      border: isOpen ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent",
+                      background: isOpen ? "#FFFFFF" : "transparent",
+                      border: isOpen ? "1px solid rgba(28,25,23,0.08)" : "1px solid transparent",
                       transition: "all 0.2s",
                     }}>
                       <button onClick={() => togglePart(`${section.section}-${part.name}`)} style={{
                         display: "flex", alignItems: "center", width: "100%", padding: "12px 16px",
                         border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600,
                         textAlign: "left", gap: 12,
-                        background: isOpen ? "rgba(255,255,255,0.04)" : "transparent",
-                        color: isOpen ? "#FFFFFF" : "#CBD5E1",
+                        background: isOpen ? "#FFFFFF" : "transparent",
+                        color: isOpen ? "#1C1917" : "#57534E",
                         transition: "all 0.2s",
                       }}>
                         <span style={{
                           width: 28, height: 28, borderRadius: 8, flexShrink: 0,
                           display: "flex", alignItems: "center", justifyContent: "center",
                           fontSize: 10, fontWeight: 700, color: section.color,
-                          background: `${section.color}15`,
+                          background: `${section.color}10`,
                         }}>
                           {part.posture === "Stand" ? "\u2191" : part.posture === "Sit" ? "\u2193" : part.posture === "Kneel" ? "\u2197" : "\u271D"}
                         </span>
                         <div style={{ flex: 1 }}>
                           <span style={{ display: "block" }}>{part.name}</span>
-                          <span style={{ fontSize: 11, color: "#64748B", fontWeight: 400, fontStyle: "italic" }}>{part.latin}</span>
+                          <span style={{ fontSize: 11, color: "#78716C", fontWeight: 400, fontStyle: "italic" }}>{part.latin}</span>
                         </div>
                         <span style={{
                           padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600,
-                          background: "rgba(255,255,255,0.06)", color: "#94A3B8", flexShrink: 0,
+                          background: "#F5F5F4", color: "#78716C", flexShrink: 0,
                         }}>
                           {part.posture}
                         </span>
-                        <span style={{ fontSize: 12, color: "#475569", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0)" }}>&#9662;</span>
+                        <span style={{ fontSize: 12, color: "#78716C", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0)" }}>&#9662;</span>
                       </button>
                       {isOpen && (
-                        <div style={{ padding: "0 16px 14px 56px", fontSize: 13, color: "#CBD5E1", lineHeight: 1.8 }}>
+                        <div style={{ padding: "0 16px 14px 56px", fontSize: 13, color: "#57534E", lineHeight: 1.8 }}>
                           {part.desc}
                         </div>
                       )}
@@ -588,28 +588,28 @@ export default function LiturgySection() {
 
           {/* ═══════════ ORDINARY VS PROPER (Mass tab) ═══════════ */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 12px" }}>Ordinary vs. Proper of the Mass</h3>
-            <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Ordinary vs. Proper of the Mass</h3>
+            <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
               Every Mass contains both fixed and changing elements. Understanding this distinction helps the faithful participate more fully.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
-              <div style={{ padding: "18px 20px", borderRadius: 14, background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#38BDF8", marginBottom: 4 }}>{ORDINARY_VS_PROPER.ordinary.title}</div>
-                <div style={{ fontSize: 11, color: "#64748B", fontStyle: "italic", marginBottom: 8 }}>{ORDINARY_VS_PROPER.ordinary.latin}</div>
-                <p style={{ fontSize: 12, color: "#94A3B8", margin: "0 0 10px", lineHeight: 1.6 }}>{ORDINARY_VS_PROPER.ordinary.description}</p>
+              <div style={{ padding: "18px 20px", borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(2,132,199,0.30)" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#0284C7", marginBottom: 4 }}>{ORDINARY_VS_PROPER.ordinary.title}</div>
+                <div style={{ fontSize: 11, color: "#78716C", fontStyle: "italic", marginBottom: 8 }}>{ORDINARY_VS_PROPER.ordinary.latin}</div>
+                <p style={{ fontSize: 12, color: "#57534E", margin: "0 0 10px", lineHeight: 1.6 }}>{ORDINARY_VS_PROPER.ordinary.description}</p>
                 {ORDINARY_VS_PROPER.ordinary.parts.map((p) => (
-                  <div key={p} style={{ fontSize: 12, color: "#CBD5E1", padding: "3px 0", display: "flex", gap: 6 }}>
-                    <span style={{ color: "#38BDF8", flexShrink: 0 }}>&#8226;</span> {p}
+                  <div key={p} style={{ fontSize: 12, color: "#57534E", padding: "3px 0", display: "flex", gap: 6 }}>
+                    <span style={{ color: "#0284C7", flexShrink: 0 }}>&#8226;</span> {p}
                   </div>
                 ))}
               </div>
-              <div style={{ padding: "18px 20px", borderRadius: 14, background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#FBBF24", marginBottom: 4 }}>{ORDINARY_VS_PROPER.proper.title}</div>
-                <div style={{ fontSize: 11, color: "#64748B", fontStyle: "italic", marginBottom: 8 }}>{ORDINARY_VS_PROPER.proper.latin}</div>
-                <p style={{ fontSize: 12, color: "#94A3B8", margin: "0 0 10px", lineHeight: 1.6 }}>{ORDINARY_VS_PROPER.proper.description}</p>
+              <div style={{ padding: "18px 20px", borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(217,119,6,0.30)" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#D97706", marginBottom: 4 }}>{ORDINARY_VS_PROPER.proper.title}</div>
+                <div style={{ fontSize: 11, color: "#78716C", fontStyle: "italic", marginBottom: 8 }}>{ORDINARY_VS_PROPER.proper.latin}</div>
+                <p style={{ fontSize: 12, color: "#57534E", margin: "0 0 10px", lineHeight: 1.6 }}>{ORDINARY_VS_PROPER.proper.description}</p>
                 {ORDINARY_VS_PROPER.proper.parts.map((p) => (
-                  <div key={p} style={{ fontSize: 12, color: "#CBD5E1", padding: "3px 0", display: "flex", gap: 6 }}>
-                    <span style={{ color: "#FBBF24", flexShrink: 0 }}>&#8226;</span> {p}
+                  <div key={p} style={{ fontSize: 12, color: "#57534E", padding: "3px 0", display: "flex", gap: 6 }}>
+                    <span style={{ color: "#D97706", flexShrink: 0 }}>&#8226;</span> {p}
                   </div>
                 ))}
               </div>
@@ -618,19 +618,19 @@ export default function LiturgySection() {
 
           {/* ═══════════ RANKS OF CELEBRATIONS ═══════════ */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 12px" }}>Ranks of Liturgical Celebrations</h3>
-            <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Ranks of Liturgical Celebrations</h3>
+            <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
               The Church classifies celebrations by rank, which determines the prayers, readings, and solemnity of the liturgy.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
               {RANKS_OF_CELEBRATIONS.map((r) => (
-                <div key={r.rank} style={{ padding: "18px 20px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div key={r.rank} style={{ padding: "18px 20px", borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: "rgba(255,255,255,0.08)", color: "#FFFFFF" }}>{r.rank}</span>
-                    <span style={{ fontSize: 11, color: "#64748B", fontStyle: "italic" }}>{r.latin}</span>
+                    <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: "#F5F5F4", color: "#1C1917" }}>{r.rank}</span>
+                    <span style={{ fontSize: 11, color: "#78716C", fontStyle: "italic" }}>{r.latin}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "#94A3B8", margin: "0 0 8px", lineHeight: 1.6 }}>{r.description}</p>
-                  <p style={{ fontSize: 11, color: "#64748B", margin: 0 }}><strong style={{ color: "#94A3B8" }}>Examples:</strong> {r.examples}</p>
+                  <p style={{ fontSize: 12, color: "#57534E", margin: "0 0 8px", lineHeight: 1.6 }}>{r.description}</p>
+                  <p style={{ fontSize: 11, color: "#78716C", margin: 0 }}><strong style={{ color: "#57534E" }}>Examples:</strong> {r.examples}</p>
                 </div>
               ))}
             </div>
@@ -638,16 +638,16 @@ export default function LiturgySection() {
 
           {/* ═══════════ HOLY DAYS OF OBLIGATION ═══════════ */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 12px" }}>Holy Days of Obligation</h3>
-            <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.7 }}>
-              The faithful are <strong style={{ color: "#FFFFFF" }}>obliged</strong> to attend Mass on these days. There are 10 Holy Days of Obligation in the universal Church (though some are transferred to Sundays in certain countries).
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Holy Days of Obligation</h3>
+            <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
+              The faithful are <strong style={{ color: "#E11D48" }}>obliged</strong> to attend Mass on these days. There are 10 Holy Days of Obligation in the universal Church (though some are transferred to Sundays in certain countries).
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
               {HOLY_DAYS_OF_OBLIGATION.map((hd) => (
-                <div key={hd.name} style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#FB7185", marginBottom: 4 }}>{hd.date}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", marginBottom: 4 }}>{hd.name}</div>
-                  <p style={{ fontSize: 11, color: "#64748B", margin: 0, lineHeight: 1.5 }}>{hd.note}</p>
+                <div key={hd.name} style={{ padding: "14px 18px", borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#E11D48", marginBottom: 4 }}>{hd.date}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1C1917", marginBottom: 4 }}>{hd.name}</div>
+                  <p style={{ fontSize: 11, color: "#78716C", margin: 0, lineHeight: 1.5 }}>{hd.note}</p>
                 </div>
               ))}
             </div>
@@ -655,18 +655,18 @@ export default function LiturgySection() {
 
           {/* ═══════════ SEQUENCES ═══════════ */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 12px" }}>Sequences</h3>
-            <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Sequences</h3>
+            <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
               A Sequence is a hymn sung between the Gospel Acclamation (Alleluia) and the Gospel on certain major feasts. It is optional on most feasts but required on Easter, Pentecost, Corpus Christi, and (optionally) the Requiem Mass.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {SEQUENCES.map((sq) => (
-                <div key={sq.name} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div key={sq.name} style={{ padding: "16px 20px", borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>{sq.name}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,0.06)", color: "#94A3B8" }}>{sq.feast}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1C1917" }}>{sq.name}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "#F5F5F4", color: "#78716C" }}>{sq.feast}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "#94A3B8", margin: 0, lineHeight: 1.6 }}>{sq.note}</p>
+                  <p style={{ fontSize: 12, color: "#57534E", margin: 0, lineHeight: 1.6 }}>{sq.note}</p>
                 </div>
               ))}
             </div>
@@ -674,18 +674,18 @@ export default function LiturgySection() {
 
           {/* ═══════════ SPECIAL MASSES ═══════════ */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 12px" }}>Special Masses & Rites</h3>
-            <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Special Masses & Rites</h3>
+            <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
               The Church celebrates the Eucharist in various contexts beyond the daily and Sunday Mass, each with its own proper prayers and rites.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
               {SPECIAL_MASSES.map((sm) => (
-                <div key={sm.name} style={{ padding: "18px 20px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#FFFFFF", marginBottom: 6 }}>{sm.name}</div>
-                  <p style={{ fontSize: 12, color: "#94A3B8", margin: "0 0 10px", lineHeight: 1.6 }}>{sm.description}</p>
+                <div key={sm.name} style={{ padding: "18px 20px", borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1C1917", marginBottom: 6 }}>{sm.name}</div>
+                  <p style={{ fontSize: 12, color: "#57534E", margin: "0 0 10px", lineHeight: 1.6 }}>{sm.description}</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                     {sm.elements.map((e) => (
-                      <span key={e} style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 500, background: "rgba(255,255,255,0.05)", color: "#94A3B8" }}>{e}</span>
+                      <span key={e} style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 500, background: "#F5F5F4", color: "#57534E" }}>{e}</span>
                     ))}
                   </div>
                 </div>
@@ -700,19 +700,19 @@ export default function LiturgySection() {
         <div>
           {/* Intro card */}
           <div style={{
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+            background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)",
             borderRadius: 16, padding: "28px 32px", marginBottom: 24,
             backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
           }}>
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(22,163,74,0.06) 0%, transparent 50%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(5,150,105,0.07) 0%, transparent 50%)" }} />
             <div style={{ position: "relative", zIndex: 1 }}>
-              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#FFFFFF", margin: 0, marginBottom: 8 }}>
+              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1C1917", margin: 0, marginBottom: 8 }}>
                 The Liturgical Year
               </h2>
-              <p style={{ fontSize: 14, color: "#94A3B8", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
+              <p style={{ fontSize: 14, color: "#57534E", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
                 The liturgical year is the Church's way of living out the mystery of Christ throughout the year.
                 It begins on the <strong style={{ color: "#7C3AED" }}>First Sunday of Advent</strong> and flows through the great seasons
-                of preparation, celebration, and growth. Each season has its own <strong style={{ color: "#16A34A" }}>liturgical color</strong>,
+                of preparation, celebration, and growth. Each season has its own <strong style={{ color: "#059669" }}>liturgical color</strong>,
                 readings, and spiritual disciplines that help us enter more deeply into the saving events of our faith.
               </p>
             </div>
@@ -724,8 +724,8 @@ export default function LiturgySection() {
             return (
               <div key={season.name} style={{
                 marginBottom: 16, borderRadius: 16, overflow: "hidden",
-                background: isOpen ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
-                border: `1px solid ${isOpen ? season.color + "30" : "rgba(255,255,255,0.06)"}`,
+                background: "#FFFFFF",
+                border: `1px solid ${isOpen ? season.color + "30" : "rgba(28,25,23,0.08)"}`,
                 transition: "all 0.3s",
               }}>
                 <button onClick={() => toggleSeason(season.name)} style={{
@@ -737,7 +737,7 @@ export default function LiturgySection() {
                   <div style={{
                     width: 48, height: 48, borderRadius: 14, flexShrink: 0,
                     background: season.color, border: `2px solid ${season.color}60`,
-                    boxShadow: `0 4px 16px ${season.color}30`,
+                    boxShadow: `0 4px 16px rgba(28,25,23,0.06)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     <span style={{ fontSize: 10, fontWeight: 800, color: season.color === "#FFFFFF" || season.color === "#D4AF37" ? "#1a1040" : "#FFFFFF" }}>
@@ -745,51 +745,53 @@ export default function LiturgySection() {
                     </span>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF" }}>{season.name}</div>
-                    <div style={{ fontSize: 12, color: "#94A3B8", fontStyle: "italic" }}>{season.latin} &middot; {season.dates}</div>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917" }}>{season.name}</div>
+                    <div style={{ fontSize: 12, color: "#78716C", fontStyle: "italic" }}>{season.latin} &middot; {season.dates}</div>
                   </div>
                   <span style={{
                     padding: "4px 12px", borderRadius: 8, fontSize: 10, fontWeight: 600,
-                    background: `${season.color}18`, color: season.color === "#FFFFFF" ? "#E2E8F0" : season.color,
-                    border: `1px solid ${season.color}30`, flexShrink: 0,
+                    background: season.color === "#FFFFFF" ? "#F5F5F4" : `${season.color}10`,
+                    color: season.color === "#FFFFFF" ? "#1C1917" : season.color,
+                    border: season.color === "#FFFFFF" ? "1px solid rgba(28,25,23,0.12)" : `1px solid ${season.color}25`,
+                    flexShrink: 0,
                   }}>
                     {season.colorName}
                   </span>
-                  <span style={{ fontSize: 14, color: "#475569", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0)" }}>&#9662;</span>
+                  <span style={{ fontSize: 14, color: "#78716C", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0)" }}>&#9662;</span>
                 </button>
 
                 {isOpen && (
                   <div style={{ padding: "0 24px 24px 88px" }}>
-                    <p style={{ fontSize: 14, color: "#CBD5E1", lineHeight: 1.8, margin: "0 0 16px" }}>{season.meaning}</p>
+                    <p style={{ fontSize: 14, color: "#57534E", lineHeight: 1.8, margin: "0 0 16px" }}>{season.meaning}</p>
 
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 16 }}>
-                      <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#64748B", marginBottom: 8 }}>Symbols</div>
+                      <div style={{ padding: "14px 18px", borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#78716C", marginBottom: 8 }}>Symbols</div>
                         {season.symbols.map((s, i) => (
-                          <div key={i} style={{ fontSize: 12, color: "#94A3B8", padding: "3px 0", display: "flex", gap: 6 }}>
+                          <div key={i} style={{ fontSize: 12, color: "#57534E", padding: "3px 0", display: "flex", gap: 6 }}>
                             <span style={{ color: season.color, flexShrink: 0 }}>&#8226;</span> {s}
                           </div>
                         ))}
                       </div>
-                      <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#64748B", marginBottom: 8 }}>Typical Readings</div>
-                        <p style={{ fontSize: 12, color: "#94A3B8", margin: 0, lineHeight: 1.7 }}>{season.readings}</p>
+                      <div style={{ padding: "14px 18px", borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#78716C", marginBottom: 8 }}>Typical Readings</div>
+                        <p style={{ fontSize: 12, color: "#57534E", margin: 0, lineHeight: 1.7 }}>{season.readings}</p>
                       </div>
                     </div>
 
-                    <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 16 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#64748B", marginBottom: 8 }}>Spiritual Disciplines</div>
-                      <p style={{ fontSize: 12, color: "#94A3B8", margin: 0, lineHeight: 1.7 }}>{season.disciplines}</p>
+                    <div style={{ padding: "14px 18px", borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)", marginBottom: 16 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#78716C", marginBottom: 8 }}>Spiritual Disciplines</div>
+                      <p style={{ fontSize: 12, color: "#57534E", margin: 0, lineHeight: 1.7 }}>{season.disciplines}</p>
                     </div>
 
                     {season.specialDays.length > 0 && (
-                      <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#64748B", marginBottom: 10 }}>Key Feasts & Celebrations</div>
+                      <div style={{ padding: "14px 18px", borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#78716C", marginBottom: 10 }}>Key Feasts & Celebrations</div>
                         {season.specialDays.map((sd, i) => (
-                          <div key={i} style={{ display: "flex", gap: 12, padding: "8px 0", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                          <div key={i} style={{ display: "flex", gap: 12, padding: "8px 0", borderTop: i > 0 ? "1px solid rgba(28,25,23,0.06)" : "none" }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#E2E8F0" }}>{sd.day}</div>
-                              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2, lineHeight: 1.6 }}>{sd.note}</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#1C1917" }}>{sd.day}</div>
+                              <div style={{ fontSize: 12, color: "#57534E", marginTop: 2, lineHeight: 1.6 }}>{sd.note}</div>
                             </div>
                           </div>
                         ))}
@@ -803,24 +805,24 @@ export default function LiturgySection() {
 
           {/* Reading cycle */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 16px" }}>The Three-Year Reading Cycle</h3>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 16px" }}>The Three-Year Reading Cycle</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
               {READING_CYCLE.map((cycle) => (
                 <div key={cycle.year} style={{
                   padding: "20px 24px", borderRadius: 14,
-                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+                  background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)",
                   backdropFilter: "blur(8px)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                     <span style={{
                       padding: "4px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-                      background: cycle.year === "Year A" ? "#3B82F620" : cycle.year === "Year B" ? "#F59E0B20" : "#8B5CF620",
-                      color: cycle.year === "Year A" ? "#60A5FA" : cycle.year === "Year B" ? "#FBBF24" : "#A78BFA",
+                      background: cycle.year === "Year A" ? "#3B82F610" : cycle.year === "Year B" ? "#F59E0B10" : "#8B5CF610",
+                      color: cycle.year === "Year A" ? "#2563EB" : cycle.year === "Year B" ? "#D97706" : "#7C3AED",
                     }}>{cycle.year}</span>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: "#FFFFFF" }}>{cycle.gospel}</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "#1C1917" }}>{cycle.gospel}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "#94A3B8", margin: "0 0 8px", lineHeight: 1.6 }}>{cycle.description}</p>
-                  <p style={{ fontSize: 11, color: "#64748B", margin: 0 }}>{cycle.yearRange}</p>
+                  <p style={{ fontSize: 12, color: "#57534E", margin: "0 0 8px", lineHeight: 1.6 }}>{cycle.description}</p>
+                  <p style={{ fontSize: 11, color: "#78716C", margin: 0 }}>{cycle.yearRange}</p>
                 </div>
               ))}
             </div>
@@ -828,23 +830,23 @@ export default function LiturgySection() {
 
           {/* Liturgical colors */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 16px" }}>Liturgical Colors</h3>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 16px" }}>Liturgical Colors</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
               {LITURGICAL_COLORS.map((lc) => (
                 <div key={lc.name} style={{
                   padding: "16px 18px", borderRadius: 12,
-                  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+                  background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                     <div style={{
                       width: 28, height: 28, borderRadius: 7, flexShrink: 0,
                       background: lc.hex, border: `2px solid ${lc.hex}50`,
-                      boxShadow: `0 2px 8px ${lc.hex}25`,
+                      boxShadow: `0 2px 8px rgba(28,25,23,0.06)`,
                     }} />
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "#FFFFFF" }}>{lc.name}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#1C1917" }}>{lc.name}</span>
                   </div>
-                  <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 6px", lineHeight: 1.5 }}>{lc.meaning}</p>
-                  <p style={{ fontSize: 10, color: "#64748B", margin: 0, lineHeight: 1.4 }}>{lc.occasions}</p>
+                  <p style={{ fontSize: 11, color: "#57534E", margin: "0 0 6px", lineHeight: 1.5 }}>{lc.meaning}</p>
+                  <p style={{ fontSize: 10, color: "#78716C", margin: 0, lineHeight: 1.4 }}>{lc.occasions}</p>
                 </div>
               ))}
             </div>
@@ -852,19 +854,19 @@ export default function LiturgySection() {
 
           {/* ═══════════ O ANTIPHONS ═══════════ */}
           <div style={{ marginTop: 32 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 12px" }}>The Great O Antiphons</h3>
-            <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 16px", lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>The Great O Antiphons</h3>
+            <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
               The O Antiphons are seven ancient Marian antiphons sung at Evening Prayer (Vespers) during the last week before Christmas (December 17\u201323). Each begins with "O" and invokes Christ using an Old Testament title from Isaiah. They are the "jewels" of the Roman Liturgy. The acrostic of the first letters in Latin reads: <strong style={{ color: "#7C3AED" }}>ERO CRAS</strong> (\u201CI will be [here] tomorrow\u2013\u2013the coming of Christ).
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {O_ANTIPHONS.map((o) => (
-                <div key={o.date} style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)" }}>
+                <div key={o.date} style={{ padding: "14px 18px", borderRadius: 12, background: "#FFFFFF", border: "1px solid rgba(124,58,237,0.30)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "#7C3AED" }}>{o.date}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>{o.antiphon}</span>
-                    <span style={{ fontSize: 11, color: "#94A3B8", fontStyle: "italic" }}>({o.english})</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1C1917" }}>{o.antiphon}</span>
+                    <span style={{ fontSize: 11, color: "#78716C", fontStyle: "italic" }}>({o.english})</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "#CBD5E1", margin: 0, lineHeight: 1.7, fontStyle: "italic" }}>&ldquo;{o.text}&rdquo;</p>
+                  <p style={{ fontSize: 12, color: "#57534E", margin: 0, lineHeight: 1.7, fontStyle: "italic" }}>&ldquo;{o.text}&rdquo;</p>
                 </div>
               ))}
             </div>
@@ -876,16 +878,16 @@ export default function LiturgySection() {
       {activeTab === "objects" && (
         <div>
           <div style={{
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+            background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)",
             borderRadius: 16, padding: "28px 32px", marginBottom: 24,
             backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
           }}>
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(212,175,55,0.06) 0%, transparent 50%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(212,175,55,0.10) 0%, transparent 50%)" }} />
             <div style={{ position: "relative", zIndex: 1 }}>
-              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#FFFFFF", margin: 0, marginBottom: 8 }}>
+              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1C1917", margin: 0, marginBottom: 8 }}>
                 Sacred Objects & Vestments
               </h2>
-              <p style={{ fontSize: 14, color: "#94A3B8", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
+              <p style={{ fontSize: 14, color: "#57534E", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
                 The Church uses sacred objects and vestments to express the dignity and beauty of the liturgy.
                 Each object has a specific purpose and deep theological meaning rooted in Scripture and Tradition.
               </p>
@@ -895,7 +897,7 @@ export default function LiturgySection() {
           {MASS_OBJECTS.map((cat) => (
             <div key={cat.category} style={{ marginBottom: 24 }}>
               <h3 style={{
-                fontSize: "1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 12px",
+                fontSize: "1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px",
                 display: "flex", alignItems: "center", gap: 10,
               }}>
                 <span style={{
@@ -910,13 +912,13 @@ export default function LiturgySection() {
                   return (
                     <div key={item.name} onClick={() => toggleObject(`${cat.category}-${item.name}`)} style={{
                       padding: "16px 18px", borderRadius: 12, cursor: "pointer",
-                      background: isOpen ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${isOpen ? "rgba(212,175,55,0.3)" : "rgba(255,255,255,0.06)"}`,
+                      background: "#FFFFFF",
+                      border: `1px solid ${isOpen ? "rgba(212,175,55,0.35)" : "rgba(28,25,23,0.08)"}`,
                       transition: "all 0.2s",
                     }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "#F1F5F9", marginBottom: isOpen ? 8 : 0 }}>{item.name}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#1C1917", marginBottom: isOpen ? 8 : 0 }}>{item.name}</div>
                       {isOpen && (
-                        <p style={{ fontSize: 12, color: "#94A3B8", margin: 0, lineHeight: 1.7 }}>{item.desc}</p>
+                        <p style={{ fontSize: 12, color: "#57534E", margin: 0, lineHeight: 1.7 }}>{item.desc}</p>
                       )}
                     </div>
                   );
@@ -931,20 +933,20 @@ export default function LiturgySection() {
       {activeTab === "hours" && (
         <div>
           <div style={{
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+            background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)",
             borderRadius: 16, padding: "28px 32px", marginBottom: 24,
             backdropFilter: "blur(12px)", position: "relative", overflow: "hidden",
           }}>
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(6,182,212,0.06) 0%, transparent 50%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(8,145,178,0.07) 0%, transparent 50%)" }} />
             <div style={{ position: "relative", zIndex: 1 }}>
-              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#FFFFFF", margin: 0, marginBottom: 8 }}>
+              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1C1917", margin: 0, marginBottom: 8 }}>
                 Liturgy of the Hours
               </h2>
-              <p style={{ fontSize: 14, color: "#94A3B8", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
-                Also known as the <strong style={{ color: "#22D3EE" }}>Divine Office</strong> or <strong style={{ color: "#22D3EE" }}>Breviary</strong>,
+              <p style={{ fontSize: 14, color: "#57534E", margin: 0, lineHeight: 1.7, maxWidth: 800 }}>
+                Also known as the <strong style={{ color: "#0891B2" }}>Divine Office</strong> or <strong style={{ color: "#0891B2" }}>Breviary</strong>,
                 the Liturgy of the Hours is the daily prayer of the universal Church. It sanctifies the hours of the day
                 with praise, psalms, Scripture readings, and prayers. Priests, deacons, and religious are bound to pray it;
-                the faithful are warmly encouraged to do so. It is based primarily on the <strong style={{ color: "#22D3EE" }}>Psalms</strong>
+                the faithful are warmly encouraged to do so. It is based primarily on the <strong style={{ color: "#0891B2" }}>Psalms</strong>
                 and incorporates other biblical canticles, hymns, readings, and prayers.
               </p>
             </div>
@@ -953,28 +955,28 @@ export default function LiturgySection() {
           {LITURGY_OF_HOURS.map((hour) => (
             <div key={hour.name} style={{
               padding: "20px 24px", borderRadius: 14, marginBottom: 12,
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+              background: "#FFFFFF", border: "1px solid rgba(28,25,23,0.08)",
               backdropFilter: "blur(8px)",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                 <span style={{
                   width: 10, height: 10, borderRadius: 999, flexShrink: 0,
-                  background: hour.name.includes("Morning") ? "#F59E0B" :
-                              hour.name.includes("Evening") ? "#8B5CF6" :
-                              hour.name.includes("Night") ? "#64748B" :
-                              hour.name.includes("Office") ? "#3B82F6" : "#22D3EE",
+                  background: hour.name.includes("Morning") ? "#D97706" :
+                              hour.name.includes("Evening") ? "#7C3AED" :
+                              hour.name.includes("Night") ? "#78716C" :
+                              hour.name.includes("Office") ? "#2563EB" : "#0891B2",
                 }} />
                 <div>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#FFFFFF" }}>{hour.name}</span>
-                  <span style={{ fontSize: 12, color: "#64748B", marginLeft: 10, fontStyle: "italic" }}>{hour.latin}</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#1C1917" }}>{hour.name}</span>
+                  <span style={{ fontSize: 12, color: "#78716C", marginLeft: 10, fontStyle: "italic" }}>{hour.latin}</span>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 16, marginBottom: 8, flexWrap: "wrap" }}>
-                <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(34,211,238,0.1)", color: "#22D3EE" }}>
+                <span style={{ padding: "3px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(8,145,178,0.10)", color: "#0891B2" }}>
                   {hour.time}
                 </span>
               </div>
-              <p style={{ fontSize: 13, color: "#94A3B8", margin: 0, lineHeight: 1.7 }}>{hour.description}</p>
+              <p style={{ fontSize: 13, color: "#57534E", margin: 0, lineHeight: 1.7 }}>{hour.description}</p>
             </div>
           ))}
         </div>

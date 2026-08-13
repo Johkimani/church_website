@@ -2,9 +2,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useState, useEffect } from "react";
 
-const OVERLAY = "linear-gradient(to top, rgba(9, 13, 22, 0.93), rgba(9, 13, 22, 0.5))";
-const BG_IMAGE = "https://images.unsplash.com/photo-1593112038458-246525299766?q=85&w=1920&auto=format&fit=crop";
-const HERO_IMAGE = "https://images.unsplash.com/photo-1531262329242-15f87ca63bfa?q=85&w=1600&auto=format&fit=crop";
+const OVERLAY = "linear-gradient(to top, rgba(28, 25, 23, 0.85), rgba(28, 25, 23, 0.35))";
+const HERO_IMAGE = "/images/eucharist.jpg";
 
 const QUOTES = [
   { text: "The Lord is my shepherd; I shall not want.", ref: "Psalm 23:1" },
@@ -21,7 +20,7 @@ const CARDS = [
     title: "Daily Missal",
     description: "The Liturgy of the Word and Gospel for today's celebration.",
     cta: "Open Readings",
-    image: "https://images.unsplash.com/photo-1491566102020-21838225c3c8?q=85&w=1200&auto=format&fit=crop",
+    image: "/images/biblestudy.webp",
     icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15z",
   },
   {
@@ -30,7 +29,7 @@ const CARDS = [
     title: "Catholic Prayers",
     description: "Essential prayers of the Catholic tradition, from the Our Father to the Memorare.",
     cta: "Browse Prayers",
-    image: "https://images.unsplash.com/photo-1475938476802-32a7e851dad1?q=85&w=1200&auto=format&fit=crop",
+    image: "/images/rosary-praying-avatar.png",
     icon: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
   },
   {
@@ -39,7 +38,7 @@ const CARDS = [
     title: "Novenas & Litanies",
     description: "Nine-day devotions and litanies of petition, praise, and intercession.",
     cta: "Begin Novena",
-    image: "https://images.unsplash.com/photo-1569845177077-2a37322a60c7?q=85&w=1200&auto=format&fit=crop",
+    image: "/images/rosary_prayers.jpg",
     icon: "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
   },
   {
@@ -48,7 +47,7 @@ const CARDS = [
     title: "Holy Bible",
     description: "Read and reflect on the Word of God with daily inspiration.",
     cta: "Open Bible",
-    image: "https://images.unsplash.com/photo-1499652848871-1527a310b13a?q=85&w=1200&auto=format&fit=crop",
+    image: "/images/read-you-bible.png",
     icon: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
   },
   {
@@ -57,7 +56,7 @@ const CARDS = [
     title: "My Progress",
     description: "Track your prayers, rosaries, and devotion journey in one place.",
     cta: "View Progress",
-    image: "https://images.unsplash.com/photo-1612799403932-29fdf8686a56?q=85&w=1200&auto=format&fit=crop",
+    image: "/images/christ.jpg",
     icon: "M22 7l-8.5 8.5-5-5L2 17M16 7h6v6",
   },
 ];
@@ -160,10 +159,7 @@ export default function Dashboard() {
     <div
       className="ml-auto w-[85%] sm:w-full sm:max-w-5xl sm:mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 min-h-screen"
       style={{
-        backgroundImage: `linear-gradient(rgba(9, 13, 22, 0.88), rgba(9, 13, 22, 0.88)), url(${BG_IMAGE})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
+        background: "linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%)",
       }}
     >
       {/* ═══════════════ HERO — TODAY'S READINGS ═══════════════ */}
@@ -239,13 +235,12 @@ export default function Dashboard() {
           <Link
             key={s.label}
             to={s.to}
-            className="group rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5"
+            className="group rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 bg-white"
             style={{
-              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01))",
-              border: "1px solid rgba(255, 255, 255, 0.07)",
+              border: "1px solid rgba(28, 25, 23, 0.08)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,0.35)"; e.currentTarget.style.borderColor = `${s.accent}55`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,0.12)"; e.currentTarget.style.borderColor = `${s.accent}66`; }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(28,25,23,0.08)"; }}
           >
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -256,8 +251,8 @@ export default function Dashboard() {
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase mb-1">{s.label}</p>
-              <p className="text-sm font-bold text-white truncate">{s.value}</p>
+              <p className="text-[10px] text-stone-500 font-bold tracking-[0.2em] uppercase mb-1">{s.label}</p>
+              <p className="text-sm font-bold text-stone-900 truncate">{s.value}</p>
             </div>
           </Link>
         ))}
@@ -268,11 +263,11 @@ export default function Dashboard() {
         <div className="w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
         <h2
           className="text-[13px] font-bold tracking-[0.25em] uppercase"
-          style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", color: "#D1D5DB" }}
+          style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", color: "#57534E" }}
         >
           Continue Your Journey
         </h2>
-        <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.06), transparent)" }} />
+        <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
       </div>
 
       {/* ═══════════════ 5 CARD GRID ═══════════════ */}
@@ -325,10 +320,9 @@ export default function Dashboard() {
 
       {/* ═══════════════ ROSARY RITUAL CARD ═══════════════ */}
       <div
-        className="rounded-3xl p-6 sm:p-7 relative overflow-hidden"
+        className="rounded-3xl p-6 sm:p-7 relative overflow-hidden bg-white"
         style={{
-          background: "linear-gradient(135deg, rgba(217, 119, 6, 0.12), rgba(9, 13, 22, 0.4))",
-          border: "1px solid rgba(217, 119, 6, 0.18)",
+          border: "1px solid rgba(217, 119, 6, 0.25)",
         }}
       >
         <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
@@ -339,9 +333,8 @@ export default function Dashboard() {
             <div
               className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
               style={{
-                background: "linear-gradient(135deg, rgba(217, 119, 6, 0.3), rgba(217, 119, 6, 0.12))",
-                color: "#FBBF24",
-                boxShadow: "0 0 28px rgba(217, 119, 6, 0.25)",
+                background: "linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(217, 119, 6, 0.1))",
+                color: "#B45309",
               }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -350,11 +343,11 @@ export default function Dashboard() {
               </svg>
             </div>
             <div>
-              <p className="text-[10px] text-amber-500/70 font-bold tracking-[0.25em] uppercase mb-1">Today's Rosary</p>
-              <p className="text-lg font-bold text-white" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+              <p className="text-[10px] text-amber-700/70 font-bold tracking-[0.25em] uppercase mb-1">Today's Rosary</p>
+              <p className="text-lg font-bold text-stone-900" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
                 {mystery} Mysteries
               </p>
-              <p className="text-xs text-slate-400 mt-0.5">{liturgy.message}</p>
+              <p className="text-xs text-stone-500 mt-0.5">{liturgy.message}</p>
             </div>
           </div>
           <Link

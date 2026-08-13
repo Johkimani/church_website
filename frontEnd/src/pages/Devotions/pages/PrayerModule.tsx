@@ -11,11 +11,11 @@ import NovenaTracker from '../components/NovenaTracker';
 import NovenaCalendar from '../components/NovenaCalendar';
 
 const CATEGORIES = {
-  novenas: { label: 'Novenas', icon: '9', color: 'bg-purple-500/10 text-purple-300' },
-  litanies: { label: 'Litanies', icon: 'L', color: 'bg-blue-500/10 text-blue-300' },
-  saints: { label: 'Saints', icon: 'S', color: 'bg-amber-500/10 text-amber-400' },
-  healing: { label: 'Healing', icon: '+', color: 'bg-emerald-500/10 text-emerald-400' },
-  daily: { label: 'Daily', icon: '/', color: 'bg-amber-500/10 text-amber-400' },
+  novenas: { label: 'Novenas', icon: '9', color: 'bg-purple-500/10 text-purple-600' },
+  litanies: { label: 'Litanies', icon: 'L', color: 'bg-blue-500/10 text-blue-600' },
+  saints: { label: 'Saints', icon: 'S', color: 'bg-amber-500/10 text-amber-700' },
+  healing: { label: 'Healing', icon: '+', color: 'bg-emerald-500/10 text-emerald-600' },
+  daily: { label: 'Daily', icon: '/', color: 'bg-amber-500/10 text-amber-700' },
 };
 
 type TabKey = 'prayers' | 'calendar';
@@ -120,12 +120,12 @@ export default function PrayerModule() {
         {/* ═══════════════ HEADER ═══════════════ */}
         <div className="mb-8">
           <h1
-            className="text-3xl sm:text-4xl font-bold text-white tracking-tight"
+            className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight"
             style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif" }}
           >
             Novenas &amp; Litanies
           </h1>
-          <p className="text-sm text-slate-400 mt-2 font-medium">
+          <p className="text-sm text-stone-500 mt-2 font-medium">
             Catholic prayers, devotions, and spiritual practices
           </p>
         </div>
@@ -134,8 +134,8 @@ export default function PrayerModule() {
         <div
           className="inline-flex rounded-xl p-1 mb-8 w-fit"
           style={{
-            background: "rgba(15, 23, 42, 0.6)",
-            border: "1px solid rgba(71, 85, 105, 0.4)",
+            background: "#FFFFFF",
+            border: "1px solid #E7E5E4",
           }}
         >
           {([
@@ -151,10 +151,10 @@ export default function PrayerModule() {
                   ? {
                       background: "linear-gradient(135deg, #D97706, #B45309)",
                       color: "#FFFFFF",
-                      boxShadow: "0 2px 8px rgba(217, 119, 6, 0.3), 0 1px 2px rgba(0,0,0,0.1)",
+                      boxShadow: "0 2px 8px rgba(217, 119, 6, 0.12)",
                     }
                   : {
-                      color: "#64748B",
+                      color: "#78716C",
                       background: "transparent",
                     }
               }
@@ -221,7 +221,7 @@ export default function PrayerModule() {
                       onClick={() => {
                         updateFilter('selectedCategory', 'litanies');
                       }}
-                      className="bg-white/15 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-white/25 transition-colors border border-white/20"
+                      className="bg-stone-100 text-stone-700 px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-stone-200 transition-colors border border-stone-200"
                     >
                       Browse Litanies
                     </button>
