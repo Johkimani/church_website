@@ -216,7 +216,7 @@
     position: fixed;
     bottom: var(--space-2xl);
     right: var(--space-2xl);
-    z-index: 1000;
+    z-index: 10000;
 }
 
 .notif-fab {
@@ -284,7 +284,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    z-index: 1000;
+    z-index: 10010;
     border: 1px solid var(--border-light);
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -426,7 +426,11 @@
     .notif-fab-container {
         bottom: 18px !important;
         right: 18px !important;
-        z-index: 12;
+        z-index: 10000;
+    }
+
+    .notif-panel-floating {
+        z-index: 10020;
     }
 }
 
