@@ -9,6 +9,7 @@ import {
   fetchTable,
   publishStats,
   fetchManageQuestions,
+  fetchQuestionTopics,
   updateQuestionApi,
   deleteQuestionApi,
   setQuestionStatusApi,
@@ -358,11 +359,19 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
   const [loading, setLoading] = useState(true);
   const [editingQuestion, setEditingQuestion] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
+  const [topics, setTopics] = useState<Array<{ topic: string; count: number }>>([]);
+  const [activeTopic, setActiveTopic] = useState("all");
+  const PAGE_SIZE = 10;
 
   const loadQuestions = async () => {
     setLoading(true);
     try {
-      const res = await fetchManageQuestions({ page, limit: 10, search });
+      const res = await fetchManageQuestions({
+        page,
+        limit: PAGE_SIZE,
+        search,
+        topic: activeTopic === "all" ? undefined : activeTopic,
+      });
       setQuestions(res.data?.questions || []);
       setTotal(res.data?.total || 0);
     } catch (err) {
@@ -372,9 +381,22 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
     }
   };
 
+  const loadTopics = async () => {
+    try {
+      const res = await fetchQuestionTopics();
+      setTopics(res.data?.topics || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     loadQuestions();
-  }, [page, search, refreshTrigger]);
+  }, [page, search, refreshTrigger, activeTopic]);
+
+  useEffect(() => {
+    loadTopics();
+  }, [refreshTrigger]);
 
   const handleDelete = async (id: number | string) => {
     if (!window.confirm("Are you sure you want to delete this question?")) return;
@@ -418,13 +440,20 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
         <div>
           <h3 className="font-bold text-stone-800 text-base">Question Bank Manager</h3>
-          <p className="text-xs text-stone-500">Manage and refine AI-generated questions in the database ({total} total questions)</p>
+          <p className="text-xs text-stone-500">
+            {activeTopic === "all"
+              ? `Manage and refine AI-generated questions in the database (${total} total questions)`
+              : `Showing "${activeTopic}" questions (${total} total)`}
+          </p>
         </div>
         <div className="relative w-full sm:w-64">
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Search questions..."
             className="w-full pl-9 pr-3 py-2 text-xs border border-stone-200 rounded-xl bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
           />
@@ -432,10 +461,57 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
         </div>
       </div>
 
+      {/* Group by generation title */}
+      <div className="mb-4">
+        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2">
+          Grouped by Title
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => {
+              setActiveTopic("all");
+              setPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              activeTopic === "all"
+                ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                : "bg-white text-stone-600 border-stone-200 hover:border-amber-400"
+            }`}
+          >
+            All Questions
+          </button>
+          {topics.map((t) => (
+            <button
+              key={t.topic}
+              onClick={() => {
+                setActiveTopic(t.topic);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                activeTopic === t.topic
+                  ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                  : "bg-white text-stone-600 border-stone-200 hover:border-amber-400"
+              }`}
+            >
+              {t.topic}
+              <span
+                className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                  activeTopic === t.topic ? "bg-white/20" : "bg-amber-50 text-amber-700"
+                }`}
+              >
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
         <div className="py-12 text-center text-xs text-stone-400">Loading Question Bank...</div>
       ) : questions.length === 0 ? (
-        <div className="py-12 text-center text-xs text-stone-400">No questions found matching search criteria.</div>
+        <div className="py-12 text-center text-xs text-stone-400">
+          No questions found {activeTopic !== "all" ? `for "${activeTopic}" ` : ""}matching search criteria.
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -520,6 +596,30 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {!loading && total > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100">
+          <span className="text-[10px] text-stone-400 font-semibold">
+            Page {page} of {Math.ceil(total / PAGE_SIZE) || 1}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= Math.ceil(total / PAGE_SIZE)}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 

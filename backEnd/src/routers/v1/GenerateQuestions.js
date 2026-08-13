@@ -4,6 +4,7 @@ import { GenerateQuestion } from "../../controllers/questionGenerator.js/Generat
 import {
   getDailyQuestions,
   getManageQuestions,
+  getQuestionTopics,
   updateQuestionController,
   deleteQuestionController,
   setQuestionStatusController,
@@ -16,6 +17,7 @@ const route = Router();
 // Liturgist-only admin routes (already behind verifyToken via the mount)
 route.post("/", requireRole("liturgist"), GenerateQuestion);
 route.get("/manage", requireRole("liturgist"), getManageQuestions);
+route.get("/topics", requireRole("liturgist"), getQuestionTopics);
 route.put("/:id", requireRole("liturgist"), updateQuestionController);
 route.put("/:id/status", requireRole("liturgist"), setQuestionStatusController);
 route.delete("/:id", requireRole("liturgist"), deleteQuestionController);

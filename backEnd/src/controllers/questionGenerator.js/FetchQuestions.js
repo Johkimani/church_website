@@ -16,17 +16,30 @@ export const getDailyQuestions = async (req, res) => {
   }
 };
 
-// GET /questions/manage?page=1&limit=20&search=... (Admin)
+// GET /questions/manage?page=1&limit=20&search=...&topic=... (Admin)
 export const getManageQuestions = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const search = req.query.search || "";
-    const result = await Question.getAllQuestions(page, limit, search);
+    const topic = req.query.topic || "";
+    const result = await Question.getAllQuestions(page, limit, search, topic);
     return res.json(result);
   } catch (err) {
     console.error("Error managing questions:", err);
     return res.status(500).json({ message: "Failed to fetch question bank" });
+  }
+};
+
+// GET /questions/topics (Liturgist) — group question-bank rows by the
+// generation topic/title so each title's questions can be reviewed together.
+export const getQuestionTopics = async (req, res) => {
+  try {
+    const topics = await Question.getTopics();
+    return res.json({ topics });
+  } catch (err) {
+    console.error("Error fetching question topics:", err);
+    return res.status(500).json({ message: "Failed to fetch question topics" });
   }
 };
 

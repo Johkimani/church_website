@@ -98,16 +98,42 @@ const Question = {
     };
   },
 
-  getAllQuestions: async (page = 1, limit = 20, search = "") => {
+  getTopics: async () => {
+    const { rows } = await db.query(
+      `SELECT topic,
+              COUNT(*) AS question_count,
+              MAX(created_at) AS last_generated
+       FROM questions
+       WHERE topic IS NOT NULL AND topic <> ''
+       GROUP BY topic
+       ORDER BY last_generated DESC NULLS LAST, topic ASC`
+    );
+    return rows.map((r) => ({
+      topic: r.topic,
+      count: parseInt(r.question_count, 10),
+      lastGenerated: r.last_generated,
+    }));
+  },
+
+  getAllQuestions: async (page = 1, limit = 20, search = "", topic = "") => {
     const offset = (page - 1) * limit;
     let query = `SELECT id, question_text, answers, correct_answer, status, topic, created_at FROM questions`;
     let countQuery = `SELECT COUNT(*) FROM questions`;
     const params = [];
+    const conditions = [];
 
+    if (topic && topic.trim()) {
+      conditions.push(`topic = $${params.length + 1}`);
+      params.push(topic.trim());
+    }
     if (search && search.trim()) {
-      query += ` WHERE question_text ILIKE $1`;
-      countQuery += ` WHERE question_text ILIKE $1`;
+      conditions.push(`question_text ILIKE $${params.length + 1}`);
       params.push(`%${search.trim()}%`);
+    }
+    if (conditions.length > 0) {
+      const where = ` WHERE ${conditions.join(" AND ")}`;
+      query += where;
+      countQuery += where;
     }
 
     query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;

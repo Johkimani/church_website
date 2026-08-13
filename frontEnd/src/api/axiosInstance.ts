@@ -131,8 +131,10 @@ export const generateAndSaveQuestions = (data: { topic: string }) =>
 export const fetchDailyQuestions = (limit: number = 10) =>
   apiClient.get(`/questions/?limit=${limit}`);
 
-export const fetchManageQuestions = (params?: { page?: number; limit?: number; search?: string }) =>
+export const fetchManageQuestions = (params?: { page?: number; limit?: number; search?: string; topic?: string }) =>
   apiClient.get("/questions/manage", { params });
+
+export const fetchQuestionTopics = () => apiClient.get("/questions/topics");
 
 export const updateQuestionApi = (id: string | number, payload: any) =>
   apiClient.put(`/questions/${id}`, payload);
