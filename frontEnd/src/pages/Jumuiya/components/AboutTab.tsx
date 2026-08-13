@@ -6,9 +6,10 @@ import "./TabsSystem.css";
 interface AboutTabProps {
   jumuiya: JumuiyaData;
   onNavigateBack: () => void;
+  onQuickLink?: (tab: 'officials' | 'activities' | 'channels' | 'tshirts') => void;
 }
 
-const AboutTab: React.FC<AboutTabProps> = ({ jumuiya }) => {
+const AboutTab: React.FC<AboutTabProps> = ({ jumuiya, onQuickLink }) => {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
@@ -169,15 +170,17 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya }) => {
             </h4>
             <div className="about-links-grid">
               {[
-                { label: "View Officials", icon: "👥" },
-                { label: "See Activities", icon: "📅" },
-                { label: "Join Community", icon: "🤝" },
-                { label: "Order T-Shirt", icon: "👕" },
+                { label: "View Officials", icon: "👥", tab: 'officials' as const },
+                { label: "See Activities", icon: "📅", tab: 'activities' as const },
+                { label: "Join Community", icon: "🤝", tab: 'channels' as const },
+                { label: "Order T-Shirt", icon: "👕", tab: 'tshirts' as const },
               ].map((link) => (
                 <button
                   key={link.label}
+                  type="button"
                   className="about-quick-link"
                   style={{ "--hover-color": jumuiya.color } as React.CSSProperties}
+                  onClick={() => onQuickLink?.(link.tab)}
                 >
                   <span>{link.icon}</span>
                   <span>{link.label}</span>

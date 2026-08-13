@@ -16,7 +16,7 @@ const Question = {
           generatedBy,
         ],
       );
-      inserted.push({ id: rows[0].id, ...q });
+      inserted.push({ id: rows[0].id, status: "draft", ...q });
     }
     return inserted;
   },

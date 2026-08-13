@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from './context/DataContext';
 import AboutTab from './components/AboutTab';
 import OfficialsTab from './components/OfficialsTab';
@@ -24,6 +24,7 @@ type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' |
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState<TabType>('about');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { getJumuiyaById } = useData();
@@ -35,6 +36,40 @@ const JumuiyaDetail: React.FC = () => {
     const jumuiyaId = id ? id.toLowerCase().replace(/[^a-z0-9]/g, '-') : '';
     const jumuiya = getJumuiyaById(jumuiyaId);
     const isMemberOfThisJumuiya = !!(user?.jumuiya_id && jumuiya?.group_id && user.jumuiya_id === jumuiya.group_id);
+
+    const setTabWithUrl = (tab: TabType) => {
+        setActiveTab(tab);
+
+        const params = new URLSearchParams(location.search);
+        params.set('tab', tab);
+
+        navigate({
+            pathname: location.pathname,
+            search: params.toString() ? `?${params.toString()}` : '',
+        }, { replace: false });
+    };
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tabFromUrl = params.get('tab') as TabType | null;
+        const validTab = tabFromUrl && [
+            'about',
+            'officials',
+            'registration',
+            'channels',
+            'members',
+            'activities',
+            'tshirts',
+            'allocations',
+            'admin',
+            'settings',
+            'stampcard'
+        ].includes(tabFromUrl);
+
+        if (validTab) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [location.search]);
 
     // Fetch dynamic officials from backend
     const { officials: dynamicOfficials } = useJumuiyaOfficials({ category: jumuiya?.name });
@@ -151,7 +186,11 @@ const JumuiyaDetail: React.FC = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'about':
-                return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/jumuiya')} />;
+                return <AboutTab
+                    jumuiya={jumuiya}
+                    onNavigateBack={() => navigate('/jumuiya')}
+                    onQuickLink={(tab) => setTabWithUrl(tab)}
+                />;
             case 'officials':
                 return <OfficialsTab
                     officials={displayedOfficials}
@@ -230,7 +269,7 @@ const JumuiyaDetail: React.FC = () => {
                             key={tab.id}
                             className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
                             onClick={() => {
-                                setActiveTab(tab.id);
+                                setTabWithUrl(tab.id);
                                 setIsSidebarOpen(false);
                             }}
                             style={activeTab === tab.id ? {

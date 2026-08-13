@@ -102,6 +102,7 @@ export const GenerateQuestion = async (req, res) => {
       return res.status(201).json({
         message: "Questions generated and saved successfully",
         count: insertedDocs.length,
+        questions: insertedDocs,
       });
     } catch (err) {
       console.error("Insert error:", err.message);

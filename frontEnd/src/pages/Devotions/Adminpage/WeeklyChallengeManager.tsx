@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   FaCheckCircle, FaPlay, FaEye, FaUpload, FaSave, FaSearch,
 } from "react-icons/fa";
-import { CalendarDays, Trophy, Activity } from "lucide-react";
+import { CalendarDays, Trophy, Activity, Sparkles } from "lucide-react";
 import {
   listWeeklyChallenges,
   createWeeklyChallenge,
@@ -12,6 +12,8 @@ import {
   publishWeeklyChallengeApi,
   reviewWeeklyChallengeApi,
   fetchManageQuestions,
+  generateAndSaveQuestions,
+  setQuestionStatusApi,
 } from "../../../api/axiosInstance";
 
 const JUMUIYA_META: Record<string, { name: string; color: string }> = {
@@ -70,6 +72,10 @@ export default function WeeklyChallengeManager() {
     questionIds: [] as number[],
     questionSearch: "",
   });
+
+  // Inline AI generation state
+  const [generating, setGenerating] = useState(false);
+  const [generatedBatch, setGeneratedBatch] = useState<any[]>([]);
 
   const loadChallenges = useCallback(async () => {
     setLoading(true);
@@ -134,12 +140,66 @@ export default function WeeklyChallengeManager() {
         questionIds: form.questionIds,
       });
       setForm((f) => ({ ...f, topic: "", questionIds: [] }));
+      setGeneratedBatch([]);
       await loadChallenges();
       setSubview("list");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to create challenge");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    setError("");
+    if (!form.topic.trim()) {
+      setError("Enter a topic first — it is used as both the challenge topic and the AI generation prompt.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await generateAndSaveQuestions({ topic: form.topic.trim() });
+      const qs = Array.isArray(res.data?.questions)
+        ? res.data.questions.map((q: any) => ({
+            ...q,
+            _id: q._id ?? q.id,
+            status: q.status || "draft",
+          }))
+        : [];
+      if (qs.length === 0) {
+        setError("The AI returned no questions for this topic. Try again.");
+      }
+      setGeneratedBatch((prev) => {
+        const seen = new Set(prev.map((q: any) => q._id));
+        return [...prev, ...qs.filter((q: any) => !seen.has(q._id))];
+      });
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.response?.data?.message || "Failed to generate questions");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleBatchStatus = async (q: any, status: "approved" | "rejected") => {
+    setError("");
+    const id: number = q._id;
+    try {
+      await setQuestionStatusApi(id, status);
+      setGeneratedBatch((prev) =>
+        prev.map((x) => (x._id === id ? { ...x, status } : x))
+      );
+      setForm((f) => ({
+        ...f,
+        questionIds:
+          status === "approved"
+            ? f.questionIds.includes(id)
+              ? f.questionIds
+              : [...f.questionIds, id]
+            : f.questionIds.filter((x) => x !== id),
+      }));
+      if (status === "approved") await loadApprovedQuestions();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.response?.data?.message || "Failed to update question status");
     }
   };
 
@@ -226,7 +286,9 @@ export default function WeeklyChallengeManager() {
   const QuestionPicker = ({ value, onChange }: { value: number[]; onChange: (id: number) => void }) => (
     <div className="border border-stone-200 rounded-xl bg-stone-50 p-3 space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-bold text-stone-600">Select Approved Questions ({value.length} selected)</span>
+        <span className="text-xs font-bold text-stone-600">
+          Or pick from previously approved questions ({value.length} selected)
+        </span>
         <div className="relative flex-1 max-w-xs">
           <input
             type="text"

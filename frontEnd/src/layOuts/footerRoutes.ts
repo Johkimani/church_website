@@ -25,7 +25,7 @@ export const footerSections: FooterSection[] = [
     routes: [
       { label: "Officials", path: "/officials" },
       { label: "Leadership History", path: "/officials/history" },
-      { label: "Jumuiya Hub", path: "/jumuiya" },
+      { label: "Jumuiya", path: "/jumuiya" },
     ],
   },
   {
@@ -35,14 +35,14 @@ export const footerSections: FooterSection[] = [
       { label: "Daily Readings", path: "/devotions/readings" },
       { label: "Prayer Room", path: "/devotions/prayer" },
       { label: "Rosary Tracker", path: "/devotions/rosary" },
-      { label: "Faith Challenge", path: "/devotions/challenge" },
+      { label: "Daily Challenge", path: "/devotions/challenge" },
     ],
   },
   {
     title: "Community",
     hoverColor: "hover:text-green-600",
     routes: [
-      { label: "Community Hub", path: "/community" },
+      { label: "Community", path: "/community" },
       { label: "Latest Updates", path: "/Notification" },
       { label: "Member Portal", path: "/login" },
     ],
