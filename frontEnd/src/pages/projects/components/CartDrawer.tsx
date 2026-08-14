@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CartItem } from '../data';
-import { X, Trash2, ShoppingBag, ShieldCheck, Plus, Minus, DollarSign, MapPin, Truck, CreditCard, Wallet, Package, User, Phone, MessageCircle } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ShieldCheck, Plus, Minus, MapPin, Truck, CreditCard, Wallet, Package, User, Phone, MessageCircle, Mail } from 'lucide-react';
 
 interface CartDrawerProps {
     isOpen: boolean;
@@ -13,6 +13,8 @@ interface CartDrawerProps {
     setCustomerName: (val: string) => void;
     customerPhone: string;
     setCustomerPhone: (val: string) => void;
+    customerEmail: string;
+    setCustomerEmail: (val: string) => void;
     deliveryAddress: string;
     setDeliveryAddress: (val: string) => void;
     collectionMethod: "pickup" | "delivery";
@@ -28,6 +30,7 @@ interface CartDrawerProps {
 export const CartDrawer: React.FC<CartDrawerProps> = ({
     isOpen, onClose, cart, cartTotal, removeFromCart, updateCartQuantity,
     customerName, setCustomerName, customerPhone, setCustomerPhone,
+    customerEmail, setCustomerEmail,
     deliveryAddress, setDeliveryAddress,
     collectionMethod, setCollectionMethod,
     proceedToCheckout, proceedWithCash,
@@ -179,6 +182,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                         <Phone size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input type="tel" className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                             placeholder="0712 345 678" value={customerPhone} onChange={(e) => handlePhoneChange(e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email (optional, for receipt)</label>
+                                    <div className="relative">
+                                        <Mail size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input type="email" className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            placeholder="you@example.com" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
                                     </div>
                                 </div>
                             </div>

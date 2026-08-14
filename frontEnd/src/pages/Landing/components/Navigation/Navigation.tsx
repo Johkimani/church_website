@@ -41,10 +41,15 @@ const navLinks = [
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 px-4 py-3 flex justify-between items-center">
         {/* Logo Section */}
         <div
-          className="text-2xl font-bold text-blue-700 tracking-tight cursor-pointer"
+          className="flex items-center gap-2.5 text-2xl font-bold text-blue-700 tracking-tight cursor-pointer"
           onClick={() => navigate("/")}
         >
-          CSA Kirinyaga
+          <img
+            src="/images/csa-logo.jpg"
+            alt="CSA Kirinyaga logo"
+            className="w-9 h-9 rounded-lg object-cover"
+          />
+          <span>CSA Kirinyaga</span>
         </div>
 
         {/* Desktop Navigation Links */}

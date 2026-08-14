@@ -1,6 +1,7 @@
 import { MpesaService } from "../services/mpesa.js";
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { sendOrderPaymentConfirmation } from "../services/notificationService.js";
 
 /**
  * SEND STK PUSH
@@ -81,11 +82,25 @@ export const mpesaCallback = async (req, res) => {
         [CheckoutRequestID, MerchantRequestID, String(phoneNumber), amount, ResultCode, ResultDesc, mpesaReceipt]
       );
 
-      await db.query(
+      const orderUpdate = await db.query(
         `UPDATE orders SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP
-          WHERE checkout_id = $2 AND status = 'pending'`,
+          WHERE checkout_id = $2 AND status = 'pending'
+          RETURNING *`,
         [mpesaReceipt, CheckoutRequestID]
       );
+
+      // ── Payment confirmation notification (fire-and-forget, never throws) ──
+      if (orderUpdate.rows.length > 0) {
+        try {
+          await sendOrderPaymentConfirmation({
+            order: orderUpdate.rows[0],
+            mpesaReceipt,
+          });
+          logger.info(`Order confirmation sent for checkout ${CheckoutRequestID}`);
+        } catch (notifErr) {
+          logger.error(`Failed to send order confirmation: ${notifErr.message}`);
+        }
+      }
 
       // ── Activity booking payments (lipa mdogo mdogo) ──
       const payResult = await db.query(

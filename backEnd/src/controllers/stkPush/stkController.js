@@ -1,6 +1,9 @@
 import { db } from "../../Configs/dbConfig.js";
 import logger from "../../logger/winston.js";
-import { sendSms } from "../../services/smsService.js";
+import {
+  sendOrderPaymentConfirmation,
+  sendHirePaymentConfirmation,
+} from "../../services/notificationService.js";
 
 /**
  * SAFARICOM STK PUSH CALLBACK
@@ -64,10 +67,11 @@ export const handleCallback = async (req, res) => {
       );
 
       // 2. Update orders that were waiting on this checkout_id
-      await db.query(
+      const orderUpdate = await db.query(
         `UPDATE orders
             SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP
-          WHERE checkout_id = $2 AND status = 'pending'`,
+          WHERE checkout_id = $2 AND status = 'pending'
+          RETURNING *`,
         [mpesaReceipt, CheckoutRequestID],
       );
 
@@ -77,7 +81,7 @@ export const handleCallback = async (req, res) => {
             SET status = 'paid', payment_status = 'paid', payment_method = 'mpesa',
                 mpesa_receipt = $1, paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
           WHERE mpesa_checkout_id = $2 AND payment_status = 'pending'
-          RETURNING hire_reference, customer_name, phone_number, item_name, quantity`,
+          RETURNING hire_reference, customer_name, phone_number, email, item_name, quantity, total_cost`,
         [mpesaReceipt, CheckoutRequestID],
       );
 
@@ -103,7 +107,7 @@ export const handleCallback = async (req, res) => {
         }
       }
 
-      // 5. Send SMS confirmation for hire requests
+      // 5. Send payment confirmation notifications (fire-and-forget, never throws)
       if (hireUpdate.rows.length > 0) {
         const hire = hireUpdate.rows[0];
         try {
@@ -117,12 +121,26 @@ export const handleCallback = async (req, res) => {
           const pickupLocation = settings.hire_pickup_location || 'the church premises';
           const pickupInstructions = settings.hire_pickup_instructions || 'We will contact you with the exact pickup time. Call the admin for any inquiries.';
 
-          const message = `Payment of KES confirmed for ${hire.item_name} × ${hire.quantity} (Ref: ${hire.hire_reference}). Pickup location: ${pickupLocation}. ${pickupInstructions} Admin contact: ${adminPhone}`;
-
-          await sendSms(message, hire.phone_number);
-          logger.info(`SMS confirmation sent to ${hire.phone_number} for hire ${hire.hire_reference}`);
+          await sendHirePaymentConfirmation({
+            hire,
+            mpesaReceipt,
+            pickupLocation,
+            pickupInstructions,
+            adminPhone,
+          });
+          logger.info(`Hire confirmation sent to ${hire.phone_number} for hire ${hire.hire_reference}`);
         } catch (smsErr) {
-          logger.error(`Failed to send hire confirmation SMS: ${smsErr.message}`);
+          logger.error(`Failed to send hire confirmation: ${smsErr.message}`);
+        }
+      }
+
+      if (orderUpdate.rows.length > 0) {
+        const order = orderUpdate.rows[0];
+        try {
+          await sendOrderPaymentConfirmation({ order, mpesaReceipt });
+          logger.info(`Order confirmation sent for order ${order.order_reference || order.id}`);
+        } catch (notifErr) {
+          logger.error(`Failed to send order confirmation: ${notifErr.message}`);
         }
       }
 

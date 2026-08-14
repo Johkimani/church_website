@@ -42,6 +42,8 @@ interface AppContextType {
     setCustomerName: (name: string) => void;
     customerPhone: string;
     setCustomerPhone: (phone: string) => void;
+    customerEmail: string;
+    setCustomerEmail: (email: string) => void;
     deliveryAddress: string;
     setDeliveryAddress: (address: string) => void;
     collectionMethod: "pickup" | "delivery";
@@ -100,6 +102,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
 
     const [deliveryAddress, setDeliveryAddress] = useState('');
     const [collectionMethod, setCollectionMethod] = useState<"pickup" | "delivery">("pickup");
@@ -292,12 +295,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // If backend already confirmed payment during its polling window
             if (response.result?.status === 'paid') {
                 showToast("Payment successful! Order confirmed.", 'success');
+                localStorage.setItem('csa_receipt_phone', phone);
+                localStorage.removeItem('csa_receipts_seen');
                 setCart([]);
                 setIsCartOpen(false);
                 setCustomerName('');
                 setCustomerPhone('');
+                setCustomerEmail('');
                 setDeliveryAddress('');
-                navigate(`/order-confirmation?order_id=${checkoutId}&method=mpesa`);
+                navigate(`/order-confirmation?order_id=${checkoutId}&cid=${checkoutId}&method=mpesa&phone=${encodeURIComponent(phone)}`);
                 return;
             }
 
@@ -307,6 +313,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     amount: cartTotal,
                     phone,
                     customer_name: customerName.trim(),
+                    customer_email: customerEmail.trim() || null,
                     payment_method: 'mpesa',
                     collection_method: collectionMethod,
                     delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
@@ -333,12 +340,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         setPaymentPending(false);
                         showToast("Payment successful! Order confirmed.", 'success');
                         const orderId = statusRes.order_id || statusRes.orderId || checkoutId;
+                        localStorage.setItem('csa_receipt_phone', phone);
+                        localStorage.removeItem('csa_receipts_seen');
                         setCart([]);
                         setIsCartOpen(false);
                         setCustomerName('');
                         setCustomerPhone('');
+                        setCustomerEmail('');
                         setDeliveryAddress('');
-                        navigate(`/order-confirmation?order_id=${orderId}&method=mpesa`);
+                        navigate(`/order-confirmation?order_id=${orderId}&cid=${checkoutId}&method=mpesa&phone=${encodeURIComponent(phone)}`);
                     } else if (statusRes.status === 'failed') {
                         clearInterval(pollInterval);
                         showToast(`Payment failed: ${statusRes.result_desc || 'Cancelled'}`, 'error');
@@ -370,13 +380,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setPaymentPending(false);
                 setPendingCheckoutId(null);
                 setPendingPhone('');
+                localStorage.setItem('csa_receipt_phone', pendingPhone);
+                localStorage.removeItem('csa_receipts_seen');
                 setCart([]);
                 setIsCartOpen(false);
                 setCustomerName('');
                 setCustomerPhone('');
+                setCustomerEmail('');
                 setDeliveryAddress('');
                 showToast("Payment confirmed! Order placed successfully.", 'success');
-                navigate(`/order-confirmation?order_id=${receipt}&method=mpesa`);
+                navigate(`/order-confirmation?order_id=${receipt}&cid=${pendingCheckoutId}&method=mpesa&phone=${encodeURIComponent(pendingPhone)}`);
             } else {
                 showToast("Could not confirm payment. Check the receipt number and try again.", 'error');
             }
@@ -406,6 +419,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 amount: cartTotal,
                 phone,
                 customer_name: customerName.trim(),
+                customer_email: customerEmail.trim() || null,
                 payment_method: 'cash',
                 collection_method: collectionMethod,
                 delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
@@ -415,10 +429,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             const orderRef = order?.order_reference || order?.id;
             const cashPhone = settings.cash_phone || '254112051739';
+            localStorage.setItem('csa_receipt_phone', phone);
             setCart([]);
             setIsCartOpen(false);
             setCustomerName('');
             setCustomerPhone('');
+            setCustomerEmail('');
             setDeliveryAddress('');
             setCollectionMethod('pickup');
             navigate(`/order-confirmation?order_id=${orderRef}&method=cash&phone=${encodeURIComponent(cashPhone)}`);
@@ -435,6 +451,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartTotal, cartItemsCount,
             isCartOpen, setIsCartOpen,
             customerName, setCustomerName, customerPhone, setCustomerPhone,
+            customerEmail, setCustomerEmail,
             deliveryAddress, setDeliveryAddress,
             collectionMethod, setCollectionMethod,
             proceedToCheckout, proceedWithCash,

@@ -1,36 +1,58 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2, Package, Home, ShoppingBag, Clock, MapPin, Truck, MessageCircle, Phone } from "lucide-react";
+import { CheckCircle2, Home, ShoppingBag, Clock, MapPin, MessageCircle, Phone, FileText } from "lucide-react";
+import { apiClient } from "../api/axiosInstance";
 import RatingModal from "./projects/components/RatingModal";
+
+interface ReceiptItem { name: string; quantity: number; price: number; }
+interface ReceiptData {
+    pickup: { order: { location: string; instructions: string; admin_phone: string } };
+    orders: Array<{
+        order_reference: string;
+        amount: number;
+        mpesa_receipt: string | null;
+        items: ReceiptItem[];
+        collection_method: string | null;
+        delivery_address: string | null;
+    }>;
+}
 
 export default function OrderConfirmation() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [method, setMethod] = useState<"mpesa" | "cash">("mpesa");
-  const [contactPhone, setContactPhone] = useState("");
+  const orderIdParam = searchParams.get("order_id");
+  const mParam = searchParams.get("method");
+  const phoneParam = searchParams.get("phone");
+  const [orderId] = useState(orderIdParam);
+  const [method] = useState<"mpesa" | "cash">(mParam === "cash" ? "cash" : "mpesa");
+  const [contactPhone, setContactPhone] = useState(phoneParam || "");
   const [showRating, setShowRating] = useState(false);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   useEffect(() => {
-    const id = searchParams.get("order_id");
-    const m = searchParams.get("method");
-    const phone = searchParams.get("phone");
-    if (id) setOrderId(id);
-    if (m === "cash") setMethod("cash");
-    if (phone) { setContactPhone(phone); return; }
-    if (m === "cash") {
-      import("../api/axiosInstance").then(({ apiClient }) => {
-        apiClient.get('/settings').then(res => {
-          if (res.data?.cash_phone) setContactPhone(res.data.cash_phone);
-        }).catch(() => {});
-      });
+    if (method === "cash" && !contactPhone) {
+      apiClient.get('/settings').then(res => {
+        if (res.data?.cash_phone) setContactPhone(res.data.cash_phone);
+      }).catch(() => {});
     }
     // Show rating modal after a short delay
     const timer = setTimeout(() => setShowRating(true), 1500);
     return () => clearTimeout(timer);
+  }, [method, contactPhone]);
+
+  // Fetch the full paid receipt (items + amount + pickup details)
+  useEffect(() => {
+    const m = searchParams.get("method");
+    if (m === "cash") return;
+    const cid = searchParams.get("cid") || searchParams.get("order_id");
+    if (!cid) return;
+    apiClient.get(`/purchase-receipts?checkout_id=${encodeURIComponent(cid)}`)
+      .then(res => { if (res.data?.orders?.length) setReceipt(res.data); })
+      .catch(() => {});
   }, [searchParams]);
 
   const isMpesa = method === "mpesa";
+  const order = receipt?.orders?.[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 flex items-center justify-center px-4 py-12">
@@ -52,7 +74,34 @@ export default function OrderConfirmation() {
             {orderId && (
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Order Number</p>
-                <p className="text-2xl font-black text-slate-800 font-mono">{orderId}</p>
+                <p className="text-2xl font-black text-slate-800 font-mono">{order?.order_reference || orderId}</p>
+              </div>
+            )}
+
+            {order && (
+              <div className="bg-white rounded-2xl border-2 border-emerald-200 overflow-hidden text-left">
+                <div className="bg-emerald-50 px-4 py-3 flex items-center gap-2 border-b border-emerald-100">
+                  <FileText size={16} className="text-emerald-600" />
+                  <p className="text-sm font-black text-emerald-800">Your Payment Receipt</p>
+                </div>
+                <div className="p-4 space-y-2">
+                  {order.items.map((item, i) => (
+                    <div key={i} className="flex justify-between text-sm">
+                      <span className="text-slate-600">{item.quantity} × {item.name}</span>
+                      <span className="font-semibold text-slate-800">KES {(item.quantity * item.price).toLocaleString()}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t border-slate-200">
+                    <span className="font-black text-slate-700">Total Paid</span>
+                    <span className="font-black text-lg text-emerald-600">KES {Number(order.amount).toLocaleString()}</span>
+                  </div>
+                  {order.mpesa_receipt && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-slate-400 font-semibold">M-Pesa receipt</span>
+                      <span className="text-xs font-mono font-bold text-slate-600">{order.mpesa_receipt}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -68,11 +117,18 @@ export default function OrderConfirmation() {
               )}
             </div>
 
-            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 text-left">
               <p className="text-sm text-blue-800 font-semibold flex items-center gap-2">
-                <MapPin size={16} /> Pick up at CSA Church Bookshop — KYU Campus
+                <MapPin size={16} /> {receipt?.pickup?.order?.location || "Pick up at CSA Church Bookshop — KYU Campus"}
               </p>
-              <p className="text-xs text-blue-600 mt-1">Monday — Saturday, 8:00 AM – 5:00 PM</p>
+              <p className="text-xs text-blue-600 mt-1">
+                {receipt?.pickup?.order?.instructions || "Monday — Saturday, 8:00 AM – 5:00 PM"}
+              </p>
+              {receipt?.pickup?.order?.admin_phone && (
+                <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                  <Phone size={11} /> {receipt.pickup.order.admin_phone}
+                </p>
+              )}
             </div>
 
             {!isMpesa && contactPhone && (
@@ -90,6 +146,16 @@ export default function OrderConfirmation() {
                   <p className="text-xs text-emerald-600">{contactPhone}</p>
                 </div>
               </a>
+            )}
+
+            {isMpesa && (
+              <div className="bg-slate-900 text-white rounded-2xl px-4 py-3 flex items-start gap-2 text-left">
+                <FileText size={15} className="mt-0.5 shrink-0 text-amber-400" />
+                <p className="text-xs">
+                  Show this receipt screen to the admin when collecting your items.
+                  Your order number confirms your payment.
+                </p>
+              </div>
             )}
 
             <div className="space-y-2">

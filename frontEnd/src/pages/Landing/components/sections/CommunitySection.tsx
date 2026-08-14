@@ -1,9 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Grid, Activity, Layers, Users, ArrowRight } from 'lucide-react';
+import { apiClient } from '../../../../api/axiosInstance';
+
+const EXPLORE_SETTING_KEYS: Record<string, string> = {
+  jumuiya: 'explore_jumuiya_image',
+  activities: 'explore_activities_image',
+  projects: 'explore_projects_image',
+  officials: 'explore_officials_image',
+  background: 'explore_background_image',
+};
 
 const CommunitySection: React.FC = () => {
   const navigate = useNavigate();
+  const [images, setImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let active = true;
+    apiClient
+      .get('/settings')
+      .then(({ data }) => {
+        if (!active) return;
+        const next: Record<string, string> = {};
+        Object.entries(EXPLORE_SETTING_KEYS).forEach(([field, key]) => {
+          if (data?.[key]) next[field] = data[key];
+        });
+        setImages(next);
+      })
+      .catch(() => {
+        // keep defaults when settings are unavailable
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const categories = [
     {
@@ -13,7 +43,7 @@ const CommunitySection: React.FC = () => {
       icon: <Grid size={22} />,
       accent: '#2563eb',
       link: '/jumuiya',
-      image: '/images/biblestudy.webp',
+      image: images.jumuiya || '/images/biblestudy.webp',
     },
     {
       title: 'Activities',
@@ -22,7 +52,7 @@ const CommunitySection: React.FC = () => {
       icon: <Activity size={22} />,
       accent: '#059669',
       link: '/activities',
-      image: '/images/eucharist.jpg',
+      image: images.activities || '/images/eucharist.jpg',
     },
     {
       title: 'Projects',
@@ -31,7 +61,7 @@ const CommunitySection: React.FC = () => {
       icon: <Layers size={22} />,
       accent: '#d97706',
       link: '/projects',
-      image: '/images/church.jpg',
+      image: images.projects || '/images/church.jpg',
     },
     {
       title: 'Officials',
@@ -40,7 +70,7 @@ const CommunitySection: React.FC = () => {
       icon: <Users size={22} />,
       accent: '#7c3aed',
       link: '/officials',
-      image: '/images/st-thomas-icon.jpg',
+      image: images.officials || '/images/st-thomas-icon.jpg',
     },
   ];
 
@@ -48,7 +78,7 @@ const CommunitySection: React.FC = () => {
     <section className="py-20 md:py-28 bg-stone-900 relative overflow-hidden" id="explore">
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/christ.jpg')" }}
+        style={{ backgroundImage: `url('${images.background || '/images/christ.jpg'}')` }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-stone-900/85 via-stone-900/70 to-stone-900/85" />
       <div className="container mx-auto px-6 relative z-10">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../../../api/axiosInstance';
 import { UPLOAD_BASE } from '../../../api/config';
 import { jumuiyaList } from '../../Jumuiya/data/jumuiyaData';
@@ -31,6 +31,22 @@ interface Props {
   jumuiyaInfo?: { name: string; slug?: string; color?: string; saintImage?: string };
 }
 
+const EXPLORE_FIELDS = [
+  { key: 'explore_jumuiya_image', label: 'Jumuiya', hint: 'Fellowship card' },
+  { key: 'explore_activities_image', label: 'Activities', hint: 'Engagement card' },
+  { key: 'explore_projects_image', label: 'Projects', hint: 'Growth card' },
+  { key: 'explore_officials_image', label: 'Officials', hint: 'Leadership card' },
+  { key: 'explore_background_image', label: 'Section Background', hint: 'Full-width backdrop' },
+];
+
+const EXPLORE_DEFAULTS: Record<string, string> = {
+  explore_jumuiya_image: '/images/biblestudy.webp',
+  explore_activities_image: '/images/eucharist.jpg',
+  explore_projects_image: '/images/church.jpg',
+  explore_officials_image: '/images/st-thomas-icon.jpg',
+  explore_background_image: '/images/christ.jpg',
+};
+
 export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +59,39 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
   const defaultSaintImage = jumuiyaList.find(j => j.id === jumuiyaId)?.saintImage || '';
   const [saintImage, setSaintImage] = useState(jumuiyaInfo?.saintImage || defaultSaintImage);
   const [saintUploading, setSaintUploading] = useState(false);
+
+  // Explore Our Community images state
+  const [exploreImages, setExploreImages] = useState<Record<string, string>>({});
+  const [exploreLoading, setExploreLoading] = useState(true);
+  const [exploreSaving, setExploreSaving] = useState(false);
+  const [exploreUploading, setExploreUploading] = useState<string | null>(null);
+  const [exploreUploadProgress, setExploreUploadProgress] = useState<Record<string, number>>({});
+  const exploreFileRef = useRef<HTMLInputElement>(null);
+  const exploreTargetKeyRef = useRef<string>('');
+
+  useEffect(() => {
+    if (jumuiyaId) return;
+    let active = true;
+    apiClient
+      .get('/settings')
+      .then(({ data }) => {
+        if (!active) return;
+        const next: Record<string, string> = {};
+        EXPLORE_FIELDS.forEach(f => {
+          if (data?.[f.key]) next[f.key] = data[f.key];
+        });
+        setExploreImages(next);
+      })
+      .catch(() => {
+        // keep empty state so defaults are shown
+      })
+      .finally(() => {
+        if (active) setExploreLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [jumuiyaId]);
 
   useEffect(() => {
     const fallback = jumuiyaList.find(j => j.id === jumuiyaId)?.saintImage || '';
@@ -127,6 +176,56 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
       console.error('Failed to upload saint image:', err);
     } finally {
       setSaintUploading(false);
+    }
+  };
+
+  const handleExploreFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleExploreUpload(exploreTargetKeyRef.current, file);
+    if (exploreFileRef.current) exploreFileRef.current.value = '';
+  };
+
+  const handleExploreUpload = async (key: string, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    setExploreUploading(key);
+    setExploreUploadProgress(p => ({ ...p, [key]: 0 }));
+    try {
+      const { uploadFile: uploadFileFn } = await import('../../../api/axiosInstance');
+      const res = await uploadFileFn(file, {
+        onProgress: (pct) => setExploreUploadProgress(prev => ({ ...prev, [key]: pct })),
+      });
+      const url = res?.data?.data?.url || res?.data?.url || '';
+      if (url) {
+        setExploreImages(prev => ({ ...prev, [key]: url }));
+      } else {
+        alert('Upload succeeded but no URL returned');
+      }
+    } catch (err) {
+      console.error('Failed to upload explore image:', err);
+      alert('Failed to upload image');
+    } finally {
+      setExploreUploading(null);
+      setExploreUploadProgress(p => ({ ...p, [key]: 0 }));
+    }
+  };
+
+  const handleExploreSave = async () => {
+    setExploreSaving(true);
+    try {
+      const payload: Record<string, string> = {};
+      EXPLORE_FIELDS.forEach(f => {
+        payload[f.key] = exploreImages[f.key] || EXPLORE_DEFAULTS[f.key] || '';
+      });
+      await apiClient.put('/settings', payload);
+      alert('Explore Our Community images saved');
+    } catch (err) {
+      console.error('Failed to save explore images:', err);
+      alert('Failed to save images');
+    } finally {
+      setExploreSaving(false);
     }
   };
 
@@ -285,6 +384,100 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
           </div>
         </div>
       </div>
+
+      {/* Explore Our Community (global gallery only) */}
+      {!jumuiyaId && (
+        <div className="bg-gradient-to-br from-amber-50 to-white p-6 rounded-2xl border border-amber-100 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <span className="w-1.5 h-5 bg-amber-500 rounded-full inline-block" />
+                Explore Our Community
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Change the images shown in the "Explore Our Community" section on the homepage.
+              </p>
+            </div>
+            <button
+              onClick={handleExploreSave}
+              disabled={exploreSaving || exploreLoading}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 hover:-translate-y-0.5 transition-all shadow-md shadow-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exploreSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              {exploreSaving ? 'Saving...' : 'Save Images'}
+            </button>
+          </div>
+
+          {exploreLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 size={24} className="animate-spin text-amber-500" />
+              <span className="ml-3 text-xs font-bold text-slate-600">Loading section images...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+              {EXPLORE_FIELDS.map(field => {
+                const current = exploreImages[field.key] || EXPLORE_DEFAULTS[field.key] || '';
+                const uploading = exploreUploading === field.key;
+                return (
+                  <div key={field.key} className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col">
+                    <div className="relative h-28 bg-slate-100">
+                      {current ? (
+                        <img
+                          src={current}
+                          alt={field.label}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <ImageIcon size={28} />
+                        </div>
+                      )}
+                      {uploading && (
+                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+                          <Loader2 size={18} className="animate-spin text-white mb-1" />
+                          <span className="text-white text-[9px] font-bold">
+                            {exploreUploadProgress[field.key] > 0 ? `${exploreUploadProgress[field.key]}%` : 'Uploading...'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 flex-1 flex flex-col gap-2">
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-800">{field.label}</p>
+                        <p className="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">{field.hint}</p>
+                      </div>
+                      <input
+                        type="url"
+                        value={current}
+                        onChange={e => setExploreImages(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        placeholder="Image URL"
+                        className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-[10px] focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-300"
+                      />
+                      <button
+                        onClick={() => { exploreTargetKeyRef.current = field.key; exploreFileRef.current?.click(); }}
+                        disabled={uploading}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-bold hover:bg-slate-800 transition-all disabled:opacity-50"
+                      >
+                        {uploading ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
+                        {uploading ? 'Uploading...' : 'Upload'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <input
+            ref={exploreFileRef}
+            type="file"
+            accept="image/*"
+            onChange={handleExploreFileChange}
+            className="hidden"
+          />
+        </div>
+      )}
 
       {/* Patron Saint Photo (only for jumuiya-specific galleries) */}
       {jumuiyaId && (
