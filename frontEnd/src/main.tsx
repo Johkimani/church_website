@@ -12,8 +12,28 @@ import { AppProvider } from './context/AppContext.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
 import RouteErrorBoundary from './components/RouteErrorBoundary'
 import { isChunkLoadError, reloadForStaleChunk } from './utils/chunkReload'
+import { prefetchAll } from './utils/routePrefetch'
 
 const queryClient = new QueryClient()
+
+// Warm lazy route chunks during idle time so in-app navigation is instant
+// (devotions tabs, admin pages, jumuiya, projects, etc.). Runs only after the
+// initial page has finished loading and the browser is free.
+function warmRouteChunks() {
+  const ric =
+    (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void })
+      .requestIdleCallback;
+  if (ric) {
+    ric(() => { prefetchAll(); }, { timeout: 3000 });
+  } else {
+    setTimeout(() => prefetchAll(), 3000);
+  }
+}
+if (document.readyState === 'complete') {
+  warmRouteChunks();
+} else {
+  window.addEventListener('load', warmRouteChunks, { once: true });
+}
 
 // Auto-recover from stale chunks after a redeploy (see utils/chunkReload.ts).
 // This runs before React mounts so it covers every lazy import in the app.

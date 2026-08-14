@@ -22,6 +22,9 @@ import {
   ShoppingCart,
   Wrench,
   ChevronRight,
+  Sparkles,
+  LayoutDashboard,
+  Activity,
 } from 'lucide-react';
 
 const JUMUIYAS = [
@@ -70,6 +73,42 @@ const FALLBACK = {
   upcoming: [] as any[],
   activity: [] as any[],
 };
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  actionLabel,
+  onAction,
+}: {
+  icon: React.ElementType;
+  title: string;
+  subtitle?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+          <Icon size={18} strokeWidth={2} />
+        </div>
+        <div className="min-w-0">
+          <h3 className="font-bold text-slate-800 leading-tight truncate">{title}</h3>
+          {subtitle && <p className="text-[11px] text-slate-400 font-medium truncate">{subtitle}</p>}
+        </div>
+      </div>
+      {actionLabel && onAction && (
+        <button
+          onClick={onAction}
+          className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 whitespace-nowrap px-2.5 py-1.5 rounded-lg hover:bg-blue-50 transition-all"
+        >
+          {actionLabel} <ChevronRight size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -213,7 +252,7 @@ export default function AdminDashboard() {
 
   const attentionItems = useMemo(
     () => [
-      { label: 'Pending Payments', value: data?.pendingPayments || 0, icon: Clock, chip: 'from-amber-500 to-orange-600', path: '/admin/registered-members' },
+      { label: 'Pending Payments', value: data?.pendingPayments || 0, icon: Wallet, chip: 'from-amber-500 to-orange-600', path: '/admin/registered-members' },
       { label: 'Pending Orders', value: data?.pendingOrders || 0, icon: ShoppingCart, chip: 'from-blue-500 to-indigo-600', path: '/admin/projects' },
       { label: 'Pending Hires', value: data?.pendingHires || 0, icon: Wrench, chip: 'from-purple-500 to-fuchsia-600', path: '/admin/projects' },
       { label: 'Upcoming Events', value: data?.upcoming?.length || 0, icon: Calendar, chip: 'from-emerald-500 to-teal-600', path: '/admin/weekly-activities' },
@@ -232,6 +271,7 @@ export default function AdminDashboard() {
   }
 
   const maxJumuiya = Math.max(1, ...(data?.jumuiyas || []).map((j: any) => j.total || 0));
+  const attentionCount = attentionItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -245,11 +285,16 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Header with refresh */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-black text-slate-800">Command Center Overview</h2>
-          <p className="text-slate-500 text-sm mt-1">Live stats from your database.</p>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white flex items-center justify-center shadow-lg ring-1 ring-white/10 shrink-0">
+            <LayoutDashboard size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-800 leading-tight">Command Center</h2>
+            <p className="text-slate-500 text-sm">Live overview of the association.</p>
+          </div>
         </div>
         <button
           onClick={() => loadDashboardData()}
@@ -262,13 +307,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat) => (
           <button
             key={stat.name}
             onClick={() => navigate(stat.link)}
-            className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left"
+            className="group relative bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-lg hover:shadow-slate-200/60 hover:-translate-y-0.5 transition-all duration-200 text-left overflow-hidden"
           >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent group-hover:via-blue-200 transition-all" />
             <div className="flex items-center justify-between mb-4">
               <div className={`relative bg-gradient-to-br ${stat.chip} w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg ring-1 ring-inset ring-white/30 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3`}>
                 <stat.icon size={26} strokeWidth={2.2} />
@@ -278,7 +324,7 @@ export default function AdminDashboard() {
                 <ArrowUpRight size={16} />
               </div>
             </div>
-            <h3 className="text-slate-500 text-sm font-medium uppercase tracking-wider">{stat.name}</h3>
+            <h3 className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{stat.name}</h3>
             <p className="text-2xl font-black text-slate-800 mt-1">{stat.value}</p>
             <p className="text-xs text-slate-400 mt-1">{stat.sub}</p>
           </button>
@@ -286,40 +332,47 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Jumuiya Membership */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="font-bold text-slate-800">Jumuiya Membership</h3>
-            <button
-              onClick={() => navigate('/admin/registered-members')}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700"
-            >
-              View All Members
-            </button>
+        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between gap-3">
+            <SectionHeader
+              icon={Users}
+              title="Jumuiya Membership"
+              subtitle="Registered members per Jumuiya"
+              actionLabel="View All Members"
+              onAction={() => navigate('/admin/registered-members')}
+            />
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-5">
             {(data?.jumuiyas || []).map((j: any) => (
               <div key={j.id}>
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: j.color }} />
+                    <span
+                      className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0"
+                      style={{ backgroundColor: j.color }}
+                    >
+                      {j.name.replace('St. ', '').charAt(0)}
+                    </span>
                     <span className="text-sm font-semibold text-slate-700">{j.name}</span>
                   </div>
-                  <span className="text-sm font-black text-slate-800">{Number(j.total || 0).toLocaleString()}</span>
+                  <span className="text-sm font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-lg">
+                    {Number(j.total || 0).toLocaleString()}
+                  </span>
                 </div>
-                <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
                       width: `${((Number(j.total || 0) / maxJumuiya) * 100).toFixed(1)}%`,
-                      backgroundColor: withAlpha(j.color, 0.85),
+                      background: `linear-gradient(90deg, ${withAlpha(j.color, 0.7)}, ${j.color})`,
                     }}
                   />
                 </div>
               </div>
             ))}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
               <span className="text-sm font-semibold text-slate-500">Total Registered</span>
               <span className="text-lg font-black text-blue-600">
                 {Number(data?.totalMembers || 0).toLocaleString()}
@@ -329,23 +382,24 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h3 className="font-bold text-slate-800 mb-6">Quick Actions</h3>
-          <div className="space-y-3">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+          <div className="mb-6">
+            <SectionHeader icon={Sparkles} title="Quick Actions" subtitle="Jump straight to work" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {quickActions.map((action) => (
               <button
                 key={action.path}
                 onClick={() => navigate(action.path)}
-                className="w-full flex items-center gap-3 p-4 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-xl transition-all group"
+                className="group flex flex-col items-start gap-3 p-4 bg-slate-50 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 border border-transparent text-slate-700 rounded-xl transition-all duration-200"
               >
                 <div className={`bg-gradient-to-br ${action.chip} w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md ring-1 ring-inset ring-white/30 shrink-0 transition-transform duration-300 group-hover:scale-110`}>
                   <action.icon size={18} strokeWidth={2.2} />
                 </div>
-                <div className="flex-1 text-left min-w-0">
-                  <p className="font-bold text-sm">{action.label}</p>
-                  <p className="text-xs text-slate-400 truncate">{action.desc}</p>
+                <div className="min-w-0 text-left">
+                  <p className="font-bold text-sm text-slate-800 truncate">{action.label}</p>
+                  <p className="text-[11px] text-slate-400 truncate leading-snug">{action.desc}</p>
                 </div>
-                <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-500 shrink-0" />
               </button>
             ))}
           </div>
@@ -353,17 +407,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Recent Activity */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="font-bold text-slate-800">Recent System Activity</h3>
-            <button
-              onClick={() => navigate('/admin/donations')}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700"
-            >
-              View All
-            </button>
+        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between gap-3">
+            <SectionHeader
+              icon={Activity}
+              title="Recent System Activity"
+              subtitle="Latest donations, payments & events"
+              actionLabel="View All"
+              onAction={() => navigate('/admin/donations')}
+            />
           </div>
           <div className="p-0">
             {(data?.activity || []).length > 0 ? (
@@ -398,29 +452,44 @@ export default function AdminDashboard() {
         </div>
 
         {/* Needs Attention */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <div className="flex items-center mb-6">
-            <h3 className="font-bold text-slate-800">Needs Attention</h3>
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <SectionHeader icon={Clock} title="Needs Attention" subtitle={`${attentionCount} item(s) waiting`} />
           </div>
-          <div className="space-y-3">
-            {attentionItems.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => navigate(item.path)}
-                className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-amber-200 hover:bg-amber-50/40 transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.chip} flex items-center justify-center text-white shadow-md ring-1 ring-inset ring-white/30 shrink-0`}>
-                    <item.icon size={17} strokeWidth={2.2} />
+          <div className="space-y-2.5">
+            {attentionItems.map((item) => {
+              const active = Number(item.value || 0) > 0;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => navigate(item.path)}
+                  className={`w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all duration-200 group ${
+                    active
+                      ? 'border-amber-200/80 bg-gradient-to-r from-amber-50/80 to-orange-50/40 hover:border-amber-300 hover:from-amber-50 hover:to-orange-50'
+                      : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.chip} flex items-center justify-center text-white shadow-md ring-1 ring-inset ring-white/30 shrink-0`}>
+                      <item.icon size={17} strokeWidth={2.2} />
+                    </div>
+                    <span className={`font-semibold text-sm truncate ${active ? 'text-slate-800' : 'text-slate-500'}`}>
+                      {item.label}
+                    </span>
                   </div>
-                  <span className="font-semibold text-sm text-slate-700">{item.label}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black text-slate-800">{item.value}</span>
-                  <ChevronRight size={16} className="text-slate-300 group-hover:text-amber-500" />
-                </div>
-              </button>
-            ))}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className={`min-w-[26px] text-center text-xs font-black rounded-full px-2 py-0.5 ${
+                        active ? 'bg-amber-500 text-white shadow-sm shadow-amber-300' : 'bg-slate-200 text-slate-500'
+                      }`}
+                    >
+                      {item.value}
+                    </span>
+                    <ChevronRight size={15} className={`transition-transform duration-200 group-hover:translate-x-0.5 ${active ? 'text-amber-500' : 'text-slate-300'}`} />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
