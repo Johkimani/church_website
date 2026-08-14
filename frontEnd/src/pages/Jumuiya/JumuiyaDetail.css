@@ -382,10 +382,10 @@
         left: 16px !important;
         right: 16px !important;
         top: auto !important;
-        bottom: 190px !important;
+        bottom: 175px !important;
         width: auto !important;
-        height: min(52vh, 440px) !important;
-        max-height: min(52vh, 440px) !important;
+        height: min(56vh, 480px) !important;
+        max-height: min(56vh, 480px) !important;
         min-height: 240px !important;
         background: #ffffff !important;
         backdrop-filter: none !important;
@@ -401,7 +401,7 @@
         flex: 1 1 auto;
         min-height: 0;
         height: auto;
-        max-height: calc(52vh - 64px);
+        max-height: calc(56vh - 64px);
         overflow-y: auto;
         background: #ffffff !important;
         backdrop-filter: none !important;
@@ -427,7 +427,7 @@
     }
     
     .notif-fab-container {
-        bottom: 110px !important;
+        bottom: 95px !important;
         right: 20px !important;
         z-index: 10000;
     }
