@@ -1,5 +1,6 @@
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { sendOrderPaymentConfirmation } from "../services/notificationService.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -110,6 +111,16 @@ export const confirmPayment = async (req, res) => {
       `UPDATE mpesa_request SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP WHERE checkout_id = $2`,
       [mpesa_receipt, checkout_id],
     );
+
+    // Fire-and-forget payment confirmation (never throws)
+    try {
+      await sendOrderPaymentConfirmation({
+        order: updated.rows[0],
+        mpesaReceipt: mpesa_receipt,
+      });
+    } catch (notifErr) {
+      logger.error(`Failed to send order confirmation: ${notifErr.message}`);
+    }
 
     logger.info(`Payment manually confirmed: Order ${order.order_reference}, Receipt=${mpesa_receipt}`);
     res.json({ status: "paid", order: updated.rows[0] });

@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db as pool } from "../../Configs/dbConfig.js";
 import logger from "../../logger/winston.js";
-import { sendEmail } from "../../Configs/emailConfig.js";
 import { sendSms } from "../../services/smsService.js";
+import { sendHirePaymentConfirmation } from "../../services/notificationService.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 
@@ -360,7 +360,7 @@ router.post("/confirm-payment/:reference", verifyToken, requireRole(...OFFICIAL_
           paid_at = CURRENT_TIMESTAMP,
           updated_at = CURRENT_TIMESTAMP
          WHERE hire_reference = $2 AND payment_status = 'pending'
-         RETURNING id, hire_reference, status, payment_status, payment_method, mpesa_receipt, paid_at, customer_name, phone_number, item_name, quantity`,
+         RETURNING id, hire_reference, status, payment_status, payment_method, mpesa_receipt, paid_at, customer_name, phone_number, email, item_name, quantity, total_cost, payment_amount`,
         [mpesa_receipt, reference]
       );
 
@@ -380,7 +380,7 @@ router.post("/confirm-payment/:reference", verifyToken, requireRole(...OFFICIAL_
 
       logger.info(`Manual M-Pesa confirmation for hire: ${reference}, Receipt: ${mpesa_receipt}`);
 
-      // Send SMS confirmation
+      // Send payment confirmation (fire-and-forget, never throws)
       const hireRow = result.rows[0];
       try {
         const settingsRes = await pool.query(
@@ -391,10 +391,15 @@ router.post("/confirm-payment/:reference", verifyToken, requireRole(...OFFICIAL_
         const adminPhone = settings.hire_admin_phone || '0712345678';
         const pickupLocation = settings.hire_pickup_location || 'the church premises';
         const pickupInstructions = settings.hire_pickup_instructions || 'We will contact you with the exact pickup time. Call the admin for any inquiries.';
-        const message = `Payment of KES confirmed for ${hireRow.item_name} × ${hireRow.quantity} (Ref: ${hireRow.hire_reference}). Pickup location: ${pickupLocation}. ${pickupInstructions} Admin contact: ${adminPhone}`;
-        await sendSms(message, hireRow.phone_number);
+        await sendHirePaymentConfirmation({
+          hire: hireRow,
+          mpesaReceipt,
+          pickupLocation,
+          pickupInstructions,
+          adminPhone,
+        });
       } catch (smsErr) {
-        logger.error(`Failed to send hire confirmation SMS: ${smsErr.message}`);
+        logger.error(`Failed to send hire confirmation: ${smsErr.message}`);
       }
       res.json({
         reference,
