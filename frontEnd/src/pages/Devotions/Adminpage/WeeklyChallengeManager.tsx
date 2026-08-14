@@ -472,59 +472,6 @@ export default function WeeklyChallengeManager() {
             </div>
           </div>
 
-          <QuestionPicker value={form.questionIds} onChange={toggleQuestion} />
-
-          <button
-            onClick={handleCreate}
-            disabled={loading}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm"
-          >
-            <FaSave size={12} />
-            {loading ? "Creating..." : "Create Draft Challenge"}
-          </button>
-        </div>
-      )}
-
-      {/* REVIEW VIEW */}
-      {subview === "review" && reviewChallenge && (
-        <div className="mt-4 space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 border border-stone-200 rounded-xl p-4">
-            <div>
-              <p className="font-bold text-stone-800 text-sm">{reviewChallenge.topic}</p>
-              <p className="text-xs text-stone-500 mt-0.5">
-                {formatWeek(reviewChallenge.weekStart)} – {formatWeek(reviewChallenge.weekEnd)} ·{" "}
-                {reviewChallenge.questionCount} questions
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {statusBadge(reviewChallenge.status)}
-              {reviewChallenge.status === "active" && (
-                <button
-                  onClick={() => handlePublish(reviewChallenge.id)}
-                  disabled={loading}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5"
-                >
-                  <FaUpload size={11} /> Publish Results
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Draft editor */}
-          {reviewChallenge.status === "draft" && (
-            <div className="space-y-4 border border-amber-100 rounded-xl p-4 bg-amber-50/40">
-              <p className="text-xs font-bold text-amber-700 uppercase tracking-widest">Draft Editor</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-stone-600 block mb-1">Topic</label>
-                  <input
-                    type="text"
-                    value={form.topic}
-                    onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))}
-                    className="w-full border border-stone-200 rounded-xl p-2.5 text-xs bg-white"
-                  />
-                </div>
-              </div>
           <div className="border border-amber-100 rounded-xl bg-amber-50/40 p-4 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -603,6 +550,59 @@ export default function WeeklyChallengeManager() {
           </div>
 
           <QuestionPicker value={form.questionIds} onChange={toggleQuestion} />
+
+          <button
+            onClick={handleCreate}
+            disabled={loading}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm"
+          >
+            <FaSave size={12} />
+            {loading ? "Creating..." : "Create Draft Challenge"}
+          </button>
+        </div>
+      )}
+
+      {/* REVIEW VIEW */}
+      {subview === "review" && reviewChallenge && (
+        <div className="mt-4 space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 border border-stone-200 rounded-xl p-4">
+            <div>
+              <p className="font-bold text-stone-800 text-sm">{reviewChallenge.topic}</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {formatWeek(reviewChallenge.weekStart)} – {formatWeek(reviewChallenge.weekEnd)} ·{" "}
+                {reviewChallenge.questionCount} questions
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {statusBadge(reviewChallenge.status)}
+              {reviewChallenge.status === "active" && (
+                <button
+                  onClick={() => handlePublish(reviewChallenge.id)}
+                  disabled={loading}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5"
+                >
+                  <FaUpload size={11} /> Publish Results
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Draft editor */}
+          {reviewChallenge.status === "draft" && (
+            <div className="space-y-4 border border-amber-100 rounded-xl p-4 bg-amber-50/40">
+              <p className="text-xs font-bold text-amber-700 uppercase tracking-widest">Draft Editor</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-stone-600 block mb-1">Topic</label>
+                  <input
+                    type="text"
+                    value={form.topic}
+                    onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))}
+                    className="w-full border border-stone-200 rounded-xl p-2.5 text-xs bg-white"
+                  />
+                </div>
+              </div>
+              <QuestionPicker value={form.questionIds} onChange={toggleQuestion} />
               <button
                 onClick={handleSaveEdit}
                 disabled={loading}
