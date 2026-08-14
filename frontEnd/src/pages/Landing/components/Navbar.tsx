@@ -15,7 +15,7 @@ const Navbar = () => {
   return (
     <header className="bg-white shadow-md sticky top-0 z-45">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-3">
-        <div className="flex items-center gap-2 mr-auto -ml-2">
+        <div className="flex items-center gap-2 mr-auto -ml-3">
           <img
             src="/images/csa-logo.jpg"
             alt="CSA Kirinyaga logo"
