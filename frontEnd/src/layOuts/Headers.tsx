@@ -86,7 +86,7 @@ const Headers = () => {
       >
         {/* Logo */}
         <div
-          className="flex items-center gap-2 cursor-pointer group mr-auto"
+          className="flex items-center gap-1.5 cursor-pointer group mr-auto -ml-1"
           onClick={() => navigate("/")}
         >
           <img
