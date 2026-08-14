@@ -113,7 +113,7 @@ export default function Terms() {
                 <p>
                   Welcome to the St. Thomas Aquinas Catholic Student Association (CSA) digital platform
                   ("Platform"). By accessing or using the Platform, including any web pages, mobile interfaces,
-                  applications, products, or services offered through csa.sta-kirinyaga.org, you agree to be
+                  applications, products, or services offered through csakyu.com, you agree to be
                   bound by these Terms and Conditions ("Terms"). If you do not agree with any part of these
                   Terms, you must not access or use the Platform.
                 </p>
@@ -179,15 +179,15 @@ export default function Terms() {
               <div className="text-slate-600 space-y-4 text-sm sm:text-base leading-relaxed font-medium">
                 <p>
                   The Platform facilitates custom merchandise orders (e.g., CSA T-shirts, sacramentals) and
-                  hire services for parish assets (chairs, liturgical instruments, and venues). The following
+                  hire services for parish assets (chairs,and liturgical instruments). The following
                   conditions apply:
                 </p>
                 <BulletList items={[
                   { title: "Order Commitment", desc: "Placing an order constitutes a binding commitment to purchase or rent. All orders are subject to availability and payment verification." },
                   { title: "Pricing", desc: "Prices are displayed in Kenyan Shillings (KES) and are subject to change without prior notice. Confirmed orders are honored at the price quoted at the time of order." },
                   { title: "Payment", desc: "Payment is processed through M-Pesa or other integrated payment gateways. Transaction receipts are recorded and accessible from your account dashboard." },
-                  { title: "Asset Responsibility", desc: "Members renting parish assets must return them in the same condition. Damage, loss, or theft will result in repair or replacement costs billed to the responsible member." },
-                  { title: "Pickup", desc: "Orders and rentals are available for pickup at the parish premises unless delivery arrangements have been explicitly agreed upon." },
+                  { title: "Asset Responsibility", desc: "Members renting CSA assets must return them in the same condition. Damage, loss, or theft will result in repair or replacement costs billed to the responsible member." },
+                  { title: "Pickup", desc: "Orders and rentals are available for pickup at the Holy Rosary Parish Kutus premises unless delivery arrangements have been explicitly agreed upon." },
                 ]} borderColor="border-emerald-100" />
               </div>
             </SectionCard>
@@ -197,8 +197,8 @@ export default function Terms() {
               <SectionHeading icon={Landmark} title="5. Donations & Financial Support" color="bg-amber-50 text-amber-600" />
               <div className="text-slate-600 space-y-4 text-sm sm:text-base leading-relaxed font-medium">
                 <p>
-                  Financial contributions made through the Platform support parish projects, devotional materials,
-                  outreach campaigns, and community development initiatives:
+                  Financial contributions made through the Platform support CSA projects, devotional materials,
+                  outreach campaigns, and Jumuiya development initiatives:
                 </p>
                 <BulletList items={[
                   { title: "Voluntary Basis", desc: "All donations, tithes, and offerings made through the Platform are strictly voluntary and non-refundable." },
@@ -215,7 +215,7 @@ export default function Terms() {
               <div className="text-slate-600 space-y-4 text-sm sm:text-base leading-relaxed font-medium">
                 <p>
                   Our refund and cancellation policies are designed to be fair while protecting the interests
-                  of the parish community:
+                  of the CSA community:
                 </p>
                 <BulletList items={[
                   { title: "Merchandise Orders", desc: "Custom orders (e.g., T-shirts) may be cancelled within 24 hours of placement for a full refund. After 24 hours, or once production has begun, cancellations are at the discretion of the CSA." },
@@ -346,9 +346,9 @@ export default function Terms() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { icon: Mail, label: "Email", value: "csa@sta-kirinyaga.org", color: "text-indigo-600" },
-                  { icon: Mail, label: "Chairperson", value: "chairperson@sta-kirinyaga.org", color: "text-indigo-600" },
-                  { icon: Mail, label: "Secretary", value: "secretary@sta-kirinyaga.org", color: "text-indigo-600" },
+                  { icon: Mail, label: "Email", value: "morrismaina077@gmail.com", color: "text-indigo-600" },
+                  { icon: Mail, label: "Chairperson", value: "morrismaina077", color: "text-indigo-600" },
+                  { icon: Mail, label: "Secretary", value: "secretary@kirinyaga.com", color: "text-indigo-600" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
                     <item.icon className={`w-5 h-5 ${item.color} shrink-0`} />

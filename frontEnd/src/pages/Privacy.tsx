@@ -107,7 +107,7 @@ export default function Privacy() {
               <div className="text-slate-600 space-y-4 text-sm sm:text-base leading-relaxed font-medium">
                 <p>
                   The St. Thomas Aquinas Catholic Student Association ("CSA," "we," "us," or "our") operates
-                  the csa.sta-kirinyaga.org platform ("Platform"). This Privacy Policy is designed to inform
+                  the csakyu.com platform ("Platform"). This Privacy Policy is designed to inform
                   you about how we collect, use, disclose, and safeguard your personal information when you
                   visit or interact with the Platform or engage with us through parish activities.
                 </p>
@@ -137,8 +137,8 @@ export default function Privacy() {
                 <div className="mt-6">
                   <h4 className="font-black text-slate-800 mb-3 text-sm uppercase tracking-wider">A. Information You Provide</h4>
                   <BulletList items={[
-                    { title: "Account Details", desc: "Full name, email address, phone number (M-Pesa-linked), parish registration number, and year of study when you create an account." },
-                    { title: "Profile Data", desc: "Optional information such as profile picture, home parish, ministry interests, and emergency contact details." },
+                    { title: "Account Details", desc: "Full name, email address, phone number, and year of study when you create an account." },
+                    { title: "Profile Data", desc: "Optional information such as profile picture, ministry interests, and emergency contact details." },
                     { title: "Transaction Records", desc: "Donation history, merchandise orders, rental bookings, and payment confirmations." },
                     { title: "Communications", desc: "Correspondence sent through our contact forms, support requests, schedule suggestions, and feedback submissions." },
                     { title: "Event Participation", desc: "RSVP status, attendance history, and preferences for CSA events and activities." },
@@ -240,7 +240,7 @@ export default function Privacy() {
                   <strong>Retention Period:</strong> We retain your personal information for as long as your
                   account is active or as needed to provide services. Transaction records are retained for
                   a minimum of seven (7) years to comply with Kenyan financial regulations. Inactive accounts
-                  are deleted after five (5) years of inactivity, unless otherwise required by law.
+                  are deleted after five (3) years of inactivity, unless otherwise required by law.
                 </p>
               </div>
             </SectionCard>
@@ -295,17 +295,17 @@ export default function Privacy() {
               <SectionHeading icon={Users} title="9. Children's Privacy" color="bg-rose-50 text-rose-600" />
               <div className="text-slate-600 space-y-4 text-sm sm:text-base leading-relaxed font-medium">
                 <p>
-                  The Platform is not directed at children under the age of 18. We do not knowingly collect
-                  personal information from children under 18.
+                  The Platform is not directed at children under the age of 16. We do not knowingly collect
+                  personal information from children under 16.
                 </p>
                 <p>
-                  Where a minor (under 18) is a member of the CSA — such as a First Year student — we require
+                  Where a minor (under 16) is a member of the CSA — such as a First Year student — we require
                   that a parent or guardian provide consent for the creation of the account and the associated
                   data processing. Parents or legal guardians may review, update, or request deletion of
                   their child's personal data by contacting us directly.
                 </p>
                 <p>
-                  If you believe a child under the age of 18 has provided personal data to us without parental
+                  If you believe a child under the age of 16 has provided personal data to us without parental
                   consent, please contact us immediately so we can investigate and take appropriate action.
                 </p>
               </div>
@@ -341,8 +341,8 @@ export default function Privacy() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { icon: Mail, label: "Data Protection Officer", value: "dpo@sta-kirinyaga.org", color: "text-emerald-600" },
-                  { icon: Mail, label: "CSA Secretariat", value: "csa@sta-kirinyaga.org", color: "text-emerald-600" },
+                  { icon: Mail, label: "Data Protection Officer", value: "morrismaina077@gmail.com", color: "text-emerald-600" },
+                  { icon: Mail, label: "CSA Secretariat", value: "csa@kirinyaga.com", color: "text-emerald-600" },
                   { icon: Mail, label: "Physical Address", value: "St. Thomas Aquinas Catholic Church, Kutus-Kerugoya Rd, Kirinyaga", color: "text-emerald-600" },
                   { icon: Mail, label: "Phone", value: "+254 7XX XXX XXX", color: "text-emerald-600" },
                 ].map((item, i) => (

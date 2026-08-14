@@ -35,9 +35,9 @@ function Footer() {
           <div className='fourth_footer'>
             <h4 className="text-white font-semibold text-lg mb-4">Contact Us</h4>
             <ul className="space-y-2 text-sm">
-              <li>St. Thomas Aquinas Parish</li>
+              <li>St. Thomas Aquinas Kirinyaga</li>
               <li>Kirinyaga, Kenya</li>
-              <li className="pt-2">Email: info@csakirinyaga.org</li>
+              <li className="pt-2">Email: morrismaina077</li>
               <li>Phone: +254 700 000000</li>
             </ul>
           </div>
