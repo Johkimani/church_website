@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   FaCheckCircle, FaPlay, FaEye, FaUpload, FaSave, FaSearch,
 } from "react-icons/fa";
-import { CalendarDays, Trophy, Activity, Sparkles } from "lucide-react";
+import { CalendarDays, Trophy, Activity, Sparkles, PencilLine } from "lucide-react";
 import {
   listWeeklyChallenges,
   createWeeklyChallenge,
@@ -14,6 +14,7 @@ import {
   fetchManageQuestions,
   generateAndSaveQuestions,
   setQuestionStatusApi,
+  createManualQuestion,
 } from "../../../api/axiosInstance";
 
 const JUMUIYA_META: Record<string, { name: string; color: string }> = {
@@ -76,6 +77,16 @@ export default function WeeklyChallengeManager() {
   // Inline AI generation state
   const [generating, setGenerating] = useState(false);
   const [generatedBatch, setGeneratedBatch] = useState<any[]>([]);
+  const [genCount, setGenCount] = useState(30);
+
+  // Manual question entry state
+  const [manualAddedIds, setManualAddedIds] = useState<number[]>([]);
+  const [manualForm, setManualForm] = useState({
+    questionText: "",
+    options: ["", "", "", ""],
+    correctOption: 0,
+    explanation: "",
+  });
 
   const loadChallenges = useCallback(async () => {
     setLoading(true);
@@ -158,7 +169,7 @@ export default function WeeklyChallengeManager() {
     }
     setGenerating(true);
     try {
-      const res = await generateAndSaveQuestions({ topic: form.topic.trim() });
+      const res = await generateAndSaveQuestions({ topic: form.topic.trim(), numberOfQuestions: genCount });
       const qs = Array.isArray(res.data?.questions)
         ? res.data.questions.map((q: any) => ({
             ...q,
@@ -252,12 +263,64 @@ export default function WeeklyChallengeManager() {
   };
 
   const toggleQuestion = (id: number) => {
-    setForm((f) => ({
-      ...f,
-      questionIds: f.questionIds.includes(id)
-        ? f.questionIds.filter((x) => x !== id)
-        : [...f.questionIds, id],
-    }));
+    setForm((f) => {
+      const has = f.questionIds.includes(id);
+      if (has) {
+        setManualAddedIds((prev) => prev.filter((x) => x !== id));
+      }
+      return {
+        ...f,
+        questionIds: has
+          ? f.questionIds.filter((x) => x !== id)
+          : [...f.questionIds, id],
+      };
+    });
+  };
+
+  const handleAddManual = async () => {
+    setError("");
+    const text = manualForm.questionText.trim();
+    const opts = manualForm.options.map((o) => o.trim());
+    if (!text) {
+      setError("Enter the question text first.");
+      return;
+    }
+    if (opts.some((o) => !o)) {
+      setError("Fill in all 4 options.");
+      return;
+    }
+    const correctIdx = manualForm.correctOption;
+    const answers = opts.map((o, i) => ({ option: String.fromCharCode(65 + i), text: o }));
+    const correctAnswer = {
+      option: answers[correctIdx].option,
+      text: answers[correctIdx].text,
+      explanation: manualForm.explanation.trim() || undefined,
+    };
+    setLoading(true);
+    try {
+      const res = await createManualQuestion({
+        questionText: text,
+        answers,
+        correctAnswer,
+        topic: form.topic.trim() || undefined,
+      });
+      const q = res.data?.question;
+      if (q?._id != null) {
+        setForm((f) => ({
+          ...f,
+          questionIds: f.questionIds.includes(q._id)
+            ? f.questionIds
+            : [...f.questionIds, q._id],
+        }));
+        setManualAddedIds((prev) => [...prev, q._id]);
+        setApprovedQuestions((prev) => [q, ...prev]);
+        setManualForm({ questionText: "", options: ["", "", "", ""], correctOption: 0, explanation: "" });
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to add manual question");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const statusBadge = (status: string) => (
@@ -287,7 +350,8 @@ export default function WeeklyChallengeManager() {
     <div className="border border-stone-200 rounded-xl bg-stone-50 p-3 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-bold text-stone-600">
-          Or pick from previously approved questions ({value.length} selected)
+          3. Or pick from previously approved questions ({value.length} selected ·{" "}
+          {manualAddedIds.filter((id) => value.includes(id)).length} manual)
         </span>
         <div className="relative flex-1 max-w-xs">
           <input
@@ -479,17 +543,38 @@ export default function WeeklyChallengeManager() {
                   <Sparkles size={12} /> 1. Generate from this topic
                 </p>
                 <p className="text-[10px] text-stone-500 mt-0.5">
-                  Uses the topic above as the AI prompt. Fresh questions appear below — approve the good ones and they are added to this challenge automatically.
+                  Generates up to {genCount} fresh questions — approve the good ones and they are added to
+                  this challenge automatically. You can publish as few as you like; each member is dealt 7
+                  random questions from whatever pool you publish.
                 </p>
               </div>
-              <button
-                onClick={handleGenerate}
-                disabled={generating || !form.topic.trim()}
-                className="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-2 shrink-0"
-              >
-                <Sparkles size={12} />
-                {generating ? "Generating..." : "Generate batch"}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 bg-white border border-stone-200 rounded-lg px-2 py-1.5">
+                  <label htmlFor="gen-count" className="text-[10px] font-bold text-stone-500 whitespace-nowrap">
+                    Count
+                  </label>
+                  <input
+                    id="gen-count"
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={genCount}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setGenCount(Number.isInteger(n) ? Math.min(Math.max(n, 1), 60) : 30);
+                    }}
+                    className="w-16 text-xs font-bold text-stone-700 bg-transparent focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating || !form.topic.trim()}
+                  className="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-2"
+                >
+                  <Sparkles size={12} />
+                  {generating ? "Generating..." : "Generate batch"}
+                </button>
+              </div>
             </div>
 
             {generatedBatch.length > 0 && (
@@ -549,16 +634,94 @@ export default function WeeklyChallengeManager() {
             )}
           </div>
 
+          {/* 2. Manual question entry */}
+          <div className="border border-emerald-100 rounded-xl bg-emerald-50/40 p-4 space-y-3">
+            <div>
+              <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                <PencilLine size={12} /> 2. Write a manual question
+              </p>
+              <p className="text-[10px] text-stone-500 mt-0.5">
+                Type a question yourself, fill in the 4 choices and tick the correct one. It's saved as
+                approved and added to this challenge automatically — mix it with AI-generated ones
+                (e.g. 10 manual + 20 AI).
+              </p>
+            </div>
+            <textarea
+              value={manualForm.questionText}
+              onChange={(e) => setManualForm((f) => ({ ...f, questionText: e.target.value }))}
+              placeholder="Type your question here..."
+              rows={2}
+              className="w-full border border-stone-200 rounded-lg p-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {manualForm.options.map((opt, idx) => (
+                <label
+                  key={idx}
+                  className="flex items-center gap-2 bg-white border border-stone-200 rounded-lg px-2.5 py-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="manual-correct"
+                    checked={manualForm.correctOption === idx}
+                    onChange={() => setManualForm((f) => ({ ...f, correctOption: idx }))}
+                    className="w-4 h-4 rounded-full accent-emerald-600 shrink-0"
+                  />
+                  <span className="text-[10px] font-black text-stone-400 uppercase w-4 shrink-0">
+                    {String.fromCharCode(65 + idx)}
+                  </span>
+                  <input
+                    type="text"
+                    value={opt}
+                    onChange={(e) =>
+                      setManualForm((f) => ({
+                        ...f,
+                        options: f.options.map((o, i) => (i === idx ? e.target.value : o)),
+                      }))
+                    }
+                    placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+                    className="flex-1 text-xs bg-transparent focus:outline-none"
+                  />
+                </label>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={manualForm.explanation}
+              onChange={(e) => setManualForm((f) => ({ ...f, explanation: e.target.value }))}
+              placeholder="Optional explanation (shown after answering)"
+              className="w-full border border-stone-200 rounded-lg p-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            />
+            <button
+              onClick={handleAddManual}
+              disabled={loading}
+              className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-2"
+            >
+              <PencilLine size={12} />
+              {loading ? "Adding..." : `Add manual question (${manualAddedIds.length} added)`}
+            </button>
+          </div>
+
           <QuestionPicker value={form.questionIds} onChange={toggleQuestion} />
 
-          <button
-            onClick={handleCreate}
-            disabled={loading}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm"
-          >
-            <FaSave size={12} />
-            {loading ? "Creating..." : "Create Draft Challenge"}
-          </button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-stone-500">
+              <span className="px-2.5 py-1 rounded-full bg-stone-100">{form.questionIds.length} selected</span>
+              <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                {manualAddedIds.length} manual
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
+                {Math.max(0, form.questionIds.length - manualAddedIds.length)} AI / picked
+              </span>
+            </div>
+            <button
+              onClick={handleCreate}
+              disabled={loading || form.questionIds.length === 0}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm"
+            >
+              <FaSave size={12} />
+              {loading ? "Creating..." : "Create Draft Challenge"}
+            </button>
+          </div>
         </div>
       )}
 

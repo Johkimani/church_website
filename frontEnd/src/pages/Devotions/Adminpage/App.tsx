@@ -12,6 +12,7 @@ import {
   fetchQuestionTopics,
   updateQuestionApi,
   deleteQuestionApi,
+  deleteQuestionsByTopicApi,
   setQuestionStatusApi,
   fetchPublishedComparison,
 } from "../../../api/axiosInstance";
@@ -408,6 +409,35 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
     }
   };
 
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const handleDeleteTopicBatch = async () => {
+    if (activeTopic === "all") return;
+    const count = topics.find((t) => t.topic === activeTopic)?.count ?? total;
+    if (
+      !window.confirm(
+        `Delete all ${count} question(s) under "${activeTopic}"?\n\nThis only removes the questions. Jumuiya, member and comparison analytics are kept. Questions in this week's active challenge are skipped.`
+      )
+    ) {
+      return;
+    }
+    setBatchDeleting(true);
+    try {
+      const res = await deleteQuestionsByTopicApi(activeTopic);
+      const skipped = res.data?.skippedCount ?? 0;
+      if (skipped > 0) {
+        alert(`${res.data?.deletedCount ?? 0} deleted. ${skipped} kept because they are in this week's active challenge.`);
+      }
+      await loadTopics();
+      setActiveTopic("all");
+      setPage(1);
+    } catch {
+      alert("Failed to delete questions");
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
   const handleSetStatus = async (id: number | string, status: "approved" | "rejected") => {
     try {
       await setQuestionStatusApi(id, status);
@@ -446,18 +476,30 @@ function QuestionBankManager({ refreshTrigger }: { refreshTrigger?: number }) {
               : `Showing "${activeTopic}" questions (${total} total)`}
           </p>
         </div>
-        <div className="relative w-full sm:w-64">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search questions..."
-            className="w-full pl-9 pr-3 py-2 text-xs border border-stone-200 rounded-xl bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-          />
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs" />
+        <div className="flex items-center gap-2">
+          {activeTopic !== "all" && (
+            <button
+              onClick={handleDeleteTopicBatch}
+              disabled={batchDeleting}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50"
+            >
+              <FaTrash size={12} />
+              {batchDeleting ? "Deleting..." : "Delete all under this title"}
+            </button>
+          )}
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search questions..."
+              className="w-full pl-9 pr-3 py-2 text-xs border border-stone-200 rounded-xl bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            />
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs" />
+          </div>
         </div>
       </div>
 

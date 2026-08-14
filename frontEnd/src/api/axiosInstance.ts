@@ -125,8 +125,15 @@ const refreshAccessAndRefreshToken = (accessToken: string) =>
   refreshClient.post("authentication/refresh", { accessToken });
 
 // --- Your API functions below ---
-export const generateAndSaveQuestions = (data: { topic: string }) =>
+export const generateAndSaveQuestions = (data: { topic: string; numberOfQuestions?: number }) =>
   apiClient.post("/questions", data);
+
+export const createManualQuestion = (data: {
+  questionText: string;
+  answers: { option: string; text: string }[];
+  correctAnswer: { option: string; text: string; explanation?: string };
+  topic?: string;
+}) => apiClient.post("/questions/manual", data);
 
 export const fetchDailyQuestions = (limit: number = 10) =>
   apiClient.get(`/questions/?limit=${limit}`);
@@ -141,6 +148,9 @@ export const updateQuestionApi = (id: string | number, payload: any) =>
 
 export const deleteQuestionApi = (id: string | number) =>
   apiClient.delete(`/questions/${id}`);
+
+export const deleteQuestionsByTopicApi = (topic: string) =>
+  apiClient.delete("/questions/by-topic", { params: { topic } });
 
 export const recordAttemptApi = (payload: {
   questionId: number | string;

@@ -21,6 +21,31 @@ const Question = {
     return inserted;
   },
 
+  create: async ({ questionText, answers, correctAnswer, topic = null, generatedBy = null }) => {
+    const { rows } = await db.query(
+      `INSERT INTO questions (question_text, answers, correct_answer, topic, status, generated_by)
+       VALUES ($1, $2, $3, $4, 'approved', $5)
+       RETURNING id, question_text, answers, correct_answer, topic, status, created_at`,
+      [
+        questionText,
+        JSON.stringify(answers),
+        JSON.stringify(correctAnswer),
+        topic,
+        generatedBy,
+      ],
+    );
+    const r = rows[0];
+    return {
+      _id: r.id,
+      questionText: r.question_text,
+      answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
+      correctAnswer: typeof r.correct_answer === "string" ? JSON.parse(r.correct_answer) : r.correct_answer,
+      status: r.status,
+      topic: r.topic,
+      createdAt: r.created_at,
+    };
+  },
+
   findById: async (id) => {
     const { rows } = await db.query(
       `SELECT id, question_text, answers, correct_answer, status, topic, created_at

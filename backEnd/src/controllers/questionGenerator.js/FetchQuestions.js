@@ -43,6 +43,106 @@ export const getQuestionTopics = async (req, res) => {
   }
 };
 
+// POST /questions/manual (Liturgist) — manually authored question saved as
+// 'approved' so it is immediately usable alongside AI-generated ones and can
+// be mixed into a weekly challenge pool.
+export const createManualQuestion = async (req, res) => {
+  try {
+    const { questionText, answers, correctAnswer, topic } = req.body;
+
+    const opts = Array.isArray(answers) ? answers : [];
+    if (!questionText || typeof questionText !== "string" || !questionText.trim()) {
+      return res.status(400).json({ status: false, message: "Question text is required" });
+    }
+    if (opts.length !== 4) {
+      return res.status(400).json({ status: false, message: "Exactly 4 answer options are required" });
+    }
+    const normalizeLetter = (o) => String(o || "").replace(/\)/g, "").trim().toUpperCase();
+
+    const normalizedAnswers = [];
+    for (let i = 0; i < opts.length; i++) {
+      const letter = normalizeLetter(opts[i]?.option);
+      const text = opts[i]?.text;
+      if (!/^[A-D]$/.test(letter) || typeof text !== "string" || !text.trim()) {
+        return res.status(400).json({ status: false, message: "Each option needs a letter (A-D) and text" });
+      }
+      normalizedAnswers.push({ option: letter, text: text.trim() });
+    }
+
+    if (!correctAnswer?.option || !correctAnswer?.text) {
+      return res.status(400).json({ status: false, message: "A correct answer with option letter and text is required" });
+    }
+    const correctLetter = normalizeLetter(correctAnswer.option);
+    if (!normalizedAnswers.some((a) => a.option === correctLetter)) {
+      return res.status(400).json({ status: false, message: "The correct answer must match one of the provided options" });
+    }
+
+    const question = await Question.create({
+      questionText: questionText.trim(),
+      answers: normalizedAnswers,
+      correctAnswer: {
+        option: correctLetter,
+        text: String(correctAnswer.text).trim(),
+        explanation: correctAnswer.explanation ? String(correctAnswer.explanation).trim() : null,
+      },
+      topic: topic?.trim() || null,
+      generatedBy: req.user?.member_id || req.user?.id || req.user?.memberId || "admin",
+    });
+
+    return res.status(201).json({ status: true, question });
+  } catch (err) {
+    console.error("Failed to create manual question:", err);
+    return res.status(500).json({ status: false, message: "Failed to create manual question" });
+  }
+};
+
+// DELETE /questions/by-topic (Liturgist) — deletes every question under a
+// generation title as a batch. Analytics are preserved: attempts are detached
+// (question_id set to NULL) rather than removed, and published_stats snapshots
+// are never touched. Questions linked to the currently active week's challenge
+// are skipped so a live challenge is not broken.
+export const deleteQuestionsByTopicController = async (req, res) => {
+  try {
+    const topic = String(req.query.topic || "").trim();
+    if (!topic) {
+      return res.status(400).json({ status: false, message: "topic query param is required" });
+    }
+
+    const totalRes = await db.query(`SELECT COUNT(*) AS c FROM questions WHERE topic = $1`, [topic]);
+    const totalInTopic = Number(totalRes.rows[0].c);
+
+    const { rows } = await db.query(
+      `SELECT q.id FROM questions q
+       WHERE q.topic = $1
+         AND q.id NOT IN (
+           SELECT wcq.question_id FROM weekly_challenge_questions wcq
+           JOIN weekly_challenges wc ON wc.id = wcq.challenge_id
+           WHERE wc.week_start = (date_trunc('week', NOW()))::date AND wc.status = 'active'
+         )`,
+      [topic],
+    );
+    const ids = rows.map((r) => r.id);
+    if (ids.length === 0) {
+      return res.json({ status: true, deletedCount: 0, skippedCount: totalInTopic });
+    }
+
+    // Detach analytics instead of deleting them (attempts keep their own stats).
+    await db.query(`UPDATE attempts SET question_id = NULL WHERE question_id = ANY($1)`, [ids]);
+
+    // weekly_challenge_questions / weekly_challenge_assignments cascade-delete.
+    const del = await db.query(`DELETE FROM questions WHERE id = ANY($1)`, [ids]);
+
+    return res.json({
+      status: true,
+      deletedCount: del.rowCount,
+      skippedCount: Math.max(0, totalInTopic - del.rowCount),
+    });
+  } catch (err) {
+    console.error("Failed to batch delete questions by topic:", err);
+    return res.status(500).json({ status: false, message: "Failed to batch delete questions" });
+  }
+};
+
 // PUT /questions/:id (Admin)
 export const updateQuestionController = async (req, res) => {
   try {
@@ -123,6 +223,16 @@ export const recordAttemptHttp = async (req, res) => {
       if (inChallenge.rows.length === 0) {
         return res.status(400).json({ message: "This question is not part of this week's challenge" });
       }
+
+      // A member may only answer questions dealt to them personally.
+      const inAssignment = await db.query(
+        `SELECT 1 FROM weekly_challenge_assignments
+         WHERE challenge_id = $1 AND member_id = $2 AND question_id = $3`,
+        [activeChallenge.id, memberId, questionId]
+      );
+      if (inAssignment.rows.length === 0) {
+        return res.status(403).json({ message: "This question was not assigned to you this week" });
+      }
     }
 
     const question = await Question.findById(questionId);
@@ -189,7 +299,7 @@ export const getTodayChallengeStatus = async (req, res) => {
 
     const answeredToday = parseInt(rows[0]?.answered_today || "0", 10);
     return res.json({
-      completedToday: answeredToday >= 10,
+      completedToday: answeredToday >= 7,
       answeredToday,
       answeredQuestionIds: rows[0]?.answered_ids || [],
     });

@@ -233,8 +233,8 @@ export default function Challenge() {
               </h1>
 
               <p className="italic text-stone-600 text-base sm:text-lg mb-6 max-w-xl mx-auto leading-relaxed">
-                One attempt per question. No going back. Let your knowledge of the faith grow this
-                week.
+                You've been dealt 7 random questions from this week's pool. One attempt per
+                question, no going back. Let your knowledge of the faith grow this week.
               </p>
 
               <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm text-stone-500 italic">
@@ -303,9 +303,17 @@ export default function Challenge() {
               <button
                 key={index}
                 onClick={() => handleNextQuestion(index)}
-                className="w-full text-left p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 hover:border-amber-600/50 transition-all duration-200 shadow-sm"
+                className="group w-full text-left p-4 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 hover:border-amber-600/50 transition-all duration-200 shadow-sm flex items-start gap-4"
               >
-                <span className="font-medium text-stone-700">{option}</span>
+                <span className="w-5 h-5 rounded-full border-2 border-stone-300 group-hover:border-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-600 opacity-0 group-hover:opacity-40 transition-opacity" />
+                </span>
+                <span className="flex items-start gap-2">
+                  <span className="text-xs font-black text-stone-400 uppercase pt-0.5">
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  <span className="font-medium text-stone-700">{option}</span>
+                </span>
               </button>
             ))}
           </div>

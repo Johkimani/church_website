@@ -4,9 +4,13 @@ import { sansitiseAndParseQuestionBlock } from "../../utils/index.js";
 import Question from "../../model/question.js";
 
 export const GenerateQuestion = async (req, res) => {
-  const { topic, numberOfQuestions = 50 } = req.body;
+  const requested = parseInt(req.body?.numberOfQuestions, 10);
+  const numberOfQuestions = Math.min(
+    Number.isInteger(requested) && requested > 0 ? requested : 30,
+    60,
+  );
 
-  logger.debug(`Generating ${numberOfQuestions} questions on topic: ${topic}`);
+  logger.debug(`Generating ${numberOfQuestions} questions on topic: ${req.body?.topic}`);
 
   try {
     const response = await axios.post(

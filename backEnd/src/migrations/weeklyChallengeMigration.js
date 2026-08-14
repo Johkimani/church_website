@@ -80,6 +80,28 @@ const migration = async () => {
     `);
     logger.info("weekly_challenge_questions table ready");
 
+    /*
+      Phase 3: per-member random assignment.
+      - Each member is dealt a random subset of the challenge's questions
+        (e.g. 7 out of a ~30 question pool). Assignments are dealt once per
+        member per challenge so the set stays stable across page reloads.
+    */
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS weekly_challenge_assignments (
+        id SERIAL PRIMARY KEY,
+        challenge_id INTEGER NOT NULL REFERENCES weekly_challenges(id) ON DELETE CASCADE,
+        member_id VARCHAR(255) NOT NULL,
+        question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE (challenge_id, member_id, question_id)
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_wca_challenge_member
+        ON weekly_challenge_assignments(challenge_id, member_id)
+    `);
+    logger.info("weekly_challenge_assignments table ready");
+
     await pool.query(`
       ALTER TABLE published_stats
         ADD COLUMN IF NOT EXISTS week_start DATE

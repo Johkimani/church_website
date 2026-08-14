@@ -2,6 +2,9 @@ import { testDb as db, withTransaction } from "../Configs/dbConfig.js";
 import Question from "../model/question.js";
 import logger from "../logger/winston.js";
 
+// Each member is dealt a random subset of the weekly question pool.
+const QUESTIONS_PER_MEMBER = 7;
+
 const formatChallenge = (r) => ({
   id: r.id,
   weekStart: r.week_start,
@@ -73,8 +76,8 @@ export const createWeeklyChallenge = async (req, res) => {
     if (!weekStart || !topic || !Array.isArray(questionIds) || questionIds.length === 0) {
       return res.status(400).json({ message: "weekStart, topic and at least one questionId are required" });
     }
-    if (questionIds.length > 50) {
-      return res.status(400).json({ message: "A challenge can contain at most 50 questions" });
+    if (questionIds.length > 60) {
+      return res.status(400).json({ message: "A challenge can contain at most 60 questions" });
     }
 
     let week;
@@ -189,8 +192,8 @@ export const updateWeeklyChallenge = async (req, res) => {
       if (questionIds.length === 0) {
         return res.status(400).json({ message: "A challenge needs at least one question" });
       }
-      if (questionIds.length > 50) {
-        return res.status(400).json({ message: "A challenge can contain at most 50 questions" });
+      if (questionIds.length > 60) {
+        return res.status(400).json({ message: "A challenge can contain at most 60 questions" });
       }
       const questions = await Question.findByIds(questionIds);
       try {
@@ -250,8 +253,16 @@ export const activateWeeklyChallenge = async (req, res) => {
 
 // GET /weekly-challenge/current (member) — active challenge for THIS week,
 // WITHOUT the answer key or explanations (those only arrive via /attempt).
+// Each member is dealt a random subset (QUESTIONS_PER_MEMBER) of the
+// challenge's question pool. The deal is stored once per member per challenge
+// so a reload never changes their set.
 export const getCurrentWeeklyChallenge = async (req, res) => {
   try {
+    const memberId = req.user?.member_id || req.user?.id;
+    if (memberId === undefined || memberId === null) {
+      return res.status(401).json({ status: false, message: "Not authenticated" });
+    }
+
     const { rows } = await db.query(
       `SELECT * FROM weekly_challenges
        WHERE week_start = (date_trunc('week', NOW()))::date AND status = 'active'`,
@@ -260,7 +271,44 @@ export const getCurrentWeeklyChallenge = async (req, res) => {
       return res.status(404).json({ status: false, message: "No active challenge this week" });
     }
     const challenge = formatChallenge(rows[0]);
-    const questions = await loadChallengeQuestions(challenge.id, false);
+
+    const existing = await db.query(
+      `SELECT question_id FROM weekly_challenge_assignments
+       WHERE challenge_id = $1 AND member_id = $2`,
+      [challenge.id, memberId],
+    );
+    if (existing.rows.length === 0) {
+      const dealt = await db.query(
+        `SELECT question_id FROM weekly_challenge_questions
+         WHERE challenge_id = $1
+         ORDER BY RANDOM()
+         LIMIT $2`,
+        [challenge.id, QUESTIONS_PER_MEMBER],
+      );
+      for (const row of dealt.rows) {
+        await db.query(
+          `INSERT INTO weekly_challenge_assignments (challenge_id, member_id, question_id)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (challenge_id, member_id, question_id) DO NOTHING`,
+          [challenge.id, memberId, row.question_id],
+        );
+      }
+    }
+
+    const assigned = await db.query(
+      `SELECT q.id, q.question_text, q.answers
+       FROM weekly_challenge_assignments wca
+       JOIN questions q ON q.id = wca.question_id
+       WHERE wca.challenge_id = $1 AND wca.member_id = $2
+       ORDER BY wca.created_at`,
+      [challenge.id, memberId],
+    );
+    const questions = assigned.rows.map((r) => ({
+      _id: r.id,
+      questionText: r.question_text,
+      answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
+    }));
+
     return res.json({ status: true, challenge, questions });
   } catch (err) {
     logger.error("Failed to fetch current weekly challenge:", err);
