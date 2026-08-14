@@ -86,7 +86,11 @@ export const payBooking = async (req, res) => {
       return res.status(400).json({ error: `Amount must be between 1 and ${remaining}` });
     }
 
-    const response = await MpesaService.stkPush(phoneNumber, amount, process.env.CALLBACK_URL);
+    const callbackUrl = process.env.CALLBACK_URL;
+    if (!callbackUrl) {
+      return res.status(500).json({ error: "CALLBACK_URL is not configured. Set the production callback URL environment variable before initiating M-Pesa payments." });
+    }
+    const response = await MpesaService.stkPush(phoneNumber, amount, callbackUrl);
     const checkoutId = response.CheckoutRequestID;
 
     await pool.query(

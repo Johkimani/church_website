@@ -6,8 +6,23 @@ const ACCESS_TTL = "15min";
 const REFRESH_TTL = "20h";
 
 // Separate secrets for access vs refresh so a leak of one never compromises
-// the other. Falls back to JWT_SECRET so existing deployments keep working
-// until the new env vars are set.
+// the other. JWT_ACCESS_SECRET / JWT_REFRESH_SECRET are required in
+// production; JWT_SECRET is kept only as a development fallback so local
+// setups without the dedicated secrets keep working.
+const isProduction = process.env.NODE_ENV === "production";
+
+if (
+  isProduction &&
+  (!process.env.JWT_ACCESS_SECRET ||
+    !process.env.JWT_REFRESH_SECRET ||
+    process.env.JWT_ACCESS_SECRET === process.env.JWT_REFRESH_SECRET)
+) {
+  throw new Error(
+    "JWT configuration error: production requires distinct JWT_ACCESS_SECRET and JWT_REFRESH_SECRET " +
+      "environment variables. Set both in the deployment environment (Render) before starting.",
+  );
+}
+
 const accessSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
 const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
 

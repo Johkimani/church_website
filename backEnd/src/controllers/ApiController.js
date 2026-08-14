@@ -40,6 +40,67 @@ const sanitizeSuggestionRows = (rows) =>
 const maybeSanitize = (tableName, rows) =>
   tableName === 'suggestions' ? sanitizeSuggestionRows(rows) : rows;
 
+// ── Generic-write hardening ────────────────────────────────────────────────
+// Sensitive columns can NEVER be set through the generic create/update API,
+// regardless of table. These are only ever written by dedicated controllers
+// (auth, password policy, role management), so blocking them here cannot
+// break legitimate generic-write features.
+const BLOCKED_WRITE_COLUMNS = new Set([
+  "password",
+  "password_hash",
+  "role",
+  "email_verified",
+  "failed_login_attempts",
+  "locked_until",
+  "email_verification_token",
+  "email_verification_expires",
+  "refresh_token",
+  "refresh_tokens",
+  "chair_unmask_token",
+  "liturgist_unmask_token",
+  "jumuiya_chair_token",
+  "jumuiya_secretary_token",
+]);
+
+// Tables whose rows contain identity / payment / credential data. Generic
+// writes to them are denied entirely; use the dedicated controllers instead.
+const READ_ONLY_TABLES = new Set([
+  "members",
+  "users",
+  "mpesa_request",
+  "contributions",
+  "orders",
+  "hire_requests",
+]);
+
+// Per-table column allowlists for generic writes. Keys outside the allowlist
+// are dropped from create/update payloads. Tables not listed here accept any
+// column except the BLOCKED_WRITE_COLUMNS.
+const WRITE_COLUMN_ALLOWLISTS = {
+  enrollments: ["module_id", "class_id", "full_name", "name", "email", "phone", "voice_type", "music_level", "status", "source"],
+  hub_modules: ["name", "description", "module_id", "status", "category", "order", "image", "about", "title", "saint_image_url", "history_pdf_url"],
+  hub_activities: ["module_id", "title", "description", "activity_date", "location", "status"],
+  hub_announcements: ["module_id", "title", "content", "announcement_date", "status"],
+  hub_gallery: ["module_id", "image_url", "title", "caption", "category", "status"],
+  hub_officials: ["module_id", "name", "role", "photo_url", "phone", "email", "bio", "order", "status"],
+  products: ["name", "description", "price", "category", "image", "stock", "status", "featured"],
+  categories: ["name", "description", "order", "status"],
+  testimonials: ["name", "message", "rating", "status"],
+  suggestions: ["suggestion", "category", "scope", "jumuiya_id", "name", "email", "user_id", "status", "reply", "replied_at", "replied_by", "approved", "is_approved", "requested_unmask", "unmask_response"],
+};
+
+const sanitizeWritePayload = (tableName, data) => {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+  const allowlist = WRITE_COLUMN_ALLOWLISTS[tableName];
+  const sanitized = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (BLOCKED_WRITE_COLUMNS.has(key)) continue;
+    if (allowlist && !allowlist.includes(key)) continue;
+    sanitized[key] = value;
+  }
+  return sanitized;
+};
+
 // Get all records from a table
 export const getTableData = async (tableName, queryParams = {}) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
@@ -105,8 +166,19 @@ export const getTableData = async (tableName, queryParams = {}) => {
 export const createRecord = async (tableName, data) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   try {
+    if (READ_ONLY_TABLES.has(dbTableName)) {
+      const err = new Error(`Writes to table "${dbTableName}" via the generic API are not allowed`);
+      err.status = 403;
+      throw err;
+    }
+    data = sanitizeWritePayload(dbTableName, data);
     const columns = Object.keys(data);
     const values = Object.values(data);
+    if (columns.length === 0) {
+      const err = new Error('No allowed columns provided for create');
+      err.status = 400;
+      throw err;
+    }
     const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
     const columnNames = columns.map(col => `"${col}"`).join(', ');
     
@@ -160,8 +232,19 @@ export const updateRecord = async (tableName, id, data) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';
   try {
+    if (READ_ONLY_TABLES.has(dbTableName)) {
+      const err = new Error(`Writes to table "${dbTableName}" via the generic API are not allowed`);
+      err.status = 403;
+      throw err;
+    }
+    data = sanitizeWritePayload(dbTableName, data);
     const columns = Object.keys(data);
     const values = Object.values(data);
+    if (columns.length === 0) {
+      const err = new Error('No allowed columns provided for update');
+      err.status = 400;
+      throw err;
+    }
     const setClause = columns.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
     
     const query = `

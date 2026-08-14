@@ -1,6 +1,31 @@
 import axios from "axios";
 import logger from "../logger/winston.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+// Strict startup guard: never silently fall back to sandbox credentials in
+// production. If any M-Pesa env var is missing, refuse to boot instead of
+// letting test transactions be treated as real ones (or vice versa).
+export const assertMpesaConfig = () => {
+  const required = ["CONSUMER_KEY", "CONSUMER_SECRET", "SHORTCODE", "PASSKEY"];
+  const missing = required.filter((key) => !process.env[key]);
+
+  if (missing.length === 0) return;
+
+  if (isProduction) {
+    throw new Error(
+      `M-Pesa configuration error: missing required environment variables: ${missing.join(", ")}. ` +
+        "Set them in the deployment environment (Render) before starting.",
+    );
+  }
+  // Development: default to Safaricom sandbox so local work keeps working.
+  logger.warn(
+    `M-Pesa running without: ${missing.join(", ")}. Using sandbox defaults (dev only).`,
+  );
+};
+
+const defaultToSandbox = (value, devValue) => (isProduction ? "" : devValue);
+
 export class MpesaService {
   static get consumerKey() {
     return process.env.CONSUMER_KEY || "";
@@ -9,17 +34,25 @@ export class MpesaService {
     return process.env.CONSUMER_SECRET || "";
   }
   static get shortCode() {
-    return process.env.SHORTCODE || "174379";
+    return defaultToSandbox(process.env.SHORTCODE, "174379");
   }
   static get passKey() {
-    return (
-      process.env.PASSKEY ||
-      "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+    return defaultToSandbox(
+      process.env.PASSKEY,
+      "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
     );
   }
-  static baseUrl = "https://sandbox.safaricom.co.ke";
+  // Live API base is only used when MPESA_ENV=production (or an explicit
+  // MPESA_BASE_URL override). Defaults to the sandbox for local development.
+  static get baseUrl() {
+    if (process.env.MPESA_BASE_URL) return process.env.MPESA_BASE_URL;
+    return process.env.MPESA_ENV === "production"
+      ? "https://api.safaricom.co.ke"
+      : "https://sandbox.safaricom.co.ke";
+  }
 
   static async getAccessToken() {
+    assertMpesaConfig();
     const auth = Buffer.from(
       `${this.consumerKey}:${this.consumerSecret}`,
     ).toString("base64");

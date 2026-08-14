@@ -182,7 +182,12 @@ router.post("/pay/:reference", async (req, res) => {
 
     // Initiate STK Push
     const { MpesaService } = await import("../../services/mpesa.js");
-    const callbackUrl = process.env.CALLBACK_URL || "https://example.com/api/v1/stkPush/callback";
+    const callbackUrl = process.env.CALLBACK_URL;
+    if (!callbackUrl) {
+      return res.status(500).json({
+        error: "CALLBACK_URL is not configured. Set the production callback URL environment variable before initiating M-Pesa payments.",
+      });
+    }
     const response = await MpesaService.stkPush(phone, totalCost, callbackUrl);
 
     const checkoutId = response.CheckoutRequestID;

@@ -13,6 +13,20 @@ import {
  *   req.body.Body.stkCallback.CheckoutRequestID
  *   req.body.Body.stkCallback.CallbackMetadata.Item (array of {Name, Value})
  */
+/**
+ * Verify a callback references a payment this server actually initiated.
+ * Forged callbacks carrying a made-up CheckoutRequestID are rejected here,
+ * before any order/hire/booking is marked paid.
+ */
+const isKnownCheckout = async (checkoutId) => {
+  if (!checkoutId) return false;
+  const res = await db.query(
+    `SELECT 1 FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+    [checkoutId],
+  );
+  return res.rows.length > 0;
+};
+
 export const handleCallback = async (req, res) => {
   // Always respond immediately to Safaricom to prevent retries
   res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
@@ -27,6 +41,14 @@ export const handleCallback = async (req, res) => {
 
     const { ResultCode, ResultDesc, CheckoutRequestID, MerchantRequestID } =
       stkCallback;
+
+    // Reject callbacks for payments we never initiated (forged requests).
+    if (!(await isKnownCheckout(CheckoutRequestID))) {
+      logger.warn(
+        `STK callback ignored: unknown CheckoutRequestID ${CheckoutRequestID}`,
+      );
+      return;
+    }
 
     logger.info(
       `STK Callback received: CheckoutID=${CheckoutRequestID}, ResultCode=${ResultCode}`,
@@ -237,8 +259,12 @@ export const waitForPaymentResult = async (
 export const initiateSTK = async (userId, phoneNumber, amount) => {
   const { MpesaService } = await import("../../services/mpesa.js");
 
-  const callbackUrl =
-    process.env.CALLBACK_URL || "https://example.com/api/v1/stkPush/callback";
+  const callbackUrl = process.env.CALLBACK_URL;
+  if (!callbackUrl) {
+    throw new Error(
+      "CALLBACK_URL is not configured. Set the production callback URL environment variable before initiating M-Pesa payments.",
+    );
+  }
   const response = await MpesaService.stkPush(phoneNumber, amount, callbackUrl);
 
   if (!response || !response.CheckoutRequestID) {

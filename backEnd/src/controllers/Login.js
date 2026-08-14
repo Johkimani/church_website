@@ -42,6 +42,18 @@ const setRefreshTokenCookie = (res, req, refreshToken) =>
 const clearRefreshTokenCookie = (res, req) =>
   res.clearCookie("refreshToken", refreshCookieOptions(req));
 
+// Normalize login timing: unknown users return before bcrypt work, which leaks
+// account existence via response latency. Burn a comparable amount of time
+// (and the same work) for unknown members so timing stays uniform.
+const DUMMY_BCRYPT_HASH = "$2b$10$Cw6T9y7qVXgQvZ0N8r9rq.yG8xZ1hV0w3N2mQoKv5yYf8Z6Wk5m7m";
+const normalizeLoginTiming = async () => {
+  try {
+    await bcrypt.compare(crypto.randomUUID(), DUMMY_BCRYPT_HASH);
+  } catch {
+    // timing normalization is best-effort; never block the response
+  }
+};
+
 export const Login = async (req, res) => {
   let { userReg, password } = req.body ?? {};
 
@@ -77,6 +89,7 @@ export const Login = async (req, res) => {
 
     if (result.rows.length === 0) {
       logger.error(`Invalid username or password for '${userReg || "<empty>"}'`);
+      await normalizeLoginTiming();
       return res.status(401).json({ status: false, message: "Invalid username or password" });
     }
 

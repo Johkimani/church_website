@@ -57,6 +57,23 @@ export const mpesaCallback = async (req, res) => {
     }
 
     const { ResultCode, ResultDesc, CheckoutRequestID, MerchantRequestID } = stkCallback;
+
+    // Reject callbacks for payments we never initiated (forged requests).
+    if (!CheckoutRequestID) {
+      logger.warn("payment callback: missing CheckoutRequestID");
+      return;
+    }
+    const known = await db.query(
+      `SELECT 1 FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+      [CheckoutRequestID],
+    );
+    if (known.rows.length === 0) {
+      logger.warn(
+        `Payment callback ignored: unknown CheckoutRequestID ${CheckoutRequestID}`,
+      );
+      return;
+    }
+
     logger.info(`Payment callback: CheckoutID=${CheckoutRequestID}, ResultCode=${ResultCode}`);
 
     if (ResultCode === 0) {

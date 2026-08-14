@@ -218,6 +218,8 @@ api.post("/:table", validateTable, authorizeTableAccess, async (req, res) => {
       return res.status(503).json({ error: 'Database unavailable. Please try again later.' });
     }
 
+    if (error && error.status) return res.status(error.status).json({ error: error.message });
+
     return res.status(500).json({ error: error.message });
   }
 });
@@ -233,6 +235,7 @@ api.patch("/:table/:id", validateTable, authorizeTableAccess, async (req, res) =
     return res.json(updated);
   } catch (error) {
     logger.error(`Error in PATCH '/:table/:id': ${error.message}`);
+    if (error && error.status) return res.status(error.status).json({ error: error.message });
     return res.status(500).json({ error: error.message });
   }
 });

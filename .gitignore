@@ -39,3 +39,5 @@ git_status_output.txt
 
 # Scripts with credentials
 check_roles.mjs
+backEnd/verify_login_hash.mjs
+backEnd/cleanup_db.js
