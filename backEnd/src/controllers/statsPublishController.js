@@ -114,7 +114,7 @@ export const getPublishedComparison = async (req, res) => {
 
     if (weekStart) {
       const monday = await pool.query(
-        `SELECT (date_trunc('week', $1::date))::date AS m`,
+        `SELECT to_char((date_trunc('week', $1::date))::date, 'YYYY-MM-DD') AS m`,
         [weekStart]
       );
       const m = monday.rows[0]?.m;
@@ -160,8 +160,8 @@ export const getComparisonOptions = async (req, res) => {
   try {
     const weeksRes = await pool.query(
       `SELECT DISTINCT
-         (date_trunc('week', attempted_at))::date AS week_start,
-         ((date_trunc('week', attempted_at))::date + 6) AS week_end
+         to_char((date_trunc('week', attempted_at))::date, 'YYYY-MM-DD') AS week_start,
+         to_char(((date_trunc('week', attempted_at))::date + 6), 'YYYY-MM-DD') AS week_end
        FROM attempts
        WHERE attempted_at IS NOT NULL
        ORDER BY week_start DESC`

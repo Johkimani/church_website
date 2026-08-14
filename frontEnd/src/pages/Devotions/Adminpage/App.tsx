@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { FaUserCircle, FaCheckCircle, FaUsers, FaTrash, FaEdit, FaSearch } from "react-icons/fa";
-import { Sparkles, TrendingUp, Award, BarChart3, PieChart as PieIcon, RefreshCw, Users, ShieldCheck, CalendarDays } from "lucide-react";
+import { Sparkles, TrendingUp, Award, BarChart3, PieChart as PieIcon, RefreshCw, Users, ShieldCheck, CalendarDays, CalendarRange } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend
 } from "recharts";
@@ -15,6 +15,7 @@ import {
   deleteQuestionsByTopicApi,
   setQuestionStatusApi,
   fetchPublishedComparison,
+  fetchComparisonOptions,
 } from "../../../api/axiosInstance";
 import JumuiyaDashboard from "../jumuiyaStatus/JumuiyaDashboard";
 import WeeklyChallengeManager from "./WeeklyChallengeManager";
@@ -761,14 +762,78 @@ function getJumuiyaColor(idOrSlug: string, membersList: JumuiyaRow[] = []): stri
   return fallbackColors[Math.abs(hash) % fallbackColors.length];
 }
 
+type AnalyticsFilterMode = "all" | "week" | "semester" | "year";
+
+interface AnalyticsWeekOption {
+  weekStart: string;
+  weekEnd: string;
+}
+interface AnalyticsSemesterOption {
+  id: number;
+  label: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+}
+interface AnalyticsYearOption {
+  year: string;
+  startDate: string;
+  endDate: string;
+}
+
+const fmtDate = (d: string) =>
+  new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
 function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaRow[] }) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadAnalytics = async () => {
+  const [options, setOptions] = useState<{
+    weeks: AnalyticsWeekOption[];
+    semesters: AnalyticsSemesterOption[];
+    academicYears: AnalyticsYearOption[];
+  }>({ weeks: [], semesters: [], academicYears: [] });
+
+  const [mode, setMode] = useState<AnalyticsFilterMode>("all");
+  const [weekFilter, setWeekFilter] = useState("");
+  const [semesterFilter, setSemesterFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+
+  useEffect(() => {
+    fetchComparisonOptions()
+      .then((res) => {
+        setOptions({
+          weeks: res.data?.weeks || [],
+          semesters: res.data?.semesters || [],
+          academicYears: res.data?.academicYears || [],
+        });
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const activeRange = useCallback((): { from: string; to: string } | null => {
+    if (mode === "week" && weekFilter) {
+      const w = options.weeks.find((x) => x.weekStart === weekFilter);
+      return w ? { from: w.weekStart, to: w.weekEnd } : null;
+    }
+    if (mode === "semester" && semesterFilter) {
+      const s = options.semesters.find((x) => String(x.id) === String(semesterFilter));
+      return s ? { from: s.startDate, to: s.endDate } : null;
+    }
+    if (mode === "year" && yearFilter) {
+      const y = options.academicYears.find((x) => x.year === yearFilter);
+      return y ? { from: y.startDate, to: y.endDate } : null;
+    }
+    return null;
+  }, [mode, weekFilter, semesterFilter, yearFilter, options]);
+
+  const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchPublishedComparison();
+      const range = activeRange();
+      const res = range
+        ? await fetchPublishedComparison({ from: range.from, to: range.to })
+        : await fetchPublishedComparison();
       const raw = Array.isArray(res.data?.data) ? res.data.data : [];
       setData(raw);
     } catch (err) {
@@ -776,11 +841,52 @@ function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaR
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeRange]);
 
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [loadAnalytics]);
+
+  const selectMode = (m: AnalyticsFilterMode) => {
+    setMode(m);
+    if (m === "week" && !weekFilter && options.weeks[0]) setWeekFilter(options.weeks[0].weekStart);
+    if (m === "semester" && !semesterFilter && options.semesters[0]) setSemesterFilter(String(options.semesters[0].id));
+    if (m === "year" && !yearFilter && options.academicYears[0]) setYearFilter(options.academicYears[0].year);
+  };
+
+  const clearFilters = () => {
+    setMode("all");
+    setWeekFilter("");
+    setSemesterFilter("");
+    setYearFilter("");
+  };
+
+  const activeSemester = options.semesters.find((s) => String(s.id) === String(semesterFilter));
+
+  const rangeLabel = (() => {
+    if (mode === "week" && weekFilter) {
+      const w = options.weeks.find((x) => x.weekStart === weekFilter);
+      return w ? `Week of ${fmtDate(w.weekStart)} – ${fmtDate(w.weekEnd)}` : null;
+    }
+    if (mode === "semester" && activeSemester) {
+      return activeSemester.label || `Semester ${fmtDate(activeSemester.startDate)} – ${fmtDate(activeSemester.endDate)}`;
+    }
+    if (mode === "year" && yearFilter) return `Academic Year ${yearFilter}`;
+    return null;
+  })();
+
+  const filterButton = (m: AnalyticsFilterMode, label: string) => (
+    <button
+      onClick={() => selectMode(m)}
+      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+        mode === m
+          ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+          : "bg-white text-stone-600 border-stone-200 hover:border-amber-400"
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   const totalParishParticipants = data.reduce((sum, item) => sum + (item.totalAttempts || 0), 0);
   const avgAccuracy = data.length
@@ -821,6 +927,80 @@ function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaR
             Refresh Analytics
           </button>
         </div>
+      </div>
+
+      {/* Filter module */}
+      <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <CalendarRange size={15} className="text-amber-600" />
+            <span className="text-xs font-black text-stone-600 uppercase tracking-widest">Filter</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {filterButton("all", "All Time")}
+            {filterButton("week", "Week")}
+            {filterButton("semester", "Semester")}
+            {filterButton("year", "Academic Year")}
+          </div>
+          <div className="flex-1 flex items-center gap-2 min-w-[220px] lg:justify-end">
+            {mode === "week" && (
+              <select
+                value={weekFilter}
+                onChange={(e) => setWeekFilter(e.target.value)}
+                className="w-full lg:w-64 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              >
+                {options.weeks.length === 0 && <option value="">No weeks with attempts yet</option>}
+                {options.weeks.map((w) => (
+                  <option key={w.weekStart} value={w.weekStart}>
+                    Week of {fmtDate(w.weekStart)} – {fmtDate(w.weekEnd)}
+                  </option>
+                ))}
+              </select>
+            )}
+            {mode === "semester" && (
+              <select
+                value={semesterFilter}
+                onChange={(e) => setSemesterFilter(e.target.value)}
+                className="w-full lg:w-64 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              >
+                {options.semesters.length === 0 && <option value="">No semesters configured yet</option>}
+                {options.semesters.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label || `${fmtDate(s.startDate)} – ${fmtDate(s.endDate)}`}
+                    {s.isCurrent ? " (Current)" : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+            {mode === "year" && (
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="w-full lg:w-64 border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              >
+                {options.academicYears.length === 0 && <option value="">No academic years yet</option>}
+                {options.academicYears.map((y) => (
+                  <option key={y.year} value={y.year}>
+                    {y.year}
+                  </option>
+                ))}
+              </select>
+            )}
+            {mode !== "all" && (
+              <button
+                onClick={clearFilters}
+                className="text-[10px] font-bold text-amber-700 hover:text-amber-900 whitespace-nowrap"
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
+        </div>
+        {mode !== "all" && (
+          <p className="text-[10px] text-stone-400 mt-2 ml-[22px]">
+            Showing live per-jumuiya accuracy for {rangeLabel || "the selected period"}. Adjusts automatically as members answer.
+          </p>
+        )}
       </div>
 
       {/* KPI Cards */}

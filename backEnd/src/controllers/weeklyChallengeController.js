@@ -5,10 +5,23 @@ import logger from "../logger/winston.js";
 // Each member is dealt a random subset of the weekly question pool.
 const QUESTIONS_PER_MEMBER = 7;
 
+// Normalize a DATE cell (Date object or string) to a plain YYYY-MM-DD string
+// so the frontend can build local Date objects without timezone surprises.
+const toDateStr = (d) => {
+  if (!d) return null;
+  if (d instanceof Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+  return String(d).slice(0, 10);
+};
+
 const formatChallenge = (r) => ({
   id: r.id,
-  weekStart: r.week_start,
-  weekEnd: r.week_end,
+  weekStart: toDateStr(r.week_start),
+  weekEnd: toDateStr(r.week_end),
   topic: r.topic,
   status: r.status,
   questionCount: Number(r.question_count),
@@ -25,7 +38,7 @@ const parseWeek = async (dateStr) => {
     [dateStr],
   );
   if (!rows[0]?.monday) throw new Error("invalid-date");
-  return { weekStart: rows[0].monday, weekEnd: rows[0].sunday };
+  return { weekStart: toDateStr(rows[0].monday), weekEnd: toDateStr(rows[0].sunday) };
 };
 
 const loadChallengeQuestions = async (challengeId, includeAnswerKey) => {
