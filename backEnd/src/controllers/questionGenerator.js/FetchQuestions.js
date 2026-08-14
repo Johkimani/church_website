@@ -166,6 +166,9 @@ export const deleteQuestionController = async (req, res) => {
     return res.json({ message: "Question deleted successfully" });
   } catch (err) {
     console.error("Error deleting question:", err);
+    if (err.code === "ACTIVE_CHALLENGE") {
+      return res.status(409).json({ message: err.message });
+    }
     return res.status(500).json({ message: "Failed to delete question" });
   }
 };

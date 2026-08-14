@@ -1,4 +1,4 @@
-import { testDb as db } from "../Configs/dbConfig.js";
+import { testDb as db, withTransaction } from "../Configs/dbConfig.js";
 
 const Question = {
   insertMany: async (questions, { topic = null, generatedBy = null } = {}) => {
@@ -211,8 +211,29 @@ const Question = {
   },
 
   deleteQuestion: async (id) => {
-    const { rowCount } = await db.query(`DELETE FROM questions WHERE id = $1`, [id]);
-    return rowCount > 0;
+    return withTransaction(async (client) => {
+      // Do not delete questions linked to the currently active week's
+      // challenge, or that live challenge would break mid-flight.
+      const activeRes = await client.query(
+        `SELECT 1 FROM weekly_challenge_questions wcq
+         JOIN weekly_challenges wc ON wc.id = wcq.challenge_id
+         WHERE wcq.question_id = $1
+           AND wc.week_start = (date_trunc('week', NOW()))::date
+           AND wc.status = 'active'`,
+        [id],
+      );
+      if (activeRes.rows.length > 0) {
+        const err = new Error("Question is part of this week's active challenge");
+        err.code = "ACTIVE_CHALLENGE";
+        throw err;
+      }
+
+      // Detach attempt analytics (set question_id to NULL) instead of deleting
+      // them, so member/jumuiya stats are preserved. Challenge links cascade.
+      await client.query(`UPDATE attempts SET question_id = NULL WHERE question_id = $1`, [id]);
+      const { rowCount } = await client.query(`DELETE FROM questions WHERE id = $1`, [id]);
+      return rowCount > 0;
+    });
   },
 };
 
