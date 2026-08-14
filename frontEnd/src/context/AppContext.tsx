@@ -2,8 +2,19 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../api/config';
 import { apiClient } from '../api/axiosInstance';
+import { SessionStorage } from '../utils';
 import { SACRAMENTAL_CATEGORIES } from '../pages/projects/pages/data';
 import type { CartItem, SacramentalCategory } from '../pages/projects/pages/data';
+
+// Email of the signed-in account, used to link purchases to "My Receipts".
+const getAccountEmail = (): string => {
+  try {
+    const stored = SessionStorage.get('userdata');
+    return stored?.status === 'success' && stored?.email ? String(stored.email) : '';
+  } catch {
+    return '';
+  }
+};
 
 export interface HireItem {
   id: number;
@@ -313,7 +324,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     amount: cartTotal,
                     phone,
                     customer_name: customerName.trim(),
-                    customer_email: customerEmail.trim() || null,
+                    customer_email: customerEmail.trim() || getAccountEmail() || null,
                     payment_method: 'mpesa',
                     collection_method: collectionMethod,
                     delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
@@ -419,7 +430,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 amount: cartTotal,
                 phone,
                 customer_name: customerName.trim(),
-                customer_email: customerEmail.trim() || null,
+                customer_email: customerEmail.trim() || getAccountEmail() || null,
                 payment_method: 'cash',
                 collection_method: collectionMethod,
                 delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,

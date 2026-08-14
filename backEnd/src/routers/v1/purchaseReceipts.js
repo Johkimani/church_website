@@ -66,11 +66,13 @@ const formatItems = (items) => {
 
 // GET /purchase-receipts?phone=2547…
 //   → all paid orders + paid hires for that phone.
+// GET /purchase-receipts?email=user@example.com
+//   → all paid orders + paid hires linked to that account email.
 // GET /purchase-receipts?checkout_id=… (or ?ref=…)
 //   → the single paid order that matches checkout_id / order_reference.
 router.get("/", async (req, res) => {
   try {
-    const { phone, checkout_id, ref } = req.query;
+    const { phone, email, checkout_id, ref } = req.query;
     const pickup = await getPickupInfo();
 
     const orders = [];
@@ -89,6 +91,31 @@ router.get("/", async (req, res) => {
       o.rows.forEach((r) => {
         orders.push({ ...r, items: formatItems(r.items) });
       });
+    } else if (email) {
+      const [o, h] = await Promise.all([
+        pool.query(
+          `SELECT order_reference, customer_name, phone, amount, mpesa_receipt, items,
+                  collection_method, delivery_address, checkout_id, status, updated_at
+             FROM orders
+            WHERE status = 'paid'
+              AND LOWER(customer_email) = LOWER($1)
+            ORDER BY updated_at DESC`,
+          [email]
+        ),
+        pool.query(
+          `SELECT hire_reference, customer_name, phone_number, item_name, quantity,
+                  total_cost, mpesa_receipt, paid_at, pickup_date, status
+             FROM hire_requests
+            WHERE payment_status = 'paid'
+              AND LOWER(email) = LOWER($1)
+            ORDER BY paid_at DESC`,
+          [email]
+        ),
+      ]);
+      o.rows.forEach((r) => {
+        orders.push({ ...r, items: formatItems(r.items) });
+      });
+      hires.push(...h.rows);
     } else if (phone) {
       const normalized = normalize(phone);
       if (!normalized) {
@@ -119,7 +146,7 @@ router.get("/", async (req, res) => {
       });
       hires.push(...h.rows);
     } else {
-      return res.status(400).json({ error: "phone, checkout_id or ref is required" });
+      return res.status(400).json({ error: "phone, email, checkout_id or ref is required" });
     }
 
     return res.json({ pickup, orders, hires });

@@ -35,6 +35,7 @@ const InstrumentsPage = lazy(() => import("./pages/projects/pages/Instruments").
 const OtherProjectsPage = lazy(() => import("./pages/projects/pages/OtherProjects").then((module) => ({ default: module.OtherProjects })));
 const ActivitiesPage = lazy(() => import("./pages/Landing/components/page/ActivitiesPage"));
 const ProductDetailsPage = lazy(() => import("./pages/projects/pages/ProductDetails"));
+const MyReceiptsPage = lazy(() => import("./pages/MyReceipts").then((module) => ({ default: module.MyReceipts })));
 
 // New Admin Pages
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
@@ -207,6 +208,9 @@ const App: React.FC = () => {
               <Route path="activities" element={<ActivitiesPage />} />
               <Route path="product/:id" element={<ProductDetailsPage />} />
             </Route>
+
+            {/* Account receipts (login required) */}
+            <Route path="my-receipts" element={<ProtectedRoute><MyReceiptsPage /></ProtectedRoute>} />
 
             {/* show notification to all */}
             <Route path="Notification" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
