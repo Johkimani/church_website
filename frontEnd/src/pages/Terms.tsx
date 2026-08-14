@@ -120,7 +120,7 @@ export default function Terms() {
                 <p>
                   The Platform is operated and maintained by the St. Thomas Aquinas CSA executive committee
                   ("CSA," "we," "us," or "our"), a registered Catholic student association within the
-                  Catholic Diocese of Kirinyaga, Kenya. These Terms constitute a legally binding agreement
+                  Catholic Diocese of Muranga, Kenya. These Terms constitute a legally binding agreement
                   between you (whether acting as an individual or on behalf of an entity) and the CSA.
                 </p>
                 <p>
@@ -347,7 +347,7 @@ export default function Terms() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
                   { icon: Mail, label: "Email", value: "morrismaina077@gmail.com", color: "text-indigo-600" },
-                  { icon: Mail, label: "Chairperson", value: "morrismaina077", color: "text-indigo-600" },
+                  { icon: Mail, label: "Chairperson", value: "Morris Maina", color: "text-indigo-600" },
                   { icon: Mail, label: "Secretary", value: "secretary@kirinyaga.com", color: "text-indigo-600" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">

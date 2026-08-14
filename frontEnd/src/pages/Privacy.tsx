@@ -107,7 +107,7 @@ export default function Privacy() {
               <div className="text-slate-600 space-y-4 text-sm sm:text-base leading-relaxed font-medium">
                 <p>
                   The St. Thomas Aquinas Catholic Student Association ("CSA," "we," "us," or "our") operates
-                  the csakyu.com platform ("Platform"). This Privacy Policy is designed to inform
+                  the csakyu.com ("Platform"). This Privacy Policy is designed to inform
                   you about how we collect, use, disclose, and safeguard your personal information when you
                   visit or interact with the Platform or engage with us through parish activities.
                 </p>
@@ -344,7 +344,7 @@ export default function Privacy() {
                   { icon: Mail, label: "Data Protection Officer", value: "morrismaina077@gmail.com", color: "text-emerald-600" },
                   { icon: Mail, label: "CSA Secretariat", value: "csa@kirinyaga.com", color: "text-emerald-600" },
                   { icon: Mail, label: "Physical Address", value: "St. Thomas Aquinas Catholic Church, Kutus-Kerugoya Rd, Kirinyaga", color: "text-emerald-600" },
-                  { icon: Mail, label: "Phone", value: "+254 7XX XXX XXX", color: "text-emerald-600" },
+                  { icon: Mail, label: "Phone", value: "+254 112051739", color: "text-emerald-600" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
                     <item.icon className={`w-5 h-5 ${item.color} shrink-0`} />
