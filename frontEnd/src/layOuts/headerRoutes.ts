@@ -17,6 +17,5 @@ export const publicNavLinks: NavLink[] = [
 
 // Auth-only routes - visible when logged in
 export const authNavLinks: NavLink[] = [
-  { name: "My Receipts", path: "/my-receipts" },
   { name: "Activities", path: "/activities" },
 ];

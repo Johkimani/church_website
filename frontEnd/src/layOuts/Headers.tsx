@@ -3,7 +3,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useApp } from "../context/AppContext";
-import { FaBell, FaShoppingCart } from "react-icons/fa";
+import { FaBell, FaReceipt, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 import AdminPanel from "../pages/Landing/components/AdminPanel";
 
@@ -160,6 +160,17 @@ const Headers = () => {
               </span>
             )}
           </button>
+
+          {/* My Receipts */}
+          {user && (
+            <button
+              onClick={() => navigate("/my-receipts")}
+              className="relative p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
+              title="My Receipts"
+            >
+              <FaReceipt className="text-lg" />
+            </button>
+          )}
 
           {/* Cart */}
           <button
@@ -349,6 +360,16 @@ const Headers = () => {
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => {
+                      navigate("/my-receipts");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all"
+                  >
+                    <FaReceipt className="text-sm text-emerald-600" />
+                    <span className="font-semibold text-sm text-slate-700">My Receipts</span>
+                  </button>
                   {isAdminRole(user?.role) && (
                     <button
                       className="w-full bg-slate-900 text-white py-3 rounded-xl font-semibold text-sm hover:bg-slate-800 transition-all active:scale-[0.98]"
