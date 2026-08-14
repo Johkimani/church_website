@@ -817,8 +817,7 @@ export default function WeeklyChallengeManager() {
                     <tr>
                       <th className="py-2.5 px-3">Rank</th>
                       <th className="py-2.5 px-3">Jumuiya</th>
-                      <th className="py-2.5 px-3 text-center">Members</th>
-                      <th className="py-2.5 px-3 text-center">Attempts</th>
+                      <th className="py-2.5 px-3 text-center">Members Attempted</th>
                       <th className="py-2.5 px-3 text-center">Avg Member Accuracy</th>
                       <th className="py-2.5 px-3 text-center">Overall Accuracy</th>
                     </tr>
@@ -829,7 +828,6 @@ export default function WeeklyChallengeManager() {
                         <td className="py-2.5 px-3 font-bold text-stone-400">#{idx + 1}</td>
                         <td className="py-2.5 px-3 font-semibold">{formatJumuiyaName(j._id, j.name)}</td>
                         <td className="py-2.5 px-3 text-center font-semibold text-stone-600">{j.participatingMembers}</td>
-                        <td className="py-2.5 px-3 text-center font-semibold text-stone-600">{j.totalAttempts}</td>
                         <td className="py-2.5 px-3 text-center font-black text-amber-700">{j.avgMemberAccuracy}%</td>
                         <td className="py-2.5 px-3 text-center font-semibold text-stone-600">{j.overallAccuracy}%</td>
                       </tr>

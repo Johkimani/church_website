@@ -782,9 +782,10 @@ function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaR
     loadAnalytics();
   }, []);
 
-  const totalParishAttempts = data.reduce((sum, item) => sum + (item.totalAttempts || 0), 0);
-  const totalParishCorrect = data.reduce((sum, item) => sum + (item.correctAttempts || 0), 0);
-  const avgAccuracy = totalParishAttempts ? (totalParishCorrect / totalParishAttempts) * 100 : 0;
+  const totalParishParticipants = data.reduce((sum, item) => sum + (item.totalAttempts || 0), 0);
+  const avgAccuracy = data.length
+    ? data.reduce((sum, item) => sum + (item.accuracy || 0), 0) / data.length
+    : 0;
 
   const sortedData = [...data].sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0));
   const topJumuiya = sortedData[0] ? formatJumuiyaSlug(sortedData[0]._id, membersList) : "N/A";
@@ -826,12 +827,12 @@ function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaR
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total Attempts</span>
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Members Participated</span>
             <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
               <Users size={16} />
             </div>
           </div>
-          <p className="text-2xl font-black text-stone-800 mt-2">{totalParishAttempts}</p>
+          <p className="text-2xl font-black text-stone-800 mt-2">{totalParishParticipants}</p>
           <p className="text-[10px] text-stone-400 mt-1">Parish-wide challenge responses</p>
         </div>
 
@@ -843,7 +844,7 @@ function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaR
             </div>
           </div>
           <p className="text-2xl font-black text-emerald-600 mt-2">{avgAccuracy.toFixed(1)}%</p>
-          <p className="text-[10px] text-stone-400 mt-1">Overall correct answer rate</p>
+          <p className="text-[10px] text-stone-400 mt-1">Average jumuiya accuracy</p>
         </div>
 
         <div className="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
@@ -907,7 +908,7 @@ function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaR
               <tr>
                 <th className="py-3 px-3">Rank</th>
                 <th className="py-3 px-3">Jumuiya Name</th>
-                <th className="py-3 px-3 text-center">Total Attempts</th>
+                <th className="py-3 px-3 text-center">Members Participated</th>
                 <th className="py-3 px-3 text-center">Correct Hits</th>
                 <th className="py-3 px-3 text-center">Accuracy (%)</th>
                 <th className="py-3 px-3 text-right">Engagement Status</th>

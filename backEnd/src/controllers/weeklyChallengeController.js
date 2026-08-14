@@ -338,7 +338,7 @@ export const reviewWeeklyChallenge = async (req, res) => {
        SELECT pm.jumuiya_id,
               MAX(sg.name) AS jumuiya_name,
               COUNT(*) AS participating_members,
-              COALESCE(SUM(pm.answered), 0) AS total_attempts,
+              COUNT(*) AS total_attempts,
               COALESCE(SUM(pm.correct), 0) AS correct_attempts,
               ROUND(COALESCE(SUM(pm.correct) * 100.0 / NULLIF(SUM(pm.answered), 0), 0), 2) AS overall_accuracy,
               ROUND(COALESCE(AVG(pm.correct::numeric * 100.0 / NULLIF(pm.answered, 0)), 0), 2) AS avg_member_accuracy
@@ -429,7 +429,7 @@ export const publishWeeklyChallenge = async (req, res) => {
          SELECT pm.jumuiya_id,
                 MAX(sg.name) AS jumuiya_name,
                 COUNT(*) AS participating_members,
-                COALESCE(SUM(pm.answered), 0) AS total_attempts,
+                COUNT(*) AS total_attempts,
                 COALESCE(SUM(pm.correct), 0) AS correct_attempts,
                 ROUND(COALESCE(SUM(pm.correct) * 100.0 / NULLIF(SUM(pm.answered), 0), 0), 2) AS overall_accuracy,
                 ROUND(COALESCE(AVG(pm.correct::numeric * 100.0 / NULLIF(pm.answered, 0)), 0), 2) AS avg_member_accuracy

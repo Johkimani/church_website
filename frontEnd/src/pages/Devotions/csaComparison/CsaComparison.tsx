@@ -329,7 +329,7 @@ export default function JumuiComparison() {
                         <RankIcon size={12} />
                         Rank #{i + 1}
                       </span>
-                      <span className="text-xs font-semibold text-stone-500">{j.totalAttempts} attempts</span>
+                      <span className="text-xs font-semibold text-stone-500">{j.totalAttempts} members participated</span>
                     </div>
                     <h3 className="font-bold text-lg text-stone-900 mb-1 truncate">{j.fullName}</h3>
                     <div className="flex items-baseline gap-2 mt-2">
@@ -376,7 +376,7 @@ export default function JumuiComparison() {
                     <th className="py-3.5 px-4">Rank</th>
                     <th className="py-3.5 px-4">Jumuiya Name</th>
                     <th className="py-3.5 px-4 text-center">Accuracy</th>
-                    <th className="py-3.5 px-4 text-center">Total Attempts</th>
+                    <th className="py-3.5 px-4 text-center">Members Participated</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-200 text-stone-900">
