@@ -306,34 +306,36 @@ const JumuiyaDetail: React.FC = () => {
             </main>
 
             {/* Notification FAB */}
-            <div className="notif-fab-container">
-                <button 
-                    className={`notif-fab ${isNotifOpen ? 'active' : ''}`}
-                    onClick={() => {
-                        setIsNotifOpen(!isNotifOpen);
-                        setHasNewNotif(false);
-                    }}
-                    style={{ backgroundColor: jumuiya.color }}
-                    aria-label="Notifications"
-                >
-                    {isNotifOpen ? <FaTimes /> : <FaBell />}
-                    {!isNotifOpen && hasNewNotif && <span className="notif-badge-pulsing" />}
-                </button>
+            {!isNotifOpen && (
+                <div className="notif-fab-container">
+                    <button 
+                        className="notif-fab"
+                        onClick={() => {
+                            setIsNotifOpen(true);
+                            setHasNewNotif(false);
+                        }}
+                        style={{ backgroundColor: jumuiya.color }}
+                        aria-label="Notifications"
+                    >
+                        <FaBell />
+                        {hasNewNotif && <span className="notif-badge-pulsing" />}
+                    </button>
+                </div>
+            )}
 
-                {isNotifOpen && (
-                    <div className="notif-panel-floating animate-slide-up">
-                        <div className="notif-panel-header" style={{ borderBottomColor: jumuiya.color }}>
-                            <h3>Community Updates</h3>
-                            <button className="close-panel" onClick={() => setIsNotifOpen(false)}>
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <div className="notif-panel-content">
-                            <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={detailColor} />
-                        </div>
+            {isNotifOpen && (
+                <div className="notif-panel-floating animate-slide-up">
+                    <div className="notif-panel-header" style={{ borderBottomColor: jumuiya.color }}>
+                        <h3>Community Updates</h3>
+                        <button className="close-panel" onClick={() => setIsNotifOpen(false)}>
+                            <FaTimes />
+                        </button>
                     </div>
-                )}
-            </div>
+                    <div className="notif-panel-content">
+                        <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={detailColor} />
+                    </div>
+                </div>
+            )}
 
             {/* Overlay for mobile */}
             {(isSidebarOpen || (isNotifOpen && window.innerWidth < 768)) && (
