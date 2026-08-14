@@ -1,446 +1,257 @@
-import React, { useState, useEffect } from 'react';
-import api from '../../Landing/services/api';
+import { useState, useEffect } from 'react';
+import { useCachedData } from '../../../hooks/useCachedData';
+import apiService from '../../Landing/services/api';
+import { 
+  Heart, 
+  Search, 
+  RefreshCcw, 
+  CheckCircle2, 
+  Clock, 
+  XCircle, 
+  TrendingUp,
+  Filter
+} from 'lucide-react';
 
-const DonationMonitor = () => {
-  const [donations, setDonations] = useState<any[]>([]);
-  const [contributions, setContributions] = useState<any[]>([]);
-  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
-  const [loading, setLoading] = useState({
-    donations: true,
-    contributions: true,
-    pendingPayments: true,
-    reports: true,
-  });
-  const [activeTab, setActiveTab] = useState<'donations' | 'contributions' | 'pendingPayments' | 'reports'>('donations');
+export default function DonationMonitor() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch data for all tabs on mount
+  const { data: donations = [], loading, refetch: fetchDonations, setData: setDonations } = useCachedData<any[]>(
+    'csa_cache_donation_monitor',
+    async () => {
+      const [mpesaData, membersData] = await Promise.all([
+        apiService.fetchTableData('mpesa_request'),
+        apiService.fetchTableData('members')
+      ]);
+
+      return mpesaData.map((d: any) => {
+        const member = membersData.find((m: any) => m.member_id === d.user_id);
+        return {
+          ...d,
+          donorName: member ? `${member.first_name} ${member.last_name}` : d.user_id
+        };
+      });
+    },
+    []
+  );
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(prev => ({ ...prev, donations: true, contributions: true, pendingPayments: true, reports: true }));
-      try {
-        const [donationsData, contributionsData, pendingPaymentsData] = await Promise.all([
-          api.getDonations(),
-          api.getContributions(),
-          api.getPendingPayments(),
-        ]);
-        setDonations(donationsData);
-        setContributions(contributionsData);
-        setPendingPayments(pendingPaymentsData);
-      } catch (err) {
-        console.error('Failed to fetch treasury data:', err);
-      } finally {
-        setLoading(prev => ({
-          ...prev,
-          donations: false,
-          contributions: false,
-          pendingPayments: false,
-          reports: false, // reports computed from other data
-        }));
-      }
-    };
+    const interval = setInterval(() => fetchDonations(true), 30000);
+    return () => clearInterval(interval);
+  }, [fetchDonations]);
 
-    fetchData();
-  }, []);
+  const filteredDonations = donations.filter(d => {
+    const matchesSearch = 
+      d.checkout_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.donorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.user_id?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = selectedStatus === 'all' || d.status?.toLowerCase() === selectedStatus.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
 
-  // Compute reports data
-  const reportData = {
-    totalDonations: donations.reduce((sum, d) => sum + (Number(d.amount) || 0), 0),
-    totalContributions: contributions.reduce((sum, c) => sum + (Number(c.amount) || 0), 0),
-    totalPending: pendingPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
-    settledToday: pendingPayments.filter(p => p.status === 'settled' && new Date(p.updated_at).toDateString() === new Date().toDateString()).length,
-    // Add more metrics as needed
+  const stats = {
+    total: donations.reduce((acc, d) => d.status === 'paid' ? acc + Number(d.amount) : acc, 0),
+    count: donations.filter(d => d.status === 'paid').length,
+    pending: donations.filter(d => d.status === 'pending').length,
+    failed: donations.filter(d => d.status === 'failed').length,
   };
 
-  // Handlers for pending payments
-  const handleSettle = async (id: string | number, settledBy: string) => {
-    try {
-      await api.settlePendingPayment(id, settledBy);
-      // Refetch pending payments
-      const updated = await api.getPendingPayments();
-      setPendingPayments(updated);
-    } catch (err) {
-      console.error('Failed to settle payment:', err);
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return (
+          <span className="flex items-center gap-1.5 justify-center px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ring-1 ring-emerald-200">
+            <CheckCircle2 size={12} />
+            Success
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="flex items-center gap-1.5 justify-center px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ring-1 ring-amber-200">
+            <Clock size={12} />
+            Waiting
+          </span>
+        );
+      case 'failed':
+        return (
+          <span className="flex items-center gap-1.5 justify-center px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ring-1 ring-rose-200">
+            <XCircle size={12} />
+            Failed
+          </span>
+        );
+      default:
+        return (
+          <span className="flex items-center gap-1.5 justify-center px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ring-1 ring-slate-200">
+            <Filter size={12} />
+            {status || 'Unknown'}
+          </span>
+        );
     }
   };
-
-  const handleCancel = async (id: string | number) => {
-    try {
-      await api.cancelPendingPayment(id);
-      const updated = await api.getPendingPayments();
-      setPendingPayments(updated);
-    } catch (err) {
-      console.error('Failed to cancel payment:', err);
-    }
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number) => `KES ${Number(amount).toLocaleString()}`;
-
-  // Format date
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Treasury Dashboard</h1>
-      
-      {/* Tabs */}
-      <div className="mb-6 border-b border-gray-200">
-        <button
-          className={`px-4 py-2 text-sm font-medium ${
-            activeTab === 'donations'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('donations')}
-        >
-          Donations
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium ml-4 ${
-            activeTab === 'contributions'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('contributions')}
-        >
-          Contributions
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium ml-4 ${
-            activeTab === 'pendingPayments'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('pendingPayments')}
-        >
-          Pending Payments
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium ml-4 ${
-            activeTab === 'reports'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('reports')}
-        >
-          Reports
-        </button>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+            <Heart className="text-rose-500" fill="currentColor" size={28} />
+            Donation Monitor
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">Real-time M-Pesa transaction tracking and financial analytics.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={fetchDonations}
+            disabled={loading}
+            className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50"
+            title="Refresh Data"
+          >
+            <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search transactions..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all w-64 shadow-sm"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'donations' && (
-        <div className="space-y-6">
-          {loading.donations ? (
-            <p className="text-center py-8 text-gray-500">Loading donations...</p>
-          ) : donations.length === 0 ? (
-            <p className="text-center py-8 text-gray-500">No donations found.</p>
-          ) : (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Recent Donations</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Donor</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {donations
-                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                      .slice(0, 20)
-                      .map((d, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(d.created_at)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatCurrency(Number(d.amount))}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            {d.donorName || d.user_id || '—'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              d.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : d.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {d.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {d.checkout_id || '—'}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+      {/* Stats row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Total Received</p>
+          <h3 className="text-2xl font-black text-slate-800">KES {stats.total.toLocaleString()}</h3>
+          <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold mt-2">
+            <TrendingUp size={12} />
+            <span>FROM {stats.count} SUCCESSFUL GIFTS</span>
+          </div>
         </div>
-      )}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Successful</p>
+          <h3 className="text-2xl font-black text-emerald-500">{stats.count}</h3>
+          <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase">Completed TRANSACTIONS</p>
+        </div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Pending</p>
+          <h3 className="text-2xl font-black text-amber-500">{stats.pending}</h3>
+          <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase">Awaiting PIN entry</p>
+        </div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Canceled / Error</p>
+          <h3 className="text-2xl font-black text-rose-500">{stats.failed}</h3>
+          <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase">Failed attempts</p>
+        </div>
+      </div>
 
-      {activeTab === 'contributions' && (
-        <div className="space-y-6">
-          {loading.contributions ? (
-            <p className="text-center py-8 text-gray-500">Loading contributions...</p>
-          ) : contributions.length === 0 ? (
-            <p className="text-center py-8 text-gray-500">No contributions found.</p>
-          ) : (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Recent Contributions</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {contributions
-                      .sort((a, b) => new Date(b.contribution_date).getTime() - new Date(a.contribution_date).getTime())
-                      .slice(0, 20)
-                      .map((c, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(c.contribution_date)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatCurrency(Number(c.amount))}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            {c.member_id || '—'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                              {c.contribution_type?.charAt(0).toUpperCase() + c.contribution_type?.slice(1) || 'Offering'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Transactions Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <h4 className="font-bold text-slate-800">Recent Transactions</h4>
+            <div className="relative">
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    showFilters || selectedStatus !== 'all'
+                    ? 'bg-blue-50 border-blue-100 text-blue-600' 
+                    : 'bg-slate-50 border-slate-100 text-slate-600'
+                  }`}
+                >
+                    <Filter size={14} />
+                    {selectedStatus === 'all' ? 'Filter' : `Status: ${selectedStatus}`}
+                </button>
 
-      {activeTab === 'pendingPayments' && (
-        <div className="space-y-6">
-          {loading.pendingPayments ? (
-            <p className="text-center py-8 text-gray-500">Loading pending payments...</p>
-          ) : pendingPayments.length === 0 ? (
-            <p className="text-center py-8 text-gray-500">No pending payments found.</p>
-          ) : (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Pending Payments</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumuiya</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {pendingPayments
-                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                      .map((p, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(p.created_at)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatCurrency(Number(p.amount))}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            {p.member_id || '—'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {p.jumuiya_id || '—'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm flex space-x-2">
-                            {p.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    const settledBy = prompt('Enter your name for settlement:') || 'Treasurer';
-                                    if (settledBy) handleSettle(p.id, settledBy);
-                                  }}
-                                  className="px-3 py-1 text-sm font-semibold text-green-600 bg-green-50 hover:bg-green-100 rounded"
-                                >
-                                  Settle
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    if (confirm('Are you sure you want to cancel this payment?')) {
-                                      handleCancel(p.id);
-                                    }
-                                  }}
-                                  className="px-3 py-1 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded"
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            )}
-                            {p.status !== 'pending' && (
-                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+                {showFilters && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-10 p-2 animate-in fade-in zoom-in-95 duration-200">
+                    <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-1">Filter by Status</p>
+                    {['all', 'paid', 'pending', 'failed'].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          setSelectedStatus(status);
+                          setShowFilters(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between ${
+                          selectedStatus === status 
+                          ? 'bg-blue-50 text-blue-600' 
+                          : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="capitalize">{status === 'paid' ? 'Success' : status === 'all' ? 'All Transactions' : status}</span>
+                        {selectedStatus === status && <CheckCircle2 size={14} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
             </div>
-          )}
         </div>
-      )}
-
-      {activeTab === 'reports' && (
-        <div className="space-y-6">
-          {loading.reports ? (
-            <p className="text-center py-8 text-gray-500">Loading reports...</p>
-          ) : (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Financial Reports</h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {/* Total Donations */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-left text-xs font-medium text-gray-500 mb-2">Total Donations</h3>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(reportData.totalDonations)}</p>
-                </div>
-                {/* Total Contributions */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-left text-xs font-medium text-gray-500 mb-2">Total Contributions</h3>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(reportData.totalContributions)}</p>
-                </div>
-                {/* Total Pending */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-left text-xs font-medium text-gray-500 mb-2">Total Pending Payments</h3>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(reportData.totalPending)}</p>
-                </div>
-                {/* Settled Today */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-left text-xs font-medium text-gray-500 mb-2">Settled Today</h3>
-                  <p className="text-2xl font-bold text-gray-900">{reportData.settledToday}</p>
-                </div>
-              </div>
-              
-              {/* Additional charts or details can go here */}
-              <div className="mt-8">
-                <h3 className="text-left text-lg font-semibold text-gray-700 mb-4">Export Options</h3>
-                <div className="flex space-x-4">
-<button
-                     onClick={() => {
-                       // Implement CSV export for donations
-                       const csv = [
-                         ['Date', 'Amount', 'Donor', 'Status', 'Reference'],
-                         ...donations.map(d => [
-                           formatDate(d.created_at),
-                           formatCurrency(Number(d.amount)),
-                           d.donorName || d.user_id || '—',
-                           d.status,
-                           d.checkout_id || '—',
-                         ]),
-                       ]
-                         .map(row => row.map(field => `"${field}"`).join(','))
-                         .join('\n');
-                       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                       const url = URL.createObjectURL(blob);
-                       const link = document.createElement('a');
-                       link.setAttribute('href', url);
-                       link.setAttribute('download', 'donations.csv');
-                       link.style.visibility = 'hidden';
-                       document.body.appendChild(link);
-                       link.click();
-                       document.body.removeChild(link);
-                     }}
-                     className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
-                   >
-                     Export Donations CSV
-                   </button>
-<button
-                     onClick={() => {
-                       // Implement CSV export for contributions
-                       const csv = [
-                         ['Date', 'Amount', 'Member', 'Type'],
-                         ...contributions.map(c => [
-                           formatDate(c.contribution_date),
-                           formatCurrency(Number(c.amount)),
-                           c.member_id || '—',
-                           c.contribution_type?.charAt(0).toUpperCase() + c.contribution_type?.slice(1) || 'Offering',
-                         ]),
-                       ]
-                         .map(row => row.map(field => `"${field}"`).join(','))
-                         .join('\n');
-                       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                       const url = URL.createObjectURL(blob);
-                       const link = document.createElement('a');
-                       link.setAttribute('href', url);
-                       link.setAttribute('download', 'contributions.csv');
-                       link.style.visibility = 'hidden';
-                       document.body.appendChild(link);
-                       link.click();
-                       document.body.removeChild(link);
-                     }}
-                     className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
-                   >
-                     Export Contributions CSV
-                   </button>
-<button
-                     onClick={() => {
-                       // Implement CSV export for pending payments
-                       const csv = [
-                         ['Date', 'Amount', 'Member', 'Jumuiya', 'Status'],
-                         ...pendingPayments.map(p => [
-                           formatDate(p.created_at),
-                           formatCurrency(Number(p.amount)),
-                           p.member_id || '—',
-                           p.jumuiya_id || '—',
-                           p.status,
-                         ]),
-                       ]
-                         .map(row => row.map(field => `"${field}"`).join(','))
-                         .join('\n');
-                       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                       const url = URL.createObjectURL(blob);
-                       const link = document.createElement('a');
-                       link.setAttribute('href', url);
-                       link.setAttribute('download', 'pending_payments.csv');
-                       link.style.visibility = 'hidden';
-                       document.body.appendChild(link);
-                       link.click();
-                       document.body.removeChild(link);
-                     }}
-                     className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
-                   >
-                     Export Pending Payments CSV
-                   </button>
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Transaction ID</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Donor / Number</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Amount</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Date & Time</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredDonations.length > 0 ? filteredDonations.map((donation, index) => (
+                <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-mono text-slate-400">{donation.checkout_id}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-[10px]">
+                        {donation.donorName?.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-slate-700 block">{donation.donorName}</span>
+                         {donation.donorName !== donation.user_id && (
+                           <span className="text-[10px] text-slate-400 font-medium">{donation.user_id}</span>
+                         )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-black text-slate-800">KES {Number(donation.amount).toLocaleString()}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-xs text-slate-600 font-medium">
+                      {new Date(donation.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {new Date(donation.created_at).toLocaleTimeString()}
+                    </p>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    {getStatusBadge(donation.status)}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                        <Heart size={48} className="text-slate-200" />
+                        <p className="text-slate-400 font-medium">No donation records found matching your search.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
-};
-
-export default DonationMonitor;
+}
