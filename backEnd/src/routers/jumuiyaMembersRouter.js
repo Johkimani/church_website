@@ -44,6 +44,7 @@ const router = express.Router();
 const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
 const JUMUIYA_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", "jumuiya_os", ...CSA_ROLES];
 const REGISTER_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", ...CSA_ROLES];
+const TREASURY_ROLES = ["treasurer", ...CSA_ROLES];
 
 // Per-jumuiya reads (any authenticated member, scoped to their own jumuiya)
 router.get('/', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id), getAllJumuiyaMembers);
@@ -64,11 +65,11 @@ router.patch('/payments/:id/status', verifyToken, requireRole(...CSA_ROLES), upd
 // Jumuiya/registration writes (officials, scoped to their own jumuiya)
 router.post('/registered/manual', verifyToken, requireRole(...CSA_ROLES), manualRegisterMember);
 router.post('/secretary-register', verifyToken, requireRole(...REGISTER_ROLES), enforceJumuiyaScope((req) => req.body?.jumuiya_id), secretaryRegisterMember);
-router.get('/pending-payments', verifyToken, requireRole(...CSA_ROLES), getPendingPayments);
+router.get('/pending-payments', verifyToken, requireRole(...TREASURY_ROLES), getPendingPayments);
 router.get('/pending-payments/my', verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.query?.jumuiya_id), getMyJumuiyaPendingPayments);
-router.patch('/pending-payments/:id/settle', verifyToken, requireRole(...CSA_ROLES), settlePendingPayment);
-router.patch('/pending-payments/:id/cancel', verifyToken, requireRole(...JUMUIYA_ROLES), cancelPendingPayment);
-router.post('/pending-payments/batch-settle', verifyToken, requireRole(...CSA_ROLES), batchSettlePendingPayments);
+router.patch('/pending-payments/:id/settle', verifyToken, requireRole(...TREASURY_ROLES), settlePendingPayment);
+router.patch('/pending-payments/:id/cancel', verifyToken, requireRole(...TREASURY_ROLES), cancelPendingPayment);
+router.post('/pending-payments/batch-settle', verifyToken, requireRole(...TREASURY_ROLES), batchSettlePendingPayments);
 
 // Member registration writes (officials, scoped to their own jumuiya)
 router.post('/', verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.body?.jumuiya_id), createJumuiyaMember);

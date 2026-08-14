@@ -430,6 +430,38 @@ class ApiService {
   async deleteContribution(contributionId: string | number): Promise<any> {
     return this.deleteRecord('contributions', contributionId);
   }
+
+// ── Pending Payments (Treasury) ──────────────────────────────────────────────
+
+   async getPendingPayments(): Promise<any[]> {
+     const response = await apiClient.get(`/jumuiya-members/pending-payments`);
+     return response.data;
+   }
+
+   async settlePendingPayment(id: string | number, settledBy = ''): Promise<any> {
+     const response = await apiClient.patch(`/jumuiya-members/pending-payments/${id}/settle`, { settled_by: settledBy });
+     this.clearCache('pending_payments');
+     return response.data;
+   }
+
+   async cancelPendingPayment(id: string | number): Promise<any> {
+     const response = await apiClient.patch(`/jumuiya-members/pending-payments/${id}/cancel`);
+     this.clearCache('pending_payments');
+     return response.data;
+   }
+
+   async batchSettlePendingPayments(jumuiyaId: string, settledBy = ''): Promise<any> {
+     const response = await apiClient.post(`/jumuiya-members/pending-payments/batch-settle`, { jumuiya_id: jumuiyaId, settled_by: settledBy });
+     this.clearCache('pending_payments');
+     return response.data;
+   }
+
+   // ── Donations ────────────────────────────────────────────────────────
+   async getDonations(): Promise<any[]> {
+     const response = await apiClient.get(`/donations`);
+     return response.data;
+   }
+
   /**
    * Clears the local cache for a specific table.
    */
