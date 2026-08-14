@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useRef, type CSSProperties } from "react";
 import { marianMysteries } from "../data/mysteries/marian";
 import { sevenSorrows } from "../data/mysteries/sevenSorrows";
 import { reparationMysteries } from "../data/mysteries/reparation";
@@ -412,7 +412,6 @@ function PrayGuide() {
   const [progress, setProgress] = useState(0);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const steps = buildFullRosarySteps(marianMysteries[activeSet]);
-  const activeMysteries = marianMysteries[activeSet];
   const setColor = MYSTERY_SETS.find((s) => s.key === activeSet)?.color || GOLD;
 
   const speak = (text: string) => {
@@ -719,7 +718,22 @@ export default function Rosary() {
         <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
         <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.12), transparent 70%)" }} />
         <div className="absolute right-8 bottom-2 text-[120px] leading-none select-none" style={{ color: "rgba(28,25,23,0.05)", fontFamily: "'Cinzel', serif" }}>✝</div>
-        <div className="relative z-10 p-8 sm:p-10">
+        <div className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 hidden md:block w-44 lg:w-52" style={{ filter: "drop-shadow(0 12px 24px rgba(217,119,6,0.35))" }}>
+          <div className="rounded-2xl overflow-hidden relative" style={{ border: "4px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 24px rgba(28,25,23,0.2)" }}>
+            <img
+              src="/images/virgin-mary.jpg"
+              alt="The Blessed Virgin Mary, Mother of Jesus"
+              loading="lazy"
+              className="w-full h-auto object-cover block"
+              style={{ aspectRatio: "1280 / 1480" }}
+            />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(217,119,6,0.18), transparent 45%)" }} />
+          </div>
+          <p className="text-center text-[10px] font-bold tracking-[0.2em] uppercase mt-2" style={{ color: "#B45309" }}>
+            Mater Dei · Mother of God
+          </p>
+        </div>
+        <div className="relative z-10 p-8 sm:p-10 md:pr-64 lg:pr-72">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5" style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.25)" }}>
             <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
             <span className="text-[11px] font-bold tracking-[0.15em] text-amber-700 uppercase">Marian Devotion</span>

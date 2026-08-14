@@ -110,18 +110,16 @@ export default function Dashboard() {
   const { user } = useAuth();
   const mystery = getTodaysMystery();
   const liturgy = getLiturgicalInfo();
-  const [greeting, setGreeting] = useState("");
+  const [greeting] = useState(() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good Morning";
+    if (h < 17) return "Good Afternoon";
+    return "Good Evening";
+  });
   const [quote, setQuote] = useState(0);
 
   // "My Progress" is personal — hide it for logged-out visitors.
   const cards = CARDS.filter((card) => card.to !== "progress" || !!user);
-
-  useEffect(() => {
-    const h = new Date().getHours();
-    if (h < 12) setGreeting("Good Morning");
-    else if (h < 17) setGreeting("Good Afternoon");
-    else setGreeting("Good Evening");
-  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setQuote((q) => (q + 1) % QUOTES.length), 6000);
@@ -157,7 +155,7 @@ export default function Dashboard() {
 
   return (
     <div
-      className="ml-auto w-[85%] sm:w-full sm:max-w-5xl sm:mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 min-h-screen"
+      className="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 min-h-screen"
       style={{
         background: "linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%)",
       }}
@@ -331,16 +329,18 @@ export default function Dashboard() {
         <div className="flex items-center justify-between gap-6 flex-wrap">
           <div className="flex items-center gap-4">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+              className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0"
               style={{
-                background: "linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(217, 119, 6, 0.1))",
-                color: "#B45309",
+                border: "2px solid rgba(217, 119, 6, 0.35)",
+                boxShadow: "0 6px 18px rgba(217, 119, 6, 0.25)",
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="5" r="2" /><circle cx="12" cy="10" r="1.5" /><circle cx="12" cy="14" r="1.5" />
-                <circle cx="12" cy="18" r="1.5" /><circle cx="12" cy="22" r="2" />
-              </svg>
+              <img
+                src="/images/virgin-mary.jpg"
+                alt="The Blessed Virgin Mary, Mother of Jesus"
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <p className="text-[10px] text-amber-700/70 font-bold tracking-[0.25em] uppercase mb-1">Today's Rosary</p>
