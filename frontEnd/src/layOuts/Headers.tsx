@@ -86,7 +86,7 @@ const Headers = () => {
       >
         {/* Logo */}
         <div
-          className="flex items-center gap-2 cursor-pointer group"
+          className="flex items-center gap-2 cursor-pointer group mr-auto"
           onClick={() => navigate("/")}
         >
           <img
@@ -94,8 +94,8 @@ const Headers = () => {
             alt="CSA Kirinyaga logo"
             className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg object-cover shadow-md shadow-blue-200 group-hover:shadow-lg group-hover:shadow-blue-300 transition-shadow"
           />
-          <div className="hidden sm:block">
-            <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight">
+          <div className="block">
+            <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
               CSA Kirinyaga
             </span>
           </div>
