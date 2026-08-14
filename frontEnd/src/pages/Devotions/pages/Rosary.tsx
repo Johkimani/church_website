@@ -721,11 +721,11 @@ export default function Rosary() {
         <div className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 hidden md:block w-44 lg:w-52" style={{ filter: "drop-shadow(0 12px 24px rgba(217,119,6,0.35))" }}>
           <div className="rounded-2xl overflow-hidden relative" style={{ border: "4px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 24px rgba(28,25,23,0.2)" }}>
             <img
-              src="/images/virgin-mary.jpg"
-              alt="The Blessed Virgin Mary, Mother of Jesus"
+              src="/images/mary-rosary.jpg"
+              alt="The Blessed Virgin Mary with the Child Jesus, holding a rosary"
               loading="lazy"
               className="w-full h-auto object-cover block"
-              style={{ aspectRatio: "1280 / 1480" }}
+              style={{ aspectRatio: "3 / 4" }}
             />
             <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(217,119,6,0.18), transparent 45%)" }} />
           </div>
