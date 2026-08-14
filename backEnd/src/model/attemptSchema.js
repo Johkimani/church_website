@@ -79,7 +79,7 @@ export const getComparisonAll = async () => {
     `SELECT
        a.jumuiya_id,
        sg.name,
-       COUNT(*) AS total_attempts,
+       COUNT(DISTINCT a.member_id) AS total_attempts,
        COUNT(*) FILTER (WHERE is_correct) AS correct_attempts,
        CASE WHEN COUNT(*) = 0 THEN 0
          ELSE ROUND(COUNT(*) FILTER (WHERE is_correct) * 100.0 / COUNT(*), 2)
@@ -108,7 +108,7 @@ export const getComparisonByRange = async (startDate, endDate) => {
     `SELECT
        a.jumuiya_id,
        sg.name,
-       COUNT(*) AS total_attempts,
+       COUNT(DISTINCT a.member_id) AS total_attempts,
        COUNT(*) FILTER (WHERE is_correct) AS correct_attempts,
        CASE WHEN COUNT(*) = 0 THEN 0
          ELSE ROUND(COUNT(*) FILTER (WHERE is_correct) * 100.0 / COUNT(*), 2)
