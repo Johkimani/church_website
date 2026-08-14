@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
+import { prefetchByPath } from "../../../utils/routePrefetch";
 import {
   FaHome,
   FaBook,
@@ -60,6 +61,8 @@ function QuickLinks() {
     <div className="mt-4 px-2">
       <NavLink
         to={item.link}
+        onMouseEnter={prefetchNav(item.link)}
+        onFocus={prefetchNav(item.link)}
         className="block rounded-xl p-4 transition-all duration-300 group"
         style={{
           background: "linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(217, 119, 6, 0.02))",
@@ -106,6 +109,10 @@ export default function Sidebar() {
     (it) => isAuthenticated || !PROTECTED_ITEM_TO.has(it.to)
   );
 
+  // Warm the destination chunk on hover/focus so tab taps render instantly.
+  const prefetchNav = (to: string) => () =>
+    prefetchByPath(to.startsWith("/") ? to : `/devotions/${to}`);
+
   return (
     <>
       {/* Sidebar - shown as fixed column on desktop (via Layout), slide-in drawer on mobile */}
@@ -151,6 +158,8 @@ export default function Sidebar() {
           <NavLink
             to="/devotions"
             end
+            onMouseEnter={prefetchNav("/devotions")}
+            onFocus={prefetchNav("/devotions")}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group ${
                 isActive ? "" : "text-stone-500 hover:text-stone-800"
@@ -214,6 +223,8 @@ export default function Sidebar() {
                   <NavLink
                     key={sub.to}
                     to={sub.to}
+                    onMouseEnter={prefetchNav(sub.to)}
+                    onFocus={prefetchNav(sub.to)}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-200 ${
                         isActive ? "" : "text-stone-500 hover:text-stone-800"
@@ -280,6 +291,8 @@ export default function Sidebar() {
                   <NavLink
                     key={sub.to}
                     to={sub.to}
+                    onMouseEnter={prefetchNav(sub.to)}
+                    onFocus={prefetchNav(sub.to)}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-200 ${
                         isActive ? "" : "text-stone-500 hover:text-stone-800"
@@ -311,6 +324,8 @@ export default function Sidebar() {
             <NavLink
               key={it.to}
               to={it.to}
+              onMouseEnter={prefetchNav(it.to)}
+              onFocus={prefetchNav(it.to)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group ${
                   isActive ? "" : "text-stone-500 hover:text-stone-800"
@@ -345,6 +360,8 @@ export default function Sidebar() {
           <NavLink
             to="/devotions"
             end
+            onMouseEnter={prefetchNav("/devotions")}
+            onFocus={prefetchNav("/devotions")}
             className="flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200 hover:scale-[1.02] group"
             style={{
               background: "linear-gradient(135deg, rgba(217, 119, 6, 0.12), rgba(217, 119, 6, 0.04))",

@@ -6,6 +6,9 @@ import { useApp } from "../context/AppContext";
 import { FaBell, FaReceipt, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 import AdminPanel from "../pages/Landing/components/AdminPanel";
+import { prefetchByPath } from "../utils/routePrefetch";
+
+const prefetchNav = (path: string) => () => prefetchByPath(path);
 
 const isAdminRole = (role: string | string[] | undefined): boolean => {
   if (!role) return false;
@@ -110,6 +113,8 @@ const Headers = () => {
                 {link.path.includes("#") ? (
                   <a
                     href={link.path}
+                    onMouseEnter={prefetchNav(link.path)}
+                    onFocus={prefetchNav(link.path)}
                     className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
@@ -124,6 +129,8 @@ const Headers = () => {
                 ) : (
                   <Link
                     to={link.path}
+                    onMouseEnter={prefetchNav(link.path)}
+                    onFocus={prefetchNav(link.path)}
                     className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
@@ -290,6 +297,7 @@ const Headers = () => {
                     {link.path.includes("#") ? (
                       <a
                         href={link.path}
+                        onMouseEnter={prefetchNav(link.path)}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
                           active
@@ -307,6 +315,7 @@ const Headers = () => {
                     ) : (
                       <Link
                         to={link.path}
+                        onMouseEnter={prefetchNav(link.path)}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
                           active
