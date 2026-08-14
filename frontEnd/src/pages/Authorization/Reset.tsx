@@ -80,9 +80,11 @@ const Reset: React.FC = () => {
           
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shadow-xl shadow-gray-200">
-              <span className="text-white font-black text-sm tracking-widest">CSA</span>
-            </div>
+            <img
+              src="/images/csa-logo.jpg"
+              alt="CSA Kirinyaga logo"
+              className="w-14 h-14 rounded-2xl object-cover shadow-xl shadow-gray-200"
+            />
             <div className="flex flex-col justify-center">
               <span className="text-gray-950 font-black text-xl tracking-tight leading-none mb-1">Catholic Students</span>
               <span className="text-amber-500 font-black text-sm tracking-tight leading-none">Association</span>

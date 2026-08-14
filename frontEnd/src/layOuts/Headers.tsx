@@ -89,9 +89,11 @@ const Headers = () => {
           className="flex items-center gap-2 cursor-pointer group"
           onClick={() => navigate("/")}
         >
-          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-200 group-hover:shadow-lg group-hover:shadow-blue-300 transition-shadow">
-            <span className="text-white font-black text-sm lg:text-base">C</span>
-          </div>
+          <img
+            src="/images/csa-logo.jpg"
+            alt="CSA Kirinyaga logo"
+            className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg object-cover shadow-md shadow-blue-200 group-hover:shadow-lg group-hover:shadow-blue-300 transition-shadow"
+          />
           <div className="hidden sm:block">
             <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight">
               CSA Kirinyaga
@@ -245,9 +247,11 @@ const Headers = () => {
           {/* Header */}
           <div className="flex items-center justify-between px-5 h-16 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-                <span className="text-white font-black text-xs">C</span>
-              </div>
+              <img
+                src="/images/csa-logo.jpg"
+                alt="CSA Kirinyaga logo"
+                className="w-7 h-7 rounded-lg object-cover"
+              />
               <span className="font-black text-slate-900 text-sm">CSA Kirinyaga</span>
             </div>
             <button
