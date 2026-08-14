@@ -12,6 +12,8 @@ interface GalleryPhoto {
     imageUrl: string;
 }
 
+const GALLERY_API_URL = `${import.meta.env.VITE_SERVER_URI || ''}/choir/gallery`;
+
 export class Gallery {
     private containerId: string;
     private photos: GalleryPhoto[] = [];
@@ -28,7 +30,7 @@ export class Gallery {
 
     private async fetchPhotos(): Promise<void> {
         try {
-            const response = await fetch('/api/choir/gallery');
+            const response = await fetch(GALLERY_API_URL);
             if (!response.ok) throw new Error('Failed to fetch gallery photos');
             this.photos = await response.json();
         } catch (error) {

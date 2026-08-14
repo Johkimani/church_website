@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '../api/axiosInstance';
 
-const API_BASE = '/api/jumuiya-members';
+const API_BASE = '/jumuiya-members';
 
 export interface JumuiyaMember {
   id: string;
@@ -60,17 +61,17 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
       if (type === 'registered') {
         url += '/registered';
       }
-      
+
       if (jumuiya_id) {
         url += `?jumuiya_id=${encodeURIComponent(jumuiya_id)}`;
       }
-      
-      const res = await fetch(url);
-      const json = await res.json();
+
+      const res = await apiClient.get(url);
+      const json = res.data;
       if (json.success) setMembers(json.data);
       else setError(json.error || 'Failed to load members');
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || 'Failed to load members');
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +87,8 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
     if (jumuiya_id) {
       url += `?jumuiya_id=${encodeURIComponent(jumuiya_id)}`;
     }
-    const res = await fetch(url);
-    const json = await res.json();
+    const res = await apiClient.get(url);
+    const json = res.data;
     if (!json.success) throw new Error(json.error || 'Failed to load unregistered members');
     return json.data;
   };
@@ -96,12 +97,8 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const addMember = async (data: MemberFormData) => {
     setIsAdding(true);
     try {
-      const res = await fetch(API_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+      const res = await apiClient.post(API_BASE, data);
+      const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to add member');
       setMembers(prev => [...prev, json.data]);
       return json.data;
@@ -114,12 +111,8 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const updateMember = async (id: string, data: Partial<MemberFormData>) => {
     setIsUpdating(true);
     try {
-      const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+      const res = await apiClient.put(`${API_BASE}/${encodeURIComponent(id)}`, data);
+      const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to update member');
       setMembers(prev => prev.map(m => m.id === id ? json.data : m));
       return json.data;
@@ -132,8 +125,8 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const deleteMember = async (id: string) => {
     setIsDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      const json = await res.json();
+      const res = await apiClient.delete(`${API_BASE}/${encodeURIComponent(id)}`);
+      const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to delete member');
       setMembers(prev => prev.filter(m => m.id !== id));
     } finally {
@@ -145,8 +138,8 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const unregisterMember = async (id: string) => {
     setIsDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/unregister/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      const json = await res.json();
+      const res = await apiClient.delete(`${API_BASE}/unregister/${encodeURIComponent(id)}`);
+      const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to unregister member');
       // Update local state: if we're in 'all' view, we might want to just update the jumuiya_id
       // For now, we'll refetch to be safe since it affects multiple tables
@@ -161,12 +154,10 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const bulkJoin = async (member_ids: string[], target_jumuiya_id: string): Promise<number> => {
     setIsBulkJoining(true);
     try {
-      const res = await fetch(`${API_BASE}/bulk-join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ member_ids, jumuiya_id: target_jumuiya_id }),
+      const res = await apiClient.post(`${API_BASE}/bulk-join`, {
+        member_ids, jumuiya_id: target_jumuiya_id,
       });
-      const json = await res.json();
+      const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to register members');
       // Refresh the members list so the newly added show up
       await fetchMembers();
@@ -193,4 +184,3 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
     refetch: fetchMembers,
   };
 };
-

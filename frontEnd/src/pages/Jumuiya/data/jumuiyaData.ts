@@ -197,7 +197,6 @@ export const jumuiyaList: JumuiyaData[] = [
     description: "Seeking truth and wisdom in community, inspired by the life and teachings of St. Augustine of Hippo.",
     color: "#1d21edd6",
     saintImage: "/images/Augustine.png",
-    historyPdf: "/assets/files/SAINT_ANTHONY.pdf",
     notifications: [
       {
         id: "n1",

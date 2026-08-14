@@ -30,13 +30,13 @@ const router = express.Router();
 // Election Term Routes
 router.get('/terms', getAllElectionTerms);
 router.get('/terms/current', getCurrentElectionTerm);
-router.post('/terms', verifyToken, createElectionTerm);
-router.put('/terms/:id', verifyToken, updateElectionTerm);
-router.delete('/terms/:id', verifyToken, deleteElectionTerm);
+router.post('/terms', verifyToken, requireRole(...OFFICIAL_ROLES), createElectionTerm);
+router.put('/terms/:id', verifyToken, requireRole(...OFFICIAL_ROLES), updateElectionTerm);
+router.delete('/terms/:id', verifyToken, requireRole(...OFFICIAL_ROLES), deleteElectionTerm);
 
 // Archive & Restore routes
-router.post('/archive', verifyToken, archiveCurrentOfficials);
-router.post('/restore', verifyToken, restoreArchivedOfficials);
+router.post('/archive', verifyToken, requireRole(...OFFICIAL_ROLES), archiveCurrentOfficials);
+router.post('/restore', verifyToken, requireRole(...OFFICIAL_ROLES), restoreArchivedOfficials);
 router.get('/term', optionalAuth, getOfficialsByTerm);
 router.get('/term/:termId', optionalAuth, getOfficialsByTerm);
 router.get('/term/:termId/export', verifyToken, requireRole(...OFFICIAL_ROLES), exportArchivedOfficials);
@@ -44,14 +44,14 @@ router.delete('/term', verifyToken, requireRole(...OFFICIAL_ROLES), bulkDeleteAr
 router.delete('/term/:officialId', verifyToken, requireRole(...OFFICIAL_ROLES), deleteArchivedOfficial);
 
 // Clear all (admin utility)
-router.delete('/clear-all', verifyToken, clearAllOfficials);
+router.delete('/clear-all', verifyToken, requireRole(...OFFICIAL_ROLES), clearAllOfficials);
 
 // Basic CRUD routes for Officials
 router.get('/list', optionalAuth, getAllOfficials); 
 router.get('/export', verifyToken, requireRole(...OFFICIAL_ROLES), exportOfficials);
 router.get('/:id', optionalAuth, getOfficialById);
-router.post('/', verifyToken, uploadMiddleware, createOfficial);
-router.put('/:id', verifyToken, uploadMiddleware, updateOfficial);
-router.delete('/:id', verifyToken, deleteOfficial);
+router.post('/', verifyToken, requireRole(...OFFICIAL_ROLES), uploadMiddleware, createOfficial);
+router.put('/:id', verifyToken, requireRole(...OFFICIAL_ROLES), uploadMiddleware, updateOfficial);
+router.delete('/:id', verifyToken, requireRole(...OFFICIAL_ROLES), deleteOfficial);
 
 export default router;

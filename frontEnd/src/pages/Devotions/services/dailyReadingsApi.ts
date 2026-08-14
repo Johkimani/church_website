@@ -2,7 +2,9 @@ import type { DailyReadings } from "../data/readingsData";
 import { buildFallbackReadings, getCachedReadings, cacheReadings } from "../data/readingsData";
 import { getLiturgicalSeason, getLiturgicalYear } from "../data/liturgicalCalendar";
 
-const API_BASE = "/api/v1";
+import { BASE_URL } from "../../../api/config";
+
+const API_BASE = BASE_URL;
 const FETCH_TIMEOUT = 8000;
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = FETCH_TIMEOUT): Promise<Response> {

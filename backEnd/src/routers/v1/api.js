@@ -34,7 +34,6 @@ const allowedTables = [
   "hub_gallery",
   "enrollments",
   "suggestions",
-  "products",
   "orders",
   "hire_requests",
   "product_categories",

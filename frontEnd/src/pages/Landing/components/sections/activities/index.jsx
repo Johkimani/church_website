@@ -35,7 +35,7 @@ const ACTIVITY_IMAGES = {
   Wednesday: "/images/biblestudy.webp",
   Thursday: "/images/rosary_prayers.jpg",
   Friday: "/images/mass.webp",
-  Saturday: "/images/sta-choir.png",
+  Saturday: "/images/sta choir.png",
 };
 
 // ── Image mapping for Weekly Activities ───────────────────────────

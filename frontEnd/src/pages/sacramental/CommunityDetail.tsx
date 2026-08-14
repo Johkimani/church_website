@@ -169,7 +169,7 @@ const CommunityDetail: React.FC = () => {
 
     const enrollMutation = useMutation({
         mutationFn: async (data: typeof formData) => {
-            const endpoint = moduleData?.registrationEndpoint || '/api/enrollments';
+            const endpoint = moduleData?.registrationEndpoint || '/enrollments';
             const isSimple = isCharismatic || isDancers || isYouth;
             const payload = isSimple ? {
                 fullName: data.name,

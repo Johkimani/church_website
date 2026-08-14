@@ -65,7 +65,7 @@ const DatabaseRegistration: React.FC = () => {
             const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:3000';
             const userdata = SessionStorage.get("userdata");
             const accessToken = userdata?.accessToken;
-            const res = await fetch(`${baseUrl}/api/members`, {
+            const res = await fetch(`${baseUrl}/members`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -11,6 +11,32 @@ export const createOrder = async (req, res) => {
 
     const itemsJson = items ? JSON.stringify(items) : null;
 
+    // A client must never be able to mark an order 'paid' on its own word.
+    // Only the Safaricom callback (or the server-side confirm flow) sets
+    // mpesa_request.status = 'paid'; require that proof before accepting it.
+    if (status === "paid") {
+      if (!checkout_id) {
+        return res.status(400).json({
+          error: "checkout_id is required to confirm a paid order",
+        });
+      }
+      const payResult = await db.query(
+        `SELECT status, mpesa_receipt FROM mpesa_request WHERE checkout_id = $1`,
+        [checkout_id],
+      );
+      const payRow = payResult.rows[0];
+      if (!payRow || payRow.status !== "paid") {
+        return res.status(400).json({
+          error: "Payment has not been verified by the server. Complete the M-Pesa payment first.",
+        });
+      }
+      if (payRow.mpesa_receipt && mpesa_receipt && payRow.mpesa_receipt !== mpesa_receipt) {
+        return res.status(400).json({
+          error: "Receipt number does not match the verified payment.",
+        });
+      }
+    }
+
     // Generate reference: CSA-000001 format
     const seqResult = await db.query("SELECT nextval('orders_id_seq') as next_id");
     const nextId = seqResult.rows[0].next_id;
