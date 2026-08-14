@@ -96,7 +96,7 @@ const Headers = () => {
           />
           <div className="block">
             <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
-              CSA Kirinyaga
+              CSA KYU
             </span>
           </div>
         </div>
