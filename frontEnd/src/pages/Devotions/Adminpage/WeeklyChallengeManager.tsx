@@ -525,7 +525,84 @@ export default function WeeklyChallengeManager() {
                   />
                 </div>
               </div>
-              <QuestionPicker value={form.questionIds} onChange={toggleQuestion} />
+          <div className="border border-amber-100 rounded-xl bg-amber-50/40 p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                  <Sparkles size={12} /> 1. Generate from this topic
+                </p>
+                <p className="text-[10px] text-stone-500 mt-0.5">
+                  Uses the topic above as the AI prompt. Fresh questions appear below — approve the good ones and they are added to this challenge automatically.
+                </p>
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={generating || !form.topic.trim()}
+                className="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-2 shrink-0"
+              >
+                <Sparkles size={12} />
+                {generating ? "Generating..." : "Generate batch"}
+              </button>
+            </div>
+
+            {generatedBatch.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 mb-2">
+                  This session's batch ({generatedBatch.length}) — approving adds a question to the challenge
+                </p>
+                <div className="border border-stone-200 rounded-lg bg-white divide-y divide-stone-100 max-h-80 overflow-y-auto">
+                  {generatedBatch.map((q: any, i: number) => {
+                    const isApproved = q.status === "approved";
+                    const isRejected = q.status === "rejected";
+                    return (
+                      <div key={q._id} className="p-3 flex items-start gap-3">
+                        <span className="text-[10px] font-black text-stone-400 w-5 pt-0.5 shrink-0">
+                          {i + 1}.
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-stone-700 leading-relaxed">{q.questionText}</p>
+                          <p className="text-[10px] text-emerald-700 font-bold mt-1">
+                            Correct: {q.correctAnswer?.option}) {q.correctAnswer?.text}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                              isApproved
+                                ? "bg-emerald-50 text-emerald-700"
+                                : isRejected
+                                  ? "bg-red-50 text-red-600"
+                                  : "bg-stone-100 text-stone-500"
+                            }`}
+                          >
+                            {isApproved ? "Added" : isRejected ? "Rejected" : "Draft"}
+                          </span>
+                          {!isApproved && (
+                            <button
+                              onClick={() => handleBatchStatus(q, "approved")}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold"
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {!isRejected && (
+                            <button
+                              onClick={() => handleBatchStatus(q, "rejected")}
+                              className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-red-50 hover:text-red-600 text-stone-500 text-[10px] font-bold"
+                            >
+                              Reject
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <QuestionPicker value={form.questionIds} onChange={toggleQuestion} />
               <button
                 onClick={handleSaveEdit}
                 disabled={loading}
