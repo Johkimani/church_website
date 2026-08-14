@@ -256,6 +256,81 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* ═══════════════ MARY SPOTLIGHT — OUR BLESSED MOTHER ═══════════════ */}
+      <div
+        className="rounded-3xl relative overflow-hidden mb-8"
+        style={{
+          background: "linear-gradient(135deg, rgba(217,119,6,0.08), rgba(217,119,6,0.02))",
+          border: "1px solid rgba(217,119,6,0.2)",
+        }}
+      >
+        <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
+          background: "linear-gradient(90deg, transparent, #D97706, transparent)",
+        }} />
+        <div className="grid md:grid-cols-5 gap-0">
+          {/* Mary image */}
+          <div className="md:col-span-2 relative h-64 md:h-full overflow-hidden">
+            <img
+              src="/images/mary-immaculate.jpg"
+              alt="The Immaculate Conception — the Blessed Virgin Mary"
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 md:hidden" style={{
+              background: "linear-gradient(to top, rgba(28,25,23,0.55), transparent 60%)",
+            }} />
+            <div className="absolute inset-0 hidden md:block" style={{
+              background: "linear-gradient(to right, transparent 75%, rgba(250,248,245,1))",
+            }} />
+          </div>
+
+          {/* Reflection */}
+          <div className="md:col-span-3 p-6 sm:p-8 md:p-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
+              style={{ background: "rgba(217, 119, 6, 0.12)", border: "1px solid rgba(217, 119, 6, 0.25)" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-[11px] font-bold tracking-[0.15em] text-amber-700 uppercase">Marian Devotion</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-4"
+              style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}
+            >
+              Our Blessed Mother
+            </h2>
+            <p className="text-sm sm:text-base text-stone-600 leading-relaxed mb-6 max-w-2xl">
+              "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women,
+              and blessed is the fruit of thy womb, Jesus." Entrust your day to Mary —
+              she leads every soul who prays with her to her Son.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="rosary"
+                className="text-sm font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105"
+                style={{
+                  background: "linear-gradient(135deg, #D97706, #B45309)",
+                  color: "#fff",
+                  boxShadow: "0 8px 24px rgba(217, 119, 6, 0.35)",
+                }}
+              >
+                Pray the Rosary →
+              </Link>
+              <Link
+                to="prayer-module"
+                className="text-sm font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105"
+                style={{
+                  background: "#FFFFFF",
+                  color: "#B45309",
+                  border: "1px solid rgba(217, 119, 6, 0.35)",
+                  boxShadow: "0 4px 16px rgba(217, 119, 6, 0.12)",
+                }}
+              >
+                Marian Novenas
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ═══════════════ SECTION — JOURNEY ═══════════════ */}
       <div className="flex items-center gap-3 mb-5 px-1">
         <div className="w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />

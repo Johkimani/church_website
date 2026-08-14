@@ -118,16 +118,39 @@ export default function PrayerModule() {
       <div className="max-w-6xl mx-auto px-4 py-8">
 
         {/* ═══════════════ HEADER ═══════════════ */}
-        <div className="mb-8">
-          <h1
-            className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight"
-            style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif" }}
-          >
-            Novenas &amp; Litanies
-          </h1>
-          <p className="text-sm text-stone-500 mt-2 font-medium">
-            Catholic prayers, devotions, and spiritual practices
-          </p>
+        <div className="relative rounded-3xl overflow-hidden mb-8 p-6 sm:p-8"
+          style={{
+            background: "linear-gradient(135deg, rgba(217,119,6,0.1), rgba(217,119,6,0.03))",
+            border: "1px solid rgba(217,119,6,0.2)",
+          }}
+        >
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
+          <div className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 hidden md:block w-36 lg:w-44" style={{ filter: "drop-shadow(0 12px 24px rgba(217,119,6,0.3))" }}>
+            <div className="rounded-2xl overflow-hidden relative" style={{ border: "4px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 24px rgba(28,25,23,0.2)" }}>
+              <img
+                src="/images/mary-madonna.jpg"
+                alt="The Madonna and Child"
+                loading="lazy"
+                className="w-full h-auto object-cover block"
+                style={{ aspectRatio: "3 / 4" }}
+              />
+            </div>
+          </div>
+          <div className="md:pr-52 lg:pr-60">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4" style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.25)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+              <span className="text-[11px] font-bold tracking-[0.15em] text-amber-700 uppercase">Intercessory Prayer</span>
+            </div>
+            <h1
+              className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight"
+              style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif" }}
+            >
+              Novenas &amp; Litanies
+            </h1>
+            <p className="text-sm text-stone-500 mt-2 font-medium">
+              Catholic prayers, devotions, and spiritual practices
+            </p>
+          </div>
         </div>
 
         {/* ═══════════════ SEGMENTED TAB CONTROL ═══════════════ */}
