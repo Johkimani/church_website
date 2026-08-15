@@ -3,12 +3,12 @@
 // same loading/error states, same card design system (white bg, slate text, blue accents)
 import { useState, useEffect, useRef } from "react";
 import { useCachedData } from "../../../../../hooks/useCachedData";
-import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, X, Smartphone, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, X, Smartphone, Loader2, CheckCircle2, AlertCircle, Users, Check } from "lucide-react";
 import apiService from "../../../services/api";
 import toast from "react-hot-toast";
 import useCountdown from "../../../../../hooks/useCountdown";
 import { useAuth } from "../../../../../context/AuthContext";
-import { bookingService } from "../../../../../api/activitiesServices";
+import { bookingService, rsvpService } from "../../../../../api/activitiesServices";
 import { useNavigate } from "react-router-dom";
 
 // ── Activity icons — matches repo's emoji/icon style ──────────────
@@ -70,7 +70,7 @@ const getWeeklyActivityImage = (activity) => {
 };
 
 // ── Weekly Activity Card ───────────────────────────────────────────
-function WeeklyCard({ activity, onBook, bookingState }) {
+function WeeklyCard({ activity, onBook, bookingState, rsvpState, onToggleRsvp }) {
   const { user } = useAuth();
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
   const icon = ACTIVITY_ICONS[activity.activity] || "✝";
@@ -165,13 +165,35 @@ function WeeklyCard({ activity, onBook, bookingState }) {
             {renderBookButton()}
           </div>
         )}
+        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
+            <Users size={12} className="text-primary/60" />
+            {rsvpState?.count || 0} going
+          </span>
+          {!user ? (
+            <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleRsvp(activity); }}
+              disabled={rsvpState?.busy}
+              className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
+                rsvpState?.going
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+              }`}
+            >
+              {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
+              {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 // ── Semester Event Card ────────────────────────────────────────────
-function SemesterCard({ event, onBook, bookingState }) {
+function SemesterCard({ event, onBook, bookingState, rsvpState, onToggleRsvp }) {
   const { user } = useAuth();
   const dt = new Date(event.date_time);
   const isPast = dt < new Date();
@@ -259,6 +281,28 @@ function SemesterCard({ event, onBook, bookingState }) {
             {renderBookButton()}
           </div>
         )}
+        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
+            <Users size={12} className="text-primary/60" />
+            {rsvpState?.count || 0} going
+          </span>
+          {!user ? (
+            <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleRsvp(event); }}
+              disabled={rsvpState?.busy}
+              className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
+                rsvpState?.going
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+              }`}
+            >
+              {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
+              {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -467,6 +511,9 @@ const ActivitiesSection = () => {
   const navigate = useNavigate();
   const [bookingTarget, setBookingTarget] = useState(null); // { activity, type, existingBooking }
   const [userBookings, setUserBookings] = useState([]);
+  const [rsvpCounts, setRsvpCounts] = useState({}); // `${type}:${id}` -> going count
+  const [myRsvps, setMyRsvps] = useState({});       // `${type}:${id}` -> true when going
+  const [rsvpBusy, setRsvpBusy] = useState({});     // `${type}:${id}` -> true while pending
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
     'csa_cache_public_activities',
     async () => {
@@ -484,7 +531,48 @@ const ActivitiesSection = () => {
 
   useEffect(() => {
     refreshBookings();
+    loadRsvps();
   }, [user]);
+
+  async function loadRsvps() {
+    try {
+      const counts = await rsvpService.getCounts();
+      const map = {};
+      (counts || []).forEach((c) => { map[`${c.activity_type}:${c.activity_id}`] = c.going_count; });
+      setRsvpCounts(map);
+    } catch (_) {}
+    if (user) {
+      try {
+        const mine = await rsvpService.getMyRsvps();
+        const m = {};
+        (mine || []).forEach((r) => { if (r.going) m[`${r.activity_type}:${r.activity_id}`] = true; });
+        setMyRsvps(m);
+      } catch (_) {}
+    } else {
+      setMyRsvps({});
+    }
+  }
+
+  async function handleToggleRsvp(activity, type) {
+    const key = `${type}:${activity.id}`;
+    if (rsvpBusy[key]) return;
+    const wasGoing = !!myRsvps[key];
+    const prevCount = rsvpCounts[key] || 0;
+
+    setMyRsvps((prev) => { const n = { ...prev }; if (wasGoing) delete n[key]; else n[key] = true; return n; });
+    setRsvpCounts((prev) => ({ ...prev, [key]: Math.max(0, prevCount + (wasGoing ? -1 : 1)) }));
+    setRsvpBusy((prev) => ({ ...prev, [key]: true }));
+    try {
+      const res = await rsvpService.setRsvp(type, activity.id, !wasGoing);
+      setRsvpCounts((prev) => ({ ...prev, [key]: res.count }));
+    } catch (err) {
+      setMyRsvps((prev) => { const n = { ...prev }; if (wasGoing) n[key] = true; else delete n[key]; return n; });
+      setRsvpCounts((prev) => ({ ...prev, [key]: prevCount }));
+      toast.error(err?.response?.data?.error || err?.message || "Failed to update RSVP");
+    } finally {
+      setRsvpBusy((prev) => { const n = { ...prev }; delete n[key]; return n; });
+    }
+  }
 
   async function refreshBookings() {
     if (user) {
@@ -569,6 +657,12 @@ const ActivitiesSection = () => {
                   key={a.id}
                   activity={a}
                   bookingState={bookingMap[`weekly:${a.id}`]}
+                  rsvpState={{
+                    count: rsvpCounts[`weekly:${a.id}`] || 0,
+                    going: !!myRsvps[`weekly:${a.id}`],
+                    busy: !!rsvpBusy[`weekly:${a.id}`],
+                  }}
+                  onToggleRsvp={(act) => handleToggleRsvp(act, 'weekly')}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
               ))}
@@ -597,6 +691,12 @@ const ActivitiesSection = () => {
                   key={e.id}
                   event={e}
                   bookingState={bookingMap[`semester:${e.id}`]}
+                  rsvpState={{
+                    count: rsvpCounts[`semester:${e.id}`] || 0,
+                    going: !!myRsvps[`semester:${e.id}`],
+                    busy: !!rsvpBusy[`semester:${e.id}`],
+                  }}
+                  onToggleRsvp={(act) => handleToggleRsvp(act, 'semester')}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
               ))}

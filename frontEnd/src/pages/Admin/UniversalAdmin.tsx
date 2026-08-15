@@ -69,6 +69,7 @@ const menuSections: NavSection[] = [
           { id: 'weekly-activities', name: 'Weekly Activities', path: '/admin/weekly-activities' },
           { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' },
           { id: 'bookings', name: 'Bookings', path: '/admin/bookings' },
+          { id: 'rsvps', name: 'RSVPs', path: '/admin/rsvps' },
         ],
       },
       { id: 'announcements', name: 'Announcements', icon: Megaphone, path: '/admin/announcements' },

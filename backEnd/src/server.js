@@ -29,6 +29,7 @@ import questionsMigration from "./migrations/questionsMigration.js";
 import publishStatsMigration from "./migrations/publishStatsMigration.js";
 import weeklyChallengeMigration from "./migrations/weeklyChallengeMigration.js";
 import activityBookingMigration from "./migrations/activityBookingMigration.js";
+import activityRsvpMigration from "./migrations/activityRsvpMigration.js";
 import { pendingPaymentsMigration } from "./migrations/pendingPaymentsMigration.js";
 import attendanceMigration from "./migrations/attendanceMigration.js";
 import jumuiyaAttendanceMigration from "./migrations/jumuiyaAttendanceMigration.js";
@@ -180,6 +181,7 @@ const initServer = async () => {
     await publishStatsMigration();
     await weeklyChallengeMigration();
     await activityBookingMigration();
+    await activityRsvpMigration();
     await pendingPaymentsMigration();
     await attendanceMigration();
     await jumuiyaAttendanceMigration();

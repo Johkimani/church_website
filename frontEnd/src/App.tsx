@@ -107,6 +107,7 @@ const SettingsPage = lazy(() => import("./pages/Admin/pages/Settings"));
 const CsaSecretaryDashboard = lazy(() => import("./pages/Admin/pages/CsaSecretaryDashboard"));
 const ActivityLog = lazy(() => import("./pages/Admin/pages/ActivityLog"));
 const AdminBookings = lazy(() => import("./pages/Admin/pages/AdminBookings"));
+const AdminRsvps = lazy(() => import("./pages/Admin/pages/AdminRsvps"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
 const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
@@ -176,6 +177,7 @@ const App: React.FC = () => {
           <Route path="secretary-dashboard" element={<SecretaryDashboard />} />
           <Route path="activity-log" element={<ActivityLog />} />
           <Route path="bookings" element={<AdminBookings />} />
+          <Route path="rsvps" element={<AdminRsvps />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="developers" element={<DeveloperTeamManager />} />
         </Route>
