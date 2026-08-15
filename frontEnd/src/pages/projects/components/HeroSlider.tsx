@@ -16,6 +16,8 @@ interface HeroSliderProps {
     section?: string;
     fallbackImages?: SliderImg[];
     shopAnchor?: string;
+    /** Label for the primary CTA button */
+    buttonLabel?: string;
 }
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({
@@ -23,6 +25,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     isAdmin,
     onDelete,
     shopAnchor = '#products',
+    buttonLabel = 'Shop Now',
 }) => {
     const [idx, setIdx] = useState(0);
     const len = images.length;
@@ -38,14 +41,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
     if (!len) {
         return (
-            <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-gradient-to-br from-slate-800 to-indigo-900 flex items-center justify-center">
-                <div className="text-center text-white px-6">
-                    <p className="text-lg font-bold mb-2 opacity-80">No slider images yet</p>
-                    <p className="text-sm opacity-60 mb-6">Upload images to display here</p>
+            <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br from-slate-100 to-blue-50 border border-slate-200 flex items-center justify-center">
+                <div className="text-center px-6">
+                    <p className="text-lg font-bold mb-2 text-slate-700">No slider images yet</p>
+                    <p className="text-sm text-slate-400 mb-6">Upload images to display here</p>
                     {isAdmin && (
                         <a
                             href="/admin/projects"
-                            className="px-6 py-2.5 bg-white text-indigo-600 font-bold text-sm rounded-xl shadow-lg hover:bg-blue-50 transition-colors"
+                            className="px-6 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl shadow-lg hover:bg-blue-700 transition-colors"
                         >
                             Manage Slider Images
                         </a>
@@ -55,9 +58,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         );
     }
 
-
     return (
-        <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl">
+        <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl">
             {images.map((img, i) => (
                 <div
                     key={i}
@@ -69,26 +71,26 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
                         className="w-full h-full object-cover"
                     />
                     {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 
                     {/* Text */}
                     <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 md:p-12">
                         {img.title && (
-                            <p className="text-white/70 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1">
+                            <p className="text-white/75 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1.5">
                                 {img.title}
                             </p>
                         )}
                         {img.message && (
-                            <h2 className="text-white text-lg sm:text-2xl md:text-4xl font-black leading-tight drop-shadow-lg max-w-2xl">
+                            <h2 className="text-white text-lg sm:text-2xl md:text-4xl font-bold leading-tight drop-shadow-lg max-w-2xl">
                                 {img.message}
                             </h2>
                         )}
                         <div className="mt-4 h-1 w-10 sm:w-16 bg-blue-400 rounded-full" />
                         <a
                             href={shopAnchor}
-                            className="mt-4 inline-block px-6 py-3 bg-white text-blue-700 font-bold text-sm rounded-xl shadow-lg hover:bg-blue-50 transition-colors"
+                            className="mt-5 inline-block px-6 py-3 bg-blue-600 text-white font-semibold text-sm rounded-xl shadow-lg hover:bg-blue-700 transition-colors"
                         >
-                            Shop Now
+                            {buttonLabel}
                         </a>
                     </div>
 

@@ -20,6 +20,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     isRental = false
 }) => {
     const image = product.image_url || product.img;
+    const [sizeError, setSizeError] = React.useState(false);
+
+    const price = Number(product.price);
 
     return (
         <div className="group flex flex-col overflow-hidden bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 hover:-translate-y-0.5 fade-in">
@@ -42,21 +45,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             <div className="flex flex-col flex-1 p-3 gap-1.5">
                 <div className="flex flex-col gap-1">
-                    <h3 className="font-bold text-slate-800 text-xs sm:text-sm leading-tight line-clamp-2 min-h-[34px]">
+                    <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-2 min-h-[40px]">
                         {product.name}
                     </h3>
-                    <span className="text-sm sm:text-base font-black text-slate-900">
-                        {product.price ? (isRental ? `KES ${product.price}/day` : `KES ${product.price}`) : 'Price on Request'}
+                    <span className="text-sm sm:text-base font-bold text-slate-900">
+                        {product.price ? (isRental ? `KES ${price.toLocaleString()}/day` : `KES ${price.toLocaleString()}`) : 'Price on Request'}
                     </span>
                 </div>
 
-                {product.desc && <p className="text-[11px] sm:text-xs text-slate-500 line-clamp-2">{product.desc}</p>}
+                {product.desc && <p className="text-xs sm:text-sm text-slate-500 line-clamp-2">{product.desc}</p>}
 
                 {/* Features for instruments/chairs */}
                 {product.features && Array.isArray(product.features) && product.features.length > 0 && (
                     <ul className="flex flex-wrap gap-x-3 gap-y-1 mt-0.5">
                         {product.features.slice(0, 3).map((feat: string, i: number) => (
-                            <li key={i} className="flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-600">
+                            <li key={i} className="flex items-center gap-1 text-xs text-slate-600">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 <span className="truncate">{feat}</span>
                             </li>
@@ -67,35 +70,38 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 {/* Sizes for T-Shirts */}
                 {categoryType === 'tshirts' && product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0 && setSelectedSize && (
                     <div className="flex flex-col gap-1.5 mt-1">
-                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Select Size</span>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Select Size</span>
                         <div className="flex flex-wrap gap-1.5">
                             {product.sizes.map((size: string) => (
                                 <button
                                     key={size}
-                                    className={`min-h-[30px] min-w-[34px] px-2 py-1 rounded-lg text-[11px] font-bold transition-all duration-200 ${selectedSize === size
+                                    className={`min-h-[32px] min-w-[36px] px-2 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${selectedSize === size
                                         ? 'bg-blue-600 text-white shadow-sm'
                                         : 'bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700'
                                     }`}
-                                    onClick={() => setSelectedSize(size)}
+                                    onClick={() => { setSelectedSize(size); setSizeError(false); }}
                                 >
                                     {size}
                                 </button>
                             ))}
                         </div>
+                        {sizeError && (
+                            <p className="text-xs text-rose-600 font-semibold">Please select a size first.</p>
+                        )}
                     </div>
                 )}
 
                 <div className="mt-auto pt-2">
                     <button
-                        className="w-full min-h-[38px] py-2 flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow transition-all duration-300 select-none active:scale-95"
+                        className="w-full min-h-[40px] py-2 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow transition-all duration-300 select-none active:scale-95"
                         onClick={() => {
                             if (categoryType === 'tshirts' && !selectedSize) {
-                                alert("Please select a size first!");
+                                setSizeError(true);
                                 return;
                             }
                             addToCart({
                                 item: product,
-                                price: product.price,
+                                price: price,
                                 rentalDays: isRental ? 1 : undefined,
                                 size: categoryType === 'tshirts' ? selectedSize : undefined
                             });

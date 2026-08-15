@@ -48,10 +48,10 @@ export default function TestimonialsSection({ variant = 'blue', title = 'Trusted
   return (
     <div className="py-10 sm:py-14 px-4">
       <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-10">
-        <span className={`inline-block text-[10px] sm:text-xs font-black ${theme.badge} px-4 py-1.5 rounded-full uppercase tracking-widest mb-3`}>
+        <span className={`inline-block text-xs sm:text-sm font-bold ${theme.badge} px-4 py-1.5 rounded-full uppercase tracking-widest mb-3`}>
           What Our Customers Say
         </span>
-        <h2 className="text-2xl sm:text-3xl font-black text-slate-800">{title}</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">{title}</h2>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
