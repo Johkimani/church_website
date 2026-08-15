@@ -35,6 +35,8 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [mode, setMode] = useState<"jumuiya" | "year">("jumuiya");
+  const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
 
   const loadFromCache = useCallback(
     (d: string) => {
@@ -98,6 +100,44 @@ export default function RecordPage({ token, onSaved }: Props) {
     [jumuiyas, counts]
   );
 
+  const modeControls = (
+    <div className="mode-toggle" style={{ marginBottom: 12, display: "flex", gap: 8 }}>
+      <button
+        className={mode === "jumuiya" ? "active" : ""}
+        onClick={() => setMode("jumuiya")}
+        style={{ padding: "6px 12px", fontSize: 12, border: "1px solid currentColor", borderRadius: 6, cursor: "pointer" }}
+      >
+        Jumuiya
+      </button>
+      <button
+        className={mode === "year" ? "active" : ""}
+        onClick={() => setMode("year")}
+        style={{ padding: "6px 12px", fontSize: 12, border: "1px solid currentColor", borderRadius: 6, cursor: "pointer" }}
+      >
+        Year
+      </button>
+    </div>
+  );
+
+  const recordedByControls = (
+    <div className="recorded-by-toggle" style={{ marginBottom: 12, display: "flex", gap: 8 }}>
+      <button
+        className={recordedBy === "coordinator" ? "active" : ""}
+        onClick={() => setRecordedBy("coordinator")}
+        style={{ padding: "6px 12px", fontSize: 12, border: "1px solid currentColor", borderRadius: 6, cursor: "pointer" }}
+      >
+        Coordinator
+      </button>
+      <button
+        className={recordedBy === "assistant" ? "active" : ""}
+        onClick={() => setRecordedBy("assistant")}
+        style={{ padding: "6px 12px", fontSize: 12, border: "1px solid currentColor", borderRadius: 6, cursor: "pointer" }}
+      >
+        Assistant
+      </button>
+    </div>
+  );
+
   const saveAll = async () => {
     if (validJumuiyas.length === 0) {
       setMessage({ ok: false, text: "Enter at least one attendance count" });
@@ -106,16 +146,32 @@ export default function RecordPage({ token, onSaved }: Props) {
     setSaving(true);
     setMessage(null);
     try {
+      const dimension = mode === "year" ? "year" : "jumuiya";
+      let sessionCounts: { jumuiyaId: string; jumuiyaName: string; count: number; year?: number }[] = [];
+      if (mode === "year") {
+        sessionCounts = validJumuiyas.map((j) => {
+          const y = counts[j.group_id] ? Number(counts[j.group_id]) : 0;
+          const yearVal = counts[`year_${j.group_id}`] ? Number(counts[`year_${j.group_id}`]) : 1;
+          return { jumuiyaId: j.group_id, jumuiyaName: j.name, count: y, year: yearVal };
+        });
+      } else {
+        sessionCounts = validJumuiyas.map((j) => ({
+          jumuiyaId: j.group_id,
+          jumuiyaName: j.name,
+          count: Number(counts[j.group_id]),
+        }));
+      }
       const session: AttendanceSession = {
         sessionId: date,
         date,
         activityType: activity?.type || "rosary",
         activityLabel: activity?.label || dayActivity(date)?.label || "Attendance",
-        recordedBy: "coordinator",
-        counts: validJumuiyas.map((j) => ({
-          jumuiyaId: j.group_id,
-          jumuiyaName: j.name,
-          count: Number(counts[j.group_id]),
+        recordedBy,
+        counts: sessionCounts.map((c) => ({
+          jumuiyaId: c.jumuiyaId,
+          jumuiyaName: c.jumuiyaName,
+          count: c.count,
+          ...(c.year !== undefined ? { year: c.year } : {}),
         })),
         recordedAt: Date.now(),
         syncedAt: null,
@@ -181,6 +237,10 @@ export default function RecordPage({ token, onSaved }: Props) {
           <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
 
+        {modeControls}
+
+        {recordedByControls}
+
         {activity?.isTallyDay && activity.label ? (
           <p className="sub" style={{ marginTop: -6 }}>
             Selected: <strong>{activity.label}</strong> on {dateLabel}
@@ -216,13 +276,24 @@ export default function RecordPage({ token, onSaved }: Props) {
                   value={counts[j.group_id] ?? ""}
                   onChange={(e) => setCount(j.group_id, e.target.value)}
                 />
+                {mode === "year" && (
+                  <input
+                    className="jum-year"
+                    type="number"
+                    min={1}
+                    max={4}
+                    placeholder="1"
+                    value={counts[`year_${j.group_id}`] ?? ""}
+                    onChange={(e) => setCounts({ ...counts, [`year_${j.group_id}`]: e.target.value })}
+                  />
+                )}
               </div>
             ))}
           </div>
 
           <button className="btn btn-primary btn-block" disabled={saving} onClick={saveAll} style={{ marginTop: 16 }}>
             <Save size={18} />
-            {saving ? "Saving…" : `Save${validJumuiyas.length ? ` ${validJumuiyas.length} Jumuiya` : ""}`}
+            {saving ? "Saving…" : mode === "jumuiya" ? `Save${validJumuiyas.length ? ` ${validJumuiyas.length} Jumuiya` : ""}` : `Save ${validJumuiyas.length} Year entries`}
           </button>
         </div>
       )}
