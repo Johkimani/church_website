@@ -1,0 +1,19 @@
+{
+  "name": "CSA Attendance",
+  "short_name": "Attendance",
+  "description": "Offline attendance recording for CSA Kirinyaga jumuiyas",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#1e293b",
+  "icons": [
+    {
+      "src": "/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
