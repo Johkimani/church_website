@@ -105,7 +105,7 @@ const Headers = () => {
         </div>
 
         {/* Desktop Nav */}
-        <ul className="hidden md:flex items-center flex-wrap justify-end gap-x-1 gap-y-1">
+        <ul className="hidden md:flex items-center ml-auto gap-x-0.5 lg:gap-x-1 overflow-x-auto scrollbar-hide flex-nowrap">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (

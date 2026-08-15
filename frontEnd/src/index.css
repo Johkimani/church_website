@@ -63,6 +63,15 @@
     background-color: rgb(var(--background-color));
     color: var(--text-primary);
     scroll-behavior: smooth;
+    /* Hide vertical scrollbar across the whole app */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   body {
@@ -526,6 +535,20 @@
       height: 750px;
     }
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL SCROLLBAR REMOVAL (all pages)
+   Page + internal scroll containers keep working, scrollbars hidden.
+   ═══════════════════════════════════════════════════════════════ */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* ── Scrollbar hide utility ── */
