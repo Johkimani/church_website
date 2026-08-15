@@ -2,8 +2,8 @@ import { useState } from "react";
 import MarianImage from "../components/MarianImage";
 
 export default function SacraLiturgiaPage() {
-  const [activeSeason, setActiveSeason] = useState("advent");
-  const [activeTab, setActiveTab] = useState("intro");
+  const [_activeSeason, setActiveSeason] = useState("advent");
+  const [_activeTab, setActiveTab] = useState("intro");
 
   const seasons = [
     { id: "advent", name: "ADVENT", roman: "I", color: "#4A2E80", active: true },

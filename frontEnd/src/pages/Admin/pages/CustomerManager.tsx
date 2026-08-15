@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import apiService from "../../Landing/services/api";
-import { Users, RefreshCcw, Loader2, Phone, ShoppingBag, Package } from "lucide-react";
+import { Users, Loader2, Phone, Package } from "lucide-react";
 import PanelHeader from "../components/PanelHeader";
 import EmptyState from "../components/EmptyState";
 

@@ -10,16 +10,6 @@ interface Props {
   jumuiyaColor: string;
 }
 
-const JUMUIYA_SLUG_TO_NAME: Record<string, string> = {
-  "st-anthony": "St. Anthony",
-  "st-augustine": "St. Augustine",
-  "st-catherine": "St. Catherine",
-  "st-dominic": "St. Dominic",
-  "st-elizabeth": "St. Elizabeth",
-  "st-maria-goretti": "St. Maria Goretti",
-  "st-monica": "St. Monica",
-};
-
 export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiyaColor }: Props) {
   const [approvals, setApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

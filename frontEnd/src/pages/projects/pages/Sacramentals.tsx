@@ -129,11 +129,6 @@ const HeroSlider: React.FC<{
 };
 
 /* ───────────────────────────────────────────────
-   TRUST STRIP
-─────────────────────────────────────────────── */
-const TrustStrip: React.FC = () => null;
-
-/* ───────────────────────────────────────────────
    CATEGORY FILTER BAR
 ─────────────────────────────────────────────── */
 const CategoryFilterBar: React.FC<{
@@ -195,7 +190,6 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
     const navigate = useNavigate();
     const [adding, setAdding] = React.useState(false);
     const image = product.image_url || product.img;
-    const desc = product.description || product.desc || '';
     const inStock = product.stock == null || Number(product.stock) > 0;
 
     const handleAdd = () => {
@@ -291,13 +285,6 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
 };
 
 /* ───────────────────────────────────────────────
-   PROCESS GUIDE
-─────────────────────────────────────────────── */
-
-const ProcessGuide: React.FC = () => null;
-
-
-/* ───────────────────────────────────────────────
    SKELETON LOADER
 ─────────────────────────────────────────────── */
 const SkeletonCard = () => (
@@ -317,7 +304,6 @@ const SkeletonCard = () => (
 ─────────────────────────────────────────────── */
 export const Sacramentals = () => {
     const { products: dbProducts, addToCart, sacCategory, setSacCategory, setIsCartOpen, isAdmin, isLoading } = useApp();
-    const navigate = useNavigate();
     const [search, setSearch] = React.useState('');
     const [debouncedSearch, setDebouncedSearch] = React.useState('');
     const [sortBy, setSortBy] = React.useState<'none' | 'price-asc' | 'price-desc' | 'name'>('none');
@@ -593,7 +579,7 @@ export const Sacramentals = () => {
 export const CategoryHero: React.FC<{
     category: 'sacramentals' | 'tshirts' | 'chairs' | 'instruments' | 'other';
     overrideBanner?: { img: string; title: string; subtitle: string };
-}> = ({ category, overrideBanner }) => {
+}> = ({ overrideBanner }) => {
     const banner = overrideBanner;
     if (!banner?.img) return null;
     return (

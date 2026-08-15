@@ -744,8 +744,8 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
     const upcoming = allStatuses
       .filter((n) => n.status?.status === 'upcoming')
       .sort((a, b) => {
-        const aD = a.status && 'daysUntil' in a.status ? a.status.daysUntil : 999;
-        const bD = b.status && 'daysUntil' in b.status ? b.status.daysUntil : 999;
+        const aD = a.status && 'daysUntil' in a.status ? (a.status.daysUntil ?? 999) : 999;
+        const bD = b.status && 'daysUntil' in b.status ? (b.status.daysUntil ?? 999) : 999;
         return aD - bD;
       });
     return upcoming[0] || null;

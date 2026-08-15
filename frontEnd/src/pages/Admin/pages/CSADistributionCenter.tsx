@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import {
   Upload, Plus, Trash2, FileSpreadsheet, CheckCircle,
-  AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Printer, Edit2, Save,
+  AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Edit2, Save,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -122,7 +122,6 @@ export default function CSADistributionCenter() {
   // Approval workflow state
   const [activeBatches, setActiveBatches] = useState<any[]>([]);
   const [approvalStatuses, setApprovalStatuses] = useState<Record<number, any>>({});
-  const [loadingBatches, setLoadingBatches] = useState(false);
   const [finalizing, setFinalizing] = useState<number | null>(null);
   const [reviewingJumuiya, setReviewingJumuiya] = useState<Record<string, boolean>>({});
   const [rejectedMembers, setRejectedMembers] = useState<any[]>([]);
@@ -297,7 +296,7 @@ export default function CSADistributionCenter() {
       const errMap: Record<number, string[]> = {};
       const keptMembers: any[] = [];
 
-      records.forEach((r: any, idx: number) => {
+      records.forEach((r: any) => {
         if (r.status === "error") {
           const errors = r.validation_errors || [];
           const warnings = r.validation_warnings || [];
@@ -377,7 +376,7 @@ export default function CSADistributionCenter() {
     setFinalizing(batchId);
     setError(null);
     try {
-      const res = await memberService.csaFinalizeDistribution(batchId);
+      await memberService.csaFinalizeDistribution(batchId);
       setApprovalStatuses(prev => { const n = {...prev}; delete n[batchId]; return n; });
       setActiveBatches(prev => prev.filter(b => b.id !== batchId));
       setDistributionDone(true);
@@ -815,7 +814,6 @@ export default function CSADistributionCenter() {
                 {loaded && status.jumuiyas && (
                   <div className="space-y-2 mt-3">
                     {status.jumuiyas.map((j: any) => {
-                      const pct = totalAll > 0 ? (j.approved / j.total) * 100 : 0;
                       return (
                         <div key={j.name} className="flex items-center gap-3">
                           <span className="text-xs font-medium text-slate-600 w-28 truncate">{j.name}</span>
@@ -892,7 +890,7 @@ export default function CSADistributionCenter() {
                     <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                          <input value={editForm.name} onChange={e => setEditForm((p: any) => ({ ...p, name: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28" />
                         ) : (
                           <span className="text-slate-700 font-medium">{m.name}</span>
@@ -900,7 +898,7 @@ export default function CSADistributionCenter() {
                       </td>
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <input value={editForm.reg_number} onChange={e => setEditForm(p => ({ ...p, reg_number: e.target.value }))}
+                          <input value={editForm.reg_number} onChange={e => setEditForm((p: any) => ({ ...p, reg_number: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-600">{m.reg_number || "—"}</span>
@@ -908,7 +906,7 @@ export default function CSADistributionCenter() {
                       </td>
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <select value={editForm.gender} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
+                          <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
                             <option value="Male">Male</option>
@@ -922,7 +920,7 @@ export default function CSADistributionCenter() {
                       </td>
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                          <input value={editForm.phone} onChange={e => setEditForm((p: any) => ({ ...p, phone: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-600">{m.phone || "—"}</span>

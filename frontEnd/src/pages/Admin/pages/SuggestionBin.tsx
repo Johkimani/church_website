@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Trash2, Trash, Loader2, CheckCircle, MessageSquare, XCircle, Shield } from 'lucide-react';
+import { Trash2, Trash, Loader2, MessageSquare, XCircle, Shield } from 'lucide-react';
 import { apiClient } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 export default function SuggestionBin() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
-  const isChair = userRoles.some((r: string) => r === 'csa_chair');
+  const isChair = userRoles.some((r: any) => r === 'csa_chair');
 
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

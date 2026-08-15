@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { semesterServices } from "../../../api/semesterServices";
 import { semNumFromConfig, semColForYearSem } from "../../../utils/semester";
-import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, BookOpen, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign } from "lucide-react";
+import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import AnalyticsDashboard from "./AnalyticsDashboard";
@@ -27,11 +27,6 @@ const SEMESTERS = [
   { label: "4.1", dbCol: "sem_7_reg" },
   { label: "4.2", dbCol: "sem_8_reg" },
 ];
-
-function getJumuiyaName(slug: string): string {
-  const j = JUMUIYAS.find(j => j.id === slug);
-  return j ? j.name : slug;
-}
 
 function getJumuiyaColor(slug: string): string {
   const j = JUMUIYAS.find(j => j.id === slug);
@@ -146,7 +141,7 @@ export default function CsaSecretaryDashboard() {
   const fetchPendingPayments = useCallback(async (status?: string) => {
     setLoadingPending(true);
     try {
-      const res = await memberService.getPendingPayments({ status: status || csaPaymentFilter });
+      const res = await memberService.getPendingPayments({ status: status || csaPaymentFilter } as any);
       setPendingPayments(res.data || []);
     } catch { setPendingPayments([]); }
     setLoadingPending(false);
@@ -204,12 +199,6 @@ export default function CsaSecretaryDashboard() {
   const toggleSort = (key: string) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
-  };
-
-  const toggleCol = (key: string) => {
-    setSelectedCols(prev =>
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-    );
   };
 
   const doExport = useCallback(() => {

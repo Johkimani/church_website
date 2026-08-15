@@ -335,7 +335,7 @@ export default function WeeklyChallengeManager() {
 
   const members = reviewDetail?.members || [];
   const memberJumuiyas = Array.from(
-    new Map(
+    new Map<string, string>(
       members
         .filter((m: any) => m.jumuiyaId)
         .map((m: any) => [m.jumuiyaId, m.jumuiyaName || formatJumuiyaName(m.jumuiyaId)])

@@ -28,19 +28,10 @@ const DistributionResults: React.FC<Props> = ({ jumuiyaId }) => {
 
   useEffect(() => { fetchDistributions(); }, [jumuiyaId]);
 
-  const viewDistribution = async (distId: number) => {
-    try {
-      const res = await memberService.getDistributionDetail(jumuiyaId, distId);
-      setSelectedDist(res.data);
-    } catch (err: any) {
-      setError("Failed to load distribution details");
-    }
-  };
-
   const runDistribution = async () => {
     setError(null);
     try {
-      const res = await memberService.runGroupDistribution(jumuiyaId, { strategy: "balanced-mixed" });
+      const res = await memberService.autoDistribute(jumuiyaId, { strategy: "balanced-mixed" });
       setSelectedDist(res.data);
       fetchDistributions();
     } catch (err: any) {
@@ -149,10 +140,6 @@ const DistributionResults: React.FC<Props> = ({ jumuiyaId }) => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex gap-1.5">
-                      <button onClick={() => viewDistribution(dist.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors" title="View Details">
-                        <Users size={15} />
-                      </button>
                       <button onClick={() => exportCSV(dist)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-colors" title="Export CSV">
                         <Download size={15} />

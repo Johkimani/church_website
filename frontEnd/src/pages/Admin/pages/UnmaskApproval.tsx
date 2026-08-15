@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../api/axiosInstance';
-import { Loader2, Shield, CheckCircle, XCircle, MessageSquare, Calendar, User } from 'lucide-react';
+import { Loader2, Shield, CheckCircle, XCircle, Calendar } from 'lucide-react';
 
 export default function UnmaskApproval() {
   const { role, token } = useParams<{ role: string; token: string }>();
@@ -12,7 +12,6 @@ export default function UnmaskApproval() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [message, setMessage] = useState('');
-  const [resultData, setResultData] = useState<any>(null);
 
   useEffect(() => {
     if (!token || !role) return;
@@ -26,7 +25,6 @@ export default function UnmaskApproval() {
     try {
       const res = await apiClient.post(`/suggestions/unmask/${role}/${token}/respond`, { action });
       setMessage(res.data.message || 'Response recorded');
-      setResultData(res.data.data || null);
       setDone(true);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to submit response');
@@ -42,7 +40,6 @@ export default function UnmaskApproval() {
     jumuiya_secretary: 'Jumuiya Secretary',
   };
   const roleLabel = roleLabelMap[role || ''] || 'Official Review';
-  const isFullyUnmasked = request?.status === 'approved' && request?.member_first_name;
 
   if (loading) {
     return (

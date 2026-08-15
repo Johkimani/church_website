@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar, FaQuoteLeft } from 'react-icons/fa';
+import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar } from 'react-icons/fa';
 import { POSITION_INFO, DEFAULT_POSITION_INFO, getAvatarForCategory } from './constants/positionInfo';
 import { getSafeImageUrl } from '../../api/config';
 
@@ -227,7 +227,7 @@ const OfficialProfile: React.FC = () => {
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 border-b-4 border-current pb-1" style={{ borderColor: `${color}40`, color: '#1e293b'}}>About the Role</h3>
                             </div>
-                            <div class="p-8 rounded-3xl bg-gray-50 border border-gray-100 italic text-gray-600 text-lg leading-relaxed shadow-inner">
+                            <div className="p-8 rounded-3xl bg-gray-50 border border-gray-100 italic text-gray-600 text-lg leading-relaxed shadow-inner">
     <p className="relative z-10">{posInfo.description}</p>
 </div>
                         </section>

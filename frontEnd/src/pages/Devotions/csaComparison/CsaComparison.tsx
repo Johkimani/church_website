@@ -356,7 +356,7 @@ export default function JumuiComparison() {
                   <YAxis tick={{ fill: "#78716C", fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                   <Tooltip
                     contentStyle={{ backgroundColor: "#fff", borderRadius: "12px", border: "1px solid rgba(28,25,23,0.1)", color: "#1c1917" }}
-                    formatter={(val: number) => [`${val?.toFixed(1)}% Accuracy`, "Performance"]}
+                    formatter={(value: any) => [`${value?.toFixed(1)}% Accuracy`, "Performance"]}
                     labelFormatter={(label) => `Jumuiya: ${label}`}
                   />
                   <Bar dataKey="accuracy" radius={[8, 8, 0, 0]}>

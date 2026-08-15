@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Image as ImageIcon, Upload, Trash2, CheckCircle2, Loader2, X } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { uploadFile } from '../../../api/axiosInstance';

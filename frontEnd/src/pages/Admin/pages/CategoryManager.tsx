@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import apiService from "../../Landing/services/api";
 import { toast } from 'react-hot-toast';
-import { Plus, Pencil, Trash2, RefreshCcw, X, Loader2, Tag, FolderOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, Tag, FolderOpen } from "lucide-react";
 import PanelHeader from "../components/PanelHeader";
 import EmptyState from "../components/EmptyState";
 
@@ -145,7 +145,7 @@ export default function CategoryManager(props: Props) {
               {!typeFilter && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Type</label>
-                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10">
+                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as "sale" | "hire" }))} className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10">
                     <option value="sale">Buy / Sale</option>
                     <option value="hire">Hire</option>
                   </select>

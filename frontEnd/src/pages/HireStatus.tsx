@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../api/axiosInstance";
-import { Search, Loader2, CheckCircle2, XCircle, CalendarDays, Armchair, Music, Smartphone, DollarSign, Copy, Check } from "lucide-react";
+import { Search, Loader2, CheckCircle2, XCircle, CalendarDays, Armchair, Music, Smartphone, DollarSign } from "lucide-react";
+import { toast } from "react-hot-toast";
 import RatingModal from "./projects/components/RatingModal";
 
 interface HireGroup {
@@ -113,7 +114,7 @@ export default function HireStatus() {
     setPaying(true);
     setPayResult(null);
     try {
-      const res = await apiClient.post(`/hire/pay/${data.reference}`, {
+      await apiClient.post(`/hire/pay/${data.reference}`, {
         phone_number: data.phone_number,
       });
       setPayResult({ success: true, message: "STK Push sent! Check your phone to enter M-Pesa PIN." });

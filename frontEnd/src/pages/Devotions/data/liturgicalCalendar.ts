@@ -107,8 +107,6 @@ export function getLiturgicalSeason(date: Date): SeasonInfo {
   const endOfOrdinary1 = addDays(dates.ashWednesday, -1);
   const endOfAdvent = addDays(dates.firstSundayAdvent, -1);
 
-  const dateStr = date.toDateString();
-
   const inRange = (d: Date, start: Date, end: Date) => {
     const t = d.getTime();
     return t >= start.getTime() && t <= end.getTime();
@@ -146,7 +144,7 @@ export function getLiturgicalSeason(date: Date): SeasonInfo {
 
   return wrap("Ordinary Time", addDays(dates.pentecost, 1), addDays(dates.firstSundayAdvent, -1));
 
-  function wrap(season: LiturgicalSeasonName, start: Date, end: Date, check?: Date): SeasonInfo {
+  function wrap(season: LiturgicalSeasonName, start: Date, end: Date, _check?: Date): SeasonInfo {
     const info = SEASONS[season];
     return {
       name: season,
@@ -185,7 +183,7 @@ export function getUpcomingFeasts(date: Date): { name: string; date: Date; daysU
   const d = getLiturgicalKeyDates(year);
   const nd = getLiturgicalKeyDates(year + 1);
 
-  const feasts: { name: string; date: Date; daysUntil: number }[] = [
+  const feasts: { name: string; date: Date }[] = [
     { name: "Ash Wednesday", date: d.ashWednesday },
     { name: "Palm Sunday", date: d.palmSunday },
     { name: "Holy Thursday", date: d.holyThursday },

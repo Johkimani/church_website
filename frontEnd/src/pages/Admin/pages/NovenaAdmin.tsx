@@ -1,15 +1,4 @@
-import { useState } from "react";
-
 export default function NovenaAdmin(){
-
-const[
-form,
-setForm
-]=useState({
-title:"",
-startDate:"",
-endDate:""
-});
 
 return(
 

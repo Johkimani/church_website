@@ -26,7 +26,7 @@ const JumuiyaLanding: React.FC = () => {
 
                 {/* Jumuiya Cards Grid */}
                 <div className="jumuiya-grid">
-                    {jumuiyaList.map((jumuiya, index) => (
+                    {jumuiyaList.map((jumuiya) => (
                         <button
                             key={jumuiya.id}
                             type="button"

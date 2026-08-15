@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Scale, FileText, Users, Shield, ShoppingBag, Landmark,
-  HelpCircle, HeartHandshake, AlertTriangle, Gavel, RefreshCw, Mail, ArrowRight, ArrowLeft
+  HelpCircle, HeartHandshake, AlertTriangle, Gavel, RefreshCw, Mail, ArrowRight
 } from "lucide-react";
 
 const sections = [
@@ -53,10 +53,6 @@ export default function Terms() {
       ))}
     </ul>
   );
-
-  const sectionProps = (id: string, icon: any, color: string) => ({
-    id, icon, color
-  });
 
   return (
     <div className="min-h-screen bg-slate-50/50 py-24 px-6 sm:px-12 lg:px-24 relative">

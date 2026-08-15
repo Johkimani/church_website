@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaCheckCircle, FaInbox, FaUsers, FaChurch, FaRegClock } from "react-icons/fa";
-import { MdUpdate, MdHistory } from "react-icons/md";
+import { MdHistory } from "react-icons/md";
 import { useNotifications } from "../../../context/NotificationContext";
-import { useAuth } from "../../../context/AuthContext";
 import { timeAgo } from "../../../utils";
 import type { fileUpload, Event as BaseEvent } from "../../../interface/api";
 
@@ -10,6 +9,7 @@ import type { fileUpload, Event as BaseEvent } from "../../../interface/api";
 type NotificationEvent = BaseEvent & {
   status?: string;
   posted_by?: string;
+  message?: string;
   images?: (string | fileUpload)[];
 };
 
@@ -121,12 +121,8 @@ const NotificationCard: React.FC<{ event: NotificationEvent }> = ({ event }) => 
 
 const Notifications: React.FC = () => {
   const { notifications, markAllAsRead, isConnected } = useNotifications();
-  const { user } = useAuth();
 
   const [activeCategory, setActiveCategory] = useState<"csa" | "jumuiya" | null>(null);
-
-  // roles is always an array (string[]) from UserData — kept for future use
-  const _roles = useMemo(() => (Array.isArray(user?.role) ? user.role : []), [user?.role]);
 
   useEffect(() => {
     if (activeCategory) {

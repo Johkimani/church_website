@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaStar } from 'react-icons/fa';
-import { Loader2 } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { useProjectsData } from '../context/ProjectsProvider';
 

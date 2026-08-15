@@ -73,7 +73,7 @@ export function useOfficials() {
 
       return { previousOfficials, photoUrl };
     },
-    onError: (error: Error, formData, context) => {
+    onError: (error: Error, _formData, context) => {
       if (context?.previousOfficials) {
         queryClient.setQueryData(['officials'], context.previousOfficials);
       }
@@ -82,7 +82,7 @@ export function useOfficials() {
       }
       showErrorToast('Failed to Add Official', error.message);
     },
-    onSuccess: (data, formData, context) => {
+    onSuccess: (_data, _formData, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -147,7 +147,7 @@ export function useOfficials() {
 
       return { previousOfficials, photoUrl: newPhotoUrlCreated ? photoUrl : undefined };
     },
-    onError: (error: Error, variables, context) => {
+    onError: (error: Error, _variables, context) => {
       if (context?.previousOfficials) {
         queryClient.setQueryData(['officials'], context.previousOfficials);
       }
@@ -156,7 +156,7 @@ export function useOfficials() {
       }
       showErrorToast('Failed to Update Official', error.message);
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (_data, _variables, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -189,7 +189,7 @@ export function useOfficials() {
 
       return { previousOfficials };
     },
-    onError: (error: Error, id, context) => {
+    onError: (error: Error, _id, context) => {
       if (context?.previousOfficials) {
         queryClient.setQueryData(['officials'], context.previousOfficials);
       }

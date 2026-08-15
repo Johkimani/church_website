@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { apiClient } from "../../../api/axiosInstance";
 import apiService from "../../Landing/services/api";
-import { CalendarDays, RefreshCcw, Loader2, CheckCircle, XCircle, RotateCcw, MessageCircle, X, MapPin, Clock3, Copy, Check, ChevronDown, ChevronRight, DollarSign, Smartphone, Ban, PackageCheck, Archive } from "lucide-react";
+import { CalendarDays, RefreshCcw, Loader2, CheckCircle, XCircle, MessageCircle, X, MapPin, Clock3, Copy, Check, ChevronDown, ChevronRight, DollarSign, Smartphone, PackageCheck, Archive } from "lucide-react";
 import Skeleton from "../../../components/Skeleton";
 import { toast } from "react-hot-toast";
 
@@ -240,7 +240,7 @@ export default function HireRequestsManager() {
   const initiateMpesaPayment = async (group: GroupedRequest) => {
     setUpdating(group.reference);
     try {
-      const res = await apiClient.post(`/hire/pay/${group.reference}`, {
+      await apiClient.post(`/hire/pay/${group.reference}`, {
         phone_number: group.phone_number,
       });
       // Poll for payment status

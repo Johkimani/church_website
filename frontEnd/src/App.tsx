@@ -50,7 +50,6 @@ const Terms = lazy(() => import("./pages/Terms.tsx"));
 
 // Devotions
 const Dashboard = lazy(() => import("./pages/Devotions/pages/Dashboard"));
-const Readings = lazy(() => import("./pages/Devotions/pages/Readings"));
 const Prayer = lazy(() => import("./pages/Devotions/pages/Prayer"));
 const LiturgicalSeasons = lazy(() => import("./pages/Devotions/pages/LiturgicalSeasons"));
 const LiturgySection = lazy(() => import("./pages/Devotions/pages/LiturgySection"));

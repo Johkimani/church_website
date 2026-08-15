@@ -48,6 +48,10 @@ const quickLinks = [
   { title: "Pray the Rosary", description: "Meditate on the mysteries", link: "/devotions/rosary", icon: <FaPrayingHands size={14} /> },
 ];
 
+// Warm the destination chunk on hover/focus so tab taps render instantly.
+const prefetchNav = (to: string) => () =>
+  prefetchByPath(to.startsWith("/") ? to : `/devotions/${to}`);
+
 function QuickLinks() {
   const [index, setIndex] = useState(0);
 
@@ -109,10 +113,6 @@ export default function Sidebar() {
   const visibleOtherItems = otherItems.filter(
     (it) => isAuthenticated || !PROTECTED_ITEM_TO.has(it.to)
   );
-
-  // Warm the destination chunk on hover/focus so tab taps render instantly.
-  const prefetchNav = (to: string) => () =>
-    prefetchByPath(to.startsWith("/") ? to : `/devotions/${to}`);
 
   return (
     <>

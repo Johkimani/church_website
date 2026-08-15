@@ -1,20 +1,15 @@
-import { UserPlus, Bell, BookOpen, Save, Loader2 } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { UserPlus, Bell, BookOpen, Save } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import AdminNotifications from "../../Jumuiya/admin/AdminNotifications";
 import AdminAbout from "../../Jumuiya/admin/AdminAbout";
-import AdminOfficials from "../../Jumuiya/admin/AdminOfficials";
-import AdminMembers from "../../Jumuiya/admin/AdminMembers";
-import AdminRegisteredMembers from "../../Jumuiya/admin/AdminRegisteredMembers";
-import AdminActivities from "../../Jumuiya/admin/AdminActivities";
-
 
 interface Props {
   jumuiyaId: string;
   jumuiyaName: string;
-  jumuiyaColor: string;
 }
 
-export default function JumuiyaQuickManager({ jumuiyaId, jumuiyaName, jumuiyaColor }: Props) {
+export default function JumuiyaQuickManager({ jumuiyaId, jumuiyaName }: Props) {
   const [activeSection, setActiveSection] = useState<"register" | "notifications" | "about">("register");
   const [memberForm, setMemberForm] = useState({
     name: "",
@@ -26,118 +21,34 @@ export default function JumuiyaQuickManager({ jumuiyaId, jumuiyaName, jumuiyaCol
   });
   const [saving, setSaving] = useState(false);
 
+  const handleMemberSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await memberService.importMembers(jumuiyaId, {
+        members: [{
+          name: memberForm.name,
+          reg_number: memberForm.reg_number,
+          email: memberForm.email,
+          phone: memberForm.phone,
+          gender: memberForm.gender,
+          academic_year: memberForm.academic_year,
+          jumuiya: jumuiyaName,
+        }],
+        file_name: "quick-manual-entry",
+      });
+      setMemberForm({ name: "", reg_number: "", email: "", phone: "", gender: "", academic_year: "" });
+    } catch {
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const sections = [
     { id: "register" as const, label: "Register Member", icon: <UserPlus size={18} />, color: "indigo" as const },
     { id: "notifications" as const, label: "Notifications", icon: <Bell size={18} />, color: "amber" as const },
     { id: "about" as const, label: "About", icon: <BookOpen size={18} />, color: "emerald" as const },
   ];
-
-  const getSectionContent = () => {
-    switch (activeSection) {
-      case "register":
-        return (
-          <div>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                <UserPlus size={24} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-slate-800">New Member Registration</h3>
-                <p className="text-sm text-slate-500">Register a new member to {jumuiyaName}</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleMemberSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    value={memberForm.name}
-                    onChange={(e) => setMemberForm(p => ({ ...p, name: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. John Doe"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Registration Number *</label>
-                  <input
-                    type="text"
-                    value={memberForm.reg_number}
-                    onChange={(e) => setMemberForm(p => ({ ...p, reg_number: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. REG123"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={memberForm.email}
-                    onChange={(e) => setMemberForm(p => ({ ...p, email: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. john@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={memberForm.phone}
-                    onChange={(e) => setMemberForm(p => ({ ...p, phone: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. +254 123456"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Gender</label>
-                  <select
-                    value={memberForm.gender}
-                    onChange={(e) => setMemberForm(p => ({ ...p, gender: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Academic Year</label>
-                  <input
-                    type="text"
-                    value={memberForm.academic_year}
-                    onChange={(e) => setMemberForm(p => ({ ...p, academic_year: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. 2024"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                  {saving ? "Registering..." : "Register Member"}
-                </button>
-              </div>
-            </form>
-          </div>
-        );
-      case 'notifications':
-        return <AdminNotifications selectedId={jumuiyaId} />;
-      case 'about':
-        return <AdminAbout selectedId={jumuiyaId} />;
-      default:
-        return null;
-    }
-  };
 
   const colorMap = {
     indigo: { bg: "bg-indigo-500", light: "bg-indigo-50", text: "text-indigo-600", ring: "ring-indigo-200", border: "border-indigo-200" },
@@ -303,22 +214,6 @@ export default function JumuiyaQuickManager({ jumuiyaId, jumuiyaName, jumuiyaCol
                 </button>
               </div>
             </form>
-          </div>
-        )}
-
-        {/* Gallery Upload */}
-        {activeSection === "gallery" && (
-          <div>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
-                <Image size={24} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-slate-800">Gallery Management</h3>
-                <p className="text-sm text-slate-500">Upload and manage photos for {jumuiyaName}</p>
-              </div>
-            </div>
-            <AdminGallery selectedId={jumuiyaId} />
           </div>
         )}
 

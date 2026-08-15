@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { LayoutGrid, Plus, Trash2, Upload, Link as LinkIcon, FileImage, Loader2, RefreshCw } from 'lucide-react';
+import { LayoutGrid, Plus, Upload, Link as LinkIcon, FileImage, Loader2 } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { uploadFile } from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';

@@ -458,8 +458,8 @@ export default function AttendanceTallyAdmin() {
       setHistoryRows(rows);
       const drafts: Record<string, string> = {};
       const roles: Record<string, RecordedRole> = {};
-      rows.forEach((r) => {
-        r.counts.forEach((c) => {
+      rows.forEach((r: any) => {
+        r.counts.forEach((c: any) => {
           const key = c.kind === "year" ? yearKey(c.year!) : c.jumuiya_id!;
           drafts[`${r.date}:${key}`] = String(c.count);
         });
@@ -1420,7 +1420,7 @@ export default function AttendanceTallyAdmin() {
                       <Tooltip cursor={{ fill: "#f1f5f9" }} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Bar dataKey="current" name="Current period" radius={[4, 4, 0, 0]}>
-                        {chartData.map((d, i) => (
+                        {chartData.map((_, i) => (
                           <Cell key={i} fill={dimRows[i]?.color || "#4f46e5"} />
                         ))}
                       </Bar>
@@ -1446,7 +1446,7 @@ export default function AttendanceTallyAdmin() {
                       <YAxis unit="%" tick={{ fontSize: 11, fill: "#64748b" }} />
                       <Tooltip cursor={{ fill: "#f1f5f9" }} formatter={(value: any) => [`${value}%`, "Rate vs active"]} />
                       <Bar dataKey="rate" name="Rate vs active" radius={[4, 4, 0, 0]}>
-                        {chartData.map((d, i) => (
+                        {chartData.map((_, i) => (
                           <Cell key={i} fill={dimRows[i]?.color || "#4f46e5"} />
                         ))}
                       </Bar>

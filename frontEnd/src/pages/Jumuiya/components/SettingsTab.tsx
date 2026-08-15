@@ -49,7 +49,7 @@ export default function SettingsTab({ jumuiyaColor }: Props) {
     }
   };
 
-  const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+  const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
   return (
     <div className="max-w-md mx-auto py-8 space-y-6">

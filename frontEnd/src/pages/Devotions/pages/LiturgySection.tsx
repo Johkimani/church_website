@@ -233,33 +233,6 @@ const READING_CYCLE = [
   { year: "Year C", gospel: "Luke", description: "The Gospel of Luke is proclaimed. Emphasizes Jesus' compassion, mercy, and concern for the poor and outcast.", yearRange: "2025, 2028, 2031..." },
 ];
 
-const KYRIE = {
-  greek: "Kyrie eleison \u2014 Christe eleison \u2014 Kyrie eleison",
-  english: "Lord, have mercy \u2014 Christ, have mercy \u2014 Lord, have mercy",
-  explanation: "This is the oldest surviving prayer in the Roman Rite. It is the only part of the Mass that has remained in Greek (the language of the early Church) rather than Latin. The threefold repetition recalls the Holy Trinity.",
-};
-
-const GLORIA = {
-  text: "Glory to God in the highest, and on earth peace to people of good will. We praise you, we bless you, we adore you, we glorify you, we give you thanks for your great glory, Lord God, heavenly King, O God, almighty Father.\n\nLord Jesus Christ, Only Begotten Son, Lord God, Lamb of God, Son of the Father, you take away the sins of the world, have mercy on us; you take away the sins of the world, receive our prayer; you are seated at the right hand of the Father, have mercy on us.\n\nFor you alone are the Holy One, you alone are the Lord, you alone are the Most High, Jesus Christ, with the Holy Spirit, in the glory of God the Father. Amen.",
-  explanation: "The Gloria is a hymn of praise with roots in the angelic song at Christ's birth (Luke 2:14). It is omitted during Advent and Lent as a penitential discipline, returning on Christmas Eve and at the Easter Vigil.",
-};
-
-const NICENE_CREED = {
-  text: "I believe in one God, the Father almighty, maker of heaven and earth, of all things visible and invisible.\n\nI believe in one Lord Jesus Christ, the Only Begotten Son of God, born of the Father before all ages. God from God, Light from Light, true God from true God, begotten, not made, consubstantial with the Father; through him all things were made.\n\nFor us men and for our salvation he came down from heaven, and by the Holy Spirit was incarnate of the Virgin Mary, and became man.\n\nFor our sake he was crucified under Pontius Pilate, he suffered death and was buried, and rose again on the third day in accordance with the Scriptures. He ascended into heaven and is seated at the right hand of the Father. He will come again in glory to judge the living and the dead and his kingdom will have no end.\n\nI believe in the Holy Spirit, the Lord, the giver of life, who proceeds from the Father and the Son, who with the Father and the Son is adored and glorified, who has spoken through the prophets.\n\nI believe in one, holy, catholic and apostolic Church. I confess one Baptism for the forgiveness of sins and I look forward to the resurrection of the dead and the life of the world to come. Amen.",
-  explanation: "The Nicene Creed was formulated at the Councils of Nicaea (325 AD) and Constantinople (381 AD). It is the Church's most authoritative profession of faith, summarizing the core doctrines of the Trinity, the Incarnation, the Passion, the Resurrection, and the Church.",
-};
-
-const SANCTUS = {
-  latin: "Sanctus, Sanctus, Sanctus Dominus Deus Sabaoth. Pleni sunt caeli et gloria tua. Hosanna in excelsis. Benedictus qui venit in nomine Domini. Hosanna in excelsis.",
-  english: "Holy, Holy, Holy Lord God of hosts! Heaven and earth are full of your glory. Hosanna in the highest. Blessed is he who comes in the name of the Lord. Hosanna in the highest!",
-  explanation: "The Sanctus draws from Isaiah 6:3 (the Seraphim's cry) and Matthew 21:9 (the crowd's acclamation at Christ's entry into Jerusalem). It is sung at the climax of the Preface, leading into the Eucharistic Prayer.",
-};
-
-const AGNUS_DEI = {
-  text: "Lamb of God, you take away the sins of the world, have mercy on us.\nLamb of God, you take away the sins of the world, have mercy on us.\nLamb of God, you take away the sins of the world, grant us peace.",
-  explanation: "The Agnus Dei echoes John the Baptist's words upon seeing Jesus: 'Behold the Lamb of God, who takes away the sin of the world' (John 1:29). It is sung during the Breaking of the Bread, recalling the Passover Lamb whose sacrifice freed Israel.",
-};
-
 const LITURGY_OF_HOURS = [
   { name: "Office of Readings", latin: "Lectio Divina", time: "Any time of day (traditionally before dawn)", description: "The most substantial of the Hours. Includes two readings (one from Scripture, one from the Church Fathers or spiritual writers) and a prayer." },
   { name: "Morning Prayer (Lauds)", latin: "Laudes", time: "Upon rising in the morning", description: "The prayer of praise and thanksgiving for the new day. Includes an opening dialogue, a hymn, three psalms with antiphons, a short reading, the Benedictus (Canticle of Zechariah), intercessions, and the concluding prayer." },
@@ -283,81 +256,6 @@ const TABS: { key: LiturgyTab; label: string; icon: string }[] = [
 /* ═══════════════════════════════════════════════════════════════
    ADDITIONAL LITURGY DATA
    ═══════════════════════════════════════════════════════════════ */
-
-const CONFITEOR = {
-  text: "I confess to almighty God\nand to you, my brothers and sisters,\nthat I have greatly sinned,\nin my thoughts and in my words,\nin what I have done\nand in what I have failed to do,\nthrough my fault, through my fault,\nthrough my most grievous fault;\ntherefore I ask blessed Mary ever-Virgin,\nall the Angels and Saints,\nand you, my brothers and sisters,\nto pray for me to the Lord our God.",
-  latin: "Confiteor Deo omnipotenti\net vobis, fratres,\nquia peccavi\ncogitatione, verbo, opere et omissione:\nmea culpa, mea culpa,\nmea maxima culpa.\nIdeo precor beatam Mariam semper Virginem,\nOmnes Angelos et Sanctos,\net vos, fratres,\norare pro me ad Dominum Deum nostrum.",
-  explanation: "The Confiteor ('I confess') is the primary form of the Penitential Act. The threefold 'mea culpa, mea culpa, mea maxima culpa' (through my fault, through my fault, through my most grievous fault) is accompanied by striking the breast. It acknowledges sin of commission ('what I have done') and omission ('what I have failed to do').",
-};
-
-const PENITENTIAL_ACTS = [
-  {
-    name: "Form A: The Confiteor",
-    description: "The most common form. A general confession of sins before the community, invoking the intercession of Mary and the Saints. Used on Sundays and Holy Days.",
-    text: "I confess to almighty God and to you, my brothers and sisters, that I have greatly sinned, in my thoughts and in my words, in what I have done and in what I have failed to do, through my fault, through my fault, through my most grievous fault; therefore I ask blessed Mary ever-Virgin, all the Angels and Saints, and you, my brothers and sisters, to pray for me to the Lord our God.",
-    absolution: "May almighty God have mercy on us, forgive us our sins, and bring us to everlasting life.",
-  },
-  {
-    name: "Form B: Brief Dialogue",
-    description: "A shorter form, often used during Advent as a sign of penitential preparation.",
-    text: "Priest: Have mercy on us, O Lord.\nPeople: For we have sinned against you.\nPriest: Show us, O Lord, your mercy.\nPeople: And grant us your salvation.",
-    absolution: "May almighty God have mercy on us, forgive us our sins, and bring us to everlasting life.",
-  },
-  {
-    name: "Form C: Invocations with Kyrie",
-    description: "A deacon-led form with various invocations followed by Kyrie eleison. Common on Sundays outside Lent and Advent.",
-    text: "Deacon: Lord, have mercy.\nPeople: Lord, have mercy.\nDeacon: Christ, have mercy.\nPeople: Christ, have mercy.\nDeacon: Lord, have mercy.\nPeople: Lord, have mercy.",
-    absolution: "May almighty God have mercy on us, forgive us our sins, and bring us to everlasting life.",
-  },
-  {
-    name: "Rite of Blessing and Sprinkling of Water",
-    description: "An alternative to the three forms above. Holy water is blessed and sprinkled on the assembly, recalling our Baptism. Used on Sundays in the Easter season, at the Baptism of the Lord, and at the discretion of the celebrant.",
-    text: "The priest blesses the water and sprinkles the people while an antiphon is sung (e.g., 'I saw water flowing from the temple' \u2013 Ezekiel 47:1-2, 5-9, 12 or Psalm 51). The assembly is reminded of their baptismal promises.",
-    absolution: "May almighty God cleanse us of our sins, and through the celebration of this Eucharist make us worthy to share at the table of his kingdom.",
-  },
-];
-
-const EUCHARISTIC_PRAYERS = [
-  {
-    name: "Eucharistic Prayer I (Roman Canon)",
-    description: "The oldest Eucharistic Prayer, dating back to at least the 4th century. It is the only Eucharistic Prayer used in the Roman Rite from the time of Pope Gregory the Great (c. 600 AD) until 1969. It contains the most saints' names and is especially suited for Sundays, Feasts of the Apostles and Saints, and Masses with a proper Communicantes.",
-    keyElements: ["Te Igitur (Therefore, Lord, we pray)", "Communicantes (In communion with...)", "Hanc Igitur (Therefore, Lord, we pray...)", "In memory of the sacrifices of Abel, Abraham, and Melchizedek"],
-    whenToUse: "Sundays, great feasts, Masses of Saints, celebrations with a proper Communicantes.",
-  },
-  {
-    name: "Eucharistic Prayer II",
-    description: "Based on an ancient anaphora attributed to Hippolytus of Rome (c. 215 AD), one of the earliest known Eucharistic Prayers. It is the shortest of the four and was originally intended for weekday use.",
-    keyElements: ["Shorter structure", "Based on the tradition of Hippolytus", "Strong Trinitarian focus"],
-    whenToUse: "Weekdays, simpler celebrations, when a shorter Eucharistic Prayer is desired.",
-  },
-  {
-    name: "Eucharistic Prayer III",
-    description: "A new composition by Cipriano Vagaggini, designed to be a general Sunday alternative to the Roman Canon. It is the most commonly used Eucharistic Prayer today. It contains a beautiful account of the entire history of salvation.",
-    keyElements: ["Salvation history narrative", "Beautiful theological language", "Extended memorial acclamation", "Optional texts for Masses for the Dead"],
-    whenToUse: "Sundays, Feasts, and when a richly theological Eucharistic Prayer is desired. The GIRM recommends it for Sundays unless EP I is preferred.",
-  },
-  {
-    name: "Eucharistic Prayer IV",
-    description: "Based on the East Syrian Anaphora of Addai and Mari, one of the oldest known Eucharistic Prayers. It has a fixed Preface (unlike EP I-III which have dozens of options) that traces creation through Christ.",
-    keyElements: ["Fixed Preface (cannot be changed)", "Creation-to-Christ salvation narrative", "Eastern liturgical tradition"],
-    whenToUse: "When the celebrant wishes to use a prayer that traces the entire sweep of salvation history from creation.",
-  },
-];
-
-const PROPER_PREFACES = [
-  { season: "Advent", text: "For he assumed at his first coming the lowliness of our flesh, and so fulfilled the design you formed long ago, and opened for us the way to eternal salvation...", note: "Used throughout Advent except the O Antiphons." },
-  { season: "Christmas", text: "For through the mystery of the Word made flesh, the light of your glory has shone anew upon the eyes of our mind...", note: "Used throughout the Christmas season." },
-  { season: "Epiphany", text: "For today you have revealed the mystery of our salvation in Christ as a light for the nations...", note: "Used on the Feast of the Epiphany." },
-  { season: "Lent", text: "For you have given your faithful people the grace to persevere in penance with heartfelt sorrow for sin...", note: "Used throughout Lent." },
-  { season: "Easter", text: "For with the Passover of your Son the destruction of the old bondage has been overcome, and the new creation has begun...", note: "Used throughout the Easter season." },
-  { season: "Ascension", text: "For the Lord Jesus, the King of Glory, conqueror of sin and death, ascended to the highest heavens as the Angels gazed in wonder...", note: "Used on the Feast of the Ascension." },
-  { season: "Pentecost", text: "For the overshadowing of the Holy Spirit, as once at the River Jordan, revealed your beloved Son to the world...", note: "Used on Pentecost Sunday." },
-  { season: "Corpus Christi", text: "For he is the true and eternal Priest who established the memorial of his saving sacrifice...", note: "Used on the Solemnity of Corpus Christi." },
-  { season: "Sacred Heart", text: "For Christ loved us beyond all telling and gave himself up for us as a fragrant offering to God...", note: "Used on the Feast of the Sacred Heart." },
-  { season: "Ordinary Time (God the Father)", text: "For with your Son and the Holy Spirit you are one God, one Lord: not in the unity of a single person, but in a Trinity of one substance...", note: "Used on the Solemnity of the Most Holy Trinity." },
-  { season: "Dedication of a Church", text: "For your Church is a holy temple built of living stones, upon the foundation of the Apostles, with Christ Jesus as the cornerstone...", note: "Used on the Anniversary of the Dedication of a Church." },
-  { season: "For the Dead", text: "For it is your will that all your children should be one with you, and we pray that they may always be joined to your Son...", note: "Used at Masses for the Dead." },
-];
 
 const HOLY_DAYS_OF_OBLIGATION = [
   { date: "January 1", name: "Solemnity of Mary, Mother of God", note: "The first solemnity of the liturgical year." },
@@ -548,7 +446,7 @@ export default function LiturgySection() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: 0 }}>{section.section}</h3>
-                  <p style={{ fontSize: 12, color: "#78716C", margin: "2px 0 0", fontStyle: "italic" }}>{section.latin}</p>
+                  <p style={{ fontSize: 12, color: "#78716C", margin: "2px 0 0", fontStyle: "italic" }}>{section.subtitle}</p>
                 </div>
               </div>
 

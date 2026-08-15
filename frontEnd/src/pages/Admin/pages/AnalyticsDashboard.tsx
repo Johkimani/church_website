@@ -7,7 +7,7 @@ import {
 import {
   TrendingUp, Users, Church, GraduationCap, CreditCard, Smartphone, Wallet,
   RefreshCw, Calendar, ArrowUpRight, CheckCircle2, Clock, XCircle,
-  X, ChevronDown, Loader2, ExternalLink, Eye, EyeOff,
+  X, Loader2, ExternalLink, Eye, EyeOff,
   Layers, GitCompare, Activity, Trophy
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -15,16 +15,6 @@ import CohortProgressionTab from "./CohortProgressionTab";
 import CrossComparisonTab from "./CrossComparisonTab";
 import JumuiyaProgressionTab from "./JumuiyaProgressionTab";
 import YearlyContributionTab from "./YearlyContributionTab";
-
-const JUMUIYA_COLORS: Record<string, string> = {
-  "St. Anthony": "#8b5cf6",
-  "St. Augustine": "#3b82f6",
-  "St. Catherine": "#800000",
-  "St. Dominic": "#979695ff",
-  "St. Elizabeth": "#07a414d1",
-  "St. Maria Goretti": "#0ea5e9",
-  "St. Monica": "#ef4444",
-};
 
 const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
 const PIE_COLORS = ["#6366f1", "#ec4899", "#14b8a6", "#f59e0b", "#8b5cf6", "#ef4444", "#22c55e", "#3b82f6", "#f97316", "#06b6d4"];
@@ -390,7 +380,7 @@ export default function AnalyticsDashboard() {
                 <YAxis tick={{ fontSize: 12, fill: '#334155' }} stroke="#cbd5e1" allowDecimals={false} width={40} domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15 / 10) * 10]} />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
-                  formatter={(value: number, _: string, props: any) => [`${value} members`, props.payload.fullName]}
+                  formatter={(value: any, _: any, props: any) => [`${value} members`, props.payload.fullName]}
                 />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]} name="Members" barSize={42} label={{ position: 'top', fontSize: 11, fontWeight: 600, fill: '#475569' }}>
                   {jumuiyaData.map((entry: any, index: number) => <Cell key={index} fill={entry.color} />)}
@@ -428,7 +418,7 @@ export default function AnalyticsDashboard() {
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={genderData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={genderData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
                   {genderData.map((_: any, index: number) => <Cell key={index} fill={["#6366f1", "#ec4899", "#94a3b8"][index] || "#94a3b8"} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />

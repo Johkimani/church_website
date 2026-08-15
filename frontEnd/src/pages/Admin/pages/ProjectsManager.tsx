@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   ShoppingBag, Package, Tag, UserCircle, BarChart3, Image, LayoutGrid, MessageCircle, ShoppingCart, CalendarDays,
   Cross, Shirt, Armchair, Music, ChevronRight, ChevronLeft, Clock, Activity, LogOut, LayoutDashboard,
-  HelpCircle, X, Menu
+  HelpCircle, Menu
 } from "lucide-react";
 import { toast } from 'react-hot-toast';
 import { apiClient } from "../../../api/axiosInstance";
@@ -272,7 +272,6 @@ export default function ProjectsManager() {
 
   // === Section Panel Routing ===
   const renderPanel = () => {
-    const s = activeSection;
     switch (activeNav) {
       case "dashboard": return renderDashboard();
       case "products": return <ProductsPanel categoryFilter={['sacramentals', 'tshirts']} />;

@@ -4,9 +4,8 @@ import { memberService } from "../../../api/jumuiyaMemberService";
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, Upload, GitMerge, CheckCircle,
-  ArrowLeftRight, UserCheck, Image, Loader2, CalendarCheck
+  ArrowLeftRight, UserCheck, Image, CalendarCheck
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
 import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
@@ -63,24 +62,6 @@ const SEMESTERS = [
   { label: "4.2", dbCol: "sem_8_reg" },
 ];
 
-function getYearSemLabel(m: any): string {
-  for (let i = 8; i >= 1; i--) {
-    const col = `sem_${i}_reg`;
-    if (m[col]) {
-      const sem = SEMESTERS[i - 1];
-      return sem ? sem.label : "";
-    }
-  }
-  return "—";
-}
-
-function formatDate(d: string | null | undefined): string {
-  if (!d) return "—";
-  try {
-    return new Date(d).toLocaleDateString("en-KE", { year: "numeric", month: "short", day: "numeric" });
-  } catch { return d; }
-}
-
 export default function SecretaryDashboard() {
   const { user } = useAuth();
   const jumuiyaId = user?.jumuiya_id || "";
@@ -111,7 +92,6 @@ export default function SecretaryDashboard() {
   const normalizedRoles = userRoles.map(r => String(r).toUpperCase().trim());
   const isChair = normalizedRoles.includes("JUMUIYA_CHAIRPERSON");
   const isSecretary = normalizedRoles.includes("JUMUIYA_SECRETARY");
-  const isOS = normalizedRoles.includes("JUMUIYA_OS");
   const roleKey = isChair ? "chair" : isSecretary ? "secretary" : "os";
   const tabs = TAB_CONFIGS[roleKey];
   const roleLabel = isChair ? "Chairperson Dashboard" : isSecretary ? "Secretary Dashboard" : "Jumuiya Dashboard";
@@ -127,29 +107,6 @@ export default function SecretaryDashboard() {
   // ── Members data ──
   const [members, setMembers] = useState<any[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [search, setSearch] = useState("");
-  const [genderFilter, setGenderFilter] = useState<string>("all");
-  const [semesterFilter, setSemesterFilter] = useState<string>("all");
-  const [sortKey, setSortKey] = useState<string>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [showExport, setShowExport] = useState(false);
-  const [exportCols, setExportCols] = useState<Record<string, boolean>>({
-    name: true, reg_number: true, gender: true, course: true,
-    year_sem: true, registration_date: true,
-    sem_1_reg: false, sem_2_reg: false, sem_3_reg: false, sem_4_reg: false,
-    sem_5_reg: false, sem_6_reg: false, sem_7_reg: false, sem_8_reg: false,
-  });
-
-  // ── Edit / Flag / Delete state ──
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<any>({});
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [flagging, setFlagging] = useState<string | null>(null);
-
-  // ── Analytics data ──
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
   // ── Fetch overview stats ──
   const fetchOverview = useCallback(async () => {
@@ -201,35 +158,6 @@ export default function SecretaryDashboard() {
     }
   }, [jumuiyaId]);
 
-  // ── Fetch analytics ──
-  const fetchAnalytics = useCallback(async () => {
-    setLoadingAnalytics(true);
-    try {
-      const res = await memberService.getAnalytics();
-      const allData = res.data || res || {};
-      
-      // Filter analytics for this jumuiya
-      const jumuiyaSlug = jumuiyaId.toLowerCase().replace(/\s+/g, "-");
-      const regByJum = (allData.registrationsByJumuiya || []).find(
-        (j: any) => (j.jumuiya_slug || "").toLowerCase() === jumuiyaSlug
-      );
-      
-      setAnalytics({
-        totalRegistered: allData.totalRegistered || 0,
-        totalMembers: allData.totalMembers || 0,
-        jumuiyaData: regByJum || null,
-        semesterFillRates: allData.semesterFillRates || null,
-        recentRegistrations: (allData.recentRegistrations || []).filter(
-          (r: any) => (r.jumuiya_slug || "").toLowerCase() === jumuiyaSlug
-        ).slice(0, 10),
-      });
-    } catch (err) {
-      console.error("Failed to load analytics:", err);
-    } finally {
-      setLoadingAnalytics(false);
-    }
-  }, [jumuiyaId]);
-
   const refreshAll = useCallback(() => {
     fetchOverview();
     fetchMembers();
@@ -242,138 +170,6 @@ export default function SecretaryDashboard() {
     window.addEventListener("csa_members_updated", handleUpdated);
     return () => window.removeEventListener("csa_members_updated", handleUpdated);
   }, [jumuiyaId, fetchMembers]);
-
-  useEffect(() => {
-    if (activeTab === "analytics") fetchAnalytics();
-  }, [activeTab, jumuiyaId]);
-
-  // ── Member Actions (Edit / Flag / Delete) ──
-  const handleEditMember = (m: any) => {
-    const nameStr = m.name || "";
-    const nameParts = nameStr.split(" ");
-    setEditingId(m.member_id || m.id);
-    setEditForm({
-      first_name: m.first_name || nameParts[0] || "",
-      last_name: m.last_name || nameParts.slice(1).join(" ") || "",
-      course: m.course || "",
-      phone: m.phone || "",
-      gender: m.gender || "",
-      year_of_study: m.year || "",
-    });
-  };
-
-  const handleSaveMember = async (memberId: string) => {
-    setSaving(true);
-    try {
-      await memberService.updateMember(memberId, editForm);
-      setMembers(prev => prev.map(m =>
-        (m.member_id === memberId || m.id === memberId) ? { ...m, ...editForm } : m
-      ));
-      setEditingId(null);
-      toast.success("Member updated");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to update member");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteMember = async (memberId: string) => {
-    if (!confirm("Permanently delete this member?\n\nThis action cannot be undone.")) return;
-    setDeleting(memberId);
-    try {
-      await memberService.deleteMember(memberId);
-      setMembers(prev => prev.filter(m => m.member_id !== memberId && m.id !== memberId));
-      toast.success("Member deleted");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to delete member");
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  const handleFlagMember = async (memberId: string, currentlyFlagged: boolean) => {
-    setFlagging(memberId);
-    try {
-      await memberService.flagMember(memberId, !currentlyFlagged);
-      setMembers(prev => prev.map(m =>
-        (m.member_id === memberId || m.id === memberId) ? { ...m, flagged: !currentlyFlagged } : m
-      ));
-      toast.success(currentlyFlagged ? "Member unflagged" : "Member flagged as inactive");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to flag member");
-    } finally {
-      setFlagging(null);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditForm({});
-  };
-
-  // ── Filtered & sorted members ──
-  const filteredMembers = useMemo(() => {
-    let result = [...members];
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(m =>
-        (m.name || "").toLowerCase().includes(q) ||
-        (m.reg_number || "").toLowerCase().includes(q) ||
-        (m.course || "").toLowerCase().includes(q)
-      );
-    }
-
-    if (genderFilter !== "all") {
-      result = result.filter(m => (m.gender || "").toLowerCase() === genderFilter.toLowerCase());
-    }
-
-    if (semesterFilter !== "all") {
-      const col = SEMESTERS.find(s => s.label === semesterFilter)?.dbCol;
-      if (col) result = result.filter(m => m[col] === true || m[col] === "true" || m[col] === 1);
-    }
-
-    result.sort((a, b) => {
-      let aVal = (a[sortKey] || "").toString().toLowerCase();
-      let bVal = (b[sortKey] || "").toString().toLowerCase();
-      if (sortKey === "name") {
-        aVal = (a.name || `${a.first_name || ""} ${a.last_name || ""}`).toLowerCase();
-        bVal = (b.name || `${b.first_name || ""} ${b.last_name || ""}`).toLowerCase();
-      }
-      return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-    });
-
-    return result;
-  }, [members, search, genderFilter, semesterFilter, sortKey, sortDir]);
-
-  // ── Export ──
-  const handleExport = () => {
-    const cols = Object.entries(exportCols).filter(([, v]) => v).map(([k]) => k);
-    const data = filteredMembers.map(m => {
-      const row: Record<string, any> = {};
-      cols.forEach(col => {
-        if (col.startsWith("sem_")) {
-          row[col] = m[col] ? "Yes" : "—";
-        } else if (col === "name") {
-          row[col] = m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim();
-        } else if (col === "registration_date") {
-          row[col] = formatDate(m[col]);
-        } else if (col === "year_sem") {
-          row[col] = getYearSemLabel(m);
-        } else {
-          row[col] = m[col] ?? "—";
-        }
-      });
-      return row;
-    });
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, "Members");
-    XLSX.writeFile(wb, `${jumuiyaInfo.name.replace(/\s+/g, "-")}-members.xlsx`);
-    setShowExport(false);
-  };
 
   const genderCounts = useMemo(() => {
     const bd = stats?.genderBreakdown;
@@ -636,7 +432,7 @@ export default function SecretaryDashboard() {
           members={members}
           stats={stats}
           csaAllocations={csaAllocations}
-          user={user}
+          user={user ?? undefined}
           onRegister={refreshAll}
         />
       )}

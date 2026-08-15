@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, X, Loader2, MessageCircle } from 'lucide-react';
+import { Star, X, Loader2 } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { toast } from 'react-hot-toast';
 
@@ -11,7 +11,7 @@ interface Props {
   onSubmitted: () => void;
 }
 
-export default function RatingModal({ orderRef, customerName: initialName, customerPhone, onClose, onSubmitted }: Props) {
+export default function RatingModal({ orderRef, customerName: initialName, onClose, onSubmitted }: Props) {
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
   const [name, setName] = useState(initialName || '');
@@ -23,14 +23,15 @@ export default function RatingModal({ orderRef, customerName: initialName, custo
     if (!name.trim()) { toast.error('Please enter your name'); return; }
     setSubmitting(true);
     try {
-      await apiService.createTestimonial({
+      const payload = {
         name: name.trim(),
         text: message.trim() || 'Great service!',
         rating,
         reference: orderRef,
         type: 'purchase',
         approved: false,
-      });
+      };
+      await apiService.createTestimonial(payload);
       setSubmitted(true);
       toast.success('Thank you for your feedback!');
       setTimeout(() => { onSubmitted(); }, 1500);

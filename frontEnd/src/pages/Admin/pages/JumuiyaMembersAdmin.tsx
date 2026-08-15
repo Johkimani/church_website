@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Users, ArrowLeft, Church, CheckCircle, AlertTriangle, RefreshCw, UserPlus, BarChart3, Upload, Search, GitMerge, ClipboardList, ThumbsDown, Edit2, Save, Trash2, GraduationCap, Image, Bell, BookOpen, UserCheck, Calendar, ListChecks, PieChart } from "lucide-react";
+import { Users, ArrowLeft, Church, RefreshCw, UserPlus, Upload, Search, ClipboardList, ThumbsDown, Edit2, Save, Trash2, GraduationCap, UserCheck, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { useAuth } from "../../../context/AuthContext";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
@@ -11,7 +11,6 @@ import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import AllMembersTable from "./AllMembersTable";
 import AssociatesTable from "./AssociatesTable";
-import JumuiyaQuickManager from "./JumuiyaQuickManager";
 
 // Improved cache with longer TTL (60s) and memory efficiency
 let statsCache: { data: Record<string, any>; ts: number } | null = null;
@@ -45,24 +44,6 @@ const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; descrip
   results: { label: "All Members", icon: <Users size={16} />, description: "View and manage all registered members" },
   allocations: { label: "Allocations", icon: <UserCheck size={16} />, description: "Approve CSA member allocations" },
 };
-
-function StatCard({ label, value, icon, bg, color }: { label: string; value: string | number; icon: React.ReactNode; bg: string; color: string }) {
-  return (
-    <div className={`${bg} rounded-xl border border-slate-200 p-4`}>
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center`} style={{ background: color + "20", color }}>
-          {icon}
-        </div>
-        <div>
-          <p className="text-2xl font-bold text-slate-800">{value}</p>
-          <p className="text-xs text-slate-500 font-medium">{label}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const StatCardMemo = memo(StatCard);
 
 function SummaryBar({ stats }: { stats: Record<string, any> }) {
   const total = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.totalMembers || 0), 0);
@@ -108,7 +89,6 @@ const SummaryBarMemo = memo(SummaryBar);
 const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string; isJumuiyaOfficial?: boolean }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, isJumuiyaOfficial }) => {
   const [activeTab, setActiveTab] = useState<SubTab>("dashboard");
 
-  const currentMeta = subTabMeta[activeTab];
   const visibleTabs = (Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]).filter(
     ([id]) => !(isJumuiyaOfficial && id === "import")
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { FaSearch, FaDownload, FaSync, FaUserGraduate, FaFilter, FaUsers, FaCheckCircle, FaGraduationCap } from "react-icons/fa";
+import { FaSearch, FaDownload, FaSync, FaUserGraduate, FaUsers, FaCheckCircle, FaGraduationCap } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
 interface AdminRegisteredMembersProps {
@@ -130,7 +130,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
     XLSX.writeFile(wb, `${jumuiyaName.replace(/\s+/g, "-")}-registered-members.xlsx`);
   };
 
-  const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+  const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
   return (
     <div className="admin-card" style={{ "--jumuiya-color": jumuiyaColor } as React.CSSProperties}>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { TshirtOrder } from '../data/jumuiyaData';
 import { useData } from '../context/DataContext';
-import { FaTshirt, FaShoppingCart, FaCheckCircle, FaUser, FaPhone, FaRuler, FaLayerGroup, FaArrowRight, FaPrint, FaDownload, FaTimes, FaIdCard } from 'react-icons/fa';
+import { FaTshirt, FaShoppingCart, FaCheckCircle, FaUser, FaPhone, FaRuler, FaLayerGroup, FaArrowRight, FaPrint, FaDownload, FaIdCard } from 'react-icons/fa';
 import tshirtMockup from '../../../assets/Images/jumuiya_tshirt.png';
 import './TabsSystem.css';
 import './TshirtsTab.css';
@@ -69,7 +69,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
         }
     };
 
-    const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+    const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
@@ -310,7 +310,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                                             <tr key={order.id}>
                                                 <td>
                                                     <div style={{ fontWeight: 700, color: '#0f172a' }}>{order.holderName}</div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Ordered on {new Date(order.submittedAt).toLocaleDateString()}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Ordered on {new Date(order.submittedAt || new Date()).toLocaleDateString()}</div>
                                                 </td>
                                                 <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{order.id}</td>
                                                 <td>
@@ -392,7 +392,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                             </div>
 
                             <p style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
-                                {new Date(lastOrder.submittedAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                {new Date(lastOrder.submittedAt || new Date()).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
                     </div>

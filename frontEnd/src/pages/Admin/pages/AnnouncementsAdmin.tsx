@@ -9,7 +9,7 @@ import {
 import NotificationModal from "../../Devotions/components/NotificationModal";
 import { useAuth } from "../../../context/AuthContext";
 import { timeAgo } from "../../../utils";
-import type { NotificationPayload, fileUpload, Event as BaseEvent } from "../../../interface/api";
+import type { NotificationPayload, Event as BaseEvent } from "../../../interface/api";
 import {
   FiPlus,
   FiEdit2,
@@ -18,7 +18,6 @@ import {
   FiAlertCircle,
   FiBell,
 } from "react-icons/fi";
-import { FaChurch, FaUsers } from "react-icons/fa";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -138,7 +137,7 @@ export default function AnnouncementsAdmin() {
     const r = user?.role;
     return Array.isArray(r) ? r : r ? [r] : [];
   }, [user?.role]);
-  const { isCSAOs, isJumuiyaOs } = useMemo(() => detectCapabilities(roles), [roles]);
+  const { isCSAOs } = useMemo(() => detectCapabilities(roles), [roles]);
 
   // Access gate — CSA OS role needed for CSA announcements page
   const canAccessPage = isCSAOs;
@@ -302,7 +301,7 @@ export default function AnnouncementsAdmin() {
       {showModal && (
         <NotificationModal
           roles={roles}
-          lockedTo={activeTab}
+          lockedTo="csa"
           createNotification={handleCreate}
           onClose={() => setShowModal(false)}
         />
@@ -312,7 +311,7 @@ export default function AnnouncementsAdmin() {
       {editingNotif && (
         <NotificationModal
           roles={roles}
-          lockedTo={activeTab}
+          lockedTo="csa"
           initialData={{
             id: editingNotif.id,
             title: editingNotif.title ?? editingNotif.text ?? "",

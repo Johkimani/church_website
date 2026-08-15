@@ -5,8 +5,8 @@ import {
 } from "recharts";
 import {
   Activity, Layers, Trophy, Users, TrendingUp, GraduationCap,
-  RefreshCw, Church, Calendar, X, Search, UserPlus, Loader2,
-  Check, DollarSign, Clock
+  Calendar, X, Search, UserPlus, Loader2,
+  Check, Clock
 } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { semesterServices } from "../../../api/semesterServices";
@@ -63,7 +63,7 @@ function isRegisteredForCurrentSem(m: any, semNum: 1 | 2): boolean {
   return m[col] === true || m[col] === 1 || m[col] === "1" || m[col] === "true";
 }
 
-const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, members, stats, csaAllocations, user, onRegister }) => {
+const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, members, csaAllocations, user, onRegister }) => {
   const resolvedColor = resolveColor(jumuiyaName, resolveColor(jumuiyaId, jumuiyaColor));
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "yearly">("overview");
   const [genderModal, setGenderModal] = useState<"male" | "female" | null>(null);
@@ -91,7 +91,7 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
 
   // ── Pending Payments State ──
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
-  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [, setLoadingPayments] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<"pending" | "all">("pending");
 
   const searchMember = async (q: string) => {
@@ -188,15 +188,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
       .filter(([k]) => k !== "Unknown")
       .sort(([a], [b]) => parseInt(a) - parseInt(b))
       .map(([year, count]) => ({ name: `Year ${year}`, count }));
-  }, [members]);
-
-  const sourceBreakdown = useMemo(() => {
-    const jum = members.filter((m: any) => m.source === "jum").length;
-    const csa = members.filter((m: any) => m.source === "csa").length;
-    return [
-      { name: "Jumuiya", value: jum },
-      { name: "CSA", value: csa },
-    ];
   }, [members]);
 
   const semesterFillData = useMemo(() => {

@@ -1,6 +1,5 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import { FaPhoneAlt, FaWhatsapp } from 'react-icons/fa'
 import { Users, ChevronRight } from 'lucide-react'
 import { useSocket } from '../../context/SocketContext'
@@ -160,7 +159,6 @@ function OfficialCard({ off, cat, navigate }: OfficialCardProps) {
 }
 
 export default function PublicView() {
-  const { user } = useAuth()
   const navigate  = useNavigate()
   const { socket } = useSocket()
   const [data, setData]             = React.useState<any[]>([])

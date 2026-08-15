@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Users, Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle } from "lucide-react";
+import { Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle } from "lucide-react";
 import * as XLSX from "xlsx";
 
 const JUMUIYAS = [
@@ -61,12 +61,12 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [sortBy, setSortBy] = useState<"jumuiya" | "gender">("jumuiya");
   const [sortAsc, setSortAsc] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportColumns, setExportColumns] = useState({
+  const [exportColumns, setExportColumns] = useState<Record<string, boolean>>({
     RegNo: true, Name: true, Gender: true, Course: true,
     Phone: true, Year: true, Jumuiya: true, Source: true,
   });
-  const [genderFilter, setGenderFilter] = useState({ Male: true, Female: true });
-  const [yearFilter, setYearFilter] = useState({ "1st": true, "2nd": true, "3rd": true, "4th+": true });
+  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Male: true, Female: true });
+  const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({ "1st": true, "2nd": true, "3rd": true, "4th+": true });
   const [pendingGraduates, setPendingGraduates] = useState<string[]>([]);
   const [migrating, setMigrating] = useState(false);
   const itemsPerPage = 25;
@@ -403,7 +403,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       <td className="py-2.5 px-3 text-slate-400 text-xs">{rowNumber}</td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.member_id} onChange={e => setEditForm(p => ({ ...p, member_id: e.target.value }))}
+                          <input value={editForm.member_id} onChange={e => setEditForm((p: any) => ({ ...p, member_id: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28 font-mono" />
                         ) : (
                           <span className="font-medium text-slate-800 text-xs">{memberId}</span>
@@ -412,9 +412,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       <td className="py-2.5 px-3">
                         {isEditing ? (
                           <div className="flex gap-1">
-                            <input value={editForm.first_name} onChange={e => setEditForm(p => ({ ...p, first_name: e.target.value }))}
+                            <input value={editForm.first_name} onChange={e => setEditForm((p: any) => ({ ...p, first_name: e.target.value }))}
                               placeholder="First" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
-                            <input value={editForm.last_name} onChange={e => setEditForm(p => ({ ...p, last_name: e.target.value }))}
+                            <input value={editForm.last_name} onChange={e => setEditForm((p: any) => ({ ...p, last_name: e.target.value }))}
                               placeholder="Last" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
                           </div>
                         ) : (
@@ -423,7 +423,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <select value={editForm.jumuiya_id} onChange={e => setEditForm(p => ({ ...p, jumuiya_id: e.target.value }))}
+                          <select value={editForm.jumuiya_id} onChange={e => setEditForm((p: any) => ({ ...p, jumuiya_id: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28">
                             <option value="">— None —</option>
                             {JUMUIYAS.map(j => (
@@ -445,7 +445,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <select value={editForm.gender} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
+                          <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
                             <option value="male">Male</option>
@@ -459,7 +459,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.course} onChange={e => setEditForm(p => ({ ...p, course: e.target.value }))}
+                          <input value={editForm.course} onChange={e => setEditForm((p: any) => ({ ...p, course: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-500 text-xs">{m.course || "—"}</span>
@@ -467,7 +467,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                          <input value={editForm.phone} onChange={e => setEditForm((p: any) => ({ ...p, phone: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
                         ) : (
                           <span className="text-slate-500 text-xs">{m.phone || "—"}</span>
@@ -475,7 +475,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.year_of_study} onChange={e => setEditForm(p => ({ ...p, year_of_study: e.target.value }))}
+                          <input value={editForm.year_of_study} onChange={e => setEditForm((p: any) => ({ ...p, year_of_study: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16" />
                         ) : (
                           <span className="text-slate-500 text-xs">{m.year || "—"}</span>

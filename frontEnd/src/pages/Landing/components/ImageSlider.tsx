@@ -17,8 +17,6 @@ const SLIDE_DURATION_MS = 12000   // How long each slide stays visible
 const ANIM_LOCK_MS = 300    // Execution lock time for transition
 const MIN_SWIPE_PX = 50      // Minimum px to register as a swipe
 
-const DEFAULT_SLIDES: GalleryItem[] = []
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function enrichSlides(dbSlides: GalleryItem[]): GalleryItem[] {
   return dbSlides.map((slide) => ({

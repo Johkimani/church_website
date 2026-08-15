@@ -10,10 +10,10 @@ export interface NovenaEvent {
   title: string;
   novenaId: string;          // links to NOVENAS array in novenas.ts
   intention: string;
-  startMonth: number;        // 0-indexed
-  startDay: number;
-  endMonth: number;
-  endDay: number;
+  startMonth?: number;       // 0-indexed (required for fixed-date novenas)
+  startDay?: number;
+  endMonth?: number;         // always start + 8 days; computed by getNovenaCalendar
+  endDay?: number;
   movable: boolean;          // true = computed from Easter
   offsetFromEaster?: number; // negative = before Easter, positive = after
   color: string;
@@ -865,7 +865,7 @@ export function getNovenaCalendar(year: number): (NovenaEvent & { startDate: Dat
     if (event.movable && event.offsetFromEaster !== undefined) {
       startDate = addDays(easter, event.offsetFromEaster);
     } else {
-      startDate = new Date(year, event.startMonth, event.startDay);
+      startDate = new Date(year, event.startMonth ?? 0, event.startDay ?? 1);
     }
     const endDate = addDays(startDate, 8); // 9 days total
     return { ...event, startDate, endDate };

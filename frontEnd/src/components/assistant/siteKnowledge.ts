@@ -114,11 +114,9 @@ let cache: { knowledge: string; facts: SiteFacts } | null = null;
 export const loadSiteData = async (): Promise<{ knowledge: string; facts: SiteFacts }> => {
   if (cache) return cache;
 
-  const [jumuiyaMod, saintsMod, adminMod, shopMod] = await Promise.all([
+  const [jumuiyaMod, saintsMod] = await Promise.all([
     import("../../pages/Jumuiya/data/jumuiyaData"),
     import("../../pages/Devotions/data/saintsData"),
-    import("../../pages/officials/constants/adminConstants"),
-    import("../../pages/projects/pages/data"),
   ]);
 
   const jumuiya: JumuiyaFact[] = jumuiyaMod.jumuiyaList.map((j) => ({

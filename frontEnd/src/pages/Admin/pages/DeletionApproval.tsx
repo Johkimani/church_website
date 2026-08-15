@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../api/axiosInstance';
-import { Loader2, Shield, CheckCircle, XCircle, Trash2, User } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Trash2, User } from 'lucide-react';
 
 export default function DeletionApproval() {
   const { token } = useParams<{ token: string }>();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [request, setRequest] = useState<any>(null);
   const [loading, setLoading] = useState(true);

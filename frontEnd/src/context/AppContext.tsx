@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../api/config';
 import { apiClient } from '../api/axiosInstance';
 import { SessionStorage } from '../utils';
-import { SACRAMENTAL_CATEGORIES } from '../pages/projects/pages/data';
 import type { CartItem, SacramentalCategory } from '../pages/projects/pages/data';
 
 // Email of the signed-in account, used to link purchases to "My Receipts".
@@ -238,7 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updateCartQuantity = (indexToUpdate: number, delta: number) => {
         setCart(prev => prev.map((item, index) => {
             if (index !== indexToUpdate) return item;
-            const newQty = (item.quantity || 1) + delta;
+            const newQty = (Number(item.quantity) || 1) + delta;
             if (newQty <= 0) return item;
             return { ...item, quantity: newQty };
         }));
@@ -255,7 +254,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (existingIdx >= 0) {
                 return prev.map((p, i) =>
                     i === existingIdx
-                        ? { ...p, quantity: (p.quantity || 1) + 1 }
+                        ? { ...p, quantity: (Number(p.quantity) || 1) + 1 }
                         : p
                 );
             }
@@ -272,10 +271,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const clearCart = () => setCart([]);
 
     const cartTotal = cart.reduce((total, item) => {
-        return total + (item.price * (item.quantity || item.rentalDays || 1));
+        return total + (item.price * (Number(item.quantity) || item.rentalDays || 1));
     }, 0);
 
-    const cartItemsCount = cart.reduce((count, item) => count + (item.quantity || 1), 0);
+    const cartItemsCount = cart.reduce((count, item) => count + (Number(item.quantity) || 1), 0);
 
     const proceedToCheckout = async () => {
         if (cart.length === 0) return;
@@ -288,7 +287,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         let phone = '254' + phoneDigits.replace(/^0+/, '');
 
         let checkoutId: string | null = null;
-        let orderCreated = false;
 
         try {
             showToast("Initiating M-Pesa payment... Please check your phone.", 'info');
@@ -332,7 +330,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     items: cart,
                     status: 'pending',
                 });
-                orderCreated = true;
             } catch (e) {
                 console.error("Failed to create pending order:", e);
                 showToast("Warning: Order record failed, but payment will proceed.", 'warning');

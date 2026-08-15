@@ -92,7 +92,7 @@ const ProductsPanel = ({ categoryFilter }: Props) => {
   const filteredProducts = useMemo(() => {
     const pool = activeCategories.length === 4
       ? products
-      : products.filter((p) => activeCategories.includes(p.category));
+      : products.filter((p) => p.category && activeCategories.includes(p.category));
     if (selectedCategory === 'all') return pool;
     return pool.filter(
       (p) => p.category?.toLowerCase() === selectedCategory

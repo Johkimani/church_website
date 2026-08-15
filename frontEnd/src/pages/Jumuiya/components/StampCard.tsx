@@ -163,7 +163,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
         );
     }
 
-    const _c = (s) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+    const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
     return (
         <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -426,7 +426,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                 Issue Date
                             </div>
                             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
-                                {new Date(displayRecord.joined_at || new Date()).toLocaleDateString('en-US', {
+                                {new Date((displayRecord as JumuiyaRosterMember & { joined_at?: string }).joined_at || new Date()).toLocaleDateString('en-US', {
                                     year: 'numeric', month: 'short', day: 'numeric'
                                 })}
                             </div>

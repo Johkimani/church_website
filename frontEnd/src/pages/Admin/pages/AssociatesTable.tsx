@@ -1,17 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Users, Search, X, RefreshCw, GraduationCap, Download, Undo2 } from "lucide-react";
+import { Search, X, RefreshCw, GraduationCap, Download, Undo2 } from "lucide-react";
 import * as XLSX from "xlsx";
-
-const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony" },
-  { id: "st-augustine", name: "St. Augustine" },
-  { id: "st-catherine", name: "St. Catherine" },
-  { id: "st-dominic", name: "St. Dominic" },
-  { id: "st-elizabeth", name: "St. Elizabeth" },
-  { id: "st-maria-goretti", name: "St. Maria Goretti" },
-  { id: "st-monica", name: "St. Monica" },
-];
 
 export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: number }) {
   const [associates, setAssociates] = useState<any[]>([]);
@@ -21,12 +11,12 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [graduationFilter, setGraduationFilter] = useState<Record<string, boolean>>({});
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportColumns, setExportColumns] = useState({
+  const [exportColumns, setExportColumns] = useState<Record<string, boolean>>({
     RegNo: true, Name: true, Gender: true, Email: true,
     Phone: true, Jumuiya: true, AdmissionYear: true,
     GraduationYear: true, Source: true, MigratedAt: true,
   });
-  const [genderFilter, setGenderFilter] = useState({ Male: true, Female: true });
+  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Male: true, Female: true });
 
   useEffect(() => {
     const timer = setTimeout(() => {

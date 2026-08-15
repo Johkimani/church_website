@@ -4,10 +4,10 @@ import { Footer } from './Footer';
 import { CartDrawer } from './CartDrawer';
 import { ReceiptsDrawer } from './ReceiptsDrawer';
 import { ToastContainer } from './ToastContainer';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../../../context/AppContext';
 import { apiClient } from '../../../api/axiosInstance';
 import { useState, useEffect } from 'react';
-import { SELLER_NUMBERS } from '../data';
+import { SELLER_NUMBERS } from '../pages/data';
 
 const PhoneIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../../../context/AppContext';
 import { motion } from 'framer-motion';
 import { HireModal } from '../components/HireModal';
-import { HeroSlider, useSliderImages } from '../components/HeroSlider';
+import { useSliderImages } from '../components/HeroSlider';
 
 import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle, FaChair } from 'react-icons/fa';
 import TestimonialsSection from '../components/TestimonialsSection';
@@ -72,7 +72,7 @@ const HeroSliderComponent: React.FC<{
 const CHAIR_PRICE = 10;
 
 export const Chairs = () => {
-    const { products, isLoading, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
+    const { products, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
     const [chairQty, setChairQty] = React.useState(1);
     const { sliderImgs, sliderLoading, isAdmin, deleteSlide } = useSliderImages('chairs');
 

@@ -5,7 +5,6 @@ import {
   FaArrowRight,
   FaSearch,
   FaCopy,
-  FaBookmark,
   FaTimes,
   FaCheck,
   FaChevronDown,
@@ -22,7 +21,7 @@ interface BibleVersionInfo {
   id: string;
   name: string;
   subtitle: string;
-  source: string;
+  source?: string;
   testaments: string[];
 }
 
@@ -36,15 +35,6 @@ interface BookInfo {
 interface Verse {
   verse: number;
   text: string;
-}
-
-interface ChapterData {
-  book: string;
-  bookName: string;
-  chapter: number;
-  testament: string;
-  totalVerses: number;
-  verses: Verse[];
 }
 
 interface Bookmark {
@@ -158,7 +148,7 @@ const SECTION_HEADINGS: Record<string, string[]> = {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export default function Bible(): JSX.Element {
+export default function Bible() {
   const [versions, setVersions] = useState<BibleVersionInfo[]>(() => getStaticVersions());
   const [version, setVersion] = useState<string>(() => localStorage.getItem("bible-reader-version") || "dra");
   const [allBooks, setAllBooks] = useState<BookInfo[]>(() => getStaticBooks().map(b => ({ code: b.code, name: b.name, testament: b.testament, chapters: b.chapters })));
@@ -209,7 +199,7 @@ export default function Bible(): JSX.Element {
       try {
         const res = await apiClient.get("/bible/books", { params: { version } });
         if (mounted && res.data?.books?.length > 0) {
-          setAllBooks(res.data.books.map((b) => ({ code: b.code, name: b.name, testament: b.testament, chapters: b.chapters })));
+          setAllBooks(res.data.books.map((b: any) => ({ code: b.code, name: b.name, testament: b.testament, chapters: b.chapters })));
         }
       } catch {}
     };
@@ -603,8 +593,7 @@ export default function Bible(): JSX.Element {
                     const readCount = getReadCount(book.code);
                     const hasProgress = readCount > 0;
                     const progress = (readCount / book.chapters) * 100;
-                    const colorMap = { amber: "bg-amber-500", rose: "bg-rose-500", emerald: "bg-emerald-500" };
-                    const textColorMap = { amber: "text-amber-600", rose: "text-rose-600", emerald: "text-emerald-600" };
+                    const colorMap: Record<string, string> = { amber: "bg-amber-500", rose: "bg-rose-500", emerald: "bg-emerald-500" };
                     return (
                       <button
                         key={book.code}
@@ -830,7 +819,6 @@ export default function Bible(): JSX.Element {
                     {/* Section headings in paragraph mode */}
                     {(() => {
                       const sections: { heading?: string; verseStart: number; verseEnd: number }[] = [];
-                      let currentSection: { heading?: string; verseStart: number; verseEnd: number } = { verseStart: 1, verseEnd: verses.length };
                       const headingVerses = Object.entries(sectionHeadings).map(([v, h]) => ({ verse: parseInt(v), heading: h[0] }));
                       if (headingVerses.length > 0) {
                         sections.length = 0;

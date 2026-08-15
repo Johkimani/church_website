@@ -20,11 +20,9 @@ const SECTION_ICONS: Record<PrayerCategory, string> = {
   rosary: "R",
   essential: "CE",
   acts: "AV",
-  confession: "CO",
   litanies: "L",
   saints: "S",
   devotions: "DE",
-  meals: "ME",
   fasting: "J",
   special: "E",
 };
@@ -53,11 +51,9 @@ const TAB_SHORT: Record<PrayerCategory, string> = {
   rosary: "Rosary",
   essential: "Essential",
   acts: "Acts",
-  confession: "Confession",
   litanies: "Litanies",
   saints: "Saints",
   devotions: "Devotions",
-  meals: "Meals",
   fasting: "Fasting",
   special: "Special",
 };
@@ -152,7 +148,7 @@ export default function Readings() {
     return CATHOLIC_PRAYERS.filter((p) => p.category === effectiveTab);
   }, [effectiveTab, searchQuery, bookmarks]);
 
-  const selectedIndex = CATEGORIES.indexOf(effectiveTab);
+  const selectedIndex = CATEGORIES.indexOf(effectiveTab as PrayerCategory);
 
   const activeIsFav = effectiveTab === FAVORITES_TAB;
   const activeMeta = activeIsFav ? FAVORITES_META : CATEGORY_META[effectiveTab];

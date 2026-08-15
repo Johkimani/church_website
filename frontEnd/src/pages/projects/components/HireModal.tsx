@@ -169,7 +169,7 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     setPaymentStep("processing");
     paidRef.current = false;
     try {
-      const res = await apiClient.post(`/hire/pay/${result.reference}`, { phone_number: payPhone.trim() });
+      await apiClient.post(`/hire/pay/${result.reference}`, { phone_number: payPhone.trim() });
       toast.success("STK Push sent! Check your phone to enter M-Pesa PIN.");
 
       // Poll for status
@@ -234,14 +234,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
-  };
-
-  const resetAll = () => {
-    setSubmitted(false);
-    setPaymentStep("choose");
-    setPayResult(null);
-    setResult(null);
-    setError("");
   };
 
   return (

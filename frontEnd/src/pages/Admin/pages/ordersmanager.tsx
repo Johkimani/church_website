@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { apiClient } from "../../../api/axiosInstance";
 import apiService from "../../Landing/services/api";
-import { Package, RefreshCcw, Loader2, CheckCircle, Clock, XCircle, MessageCircle, DollarSign, Truck, MapPin, Ban, Archive, CookingPot, ShoppingBag } from "lucide-react";
+import { Package, RefreshCcw, Loader2, CheckCircle, MessageCircle, DollarSign, Ban, Archive, CookingPot, ShoppingBag } from "lucide-react";
 import Skeleton from "../../../components/Skeleton";
 import { toast } from "react-hot-toast";
 
@@ -209,7 +208,6 @@ export default function OrdersManager() {
               <tbody className="divide-y divide-slate-100">
                 {visible.map((o: any) => {
                   const isCash = o.payment_method === "cash";
-                  const hasItems = o.items && JSON.parse(typeof o.items === "string" ? o.items : "[]").length > 0;
                   return (
                     <tr key={o.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3 font-mono text-xs text-slate-700">

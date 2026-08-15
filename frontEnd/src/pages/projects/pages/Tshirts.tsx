@@ -1,9 +1,8 @@
 import React from 'react';
 import { useApp } from '../../../context/AppContext';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shirt } from 'lucide-react';
-import { HeroSlider, useSliderImages } from '../components/HeroSlider';
+import { useSliderImages } from '../components/HeroSlider';
 
 import { FaStar, FaCheckCircle, FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
 import TestimonialsSection from '../components/TestimonialsSection';

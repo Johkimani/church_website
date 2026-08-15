@@ -17,7 +17,7 @@ export default function DonationMonitor() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: donations = [], loading, refetch: fetchDonations, setData: setDonations } = useCachedData<any[]>(
+  const { data: donations = [], loading, refetch: fetchDonations } = useCachedData<any[]>(
     'csa_cache_donation_monitor',
     async () => {
       const [mpesaData, membersData] = await Promise.all([
@@ -105,7 +105,7 @@ export default function DonationMonitor() {
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={fetchDonations}
+            onClick={() => fetchDonations()}
             disabled={loading}
             className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50"
             title="Refresh Data"

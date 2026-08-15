@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CartItem } from '../data';
+import type { CartItem } from '../pages/data';
 import { IconCalendar } from './Icons';
 
 interface ProductCardProps {

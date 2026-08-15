@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Image, Plus, Trash2, GripVertical, Upload, Eye, Edit2, Save, X, Loader2, Link as LinkIcon, FileImage, RefreshCw } from 'lucide-react';
+import { Image, Plus, Trash2, GripVertical, Upload, Eye, Edit2, Save, X, Loader2, Link as LinkIcon, FileImage } from 'lucide-react';
 import apiService from '../../Landing/services/api';
 import { uploadFile } from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';

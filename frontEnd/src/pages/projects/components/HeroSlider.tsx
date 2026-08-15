@@ -22,8 +22,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     images,
     isAdmin,
     onDelete,
-    section = 'sacramentals',
-    fallbackImages = [],
     shopAnchor = '#products',
 }) => {
     const [idx, setIdx] = useState(0);

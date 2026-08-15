@@ -32,7 +32,7 @@ const OrganizationPanel: React.FC<Props> = ({ jumuiyaId }) => {
     if (!newGroup.name.trim()) return;
     setError(null);
     try {
-      await memberService.createGroup(jumuiyaId, newGroup);
+      await memberService.createGroups(jumuiyaId, { groups: [newGroup] });
       setNewGroup({ name: "", capacity: 0, leader_name: "", leader_phone: "" });
       setShowCreate(false);
       fetchGroups();

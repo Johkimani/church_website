@@ -2,9 +2,9 @@ import React from 'react';
 import { useApp } from '../../../context/AppContext';
 import { motion } from 'framer-motion';
 import { HireModal } from '../components/HireModal';
-import { HeroSlider, useSliderImages } from '../components/HeroSlider';
+import { useSliderImages } from '../components/HeroSlider';
 
-import { FaStar, FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle } from 'react-icons/fa';
+import { FaStar, FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
@@ -180,7 +180,7 @@ const InstrumentCard: React.FC<{
 };
 
 export const Instruments = () => {
-    const { products, isLoading, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
+    const { products, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
     const { sliderImgs, sliderLoading, isAdmin, deleteSlide } = useSliderImages('instruments');
 
     const instruments = React.useMemo(() => {

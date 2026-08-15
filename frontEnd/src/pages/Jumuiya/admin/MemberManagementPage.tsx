@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import RegistrationDashboard from "./RegistrationDashboard";

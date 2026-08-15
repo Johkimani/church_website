@@ -123,7 +123,7 @@ export default function CohortProgressionTab() {
             />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
-              formatter={(value: number, name: string) => [`${value}%`, name]}
+              formatter={(value: any, name: any) => [`${value}%`, name]}
               labelStyle={{ fontWeight: 600 }}
             />
             <Legend

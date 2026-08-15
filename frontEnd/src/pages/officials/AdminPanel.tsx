@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, Share2, History, LayoutDashboard, Search, Archive, Check } from 'lucide-react';
+import { Download, Share2, History, LayoutDashboard, Archive, Check } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '../../context/SocketContext';
 

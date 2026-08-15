@@ -3,6 +3,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useReducer } from "react";
 
+import type { Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext.tsx";
 import { UPLOAD_BASE } from "../api/config";
 
@@ -22,7 +23,7 @@ const isJwtExpired = (token: string) => {
 };
 
 // Function to establish a socket connection with authorization token
-const getSocket = async (token: string | undefined): Promise<ReturnType<typeof import("socket.io-client")> | null> => {
+const getSocket = async (token: string | undefined): Promise<Socket | null> => {
   if (!token) return null;
   // Basic JWT format check (3 parts separated by dots). Prevent connecting with malformed tokens.
   if (typeof token === 'string' && token.split('.').length !== 3) {
@@ -49,8 +50,6 @@ const getSocket = async (token: string | undefined): Promise<ReturnType<typeof i
 };
 
 // Create a context to hold the socket instance
-type Socket = ReturnType<typeof import("socket.io-client")>;
-
 type SocketState = { socket: Socket | null };
 type SocketAction = { type: "SET_SOCKET"; socket: Socket | null };
 

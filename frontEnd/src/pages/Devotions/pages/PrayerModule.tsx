@@ -3,7 +3,7 @@ import type { Prayer } from '../data/prayerCategories';
 import { PRAYERS } from '../data/prayerCategories';
 import { NOVENAS, type Novena } from '../data/novenas';
 import { getNovenaCalendar } from '../data/novenaCalendar';
-import { usePrayerFilter } from '../hooks/usePrayerFilter';
+import { usePrayerFilter, type PrayerFilters } from '../hooks/usePrayerFilter';
 import PrayerFilter from '../components/PrayerFilter';
 import PrayerList from '../components/PrayerList';
 import PrayerReader from '../components/PrayerReader';
@@ -192,7 +192,7 @@ export default function PrayerModule() {
             {/* Filters */}
             <PrayerFilter
               filters={filters}
-              onFilterChange={updateFilter}
+              onFilterChange={(key, value) => updateFilter(key as keyof PrayerFilters, value)}
               onClearFilters={clearFilters}
               categories={CATEGORIES}
               categoryCounts={categoryCounts}

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../../context/AppContext';
 import { FaStar, FaShoppingCart, FaChevronLeft, FaCheckCircle, FaMinus, FaPlus } from 'react-icons/fa';

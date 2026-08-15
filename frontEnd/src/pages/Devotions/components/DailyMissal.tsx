@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { DailyReadings, Reading } from "../data/readingsData";
-import { getDailyReadings, getNextSunday, getTomorrow, formatDate } from "../services/dailyReadingsApi";
+import { getDailyReadings, getNextSunday, getTomorrow } from "../services/dailyReadingsApi";
 
 type DateTab = "today" | "tomorrow" | "next-sunday";
 

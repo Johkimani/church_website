@@ -88,7 +88,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
       return { snapshots, photoUrl };
     },
-    onError: (error: Error, formData, context) => {
+    onError: (error: Error, _formData, context) => {
       if (context?.snapshots) {
         context.snapshots.forEach(snapshot => {
           queryClient.setQueryData(snapshot.queryKey, snapshot.data);
@@ -99,7 +99,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       showErrorToast('Failed to Add Jumuiya Official', error.message);
     },
-    onSuccess: (data, formData, context) => {
+    onSuccess: (_data, _formData, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -176,7 +176,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
       return { snapshots, photoUrl: newPhotoUrlCreated ? photoUrl : undefined };
     },
-    onError: (error: Error, variables, context) => {
+    onError: (error: Error, _variables, context) => {
       if (context?.snapshots) {
         context.snapshots.forEach(snapshot => {
           queryClient.setQueryData(snapshot.queryKey, snapshot.data);
@@ -187,7 +187,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       showErrorToast('Failed to Update Jumuiya Official', error.message);
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (_data, _variables, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -228,7 +228,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
       return { snapshots };
     },
-    onError: (error: Error, id, context) => {
+    onError: (error: Error, _id, context) => {
       if (context?.snapshots) {
         context.snapshots.forEach(snapshot => {
           queryClient.setQueryData(snapshot.queryKey, snapshot.data);

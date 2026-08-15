@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCachedData } from '../../../hooks/useCachedData';
 import { apiClient } from '../../../api/axiosInstance';
 import {
@@ -28,7 +28,7 @@ const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1438029071396-1e831a7fa
 export default function CommunityManager() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: modules = [], loading, error, refetch: loadModules, setData: setModules } = useCachedData<any[]>(
+  const { data: modules = [], loading, refetch: loadModules } = useCachedData<any[]>(
     'csa_cache_hub_modules',
     async () => {
       const response = await apiClient.get('/hub_modules');
@@ -63,7 +63,7 @@ export default function CommunityManager() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={loadModules}
+            onClick={() => loadModules()}
             className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
             title="Refresh"
           >

@@ -310,7 +310,7 @@ export default function NovenaCalendar({ onStartNovena, className = '' }: Novena
         </div>
       ) : (
         <div className="space-y-3">
-          {monthNovenas.map(({ event, status, currentDay, progress, daysUntil: days }) => {
+          {monthNovenas.map(({ event, status, currentDay, progress }) => {
             const active = status === 'active';
             const past = status === 'past';
             const countdown = daysUntil(event.startDate);

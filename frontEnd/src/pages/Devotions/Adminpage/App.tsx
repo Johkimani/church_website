@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { FaUserCircle, FaCheckCircle, FaUsers, FaTrash, FaEdit, FaSearch } from "react-icons/fa";
-import { Sparkles, TrendingUp, Award, BarChart3, PieChart as PieIcon, RefreshCw, Users, ShieldCheck, CalendarDays, CalendarRange } from "lucide-react";
+import { FaUserCircle, FaCheckCircle, FaTrash, FaEdit, FaSearch } from "react-icons/fa";
+import { Sparkles, TrendingUp, Award, BarChart3, RefreshCw, Users, ShieldCheck, CalendarDays, CalendarRange } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid
 } from "recharts";
 import {
   generateAndSaveQuestions,
@@ -1066,7 +1066,7 @@ function JumuiyaAnalyticsOverview({ membersList = [] }: { membersList?: JumuiyaR
                 <YAxis tick={{ fill: "#64748b", fontSize: 10 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                 <Tooltip
                   contentStyle={{ backgroundColor: "#1e293b", borderRadius: "12px", color: "#fff", fontSize: "12px" }}
-                  formatter={(val: number) => [`${val.toFixed(1)}% Accuracy`, "Accuracy"]}
+                  formatter={(value: any) => [`${value.toFixed(1)}% Accuracy`, "Accuracy"]}
                 />
                 <Bar dataKey="accuracy" radius={[6, 6, 0, 0]}>
                   {chartData.map((entry, index) => (

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CartItem } from '../data';
+import type { CartItem } from '../pages/data';
 import { X, Trash2, ShoppingBag, ShieldCheck, Plus, Minus, MapPin, Truck, CreditCard, Wallet, Package, User, Phone, MessageCircle, Mail } from 'lucide-react';
 
 interface CartDrawerProps {
@@ -150,7 +150,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                                     <Plus size={10} />
                                                 </button>
                                             </div>
-                                            <span className="text-xs font-black text-slate-900">KES {Number(item.price * (item.quantity || 1)).toLocaleString()}</span>
+                                            <span className="text-xs font-black text-slate-900">KES {Number(item.price * Number(item.quantity || 1)).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>

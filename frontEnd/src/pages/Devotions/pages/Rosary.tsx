@@ -378,7 +378,7 @@ function BeadDiagram() {
 
 // ─── PRAYER GUIDE WITH AUDIO ─────────────────────────────────────────────
 
-const FULL_ROSARY_STEPS: { title: string; prayer: string; isOurFather: boolean; isHailMary: boolean; isGloryBe: boolean; isFatima: boolean; isCreed: boolean; isSignOfCross: boolean; isHailHolyQueen: boolean; isConcluding: boolean; isMysteryAnnouncement: boolean; mysteryTitle?: string }[] = [
+const FULL_ROSARY_STEPS: { title: string; prayer: string; isOurFather?: boolean; isHailMary?: boolean; isGloryBe?: boolean; isFatima?: boolean; isCreed?: boolean; isSignOfCross?: boolean; isHailHolyQueen?: boolean; isConcluding?: boolean; isMysteryAnnouncement?: boolean; mysteryTitle?: string; instruction?: string; contemplation?: string }[] = [
   { title: "Sign of the Cross", prayer: "In the name of the Father, and of the Son, and of the Holy Spirit. Amen.", isSignOfCross: true },
   { title: "Apostles' Creed", prayer: "I believe in God, the Father almighty, Creator of heaven and earth, and in Jesus Christ, his only Son, our Lord, who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died and was buried; he descended into hell; on the third day he rose again from the dead; he ascended into heaven, and is seated at the right hand of God the Father almighty; from there he will come to judge the living and the dead. I believe in the Holy Spirit, the holy catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen.", isCreed: true },
   { title: "Our Father", prayer: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.", isOurFather: true },
@@ -391,7 +391,7 @@ const FULL_ROSARY_STEPS: { title: string; prayer: string; isOurFather: boolean; 
 function buildFullRosarySteps(mysteries: Mystery[]) {
   const steps: typeof FULL_ROSARY_STEPS = [];
   mysteries.forEach((m, idx) => {
-    steps.push({ title: `Mystery ${idx + 1}: ${m.title}`, prayer: m.english, isMysteryAnnouncement: true, mysteryTitle: m.title });
+    steps.push({ title: `Mystery ${idx + 1}: ${m.title}`, prayer: m.english ?? "", isMysteryAnnouncement: true, mysteryTitle: m.title });
     steps.push({ title: "Our Father", prayer: FULL_ROSARY_STEPS[2].prayer, isOurFather: true });
     for (let i = 1; i <= 10; i++) {
       steps.push({ title: `Hail Mary ${i}`, prayer: FULL_ROSARY_STEPS[3].prayer, isHailMary: true });

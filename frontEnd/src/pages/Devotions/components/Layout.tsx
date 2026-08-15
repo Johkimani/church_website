@@ -9,7 +9,7 @@ export default function Layout() {
   useEffect(() => {
     const saved = localStorage.getItem('devotions-bg-image');
     if (saved) {
-      const container = document.querySelector('.devotions-view-container');
+      const container = document.querySelector<HTMLElement>('.devotions-view-container');
       if (container) {
         container.style.setProperty('--bg-custom-image', `url('${saved}')`);
       }

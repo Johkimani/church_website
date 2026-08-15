@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Camera, ArrowRight, Expand } from 'lucide-react';
 import { fetchGalleryTeaser } from '../../../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { UPLOAD_BASE } from '../../../../api/config';
 
 interface GalleryItem {

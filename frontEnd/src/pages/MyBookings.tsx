@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { bookingService } from "../api/activitiesServices";
-import { RefreshCw, Clock, MapPin, Calendar, ChevronLeft } from "lucide-react";
+import { RefreshCw, Clock, Calendar, ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Booking {

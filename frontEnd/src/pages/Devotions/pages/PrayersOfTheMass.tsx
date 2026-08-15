@@ -128,12 +128,10 @@ export default function PrayersOfTheMass() {
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);
   const [expandedPenitential, setExpandedPenitential] = useState<string | null>(null);
   const [expandedEucharistic, setExpandedEucharistic] = useState<string | null>(null);
-  const [expandedProper, setExpandedProper] = useState<string | null>(null);
 
   const togglePrayer = (key: string) => setExpandedPrayer(expandedPrayer === key ? null : key);
   const togglePenitential = (key: string) => setExpandedPenitential(expandedPenitential === key ? null : key);
   const toggleEucharistic = (key: string) => setExpandedEucharistic(expandedEucharistic === key ? null : key);
-  const toggleProper = (key: string) => setExpandedProper(expandedProper === key ? null : key);
 
   return (
     <div className="w-full min-h-screen bg-transparent">
@@ -356,7 +354,7 @@ export default function PrayersOfTheMass() {
 }
 
 function PrayerCard({ title, subtitle, color, latin, text, explanation, expanded, onToggle }: {
-  title: string; subtitle: string; color: string; latin: string; text: string; explanation: string; expanded: boolean; onToggle: () => void;
+  title: string; subtitle: string; color: string; latin?: string; text: string; explanation: string; expanded: boolean; onToggle: () => void;
 }) {
   return (
     <div className="mb-4 rounded-2xl overflow-hidden bg-white border border-stone-200 shadow-sm transition-all duration-300">

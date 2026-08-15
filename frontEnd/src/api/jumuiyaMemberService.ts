@@ -42,7 +42,7 @@ export const memberService = {
     apiClient.delete(`${BASE(jumuiyaId)}/seasons/${id}`).then(r => r.data),
 
   // ── Imports ──
-  importMembers: (jumuiyaId: string, data: { members: any[]; season_id?: number; file_name?: string }) =>
+  importMembers: (jumuiyaId: string, data: { members: any[]; season_id?: number; file_name?: string; academic_year?: string }) =>
     apiClient.post(`${BASE(jumuiyaId)}/import-members`, data).then(r => r.data),
 
   getImports: (jumuiyaId: string) =>
@@ -179,7 +179,7 @@ export const memberService = {
   getPendingPayments: (params?: { jumuiya_id?: string }) =>
     apiClient.get(`/jumuiya-members/pending-payments`, { params }).then(r => r.data),
 
-  getMyJumuiyaPendingPayments: (params: { jumuiya_id: string }) =>
+  getMyJumuiyaPendingPayments: (params: { jumuiya_id: string; status?: string }) =>
     apiClient.get(`/jumuiya-members/pending-payments/my`, { params }).then(r => r.data),
 
   settlePendingPayment: (id: number, data?: { settled_by?: string }) =>
