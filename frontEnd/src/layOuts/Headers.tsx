@@ -168,17 +168,6 @@ const Headers = () => {
             )}
           </button>
 
-          {/* My Receipts */}
-          {user && (
-            <button
-              onClick={() => navigate("/my-receipts")}
-              className="relative p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
-              title="My Receipts"
-            >
-              <FaReceipt className="text-lg" />
-            </button>
-          )}
-
           {/* Cart */}
           <button
             className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
@@ -206,6 +195,14 @@ const Headers = () => {
               <span className="text-sm font-semibold text-slate-700 hidden lg:block truncate max-w-[100px]">
                 {user.name}
               </span>
+              <button
+                className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg font-semibold text-xs hover:bg-emerald-50 transition-all"
+                onClick={() => navigate("/my-receipts")}
+                title="My Receipts"
+              >
+                <FaReceipt className="text-sm" />
+                <span className="hidden xl:inline">Receipts</span>
+              </button>
               {isAdminRole(user?.role) && (
                 <button
                   className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition-all"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MarianImage from "../components/MarianImage";
 
 const SEASONS = [
   {
@@ -486,6 +487,13 @@ export default function LiturgicalSeasons() {
           </p>
           <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
         </div>
+        <MarianImage
+          className="mt-6"
+          src="/images/mary-annunciation.jpg"
+          caption="Mary, Mother of God"
+          size={96}
+          href="/devotions/rosary"
+        />
         <p className="text-sm text-stone-500 mt-4 max-w-3xl text-center font-light leading-relaxed">
           The Liturgical Year is the heart of Catholic worship, guiding the faithful through the mysteries of salvation history from Advent to Ordinary Time. Each season carries unique spiritual gifts, practices, and sacred traditions that prepare us to encounter Christ more deeply.
         </p>

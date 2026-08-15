@@ -23,6 +23,20 @@ function AboutSection() {
 
       <div className="text-center max-w-3xl mx-auto mb-12 md:mb-20">
         <h2 className="text-slate-400 font-bold tracking-[0.2em] uppercase text-[10px] mb-4">Who We Are</h2>
+        <div className="mb-6 flex justify-center">
+          <a href="/devotions/rosary" className="inline-flex hover:scale-105 transition-transform duration-300" title="Pray the Rosary with Our Lady">
+            <div className="rounded-full overflow-hidden p-1.5" style={{
+              background: "linear-gradient(135deg, #FBBF24, #D97706)",
+              boxShadow: "0 14px 30px rgba(217,119,6,0.35), 0 4px 12px rgba(28,25,23,0.15)",
+            }}>
+              <img
+                src="/images/mary-immaculate.jpg"
+                alt="The Blessed Virgin Mary"
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover"
+              />
+            </div>
+          </a>
+        </div>
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 mb-6 tracking-tight">
           Welcome to CSA Kirinyaga University
         </h1>

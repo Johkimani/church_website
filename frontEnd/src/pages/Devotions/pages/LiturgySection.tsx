@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MarianImage from "../components/MarianImage";
 
 /* ═══════════════════════════════════════════════════════════════
    CATHOLIC LITURGY — EDUCATIONAL DATA
@@ -455,6 +456,27 @@ export default function LiturgySection() {
 
   return (
     <div style={{ position: "relative", zIndex: 5 }}>
+      {/* ═══════════ MARIAN HEADER ═══════════ */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap",
+        background: "linear-gradient(135deg, #FFFFFF, #FDF6EC)",
+        border: "1px solid rgba(217,119,6,0.18)",
+        borderRadius: 16, padding: "16px 20px", marginBottom: 24,
+      }}>
+        <MarianImage
+          src="/images/mary-rosary.jpg"
+          caption="Our Lady of the Rosary"
+          size={76}
+          href="/devotions/rosary"
+        />
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.2em", color: "#B45309" }}>The Liturgy & The Blessed Mother</div>
+          <p style={{ fontSize: 13, color: "#78716C", margin: "4px 0 0", lineHeight: 1.5 }}>
+            In every liturgical season the Church honours Mary, the first disciple, whose fiat echoes through the sacred mysteries we celebrate.
+          </p>
+        </div>
+      </div>
+
       {/* ═══════════ TAB BAR ═══════════ */}
       <div style={{
         display: "flex", gap: 6, marginBottom: 28, flexWrap: "wrap",

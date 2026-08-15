@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { prefetchByPath } from "../../../utils/routePrefetch";
+import MarianImage from "./MarianImage";
 import {
   FaHome,
   FaBook,
@@ -385,6 +386,17 @@ export default function Sidebar() {
           <p className="text-[10px] text-center text-stone-400 tracking-wider mt-3">
             ✦ DEVS: SACRED SPACE ✦
           </p>
+          <div className="mt-3 flex justify-center">
+            <NavLink
+              to="/devotions/rosary"
+              onMouseEnter={prefetchNav("/devotions/rosary")}
+              onFocus={prefetchNav("/devotions/rosary")}
+              className="hover:scale-105 transition-transform duration-200 inline-flex"
+              aria-label="Pray the Holy Rosary with Our Lady"
+            >
+              <MarianImage src="/images/mary-rosary.jpg" alt="Our Lady of the Rosary" size={64} />
+            </NavLink>
+          </div>
         </div>
       </aside>
 

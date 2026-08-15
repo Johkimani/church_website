@@ -6,6 +6,7 @@ import type { DailyReadings } from "../data/readingsData";
 import SaintOfTheDay from "../components/SaintOfTheDay";
 import LiturgicalBanner from "../components/LiturgicalBanner";
 import DailyMissal from "../components/DailyMissal";
+import MarianImage from "../components/MarianImage";
 
 export default function DailyLiturgy() {
   const today = new Date();
@@ -34,8 +35,14 @@ export default function DailyLiturgy() {
   return (
     <div className="min-h-screen pb-24">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <MarianImage
+            src="/images/mary-madonna.jpg"
+            caption="Our Lady"
+            size={76}
+            href="/devotions/rosary"
+          />
+          <div className="flex-1 min-w-[220px]">
              <h1 className="text-2xl font-bold text-stone-900">Daily Liturgy</h1>
              <p className="text-sm text-stone-500 mt-1">
               {today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}

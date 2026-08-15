@@ -4,6 +4,7 @@ import PrayerBook from "./PrayerBook";
 import PrayerModule from "./PrayerModule";
 import Rosary from "./Rosary";
 import LiturgySection from "./LiturgySection";
+import MarianImage from "../components/MarianImage";
 
 type SubTab = "book" | "novenas" | "rosary" | "liturgy";
 
@@ -62,13 +63,21 @@ export default function AllPrayers() {
       </div>
 
       {/* HERO */}
-      <div style={{ position: "relative", zIndex: 5, maxWidth: 1400, margin: "0 auto", padding: "32px 24px 0" }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#1C1917", margin: 0, lineHeight: 1.15, letterSpacing: "-0.02em", fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
-          All Prayers
-        </h1>
-        <p style={{ fontSize: 15, color: "#78716C", margin: "8px 0 0", lineHeight: 1.5 }}>
-          Explore our complete collection of Catholic prayers, novenas, rosary, and liturgy guides
-        </p>
+      <div style={{ position: "relative", zIndex: 5, maxWidth: 1400, margin: "0 auto", padding: "32px 24px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#1C1917", margin: 0, lineHeight: 1.15, letterSpacing: "-0.02em", fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+            All Prayers
+          </h1>
+          <p style={{ fontSize: 15, color: "#78716C", margin: "8px 0 0", lineHeight: 1.5 }}>
+            Explore our complete collection of Catholic prayers, novenas, rosary, and liturgy guides
+          </p>
+        </div>
+        <MarianImage
+          src="/images/mary-annunciation.jpg"
+          caption="Our Lady of the Annunciation"
+          size={112}
+          href="/devotions/rosary"
+        />
       </div>
 
       {/* SUB-TAB NAVIGATION */}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MarianImage from "../components/MarianImage";
 
 const KYRIE = {
   greek: "Kyrie eleison — Christe eleison — Kyrie eleison",
@@ -148,6 +149,14 @@ export default function PrayersOfTheMass() {
           <p className="text-sm text-stone-500 mt-2 max-w-lg mx-auto leading-relaxed">
             The Ordinary of the Mass consists of the parts that remain the same every day. The Propers change with each day's celebration. Below are the full texts of the principal prayers that every Catholic should know by heart.
           </p>
+          <div className="mt-6 flex justify-center">
+            <MarianImage
+              src="/images/mary-madonna.jpg"
+              caption="Blessed Mother"
+              size={92}
+              href="/devotions/rosary"
+            />
+          </div>
         </div>
 
         {/* Kyrie */}

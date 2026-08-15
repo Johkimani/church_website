@@ -1,4 +1,5 @@
 import { useState } from "react";
+import MarianImage from "../components/MarianImage";
 
 export default function SacraLiturgiaPage() {
   const [activeSeason, setActiveSeason] = useState("advent");
@@ -55,6 +56,14 @@ export default function SacraLiturgiaPage() {
         <p className="text-sm text-stone-500 mt-2 max-w-lg mx-auto leading-relaxed">
           Exploring the Mysteries of Salvation History and Catholic Worship. Use the timeline to navigate the seasons.
         </p>
+        <div className="mt-6 flex justify-center">
+          <MarianImage
+            src="/images/mary-annunciation.jpg"
+            caption="Mary at the Annunciation"
+            size={92}
+            href="/devotions/rosary"
+          />
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">

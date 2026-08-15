@@ -125,13 +125,21 @@ export const Home = () => {
             className="mt-6 flex flex-wrap items-center justify-center gap-5 sm:gap-8"
           >
             {[
-              { label: 'Kirinyaga University', sub: 'KYU', icon: '🎓' },
-              { label: 'Catholic Student Association', sub: 'CSA', icon: '✝️' },
-              { label: 'St. Thomas of Aquinas', sub: 'Patron Saint', icon: '📖' },
+              { id: 'kyu', label: 'Kirinyaga University', sub: 'KYU', icon: '🎓' },
+              { id: 'csa', label: 'Catholic Student Association', sub: 'CSA', icon: '✝️' },
+              { id: 'patron', label: 'St. Thomas of Aquinas', sub: 'Patron Saint', icon: '📖' },
             ].map((brand, i) => (
               <div key={i} className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg flex items-center justify-center">
-                  <span className="text-[10px] font-black text-blue-300">{brand.icon}</span>
+                <div className="w-8 h-8 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg flex items-center justify-center overflow-hidden">
+                  {brand.id === 'patron' ? (
+                    <img
+                      src="/images/st-thomas-icon.jpg"
+                      alt="St. Thomas of Aquinas"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-black text-blue-300">{brand.icon}</span>
+                  )}
                 </div>
                 <div>
                   <p className="text-xs font-black text-white">{brand.sub}</p>
@@ -260,6 +268,51 @@ export const Home = () => {
           </motion.div>
         )}
       </div>
+
+      {/* ══════════ Patron Saint Banner ══════════ */}
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-16 sm:pt-20">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7 }}
+          className="relative overflow-hidden rounded-[2.5rem] bg-slate-900"
+        >
+          <img
+            src="/images/st-thomas-aquinas.jpg"
+            alt="St. Thomas Aquinas"
+            className="absolute inset-0 w-full h-full object-cover opacity-35"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-slate-900/30" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-center gap-8 sm:gap-12 p-8 sm:p-14">
+            <div className="shrink-0">
+              <div className="rounded-full overflow-hidden p-1.5" style={{
+                background: "linear-gradient(135deg, #FBBF24, #D97706)",
+                boxShadow: "0 18px 40px rgba(217,119,6,0.4)",
+              }}>
+                <img
+                  src="/images/st-thomas-aquinas.jpg"
+                  alt="St. Thomas Aquinas"
+                  className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover border-4 border-white/20"
+                />
+              </div>
+            </div>
+            <div className="text-center sm:text-left">
+              <span className="inline-block text-[10px] font-black text-amber-300 bg-amber-300/10 border border-amber-300/30 px-4 py-1.5 rounded-full uppercase tracking-widest mb-4">
+                Our Patron Saint
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                St. Thomas Aquinas
+              </h2>
+              <p className="mt-3 text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
+                Doctor of the Church and patron of students, theologians, and universities. His
+                brilliant mind was matched by a profound devotion to the Eucharist — he reminds us
+                that all knowledge finds its beginning and end in God.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </section>
 
       <FaithFooter />
 

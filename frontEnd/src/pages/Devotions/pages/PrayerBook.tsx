@@ -7,6 +7,7 @@ import {
   type CatholicPrayer,
   type PrayerCategory,
 } from "../data/catholicPrayers";
+import MarianImage from "../components/MarianImage";
 
 const CATEGORIES = Object.keys(CATEGORY_META) as PrayerCategory[];
 
@@ -216,6 +217,12 @@ export default function PrayerBook() {
               </div>
             ))}
           </div>
+          <MarianImage
+            src="/images/mary-immaculate.jpg"
+            caption="Immaculate Mother"
+            size={104}
+            href="/devotions/rosary"
+          />
         </div>
       </div>
 
