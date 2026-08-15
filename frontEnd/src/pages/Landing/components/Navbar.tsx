@@ -15,17 +15,17 @@ const Navbar = () => {
   return (
     <header className="bg-white shadow-md sticky top-0 z-45">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-3">
-        <div className="flex items-center gap-2 mr-auto -ml-4 sm:-ml-5">
+        <div className="flex items-center gap-2 mr-auto shrink-0">
           <img
             src="/images/csa-logo.jpg"
             alt="CSA Kirinyaga logo"
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover"
           />
-          <span className="text-xl sm:text-2xl font-black text-blue-700 tracking-tight whitespace-nowrap">CSA KYU</span>
+          <span className="text-lg sm:text-xl lg:text-2xl font-black text-blue-700 tracking-tight whitespace-nowrap">CSA KYU</span>
         </div>
         
         {/* Desktop Navigation */}
-        <ul className="hidden md:flex items-center space-x-6">
+        <ul className="hidden md:flex items-center flex-wrap justify-end gap-x-6 gap-y-2">
           <li>
             <Link 
               to="/" 
