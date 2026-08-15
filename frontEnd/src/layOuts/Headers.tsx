@@ -85,11 +85,11 @@ const Headers = () => {
           scrolled
             ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
             : "bg-white/95 backdrop-blur-sm"
-        } px-[6%] lg:px-[8%] py-0 flex justify-between items-center h-16 lg:h-20`}
+        } px-[6%] lg:px-[8%] py-2 flex justify-between items-center min-h-16 lg:min-h-20`}
       >
         {/* Logo */}
         <div
-          className="flex items-center gap-1.5 cursor-pointer group mr-auto -ml-6 lg:-ml-7"
+          className="flex items-center gap-1.5 cursor-pointer group mr-auto shrink-0"
           onClick={() => navigate("/")}
         >
           <img
@@ -105,7 +105,7 @@ const Headers = () => {
         </div>
 
         {/* Desktop Nav */}
-        <ul className="hidden md:flex items-center gap-1">
+        <ul className="hidden md:flex items-center flex-wrap justify-end gap-x-1 gap-y-1">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
