@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "build": "echo 'No build required for backend'",
+    "test": "node --experimental-test-module-mocks --test \"tests/**/*.test.js\"",
     "db:migrate": "node db_operations/setup_community_db.js",
     "db:seed": "node db_operations/seed_gallery_images.js",
     "db:check": "node db_operations/check_schema.js",

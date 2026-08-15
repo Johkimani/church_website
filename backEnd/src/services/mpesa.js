@@ -24,7 +24,7 @@ export const assertMpesaConfig = () => {
   );
 };
 
-const defaultToSandbox = (value, devValue) => (isProduction ? "" : devValue);
+const defaultToSandbox = (value, devValue) => value || (isProduction ? "" : devValue);
 
 export class MpesaService {
   static get consumerKey() {
@@ -42,13 +42,14 @@ export class MpesaService {
       "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
     );
   }
-  // Live API base is only used when MPESA_ENV=production (or an explicit
-  // MPESA_BASE_URL override). Defaults to the sandbox for local development.
+  // Live API base is used whenever the app runs in production, whether that
+  // is signalled via NODE_ENV=production (like Render) or the M-Pesa-specific
+  // MPESA_ENV=production. Keeping both in sync with assertMpesaConfig means a
+  // production app can never silently push to the sandbox with live creds.
   static get baseUrl() {
     if (process.env.MPESA_BASE_URL) return process.env.MPESA_BASE_URL;
-    return process.env.MPESA_ENV === "production"
-      ? "https://api.safaricom.co.ke"
-      : "https://sandbox.safaricom.co.ke";
+    const useLive = isProduction || process.env.MPESA_ENV === "production";
+    return useLive ? "https://api.safaricom.co.ke" : "https://sandbox.safaricom.co.ke";
   }
 
   static async getAccessToken() {
