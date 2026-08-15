@@ -40,7 +40,7 @@ export const checkStatus = async (req, res) => {
 
   try {
     const result = await testDb.query(
-      `SELECT status, result_desc FROM mpesa_request WHERE checkout_id = $1`,
+      `SELECT status, result_desc, mpesa_receipt FROM mpesa_request WHERE checkout_id = $1`,
       [checkoutId],
     );
 
@@ -50,7 +50,7 @@ export const checkStatus = async (req, res) => {
         .json({ status: "error", message: "Transaction not found" });
     }
 
-    const { status, result_desc } = result.rows[0];
+    const { status, result_desc, mpesa_receipt } = result.rows[0];
 
     // If paid, also return the order_id linked to this checkout
     let orderId = null;
@@ -64,7 +64,7 @@ export const checkStatus = async (req, res) => {
       }
     }
 
-    res.json({ status, result_desc, order_id: orderId });
+    res.json({ status, result_desc, mpesa_receipt: mpesa_receipt || null, order_id: orderId });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
