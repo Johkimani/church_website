@@ -344,7 +344,7 @@ export default function Terms() {
                 {[
                   { icon: Mail, label: "Email", value: "morrismaina077@gmail.com", color: "text-indigo-600" },
                   { icon: Mail, label: "Chairperson", value: "Morris Maina", color: "text-indigo-600" },
-                  { icon: Mail, label: "Secretary", value: "secretary@kirinyaga.com", color: "text-indigo-600" },
+                  { icon: Mail, label: "Secretary", value: "ivymundara05@gmail.com", color: "text-indigo-600" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
                     <item.icon className={`w-5 h-5 ${item.color} shrink-0`} />

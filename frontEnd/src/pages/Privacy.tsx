@@ -342,7 +342,7 @@ export default function Privacy() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
                   { icon: Mail, label: "Data Protection Officer", value: "morrismaina077@gmail.com", color: "text-emerald-600" },
-                  { icon: Mail, label: "CSA Secretariat", value: "csa@kirinyaga.com", color: "text-emerald-600" },
+                  { icon: Mail, label: "CSA Secretariat", value: "ivymundara05@gmail.com", color: "text-emerald-600" },
                   { icon: Mail, label: "Physical Address", value: "St. Thomas Aquinas Catholic Church, Kutus-Kerugoya Rd, Kirinyaga", color: "text-emerald-600" },
                   { icon: Mail, label: "Phone", value: "+254 112051739", color: "text-emerald-600" },
                 ].map((item, i) => (
