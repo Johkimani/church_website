@@ -131,10 +131,14 @@ api.get("/all/data", verifyToken, async (req, res) => {
 api.get("/:table", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table } = req.params;
-    let data = await getTableData(table, req.query);
-    
+    const payload = await getTableData(table, req.query);
+
+    // When pagination params were supplied the controller returns an object
+    // { data, pagination }; otherwise it returns a plain array (legacy shape).
+    const data = payload && !Array.isArray(payload) ? payload.data : payload;
+
     if (table === 'enrollments') {
-      data = data.map(item => {
+      const mapped = data.map(item => {
         if (['charismatic', 'dancers', 'youth'].includes(item.module_id) || ['charismatic', 'dancers', 'youth'].includes(item.class_id)) {
           return {
             id: item.id,
@@ -149,10 +153,15 @@ api.get("/:table", validateTable, authorizeTableAccess, async (req, res) => {
         }
         return item;
       });
+
+      if (payload && !Array.isArray(payload)) {
+        return res.json({ ...payload, data: mapped });
+      }
+      return res.json(mapped);
     }
 
     logger.debug(`Success fetching from route '/:table'`);
-    return res.json(data);
+    return res.json(payload);
   } catch (error) {
     logger.error(`Error in '/:table': ${error.message}\n${error.stack}`);
 

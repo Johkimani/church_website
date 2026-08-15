@@ -2,6 +2,7 @@ import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import bcrypt from "bcrypt";
 import { getCurrentSemester } from "../utils/semesterConfig.js";
+import { parsePagination } from "../utils/pagination.js";
 
 /**
  * Error carrying an HTTP status so route handlers can map it to a response.
@@ -86,7 +87,7 @@ function deriveYearFromReg(memberId) {
   return `${year}-${year + 1}`;
 }
 
-async function fetchAllMembers(jumuiya_id) {
+async function fetchAllMembers(jumuiya_id, pagination = null) {
   const resolvedUuid = await resolveJumuiyaUuid(jumuiya_id);
 
   if (jumuiya_id && !resolvedUuid) {
@@ -123,11 +124,25 @@ async function fetchAllMembers(jumuiya_id) {
     params.push(resolvedUuid);
   }
 
-  query += ` ORDER BY m.first_name ASC`;
+  let totalCount = null;
+  if (pagination && pagination.isPaginated) {
+    const countResult = await pool.query(
+      `SELECT COUNT(*)::int AS total
+         FROM members m
+        WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+          ${resolvedUuid ? `AND m.jumuiya_id = $1` : ""}`,
+      resolvedUuid ? params : []
+    );
+    totalCount = countResult.rows[0]?.total ?? 0;
+
+    query += ` ORDER BY m.first_name ASC LIMIT ${pagination.limit} OFFSET ${pagination.offset}`;
+  } else {
+    query += ` ORDER BY m.first_name ASC`;
+  }
 
   const result = await pool.query(query, params);
 
-  return result.rows.map(row => {
+  const rows = result.rows.map(row => {
     const firstName = row.first_name || "";
     const lastName = row.last_name || "";
     const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || row.id || "Unknown";
@@ -156,6 +171,20 @@ async function fetchAllMembers(jumuiya_id) {
       is_current_jumuiya: !!(resolvedUuid && row.jumuiya_uuid === resolvedUuid),
     };
   });
+
+  if (pagination && pagination.isPaginated) {
+    return {
+      data: rows,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total: totalCount,
+        totalPages: totalCount > 0 ? Math.ceil(totalCount / pagination.limit) : 1,
+      },
+    };
+  }
+
+  return rows;
 }
 
 /**
@@ -166,7 +195,11 @@ async function fetchAllMembers(jumuiya_id) {
 export const getAllJumuiyaMembers = async (req, res) => {
   try {
     const { jumuiya_id } = req.query;
-    const merged = await fetchAllMembers(jumuiya_id);
+    const pagination = parsePagination(req.query);
+    const merged = await fetchAllMembers(jumuiya_id, pagination);
+    if (pagination.isPaginated) {
+      return res.json({ success: true, ...merged });
+    }
     res.json({ success: true, data: merged });
   } catch (error) {
     logger.error("Error fetching all members: " + error.message);
@@ -668,6 +701,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
 export const getRegisteredJumuiyaMembers = async (req, res) => {
   try {
     const { jumuiya_id } = req.query;
+    const pagination = parsePagination(req.query);
 
     const resolvedUuid = await resolveJumuiyaUuid(jumuiya_id);
 
@@ -698,7 +732,23 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
       queryParams.push(resolvedUuid);
     }
 
-    query += ` ORDER BY m.first_name ASC`;
+    let totalCount = null;
+    if (pagination.isPaginated) {
+      const countResult = await pool.query(
+        `SELECT COUNT(*)::int AS total
+           FROM registered r
+           JOIN members m ON r.member_id = m.member_id
+          WHERE r.status = 'active'
+            AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+            ${resolvedUuid ? `AND r.jumuiya_id = $1` : ""}`,
+        resolvedUuid ? queryParams : []
+      );
+      totalCount = countResult.rows[0]?.total ?? 0;
+
+      query += ` ORDER BY m.first_name ASC LIMIT ${pagination.limit} OFFSET ${pagination.offset}`;
+    } else {
+      query += ` ORDER BY m.first_name ASC`;
+    }
 
     const result = await pool.query(query, queryParams);
 
@@ -708,6 +758,19 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
       is_current_jumuiya: true,
       jumuiya_id: jumuiya_id || row.jumuiya_id,
     }));
+
+    if (pagination.isPaginated) {
+      return res.json({
+        success: true,
+        data: formatted,
+        pagination: {
+          page: pagination.page,
+          limit: pagination.limit,
+          total: totalCount,
+          totalPages: totalCount > 0 ? Math.ceil(totalCount / pagination.limit) : 1,
+        },
+      });
+    }
 
     res.json({ success: true, data: formatted });
   } catch (error) {
@@ -725,8 +788,9 @@ export const getAllRegisteredMembers = async (req, res) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.setHeader("Pragma", "no-cache");
-    const result = await pool.query(`
-      SELECT
+    const pagination = parsePagination(req.query);
+
+    const selectBase = `
         r.id as registration_id,
         r.serial_no,
         r.registration_date,
@@ -742,13 +806,31 @@ export const getAllRegisteredMembers = async (req, res) => {
         LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug,
         m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
         m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg
+    `;
+
+    const baseWhere = `
       FROM registered r
       JOIN members m ON r.member_id = m.member_id
       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
       WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
         AND r.status = 'active'
-      ORDER BY sg.name, m.first_name ASC
-    `);
+    `;
+
+    let totalCount = null;
+    if (pagination.isPaginated) {
+      const countResult = await pool.query(
+        `SELECT COUNT(*)::int AS total ${baseWhere}`
+      );
+      totalCount = countResult.rows[0]?.total ?? 0;
+    }
+
+    const orderLimit = pagination.isPaginated
+      ? `ORDER BY sg.name, m.first_name ASC LIMIT ${pagination.limit} OFFSET ${pagination.offset}`
+      : `ORDER BY sg.name, m.first_name ASC`;
+
+    const result = await pool.query(
+      `SELECT ${selectBase} ${baseWhere} ${orderLimit}`
+    );
 
     const allIds = result.rows.map(r => r.id);
     const kimRow = allIds.find(id => id && id.includes('PA106/G/19920'));
@@ -761,6 +843,20 @@ export const getAllRegisteredMembers = async (req, res) => {
                        row.sem_5_reg, row.sem_6_reg, row.sem_7_reg, row.sem_8_reg]
                        .filter(Boolean).length,
     }));
+
+    if (pagination.isPaginated) {
+      return res.json({
+        success: true,
+        data: formatted,
+        total: totalCount,
+        pagination: {
+          page: pagination.page,
+          limit: pagination.limit,
+          total: totalCount,
+          totalPages: totalCount > 0 ? Math.ceil(totalCount / pagination.limit) : 1,
+        },
+      });
+    }
 
     res.json({ success: true, data: formatted, total: formatted.length });
   } catch (error) {
@@ -1298,7 +1394,11 @@ export const registerWithPayment = async (req, res) => {
  */
 export const getAllMembersAcrossJumuiyas = async (req, res) => {
   try {
-    const merged = await fetchAllMembers(null);
+    const pagination = parsePagination(req.query);
+    const merged = await fetchAllMembers(null, pagination);
+    if (pagination.isPaginated) {
+      return res.json({ success: true, ...merged });
+    }
     res.json({ success: true, data: merged });
   } catch (error) {
     logger.error("Error fetching all members across jumuiyas: " + error.message);

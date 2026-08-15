@@ -1,5 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { parsePagination } from "../utils/pagination.js";
 
 const TABLE_SORT_COLUMNS = {
   events: "event_date",
@@ -101,52 +102,96 @@ const sanitizeWritePayload = (tableName, data) => {
   return sanitized;
 };
 
-// Get all records from a table
+// Get all records from a table.
+// Supports optional ?page= & ?limit= (see utils/pagination.js). When pagination
+// params are present it returns { data, pagination }, otherwise it returns the
+// plain row array exactly as before (backward compatible).
 export const getTableData = async (tableName, queryParams = {}) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const sortCol = TABLE_SORT_COLUMNS[tableName] || (dbTableName === 'sub_groups' ? 'group_id' : 'id');
   const SAFE_IDENTIFIER = /^[a-zA-Z0-9_]+$/;
+  const { isPaginated, page, limit, offset } = parsePagination(queryParams);
   const filterKeys = Object.keys(queryParams)
     .filter((key) => queryParams[key] !== undefined && queryParams[key] !== '')
+    .filter((key) => key !== 'page' && key !== 'limit')
     .filter((key) => SAFE_IDENTIFIER.test(key));
 
   try {
-    let query = `SELECT * FROM "${dbTableName}"`;
     const values = [];
 
+    let whereClause = '';
     if (filterKeys.length > 0) {
       const filters = filterKeys.map((key, index) => {
         values.push(queryParams[key]);
         return `"${key}" = $${index + 1}`;
       });
-      query += ` WHERE ${filters.join(' AND ')}`;
+      whereClause = ` WHERE ${filters.join(' AND ')}`;
     }
+
+    let countTotal = null;
+    if (isPaginated) {
+      const countResult = await pool.query(
+        `SELECT COUNT(*)::int AS total FROM "${dbTableName}"${whereClause}`,
+        values
+      );
+      countTotal = countResult.rows[0]?.total ?? 0;
+    }
+
+    let query = `SELECT * FROM "${dbTableName}"${whereClause}`;
 
     if (!SAFE_IDENTIFIER.test(sortCol)) {
       throw new Error('Invalid sort column');
     }
 
     query += ` ORDER BY "${sortCol}" DESC`;
+    if (isPaginated) {
+      query += ` LIMIT ${limit} OFFSET ${offset}`;
+    }
 
     const result = await pool.query(query, values);
-    return maybeSanitize(tableName, result.rows);
+    const rows = maybeSanitize(tableName, result.rows);
+
+    if (isPaginated) {
+      return {
+        data: rows,
+        pagination: {
+          page,
+          limit,
+          total: countTotal,
+          totalPages: countTotal > 0 ? Math.ceil(countTotal / limit) : 1,
+        },
+      };
+    }
+
+    return rows;
   } catch (firstError) {
     // Fallback to unordered if ordering column is missing
     if (firstError.code === '42703') {
       logger.warn(`Falling back to unordered SELECT for "${dbTableName}" - column "${sortCol}" not found`);
       try {
         const fallback = await pool.query(`SELECT * FROM "${dbTableName}"`);
-        return maybeSanitize(tableName, fallback.rows);
+        const rows = maybeSanitize(tableName, fallback.rows);
+        if (isPaginated) {
+          return {
+            data: rows,
+            pagination: { page, limit, total: rows.length, totalPages: 1 },
+          };
+        }
+        return rows;
       } catch (fallbackError) {
         console.error(`Fallback SELECT also failed for "${dbTableName}":`, fallbackError.message);
-        return [];
+        return isPaginated
+          ? { data: [], pagination: { page, limit, total: 0, totalPages: 1 } }
+          : [];
       }
     }
     
     // Check if table exists
     if (firstError.code === '42P01') {
       console.error(`[ApiController] Table "${dbTableName}" does not exist in DB.`);
-      return [];
+      return isPaginated
+        ? { data: [], pagination: { page, limit, total: 0, totalPages: 1 } }
+        : [];
     }
     
     // Other database errors - log to console for immediate visibility in server logs
@@ -155,7 +200,9 @@ export const getTableData = async (tableName, queryParams = {}) => {
     
     // Connection issues fallback (return empty array instead of crashing app)
     if (firstError.message.includes('connection') || firstError.message.includes('queryable')) {
-       return [];
+       return isPaginated
+         ? { data: [], pagination: { page, limit, total: 0, totalPages: 1 } }
+         : [];
     }
     
     throw firstError;
