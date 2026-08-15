@@ -33,6 +33,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const onAuthExpired = () => {
+      setToken(null);
+      setSyncMsg(null);
+    };
+    window.addEventListener("csa:auth-expired", onAuthExpired);
+    return () => window.removeEventListener("csa:auth-expired", onAuthExpired);
+  }, []);
+
+  useEffect(() => {
     if (ready) refreshPendingCount();
   }, [ready]);
 

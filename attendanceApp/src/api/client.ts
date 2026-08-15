@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearSession } from "../db/db";
 
 const rawBase = (import.meta.env.VITE_SERVER_URI as string) || "http://localhost:3001/api/v1";
 export const BASE_URL = rawBase.replace(/\/$/, "");
@@ -14,6 +15,25 @@ apiClient.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+/**
+ * Session-expiry guard. The access token is short-lived (15 min) and the app
+ * has no refresh flow, so when the API says 401 the session is stale: clear the
+ * token and bounce back to the login screen. Saved attendance records live in
+ * IndexedDB and are untouched by this.
+ */
+apiClient.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    const status = err?.response?.status;
+    if (status === 401 && localStorage.getItem("csa_attendance_token")) {
+      localStorage.removeItem("csa_attendance_token");
+      await clearSession().catch(() => {});
+      window.dispatchEvent(new Event("csa:auth-expired"));
+    }
+    return Promise.reject(err);
+  }
+);
 
 export interface LoginResult {
   member_id: string;
