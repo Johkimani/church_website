@@ -178,6 +178,26 @@ input[type="number"] {
 .btn-ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
 .btn-block { width: 100%; }
 
+/* Mode + recorder toggles */
+.mode-toggle button,
+.recorded-by-toggle button {
+  background: #fff;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.mode-toggle button.active,
+.recorded-by-toggle button.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
 /* Jumuiya rows */
 .jum-row {
   display: flex;

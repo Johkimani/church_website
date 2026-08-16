@@ -93,7 +93,8 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
                   <strong>{new Date(s.date + "T00:00:00").toLocaleDateString()}</strong>
                   <div style={{ color: "var(--muted)", fontSize: 12 }}>
                     {s.activityLabel} · {s.counts.reduce((t, c) => t + c.count, 0)} attendees across{" "}
-                    {s.counts.length} jumuiya
+                    {s.counts.length} {s.dimension === "year" ? "year group" : "jumuiya"}
+                    {s.counts.length > 1 ? "s" : ""}
                   </div>
                 </div>
                 <span className={`chip ${s.syncedAt ? "synced" : "pending"}`}>

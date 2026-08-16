@@ -58,13 +58,21 @@ export interface TallyJumuiya {
   register_count?: number | null;
 }
 
+export interface TallyYear {
+  year: string;
+  label: string;
+  color: string;
+  total_members?: number;
+  active_members?: number;
+}
+
 export interface TallyContext {
   date: string;
   isTallyDay: boolean;
   activityType: string;
   activityLabel: string;
   jumuiyas: TallyJumuiya[];
-  years: { year: string; label: string; color: string; total_members?: number; active_members?: number }[];
+  years: TallyYear[];
 }
 
 export interface TallyDayInfo {
@@ -79,11 +87,21 @@ export interface RecentStatus {
   tally_days: TallyDayInfo[];
 }
 
+export interface SessionCountJumuiya {
+  jumuiya_id: string;
+  count: number;
+}
+
+export interface SessionCountYear {
+  year: string;
+  count: number;
+}
+
 export interface SessionPayload {
   date: string;
-  counts: { jumuiya_id: string; count: number }[];
+  counts: SessionCountJumuiya[] | SessionCountYear[];
   recordedBy: "coordinator" | "assistant";
-  dimension: "jumuiya";
+  dimension: "jumuiya" | "year";
 }
 
 export async function login(userReg: string, password: string): Promise<LoginResult> {

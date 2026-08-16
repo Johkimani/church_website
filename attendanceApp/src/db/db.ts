@@ -8,9 +8,10 @@ export interface TallyJumuiya {
 }
 
 export interface TallyCount {
-  jumuiyaId: string;
-  jumuiyaName: string;
+  jumuiyaId?: string;
+  jumuiyaName?: string;
   count: number;
+  year?: number;
 }
 
 export interface AttendanceSession {
@@ -18,6 +19,7 @@ export interface AttendanceSession {
   date: string; // YYYY-MM-DD
   activityType: string; // e.g. "rosary" | "bible_study"
   activityLabel: string;
+  dimension: "jumuiya" | "year";
   recordedBy: "coordinator" | "assistant";
   counts: TallyCount[];
   recordedAt: number;

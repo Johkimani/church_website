@@ -1,5 +1,5 @@
 import { db, type AttendanceSession } from "../db/db";
-import { pushSession, getApiErrorMessage } from "../api/client";
+import { pushSession, getApiErrorMessage, type SessionPayload } from "../api/client";
 
 export interface SyncResult {
   pushed: number;
@@ -25,11 +25,16 @@ export async function syncPending(
 
   for (const s of pending) {
     try {
+      const isYear = s.dimension === "year";
       await pushSession(token, {
         date: s.date,
-        counts: s.counts.map((c) => ({ jumuiya_id: c.jumuiyaId, count: c.count })),
+        dimension: isYear ? "year" : "jumuiya",
+        counts: s.counts.map((c) =>
+          isYear
+            ? { year: String(c.year ?? 1), count: c.count }
+            : { jumuiya_id: c.jumuiyaId!, count: c.count }
+        ) as SessionPayload["counts"],
         recordedBy: s.recordedBy || "coordinator",
-        dimension: "jumuiya",
       });
       await db.sessions.update(s.sessionId, { syncedAt: Date.now() });
       pushed += 1;

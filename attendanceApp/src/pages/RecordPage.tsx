@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Save, RefreshCw, Zap, AlertTriangle } from "lucide-react";
 import { db, getMeta, setMeta, type AttendanceSession, type TallyJumuiya } from "../db/db";
-import { fetchTallyContext, getApiErrorMessage } from "../api/client";
-import { getSession } from "../db/db";
+import { fetchTallyContext, getApiErrorMessage, type TallyYear } from "../api/client";
 import { syncPending } from "../sync/sync";
 
 interface Props {
@@ -26,9 +25,20 @@ const DAY_ACTIVITY: Record<number, { type: string; label: string }> = {
 
 const dayActivity = (date: string) => DAY_ACTIVITY[new Date(date + "T12:00:00").getDay()] ?? null;
 
+// Same Year 1-4 universe as the backend. Used when the context can't be fetched.
+const FALLBACK_YEARS: TallyYear[] = [
+  { year: "1", label: "Year 1", color: "#0ea5e9" },
+  { year: "2", label: "Year 2", color: "#10b981" },
+  { year: "3", label: "Year 3", color: "#f59e0b" },
+  { year: "4", label: "Year 4", color: "#8b5cf6" },
+];
+
+const yearKey = (y: string) => `y:${y}`;
+
 export default function RecordPage({ token, onSaved }: Props) {
   const [date, setDate] = useState(todayISO());
   const [jumuiyas, setJumuiyas] = useState<TallyJumuiya[]>([]);
+  const [years, setYears] = useState<TallyYear[]>(FALLBACK_YEARS);
   const [activity, setActivity] = useState<{ isTallyDay: boolean; type: string; label: string } | null>(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [counts, setCounts] = useState<Record<string, string>>({});
@@ -38,21 +48,18 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [mode, setMode] = useState<"jumuiya" | "year">("jumuiya");
   const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
 
-  const loadFromCache = useCallback(
-    (d: string) => {
-      return getMeta<TallyJumuiya[]>("jumuiyas").then((j) => {
-        setJumuiyas(j || []);
-        const offline = dayActivity(d);
-        setActivity(
-          offline
-            ? { isTallyDay: true, type: offline.type, label: offline.label }
-            : { isTallyDay: false, type: "", label: "" }
-        );
-        return j;
-      });
-    },
-    []
-  );
+  const loadFromCache = useCallback((d: string) => {
+    return getMeta<TallyJumuiya[]>("jumuiyas").then((j) => {
+      setJumuiyas(j || []);
+      const offline = dayActivity(d);
+      setActivity(
+        offline
+          ? { isTallyDay: true, type: offline.type, label: offline.label }
+          : { isTallyDay: false, type: "", label: "" }
+      );
+      return j;
+    });
+  }, []);
 
   const refreshContext = useCallback(
     async (d: string) => {
@@ -60,6 +67,7 @@ export default function RecordPage({ token, onSaved }: Props) {
       try {
         const ctx = await fetchTallyContext(token, d);
         setJumuiyas(ctx.jumuiyas);
+        setYears(ctx.years?.length ? ctx.years : FALLBACK_YEARS);
         setActivity({
           isTallyDay: ctx.isTallyDay,
           type: ctx.activityType,
@@ -96,8 +104,19 @@ export default function RecordPage({ token, onSaved }: Props) {
   };
 
   const validJumuiyas = useMemo(
-    () => jumuiyas.filter((j) => counts[j.group_id] !== undefined && counts[j.group_id] !== "" && counts[j.group_id] !== "0"),
+    () =>
+      jumuiyas.filter(
+        (j) => counts[j.group_id] !== undefined && counts[j.group_id] !== "" && counts[j.group_id] !== "0"
+      ),
     [jumuiyas, counts]
+  );
+
+  const validYearCount = useMemo(
+    () => years.filter((yr) => {
+      const v = counts[yearKey(yr.year)];
+      return v !== undefined && v !== "" && v !== "0";
+    }).length,
+    [years, counts]
   );
 
   const modeControls = (
@@ -139,33 +158,38 @@ export default function RecordPage({ token, onSaved }: Props) {
   );
 
   const saveAll = async () => {
-    if (validJumuiyas.length === 0) {
+    let sessionCounts: { jumuiyaId: string; jumuiyaName: string; count: number; year?: number }[] = [];
+    if (mode === "year") {
+      sessionCounts = years
+        .map((yr) => ({
+          jumuiyaId: "",
+          jumuiyaName: yr.label,
+          count: Number(counts[yearKey(yr.year)] || 0) || 0,
+          year: Number(yr.year),
+        }))
+        .filter((c) => c.count > 0);
+    } else {
+      sessionCounts = validJumuiyas.map((j) => ({
+        jumuiyaId: j.group_id,
+        jumuiyaName: j.name,
+        count: Number(counts[j.group_id]),
+      }));
+    }
+
+    if (sessionCounts.length === 0) {
       setMessage({ ok: false, text: "Enter at least one attendance count" });
       return;
     }
+
     setSaving(true);
     setMessage(null);
     try {
-      const dimension = mode === "year" ? "year" : "jumuiya";
-      let sessionCounts: { jumuiyaId: string; jumuiyaName: string; count: number; year?: number }[] = [];
-      if (mode === "year") {
-        sessionCounts = validJumuiyas.map((j) => {
-          const y = counts[j.group_id] ? Number(counts[j.group_id]) : 0;
-          const yearVal = counts[`year_${j.group_id}`] ? Number(counts[`year_${j.group_id}`]) : 1;
-          return { jumuiyaId: j.group_id, jumuiyaName: j.name, count: y, year: yearVal };
-        });
-      } else {
-        sessionCounts = validJumuiyas.map((j) => ({
-          jumuiyaId: j.group_id,
-          jumuiyaName: j.name,
-          count: Number(counts[j.group_id]),
-        }));
-      }
       const session: AttendanceSession = {
         sessionId: date,
         date,
         activityType: activity?.type || "rosary",
         activityLabel: activity?.label || dayActivity(date)?.label || "Attendance",
+        dimension: mode === "year" ? "year" : "jumuiya",
         recordedBy,
         counts: sessionCounts.map((c) => ({
           jumuiyaId: c.jumuiyaId,
@@ -185,7 +209,7 @@ export default function RecordPage({ token, onSaved }: Props) {
           lastError = msg;
         });
         if (res.pushed > 0) {
-          setMessage({ ok: true, text: `Saved tallies for ${date} and synced to the server.` });
+          setMessage({ ok: true, text: `Saved ${mode === "year" ? "year tallies" : "tallies"} for ${date} and synced to the server.` });
         } else if (res.failed > 0) {
           setMessage({
             ok: true,
@@ -205,6 +229,7 @@ export default function RecordPage({ token, onSaved }: Props) {
   };
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString();
+  const enteredCount = mode === "year" ? validYearCount : validJumuiyas.length;
 
   return (
     <div className="space-y-4">
@@ -230,7 +255,7 @@ export default function RecordPage({ token, onSaved }: Props) {
             <RefreshCw size={15} className={refreshing || loadingContext ? "spin" : ""} /> Refresh
           </button>
         </div>
-        <p className="sub">Pick the date, then enter the number of attendees per jumuiya.</p>
+        <p className="sub">Pick the date, then enter the number of attendees.</p>
 
         <div className="field">
           <label>Activity date</label>
@@ -252,7 +277,34 @@ export default function RecordPage({ token, onSaved }: Props) {
         )}
       </div>
 
-      {jumuiyas.length === 0 ? (
+      {mode === "year" ? (
+        <div className="card">
+          <h2>Attendees per Year of Study</h2>
+          <p className="sub">Leave a year blank or 0 if none attended.</p>
+          <div className="space-y-2">
+            {years.map((yr) => (
+              <div key={yr.year} className="jum-row">
+                <div className="jum-dot" style={{ backgroundColor: yr.color }}>
+                  {yr.year}
+                </div>
+                <span className="jum-name">{yr.label}</span>
+                <input
+                  className="jum-count"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={counts[yearKey(yr.year)] ?? ""}
+                  onChange={(e) => setCount(yearKey(yr.year), e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+
+          <button className="btn btn-primary btn-block" disabled={saving} onClick={saveAll} style={{ marginTop: 16 }}>
+            <Save size={18} />
+            {saving ? "Saving…" : `Save${enteredCount ? ` ${enteredCount} Year${enteredCount > 1 ? "s" : ""}` : ""}`}
+          </button>
+        </div>
+      ) : jumuiyas.length === 0 ? (
         <div className="card">
           <p className="sub" style={{ margin: 0 }}>
             No jumuiya list cached yet. Connect once so the app can fetch the tally-day list.
@@ -276,24 +328,13 @@ export default function RecordPage({ token, onSaved }: Props) {
                   value={counts[j.group_id] ?? ""}
                   onChange={(e) => setCount(j.group_id, e.target.value)}
                 />
-                {mode === "year" && (
-                  <input
-                    className="jum-year"
-                    type="number"
-                    min={1}
-                    max={4}
-                    placeholder="1"
-                    value={counts[`year_${j.group_id}`] ?? ""}
-                    onChange={(e) => setCounts({ ...counts, [`year_${j.group_id}`]: e.target.value })}
-                  />
-                )}
               </div>
             ))}
           </div>
 
           <button className="btn btn-primary btn-block" disabled={saving} onClick={saveAll} style={{ marginTop: 16 }}>
             <Save size={18} />
-            {saving ? "Saving…" : mode === "jumuiya" ? `Save${validJumuiyas.length ? ` ${validJumuiyas.length} Jumuiya` : ""}` : `Save ${validJumuiyas.length} Year entries`}
+            {saving ? "Saving…" : `Save${enteredCount ? ` ${enteredCount} Jumuiya${enteredCount > 1 ? "s" : ""}` : ""}`}
           </button>
         </div>
       )}
