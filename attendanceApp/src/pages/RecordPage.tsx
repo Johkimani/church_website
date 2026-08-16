@@ -307,7 +307,7 @@ export default function RecordPage({ token, onSaved }: Props) {
 
           {recordedByControls}
 
-          <button className="btn btn-primary btn-block" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
+          <button className="btn btn-primary" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
             <Save size={18} />
             {saving ? "Saving…" : !isTallyDay ? "Not a tally day" : `Save${enteredCount ? ` ${enteredCount} Year${enteredCount > 1 ? "s" : ""}` : ""}`}
           </button>
@@ -342,7 +342,7 @@ export default function RecordPage({ token, onSaved }: Props) {
 
           {recordedByControls}
 
-          <button className="btn btn-primary btn-block" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
+          <button className="btn btn-primary" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
             <Save size={18} />
             {saving ? "Saving…" : !isTallyDay ? "Not a tally day" : `Save${enteredCount ? ` ${enteredCount} Jumuiya${enteredCount > 1 ? "s" : ""}` : ""}`}
           </button>

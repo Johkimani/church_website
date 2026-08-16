@@ -10,6 +10,8 @@ import InstallButton from "./components/InstallButton";
 
 type Tab = "record" | "pending";
 
+type Splash = "show" | "fade" | "gone";
+
 export default function App() {
   const network = useNetworkStatus();
   const [token, setToken] = useState<string | null>(null);
@@ -17,6 +19,16 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("record");
   const [pending, setPending] = useState(0);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [splash, setSplash] = useState<Splash>("show");
+
+  useEffect(() => {
+    const t1 = window.setTimeout(() => setSplash("fade"), 1200);
+    const t2 = window.setTimeout(() => setSplash("gone"), 1700);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
 
   const loadAuth = async () => {
     const t = await getSession("token");
@@ -69,28 +81,29 @@ export default function App() {
     };
   }, [token, network]);
 
-  if (!ready) {
-    return (
-      <div className="app-shell">
-        <main className="app-main">Loading…</main>
-      </div>
-    );
-  }
-
-  if (!token) {
-    return (
-      <LoginPage
-        onLogin={(newToken) => {
-          setToken(newToken);
-          setTab("record");
-          refreshPendingCount();
-        }}
-      />
-    );
-  }
-
   return (
-    <div className="app-shell">
+    <>
+      {splash !== "gone" && (
+        <div className={`splash ${splash === "fade" ? "fade" : ""}`}>
+          <img src="/icons/app-icon-512.png" alt="" className="splash-logo" />
+          <div className="splash-name">CSA Attendance</div>
+        </div>
+      )}
+
+      {!ready ? (
+        <div className="app-shell">
+          <main className="app-main">Loading…</main>
+        </div>
+      ) : !token ? (
+        <LoginPage
+          onLogin={(newToken) => {
+            setToken(newToken);
+            setTab("record");
+            refreshPendingCount();
+          }}
+        />
+      ) : (
+        <div className="app-shell">
       <main className="app-main">
         <div className={`banner ${network}`}>
           {network === "online" ? <Wifi size={16} /> : <WifiOff size={16} />}
@@ -129,6 +142,8 @@ export default function App() {
           {pending > 0 && <span className="badge">{pending > 99 ? "99+" : pending}</span>}
         </button>
       </nav>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
