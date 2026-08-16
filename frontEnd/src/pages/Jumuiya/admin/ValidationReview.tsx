@@ -189,7 +189,8 @@ const ValidationReview: React.FC<Props> = ({ jumuiyaId }) => {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Import ID</th>
+                <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Queue / Batch</th>
+                <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
                 <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Date</th>
                 <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Total</th>
                 <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Valid</th>
@@ -201,11 +202,25 @@ const ValidationReview: React.FC<Props> = ({ jumuiyaId }) => {
             <tbody>
               {imports.map((imp) => {
                 const st = STATUS_STYLES[imp.status] || STATUS_STYLES.pending;
+                const isWhatsApp = imp.file_name === "whatsapp-self-registration";
                 return (
                   <tr key={imp.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-medium text-slate-800">#{imp.id}</td>
+                    <td className="py-3 px-4 font-medium text-slate-800">
+                      #{imp.id}
+                    </td>
+                    <td className="py-3 px-4">
+                      {isWhatsApp ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          WhatsApp Link
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
+                          {imp.file_name || "Manual / CSV"}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-slate-500">{imp.import_date?.slice(0, 10)}</td>
-                    <td className="py-3 px-4 text-slate-700">{imp.total_records}</td>
+                    <td className="py-3 px-4 text-slate-700 font-semibold">{imp.total_records}</td>
                     <td className="py-3 px-4 text-emerald-600 font-medium">{imp.valid_records}</td>
                     <td className="py-3 px-4 text-red-600 font-medium">{imp.error_records}</td>
                     <td className="py-3 px-4">
@@ -214,39 +229,33 @@ const ValidationReview: React.FC<Props> = ({ jumuiyaId }) => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex gap-1.5">
+                      <div className="flex items-center gap-2">
                         <button onClick={() => viewImportDetail(imp.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors" title="View Details">
-                          <Eye size={15} />
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors" title="View Details">
+                          <Eye size={13} /> View / Edit
                         </button>
                         {imp.status === "pending" && (
-                          <>
-                            <button onClick={() => handleStatusChange(imp.id, "reviewed")}
-                              disabled={imp.error_records > 0}
-                              className={`p-1.5 rounded-lg transition-colors ${
-                                imp.error_records > 0
-                                  ? "text-slate-300 cursor-not-allowed"
-                                  : "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50"
-                              }`}
-                              title={imp.error_records > 0 ? "Fix errors before marking reviewed" : "Mark Reviewed"}>
-                              <Check size={15} />
-                            </button>
-                            <button onClick={() => handleStatusChange(imp.id, "rejected")}
-                              className="p-1.5 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors" title="Reject">
-                              <X size={15} />
-                            </button>
-                          </>
+                          <button onClick={() => handleStatusChange(imp.id, "processed")}
+                            disabled={imp.error_records > 0}
+                            className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                              imp.error_records > 0
+                                ? "text-slate-400 bg-slate-100 cursor-not-allowed"
+                                : "text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm"
+                            }`}
+                            title={imp.error_records > 0 ? "Fix errors before importing" : "Import all valid records to Jumuiya"}>
+                            <Check size={13} /> Import to Jumuiya
+                          </button>
                         )}
                         {imp.status === "reviewed" && (
                           <button onClick={() => handleStatusChange(imp.id, "processed")}
                             disabled={imp.error_records > 0}
-                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                            className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
                               imp.error_records > 0
                                 ? "text-slate-400 bg-slate-100 cursor-not-allowed"
-                                : "text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                                : "text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm"
                             }`}
-                            title={imp.error_records > 0 ? "Fix errors before processing" : ""}>
-                            Process
+                            title={imp.error_records > 0 ? "Fix errors before processing" : "Import to Jumuiya"}>
+                            <Check size={13} /> Import to Jumuiya
                           </button>
                         )}
                       </div>

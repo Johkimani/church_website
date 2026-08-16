@@ -110,6 +110,7 @@ const AdminRsvps = lazy(() => import("./pages/Admin/pages/AdminRsvps"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
 const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
+const JumuiyaSelfRegister = lazy(() => import("./pages/Jumuiya/pages/JumuiyaSelfRegister"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -186,6 +187,10 @@ const App: React.FC = () => {
         <Route path="/hire-status" element={<HireStatus />} />
         <Route path="/suggestions/unmask/:role/:token" element={<UnmaskApproval />} />
         <Route path="/officials/deletion-approval/:token" element={<DeletionApproval />} />
+
+        {/* Dynamic Jumuiya WhatsApp Self-Registration (Mobile-first, public) */}
+        <Route path="/register/:jumuiya_slug" element={<JumuiyaSelfRegister />} />
+        <Route path="/register" element={<JumuiyaSelfRegister />} />
 
           {/* Public Routes with Page Layout */}
           <Route path="/" element={<Pageoulet />}>

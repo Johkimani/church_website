@@ -6,6 +6,7 @@ import { useAuth } from "../../../context/AuthContext";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
 import MemberReview from "../../Jumuiya/admin/MemberReview";
+import ValidationReview from "../../Jumuiya/admin/ValidationReview";
 import MembersList from "../../Jumuiya/admin/MembersList";
 import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
@@ -35,14 +36,15 @@ const JUMUIYAS = [
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";
 
-type SubTab = "dashboard" | "import" | "review" | "results" | "allocations";
+type SubTab = "dashboard" | "staging" | "review" | "results" | "allocations" | "import";
 
 const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; description: string }> = {
   dashboard: { label: "Dashboard", icon: <PieChart size={16} />, description: "Overview and registration statistics" },
-  import: { label: "New Admission", icon: <Upload size={16} />, description: "Import and add new members" },
-  review: { label: "Review", icon: <ClipboardList size={16} />, description: "Review and approve pending registrations" },
+  staging: { label: "Pending Queue", icon: <ClipboardList size={16} />, description: "Review and approve WhatsApp self-registrations & imports" },
+  review: { label: "Active Review", icon: <UserCheck size={16} />, description: "Review and edit active registered members" },
   results: { label: "All Members", icon: <Users size={16} />, description: "View and manage all registered members" },
   allocations: { label: "Allocations", icon: <UserCheck size={16} />, description: "Approve CSA member allocations" },
+  import: { label: "Manual Admission", icon: <Upload size={16} />, description: "Import and add new members manually" },
 };
 
 function SummaryBar({ stats }: { stats: Record<string, any> }) {
@@ -123,10 +125,11 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
       </div>
 
       {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-      {activeTab === "import" && !isJumuiyaOfficial && <MemberImportForm jumuiyaId={jumuiyaId} />}
+      {activeTab === "staging" && <ValidationReview jumuiyaId={jumuiyaId} />}
       {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
+      {activeTab === "import" && !isJumuiyaOfficial && <MemberImportForm jumuiyaId={jumuiyaId} />}
     </div>
   );
 };

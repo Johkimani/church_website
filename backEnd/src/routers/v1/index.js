@@ -28,6 +28,7 @@ import stkPushRouter from "./stkPush.route.js";
 const router = Router()
 import paymentRouter from "./payment.router.js";
 import jumuiyaMemberRouter from "./jumuiyaMemberRouter.js";
+import jumuiyaSelfRegisterRouter from "./jumuiyaSelfRegisterRouter.js";
 import settingsRouter from "./settingsRoutes.js";
 import { roleManagementRouter } from "./roleManagementRouter.js";
 import readingsRouter from "./readingsRoutes.js";
@@ -79,6 +80,9 @@ router.use("/", sliderRoutes);
 router.use("/activities", activitiesPublicRouter);
 router.use("/admin/activities", activitiesAdminRouter);
 
+
+// Public Dynamic WhatsApp Self-Registration (no auth required)
+router.use("/jumuiya", jumuiyaSelfRegisterRouter);
 
 // Jumuiya Member Collection System (auth: member PII + management writes)
 router.use("/jumuiya-members", verifyToken, jumuiyaMemberRouter);

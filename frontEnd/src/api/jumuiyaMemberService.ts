@@ -264,4 +264,22 @@ export const memberService = {
 
   updatePaymentStatus: (id: number, data: { status: string; mpesa_receipt?: string }) =>
     apiClient.patch(`/jumuiya-members/payments/${id}/status`, data).then(r => r.data),
+
+  // ── WhatsApp Dynamic Self-Registration ──
+  selfRegister: (data: {
+    name: string;
+    regNumber: string;
+    gender: string;
+    email: string;
+    phone: string;
+    course: string;
+    jumuiya_slug: string;
+  }) => apiClient.post(`/jumuiya/self-register`, data).then(r => r.data),
+
+  checkDuplicate: (params: { regNumber?: string; email?: string }) =>
+    apiClient.get(`/jumuiya/check-duplicate`, { params }).then(r => r.data),
+
+  getPublicJumuiyaInfo: (slug: string) =>
+    apiClient.get(`/jumuiya/info/${slug}`).then(r => r.data),
 };
+
