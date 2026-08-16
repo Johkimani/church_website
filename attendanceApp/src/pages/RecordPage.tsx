@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Save, RefreshCw, Zap, AlertTriangle } from "lucide-react";
+import { Save, Zap, AlertTriangle } from "lucide-react";
 import { db, getMeta, setMeta, type AttendanceSession, type TallyJumuiya } from "../db/db";
 import { fetchTallyContext, getApiErrorMessage, type NovenaWindow, type TallyYear } from "../api/client";
 import { syncPending } from "../sync/sync";
@@ -44,11 +44,10 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [years, setYears] = useState<TallyYear[]>(FALLBACK_YEARS);
   const [activeNovenas, setActiveNovenas] = useState<NovenaWindow[]>([]);
   const [activity, setActivity] = useState<{ isTallyDay: boolean; type: string; label: string } | null>(null);
-  const [loadingContext, setLoadingContext] = useState(false);
+  const [, setLoadingContext] = useState(false);
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [mode, setMode] = useState<"jumuiya" | "year">("jumuiya");
   const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
 
@@ -263,20 +262,7 @@ export default function RecordPage({ token, onSaved }: Props) {
       )}
 
       <div className="card">
-        <div className="flex" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <h2>Record Attendance</h2>
-          <button
-            className="btn btn-ghost"
-            onClick={() => {
-              setRefreshing(true);
-              refreshContext(date).finally(() => setRefreshing(false));
-            }}
-            disabled={refreshing || loadingContext}
-            style={{ padding: "8px 12px", fontSize: 13 }}
-          >
-            <RefreshCw size={15} className={refreshing || loadingContext ? "spin" : ""} /> Refresh
-          </button>
-        </div>
+        <h2>Record Attendance</h2>
         <p className="sub">Pick the date, then enter the number of attendees.</p>
 
         <div className="field">

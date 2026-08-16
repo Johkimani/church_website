@@ -54,6 +54,13 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     load();
   };
 
+  const clearAll = async () => {
+    if (!confirm("Delete ALL saved dates from this device? This cannot be undone.")) return;
+    await db.sessions.clear();
+    load();
+    onSynced(0);
+  };
+
   return (
     <div className="space-y-4">
       <div className="card">
@@ -69,6 +76,11 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
           <RefreshCw size={18} className={syncing ? "spin" : ""} />
           {syncing ? "Syncing…" : "Sync now"}
         </button>
+        {sessions.length > 0 && (
+          <button className="btn btn-ghost btn-block" onClick={clearAll} style={{ marginTop: 8 }}>
+            <Trash2 size={16} /> Clear all saved dates
+          </button>
+        )}
         {status && <div className={`banner ${status.ok ? "online" : "error"}`} style={{ margin: "12px 0 0" }}>{status.text}</div>}
       </div>
 
