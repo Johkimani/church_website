@@ -201,6 +201,14 @@ interface HistoryRow {
 const fmt = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+// A novena runs 9 days — end date auto-fills to start + 8 (still editable).
+const novenaEndFor = (start: string) => {
+  if (!start) return "";
+  const dt = new Date(start + "T00:00:00");
+  if (isNaN(dt.getTime())) return "";
+  return fmt(addDays(dt, 8));
+};
+
 const addDays = (d: Date, n: number) => {
   const x = new Date(d);
   x.setDate(x.getDate() + n);
@@ -422,7 +430,7 @@ export default function AttendanceTallyAdmin() {
   const [novenas, setNovenas] = useState<NovenaRow[]>([]);
   const [novenaLoading, setNovenaLoading] = useState(false);
   const [novenaSaving, setNovenaSaving] = useState(false);
-  const [novenaDraft, setNovenaDraft] = useState({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+  const [novenaDraft, setNovenaDraft] = useState({ start_date: todayStr(), end_date: novenaEndFor(todayStr()), is_active: true });
   const [novenaEditing, setNovenaEditing] = useState<number | null>(null);
 
   // History state
@@ -499,7 +507,7 @@ export default function AttendanceTallyAdmin() {
         await attendanceServices.createNovena({ start_date, end_date, is_active });
         toast.success("Novena scheduled — every day inside the window is now a tally day");
       }
-      setNovenaDraft({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+      setNovenaDraft({ start_date: todayStr(), end_date: novenaEndFor(todayStr()), is_active: true });
       setNovenaEditing(null);
       await loadNovenas();
     } catch (err) {
@@ -516,7 +524,7 @@ export default function AttendanceTallyAdmin() {
       toast.success("Novena deleted");
       if (novenaEditing === id) {
         setNovenaEditing(null);
-        setNovenaDraft({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+        setNovenaDraft({ start_date: todayStr(), end_date: novenaEndFor(todayStr()), is_active: true });
       }
       await loadNovenas();
     } catch (err) {
@@ -1317,7 +1325,7 @@ export default function AttendanceTallyAdmin() {
           onToggle={handleNovenaToggle}
           onCancel={() => {
             setNovenaEditing(null);
-            setNovenaDraft({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+            setNovenaDraft({ start_date: todayStr(), end_date: novenaEndFor(todayStr()), is_active: true });
           }}
         />
       ) : tab === "config" ? (
@@ -2150,7 +2158,8 @@ function NovenaTab({
           <CalendarRange size={16} className="text-slate-400" /> Novena Windows
         </h3>
         <p className="text-sm text-slate-600 mt-1">
-          Schedule a novena by setting its <b>start</b> and <b>end</b> date. Every day inside an{" "}
+          Schedule a novena by picking its <b>start date</b> — the end date auto-fills to a 9-day window
+          (start + 8 days) and stays editable if the novena is shorter or longer. Every day inside an{" "}
           <b>active</b> window counts as a tally day, so the offline tally app will accept those dates. The
           tally app reads these dates automatically — no setup on the app is needed.
         </p>
@@ -2176,7 +2185,13 @@ function NovenaTab({
             <input
               type="date"
               value={draft.start_date}
-              onChange={(e) => setDraft((p) => ({ ...p, start_date: e.target.value }))}
+              onChange={(e) =>
+                setDraft((p) => ({
+                  ...p,
+                  start_date: e.target.value,
+                  end_date: e.target.value ? novenaEndFor(e.target.value) : p.end_date,
+                }))
+              }
               className={inputCls}
             />
           </div>
