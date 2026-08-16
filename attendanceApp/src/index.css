@@ -248,6 +248,40 @@ input[type="number"] {
 .banner.offline { background: #fef3c7; color: var(--amber); }
 .banner.error { background: #fee2e2; color: var(--red); }
 
+/* Install app */
+.install-hint {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: var(--brand);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.install-btn:active { background: var(--brand-dark); }
+.install-ios {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: #eef2ff;
+  padding: 8px 14px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.install-ios .arrow { color: var(--brand); }
+
 /* List */
 .record-row {
   display: flex;

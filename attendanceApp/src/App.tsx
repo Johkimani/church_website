@@ -6,6 +6,7 @@ import { syncPending } from "./sync/sync";
 import LoginPage from "./pages/LoginPage";
 import RecordPage from "./pages/RecordPage";
 import PendingPage from "./pages/PendingPage";
+import InstallButton from "./components/InstallButton";
 
 type Tab = "record" | "pending";
 
@@ -100,6 +101,8 @@ export default function App() {
         {syncMsg && (
           <div className={`banner ${syncMsg.ok ? "online" : "error"}`}>{syncMsg.text}</div>
         )}
+
+        <InstallButton />
 
         {tab === "record" ? (
           <RecordPage token={token} onSaved={refreshPendingCount} />
