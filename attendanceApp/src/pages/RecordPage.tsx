@@ -153,7 +153,7 @@ export default function RecordPage({ token, onSaved }: Props) {
   );
 
   const recordedByControls = (
-    <div className="recorded-by-toggle" style={{ marginBottom: 12, display: "flex", gap: 8 }}>
+    <div className="recorded-by-toggle" style={{ marginBottom: 12, display: "flex", gap: 8, justifyContent: "center" }}>
       <button
         className={recordedBy === "coordinator" ? "active" : ""}
         onClick={() => setRecordedBy("coordinator")}
@@ -286,15 +286,9 @@ export default function RecordPage({ token, onSaved }: Props) {
 
         {modeControls}
 
-        {recordedByControls}
-
-        {activity?.isTallyDay && activity.label ? (
+        {activity?.isTallyDay && activity.label && (
           <p className="sub" style={{ marginTop: -6 }}>
             Selected: <strong>{activity.label}</strong> on {dateLabel}
-          </p>
-        ) : (
-          <p className="sub" style={{ marginTop: -6 }}>
-            {dateLabel} is not a tally day (Mon/Wed/Thu or a scheduled novena), so no tally can be saved.
           </p>
         )}
       </div>
@@ -320,6 +314,8 @@ export default function RecordPage({ token, onSaved }: Props) {
               </div>
             ))}
           </div>
+
+          {recordedByControls}
 
           <button className="btn btn-primary btn-block" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
             <Save size={18} />
@@ -353,6 +349,8 @@ export default function RecordPage({ token, onSaved }: Props) {
               </div>
             ))}
           </div>
+
+          {recordedByControls}
 
           <button className="btn btn-primary btn-block" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
             <Save size={18} />
