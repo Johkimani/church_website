@@ -85,11 +85,6 @@ export default function RecordPage({ token, onSaved }: Props) {
         await setMeta("active_novenas", ctx.active_novenas || []);
         if (ctx.isTallyDay) {
           setMessage({ ok: true, text: `Tally day: ${ctx.activityLabel} — enter counts below.` });
-        } else {
-          setMessage({
-            ok: false,
-            text: `${d} is not a tally day (Mon/Wed/Thu or a scheduled novena).`,
-          });
         }
       } catch {
         await loadFromCache(d);
@@ -266,16 +261,26 @@ export default function RecordPage({ token, onSaved }: Props) {
 
         <div className="field">
           <label>Activity date</label>
-          <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            type="date"
+            className="input"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={{ width: 190, padding: "8px 10px", fontSize: 14 }}
+          />
         </div>
 
-        {modeControls}
-
-        {activity?.isTallyDay && activity.label && (
+        {activity?.isTallyDay && activity.label ? (
           <p className="sub" style={{ marginTop: -6 }}>
             Selected: <strong>{activity.label}</strong> on {dateLabel}
           </p>
+        ) : (
+          <p className="sub" style={{ marginTop: -6 }}>
+            {dateLabel} is not a tally day (Mon/Wed/Thu or a scheduled novena), so no tally can be saved.
+          </p>
         )}
+
+        {modeControls}
       </div>
 
       {mode === "year" ? (
