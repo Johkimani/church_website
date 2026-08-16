@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Upload, Plus, Trash2, FileSpreadsheet, CheckCircle, AlertTriangle } from "lucide-react";
 import * as XLSX from "xlsx";
+import CopyWhatsAppButton from "../components/CopyWhatsAppButton";
 
 interface Props {
   jumuiyaId: string;
@@ -220,13 +221,14 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-slate-800">Import Members</h3>
           <p className="text-xs text-slate-500">
             Adding members to <span className="font-semibold text-indigo-600">{jumuiyaName}</span>
           </p>
         </div>
+        <CopyWhatsAppButton jumuiyaSlug={jumuiyaId} jumuiyaName={jumuiyaName} variant="compact" />
       </div>
 
       {error && (

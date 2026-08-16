@@ -12,6 +12,7 @@ import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import AllMembersTable from "./AllMembersTable";
 import AssociatesTable from "./AssociatesTable";
+import CopyWhatsAppButton from "../../Jumuiya/components/CopyWhatsAppButton";
 
 // Improved cache with longer TTL (60s) and memory efficiency
 let statsCache: { data: Record<string, any>; ts: number } | null = null;
@@ -391,14 +392,17 @@ export default function JumuiyaMembersAdmin() {
           <ArrowLeft size={16} /> Back to all Jumuiyas
         </button>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: jumuiya.color }}>
-            {jumuiya.initials}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: jumuiya.color }}>
+              {jumuiya.initials}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">{jumuiya.name}</h2>
+              <p className="text-sm text-slate-500">Member Management</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">{jumuiya.name}</h2>
-            <p className="text-sm text-slate-500">Member Management</p>
-          </div>
+          <CopyWhatsAppButton jumuiyaSlug={jumuiya.id} jumuiyaName={jumuiya.name} />
         </div>
 
         <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} />

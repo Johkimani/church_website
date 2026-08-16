@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useParams, Link } from "react-router-dom";
 import {
   ShieldCheck,
   Lock,
@@ -16,8 +16,6 @@ import {
   Share2,
   ArrowRight,
   RefreshCw,
-  Copy,
-  ExternalLink,
   ChevronRight,
 } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
@@ -102,7 +100,6 @@ const JUMUIYA_FALLBACKS: Record<
 
 export default function JumuiyaSelfRegister() {
   const { jumuiya_slug } = useParams<{ jumuiya_slug: string }>();
-  const navigate = useNavigate();
   const slug = (jumuiya_slug || "").toLowerCase().trim();
 
   // Resolved metadata from data / fallback / API
@@ -283,7 +280,7 @@ export default function JumuiyaSelfRegister() {
 
     setSubmitting(true);
     try {
-      const res = await memberService.selfRegister({
+      await memberService.selfRegister({
         name: formData.name.trim(),
         regNumber: formData.regNumber.trim(),
         gender: formData.gender,
