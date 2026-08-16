@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Church, LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
 import { login, getApiErrorMessage } from "../api/client";
 import { setSession } from "../db/db";
 
@@ -33,7 +33,7 @@ export default function LoginPage({ onLogin }: Props) {
   return (
     <form className="login-wrap" onSubmit={submit}>
       <div className="login-logo">
-        <Church size={40} />
+        <img src="/icons/app-icon-512.png" alt="CSA Attendance" className="login-logo-img" />
       </div>
       <h1 className="login-title">CSA Attendance</h1>
       <p className="login-sub">Works offline — sign in once to prepare this device.</p>

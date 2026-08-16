@@ -305,12 +305,14 @@ input[type="number"] {
   width: 72px;
   height: 72px;
   border-radius: 20px;
-  background: #1e293b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #3b82f6;
   margin: 0 auto 12px;
+  overflow: hidden;
+}
+.login-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .login-title {
   text-align: center;
@@ -355,13 +357,15 @@ input[type="number"] {
   width: 96px;
   height: 96px;
   border-radius: 26px;
-  background: #1e293b;
-  color: #3b82f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
   animation: logoPop 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.splash-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .splash-name {
   font-size: 15px;
