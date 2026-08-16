@@ -55,6 +55,20 @@ export const attendanceServices = {
     recordedBy: "coordinator" | "assistant"
   ) =>
     apiClient.patch(`/attendance/history/${date}`, { counts, recordedBy }).then((r) => r.data),
+
+  getNovenas: () =>
+    apiClient.get("/attendance/novena").then((r) => r.data?.data || []),
+
+  createNovena: (payload: { start_date: string; end_date: string; is_active?: boolean }) =>
+    apiClient.post("/attendance/novena", payload).then((r) => r.data),
+
+  updateNovena: (
+    id: number,
+    payload: { start_date: string; end_date: string; is_active?: boolean }
+  ) => apiClient.patch(`/attendance/novena/${id}`, payload).then((r) => r.data),
+
+  deleteNovena: (id: number) =>
+    apiClient.delete(`/attendance/novena/${id}`).then((r) => r.data),
 };
 
 export const getApiError = (err: any): string =>

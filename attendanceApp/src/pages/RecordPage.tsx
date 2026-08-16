@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Save, RefreshCw, Zap, AlertTriangle } from "lucide-react";
 import { db, getMeta, setMeta, type AttendanceSession, type TallyJumuiya } from "../db/db";
-import { fetchTallyContext, getApiErrorMessage, type TallyYear } from "../api/client";
+import { fetchTallyContext, getApiErrorMessage, type NovenaWindow, type TallyYear } from "../api/client";
 import { syncPending } from "../sync/sync";
 
 interface Props {
@@ -35,10 +35,14 @@ const FALLBACK_YEARS: TallyYear[] = [
 
 const yearKey = (y: string) => `y:${y}`;
 
+const isWithinNovena = (d: string, windows: NovenaWindow[]) =>
+  windows.some((n) => d >= n.start_date && d <= n.end_date);
+
 export default function RecordPage({ token, onSaved }: Props) {
   const [date, setDate] = useState(todayISO());
   const [jumuiyas, setJumuiyas] = useState<TallyJumuiya[]>([]);
   const [years, setYears] = useState<TallyYear[]>(FALLBACK_YEARS);
+  const [activeNovenas, setActiveNovenas] = useState<NovenaWindow[]>([]);
   const [activity, setActivity] = useState<{ isTallyDay: boolean; type: string; label: string } | null>(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [counts, setCounts] = useState<Record<string, string>>({});
@@ -49,16 +53,20 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
 
   const loadFromCache = useCallback((d: string) => {
-    return getMeta<TallyJumuiya[]>("jumuiyas").then((j) => {
-      setJumuiyas(j || []);
-      const offline = dayActivity(d);
-      setActivity(
-        offline
-          ? { isTallyDay: true, type: offline.type, label: offline.label }
-          : { isTallyDay: false, type: "", label: "" }
-      );
-      return j;
-    });
+    return Promise.all([getMeta<TallyJumuiya[]>("jumuiyas"), getMeta<NovenaWindow[]>("active_novenas")]).then(
+      ([j, nov]) => {
+        setJumuiyas(j || []);
+        setActiveNovenas(nov || []);
+        const offline = dayActivity(d);
+        const inNovena = isWithinNovena(d, nov || []);
+        setActivity(
+          offline || inNovena
+            ? { isTallyDay: true, type: offline?.type || "novena", label: offline?.label || "Novena day" }
+            : { isTallyDay: false, type: "", label: "" }
+        );
+        return j;
+      }
+    );
   }, []);
 
   const refreshContext = useCallback(
@@ -68,18 +76,20 @@ export default function RecordPage({ token, onSaved }: Props) {
         const ctx = await fetchTallyContext(token, d);
         setJumuiyas(ctx.jumuiyas);
         setYears(ctx.years?.length ? ctx.years : FALLBACK_YEARS);
+        setActiveNovenas(ctx.active_novenas || []);
         setActivity({
           isTallyDay: ctx.isTallyDay,
           type: ctx.activityType,
           label: ctx.activityLabel,
         });
         await setMeta("jumuiyas", ctx.jumuiyas);
+        await setMeta("active_novenas", ctx.active_novenas || []);
         if (ctx.isTallyDay) {
           setMessage({ ok: true, text: `Tally day: ${ctx.activityLabel} — enter counts below.` });
         } else {
           setMessage({
             ok: false,
-            text: `${d} is not a tally day (Mon/Wed/Thu or an active novena). You can still save it offline.`,
+            text: `${d} is not a tally day (Mon/Wed/Thu or a scheduled novena).`,
           });
         }
       } catch {
@@ -118,6 +128,10 @@ export default function RecordPage({ token, onSaved }: Props) {
     }).length,
     [years, counts]
   );
+
+  // Server truth when the context was fetched; offline heuristic otherwise.
+  // A date is a valid tally day on Mon/Wed/Thu or inside a scheduled novena window.
+  const isTallyDay = activity?.isTallyDay ?? (dayActivity(date) != null || isWithinNovena(date, activeNovenas));
 
   const modeControls = (
     <div className="mode-toggle" style={{ marginBottom: 12, display: "flex", gap: 8 }}>
@@ -158,6 +172,14 @@ export default function RecordPage({ token, onSaved }: Props) {
   );
 
   const saveAll = async () => {
+    if (!isTallyDay) {
+      setMessage({
+        ok: false,
+        text: `${date} is not a tally day (Mon/Wed/Thu or a scheduled novena), so no tally was saved.`,
+      });
+      return;
+    }
+
     let sessionCounts: { jumuiyaId: string; jumuiyaName: string; count: number; year?: number }[] = [];
     if (mode === "year") {
       sessionCounts = years
@@ -272,7 +294,7 @@ export default function RecordPage({ token, onSaved }: Props) {
           </p>
         ) : (
           <p className="sub" style={{ marginTop: -6 }}>
-            {dateLabel} is not a regular tally day (Mon/Wed/Thu). Novena days also count — the server decides on sync.
+            {dateLabel} is not a tally day (Mon/Wed/Thu or a scheduled novena), so no tally can be saved.
           </p>
         )}
       </div>
@@ -299,9 +321,9 @@ export default function RecordPage({ token, onSaved }: Props) {
             ))}
           </div>
 
-          <button className="btn btn-primary btn-block" disabled={saving} onClick={saveAll} style={{ marginTop: 16 }}>
+          <button className="btn btn-primary btn-block" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
             <Save size={18} />
-            {saving ? "Saving…" : `Save${enteredCount ? ` ${enteredCount} Year${enteredCount > 1 ? "s" : ""}` : ""}`}
+            {saving ? "Saving…" : !isTallyDay ? "Not a tally day" : `Save${enteredCount ? ` ${enteredCount} Year${enteredCount > 1 ? "s" : ""}` : ""}`}
           </button>
         </div>
       ) : jumuiyas.length === 0 ? (
@@ -332,9 +354,9 @@ export default function RecordPage({ token, onSaved }: Props) {
             ))}
           </div>
 
-          <button className="btn btn-primary btn-block" disabled={saving} onClick={saveAll} style={{ marginTop: 16 }}>
+          <button className="btn btn-primary btn-block" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
             <Save size={18} />
-            {saving ? "Saving…" : `Save${enteredCount ? ` ${enteredCount} Jumuiya${enteredCount > 1 ? "s" : ""}` : ""}`}
+            {saving ? "Saving…" : !isTallyDay ? "Not a tally day" : `Save${enteredCount ? ` ${enteredCount} Jumuiya${enteredCount > 1 ? "s" : ""}` : ""}`}
           </button>
         </div>
       )}

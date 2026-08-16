@@ -11,6 +11,10 @@ import {
   exportAnalyticsExcel,
   getHistory,
   updateTally,
+  listNovenas,
+  createNovena,
+  updateNovena,
+  deleteNovena,
 } from "../controllers/attendanceController.js";
 
 const router = Router();
@@ -28,5 +32,9 @@ router.get("/analytics/export", exportAnalyticsExcel);
 router.get("/analytics", getAnalytics);
 router.get("/history", getHistory);
 router.patch("/history/:date", updateTally);
+router.get("/novena", listNovenas);
+router.post("/novena", createNovena);
+router.patch("/novena/:id", updateNovena);
+router.delete("/novena/:id", deleteNovena);
 
 export default router;

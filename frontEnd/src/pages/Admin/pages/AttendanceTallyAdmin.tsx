@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   FileSpreadsheet,
   ArrowUpDown,
+  CalendarRange,
 } from "lucide-react";
 import {
   BarChart,
@@ -136,6 +137,14 @@ interface MeetingConfigRow {
   recent_registers: { date: string; present_count: number; total_count: number }[];
   last_register_date: string | null;
   stale: boolean;
+}
+
+interface NovenaRow {
+  id: number;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  created_at?: string;
 }
 
 interface AnalyticsData {
@@ -369,7 +378,7 @@ function TrendBadge({ delta }: { delta: number }) {
 
 export default function AttendanceTallyAdmin() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"tally" | "analytics" | "config" | "history">("tally");
+  const [tab, setTab] = useState<"tally" | "analytics" | "config" | "history" | "novena">("tally");
 
   // Take Tally state
   const [date, setDate] = useState<string>(todayStr());
@@ -409,6 +418,13 @@ export default function AttendanceTallyAdmin() {
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState<Record<string, boolean>>({});
 
+  // Novena windows state
+  const [novenas, setNovenas] = useState<NovenaRow[]>([]);
+  const [novenaLoading, setNovenaLoading] = useState(false);
+  const [novenaSaving, setNovenaSaving] = useState(false);
+  const [novenaDraft, setNovenaDraft] = useState({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+  const [novenaEditing, setNovenaEditing] = useState<number | null>(null);
+
   // History state
   const [historyRows, setHistoryRows] = useState<HistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -447,6 +463,84 @@ export default function AttendanceTallyAdmin() {
   useEffect(() => {
     if (tab === "config") loadConfig();
   }, [tab, loadConfig]);
+
+  const loadNovenas = useCallback(async () => {
+    setNovenaLoading(true);
+    try {
+      const rows = await attendanceServices.getNovenas();
+      setNovenas(rows);
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setNovenaLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === "novena") loadNovenas();
+  }, [tab, loadNovenas]);
+
+  const handleNovenaSave = async () => {
+    const { start_date, end_date, is_active } = novenaDraft;
+    if (!start_date || !end_date) {
+      toast.error("Pick a start and end date for the novena");
+      return;
+    }
+    if (start_date > end_date) {
+      toast.error("Start date must be on or before the end date");
+      return;
+    }
+    setNovenaSaving(true);
+    try {
+      if (novenaEditing != null) {
+        await attendanceServices.updateNovena(novenaEditing, { start_date, end_date, is_active });
+        toast.success("Novena updated");
+      } else {
+        await attendanceServices.createNovena({ start_date, end_date, is_active });
+        toast.success("Novena scheduled — every day inside the window is now a tally day");
+      }
+      setNovenaDraft({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+      setNovenaEditing(null);
+      await loadNovenas();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setNovenaSaving(false);
+    }
+  };
+
+  const handleNovenaDelete = async (id: number) => {
+    if (!window.confirm("Delete this novena? Days inside its window will stop counting as tally days.")) return;
+    try {
+      await attendanceServices.deleteNovena(id);
+      toast.success("Novena deleted");
+      if (novenaEditing === id) {
+        setNovenaEditing(null);
+        setNovenaDraft({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+      }
+      await loadNovenas();
+    } catch (err) {
+      toast.error(getApiError(err));
+    }
+  };
+
+  const handleNovenaEdit = (row: NovenaRow) => {
+    setNovenaEditing(row.id);
+    setNovenaDraft({ start_date: row.start_date, end_date: row.end_date, is_active: row.is_active });
+  };
+
+  const handleNovenaToggle = async (row: NovenaRow) => {
+    try {
+      await attendanceServices.updateNovena(row.id, {
+        start_date: row.start_date,
+        end_date: row.end_date,
+        is_active: !row.is_active,
+      });
+      await loadNovenas();
+    } catch (err) {
+      toast.error(getApiError(err));
+    }
+  };
 
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -810,6 +904,14 @@ export default function AttendanceTallyAdmin() {
             }`}
           >
             <Settings2 size={16} /> Meeting Days
+          </button>
+          <button
+            onClick={() => setTab("novena")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              tab === "novena" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-600 hover:text-slate-800"
+            }`}
+          >
+            <CalendarRange size={16} /> Novena
           </button>
           <button
             onClick={() => setTab("history")}
@@ -1201,6 +1303,23 @@ export default function AttendanceTallyAdmin() {
             </div>
           </div>
         </div>
+      ) : tab === "novena" ? (
+        <NovenaTab
+          rows={novenas}
+          loading={novenaLoading}
+          saving={novenaSaving}
+          draft={novenaDraft}
+          setDraft={setNovenaDraft}
+          editing={novenaEditing}
+          onSave={handleNovenaSave}
+          onDelete={handleNovenaDelete}
+          onEdit={handleNovenaEdit}
+          onToggle={handleNovenaToggle}
+          onCancel={() => {
+            setNovenaEditing(null);
+            setNovenaDraft({ start_date: todayStr(), end_date: todayStr(), is_active: true });
+          }}
+        />
       ) : tab === "config" ? (
         <MeetingDaysTab
           rows={configRows}
@@ -1984,6 +2103,192 @@ function HistoryTab({
           <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400">
             A single save updates the whole day (all counts in the day's mode + who recorded it). Register-sourced
             counts are locked to keep them consistent with the secretary's per-member register.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NovenaTab({
+  rows,
+  loading,
+  saving,
+  draft,
+  setDraft,
+  editing,
+  onSave,
+  onDelete,
+  onEdit,
+  onToggle,
+  onCancel,
+}: {
+  rows: NovenaRow[];
+  loading: boolean;
+  saving: boolean;
+  draft: { start_date: string; end_date: string; is_active: boolean };
+  setDraft: React.Dispatch<
+    React.SetStateAction<{ start_date: string; end_date: string; is_active: boolean }>
+  >;
+  editing: number | null;
+  onSave: () => void;
+  onDelete: (id: number) => void;
+  onEdit: (row: NovenaRow) => void;
+  onToggle: (row: NovenaRow) => void;
+  onCancel: () => void;
+}) {
+  const fmt = (d: string) =>
+    new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const isTodayInRange = rows.some(
+    (r) => r.is_active && todayStr() >= r.start_date && todayStr() <= r.end_date
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+          <CalendarRange size={16} className="text-slate-400" /> Novena Windows
+        </h3>
+        <p className="text-sm text-slate-600 mt-1">
+          Schedule a novena by setting its <b>start</b> and <b>end</b> date. Every day inside an{" "}
+          <b>active</b> window counts as a tally day, so the offline tally app will accept those dates. The
+          tally app reads these dates automatically — no setup on the app is needed.
+        </p>
+        {isTodayInRange ? (
+          <p className="mt-3 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+            A novena window is currently active — today is a valid tally day.
+          </p>
+        ) : (
+          <p className="mt-3 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            No active novena covers today. Tally days are Monday, Wednesday and Thursday (plus any novena
+            window you schedule).
+          </p>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="font-semibold text-slate-800">
+          {editing != null ? "Edit Novena" : "Schedule a Novena"}
+        </h3>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Start date</label>
+            <input
+              type="date"
+              value={draft.start_date}
+              onChange={(e) => setDraft((p) => ({ ...p, start_date: e.target.value }))}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">End date</label>
+            <input
+              type="date"
+              value={draft.end_date}
+              min={draft.start_date}
+              onChange={(e) => setDraft((p) => ({ ...p, end_date: e.target.value }))}
+              className={inputCls}
+            />
+          </div>
+          <label className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 cursor-pointer h-fit">
+            <input
+              type="checkbox"
+              checked={draft.is_active}
+              onChange={(e) => setDraft((p) => ({ ...p, is_active: e.target.checked }))}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/30"
+            />
+            Active
+          </label>
+          <div className="flex gap-2">
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              {saving ? "Saving…" : editing != null ? "Update" : "Schedule"}
+            </button>
+            {editing != null && (
+              <button
+                onClick={onCancel}
+                className="px-4 py-2 rounded-lg text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
+          <Loader2 size={18} className="animate-spin" /> Loading novena windows…
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm">
+          No novena windows scheduled yet. Schedule one above to make its days tally days.
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
+                  <th className="px-5 py-3">Window</th>
+                  <th className="px-3 py-3">Days</th>
+                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id} className="border-t border-slate-100">
+                    <td className="px-5 py-3 font-semibold text-slate-700 whitespace-nowrap">
+                      {fmt(row.start_date)} → {fmt(row.end_date)}
+                    </td>
+                    <td className="px-3 py-3 text-slate-500">
+                      {Math.round(
+                        (new Date(row.end_date + "T00:00:00").getTime() -
+                          new Date(row.start_date + "T00:00:00").getTime()) /
+                          86400000 +
+                          1
+                      )}{" "}
+                      days
+                    </td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => onToggle(row)}
+                        title={row.is_active ? "Click to deactivate" : "Click to activate"}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                          row.is_active
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-slate-100 text-slate-500 border-slate-200"
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${row.is_active ? "bg-emerald-500" : "bg-slate-400"}`} />
+                        {row.is_active ? "Active" : "Inactive"}
+                      </button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => onEdit(row)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => onDelete(row.id)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

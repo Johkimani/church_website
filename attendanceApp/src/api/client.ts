@@ -66,11 +66,18 @@ export interface TallyYear {
   active_members?: number;
 }
 
+export interface NovenaWindow {
+  id?: number;
+  start_date: string;
+  end_date: string;
+}
+
 export interface TallyContext {
   date: string;
   isTallyDay: boolean;
   activityType: string;
   activityLabel: string;
+  active_novenas?: NovenaWindow[];
   jumuiyas: TallyJumuiya[];
   years: TallyYear[];
 }

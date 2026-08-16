@@ -210,7 +210,7 @@ export const getTallyContext = async (req, res) => {
     const date = normalizeDate(req.query.date) || todayStr();
     const ctx = await getActivityForDate(date);
 
-    const [sgResult, memberCounts, yearCounts, registerMap] = await Promise.all([
+    const [sgResult, memberCounts, yearCounts, registerMap, activeNovenas] = await Promise.all([
       pool.query(
         `SELECT group_id, name, slug, color FROM sub_groups
          WHERE slug <> ALL($1)
@@ -220,6 +220,14 @@ export const getTallyContext = async (req, res) => {
       getMemberCounts(),
       getYearCounts(),
       getRegisterPresentMap(date),
+      pool.query(
+        `SELECT id, to_char(start_date, 'YYYY-MM-DD') AS start_date,
+                to_char(end_date, 'YYYY-MM-DD') AS end_date
+         FROM novena_schedules
+         WHERE is_active = true
+         ORDER BY start_date ASC
+         LIMIT 20`
+      ),
     ]);
 
     const jumuiyas = sgResult.rows.map((row) => {
@@ -238,12 +246,100 @@ export const getTallyContext = async (req, res) => {
       return { year: y, label: yearLabel(y), color: YEAR_COLORS[y], ...counts };
     });
 
-    res.json({ success: true, data: { date, ...ctx, jumuiyas, years } });
+    res.json({
+      success: true,
+      data: { date, ...ctx, active_novenas: activeNovenas.rows, jumuiyas, years },
+    });
   } catch (error) {
     console.error("getTallyContext error:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// ── Novena windows ──────────────────────────────────────────────────────
+// The coordinator schedules novena date ranges here so the tally app can
+// recognize every day inside a window as a valid tally day (novena).
+export const listNovenas = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, to_char(start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(end_date, 'YYYY-MM-DD') AS end_date, is_active,
+              to_char(created_at, 'YYYY-MM-DD HH24:MI') AS created_at
+       FROM novena_schedules
+       ORDER BY start_date DESC, id DESC`
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error("listNovenas error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const createNovena = async (req, res) => {
+  const { start_date, end_date, is_active } = req.body || {};
+  if (!normalizeDate(start_date) || !normalizeDate(end_date)) {
+    return res.status(400).json({ success: false, error: "Valid start_date and end_date (YYYY-MM-DD) are required" });
+  }
+  if (start_date > end_date) {
+    return res.status(400).json({ success: false, error: "start_date must be on or before end_date" });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO novena_schedules (start_date, end_date, is_active)
+       VALUES ($1, $2, $3)
+       RETURNING id, to_char(start_date, 'YYYY-MM-DD') AS start_date,
+                 to_char(end_date, 'YYYY-MM-DD') AS end_date, is_active`,
+      [start_date, end_date, is_active == null ? true : Boolean(is_active)]
+    );
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("createNovena error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateNovena = async (req, res) => {
+  const { id } = req.params;
+  const { start_date, end_date, is_active } = req.body || {};
+  if (!normalizeDate(start_date) || !normalizeDate(end_date)) {
+    return res.status(400).json({ success: false, error: "Valid start_date and end_date (YYYY-MM-DD) are required" });
+  }
+  if (start_date > end_date) {
+    return res.status(400).json({ success: false, error: "start_date must be on or before end_date" });
+  }
+  try {
+    const result = await pool.query(
+      `UPDATE novena_schedules
+       SET start_date = $1, end_date = $2, is_active = $3
+       WHERE id = $4
+       RETURNING id, to_char(start_date, 'YYYY-MM-DD') AS start_date,
+                 to_char(end_date, 'YYYY-MM-DD') AS end_date, is_active`,
+      [start_date, end_date, is_active == null ? true : Boolean(is_active), id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Novena not found" });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("updateNovena error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const deleteNovena = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(`DELETE FROM novena_schedules WHERE id = $1 RETURNING id`, [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Novena not found" });
+    }
+    res.json({ success: true, data: { id, deleted: true } });
+  } catch (error) {
+    console.error("deleteNovena error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 
 // ── GET /sessions?date=YYYY-MM-DD ───────────────────────────────────────
 export const getSession = async (req, res) => {
