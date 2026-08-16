@@ -93,7 +93,6 @@ export default function RecordPage({ token, onSaved }: Props) {
         }
       } catch {
         await loadFromCache(d);
-        setMessage({ ok: false, text: "Offline — using the saved jumuiya list. Records sync later." });
       } finally {
         setLoadingContext(false);
       }
