@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download } from "lucide-react";
+import { Chrome, Download } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -10,7 +10,9 @@ export default function InstallButton() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
-  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const ua = navigator.userAgent;
+  const isIos = /iphone|ipad|ipod/i.test(ua);
+  const isEdgeAndroid = /Android/i.test(ua) && /Edg\//i.test(ua);
   const showIosHint = isIos && !installed && !("standalone" in navigator);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function InstallButton() {
   }, []);
 
   if (installed) return null;
-  if (!deferred && !showIosHint) return null;
+  if (!deferred && !showIosHint && !isEdgeAndroid) return null;
 
   const handleClick = async () => {
     if (!deferred) return;
@@ -39,6 +41,18 @@ export default function InstallButton() {
     await deferred.userChoice;
     setDeferred(null);
   };
+
+  // Edge on Android only creates a home-screen shortcut (with the Edge logo
+  // badge), so guide the user to Chrome where a clean app install is possible.
+  if (isEdgeAndroid) {
+    return (
+      <div className="install-hint">
+        <p className="install-ios">
+          <Chrome size={16} /> This browser installs a shortcut with the Edge logo. For a clean app icon, open this app in Chrome and tap "Install App".
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="install-hint">
