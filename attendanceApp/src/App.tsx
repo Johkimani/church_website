@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PencilLine, History, Wifi, WifiOff } from "lucide-react";
+import { PencilLine, History, Wifi, WifiOff, Church } from "lucide-react";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { getSession } from "./db/db";
 import { syncPending } from "./sync/sync";
@@ -85,7 +85,9 @@ export default function App() {
     <>
       {splash !== "gone" && (
         <div className={`splash ${splash === "fade" ? "fade" : ""}`}>
-          <img src="/icons/app-icon-512.png" alt="" className="splash-logo" />
+          <div className="splash-logo">
+            <Church size={56} />
+          </div>
           <div className="splash-name">CSA Attendance</div>
         </div>
       )}
