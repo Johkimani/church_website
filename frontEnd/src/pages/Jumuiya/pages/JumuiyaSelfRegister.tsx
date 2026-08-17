@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ShieldCheck,
-  Lock,
   User,
   Hash,
   Mail,
@@ -10,10 +8,7 @@ import {
   BookOpen,
   CheckCircle2,
   AlertCircle,
-  Clock,
-  MapPin,
   Sparkles,
-  Share2,
   ArrowRight,
   RefreshCw,
   ChevronRight,
@@ -400,9 +395,9 @@ export default function JumuiyaSelfRegister() {
             <div className="relative z-10 w-full flex items-center justify-between">
               <div>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-white/20 backdrop-blur-md text-white border border-white/30">
-                  <Sparkles size={12} /> Dynamic Self-Registration
+                  <Sparkles size={12} /> Self-Registration
                 </span>
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white drop-shadow-sm">
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white drop-shadow-lg">
                   {localJumuiya.name} Jumuiya
                 </h1>
               </div>
@@ -422,39 +417,13 @@ export default function JumuiyaSelfRegister() {
             </div>
           </div>
 
-          {/* Locked Destination Banner */}
-          <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between text-xs sm:text-sm font-semibold">
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                <Lock size={13} />
-              </span>
-              <span className="text-slate-300">
-                Target Jumuiya:{" "}
-                <span className="text-white font-bold">{localJumuiya.name}</span> (Locked)
-              </span>
-            </div>
-            <span className="text-[11px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">
-              WhatsApp Link
-            </span>
-          </div>
-
-          {/* Saint Quote & Info */}
+          {/* Saint Quote */}
           <div className="p-5 bg-white border-b border-slate-100">
             {localJumuiya.quote && (
-              <p className="text-xs italic text-slate-500 mb-3 border-l-2 pl-3 border-indigo-400">
+              <p className="text-xs italic text-slate-500 border-l-2 pl-3 border-indigo-400">
                 &ldquo;{localJumuiya.quote}&rdquo;
               </p>
             )}
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
-              <div className="flex items-center gap-1.5">
-                <MapPin size={13} className="text-indigo-500" />
-                <span>Venue: <strong>{localJumuiya.venue}</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock size={13} className="text-indigo-500" />
-                <span>Meeting: <strong>{localJumuiya.time}</strong></span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -472,7 +441,7 @@ export default function JumuiyaSelfRegister() {
               Welcome, {submittedSession.name}!
             </h2>
             <p className="text-sm text-slate-600 mt-2 max-w-sm mx-auto">
-              Your details for <strong className="text-slate-800">{submittedSession.jumuiyaName}</strong> have been submitted directly into the coordinator&apos;s pending admission queue.
+              Your details for <strong className="text-slate-800">{submittedSession.jumuiyaName}</strong> have been submitted directly into the Jumuiya coordinator&apos;s pending admission queue.
             </p>
 
             {/* Member Details Pill */}
@@ -489,33 +458,6 @@ export default function JumuiyaSelfRegister() {
                 <span className="text-slate-500">Submission Date:</span>
                 <span className="font-medium text-slate-700">{submittedSession.date}</span>
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 px-4 rounded-xl text-sm transition-all shadow-md active:scale-98"
-              >
-                {copiedLink ? (
-                  <>
-                    <CheckCircle2 size={16} className="text-emerald-400" /> Copied WhatsApp Link!
-                  </>
-                ) : (
-                  <>
-                    <Share2 size={16} /> Share Link with Fellow Students
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleRegisterAnother}
-                className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl text-xs transition-colors"
-              >
-                <RefreshCw size={13} /> Register Another Person on This Phone
-              </button>
             </div>
           </div>
         ) : (
@@ -708,27 +650,15 @@ export default function JumuiyaSelfRegister() {
               {fieldErrors.course && <p className="text-[11px] text-red-500 mt-1">{fieldErrors.course}</p>}
             </div>
 
-            {/* Locked Jumuiya Pill */}
-            <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 text-slate-600">
-                <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-                <span>
-                  Registering directly under:{" "}
-                  <strong className="text-slate-900 font-bold">{localJumuiya.name}</strong>
-                </span>
-              </div>
-              <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-md">
-                LOCKED
-              </span>
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-4 px-6 rounded-2xl text-white font-bold text-sm shadow-lg shadow-indigo-500/20 hover:opacity-95 active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 px-6 rounded-2xl text-white font-bold text-sm shadow-lg hover:opacity-95 active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
                 background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
+                boxShadow: `0 4px 14px ${primaryColor}40`,
+                color: "#fff",
               }}
             >
               {submitting ? (
