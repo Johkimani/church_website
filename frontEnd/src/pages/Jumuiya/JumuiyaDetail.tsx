@@ -31,8 +31,9 @@ const JumuiyaDetail: React.FC = () => {
     const { user } = useAuth();
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [hasNewNotif, setHasNewNotif] = useState(true); // Initial state for demo
-    const isAdmin = user?.role === 'admin';
-    const isJumuiyaOfficial = isMemberOfThisJumuiya && ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(user?.role || '');
+    const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
+    const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+    const isJumuiyaOfficial = isMemberOfThisJumuiya && userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(r));
     const canManageActivities = isAdmin || isJumuiyaOfficial;
 
     const jumuiyaId = id ? id.toLowerCase().replace(/[^a-z0-9]/g, '-') : '';

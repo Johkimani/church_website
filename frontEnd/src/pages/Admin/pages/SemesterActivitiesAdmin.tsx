@@ -86,7 +86,8 @@ const GLOBAL_ROLES = ['csa_chair', 'jumuiya_coordinator', 'admin'];
 
 export default function SemesterActivitiesAdmin() {
   const { user } = useAuth();
-  const isScoped = user?.jumuiya_id && !GLOBAL_ROLES.includes(user?.role || '');
+  const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+  const isScoped = !!user?.jumuiya_id && !userRoles.some(r => GLOBAL_ROLES.includes(r));
   const jumuiyaId = user?.jumuiya_id || '';
 
   const [events, setEvents] = useState<Event[]>([]);
