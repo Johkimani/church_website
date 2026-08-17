@@ -111,6 +111,7 @@ const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
 const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
 const JumuiyaSelfRegister = lazy(() => import("./pages/Jumuiya/pages/JumuiyaSelfRegister"));
+const PublicJoin = lazy(() => import("./pages/PublicJoin"));
 
 // Sacramental / Community
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
@@ -191,6 +192,9 @@ const App: React.FC = () => {
         {/* Dynamic Jumuiya WhatsApp Self-Registration (Mobile-first, public) */}
         <Route path="/register/:jumuiya_slug" element={<JumuiyaSelfRegister />} />
         <Route path="/register" element={<JumuiyaSelfRegister />} />
+
+        {/* Public CSA Self-Registration via QR code (mobile-first, no auth) */}
+        <Route path="/join" element={<PublicJoin />} />
 
           {/* Public Routes with Page Layout */}
           <Route path="/" element={<Pageoulet />}>
