@@ -1,8 +1,12 @@
 import axios from "axios";
 import { SessionStorage } from "../utils";
 import type { fileUpload } from "../interface/api";
-import { normalizeFiles } from "../pages/Devotions/utitlty";
 import { BASE_URL } from "./config";
+
+const normalizeFiles = (files: File[] | File | null | undefined): File[] => {
+  if (!files) return [];
+  return Array.isArray(files) ? files : [files];
+};
 
 const API_BASE_URL = BASE_URL;
 
