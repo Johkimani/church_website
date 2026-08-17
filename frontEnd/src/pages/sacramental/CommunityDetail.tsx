@@ -27,7 +27,8 @@ import {
   Mail,
   Phone,
   CheckCircle,
-  X
+  X,
+  Tag
 } from 'lucide-react';
 
 interface MinistryMood {
@@ -1275,33 +1276,80 @@ const CommunityDetail: React.FC = () => {
             {/* Gallery Lightbox Modal */}
             {activePhoto && (
                 <div
-                    className="fixed inset-0 z-[9999] bg-stone-900/70 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in cursor-zoom-out"
+                    className="fixed inset-0 z-[9999] bg-stone-950/80 backdrop-blur-xl flex items-center justify-center p-4 md:p-8 animate-fade-in"
                     onClick={() => setActivePhoto(null)}
                 >
-                    {/* Close button */}
-                    <button
-                        onClick={() => setActivePhoto(null)}
-                        className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/80 hover:bg-white text-stone-800 flex items-center justify-center transition-all cursor-pointer hover:scale-110 shadow-lg"
-                    >
-                        <X size={24} />
-                    </button>
-
-                    {/* Polaroid frame */}
+                    {/* Container */}
                     <div
-                        className="relative bg-white p-3 pb-12 rounded-[2px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] max-w-3xl w-full cursor-default"
+                        className="relative bg-white rounded-2xl shadow-[0_40px_100px_-24px_rgba(0,0,0,0.5)] max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-scale-in"
                         onClick={e => e.stopPropagation()}
                     >
-                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-amber-200/50 border border-amber-200/30 -rotate-2 pointer-events-none" />
-                        <img
-                            src={activePhoto.url || activePhoto.imageUrl || activePhoto.image_url}
-                            alt={activePhoto.caption || activePhoto.eventName}
-                            className="w-full max-h-[68vh] object-contain rounded-[1px] bg-stone-100 animate-scale-in"
-                        />
-                        <div className="mt-3 text-center px-2">
-                            <h3 className="font-serif text-lg font-bold text-stone-800 tracking-tight">{activePhoto.caption || activePhoto.eventName}</h3>
-                            {activePhoto.description && (
-                                <p className="text-stone-500 text-sm mt-1 font-medium leading-relaxed">{activePhoto.description}</p>
-                            )}
+                        {/* Close button */}
+                        <button
+                            onClick={() => setActivePhoto(null)}
+                            className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-stone-900/60 hover:bg-stone-900/80 text-white flex items-center justify-center transition-all cursor-pointer hover:scale-110 backdrop-blur-sm"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        {/* Image section */}
+                        <div className="bg-stone-950 flex-shrink-0 flex items-center justify-center">
+                            <img
+                                src={activePhoto.url || activePhoto.imageUrl || activePhoto.image_url}
+                                alt={activePhoto.caption || activePhoto.eventName}
+                                className="w-full max-h-[60vh] object-contain"
+                            />
+                        </div>
+
+                        {/* Info panel — dedicated section below image */}
+                        <div className="bg-stone-50 border-t border-stone-200 p-6 md:p-8 flex-shrink-0">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
+                                {/* Left — caption, ID, tags, description */}
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="font-serif text-xl md:text-2xl font-bold text-stone-900 tracking-tight leading-snug">
+                                        {activePhoto.caption || activePhoto.eventName || 'Untitled'}
+                                    </h3>
+
+                                    <div className="flex flex-wrap items-center gap-2.5 mt-3">
+                                        {activePhoto.public_id && (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-200/70 text-stone-600 rounded-lg text-[11px] font-bold uppercase tracking-wider">
+                                                <span className="text-stone-400 text-[9px]">#</span>
+                                                {activePhoto.public_id}
+                                            </span>
+                                        )}
+                                        {activePhoto.category && activePhoto.category !== 'general' && (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200/60 rounded-lg text-[11px] font-bold uppercase tracking-wider">
+                                                <Tag size={10} className="opacity-70" />
+                                                {activePhoto.category}
+                                            </span>
+                                        )}
+                                        {activePhoto.event_date && (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[11px] font-bold tracking-wider">
+                                                <Calendar size={10} className="opacity-70" />
+                                                {new Date(activePhoto.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {activePhoto.description && (
+                                        <p className="text-stone-600 text-sm mt-4 leading-relaxed">
+                                            {activePhoto.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Right — Acknowledge button */}
+                                <button
+                                    onClick={() => {
+                                        toast.success('Photo acknowledged');
+                                        setActivePhoto(null);
+                                    }}
+                                    className="inline-flex items-center gap-2 px-5 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-[1.02] shadow-md shrink-0 cursor-pointer"
+                                >
+                                    <CheckCircle size={15} />
+                                    Acknowledge
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
