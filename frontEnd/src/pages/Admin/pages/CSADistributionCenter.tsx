@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import {
   Upload, Plus, Trash2, FileSpreadsheet, CheckCircle,
-  AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Edit2, Save,
+  AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Edit2, Save, QrCode,
 } from "lucide-react";
+import QRCode from "qrcode";
 import * as XLSX from "xlsx";
 
 const JUMUIYAS = [
@@ -332,6 +333,23 @@ export default function CSADistributionCenter() {
     }
   };
 
+  const handleDownloadQR = async () => {
+    const joinUrl = `${window.location.origin}/join`;
+    try {
+      const dataUrl = await QRCode.toDataURL(joinUrl, {
+        width: 400,
+        margin: 2,
+        color: { dark: "#0f172a", light: "#ffffff" },
+      });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "csa-join-qr-code.png";
+      link.click();
+    } catch {
+      setError("Failed to generate QR code");
+    }
+  };
+
   const handleFilterChange = (year: string, gender: string) => {
     setFilterYear(year);
     setFilterGender(gender);
@@ -613,6 +631,10 @@ export default function CSADistributionCenter() {
           <button onClick={handleImport} disabled={importing || Object.keys(memberErrors).length > 0 || !validated}
             className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded-lg transition-colors">
             {importing ? "Importing..." : "Import to CSA"}
+          </button>
+          <button onClick={handleDownloadQR}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">
+            <QrCode size={14} /> Download QR
           </button>
         </div>
 
