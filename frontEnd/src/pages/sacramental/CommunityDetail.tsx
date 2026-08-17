@@ -393,7 +393,6 @@ const CommunityDetail: React.FC = () => {
         ...(moduleData?.musicClasses?.length ? [{ id: 'classes' as TabType, label: 'Classes', icon: 'fas fa-graduation-cap' }] : []),
         ...(moduleData?.practiceSchedules?.length ? [{ id: 'schedules' as TabType, label: moduleData.scheduleLabel || 'Schedule', icon: 'fas fa-clock' }] : []),
         { id: 'officials', label: 'Leadership', icon: 'fas fa-users' },
-        ...(enrollmentsData?.length && !isStFrancis && !isCharismatic && !isDancers && !isYouth ? [{ id: 'members' as TabType, label: 'Members', icon: 'fas fa-user-group' }] : []),
         { id: 'activities', label: 'Activities', icon: 'fas fa-calendar-alt' },
         { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' }
     ];
@@ -1017,40 +1016,34 @@ const CommunityDetail: React.FC = () => {
                                     )}
                                 </div>
 
-                                {/* Scrollable scrapbook gallery */}
-                                <div
-                                    className="pr-3 gallery-scrollbar"
-                                    style={{ height: '650px', maxHeight: '75vh', overflowY: 'scroll' }}
-                                >
+                                {/* Gallery grid */}
+                                <div className="community-gallery-container pr-3 gallery-scrollbar">
                                     {moduleData.gallery && moduleData.gallery.length > 0 ? (
-                                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 pb-4">
-                                            {moduleData.gallery.map((img: any, i: number) => {
-                                                const rotation = [-2, 1.5, -1, 2, -1.5, 1.8][i % 6];
-                                                return (
-                                                    <div
-                                                        key={img.id}
-                                                        onClick={() => setActivePhoto(img)}
-                                                        className="group relative cursor-zoom-in select-none"
-                                                        style={{ transform: `rotate(${rotation}deg)` }}
-                                                    >
-                                                        {/* tape */}
-                                                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 bg-amber-200/50 border border-amber-200/30 rotate-1 z-10 pointer-events-none" />
-                                                        <div className="bg-white rounded-[2px] shadow-[0_8px_30px_-10px_rgba(60,40,20,0.25)] overflow-hidden" style={{ padding: '6px', paddingBottom: '34px' }}>
-                                                            <div className="relative overflow-hidden rounded-[1px] aspect-[4/3] bg-stone-100">
-                                                                <img
-                                                                    src={img.url || img.imageUrl || img.image_url}
-                                                                    alt={img.caption || img.eventName}
-                                                                    loading="lazy"
-                                                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
-                                                                />
-                                                            </div>
-                                                            <div className="mt-1.5 px-1 truncate text-[10px] font-bold text-stone-600 leading-tight">
-                                                                {img.caption || img.eventName}
-                                                            </div>
-                                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-4">
+                                            {moduleData.gallery.map((img: any) => (
+                                                <button
+                                                    key={img.id}
+                                                    onClick={() => setActivePhoto(img)}
+                                                    className="group relative text-left bg-white rounded-xl border border-stone-200 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-zoom-in"
+                                                >
+                                                    <div className="relative aspect-[4/3] bg-stone-100 overflow-hidden">
+                                                        <img
+                                                            src={img.url || img.imageUrl || img.image_url}
+                                                            alt={img.caption || img.eventName}
+                                                            loading="lazy"
+                                                            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                                     </div>
-                                                );
-                                            })}
+                                                    {(img.caption || img.eventName) && (
+                                                        <div className="px-3.5 py-3 border-t border-stone-100">
+                                                            <p className="text-xs font-bold text-stone-700 leading-snug truncate">
+                                                                {img.caption || img.eventName}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center h-full text-center text-stone-400">
