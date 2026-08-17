@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Upload, Plus, Trash2, FileSpreadsheet, CheckCircle, AlertTriangle } from "lucide-react";
+import CopyWhatsAppButton from "../components/CopyWhatsAppButton";
 import * as XLSX from "xlsx";
 
 
@@ -228,6 +229,7 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
             Adding members to <span className="font-semibold text-indigo-600">{jumuiyaName}</span>
           </p>
         </div>
+        <CopyWhatsAppButton jumuiyaSlug={jumuiyaId} jumuiyaName={jumuiyaName} variant="compact" />
       </div>
 
       {error && (
