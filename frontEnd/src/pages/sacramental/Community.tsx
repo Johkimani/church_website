@@ -58,7 +58,7 @@ const Community: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#faf8f5]">
         <div className="w-12 h-12 border-[3px] border-stone-200 border-t-amber-700 rounded-full animate-spin mb-5" />
-        <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-stone-400">
+        <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">
           Gathering the family…
         </p>
       </div>
@@ -158,7 +158,7 @@ const Community: React.FC = () => {
           <h2 className="mt-4 font-serif text-2xl md:text-3xl font-bold text-stone-900">
             Choose your community
           </h2>
-          <p className="mt-2 max-w-xl text-sm text-stone-500 leading-relaxed">
+          <p className="mt-2 max-w-xl text-sm text-slate-600 leading-relaxed">
             Every ministry is open to all — no experience required. Tap a card to
             learn more and get involved.
           </p>
@@ -184,7 +184,7 @@ const Community: React.FC = () => {
                 className="group relative flex flex-col bg-white rounded-[1.75rem] border border-stone-100 shadow-[0_1px_3px_rgba(28,25,23,0.06)] hover:shadow-[0_28px_50px_-28px_rgba(28,25,23,0.45)] transition-all duration-300 ease-out overflow-hidden cursor-pointer hover:-translate-y-1.5"
               >
                 {/* Media / fallback */}
-                <div className="h-40 relative overflow-hidden shrink-0">
+                <div className="aspect-video relative overflow-hidden bg-stone-100 shrink-0">
                   {image ? (
                     <>
                       <img
@@ -193,7 +193,7 @@ const Community: React.FC = () => {
                         loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/5 to-transparent" />
                     </>
                   ) : (
                     <div className="absolute inset-0" style={{ backgroundColor: accent }}>
@@ -204,14 +204,14 @@ const Community: React.FC = () => {
                   )}
 
                   {/* Accent signature strip */}
-                  <div className="absolute top-0 inset-x-0 h-1.5" style={{ backgroundColor: accent }} />
+                  <div className="absolute top-0 inset-x-0 h-1.5 z-10" style={{ backgroundColor: accent }} />
                 </div>
 
                 {/* Body */}
                 <div className="p-6 pt-4 flex flex-col flex-grow">
                   {/* Overlapping icon tile */}
                   <div
-                    className="-mt-10 mb-4 w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg ring-4 ring-white"
+                    className="-mt-10 mb-4 w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg ring-4 ring-white relative z-10 shrink-0"
                     style={{ backgroundColor: accent }}
                   >
                     <Icon className="w-6 h-6" />
@@ -228,18 +228,18 @@ const Community: React.FC = () => {
                     {mod.title}
                   </h3>
 
-                  <p className="mt-2.5 text-sm leading-relaxed text-stone-500 line-clamp-3 flex-grow">
+                  <p className="mt-2.5 text-sm leading-relaxed text-slate-600 line-clamp-3 flex-grow">
                     {mod.description}
                   </p>
 
                   {mod.meetingSchedule && (
-                    <p className="mt-4 flex items-center gap-2 text-xs font-semibold text-stone-400">
+                    <p className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
                       <Clock size={13} className="shrink-0" style={{ color: accent }} />
                       <span className="truncate">{mod.meetingSchedule}</span>
                     </p>
                   )}
 
-                  <div className="mt-5 flex items-center justify-between pt-4 border-t border-stone-100">
+                  <div className="mt-auto pt-5 flex items-center justify-between border-t border-stone-100">
                     <span className="text-sm font-bold text-stone-800">Explore ministry</span>
                     <span
                       className="w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 group-hover:translate-x-1 group-hover:bg-stone-900"
@@ -256,11 +256,11 @@ const Community: React.FC = () => {
 
         {activeModules.length === 0 && (
           <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-dashed border-stone-300">
-            <div className="w-12 h-12 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-4">
+            <div className="w-12 h-12 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-slate-500 mb-4">
               <Users className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-stone-500 mb-2">No ministries found</h3>
-            <p className="text-stone-400">
+            <h3 className="text-xl font-bold text-slate-600 mb-2">No ministries found</h3>
+            <p className="text-slate-500">
               We couldn't find any active ministry modules at the moment.
             </p>
           </div>
@@ -274,10 +274,10 @@ const Community: React.FC = () => {
           <Sparkles size={12} className="text-amber-500" />
           <span className="h-px w-10 bg-stone-300" />
         </div>
-        <p className="text-stone-400 font-serif italic text-lg leading-relaxed">
-          “For where two or three gather in my name, there am I with them.”
+        <p className="text-slate-500 font-serif italic text-lg leading-relaxed">
+          "For where two or three gather in my name, there am I with them."
         </p>
-        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.25em] text-stone-400">
+        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
           Matthew 18:20
         </p>
       </div>
