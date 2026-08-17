@@ -281,5 +281,9 @@ export const memberService = {
 
   getPublicJumuiyaInfo: (slug: string) =>
     apiClient.get(`/jumuiya/info/${slug}`).then(r => r.data),
+
+  // ── Pending Self-Registrations (for Manual Admission) ──
+  getPendingSelfRegistrations: (jumuiyaId: string) =>
+    apiClient.get(`/jumuiya-members/${jumuiyaId}/pending-self-registrations`).then(r => r.data),
 };
 

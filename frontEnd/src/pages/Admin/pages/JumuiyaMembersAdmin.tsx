@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Users, ArrowLeft, Church, RefreshCw, UserPlus, Upload, Search, ClipboardList, ThumbsDown, Edit2, Save, Trash2, GraduationCap, UserCheck, PieChart } from "lucide-react";
+import { Users, ArrowLeft, Church, RefreshCw, UserPlus, Upload, Search, ThumbsDown, Edit2, Save, Trash2, GraduationCap, UserCheck, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { useAuth } from "../../../context/AuthContext";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
 import MemberReview from "../../Jumuiya/admin/MemberReview";
-import ValidationReview from "../../Jumuiya/admin/ValidationReview";
 import MembersList from "../../Jumuiya/admin/MembersList";
 import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
@@ -37,11 +36,10 @@ const JUMUIYAS = [
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";
 
-type SubTab = "dashboard" | "staging" | "review" | "results" | "allocations" | "import";
+type SubTab = "dashboard" | "review" | "results" | "allocations" | "import";
 
 const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; description: string }> = {
   dashboard: { label: "Dashboard", icon: <PieChart size={16} />, description: "Overview and registration statistics" },
-  staging: { label: "Pending Queue", icon: <ClipboardList size={16} />, description: "Review and approve WhatsApp self-registrations & imports" },
   review: { label: "Active Review", icon: <UserCheck size={16} />, description: "Review and edit active registered members" },
   results: { label: "All Members", icon: <Users size={16} />, description: "View and manage all registered members" },
   allocations: { label: "Allocations", icon: <UserCheck size={16} />, description: "Approve CSA member allocations" },
@@ -92,15 +90,13 @@ const SummaryBarMemo = memo(SummaryBar);
 const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string; isJumuiyaOfficial?: boolean }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, isJumuiyaOfficial }) => {
   const [activeTab, setActiveTab] = useState<SubTab>("dashboard");
 
-  const visibleTabs = (Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]).filter(
-    ([id]) => !(isJumuiyaOfficial && id === "import")
-  );
+  const visibleTabs = (Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]);
 
   return (
     <div>
       {/* Main Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200 p-2 mb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
           {visibleTabs.map(([id, meta]) => {
             const isActive = activeTab === id;
             return (
@@ -126,11 +122,10 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
       </div>
 
       {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-      {activeTab === "staging" && <ValidationReview jumuiyaId={jumuiyaId} />}
       {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-      {activeTab === "import" && !isJumuiyaOfficial && <MemberImportForm jumuiyaId={jumuiyaId} />}
+      {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
     </div>
   );
 };

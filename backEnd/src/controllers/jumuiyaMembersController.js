@@ -1980,3 +1980,32 @@ export const getYearlyContribution = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to fetch yearly contribution" });
   }
 };
+
+/**
+ * GET /jumuiya-members/:jumuiyaId/pending-self-registrations
+ * Returns pending import_records for a jumuiya (WhatsApp self-registrations
+ * under that jumuiya's batches) so the coordinator can review them in Manual Admission.
+ */
+export const getPendingSelfRegistrations = async (req, res) => {
+  try {
+    const { jumuiyaId } = req.params;
+    const result = await pool.query(
+      `SELECT ir.id, ir.raw_name, ir.raw_reg_number, ir.raw_gender, ir.raw_course,
+              ir.raw_jumuiya, ir.raw_phone, ir.raw_email,
+              ir.cleaned_name, ir.cleaned_reg_number, ir.cleaned_gender, ir.cleaned_course,
+              ir.cleaned_jumuiya, ir.cleaned_phone, ir.cleaned_email,
+              ir.status, ir.validation_errors, ir.validation_warnings,
+              ir.created_at, mi.id as import_id, mi.file_name, mi.academic_year
+       FROM import_records ir
+       JOIN member_imports mi ON mi.id = ir.import_id
+       WHERE ir.status = 'pending'
+         AND mi.jumuiya_id = $1
+       ORDER BY ir.created_at ASC`,
+      [jumuiyaId]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    logger.error("getPendingSelfRegistrations error: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch pending self-registrations" });
+  }
+};

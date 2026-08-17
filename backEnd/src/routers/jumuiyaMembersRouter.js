@@ -29,6 +29,7 @@ import {
   getCohortAnalytics,
   getJumuiyaProgression,
   getYearlyContribution,
+  getPendingSelfRegistrations,
 } from '../controllers/jumuiyaMembersController.js';
 import {
   getPendingMigrationMembers,
@@ -51,6 +52,7 @@ router.get('/', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id)
 router.get('/registered', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id), getRegisteredJumuiyaMembers);
 router.get('/unregistered', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id), getUnregisteredMembers);
 router.get('/lookup', verifyToken, getJumuiyaLookup);
+router.get('/:jumuiyaId/pending-self-registrations', verifyToken, requireRole(...CSA_ROLES), getPendingSelfRegistrations);
 
 // CSA-wide member PII (CSA executives only)
 router.get('/all', verifyToken, requireRole(...CSA_ROLES), getAllMembersAcrossJumuiyas);

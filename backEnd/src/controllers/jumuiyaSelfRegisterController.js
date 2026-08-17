@@ -444,8 +444,8 @@ export const selfRegisterMember = async (req, res) => {
       importBatchId = newBatchRes.rows[0].id;
     }
 
-    // 6. Insert into import_records
-    const recordStatus = validated.status === "error" ? "error" : "valid";
+    // 6. Insert into import_records (pending — coordinator validates via Manual Admission)
+    const recordStatus = validated.status === "error" ? "error" : "pending";
     const insertRecRes = await pool.query(
       `INSERT INTO import_records
          (import_id, raw_name, raw_reg_number, raw_gender, raw_course, raw_jumuiya, raw_phone, raw_email,
@@ -479,7 +479,7 @@ export const selfRegisterMember = async (req, res) => {
     await pool.query(
       `UPDATE member_imports SET
          total_records = (SELECT COUNT(*) FROM import_records WHERE import_id = $1),
-         valid_records = (SELECT COUNT(*) FROM import_records WHERE import_id = $1 AND status IN ('valid', 'warning')),
+         valid_records = (SELECT COUNT(*) FROM import_records WHERE import_id = $1 AND status IN ('valid', 'warning', 'pending')),
          error_records = (SELECT COUNT(*) FROM import_records WHERE import_id = $1 AND status = 'error')
        WHERE id = $1`,
       [importBatchId]

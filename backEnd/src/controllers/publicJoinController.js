@@ -265,7 +265,7 @@ export const publicJoinSubmit = async (req, res) => {
     }
 
     // 5. Insert into import_records (cleaned_jumuiya intentionally NULL — coordinator assigns)
-    const recordStatus = validated.status === "error" ? "error" : "valid";
+    const recordStatus = validated.status === "error" ? "error" : "pending";
     const insertRes = await pool.query(
       `INSERT INTO import_records
          (import_id, raw_name, raw_reg_number, raw_gender, raw_course, raw_jumuiya, raw_phone, raw_email,

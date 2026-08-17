@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Upload, Plus, Trash2, FileSpreadsheet, CheckCircle, AlertTriangle } from "lucide-react";
+import { Upload, Plus, Trash2, FileSpreadsheet, CheckCircle, AlertTriangle, ClipboardList } from "lucide-react";
 import CopyWhatsAppButton from "../components/CopyWhatsAppButton";
 import * as XLSX from "xlsx";
 
@@ -88,7 +88,29 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
   const [importResult, setImportResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [importYear, setImportYear] = useState(ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1] || "");
+  const [pendingCount, setPendingCount] = useState(0);
   const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    memberService.getPendingSelfRegistrations(jumuiyaId).then((res: any) => {
+      if (cancelled) return;
+      const rows = res?.data || [];
+      if (rows.length > 0) {
+        const mapped = rows.map((r: any) => ({
+          name: r.cleaned_name || r.raw_name || "",
+          regNumber: r.cleaned_reg_number || r.raw_reg_number || "",
+          gender: r.cleaned_gender || r.raw_gender || "",
+          phone: r.cleaned_phone || r.raw_phone || "",
+          email: r.cleaned_email || r.raw_email || "",
+          jumuiya: jumuiyaName,
+        }));
+        setMembers([...mapped, { ...emptyRow, jumuiya: jumuiyaName }]);
+        setPendingCount(mapped.length);
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [jumuiyaId, jumuiyaName]);
 
   const fillJumuiya = (data: any[]) => data.map((m) => ({ ...m, jumuiya: m.jumuiya || jumuiyaName }));
 
@@ -218,6 +240,7 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
     setValidationResults(null);
     setImportResult(null);
     setError(null);
+    setPendingCount(0);
   };
 
   return (
@@ -236,6 +259,16 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-start gap-2">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {pendingCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-lg px-4 py-3 flex items-start gap-2">
+          <ClipboardList size={16} className="shrink-0 mt-0.5" />
+          <span>
+            <strong>{pendingCount}</strong> pending self-registration{pendingCount !== 1 ? "s" : ""} loaded below.
+            Review, edit, then validate and import.
+          </span>
         </div>
       )}
 
