@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import PageLoader from "./assets/Layouts/PageLoader";
 
@@ -124,10 +124,13 @@ const FallBack: React.FC = () => <PageLoader message="Loading..." fullScreen />;
 
 
 const App: React.FC = () => {
+  const { pathname } = useLocation();
+  const hideRafiki = pathname.startsWith("/join") || pathname.startsWith("/register");
+
   return (
     <Suspense fallback={<FallBack />}>
       <Toaster position="top-right" reverseOrder={false} />
-      <RafikiWidget />
+      {!hideRafiki && <RafikiWidget />}
       <Routes>
         {/* Authentication Routes */}
         <Route

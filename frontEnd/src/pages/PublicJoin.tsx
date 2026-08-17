@@ -198,7 +198,7 @@ export default function PublicJoin() {
               Thank you, {submitted.name}!
             </h2>
             <p className="text-sm text-slate-600 mt-3 max-w-sm mx-auto leading-relaxed">
-              Your details have been submitted successfully. Your Jumuiya coordinator
+              Your details have been submitted successfully. The Jumuiya coordinator
               will review your registration and assign you to a community shortly.
             </p>
 
@@ -216,8 +216,9 @@ export default function PublicJoin() {
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 leading-relaxed">
               <p className="font-bold mb-1">What happens next?</p>
               <p>
-                Your coordinator will review your details and assign you to a Jumuiya.
+                The Jumuiya coordinator will review your details and assign you to a Jumuiya.
                 You will be able to log in using your Registration Number as your initial password.
+                Visit <span className="font-bold">csakyu.com</span> to learn more about CSA Kirinyaga.
               </p>
             </div>
           </div>
@@ -247,10 +248,10 @@ export default function PublicJoin() {
                   New Member Registration
                 </h1>
               </div>
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md p-1 border-2 border-white/40 shadow-lg shrink-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md p-1 border-2 border-white/40 shadow-lg shrink-0 overflow-hidden">
                 <img
-                  src="/icons/app-icon-512.png"
-                  alt="CSA"
+                  src="/images/csa-logo.jpg"
+                  alt="CSA Kirinyaga"
                   className="w-full h-full object-cover rounded-xl"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
@@ -281,7 +282,7 @@ export default function PublicJoin() {
           <div>
             <h2 className="text-lg font-bold text-slate-800">Student Information</h2>
             <p className="text-xs text-slate-500">
-              Provide your accurate details so your coordinator can add you to the system.
+              Provide your accurate details so the Jumuiya coordinator can add you to the system.
             </p>
           </div>
 
