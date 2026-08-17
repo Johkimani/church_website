@@ -23,6 +23,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: string;
     color: string;
     saintImage: string;
+    greeting: string;
     quote: string;
     venue: string;
     time: string;
@@ -33,6 +34,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: "St. Anthony of Padua",
     color: "#8b5cf6",
     saintImage: "/images/Anthony.png",
+    greeting: "Empowered By Grace",
     quote: "The breath of Charity widens the narrow heart of sinners.",
     venue: "LH 24",
     time: "Sunday 2:00 PM - 4:00 PM",
@@ -42,6 +44,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: "St. Augustine of Hippo",
     color: "#3b82f6",
     saintImage: "/images/Augustine.png",
+    greeting: "Our Hearts Are Restless",
     quote: "Our hearts are restless until they rest in Thee.",
     venue: "LH 21",
     time: "Sunday 2:00 PM - 4:00 PM",
@@ -51,6 +54,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: "St. Catherine of Alexandria",
     color: "#800000",
     saintImage: "/images/Catherine.png",
+    greeting: "St. Catherine The Great Family",
     quote: "Be who God meant you to be and you will set the world on fire.",
     venue: "LH 18",
     time: "Sunday 2:00 PM - 4:00 PM",
@@ -60,6 +64,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: "St. Dominic Guzman",
     color: "#475569",
     saintImage: "/images/Dominic.png",
+    greeting: "God Is Good, I'm A Witness",
     quote: "A man who governs his passions is master of the world.",
     venue: "LH 15",
     time: "Sunday 2:00 PM - 4:00 PM",
@@ -69,6 +74,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: "St. Elizabeth of Hungary",
     color: "#059669",
     saintImage: "/images/Elizabeth.png",
+    greeting: "Brothers and Sisters",
     quote: "We must give whatever we have gladly and with a cheerful heart.",
     venue: "LH 12",
     time: "Sunday 2:00 PM - 4:00 PM",
@@ -78,6 +84,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: "St. Maria Goretti",
     color: "#0284c7",
     saintImage: "/images/Goretti.png",
+    greeting: "With God's Grace",
     quote: "Forgive, and you will be forgiven.",
     venue: "LH 09",
     time: "Sunday 2:00 PM - 4:00 PM",
@@ -87,6 +94,7 @@ const JUMUIYA_FALLBACKS: Record<
     fullName: "St. Monica of Hippo",
     color: "#dc2626",
     saintImage: "/images/Monica.png",
+    greeting: "Tusimame Imara",
     quote: "Nothing is far from God.",
     venue: "LH 06",
     time: "Sunday 2:00 PM - 4:00 PM",
@@ -107,6 +115,7 @@ export default function JumuiyaSelfRegister() {
         fullName: fromList.fullName || fromList.name,
         color: fromList.color || fromFallback?.color || "#6366f1",
         saintImage: fromList.saintImage || fromFallback?.saintImage || "/images/cross.png",
+        greeting: fromFallback?.greeting || "",
         quote: fromList.description || fromFallback?.quote || "",
         venue: fromList.meetingSchedule?.venue || fromFallback?.venue || "Main Hall",
         time: fromList.meetingSchedule?.time || fromFallback?.time || "Sunday 2:00 PM",
@@ -395,7 +404,7 @@ export default function JumuiyaSelfRegister() {
             <div className="relative z-10 w-full flex items-center justify-between">
               <div>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-black/20 backdrop-blur-md text-white border border-white/30">
-                  <Sparkles size={12} /> Self-Registration
+                  {localJumuiya.greeting}
                 </span>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.4)" }}>
                   {localJumuiya.name} Jumuiya
