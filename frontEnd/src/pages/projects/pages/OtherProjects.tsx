@@ -22,7 +22,6 @@ export const OtherProjects = () => {
     return (
         <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
-            {/* ══════════ HERO ══════════ */}
             <ProjectHero>
                 <ProjectPageHeader
                     badge="Expansion & Community"
@@ -31,7 +30,6 @@ export const OtherProjects = () => {
                 />
             </ProjectHero>
 
-            {/* ══════════ SEARCH ══════════ */}
             <div className="max-w-2xl mx-auto px-3 sm:px-6 -mt-6 relative z-20">
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -45,7 +43,6 @@ export const OtherProjects = () => {
                 </div>
             </div>
 
-            {/* ══════════ PRODUCT SECTION ══════════ */}
             <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-6">
                 {/* Results bar */}
                 <div className="flex items-center justify-between mb-4 px-1">

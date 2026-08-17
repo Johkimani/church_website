@@ -22,12 +22,8 @@ import React, {
 import { useAuth } from "./AuthContext";
 import { UPLOAD_BASE } from "../api/config";
 
-// ── Derive server root from existing UPLOAD_BASE constant ───────────────────
-// UPLOAD_BASE = "http://localhost:3001"  (strips the /api suffix)
 const SERVER_ROOT =
   UPLOAD_BASE || (import.meta.env.DEV ? "http://localhost:3001" : "");
-
-// ── Types ────────────────────────────────────────────────────────────────────
 
 export type SSEEventName =
   | "connected"
@@ -48,14 +44,10 @@ interface SSEContextType {
   subscribe: <T = any>(event: SSEEventName, handler: SSEListener<T>) => () => void;
 }
 
-// ── Context ──────────────────────────────────────────────────────────────────
-
 const SSEContext = createContext<SSEContextType>({
   isConnected: false,
   subscribe: () => () => {},
 });
-
-// ── Provider ─────────────────────────────────────────────────────────────────
 
 export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -69,7 +61,6 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
 
-  // ── Internal dispatcher ────────────────────────────────────────────────────
   const dispatch = useCallback((eventName: SSEEventName, data: any) => {
     listenersRef.current.get(eventName)?.forEach((handler) => {
       try {
@@ -80,7 +71,6 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
-  // ── Connection management ──────────────────────────────────────────────────
   useEffect(() => {
     mountedRef.current = true;
 
@@ -100,7 +90,6 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
       const es = new EventSource(sseUrl);
       esRef.current = es;
 
-      // ── Named event listeners ──────────────────────────────────────────────
       es.addEventListener("connected", () => {
         if (mountedRef.current) setIsConnected(true);
       });
@@ -122,7 +111,6 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       });
 
-      // ── Error / reconnect ──────────────────────────────────────────────────
       es.onerror = () => {
         if (!mountedRef.current) return;
         setIsConnected(false);
@@ -154,7 +142,6 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
     // Re-connect when the access token changes (login / logout / refresh).
   }, [user?.accessToken, refreshSession]);
 
-  // ── Public subscribe API ───────────────────────────────────────────────────
   const subscribe = useCallback(
     <T = any>(event: SSEEventName, handler: SSEListener<T>) => {
       if (!listenersRef.current.has(event)) {
@@ -176,7 +163,5 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
     </SSEContext.Provider>
   );
 };
-
-// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export const useSSE = () => useContext(SSEContext);

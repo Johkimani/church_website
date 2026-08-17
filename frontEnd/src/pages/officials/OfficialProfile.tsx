@@ -158,7 +158,7 @@ const OfficialProfile: React.FC = () => {
 
     if (error || !official) return (
         <div className="h-full flex flex-col items-center justify-center bg-gray-50 p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{error || 'Something went wrong'}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">{error || 'Official profile could not be loaded'}</h2>
             <button onClick={() => navigate(-1)} className="px-6 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition-colors">Go Back</button>
         </div>
     );

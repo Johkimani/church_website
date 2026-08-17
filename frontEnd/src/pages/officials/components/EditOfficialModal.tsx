@@ -172,19 +172,19 @@ export function EditOfficialModal({
   {mode === 'csa' 
   ? Object.keys(POSITION_BY_CATEGORY).map(k => {
       const stats = categoryStats[k];
-      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
+      const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
       return <option key={k} value={k}>{label}</option>;
     })
   : mode === 'groups'
     ? GROUP_OPTIONS.map(k => {
         const stats = categoryStats[k];
         const limit = POSITIONS_BY_GROUP[k]?.length || 0;
-        const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${limit})`;
+        const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/${limit})`;
         return <option key={k} value={k}>{label}</option>;
       })
     : JUMUIYA_OPTIONS.map(k => {
       const stats = categoryStats[k];
-      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/8)`;
+      const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/8)`;
       return <option key={k} value={k}>{label}</option>;
     })
   }
@@ -195,7 +195,7 @@ export function EditOfficialModal({
       <span className={`text-[10px] font-bold flex items-center gap-1 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
         {categoryStats[category].isFull ? (
           <>
-            <span>✔</span> Fully Filled ({categoryStats[category].count}/{categoryStats[category].limit})
+            <span> Fully Filled ({categoryStats[category].count}/{categoryStats[category].limit})
           </>
         ) : (
           `Available (${categoryStats[category].count}/${categoryStats[category].limit})`

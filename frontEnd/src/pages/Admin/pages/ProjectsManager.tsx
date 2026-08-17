@@ -202,7 +202,7 @@ export default function ProjectsManager() {
       { label: 'Pending', value: pendingCount, icon: Clock, color: 'bg-amber-500' },
       { label: 'Customers', value: stats.customers, icon: UserCircle, color: 'bg-purple-500' },
       { label: 'Categories', value: stats.categories, icon: Tag, color: 'bg-sky-500' },
-      { label: 'Avg Rating', value: testimonialStats.avgRating > 0 ? `${testimonialStats.avgRating}★` : '—', icon: MessageCircle, color: 'bg-rose-500' },
+      { label: 'Avg Rating', value: testimonialStats.avgRating > 0 ? `${testimonialStats.avgRating}` : '—', icon: MessageCircle, color: 'bg-rose-500' },
     ];
 
     return (

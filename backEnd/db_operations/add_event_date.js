@@ -17,10 +17,10 @@ const pool = new Pool({
 async function migrate() {
   try {
     await pool.query("ALTER TABLE hub_gallery ADD COLUMN IF NOT EXISTS event_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP");
-    console.log("✅ Column event_date added successfully");
+    console.log("Column event_date added successfully");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Migration failed:", err);
+    console.error("Migration failed:", err);
     process.exit(1);
   }
 }

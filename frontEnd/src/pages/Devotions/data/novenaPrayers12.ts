@@ -1,10 +1,8 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_12: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT BENEDICT
   // novenaId: "novenas-saint-benedict"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sba-np-1",
@@ -88,10 +86,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Saint Benedict, your whole life was animated by one supreme desire: to seek God. You left the corruption of Rome, you withdrew to the desert of Subiaco, you climbed the heights of Monte Cassino — always driven by the same restless longing for the face of God. On this final day of my novena, I renew my commitment to seek God above all things. I desire to know Him more deeply through prayer and the sacraments, to love Him more ardently in my daily life, and to serve Him more faithfully in my neighbor. May every moment of my existence — its joys and sorrows, its work and rest, its successes and failures — be directed toward this one great goal: the vision of God face to face in eternal glory. O Holy Father Benedict, who sought God in all things and found Him, pray for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT HILDEGARD OF BINGEN
   // novenaId: "novenas-saint-hildegard"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "shb-np-1",
@@ -175,10 +171,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Saint Hildegard, on this final day of the novena, I contemplate with you the grand vision of all things united in Christ — the Alpha and Omega, the beginning and the end, in whom all creation holds together. You saw in your visions the cosmic scope of Christ's redemption, how the Cross of Jesus reaches to the farthest corners of the universe, restoring all things in heaven and on earth. Help me to live in this vision, to see beyond the fragmentation and division of our broken world to the unity that God is preparing for those who love Him. May my life contribute to this great work of reconciliation — between God and humanity, between human beings and creation, between races and nations, between body and soul. O Hildegard, who beheld the unity of all things in Christ, bring me to that day when all creation will sing in harmony the praises of God. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO ALL HOLY ANGELS
   // novenaId: "novenas-all-angels"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "aha-np-1",
@@ -262,10 +256,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Holy Angels, on this final day of my novena, I contemplate with longing the glory you enjoy in heaven — the unceasing worship, the perfect love, the unending joy of beholding the face of God. You who see Him as He is, who love Him with the fullness of your being, who serve Him with perfect fidelity, pray for me that I may one day join you in the eternal liturgy. Help me to live this day and every day with heaven as my goal, with God as my supreme desire, and with the hope that does not disappoint. May the thought of heaven sustain me in trials, the promise of heaven console me in sorrows, and the joy of heaven inspire me to holiness. O Holy Angels, who stand before the throne of God, lead me safely through this life to the life that knows no end. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MARY OF EGYPT
   // novenaId: "novenas-saint-mary-of-egypt"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sme-np-1",
@@ -349,10 +341,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Saint Mary of Egypt, on this final day of my novena, I contemplate with you the journey that lies before me — the journey from this life to the heavenly homeland. You completed your journey in triumph, passing from the desert to the embrace of Christ, received into the glory of heaven. I pray that I may follow your example of perseverance, courage, and love. Help me to keep my eyes fixed on heaven, to run with endurance the race that is set before me, and to finish the course with joy. When the road is steep, give me strength. When I am weary, renew my spirit. When I am tempted to turn back, remind me of the prize that awaits. O Holy Mary of Egypt, who passed from the desert of penance to the paradise of eternal joy, obtain for me the grace of final perseverance and lead me safely to the arms of God. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO JESUS CHRIST
   // novenaId: "novenas-jesus-christ"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "jcr-np-1",
@@ -436,10 +426,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Lord Jesus Christ, You ascended into heaven in glory and You will come again in glory to judge the living and the dead. I live in the hope of Your return, watching and praying, laboring and waiting, like the wise virgins who kept their lamps trimmed and burning. Help me to live this day and every day as if it were the day of Your coming. May I not be found sleeping in sin or caught off guard by Your arrival. I want to meet You with confidence, not with fear; with love, not with shame; with my lamp burning brightly with the oil of grace. I entrust to Your mercy all my deceased loved ones, all the faithful departed, and all souls in purgatory, that when You come in glory, they may be gathered into Your heavenly kingdom. O Jesus, come quickly, and let Your kingdom be established in every heart. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY ROSARY
   // novenaId: "novenas-holy-rosary"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "thr-np-1",
@@ -523,10 +511,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Blessed Virgin Mary, Queen of Heaven and Earth, as I meditate on your Coronation in heaven, I contemplate the glory that awaits those who remain faithful to God. You were crowned Queen of all creation, surrounded by angels and saints, exalted above all creatures. And yet you remain our Mother, our Advocate, our Guide. On this final day of the Rosary novena, I consecrate myself entirely to your Immaculate Heart. I give you my past, my present, and my future. I entrust to you my body, my soul, my family, my work, and all that I am and have. Take me under your mantle, lead me always to Jesus, and bring me safely to the heavenly homeland. O Mary, Queen of the Most Holy Rosary, pray for us sinners now and at the hour of our death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT RITA
   // novenaId: "novenas-saint-rita"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sr2-np-1",
@@ -610,10 +596,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Saint Rita of Cascia, on this final day of my novena, I come before you with a heart full of confidence in your powerful intercession. You are called the Saint of the Impossible, not because God performs tricks at your request, but because you teach us that nothing is impossible to God when we trust in Him with all our hearts. I present to you my most difficult intention — the one that weighs most heavily on my heart, the one that seems to have no solution. I ask you to present it before the throne of God and to obtain for me the grace I need. If it is God's will, may this intention be granted in His perfect time and manner. And if God has something better in store, may I have the wisdom and the humility to accept it. O Saint Rita, patron of impossible causes, pray for me now and always. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT CHARLES BORROMEO
   // novenaId: "novenas-saint-charles-borromeo"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "scb-np-1",
@@ -697,10 +681,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Saint Charles Borromeo, you were always mindful of the four last things — death, judgment, heaven, and hell. You lived each day with eternity in view, and you died as you had lived — in the peace of Christ, fortified by the sacraments, surrounded by your beloved faithful. On this final day of my novena, I contemplate my own death and judgment. Help me to live this day and every day with the awareness that I will one day stand before the judgment seat of God. May I not be found unprepared, but ready to give an account of my life. Help me to live in such a way that I need not fear death, but can meet it with the confidence of one who has tried to serve God faithfully. Obtain for me the grace of a holy death — with the sacraments of the Church, with the prayers of the faithful, and with the hope of eternal life. O Saint Charles, who died in the peace of Christ, pray for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT CYRIL OF ALEXANDRIA
   // novenaId: "novenas-saint-cyril-alexandria"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sca-np-1",
@@ -784,10 +766,8 @@ export const NOVENA_PRAYERS_12: Prayer[] = [
     text: `O Saint Cyril of Alexandria, on this final day of my novena, I contemplate with you the goal of the Christian life: eternal union with God in heaven. You taught that Christ came to restore to us the divine adoption that sin had destroyed, that through His Incarnation, Passion, Death, and Resurrection we have been made children of God and heirs of eternal life. I pray today that this hope may animate my entire existence. Help me to live each day in the light of eternity, to value the imperishable treasures of heaven above the passing goods of earth, and to prepare my soul for the day when I will see God face to face. I commend my soul to the mercy of God, to the intercession of the Blessed Virgin Mary, to the prayers of Saint Cyril, and to the guardian angel who has watched over me from the cradle. O Saint Cyril, champion of eternal truth, pray for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT BONAVENTURE
   // novenaId: "novenas-saint-bonaventure"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sbv-np-1",

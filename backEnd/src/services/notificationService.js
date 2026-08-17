@@ -2,7 +2,6 @@ import logger from "../logger/winston.js";
 import { sendSms } from "./smsService.js";
 import { sendMail } from "../Configs/emailConfig.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Payment confirmation notifications (SMS + email).
 //
 // Every function here is defensive by design:
@@ -10,7 +9,6 @@ import { sendMail } from "../Configs/emailConfig.js";
 //   • runs SMS and email in parallel (Promise.allSettled) so one slow/failed
 //     channel never blocks or breaks the other,
 //   • skips silently when a channel is not configured.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const toKenyan = (phone) => {
   if (!phone) return null;

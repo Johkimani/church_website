@@ -128,8 +128,6 @@ const resolveJumuiyaInput = async (input) => {
   return null;
 };
 
-// ─── Seasons ────────────────────────────────────────────
-
 export const createSeason = async (req, res) => {
   try {
     const { jumuiya_id, season_name, start_date, end_date, status } = req.body;
@@ -196,8 +194,6 @@ export const deleteSeason = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Imports ────────────────────────────────────────────
 
 export const importMembers = async (req, res) => {
   try {
@@ -555,8 +551,6 @@ export const updateImportStatus = async (req, res) => {
   }
 };
 
-// ─── Validation ─────────────────────────────────────────
-
 export const validateImportData = async (req, res) => {
   try {
     const { members } = req.body;
@@ -596,8 +590,6 @@ export const validateImportData = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Groups ──────────────────────────────────────────────
 
 export const createGroups = async (req, res) => {
   try {
@@ -680,8 +672,6 @@ export const deleteGroup = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Distribution ───────────────────────────────────────
 
 export const autoDistribute = async (req, res) => {
   try {
@@ -806,8 +796,6 @@ export const getGroupMembers = async (req, res) => {
   }
 };
 
-// ─── Statistics ─────────────────────────────────────────
-
 export const getStatistics = async (req, res) => {
   try {
     let { jumuiya_id } = req.params;
@@ -912,8 +900,6 @@ export const getStatistics = async (req, res) => {
   }
 };
 
-// ─── Batch Statistics (all jumuiyas in one call) ────────
-
 const slugToName = {
   "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
   "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
@@ -985,8 +971,6 @@ export const getBatchStatistics = async (req, res) => {
   }
 };
 
-// ─── Distribution History ───────────────────────────────
-
 export const getDistributionHistory = async (req, res) => {
   try {
     const { jumuiya_id } = req.params;
@@ -1000,8 +984,6 @@ export const getDistributionHistory = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Export ──────────────────────────────────────────────
 
 function deriveYearFromReg(memberId) {
   if (!memberId) return null;
@@ -1149,8 +1131,6 @@ export const exportAssignments = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── CSA-Level (centralized admission & distribution) ──
 
 const JUMUIYA_NAMES = [
   "St. Anthony", "St. Augustine", "St. Catherine",
@@ -1636,8 +1616,6 @@ export const csaDistributeMembers = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Coordinator Approval Workflow ──────────────────────
 
 /**
  * Compute a balanced distribution for pending CSA members.

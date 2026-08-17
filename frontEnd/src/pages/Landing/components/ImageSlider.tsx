@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import apiService from '../services/api'
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 interface GalleryItem {
   id: number
   title: string
@@ -12,12 +11,10 @@ interface GalleryItem {
   event_date: string
 }
 
-// ─── Constants (outside component — never re-created on re-render) ────────────
 const SLIDE_DURATION_MS = 12000   // How long each slide stays visible
 const ANIM_LOCK_MS = 300    // Execution lock time for transition
 const MIN_SWIPE_PX = 50      // Minimum px to register as a swipe
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function enrichSlides(dbSlides: GalleryItem[]): GalleryItem[] {
   return dbSlides.map((slide) => ({
     ...slide,
@@ -63,7 +60,6 @@ function ImageSlider() {
       .catch(() => setDbSlides([]))
   }, [])
 
-  // ── Image pre-loading: fetch next & previous images into browser cache ─────
   useEffect(() => {
     if (total === 0) return
     const nextIdx = (currentSlide + 1) % total
@@ -72,7 +68,6 @@ function ImageSlider() {
     preloadImage(displaySlides[prevIdx].image_url)
   }, [currentSlide, total]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Warm up the browser cache by preloading all slides once resolved ────────
   useEffect(() => {
     if (total === 0) return
     displaySlides.forEach((slide) => {
@@ -80,7 +75,6 @@ function ImageSlider() {
     })
   }, [total]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-play: resets timer every time currentSlide changes ───────────────
   useEffect(() => {
     if (total === 0) return
     const timer = setInterval(() => {
@@ -89,7 +83,6 @@ function ImageSlider() {
     return () => clearInterval(timer)
   }, [currentSlide, total])
 
-  // ── Navigation ─────────────────────────────────────────────────────────────
   const navigate = useCallback((to: number) => {
     if (isAnimating || total === 0) return
     setIsAnimating(true)
@@ -101,7 +94,6 @@ function ImageSlider() {
   const prevSlide = useCallback(() => navigate((currentSlide - 1 + total) % total), [navigate, currentSlide, total])
   const goToSlide = useCallback((i: number) => { if (i !== currentSlide) navigate(i) }, [navigate, currentSlide])
 
-  // ── Touch swipe ────────────────────────────────────────────────────────────
   const onTouchStart = (e: React.TouchEvent) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX) }
   const onTouchMove = (e: React.TouchEvent) => { setTouchEnd(e.targetTouches[0].clientX) }
   const onTouchEnd = () => {
@@ -111,7 +103,6 @@ function ImageSlider() {
     if (d < -MIN_SWIPE_PX) prevSlide()
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   if (total === 0) {
     return (
       <section className="relative h-[60vh] md:h-[85vh] min-h-[450px] overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex items-center justify-center">
@@ -136,7 +127,6 @@ function ImageSlider() {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* ── 1. Images ─────────────────────────────────────────────────────── */}
       {displaySlides.map((slide, i) => {
         const isLoaded = loadedImages[slide.id]
         return (
@@ -164,7 +154,6 @@ function ImageSlider() {
         )
       })}
 
-      {/* ── 2. Text overlays ──────────────────────────────────────────────── */}
       {displaySlides.map((slide, i) => {
         const [line1, line2] = slide.title.split('\n')
         const active = i === currentSlide
@@ -197,7 +186,6 @@ function ImageSlider() {
         )
       })}
 
-      {/* ── 3. Desktop nav buttons — sleek edge-pinned pill capsules ──────── */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); prevSlide() }}
@@ -232,7 +220,6 @@ function ImageSlider() {
         <span className="text-[8px] font-bold tracking-[0.2em] uppercase opacity-70">Next</span>
       </button>
 
-      {/* ── 4. Progress dots ──────────────────────────────────────────────── */}
       <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-2 z-40 px-2">
         {displaySlides.map((slide, i) => (
             <button

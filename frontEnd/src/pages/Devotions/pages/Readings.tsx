@@ -273,9 +273,7 @@ export default function Readings() {
 
   return (
     <div className="parchment parchment-bg min-h-screen" data-theme={theme}>
-      {/* ═══════════════════════════════════════════════════ */}
-      {/* FRONTISPIECE                                       */}
-      {/* ═══════════════════════════════════════════════════ */}
+
       <header className="relative overflow-hidden">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -303,9 +301,7 @@ export default function Readings() {
         <div className="h-px w-full" style={{ backgroundColor: "var(--p-gold-line)" }} />
       </header>
 
-      {/* ═══════════════════════════════════════════════════ */}
-      {/* TOOLBAR — search, font size, theme                 */}
-      {/* ═══════════════════════════════════════════════════ */}
+
       <div
         className="sticky top-16 lg:top-20 z-30"
         style={{ backgroundColor: "var(--p-bg)", borderBottom: "1px solid var(--p-rule)" }}
@@ -400,9 +396,7 @@ export default function Readings() {
       </div>
 
       <div ref={contentRef} className="max-w-3xl mx-auto px-4 scroll-mt-28">
-        {/* ═══════════════════════════════════════════════════ */}
-        {/* CHAPTER HEADER                                     */}
-        {/* ═══════════════════════════════════════════════════ */}
+
         {!searchQuery && (
           <div className="text-center mt-8 mb-6">
             <div className="flex items-center justify-center gap-3 mb-2.5">
@@ -426,9 +420,7 @@ export default function Readings() {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════ */}
-        {/* PRAYER INDEX — BOOK LIST                           */}
-        {/* ═══════════════════════════════════════════════════ */}
+
         {filteredPrayers.length === 0 ? (
           <div className="text-center py-20">
             <div className="gold text-2xl mb-4">{'\u2766'}</div>
@@ -470,9 +462,7 @@ export default function Readings() {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════ */}
-        {/* FOOTER                                             */}
-        {/* ═══════════════════════════════════════════════════ */}
+
         {!searchQuery && (
           <div className="text-center pt-8 pb-10">
             <div className="gold text-sm mb-3">{'\u2720'}</div>
@@ -483,9 +473,7 @@ export default function Readings() {
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════ */}
-      {/* READER — OPEN BOOK PAGE                            */}
-      {/* ═══════════════════════════════════════════════════ */}
+
       {selectedPrayer && (
         <div
           className="fixed inset-0 z-[60] flex"

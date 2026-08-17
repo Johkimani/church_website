@@ -14,7 +14,6 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya, onQuickLink }) => {
 
   return (
     <div className="tab-system-content" style={{ "--jumuiya-color": jumuiya.color } as React.CSSProperties}>
-      {/* ═══ Hero Banner ═══ */}
       <div className="about-hero" style={{ background: jumuiya.color }}>
         <div className="about-hero-overlay" />
         
@@ -40,7 +39,6 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya, onQuickLink }) => {
         </div>
       </div>
 
-      {/* ═══ Stats Row ═══ */}
       <div className="about-stats-row">
         <div className="about-stat-card">
           <div className="about-stat-icon" style={{ background: `${jumuiya.color}15`, color: jumuiya.color }}>
@@ -71,7 +69,6 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya, onQuickLink }) => {
         </div>
       </div>
 
-      {/* ═══ Main Content Grid ═══ */}
       <div className="about-main-grid">
         {/* Left: Story Section */}
         <div className="about-story-section">
@@ -167,10 +164,10 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya, onQuickLink }) => {
             </h4>
             <div className="about-links-grid">
               {[
-                { label: "View Officials", icon: "👥", tab: 'officials' as const },
-                { label: "See Activities", icon: "📅", tab: 'activities' as const },
-                { label: "Join Community", icon: "🤝", tab: 'channels' as const },
-                { label: "Order T-Shirt", icon: "👕", tab: 'tshirts' as const },
+                { label: "View Officials", icon: "", tab: 'officials' as const },
+                { label: "See Activities", icon: "", tab: 'activities' as const },
+                { label: "Join Community", icon: "", tab: 'channels' as const },
+                { label: "Order T-Shirt", icon: "", tab: 'tshirts' as const },
               ].map((link) => (
                 <button
                   key={link.label}

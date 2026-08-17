@@ -15,8 +15,6 @@ const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
 
 
-
-
 export const Tshirts = () => {
     const { products, addToCart, setIsCartOpen } = useApp();
     const [selectedSize, setSelectedSize] = React.useState<string>('');
@@ -62,7 +60,6 @@ export const Tshirts = () => {
     return (
         <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
-            {/* ══════════ HERO ══════════ */}
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
                     {sliderLoading ? (
@@ -85,7 +82,6 @@ export const Tshirts = () => {
                 />
             </ProjectHero>
 
-            {/* ══════════ SHOWCASE CARD ══════════ */}
             <motion.section
                 id="tshirts"
                 initial={{ opacity: 0, y: 20 }}

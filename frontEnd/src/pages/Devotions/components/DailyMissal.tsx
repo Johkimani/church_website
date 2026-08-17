@@ -8,10 +8,7 @@ interface DailyMissalProps {
   initialReadings?: DailyReadings;
 }
 
-/* ─────────────────────────────────────────────
-   LITURGICAL TEXT SANITIZER
-   Complies with Liturgiam Authenticam
-   ───────────────────────────────────────────── */
+
 
 function sanitizeDivineNames(text: string): string {
   let out = text;
@@ -23,13 +20,7 @@ function sanitizeDivineNames(text: string): string {
   return out;
 }
 
-/* ─────────────────────────────────────────────
-   RESPONSORIAL PSALM PARSER
-   - Strips all repeated R. lines from raw text
-   - Extracts the Response text
-   - Groups verses into stanzas of 3–6 lines
-   - Inserts R. once at the end of each stanza
-   ───────────────────────────────────────────── */
+
 
 const RESPONSE_PATTERNS = [
   /^R\.\s*/i,
@@ -80,9 +71,7 @@ function groupPsalmIntoStanzas(rawText: string, defaultResponse?: string): { sta
   return { stanzas, response };
 }
 
-/* ─────────────────────────────────────────────
-   SWAHILI / ENGLISH TRANSLATIONS
-   ───────────────────────────────────────────── */
+
 
 const T = {
   en: {
@@ -131,9 +120,7 @@ const T = {
 
 type Lang = keyof typeof T;
 
-/* ─────────────────────────────────────────────
-   READING CARD COMPONENT
-   ───────────────────────────────────────────── */
+
 
 function ReadingCard({ reading, lang }: { reading: Reading; lang: Lang }) {
   const t = T[lang];
@@ -165,7 +152,6 @@ function ReadingCard({ reading, lang }: { reading: Reading; lang: Lang }) {
           : "0 2px 4px -1px rgba(0,0,0,0.05), 0 4px 12px -2px rgba(0,0,0,0.08)",
       }}
     >
-      {/* ── Header ── */}
       <div className={`px-5 py-3 ${cfg.bgLight} border-b ${cfg.border} flex flex-wrap items-center justify-between gap-2`}>
         <div className="flex items-center gap-2 min-w-0">
           <span className={`text-[10px] font-bold uppercase tracking-wider ${cfg.color} ${cfg.bgLight} px-2 py-0.5 rounded-full border ${cfg.border}`}>
@@ -183,7 +169,6 @@ function ReadingCard({ reading, lang }: { reading: Reading; lang: Lang }) {
         </div>
       </div>
 
-      {/* ── Body ── */}
       <div className="px-5 py-4">
         {isPsalm ? (
           <PsalmBody rawText={sanitizedText} citation={reading.citation} serverResponse={reading.response} lang={lang} />
@@ -191,7 +176,6 @@ function ReadingCard({ reading, lang }: { reading: Reading; lang: Lang }) {
           <ReadingBody rawText={sanitizedText} />
         )}
 
-        {/* ── Liturgical Conclusion ── */}
         {conclusion && (
           <div className="mt-4 pt-3 border-t border-slate-100">
             <p className="text-sm font-semibold text-slate-800 italic">{conclusion.proclamation}</p>
@@ -203,10 +187,7 @@ function ReadingCard({ reading, lang }: { reading: Reading; lang: Lang }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   PSALM BODY
-   Renders: Response at top, then stanzas with R. at end
-   ───────────────────────────────────────────── */
+
 
 function PsalmBody({ rawText, citation, serverResponse, lang }: { rawText: string; citation: string; serverResponse?: string; lang: Lang }) {
   const t = T[lang];
@@ -249,10 +230,7 @@ function PsalmBody({ rawText, citation, serverResponse, lang }: { rawText: strin
   );
 }
 
-/* ─────────────────────────────────────────────
-   READING BODY (First / Second / Gospel)
-   Renders text in natural paragraphs
-   ───────────────────────────────────────────── */
+
 
 function ReadingBody({ rawText }: { rawText: string }) {
   const paragraphs = rawText
@@ -271,9 +249,7 @@ function ReadingBody({ rawText }: { rawText: string }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   SKELETON LOADER
-   ───────────────────────────────────────────── */
+
 
 function ReadingSkeleton() {
   return (
@@ -292,9 +268,7 @@ function ReadingSkeleton() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN COMPONENT
-   ───────────────────────────────────────────── */
+
 
 export default function DailyMissal({ initialReadings }: DailyMissalProps) {
   const [activeTab, setActiveTab] = useState<DateTab>("today");

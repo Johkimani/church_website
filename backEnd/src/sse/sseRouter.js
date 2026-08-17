@@ -21,7 +21,6 @@ const router = Router();
  *   • Individual – targeted sendToUser() calls for badge count updates
  */
 router.get("/", async (req, res) => {
-  // ── 1. Extract token (query param or Authorization header) ──────────────
   const token =
     req.query.token ||
     (req.headers.authorization?.startsWith("Bearer ")
@@ -32,7 +31,6 @@ router.get("/", async (req, res) => {
     return res.status(401).json({ error: "Authentication token required" });
   }
 
-  // ── 2. Verify JWT ────────────────────────────────────────────────────────
   let decoded;
   try {
     decoded = verifyAccessToken(token);
@@ -45,7 +43,6 @@ router.get("/", async (req, res) => {
   const jumuiyaId = String(decoded.jumuiya_id ?? "");
   const role = decoded.role;
 
-  // ── 3. Confirm user exists in DB ──────────────────────────────────────────
   try {
     const { rows } = await db.query(
       "SELECT member_id FROM members WHERE member_id = $1 LIMIT 1",
@@ -59,7 +56,6 @@ router.get("/", async (req, res) => {
     return res.status(500).json({ error: "Authentication check failed" });
   }
 
-  // ── 4. Set SSE response headers ──────────────────────────────────────────
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
@@ -71,13 +67,10 @@ router.get("/", async (req, res) => {
   }
   res.flushHeaders();
 
-  // ── 5. Register client (CSA + Jumuiya channels handled server-side) ──────
   addSSEClient(memberId, jumuiyaId, res);
 
-  // ── 6. Send "connected" confirmation ────────────────────────────────────
   res.write(`event: connected\ndata: ${JSON.stringify({ ok: true })}\n\n`);
 
-  // ── 7. Send initial unread badge count ───────────────────────────────────
   try {
     const isAdmin = (Array.isArray(role) ? role : [role]).some((r) =>
       ["csa_chair", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim()),
@@ -99,14 +92,12 @@ router.get("/", async (req, res) => {
     logger.warn(`[SSE] Initial unread count failed: ${err.message}`);
   }
 
-  // ── 8. Keepalive comment every 25 s (prevents proxy timeouts) ────────────
   const pingInterval = setInterval(() => {
     try {
       res.write(": ping\n\n");
     } catch {}
   }, 25_000);
 
-  // ── 9. Clean up on client disconnect ────────────────────────────────────
   req.on("close", () => {
     clearInterval(pingInterval);
     removeSSEClient(memberId, res);

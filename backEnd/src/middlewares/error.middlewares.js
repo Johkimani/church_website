@@ -19,7 +19,7 @@ import { ApiError } from "../utils/ApiError.js";
 function classifyError(err) {
   // Default values
   let statusCode = 500;
-  let message = err.message || "Something went wrong";
+  let message = err.message || "Request could not be completed";
 
   // ApiError already has everything
   if (err instanceof ApiError) {

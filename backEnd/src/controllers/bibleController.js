@@ -11,7 +11,6 @@ const BIBLE_VERSIONS = [
   { id: "asv", name: "American Standard", subtitle: "American Standard Version 1901", source: "bible-api", testaments: ["OT", "NT"] },
 ];
 
-// ─── Standard book list for bible-api.com versions (no books endpoint) ───────
 // Uses lowercase names as bible-api.com expects them
 const BIBLE_API_BOOKS = [
   // Old Testament
@@ -88,7 +87,6 @@ const BIBLE_API_BOOKS = [
 const BIBLE_API_NAME_MAP = {};
 BIBLE_API_BOOKS.forEach((b) => { BIBLE_API_NAME_MAP[b.code] = b.apiName; });
 
-// ─── dailybible.ca DC book detection ─────────────────────────────────────────
 const DC_BOOKS = new Set([
   "TOBIT", "JUDITH", "WISDOM", "SIRACH", "BARUCH", "1 MACCABEES", "2 MACCABEES",
   "1 ESDRAS", "2 ESDRAS", "ADDDAN",
@@ -105,7 +103,6 @@ const NT_BOOKS = new Set([
 
 const UNFETCHABLE_BOOKS = new Set(["LETTER OF JEREMIAH", "PSALMS OF SOLOMON"]);
 
-// ─── Caches ──────────────────────────────────────────────────────────────────
 const bookListCache = {};
 const chapterCache = {};
 const CHAPTER_CACHE_TTL = 60 * 60 * 1000;
@@ -116,7 +113,6 @@ function getTestament(code) {
   return "OT";
 }
 
-// ─── Fetch helpers ───────────────────────────────────────────────────────────
 async function fetchJson(url, label) {
   try {
     const res = await fetch(url);
@@ -131,7 +127,6 @@ async function fetchJson(url, label) {
   }
 }
 
-// ─── dailybible.ca (DRA only) ────────────────────────────────────────────────
 async function fetchDailyBibleBooks() {
   const url = `${DAILY_BIBLE_BASE}/books?translation=dra`;
   const data = await fetchJson(url, "dailybible books dra");
@@ -158,7 +153,6 @@ async function fetchDailyBibleChapter(bookCode, chapter) {
   }));
 }
 
-// ─── bible-api.com (KJV, WEB, BBE, ASV) ─────────────────────────────────────
 async function fetchBibleApiChapter(bookCode, chapter, version) {
   const apiName = BIBLE_API_NAME_MAP[bookCode];
   if (!apiName) {
@@ -176,7 +170,6 @@ async function fetchBibleApiChapter(bookCode, chapter, version) {
   }));
 }
 
-// ─── Unified book list ───────────────────────────────────────────────────────
 async function getBookList(version) {
   if (bookListCache[version]) return bookListCache[version];
 
@@ -206,7 +199,6 @@ async function getBookList(version) {
   return books;
 }
 
-// ─── Cache helpers ───────────────────────────────────────────────────────────
 function getCachedChapter(cacheKey) {
   const cached = chapterCache[cacheKey];
   if (!cached) return null;
@@ -221,7 +213,6 @@ function setChapterCache(cacheKey, data) {
   chapterCache[cacheKey] = { data, timestamp: Date.now() };
 }
 
-// ─── Handlers ────────────────────────────────────────────────────────────────
 export const getVersions = (_req, res) => {
   try {
     return res.json({ versions: BIBLE_VERSIONS });

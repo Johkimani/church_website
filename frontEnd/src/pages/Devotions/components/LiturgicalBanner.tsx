@@ -39,12 +39,12 @@ export default function LiturgicalBanner({ season, celebration }: LiturgicalBann
               className="w-8 h-8 rounded-full flex items-center justify-center text-lg"
               style={{ backgroundColor: season.colorHex }}
             >
-              {season.name === "Advent" && "🕯"}
-              {season.name === "Christmas" && "⭐"}
-              {season.name === "Lent" && "🙏"}
-              {season.name === "Triduum" && "🔥"}
-              {season.name === "Easter" && "✝"}
-              {season.name === "Ordinary Time" && "🌿"}
+              {season.name === "Advent" && ""}
+              {season.name === "Christmas" && ""}
+              {season.name === "Lent" && ""}
+              {season.name === "Triduum" && ""}
+              {season.name === "Easter" && ""}
+              {season.name === "Ordinary Time" && ""}
             </div>
           </div>
 

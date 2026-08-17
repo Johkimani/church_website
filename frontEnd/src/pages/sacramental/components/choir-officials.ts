@@ -79,7 +79,7 @@ export class ChoirOfficials {
                 href: `mailto:${official.email}`,
                 title: `Email ${official.name}`
             });
-            emailLink.innerHTML = `📧 <span>${official.email}</span>`;
+            emailLink.innerHTML = `<span>${official.email}</span>`;
             container.appendChild(emailLink);
         }
 
@@ -88,7 +88,7 @@ export class ChoirOfficials {
                 href: `tel:${official.phoneNumber}`,
                 title: `Call ${official.name}`
             });
-            callLink.innerHTML = `📞 <span>${official.phoneNumber}</span>`;
+            callLink.innerHTML = `<span>${official.phoneNumber}</span>`;
             container.appendChild(callLink);
         }
 

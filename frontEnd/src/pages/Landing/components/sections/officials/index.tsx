@@ -105,10 +105,10 @@ const OfficialsSection: React.FC = () => {
                         </div>
                       </div>
                       {official.phone && (
-                        <p className="text-gray-600 text-xs md:text-sm">📞 {official.phone}</p>
+                        <p className="text-gray-600 text-xs md:text-sm">{official.phone}</p>
                       )}
                       {official.email && (
-                        <p className="text-gray-600 text-xs md:text-sm">✉️ {official.email}</p>
+                        <p className="text-gray-600 text-xs md:text-sm">{official.email}</p>
                       )}
                     </div>
                   ))}

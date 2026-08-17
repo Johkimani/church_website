@@ -106,7 +106,7 @@ export class NextPracticeCountdown {
 
             body.innerHTML = `
                 <div class="csa-choir-countdown__in-progress">
-                    <div class="csa-choir-countdown__progress-badge">🎵 Practice in Progress</div>
+                    <div class="csa-choir-countdown__progress-badge">Practice in Progress</div>
                     <div class="csa-choir-countdown__progress-info">
                         <strong>${s.day}</strong> &nbsp;·&nbsp; ${s.location}
                     </div>
@@ -135,7 +135,7 @@ export class NextPracticeCountdown {
             <div class="csa-choir-countdown__info">
                 <div class="csa-choir-countdown__day">${s.day}</div>
                 <div class="csa-choir-countdown__time">${startFmt} – ${endFmt}</div>
-                <div class="csa-choir-countdown__location">📍 ${s.location}</div>
+                <div class="csa-choir-countdown__location">${s.location}</div>
             </div>
             <div class="csa-choir-countdown__timer">
                 <div class="csa-choir-countdown__unit">

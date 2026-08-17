@@ -1,10 +1,8 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_10: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT CLARE OF ASSISI
   // novenaId: "novenas-saint-clare"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sc-np-1",
@@ -88,10 +86,8 @@ export const NOVENA_PRAYERS_10: Prayer[] = [
     text: `O Saint Clare, who died on August 11, 1253, at the age of fifty-nine, surrounded by your sisters, having received the papal approval of your rule just two days before your death, you entered eternal life with the confidence of a bride meeting her beloved. Pray for me now at the end of this novena, that I may live each day with the same readiness to meet my Creator. Help me to die as you died — in peace, in faith, in the arms of Holy Mother Church. Obtain for me the grace of final perseverance, that I may receive the last sacraments worthily and pass from this world to the next without delay. And when I arrive at the gates of paradise, may you, together with Saint Francis and all the saints, welcome me into the eternal joy of heaven, where I hope to gaze upon the face of Christ forever. O Saint Clare, flower of eternal life, lead us safely home. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE IMMACULATE CONCEPTION
   // novenaId: "novenas-immaculate-conception"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "ic-np-1",
@@ -175,10 +171,8 @@ export const NOVENA_PRAYERS_10: Prayer[] = [
     text: `O Immaculate Conception, you who were preserved from sin in this life were also preserved from the corruption of death and were assumed body and soul into heaven, where you now reign as Queen of Angels and Saints. You are the living proof that what God did for you He desires to do for all the redeemed — to purify us from sin, to conform us to the image of Christ, and to bring us to eternal glory. I look to you today as my hope and my confidence. Because you were immaculate, I dare to hope that I too, though a sinner, can be purified and made ready for heaven by the grace of God. Obtain for me the grace of final perseverance, that I may never lose the state of grace, and that when my earthly pilgrimage is complete, I may join you and all the saints in the eternal worship of God. O Immaculate Conception, pray for us sinners, now and at the hour of our death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE PRECIOUS BLOOD
   // novenaId: "novenas-precious-blood"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "pb-np-1",

@@ -69,7 +69,6 @@ export default function AnalyticsDashboard() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // ── Mock data for demo mode (high-volume scenario: 100 per jumuiya) ──
   const MOCK_DATA = {
     overview: { totalRegistered: 647, totalMembers: 720, registrationRate: 90 },
     registrationTrends: [
@@ -501,7 +500,6 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* ── Payment Status Modal ── */}
       {showPayments && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPayments(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>

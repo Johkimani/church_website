@@ -68,7 +68,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "yearly">("overview");
   const [genderModal, setGenderModal] = useState<"male" | "female" | null>(null);
 
-  // ── Current semester (CSA-configured window) ──
   const [semester, setSemester] = useState<any>(null);
   useEffect(() => {
     semesterServices
@@ -78,7 +77,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   }, []);
   const semNum: 1 | 2 = semNumFromConfig(semester);
 
-  // ── Manual Registration State ──
   const [showManualReg, setShowManualReg] = useState(false);
   const [regSearch, setRegSearch] = useState("");
   const [regResults, setRegResults] = useState<any[]>([]);
@@ -89,7 +87,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   const [regAmount, setRegAmount] = useState("");
   const [regSubmitting, setRegSubmitting] = useState(false);
 
-  // ── Pending Payments State ──
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [, setLoadingPayments] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<"pending" | "all">("pending");
@@ -316,7 +313,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
         </button>
       </div>
 
-      {/* ═══════ OVERVIEW ═══════ */}
       {activeSubTab === "overview" && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -483,7 +479,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
         </div>
       )}
 
-      {/* ═══════ COHORT PROGRESSION ═══════ */}
       {activeSubTab === "cohort" && (
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
@@ -512,7 +507,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
         </div>
       )}
 
-      {/* ═══════ YEARLY COMPARISON ═══════ */}
       {activeSubTab === "yearly" && (
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
@@ -596,7 +590,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
         </div>
       )}
 
-      {/* ── Payments Section ── */}
       {(pendingPayments.length > 0 || paymentFilter === "all") && (
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
@@ -677,7 +670,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
         </div>
       )}
 
-      {/* ── Manual Registration Modal ── */}
       {showManualReg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowManualReg(false); resetRegisterForm(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>

@@ -118,7 +118,7 @@ const GalleryPage: React.FC = () => {
       <div className="px-4 py-6 max-w-[2000px] mx-auto">
         {Object.keys(groupedGallery).length === 0 ? (
            <div className="flex flex-col items-center justify-center pt-20 text-gray-400">
-             <div className="text-6xl mb-4">📸</div>
+              <div className="text-6xl mb-4"></div>
              <p className="text-lg">No photos found</p>
            </div>
         ) : (

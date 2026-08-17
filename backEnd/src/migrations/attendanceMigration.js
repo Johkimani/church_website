@@ -3,7 +3,6 @@ import logger from "../logger/winston.js";
 
 const migration = async () => {
   try {
-    // ── Attendance tally system ─────────────────────────────────────────
     await pool.query(`
       CREATE TABLE IF NOT EXISTS attendance_tallies (
         tally_id SERIAL PRIMARY KEY,
@@ -38,7 +37,6 @@ const migration = async () => {
     await pool.query(
       `CREATE INDEX IF NOT EXISTS idx_attendance_tallies_jumuiya ON attendance_tallies (jumuiya_id);`
     );
-    // ── Year-of-study tallies ───────────────────────────────────────────
     // Coordinators may take attendance by Year of Study (Year 1-4) instead of
     // by jumuiya. Year rows keep jumuiya_id NULL and store year_of_study +
     // dimension='year' (jumuiya rows store dimension='jumuiya', year_of_study NULL).
@@ -63,7 +61,6 @@ const migration = async () => {
       `CREATE INDEX IF NOT EXISTS idx_attendance_tallies_dimension ON attendance_tallies (dimension);`
     );
 
-    // ── Novena tables (missing in DB but referenced by activities system) ──
     await pool.query(`
       CREATE TABLE IF NOT EXISTS novena_schedules (
         id SERIAL PRIMARY KEY,

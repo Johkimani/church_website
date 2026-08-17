@@ -236,7 +236,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                                         <FaCheckCircle className="tshirt-success-icon" />
                                     </div>
                                     <h2 className="tshirt-success-title">
-                                        Request Received! 🎉
+                                        Request Received!
                                     </h2>
                                     <p className="tshirt-success-text">
                                         We've sent an M-Pesa payment prompt to your phone. Complete the payment to confirm your order.
@@ -251,7 +251,7 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({ jumuiyaId, jumuiyaName, orders,
                                             <div className="tshirt-progress-fill" style={{ width: '66%' }} />
                                         </div>
                                         <p className="tshirt-expiration-note">
-                                            ⏱️ Payment expires in 15 minutes
+                                            Payment expires in 15 minutes
                                         </p>
                                     </div>
 

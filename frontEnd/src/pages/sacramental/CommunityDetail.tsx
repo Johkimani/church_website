@@ -58,7 +58,6 @@ const tabIcons: Record<string, React.ReactNode> = {
   gallery: <ImageIcon size={16} />
 };
 
-// ─── Next Practice Countdown (Choir-specific) ────────────────────────────────
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function parseT(t: string) {
@@ -104,7 +103,7 @@ const PracticeCountdown: React.FC<{ schedules: PracticeSchedule[] }> = ({ schedu
         const secs = Math.floor((remaining % 60000) / 1000);
         return (
             <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
-                <div className="text-green-700 font-black text-lg mb-1">🎵 Practice In Progress!</div>
+                <div className="text-green-700 font-black text-lg mb-1">Practice In Progress!</div>
                 <div className="text-green-600 font-semibold">{inProgress.s.day} · {inProgress.s.location}</div>
                 <div className="text-green-500 text-sm mt-1">Ends in <strong>{mins}m {secs}s</strong></div>
             </div>
@@ -125,7 +124,7 @@ const PracticeCountdown: React.FC<{ schedules: PracticeSchedule[] }> = ({ schedu
             <div className="text-center mb-4">
                 <div className="font-extrabold text-slate-800 text-lg">{next.s.day}</div>
                 <div className="text-slate-500 text-sm">{fmt12(next.s.startTime)} – {fmt12(next.s.endTime)}</div>
-                <div className="text-slate-400 text-xs mt-1">📍 {next.s.location}</div>
+                <div className="text-slate-400 text-xs mt-1">{next.s.location}</div>
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
                 {[['DAYS', days], ['HRS', hours], ['MIN', minutes], ['SEC', seconds]].map(([label, val]) => (
@@ -138,8 +137,6 @@ const PracticeCountdown: React.FC<{ schedules: PracticeSchedule[] }> = ({ schedu
         </div>
     );
 };
-// ─────────────────────────────────────────────────────────────────────────────
-
 const CommunityDetail: React.FC = () => {
     const { moduleId } = useParams<{ moduleId: string }>();
     const navigate = useNavigate();
@@ -430,7 +427,6 @@ const CommunityDetail: React.FC = () => {
             {/* hand-torn parish strip */}
             <div className="h-2 bg-[repeating-linear-gradient(135deg,#7c2d12_0_14px,#9a3412_14px_28px)] opacity-90" />
 
-            {/* ══════════ Editorial Hero ══════════ */}
             <div className="w-full relative overflow-hidden">
                 {heroImage && (
                     <div className="absolute inset-0 z-0">
@@ -477,7 +473,6 @@ const CommunityDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* ══════════ Page Container ══════════ */}
             <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-20">
                 {/* Tab bar */}
                 <div className="bg-white/70 backdrop-blur-sm border border-stone-200/70 rounded-sm shadow-[0_10px_40px_-24px_rgba(60,40,20,0.3)] p-1.5 mb-8 flex flex-wrap gap-1.5 justify-center md:justify-start sticky top-2">
@@ -801,7 +796,7 @@ const CommunityDetail: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <h3 className="text-xl font-extrabold text-slate-800 leading-tight">{ps.day}</h3>
-                                                    <p className="text-slate-500 font-semibold text-xs mt-1">📍 {ps.location}</p>
+                                                    <p className="text-slate-500 font-semibold text-xs mt-1">{ps.location}</p>
                                                 </div>
                                             </div>
                                             <div className="text-sm font-black text-blue-600 bg-blue-50 px-4 py-2.5 rounded-2xl border border-blue-100 shrink-0 text-center">

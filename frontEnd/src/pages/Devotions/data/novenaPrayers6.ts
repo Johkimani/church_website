@@ -1,9 +1,7 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_6: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MONICA
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "smo-np-1",
@@ -87,9 +85,7 @@ export const NOVENA_PRAYERS_6: Prayer[] = [
     text: `O God of infinite mercy, who gathered together on earth the holy family of Monica, Augustine, and Navigius, and who will gather them again in eternal glory, grant me through the intercession of Saint Monica the joy of a heavenly reunion with all who have died in the grace of God. I believe in the Communion of Saints and in the resurrection of the body, and I trust that those who die in friendship with Christ will be united with Him and with one another in the life without end. Holy Monica, you now gaze upon the face of the God for whom you wept and prayed — intercede for me that I may persevere in faith, hope, and charity until the day when all tears are wiped away and death is swallowed up in victory. May the hope of this heavenly reunion strengthen me in my daily life and inspire me to live with greater generosity for the glory of God and the salvation of souls. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT THÉRÈSE OF LISIEUX
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "st-np-1",
@@ -173,9 +169,7 @@ export const NOVENA_PRAYERS_6: Prayer[] = [
     text: `O God of infinite generosity, who promised through Saint Thérèse that after her death she would spend her heaven doing good upon earth, I confidently claim that promise today and ask for a shower of graces upon myself and all who have requested my prayers. Holy Thérèse, Doctor of the Church and patroness of the missions, you who said you would let fall a "rose" from heaven as a sign of your intercession, grant me now the grace I most need for the salvation of my soul. I ask you to shower down upon me, upon my family, and upon the whole Church a cascade of roses — graces of conversion, healing, peace, and holiness. May your promise inspire in me a deeper trust in the communion of Saints and a greater willingness to intercede for others from this earth. I throw my confidence upon you as you threw yours upon God, and I believe that your Little Way will lead me safely home to heaven, where together we shall praise the Lord for all eternity. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // ROSARY NOVENA
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "rn-np-1",
@@ -259,9 +253,7 @@ export const NOVENA_PRAYERS_6: Prayer[] = [
     text: `O Blessed Virgin Mary, Queen of Heaven and Earth, Mother of the Church and Mother of my soul, at the conclusion of this novena I consecrate myself entirely to you without reservation. I give you my body, my soul, my thoughts, my actions, my prayers, my sufferings, and every moment of my life from this day until the moment of my death. I place all that I am and all that I have under your maternal mantle, trusting that you will present me to your divine Son and lead me safely along the path to eternal life. O Mary, I am yours and all that I have is yours. Accept me as your property, your child, your servant, and your instrument. Use me according to the will of God for the greater glory of the Most Holy Trinity, for the conversion of sinners, for the sanctification of priests, and for the peace of the world. Through this consecration, may I become more fully a disciple of Jesus Christ and a faithful member of His Holy Catholic Church. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA FOR THE HOLY SOULS IN PURGATORY
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "hss-np-1",

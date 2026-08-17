@@ -299,14 +299,12 @@ export const updateJumuiyaMember = async (req, res) => {
     }
 
     const data = await withTransaction(async (client) => {
-      // ── Try members table first ──
       const currentRes = await client.query(
         "SELECT jumuiya_id, first_name, last_name FROM members WHERE member_id = $1",
         [id]
       );
 
       if (currentRes.rows.length > 0) {
-        // ─── Path A: update members table ───
         const oldJumuiyaId = currentRes.rows[0].jumuiya_id;
         const oldFirstName = currentRes.rows[0].first_name;
         const oldLastName = currentRes.rows[0].last_name;
@@ -405,7 +403,6 @@ export const updateJumuiyaMember = async (req, res) => {
         };
       }
 
-      // ─── Path B: update import_records and sync to members ───
       const syncSets = [];
       const syncVals = [];
       let sp = 1;
@@ -1480,8 +1477,6 @@ export const sendStampCard = async (req, res) => {
   }
 };
 
-// ─── Analytics ────────────────────────────────────────────────────────────────
-
 export const getAnalytics = async (req, res) => {
   try {
     const JUMUIYAS = [
@@ -1670,8 +1665,6 @@ export const getAnalytics = async (req, res) => {
   }
 };
 
-// ─── Update Payment Status ────────────────────────────────────────────────────
-
 export const getPayments = async (req, res) => {
   try {
     const { status } = req.query;
@@ -1737,7 +1730,6 @@ export const updatePaymentStatus = async (req, res) => {
   }
 };
 
-// ─── Cohort Analytics ─────────────────────────────────────────────────────────
 const SEMESTER_COLS = ['sem_1_reg','sem_2_reg','sem_3_reg','sem_4_reg','sem_5_reg','sem_6_reg','sem_7_reg','sem_8_reg'];
 const SEMESTER_LABELS = ['1.1','1.2','2.1','2.2','3.1','3.2','4.1','4.2'];
 

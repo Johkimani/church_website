@@ -36,7 +36,6 @@ export const Chairs = () => {
 
             {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} showEventDate={false} />}
 
-            {/* ══════════ HERO ══════════ */}
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
                     {sliderLoading ? (
@@ -59,7 +58,6 @@ export const Chairs = () => {
                 />
             </ProjectHero>
 
-            {/* ══════════ SHOWCASE SECTION ══════════ */}
             <motion.section
                 id="chairs"
                 initial={{ opacity: 0, y: 20 }}
@@ -113,10 +111,17 @@ export const Chairs = () => {
                                 <div className="bg-blue-50 rounded-2xl p-4 space-y-3">
                                     <div className="flex items-end justify-between">
                                         <div>
-                                            <p className="text-xs text-slate-500 font-semibold">Rental rate</p>
+                                            <p className="text-xs text-slate-500 font-semibold">Daily rate</p>
                                             <p className="text-3xl font-bold text-slate-900">
                                                 KES {Number(price).toLocaleString()}
                                                 <span className="text-sm font-bold text-slate-400"> /chair/day</span>
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500 font-semibold">Hourly rate</p>
+                                            <p className="text-xl font-bold text-blue-600">
+                                                KES {Math.round(price / 8).toLocaleString()}
+                                                <span className="text-sm font-bold text-slate-400"> /hr</span>
                                             </p>
                                         </div>
                                     </div>

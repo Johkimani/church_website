@@ -14,12 +14,10 @@ const router = Router();
 const permission   = (action, resource) => authorize(action, resource);
 const requireAdmin = (action, resource) => [verifyToken, permission(action, resource)];
 
-// ── SSE persistent connection ─────────────────────────────────────────────────
 // No auth middleware here — the SSE router handles token verification itself
 // because EventSource cannot send Authorization headers.
 router.use("/sse", sseRouter);
 
-// ── REST endpoints ────────────────────────────────────────────────────────────
 router.post(  "/",    ...requireAdmin("create", "notifications"), createNotification);
 router.get(   "/",    verifyToken,                                getNotification);
 router.patch( "/:id", ...requireAdmin("update", "notifications"), updateNotification);

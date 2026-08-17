@@ -2,10 +2,8 @@ import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_15: Prayer[] = [
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT ANNE — Patroness of Mothers and Grandmothers
   // novenaId: "novenas-saint-anne"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sa-np-1",
@@ -89,10 +87,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O thankworthy Saint Anne, as this novena draws to a close, I desire to offer thanksgiving to God for the countless blessings He has bestowed upon me through your intercession. You who received the gift of Mary with such gratitude teach me to receive every gift of God with the same spirit of thanksgiving. For the gift of life, I thank God. For the gift of faith, I thank God. For the gift of family and friends, for the Sacraments, for the Church, for every breath and heartbeat — all is gift. Help me to cultivate a heart that is always grateful, a spirit that counts blessings rather than complaints, a soul that recognizes the hand of God in every circumstance. O Saint Anne, mother blessed of God, obtain for me the grace to live each day in joyful gratitude for God's infinite goodness and mercy.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT CELESTINE V — The Pope Who Resigned
   // novenaId: "novenas-saint-celestine"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sc-np-1",
@@ -176,10 +172,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O free Saint Celestine, in resigning the papacy you discovered a freedom that the world cannot give — the freedom of one who has no attachment to worldly honor or position. You returned to your simple cell and lived out your final years in peace, free from the burdens of office, free for God alone. I pray today for this kind of interior freedom, the liberation of the soul from the chains of ambition, pride, and self-will. Set me free from the tyranny of others' opinions, from the slavery of disordered desires, from the prison of my own ego. Help me to understand that true freedom is not the ability to do whatever I want but the grace to do what God wills. O Saint Celestine, who found freedom in surrender, obtain for me the glorious liberty of the children of God.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT BRENDAN THE NAVIGATOR — Patron of Seafarers
   // novenaId: "novenas-saint-brendan"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sbr-np-1",
@@ -263,10 +257,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O joyful Saint Brendan, when at last you reached the Island of the Blessed, you found not merely a beautiful land but a foretaste of heaven itself — a place of perpetual peace, boundless joy, and the radiant presence of God. Your heart, which had longed for this destination through years of hardship, was finally satisfied. I pray today that the joy of heaven may fill my heart even now, while I am still on earth. Help me to live each day in the light of eternity, knowing that this world is but a passage and heaven is my true home. When trials come, remind me of the joy that awaits. When sorrows weigh upon me, lift my eyes to the blessed land where every tear will be wiped away. O Saint Brendan, who tasted the joy of heaven, obtain for me a heart that always rejoices in the hope of eternal glory.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT KATERI TEKAKWITHA — Lily of the Mohawks
   // novenaId: "novenas-saint-kateri"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "skt-np-1",
@@ -350,10 +342,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O heavenly Saint Kateri, your last words on earth were the sweetest testimony of faith: "I love Jesus Christ. I love Him because I have seen Him, loved Him, desired Him, and served Him. I want to go to heaven." And so you did, departing this life at the age of twenty-four and entering into the eternal joy of God's presence. You who had suffered so much on earth found in heaven the perfect happiness that had eluded you in this world. I pray today for the grace to live with heaven always before my eyes, to make every decision in light of eternity, to store up treasures where moth and rust cannot destroy. When I am tempted to set my heart on earthly things, remind me of the infinitely greater glory that awaits the faithful. O Saint Kateri, lily of heaven, obtain for me the grace to live and die in such a way that I may one day join you in the eternal paradise of God.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT OSCAR ROMERO — Martyr for Justice
   // novenaId: "novenas-saint-oscar-romero"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sor-np-1",
@@ -437,10 +427,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O legacy-rich Saint Oscar Romero, your death on the altar did not end your mission but fulfilled it. The people of El Salvador and of the entire world have been inspired by your example for decades. The Church has recognized your holiness by canonizing you as a saint, and your words continue to echo across the centuries: "If they kill me, I shall arise in the Salvadoran people." I pray today that my own life may bear fruit that lasts for eternity. Help me to live in such a way that my faith, my charity, and my witness will inspire those who come after me. Grant me the grace to plant seeds of holiness in the hearts of others, seeds that will bloom long after I am gone. May my legacy be not worldly success but faithful discipleship, not fame but holiness, not power but service. O Saint Oscar Romero, whose legacy endures forever, obtain for me the grace to build a life that glorifies God and benefits His Church.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO ALL HOLY MARTYRS OF AFRICA
   // novenaId: "novenas-all-saints-africa"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sma-np-1",
@@ -524,10 +512,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O victorious Martyrs of Africa, you who have already won the crown of glory, I celebrate today the triumph that is yours and that awaits all who persevere in faith. The victory of Christ on the cross is the victory that you share, the victory over sin, over death, over the powers of darkness. Despite centuries of persecution, the Church in Africa is not destroyed but flourishes — this is the work of God, who uses the blood of martyrs to water the vineyard of His Church. I pray today with the confidence of those who know the ending of the story — Christ has won, Christ is victorious, Christ will come again. Help me to live each day in the light of this victory, to face every challenge with the assurance that God is in control, to proclaim with joy that the Lord is risen and His victory is complete. O holy Martyrs of Africa, triumphant in glory, obtain for me the grace to live and die in the victory of Christ.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO JESUS OF NAZARETH
   // novenaId: "novenas-jesus-nazareth"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sjn-np-1",
@@ -611,10 +597,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O Jesus of Nazareth, risen from the dead, You who conquered sin and death by the power of Your resurrection, I rejoice in You today! The tomb is empty, the stone has been rolled away, the angels proclaim that He is not here — He is risen! The resurrection is the foundation of our faith, the guarantee of our own resurrection, the triumph of light over darkness, life over death, hope over despair. I pray today that the power of Your resurrection may transform my life. Help me to live as a child of the resurrection, to rise from the death of sin to the life of grace, to leave behind the tomb of my old self and walk in the newness of life. When I am buried under the weight of sorrow, failure, or fear, raise me up by Your almighty power. O Jesus of Nazareth, risen Lord, You are the resurrection and the life, and whoever believes in You will never die.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA FOR THE SACRAMENT OF RECONCILIATION
   // novenaId: "novenas-sacrament-reconciliation"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "src-np-1",
@@ -698,10 +682,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O Prince of Peace, You who said "My peace I give to you, not as the world gives" (John 14:27), I pray today for the peace that comes from a clean conscience and a forgiven soul. There is no peace like the peace that follows a good confession — the burden lifted, the guilt removed, the darkness replaced by light. This is the peace that the world cannot give because the world does not know how to heal the soul. I thank You for this inestimable gift. Help me to guard this peace by avoiding the occasions of sin, by living in a state of grace, and by returning to confession quickly whenever I fall. May the peace of Christ rule in my heart always, and may I be an instrument of Your peace to others. O Jesus, our peace and our reconciliation, I praise You for the gift of confession and the peace it brings to the soul.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE SACRAMENT OF THE EUCHARIST
   // novenaId: "novenas-sacrament-eucharist"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "seu-np-1",
@@ -785,10 +767,8 @@ export const NOVENA_PRAYERS_15: Prayer[] = [
     text: `O Jesus, Eucharistic Lord, the Holy Eucharist is called the "viaticum" — the food for the journey — and also the "pledge of future glory." In receiving Your Body and Blood, I receive a foretaste of the heavenly banquet, a preview of the eternal joy that awaits the faithful in heaven. The Eucharist connects earth to heaven, time to eternity, the pilgrim Church to the Church triumphant. I pray today for the grace to live with heaven always before my eyes, strengthened by the Eucharist on my journey. Help me to remember that the joy of the Eucharist is but a small taste of the infinite bliss that awaits those who love God. When the trials of life weigh me down, lift my eyes to the heavenly vision. When I receive You in Communion, let me anticipate the day when I will see You face to face. O Jesus, bread of heaven, nourish my soul for the eternal life that awaits.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY CROSS AND THE PASSION
   // novenaId: "novenas-holy-cross-passion"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "shc-np-1",

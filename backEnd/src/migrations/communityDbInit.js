@@ -9,7 +9,6 @@ const runParallel = (queries) => Promise.all(queries.map((q) => db.query(q)));
 export const setupCommunityDatabase = async () => {
   const startTime = Date.now();
   try {
-    // ── Version gate ────────────────────────────────────────────────
     // system_settings is always ensured so the gate can read the version.
     await db.query(`
       CREATE TABLE IF NOT EXISTS system_settings (
@@ -31,7 +30,6 @@ export const setupCommunityDatabase = async () => {
 
     logger.info("Initializing Community Hub database schema...");
 
-    // ── Wave 1: base tables (no cross-table dependencies) ────────────
     await runParallel([
       `CREATE TABLE IF NOT EXISTS weekly_activities (
         id SERIAL PRIMARY KEY,
@@ -165,9 +163,6 @@ export const setupCommunityDatabase = async () => {
       "mpesa_request", "orders", "hire_requests",
     ].forEach((t) => logger.info(`Table '${t}' ready`));
 
-    // ── Wave 2: dependent tables + idempotent column additions ──────
-    // Every statement in this wave touches a different table, so running
-    // them in parallel cannot cause lock contention.
     await Promise.all([
       db.query(`CREATE TABLE IF NOT EXISTS hub_officials (
         id SERIAL PRIMARY KEY,
@@ -280,6 +275,9 @@ export const setupCommunityDatabase = async () => {
         ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS pickup_time VARCHAR(100);
         ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS hire_reference VARCHAR(50);
         ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;`).catch(() => {}),
+      // Add hourly hire support columns
+      db.query(`ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS hire_mode VARCHAR(20) DEFAULT 'daily';
+        ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS hours INTEGER DEFAULT 0;`).catch(() => {}),
       db.query(`ALTER TABLE mpesa_request ADD COLUMN IF NOT EXISTS payment_source VARCHAR(20) DEFAULT 'mpesa';`).catch(() => {}),
       // Relax the legacy status CHECK on mpesa_request so the app's statuses
       // ('success', 'cancelled') are accepted alongside the STK push ones.
@@ -323,7 +321,6 @@ export const setupCommunityDatabase = async () => {
     logger.info("weekly_activities columns verified");
     logger.info("semester_activities columns verified");
 
-    // ── Record schema version so later boots skip the heavy init ────
     await db.query(
       `INSERT INTO system_settings (key, value, description, updated_at)
        VALUES ('schema_version', $1, 'Community Hub schema version', NOW())
@@ -332,9 +329,9 @@ export const setupCommunityDatabase = async () => {
     );
 
     const duration = Date.now() - startTime;
-    logger.info(`✔ Community Hub database schema ready (including commerce tables). (Duration: ${duration}ms)`);
+    logger.info(`Community Hub database schema ready (including commerce tables). (Duration: ${duration}ms)`);
   } catch (error) {
-    logger.error("❌ Community Hub database schema initialization failed:", error.message, { stack: error.stack });
+    logger.error("Community Hub database schema initialization failed:", error.message, { stack: error.stack });
     // Non-fatal, do not exit server process here to let basic app routes function
   }
 };

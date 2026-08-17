@@ -1,9 +1,7 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_4: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO CHRIST THE KING
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "ck-np-1",
@@ -87,9 +85,7 @@ export const NOVENA_PRAYERS_4: Prayer[] = [
     text: `O Lord Jesus Christ, King of Kings and Lord of Lords, we consecrate ourselves entirely to Your Sacred Kingship. We give You our hearts, our minds, our bodies, and our souls to be ruled by You alone. Accept us as Your faithful subjects, and grant us the grace to serve You with all our strength in this life, that we may be admitted into Your kingdom of eternal joy in the next. May Your will be done in us and through us, now and forever. Reign in our hearts, O King of Glory, and let Your kingdom come in all its fullness. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT CECILIA — Patron of Musicians
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sc-np-1",
@@ -173,9 +169,7 @@ export const NOVENA_PRAYERS_4: Prayer[] = [
     text: `O glorious Saint Cecilia, patroness of sacred art, we consecrate to you all the arts in the service of God and His Church. Bless painters, sculptors, architects, poets, and musicians alike, that they may work together to create places of worship that lift the soul to heaven. Help us to recognize that all beauty is a reflection of the Creator's infinite goodness and that every work of art can be an instrument of grace. May the sacred arts flourish once more in our parishes and schools, inspiring the faithful to deeper prayer, stronger devotion, and a more profound love for the mysteries of the faith. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MICHAEL THE ARCHANGEL
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sm-np-1",
@@ -259,9 +253,7 @@ export const NOVENA_PRAYERS_4: Prayer[] = [
     text: `O glorious Saint Michael the Archangel, we consecrate ourselves to your holy guardianship and place our lives under your divine protection. Be our leader in the spiritual battle, our shield in the hour of danger, and our guide on the path to salvation. We ask that your mighty hand may rest upon us, our families, our parishes, and all the Church Militant, to keep us safe from the powers of evil and to lead us always in the way of truth and holiness. O Saint Michael, defend us in battle, be our protection against the wickedness and snares of the devil. May God rebuke him, we humbly pray, and may you, O prince of the heavenly host, cast into hell Satan and all evil spirits who prowl about the world seeking the ruin of souls. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE ASSUMPTION OF MARY
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "am-np-1",
@@ -345,9 +337,7 @@ export const NOVENA_PRAYERS_4: Prayer[] = [
     text: `O Queen assumed into heaven, we consecrate ourselves wholly and entirely to your Immaculate Heart. Take possession of our hearts, our minds, and our souls, and lead us to your Divine Son. We place under your maternal protection our families, our loved ones, our works, and all that we are and possess. Be truly our Mother and our Queen, and guide us along the narrow path that leads to eternal life. O Mary, assumed into heaven, pray for us who have recourse to you. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY SPIRIT (PENTECOST)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "ph-np-1",

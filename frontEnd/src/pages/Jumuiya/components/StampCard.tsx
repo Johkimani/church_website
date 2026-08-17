@@ -233,7 +233,6 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     pointerEvents: 'none', zIndex: 1
                 }} />
 
-                {/* ── Header ── */}
                 <div style={{
                     background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${_c('DD')} 100%)`,
                     padding: '24px 28px', color: 'white', position: 'relative', overflow: 'hidden'
@@ -274,7 +273,6 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     </div>
                 </div>
 
-                {/* ── Body ── */}
                 <div style={{ padding: '24px 28px 28px' }}>
                     {/* Member Info */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>

@@ -69,7 +69,6 @@ const getActiveRoster = async (jumuiyaId) => {
   }));
 };
 
-// ── GET /context?jumuiya_id=&date= ──────────────────────────────────────
 export const getRegisterContext = async (req, res) => {
   try {
     const jumuiyaId = req.query?.jumuiya_id;
@@ -115,7 +114,6 @@ export const getRegisterContext = async (req, res) => {
   }
 };
 
-// ── GET /register?jumuiya_id=&date= ─────────────────────────────────────
 export const getRegister = async (req, res) => {
   try {
     const jumuiyaId = req.query?.jumuiya_id;
@@ -149,7 +147,6 @@ export const getRegister = async (req, res) => {
   }
 };
 
-// ── POST /register ──────────────────────────────────────────────────────
 export const saveRegister = async (req, res) => {
   const { jumuiya_id, date, records } = req.body || {};
 
@@ -247,7 +244,6 @@ export const saveRegister = async (req, res) => {
   }
 };
 
-// ── DELETE /register/:date?jumuiya_id= ──────────────────────────────────
 export const deleteRegister = async (req, res) => {
   try {
     const jumuiyaId = req.query?.jumuiya_id;
@@ -270,7 +266,6 @@ export const deleteRegister = async (req, res) => {
   }
 };
 
-// ── GET /summary?jumuiya_id=&sessions= ──────────────────────────────────
 export const getSummary = async (req, res) => {
   try {
     const jumuiyaId = req.query?.jumuiya_id;
@@ -343,7 +338,6 @@ export const getSummary = async (req, res) => {
   }
 };
 
-// ── GET /meeting-config (all jumuiyas) ──────────────────────────────────
 export const getMeetingConfigs = async (req, res) => {
   try {
     const result = await pool.query(
@@ -449,7 +443,6 @@ export const getMeetingConfigs = async (req, res) => {
   }
 };
 
-// ── PUT /meeting-config/:jumuiya_id ─────────────────────────────────────
 export const updateMeetingConfig = async (req, res) => {
   const meetingDay = Number(req.body?.meeting_day);
   if (!Number.isInteger(meetingDay) || meetingDay < 0 || meetingDay > 6) {
@@ -484,7 +477,6 @@ export const updateMeetingConfig = async (req, res) => {
   }
 };
 
-// ── DELETE /meeting-config/:jumuiya_id (unset → any meeting day allowed) ──
 export const deleteMeetingConfig = async (req, res) => {
   try {
     const jumuiya = await getJumuiya(req.params?.jumuiya_id);

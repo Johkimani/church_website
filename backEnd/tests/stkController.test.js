@@ -2,7 +2,6 @@ import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { silentLogger } from "./helpers.js";
 
-// ── Module mocks (registered ONCE per process) ─────────────────────────────
 const CHECKOUT = "ws_CO_20260815_00001";
 
 const dbState = { routes: [], calls: [] };
@@ -40,7 +39,6 @@ const { handleCallback, initiateSTK, waitForPaymentResult } = await import(
   "../src/controllers/stkPush/stkController.js?stk"
 );
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
 const setRoutes = (overrides = {}) => {
   dbState.routes = [
     {
@@ -94,7 +92,6 @@ const mkRes = () => {
   return res;
 };
 
-// ── Tests ───────────────────────────────────────────────────────────────────
 test("callback: always acks Safaricom first", async () => {
   setRoutes();
   const res = mkRes();

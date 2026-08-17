@@ -15,7 +15,7 @@ import {
 import { getStaticChapter, getStaticBooks, getStaticVersions } from "../data/bibleData";
 import { apiClient } from "../../../api/axiosInstance";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+
 
 interface BibleVersionInfo {
   id: string;
@@ -61,7 +61,7 @@ interface RecentBook {
   timestamp: number;
 }
 
-// ─── Verse of the Day ────────────────────────────────────────────────────────
+
 const VERSE_OF_THE_DAY: { text: string; ref: string }[] = [
   { text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.", ref: "John 3:16" },
   { text: "The Lord is my shepherd; I shall not want.", ref: "Psalm 23:1" },
@@ -101,7 +101,7 @@ function getVerseOfTheDay() {
   return VERSE_OF_THE_DAY[seed % VERSE_OF_THE_DAY.length];
 }
 
-// ─── Section headings ────────────────────────────────────────────────────────
+
 
 const SECTION_HEADINGS: Record<string, string[]> = {
   "GEN.1": ["The Creation", "The Fall", "The Curse"],
@@ -146,7 +146,7 @@ const SECTION_HEADINGS: Record<string, string[]> = {
   "REV.21": ["A New Heaven and a New Earth"],
 };
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+
 
 export default function Bible() {
   const [versions, setVersions] = useState<BibleVersionInfo[]>(() => getStaticVersions());
@@ -180,7 +180,7 @@ export default function Bible() {
 
   const verseOfDay = useMemo(() => getVerseOfTheDay(), []);
 
-  // ── Load versions & books from backend API (static fallback) ──
+
   useEffect(() => {
     let mounted = true;
     const loadVersions = async () => {
@@ -207,7 +207,7 @@ export default function Bible() {
     return () => { mounted = false; };
   }, [version]);
 
-  // ── Load persisted data ──
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem("bible-bookmarks");
@@ -244,7 +244,7 @@ export default function Bible() {
     localStorage.setItem("bible-recent-books", JSON.stringify(updated));
   };
 
-  // ── Section headings ──
+
   const sectionHeadings = useMemo(() => {
     if (!selectedBook) return {};
     const key = `${selectedBook.code}.${selectedChapter}`;
@@ -259,7 +259,7 @@ export default function Bible() {
     return map;
   }, [selectedBook, selectedChapter, verses]);
 
-  // ── Load chapter ──
+
   const loadChapter = useCallback(async (bookCode: string, chapter: number) => {
     setLoading(true);
     setError(null);
@@ -300,7 +300,7 @@ export default function Bible() {
     }
   }, [allBooks, readChapters, recentBooks, version]);
 
-  // ── Book selection ──
+
   const handleBookSelect = (book: BookInfo) => {
     setSelectedBook(book);
     setSelectedChapter(1);
@@ -308,7 +308,7 @@ export default function Bible() {
     loadChapter(book.code, 1);
   };
 
-  // ── Chapter nav ──
+
   const goToPrev = useCallback(() => {
     if (!selectedBook || selectedChapter <= 1) return;
     loadChapter(selectedBook.code, selectedChapter - 1);
@@ -319,7 +319,7 @@ export default function Bible() {
     loadChapter(selectedBook.code, selectedChapter + 1);
   }, [selectedBook, selectedChapter, loadChapter]);
 
-  // ── Keyboard ──
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -330,7 +330,7 @@ export default function Bible() {
     return () => window.removeEventListener("keydown", handler);
   }, [goToPrev, goToNext]);
 
-  // ── Swipe gestures ──
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -344,35 +344,35 @@ export default function Bible() {
     }
   };
 
-  // ── Version change ──
+
   const handleVersionChange = (newVer: string) => {
     setVersion(newVer);
     localStorage.setItem("bible-reader-version", newVer);
     if (selectedBook) loadChapter(selectedBook.code, selectedChapter);
   };
 
-  // ── Font size ──
+
   const changeFontSize = (delta: number) => {
     const next = Math.max(14, Math.min(28, fontSize + delta));
     setFontSize(next);
     localStorage.setItem("bible-font-size", String(next));
   };
 
-  // ── Dark mode toggle ──
+
   const toggleDarkMode = () => {
     const next = !darkMode;
     setDarkMode(next);
     localStorage.setItem("bible-dark-mode", String(next));
   };
 
-  // ── Paragraph mode toggle ──
+
   const toggleParagraphMode = () => {
     const next = !paragraphMode;
     setParagraphMode(next);
     localStorage.setItem("bible-paragraph-mode", String(next));
   };
 
-  // ── Copy with reference ──
+
   const handleCopy = (verse: Verse) => {
     const ref = selectedBook ? `${selectedBook.name} ${selectedChapter}:${verse.verse}` : "";
     const verName = currentVersion?.name || version.toUpperCase();
@@ -382,7 +382,7 @@ export default function Bible() {
     setTimeout(() => setCopiedVerse(null), 2000);
   };
 
-  // ── Bookmark ──
+
   const handleBookmark = (verse: Verse) => {
     const ref = selectedBook ? `${selectedBook.name} ${selectedChapter}:${verse.verse}` : "";
     const exists = bookmarks.find(
@@ -403,7 +403,7 @@ export default function Bible() {
   const isBookmarked = (v: number) =>
     bookmarks.some((b) => b.version === version && b.book === selectedBook?.code && b.chapter === selectedChapter && b.verse === v);
 
-  // ── Search ──
+
   const handleSearch = () => {
     if (!searchQuery.trim()) return;
     const refMatch = searchQuery.match(/^(\d?\s*\w+)\s+(\d+):(\d+)$/i);
@@ -424,7 +424,7 @@ export default function Bible() {
       else toast.error(`"${bookName}" not found`);
       return;
     }
-    toast("Type a reference like \"John 3:16\" or \"Genesis 1\"", { icon: "📖" });
+    toast("Type a reference like \"John 3:16\" or \"Genesis 1\"", { icon: "" });
   };
 
   const currentVersion = versions.find((v) => v.id === version) || versions[0];
@@ -432,10 +432,10 @@ export default function Bible() {
   const DC = allBooks.filter((b) => b.testament === "DC");
   const NT = allBooks.filter((b) => b.testament === "NT");
 
-  // ── Check if a book has read chapters ──
+
   const getReadCount = (bookCode: string) => readChapters[bookCode]?.size || 0;
 
-  // ─── RENDER ──────────────────────────────────────────────────────────────
+  
   return (
     <div
       ref={containerRef}
@@ -443,7 +443,6 @@ export default function Bible() {
       onTouchStart={selectedBook ? handleTouchStart : undefined}
       onTouchEnd={selectedBook ? handleTouchEnd : undefined}
     >
-      {/* ── Top Bar ── */}
       <div className={`sticky top-16 lg:top-20 z-30 transition-colors duration-300 ${darkMode ? "bg-[#222] border-b border-[#333]" : "bg-white/80 backdrop-blur-md border-b border-stone-200/60"}`}>
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           {selectedBook ? (
@@ -495,7 +494,7 @@ export default function Bible() {
               )}
 
               <button onClick={toggleDarkMode} className={`p-2 rounded-lg transition-colors ${darkMode ? "text-yellow-400 hover:bg-[#333]" : "text-stone-500 hover:bg-stone-100"}`}>
-                {darkMode ? "☀️" : "🌙"}
+                {darkMode ? "" : ""}
               </button>
 
               {selectedBook && (
@@ -575,7 +574,6 @@ export default function Bible() {
         )}
       </div>
 
-      {/* ── Book Navigation Panel ── */}
       {showBookNav && (
         <div className={`max-w-3xl mx-auto px-4 py-4 ${darkMode ? "text-stone-200" : ""}`}>
           <div className={`rounded-2xl border p-4 ${darkMode ? "bg-[#222] border-[#333]" : "bg-white border-stone-200 shadow-sm"}`}>
@@ -625,7 +623,6 @@ export default function Bible() {
         </div>
       )}
 
-      {/* ── Bookmarks Panel ── */}
       {showBookmarks && (
         <div className={`max-w-3xl mx-auto px-4 py-4`}>
           <div className={`rounded-2xl border p-5 ${darkMode ? "bg-[#222] border-[#333]" : "bg-white border-stone-200 shadow-sm"}`}>
@@ -656,7 +653,6 @@ export default function Bible() {
         </div>
       )}
 
-       {/* ── Main Area ── */}
        <div className={`max-w-3xl mx-auto px-4 ${immersiveMode ? "py-8" : "py-6"}`}>
          {/* Total Reading Progress */}
          {Object.keys(readChapters).length > 0 && (
@@ -681,7 +677,6 @@ export default function Bible() {
          )}
 
          {!selectedBook && !showBookNav && !showBookmarks && (
-          /* ── Landing ── */
           <div className="py-10 space-y-8">
             {/* Verse of the Day */}
             <div className={`rounded-2xl border p-6 text-center ${darkMode ? "bg-[#222] border-[#333]" : "bg-gradient-to-b from-amber-50/80 to-white border-amber-100/60 shadow-sm"}`}>
@@ -750,7 +745,7 @@ export default function Bible() {
             {/* Start Reading */}
             <div className="text-center pt-8 pb-12">
               <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 ${darkMode ? "bg-amber-900/30 border border-amber-800/30" : "bg-amber-50 border border-amber-100"}`}>
-                <span className={`text-3xl ${darkMode ? "text-amber-400" : "text-amber-600"}`}>✝</span>
+                <span className={`text-3xl ${darkMode ? "text-amber-400" : "text-amber-600"}`}></span>
               </div>
               <h1 className={`text-2xl font-serif font-bold mb-1 ${darkMode ? "text-stone-200" : "text-stone-800"}`}>
                 {currentVersion?.name || "Holy Bible"}
@@ -771,7 +766,6 @@ export default function Bible() {
           </div>
         )}
 
-         {/* ── Chapter Content ── */}
          {selectedBook && (
            <div className="py-6">
              {/* Book Progress */}
@@ -814,8 +808,7 @@ export default function Bible() {
                 style={{ fontSize: `${fontSize}px`, color: darkMode ? "#d4d0c8" : "#2c2c2c" }}
               >
                 {paragraphMode ? (
-                  /* ── Paragraph Mode ── */
-                  <div className="space-y-4">
+                   <div className="space-y-4">
                     {/* Section headings in paragraph mode */}
                     {(() => {
                       const sections: { heading?: string; verseStart: number; verseEnd: number }[] = [];
@@ -866,8 +859,7 @@ export default function Bible() {
                     })()}
                   </div>
                 ) : (
-                  /* ── Verse-by-Verse Mode ── */
-                  verses.map((v) => {
+                   verses.map((v) => {
                     const heading = sectionHeadings[v.verse];
                     return (
                       <span key={v.verse} className="block">

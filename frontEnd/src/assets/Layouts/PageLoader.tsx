@@ -13,7 +13,7 @@ const PageLoader: React.FC<PageLoaderProps> = ({ message = 'Loading...', fullScr
                 <div className="spinner-ring ring-1"></div>
                 <div className="spinner-ring ring-2"></div>
                 <div className="spinner-ring ring-3"></div>
-                <div className="loader-icon">✝</div>
+                <div className="loader-icon"></div>
             </div>
             <div className="loader-text-wrap">
                 <p className="loader-text">{message}</p>

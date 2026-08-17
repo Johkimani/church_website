@@ -86,7 +86,7 @@ export default function ProductDetails() {
                             <img src={image} alt={product.name} className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover" />
                         ) : (
                             <div className="w-full h-[300px] sm:h-[400px] lg:h-[500px] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-6xl">
-                                ✝️
+
                             </div>
                         )}
                     </div>
@@ -246,7 +246,7 @@ export default function ProductDetails() {
                                         {img ? (
                                             <img src={img} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-3xl">✝️</div>
+                                            <div className="w-full h-full flex items-center justify-center text-3xl"></div>
                                         )}
                                     </div>
                                     <div className="p-3">

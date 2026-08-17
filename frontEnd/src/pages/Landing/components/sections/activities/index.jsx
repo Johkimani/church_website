@@ -11,15 +11,13 @@ import { useAuth } from "../../../../../context/AuthContext";
 import { bookingService, rsvpService } from "../../../../../api/activitiesServices";
 import { useNavigate } from "react-router-dom";
 
-// ── Activity icons — matches repo's emoji/icon style ──────────────
 const ACTIVITY_ICONS = {
-  "Rosary":         "📿",
-  "Choir Practice": "🎵",
-  "Bible Study":    "📖",
-  "Mass":           "⛪",
+  "Rosary":         "",
+  "Choir Practice": "",
+  "Bible Study":    "",
+  "Mass":           "",
 };
 
-// ── Day accent colours — slate palette matching repo's design system ─
 const DAY_COLORS = {
   Monday:    "border-l-blue-400   bg-blue-50/40",
   Tuesday:   "border-l-purple-400 bg-purple-50/40",
@@ -38,7 +36,6 @@ const ACTIVITY_IMAGES = {
   Saturday: "/images/sta choir.png",
 };
 
-// ── Image mapping for Weekly Activities ───────────────────────────
 const DEFAULT_ACTIVITY_IMAGE = "/images/church.jpg";
 
 const getWeeklyActivityImage = (activity) => {
@@ -69,11 +66,10 @@ const getWeeklyActivityImage = (activity) => {
   return null;
 };
 
-// ── Weekly Activity Card ───────────────────────────────────────────
 function WeeklyCard({ activity, onBook, bookingState, rsvpState, onToggleRsvp }) {
   const { user } = useAuth();
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
-  const icon = ACTIVITY_ICONS[activity.activity] || "✝";
+  const icon = ACTIVITY_ICONS[activity.activity] || "";
 
   const mappedImage = getWeeklyActivityImage(activity);
   const imgSrc = mappedImage || DEFAULT_ACTIVITY_IMAGE;
@@ -155,7 +151,7 @@ function WeeklyCard({ activity, onBook, bookingState, rsvpState, onToggleRsvp })
         <p className="flex items-center gap-2">
           <Clock size={12} className="text-primary/60" />{activity.time}
         </p>
-        <p className="text-[11px] text-slate-600 font-semibold">⏳ {timerText}</p>
+        <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
         <p className="flex items-center gap-2">
           <MapPin size={12} className="text-primary/60" />{activity.venue}
         </p>
@@ -192,7 +188,6 @@ function WeeklyCard({ activity, onBook, bookingState, rsvpState, onToggleRsvp })
   );
 }
 
-// ── Semester Event Card ────────────────────────────────────────────
 function SemesterCard({ event, onBook, bookingState, rsvpState, onToggleRsvp }) {
   const { user } = useAuth();
   const dt = new Date(event.date_time);
@@ -270,7 +265,7 @@ function SemesterCard({ event, onBook, bookingState, rsvpState, onToggleRsvp }) 
           <Clock size={12} className="text-primary/60" />
           {dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
         </p>
-        <p className="text-[11px] text-slate-600 font-semibold">⏳ {timerText}</p>
+        <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
         <p className="flex items-center gap-2">
           <MapPin size={12} className="text-primary/60" />
           {event.venue}
@@ -308,7 +303,6 @@ function SemesterCard({ event, onBook, bookingState, rsvpState, onToggleRsvp }) 
   );
 }
 
-// ── Booking Modal ──────────────────────────────────────────────────
 function BookingModal({ activity, activityType, onClose, existingBooking, onPaymentComplete }) {
   const [step, setStep] = useState(existingBooking?.id ? "paying" : "book");
   const [phone, setPhone] = useState("");
@@ -491,7 +485,7 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
               <div className="mx-auto w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><AlertCircle size={40} /></div>
               <div>
                 <h3 className="text-2xl font-black text-gray-900">Error</h3>
-                <p className="text-slate-500 mt-2">{message || "Something went wrong. Please try again."}</p>
+                <p className="text-slate-500 mt-2">{message || "Booking failed. Please try again."}</p>
               </div>
               <button onClick={() => { setStep("book"); setMessage(""); }} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all">Try Again</button>
             </div>
@@ -505,7 +499,6 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
   );
 }
 
-// ── Main Section ───────────────────────────────────────────────────
 const ActivitiesSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();

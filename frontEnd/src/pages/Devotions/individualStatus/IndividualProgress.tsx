@@ -19,22 +19,22 @@ interface SummaryEntry {
 // Encouragement messages based on accuracy
 function getEncouragement(accuracy: number): { emoji: string; verse: string; msg: string } {
   if (accuracy >= 80) return {
-    emoji: "🌟",
+    emoji: "",
     verse: "\"Well done, good and faithful servant.\" — Matthew 25:21",
     msg: "Outstanding! Keep shining in your faith walk.",
   };
   if (accuracy >= 60) return {
-    emoji: "🕊️",
+    emoji: "",
     verse: "\"I press on toward the goal.\" — Philippians 3:14",
     msg: "Great progress — your perseverance is an inspiration.",
   };
   if (accuracy >= 40) return {
-    emoji: "🌱",
+    emoji: "",
     verse: "\"Faith as small as a mustard seed.\" — Matthew 17:20",
     msg: "You're growing! Every attempt builds wisdom.",
   };
   return {
-    emoji: "🙏",
+    emoji: "",
     verse: "\"Ask and it shall be given to you.\" — Matthew 7:7",
     msg: "Keep showing up — your journey is just beginning.",
   };
@@ -147,7 +147,7 @@ export default function MemberDashboard() {
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 rounded-full border-4 border-amber-200" />
             <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin" />
-            <span className="absolute inset-0 flex items-center justify-center text-xl">🙏</span>
+            <span className="absolute inset-0 flex items-center justify-center text-xl"></span>
           </div>
           <p className="text-sm font-semibold text-amber-700 tracking-wide">Loading your journey...</p>
         </div>
@@ -163,7 +163,6 @@ export default function MemberDashboard() {
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16">
 
-        {/* ── HEADER ── */}
         <div className="mb-8">
           <p className="text-xs font-bold text-amber-600 uppercase tracking-[0.25em] mb-2">Your Spiritual Journey</p>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight">
@@ -178,48 +177,44 @@ export default function MemberDashboard() {
         </div>
 
         {!summary ? (
-          /* ── EMPTY STATE ── */
           <div className="bg-white rounded-3xl border border-amber-100 shadow-sm p-12 text-center">
-            <div className="text-5xl mb-5">📖</div>
+            <div className="text-5xl mb-5"></div>
             <h3 className="text-xl font-black text-slate-800 mb-2">No Progress Recorded Yet</h3>
             <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
               Complete the weekly liturgical challenge and the liturgist will publish your progress here.
             </p>
             <div className="mt-6 inline-block px-5 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-700">
-              🌟 Start this week's challenge to begin your journey
+              Start this week's challenge to begin your journey
             </div>
           </div>
         ) : (
           <>
-            {/* ── ENCOURAGEMENT BANNER ── */}
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-5 mb-6 text-white shadow-lg shadow-amber-200/60">
               <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Liturgist's Note</p>
               <p className="font-semibold text-sm leading-relaxed">{encouragement.msg}</p>
             </div>
 
-            {/* ── STATS ROW ── */}
             <div className="grid grid-cols-3 gap-3 mb-6">
               {/* Total attempts */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-                <div className="text-2xl mb-1">📝</div>
+                <div className="text-2xl mb-1"></div>
                 <p className="text-2xl font-black text-slate-900">{summary.totalAttempts}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Attempts</p>
               </div>
               {/* Correct */}
               <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-4 text-center">
-                <div className="text-2xl mb-1">✅</div>
+                <div className="text-2xl mb-1"></div>
                 <p className="text-2xl font-black text-emerald-700">{summary.correctAttempts}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Correct</p>
               </div>
               {/* Wrong */}
               <div className="bg-white rounded-2xl border border-red-50 shadow-sm p-4 text-center">
-                <div className="text-2xl mb-1">🔄</div>
+                <div className="text-2xl mb-1"></div>
                 <p className="text-2xl font-black text-red-500">{wrongAnswers}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Review</p>
               </div>
             </div>
 
-            {/* ── ACCURACY RING + BREAKDOWN ── */}
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 mb-6 flex flex-col sm:flex-row items-center gap-8">
               <div className="flex-shrink-0">
                 <AccuracyRing accuracy={accuracy} />
@@ -236,7 +231,6 @@ export default function MemberDashboard() {
               </div>
             </div>
 
-            {/* ── TRAJECTORY CHART ── */}
             {chartData.length > 0 && (
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 mb-6">
                 <div className="flex items-center justify-between mb-6">
@@ -277,7 +271,6 @@ export default function MemberDashboard() {
               </div>
             )}
 
-            {/* ── BOTTOM SCRIPTURE ── */}
             <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-5 text-center">
               <p className="text-amber-800 font-semibold text-sm leading-relaxed italic">
                 "Do not be conformed to this world, but be transformed by the renewing of your mind."

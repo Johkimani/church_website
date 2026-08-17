@@ -1,10 +1,8 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_11: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MICHAEL THE ARCHANGEL
   // novenaId: "novenas-saint-michael-archangel"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sma-np-1",
@@ -88,10 +86,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O glorious Saint Michael the Archangel, prince of the heavenly court and servant of the Most High God, I come to the close of this novena with a heart full of gratitude for your heavenly protection and a deep resolve to remain faithful to the God you serve. I consecrate myself today to your holy protection, entrusting to your care my body and soul, my family and friends, my work and ministry, my present life and my eternal destiny. Be my constant companion on the way of salvation, my shield in the hour of temptation, my light in the darkness of doubt, and my advocate before the throne of God. O Saint Michael, who in the power of God cast down the dragon from heaven, cast down from my life every influence of evil, and establish in my heart the perfect reign of Jesus Christ. Lead me always in the path of duty and honor, defend me in every danger, and when the time comes, conduct me to the presence of the Eternal King, there to praise God with you and all the angels for ever and ever. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT GABRIEL THE ARCHANGEL
   // novenaId: "novenas-saint-gabriel"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sga-np-1",
@@ -175,10 +171,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O glorious Saint Gabriel the Archangel, heavenly intercessor and faithful servant of the Most High God, as I bring this novena to its close, I offer you my heartfelt gratitude for the graces and blessings that have flowed from your powerful intercession. I ask you now to continue to watch over me and to present my prayers before the throne of God with the same diligence and love that you displayed when you carried the message of salvation to the Blessed Virgin Mary. Be my constant companion on the journey of faith, my guide in times of uncertainty, my comfort in times of sorrow, and my protector in times of danger. O Saint Gabriel, who in the presence of God offered the prayers of the faithful as incense, accept now my prayer and carry it to the foot of the divine throne. And may the God who sent you to announce the coming of the Savior bless me, keep me, and bring me safely to the eternal joy of His kingdom. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT URSULA
   // novenaId: "novenas-saint-ursula"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sur-np-1",
@@ -262,10 +256,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O glorious Saint Ursula, queen of the holy virgins and crown of the martyrs, as I bring this novena to its close, I place myself under your heavenly patronage and consecrate myself to your loving care. You who led eleven thousand virgins to the palm of martyrdom and to the crown of eternal glory, be my guide and companion on the journey of faith. Protect my purity of heart and body, strengthen my resolve to live for Christ alone, and obtain for me the grace of final perseverance. O Saint Ursula, who in the sight of God intercedes for all who honor you, present my petitions before the throne of the Almighty, and obtain for me the favors I have sought during these nine days of prayer. May the God who adorned you with the crown of virginity and martyrdom bless you and reward you for all eternity, and may your prayers bring me closer to the heart of Jesus Christ, your divine King. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT ANTHONY OF PADUA
   // novenaId: "novenas-saint-anthony-patron"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sap-np-1",
@@ -349,10 +341,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O blessed Saint Anthony, lily of purity, star of holiness, and miracle-worker of God, as I bring this novena to its close, I offer you my most sincere gratitude for the blessings and graces that have been bestowed upon me through your powerful intercession. I consecrate myself anew to your loving care, entrusting to you my body and soul, my present and my future, my joys and my sorrows, my successes and my failures. You who hold in your arms the Infant Jesus, the source of all grace and blessing, present me before Him and ask Him to look upon me with mercy and love. O Saint Anthony, whose feast day is celebrated with such joy by the faithful, who is invoked in every need and never left without assistance, continue to help me throughout my life and at the hour of my death. May the God who adorned you with such remarkable gifts and virtues bless you and reward you for all eternity, and may your prayers bring me safely to the gates of paradise, where I hope to thank God for all eternity for having given me such a powerful friend in heaven. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT CLEMENT
   // novenaId: "novenas-saint-clement"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "scm-np-1",
@@ -436,10 +426,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O glorious Saint Clement, pope, martyr, and faithful successor of Saint Peter, as I bring this novena to its close, I offer you my deepest gratitude for your powerful intercession and heavenly aid. You who governed the universal Church with apostolic authority, who defended the faith against error, who sealed your pontificate with the blood of martyrdom, and who continue to assist the faithful from your throne in heaven — be my constant intercessor before the throne of God. I entrust to your care all my needs, both spiritual and temporal, and I consecrate myself to your patronage for the rest of my life. May the God who chose you to be the Vicar of Christ on earth and who crowned you with the laurel of martyrdom reward you for all eternity and grant me, through your intercession, the grace to remain faithful to the Catholic faith until the day I stand before the throne of God. O Saint Clement, Vicar of Christ and martyr of the faith, pray for us now and at the hour of our death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT LUCY
   // novenaId: "novenas-saint-lucy"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "slu-np-1",
@@ -523,10 +511,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O blessed Saint Lucy, star of the Advent season and herald of the coming Christ, as I bring this novena to its close, I place myself under your heavenly patronage and dedicate myself to your service. You who shine as a beacon of light in the midst of the dark winter of this world, you who prepare the way of the Lord by your life of faith and charity, you who by your martyrdom have won the crown of eternal life — be my guide and my companion on the journey to heaven. Grant me the grace to carry the light of Christ wherever I go, to shine as a lamp of faith in a world of unbelief, and to illuminate the path for others who walk in darkness. O Saint Lucy, whose feast day falls in the darkest time of the year as a reminder that the light of Christ is always stronger than the darkness, obtain for me the light of God's grace in this life and the light of God's glory in the next. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT BARBARA
   // novenaId: "novenas-saint-barbara"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sbr-np-1",
@@ -610,10 +596,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O glorious Saint Barbara, virgin, martyr, and powerful intercessor before the throne of God, as I bring this novena to its close, I offer you my deepest thanks for your heavenly aid and protection. You who in your earthly life were a tower of faith and a fortress of virtue, you who in your heavenly glory continue to watch over the faithful with maternal care, be my constant protector and advocate. I entrust to you my body and soul, my present and my future, my hopes and my fears, and I ask that you may present my petitions before the throne of the Almighty. O Saint Barbara, who obtained from God the extraordinary privilege that those who invoke you at the hour of death would never die without the last sacraments, obtain for me the grace of a holy life and a holy death, that I may receive the sacraments of the Church in my final hour and depart this world in the friendship of God. O Saint Barbara, powerful helper in every need, be with me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT AMBROSE
   // novenaId: "novenas-saint-ambrose"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sam-np-1",
@@ -697,10 +681,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O glorious Saint Ambrose, honey-tongued doctor of the Church, bishop of Milan, and one of the greatest preachers in the history of Christianity, as I bring this novena to its close, I offer you my most sincere gratitude for your powerful intercession and heavenly aid. You who converted Saint Augustine through your preaching and by your prayers, you who defended the faith against heresy, who governed the Church with wisdom and courage, who enriched the Church with sacred music and sacred learning, who fed the poor and cared for the sick — be my constant intercessor before the throne of God. I entrust to you all my needs, both spiritual and temporal, and I consecrate myself to your patronage. O Saint Ambrose, who was taken from the world to the episcopal throne by divine providence, obtain for me the grace to respond to God's call with the same promptness and generosity that characterized your life. May the God who adorned you with such remarkable gifts and virtues bless you and reward you for all eternity, and may your prayers bring me safely to the heavenly kingdom. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT NICHOLAS
   // novenaId: "novenas-saint-nicholas"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "snich-np-1",
@@ -784,10 +766,8 @@ export const NOVENA_PRAYERS_11: Prayer[] = [
     text: `O glorious Saint Nicholas, bishop of Myra, wonder-worker of God, and beloved patron of children and gift-givers, as I bring this novena to its close, I offer you my most heartfelt gratitude for your powerful intercession and heavenly aid. You who in your earthly life were a model of charity, generosity, and holiness, and who in your heavenly glory continue to shower blessings upon the faithful who call upon your name — be my constant friend and helper. I entrust to you my family, my work, my finances, and every intention that I carry in my heart. May the God who adorned you with such remarkable gifts and virtues bless you and reward you for all eternity. O Saint Nicholas, whose name evokes the joy and generosity of Christmas, obtain for me the grace to live with the same spirit of selfless love that characterized your life, so that I may one day join you in the heavenly kingdom, there to praise God for ever and ever. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT ELIZABETH ANN SETON
   // novenaId: "novenas-saint-elizabeth-ann-seton"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "seas-np-1",

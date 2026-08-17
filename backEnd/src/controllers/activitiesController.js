@@ -1,10 +1,6 @@
 // src/controllers/activitiesController.js
 import { db } from "../Configs/dbConfig.js";
 
-// ─────────────────────────────────────────────
-// WEEKLY ACTIVITIES
-// ─────────────────────────────────────────────
-
 export const getWeeklyActivities = async (req, res) => {
   try {
     const result = await db.query(
@@ -402,10 +398,6 @@ export const reorderWeeklyActivities = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
-// SEMESTER ACTIVITIES
-// ─────────────────────────────────────────────
-
 export const getSemesterActivities = async (req, res) => {
   try {
     const result = await db.query(
@@ -540,10 +532,6 @@ export const deleteSemesterActivity = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-// ─────────────────────────────────────────────
-// EFFECTIVE SCHEDULE (AUTO SWITCH)
-// ─────────────────────────────────────────────
-
 export const getEffectiveWeeklySchedule = async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
@@ -599,10 +587,6 @@ export const getEffectiveWeeklySchedule = async (req, res) => {
     });
   }
 };
-// ─────────────────────────────────────────────
-// NOVENA SYSTEM
-// ─────────────────────────────────────────────
-
 export const getNovenaSchedules = async (req, res) => {
   try {
     const result = await db.query(
@@ -796,10 +780,6 @@ export const deleteNovenaOverrideActivity = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
-// SEMESTER ACTIVITIES (ADMIN: activate/deactivate)
-// ─────────────────────────────────────────────
-
 export const activateSemesterActivity = async (req, res) => {
   const { id } = req.params;
 
@@ -837,10 +817,6 @@ export const deactivateSemesterActivity = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-
-// ─────────────────────────────────────────────
-// NOVENA OVERRIDES (ADMIN: reorder)
-// ─────────────────────────────────────────────
 
 export const reorderNovenaOverrides = async (req, res) => {
   const { items } = req.body || {};

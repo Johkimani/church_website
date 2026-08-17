@@ -39,10 +39,8 @@ const JUMUIYA_OFFICIAL_ROLES = [
 // through for any jumuiya; writes remain scoped to JUMUIYA_ROLES.
 const JUMUIYA_READ_ROLES = [...JUMUIYA_OFFICIAL_ROLES, ...CSA_ROLES];
 
-// ── Batch (all jumuiya stats in one call) ──
 router.get("/stats/batch", verifyToken, requireRole(...OFFICIAL_ROLES), getBatchStatistics);
 
-// ── CSA-Level (centralized admission & distribution — CSA executives only) ──
 router.post("/csa/import-members", verifyToken, requireRole(...CSA_ROLES), csaImportMembers);
 router.get("/csa/pending-members", verifyToken, requireRole(...CSA_ROLES), csaGetPendingMembers);
 router.get("/csa/jumuiya-stats", verifyToken, requireRole(...CSA_ROLES), csaGetJumuiyaStats);
@@ -64,8 +62,6 @@ router.get("/csa/jumuiya-list/:jumuiya_id", verifyToken, requireRole(...JUMUIYA_
 router.get("/csa/rejected-members", verifyToken, requireRole(...CSA_ROLES), csaGetRejectedMembers);
 router.patch("/csa/rejected-members/:id", verifyToken, requireRole(...CSA_ROLES), csaUpdateRejectedMember);
 router.delete("/csa/rejected-members/:id", verifyToken, requireRole(...CSA_ROLES), csaDeleteRejectedMember);
-
-// ── Per-jumuiya management (officials, scoped to their own jumuiya) ──
 
 // Seasons
 router.post("/:jumuiya_id/seasons", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), createSeason);

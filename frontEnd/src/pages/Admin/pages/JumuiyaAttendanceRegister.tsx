@@ -16,8 +16,6 @@ import {
 } from "lucide-react";
 import { jumuiyaAttendanceService, getApiError } from "../../../api/jumuiyaAttendanceService";
 
-// ── Types ────────────────────────────────────────────────────────────────
-
 interface RegisterContext {
   date: string;
   today: string;
@@ -58,8 +56,6 @@ interface StripDay {
   recorded: boolean;
 }
 
-// ── Date helpers ─────────────────────────────────────────────────────────
-
 const fmt = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -79,8 +75,6 @@ const inputCls =
 
 const pctLabel = (rate: number | null) =>
   rate == null ? "—" : `${(rate * 100).toFixed(1)}%`;
-
-// ── Main component ───────────────────────────────────────────────────────
 
 export default function JumuiyaAttendanceRegister({
   jumuiyaId,
@@ -102,7 +96,6 @@ export default function JumuiyaAttendanceRegister({
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
 
-  // ── Loaders ──
   const loadRegister = useCallback(
     async (target: string) => {
       if (!jumuiyaId) return;
@@ -171,7 +164,6 @@ export default function JumuiyaAttendanceRegister({
     return days.reverse();
   }, [ctx, summary]);
 
-  // ── Derived ──
   const roster = ctx?.roster || [];
   const presentCount = useMemo(
     () => roster.filter((m) => presentMap[m.member_id] === true).length,
@@ -185,7 +177,6 @@ export default function JumuiyaAttendanceRegister({
     roster.length > 0 &&
     !saving;
 
-  // ── Actions ──
   const setAll = (value: boolean) => {
     const next: Record<string, boolean> = {};
     roster.forEach((m) => {
@@ -235,7 +226,6 @@ export default function JumuiyaAttendanceRegister({
     }
   };
 
-  // ── Render ──
   return (
     <div className="space-y-6">
       {/* Header + view toggle */}

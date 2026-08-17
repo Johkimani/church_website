@@ -104,13 +104,13 @@ const ProjectsSection: React.FC = () => {
                     )}
                     <div className="grid gap-2 sm:grid-cols-2 text-sm text-slate-600">
                       {project.start_date && (
-                        <p>📅 Started: {new Date(project.start_date).toLocaleDateString()}</p>
+                        <p>Started: {new Date(project.start_date).toLocaleDateString()}</p>
                       )}
                       {project.end_date && (
-                        <p>🏁 Target: {new Date(project.end_date).toLocaleDateString()}</p>
+                        <p>Target: {new Date(project.end_date).toLocaleDateString()}</p>
                       )}
                       {project.budget && (
-                        <p>💰 Budget: KES {project.budget.toLocaleString()}</p>
+                        <p>Budget: KES {project.budget.toLocaleString()}</p>
                       )}
                     </div>
                   </div>

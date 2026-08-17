@@ -13,7 +13,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   novenas: 'from-purple-600 to-indigo-600',
 };
 
-// ─── Litany Parser ─────────────────────────────────────────────
 // Litanies store text as "Holy Mary, pray for us. Holy Mother of God, pray for us."
 // with \n\n separating sections. We parse into structured invocation/response pairs.
 
@@ -93,7 +92,7 @@ function parseLitany(text: string): LitanyBlock[] {
   return blocks;
 }
 
-// ─── Litany Body Component ─────────────────────────────────────
+
 
 function LitanyBody({ prayer }: { prayer: Prayer }) {
   const blocks = parseLitany(prayer.text);
@@ -144,7 +143,7 @@ function LitanyBody({ prayer }: { prayer: Prayer }) {
   );
 }
 
-// ─── Generic Body ──────────────────────────────────────────────
+
 
 function GenericBody({ prayer }: { prayer: Prayer }) {
   return (
@@ -161,7 +160,7 @@ function GenericBody({ prayer }: { prayer: Prayer }) {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────
+
 
 export default function PrayerReader({ prayer, onClose }: PrayerReaderProps) {
   const gradient = CATEGORY_COLORS[prayer.category] || 'from-indigo-600 to-purple-600';

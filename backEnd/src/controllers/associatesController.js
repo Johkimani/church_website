@@ -37,7 +37,6 @@ const slugToJumuiyaName = {
   "st-monica": "St. Monica",
 };
 
-// ── GET pending graduated members ──
 export const getPendingMigrationMembers = async (req, res) => {
   try {
     const { jumuiya_id } = req.query;
@@ -107,7 +106,6 @@ export const getPendingMigrationMembers = async (req, res) => {
   }
 };
 
-// ── POST migrate graduated members to associates ──
 export const migrateToAssociates = async (req, res) => {
   try {
     const { member_ids, migrated_by } = req.body;
@@ -152,7 +150,6 @@ export const migrateToAssociates = async (req, res) => {
   }
 };
 
-// ── GET list all associates ──
 export const getAssociatesList = async (req, res) => {
   try {
     const { jumuiya_id, graduation_year } = req.query;
@@ -184,7 +181,6 @@ export const getAssociatesList = async (req, res) => {
   }
 };
 
-// ── GET export associates as JSON (for frontend Excel export) ──
 export const exportAssociates = async (req, res) => {
   try {
     const { graduation_year, jumuiya_id } = req.query;
@@ -226,7 +222,6 @@ export const exportAssociates = async (req, res) => {
   }
 };
 
-// ── DELETE revert migration (undo) ──
 export const undoMigration = async (req, res) => {
   try {
     const { member_id } = req.body;

@@ -116,7 +116,6 @@ export default function UniversalAdmin() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [openMenus, setOpenMenus] = useState<string[]>(['activities']);
 
-  // ── Preserve sidebar nav scroll position across route changes ──
   const navRef = useRef<HTMLElement | null>(null);
   const NAV_SCROLL_KEY = 'admin_nav_scroll';
   const loadSavedNavScroll = (): number => {
@@ -235,7 +234,6 @@ export default function UniversalAdmin() {
 
   const { user, logout } = useAuth();
 
-  // ── Role Access Controls (single source of truth: utils/adminAccess) ──────
   const normalized = normalizeRoles(user?.role);
 
   const hasAccess = checkAccess(normalized, location.pathname);
@@ -292,7 +290,6 @@ export default function UniversalAdmin() {
         />
       )}
 
-      {/* ═══════════════ SIDEBAR ═══════════════ */}
       <aside
         className={`${isMobile
             ? `fixed inset-y-0 left-0 w-72 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
@@ -459,7 +456,6 @@ export default function UniversalAdmin() {
         </div>
       </aside>
 
-      {/* ═══════════════ MAIN AREA ═══════════════ */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="h-16 lg:h-[4.25rem] bg-white/95 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-4 md:px-6 lg:px-8 shrink-0 shadow-sm z-20">

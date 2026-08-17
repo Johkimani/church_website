@@ -27,9 +27,6 @@ const TITLES = {
   gospel: "Gospel",
 };
 
-// ─── PSALM RESPONSES ──────────────────────────────────────────────────
-// Maps psalm numbers to their proper liturgical responses (Roman Lectionary)
-// Used when the raw text has no R. markers (bible-api.com returns plain text)
 const PSALM_RESPONSES = {
   1: "The Lord will guard the way of the just.",
   2: "You are my Son; this day I have begotten you.",
@@ -337,7 +334,6 @@ const PSALM_RESPONSES_SW = {
   150: "Mtuimbueni Bwana katika mahali patakatifu.",
 };
 
-// ─── Helper: extract psalm number from citation ────────────────────────
 function extractPsalmNumber(citation) {
   const m = citation.match(/Psalm(?:s)?\s+(\d+)/i);
   return m ? parseInt(m[1], 10) : null;
@@ -350,7 +346,6 @@ function getPsalmResponse(citation, lang) {
   return map[num] || PSALM_RESPONSES[num] || null;
 }
 
-// ─── Local database cache (loaded once into memory) ─────────────────────
 const localCache = {};
 
 function loadLocalDB(year, version) {
@@ -398,7 +393,6 @@ function getLocalReading(dateKey, version) {
   return null;
 }
 
-// ─── External API fallbacks ──────────────────────────────────────────────
 function getYear(date) {
   return date.getFullYear();
 }
@@ -496,11 +490,6 @@ async function fetchJSON(url, timeout = 10000) {
   }
 }
 
-// ─── Liturgical calendar proxy ──────────────────────────────────────────
-// calapi.inadiutorium.cz is HTTP-only; browsers cannot fetch it from an
-// HTTPS page (mixed content / CSP), so we proxy it server-side. The host
-// resolves to both A and AAAA records, but its IPv6 route is unreachable
-// from many networks, so force IPv4 resolution.
 const calendarCache = { date: null, data: null, fetchedAt: 0 };
 const CALENDAR_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -646,7 +635,6 @@ function buildGenericReadings(date, season, liturgicalYear) {
   };
 }
 
-// ─── Main handler ────────────────────────────────────────────────────────
 function getLocalReadingByLang(dateKey, lang, version) {
   const year = parseInt(dateKey.split("-")[0], 10);
   if (lang === "sw" || version === "sw" || version === "swahili") {

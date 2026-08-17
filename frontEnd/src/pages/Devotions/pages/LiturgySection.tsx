@@ -1,11 +1,6 @@
 import { useState } from "react";
 import MarianImage from "../components/MarianImage";
 
-/* ═══════════════════════════════════════════════════════════════
-   CATHOLIC LITURGY — EDUCATIONAL DATA
-   Based on USCCB, General Instruction of the Roman Missal (GIRM),
-   and Sacred Congregation of Rites documents
-   ═══════════════════════════════════════════════════════════════ */
 
 const MASS_PARTS = [
   {
@@ -241,9 +236,7 @@ const LITURGY_OF_HOURS = [
   { name: "Night Prayer (Compline)", latin: "Completorium", time: "Before retiring to bed", description: "The simplest and most intimate of the Hours. Includes an examination of conscience, a hymn, psalms, the Nunc Dimittis (Canticle of Simeon), and a final Marian antiphon." },
 ];
 
-/* ═══════════════════════════════════════════════════════════════
-   COMPONENT
-   ═══════════════════════════════════════════════════════════════ */
+
 
 type LiturgyTab = "mass" | "seasons" | "objects" | "hours";
 const TABS: { key: LiturgyTab; label: string; icon: string }[] = [
@@ -253,9 +246,7 @@ const TABS: { key: LiturgyTab; label: string; icon: string }[] = [
   { key: "hours",   label: "Liturgy of the Hours", icon: "\u231A" },
 ];
 
-/* ═══════════════════════════════════════════════════════════════
-   ADDITIONAL LITURGY DATA
-   ═══════════════════════════════════════════════════════════════ */
+
 
 const HOLY_DAYS_OF_OBLIGATION = [
   { date: "January 1", name: "Solemnity of Mary, Mother of God", note: "The first solemnity of the liturgical year." },
@@ -354,7 +345,7 @@ export default function LiturgySection() {
 
   return (
     <div style={{ position: "relative", zIndex: 5 }}>
-      {/* ═══════════ MARIAN HEADER ═══════════ */}
+
       <div style={{
         display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap",
         background: "linear-gradient(135deg, #FFFFFF, #FDF6EC)",
@@ -375,7 +366,7 @@ export default function LiturgySection() {
         </div>
       </div>
 
-      {/* ═══════════ TAB BAR ═══════════ */}
+
       <div style={{
         display: "flex", gap: 6, marginBottom: 28, flexWrap: "wrap",
         background: "#FFFFFF", borderRadius: 14, padding: 5,
@@ -399,7 +390,7 @@ export default function LiturgySection() {
         })}
       </div>
 
-       {/* ═══════════ HOW TO PARTICIPATE ═══════════ */}
+
        {activeTab === "mass" && (
          <div>
            {/* Intro card */}
@@ -506,7 +497,7 @@ export default function LiturgySection() {
             </div>
           ))}
 
-          {/* ═══════════ ORDINARY VS PROPER (Mass tab) ═══════════ */}
+
           <div style={{ marginTop: 32 }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Ordinary vs. Proper of the Mass</h3>
             <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
@@ -536,7 +527,7 @@ export default function LiturgySection() {
             </div>
           </div>
 
-          {/* ═══════════ RANKS OF CELEBRATIONS ═══════════ */}
+
           <div style={{ marginTop: 32 }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Ranks of Liturgical Celebrations</h3>
             <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
@@ -556,7 +547,7 @@ export default function LiturgySection() {
             </div>
           </div>
 
-          {/* ═══════════ HOLY DAYS OF OBLIGATION ═══════════ */}
+
           <div style={{ marginTop: 32 }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Holy Days of Obligation</h3>
             <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
@@ -573,7 +564,7 @@ export default function LiturgySection() {
             </div>
           </div>
 
-          {/* ═══════════ SEQUENCES ═══════════ */}
+
           <div style={{ marginTop: 32 }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Sequences</h3>
             <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
@@ -592,7 +583,7 @@ export default function LiturgySection() {
             </div>
           </div>
 
-          {/* ═══════════ SPECIAL MASSES ═══════════ */}
+
           <div style={{ marginTop: 32 }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>Special Masses & Rites</h3>
             <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
@@ -615,7 +606,7 @@ export default function LiturgySection() {
         </div>
       )}
 
-      {/* ═══════════ LITURGICAL YEAR ═══════════ */}
+
       {activeTab === "seasons" && (
         <div>
           {/* Intro card */}
@@ -772,7 +763,7 @@ export default function LiturgySection() {
             </div>
           </div>
 
-          {/* ═══════════ O ANTIPHONS ═══════════ */}
+
           <div style={{ marginTop: 32 }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1C1917", margin: "0 0 12px" }}>The Great O Antiphons</h3>
             <p style={{ fontSize: 13, color: "#57534E", margin: "0 0 16px", lineHeight: 1.7 }}>
@@ -794,7 +785,7 @@ export default function LiturgySection() {
         </div>
       )}
 
-       {/* ═══════════ SACRED OBJECTS ═══════════ */}
+
       {activeTab === "objects" && (
         <div>
           <div style={{
@@ -849,7 +840,7 @@ export default function LiturgySection() {
         </div>
       )}
 
-      {/* ═══════════ LITURGY OF THE HOURS ═══════════ */}
+
       {activeTab === "hours" && (
         <div>
           <div style={{
@@ -905,7 +896,5 @@ export default function LiturgySection() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PENITENTIAL ACT CARD
-   ═══════════════════════════════════════════════════════════════ */
+
 

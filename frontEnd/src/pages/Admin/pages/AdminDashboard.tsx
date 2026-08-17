@@ -278,7 +278,7 @@ export default function AdminDashboard() {
       {/* Error Banner */}
       {error && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 px-6 py-4 rounded-2xl flex items-center justify-between">
-          <span className="font-bold text-sm">⚠️ Data load error: {String(error)}</span>
+          <span className="font-bold text-sm">Data load error: {String(error)}</span>
           <button onClick={() => loadDashboardData()} className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 bg-rose-100 hover:bg-rose-200 rounded-lg transition-all">
             <RefreshCcw size={14} /> Retry
           </button>

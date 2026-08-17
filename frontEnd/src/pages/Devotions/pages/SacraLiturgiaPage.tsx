@@ -15,10 +15,10 @@ export default function SacraLiturgiaPage() {
   ];
 
   const massSteps = [
-    { num: "I", title: "INTRODUCTORY RITES", icon: "🚶", subtitle: "The Entrance Procession", detail: "Music: O Come, O Come, Emmanuel" },
-    { num: "II", title: "THE GREETING", icon: "🤝", subtitle: "Priest says 'Grace to you...'", detail: null, response: "And with your spirit." },
-    { num: "III", title: "PENITENTIAL ACT", icon: "🙏", subtitle: "Confiteor", detail: "I confess to almighty God..." },
-    { num: "IV", title: "KYRIE ELEISON", icon: "🎵", subtitle: "Lord, have mercy", detail: "Kyrie Eleison — Christe Eleison — Kyrie Eleison" },
+    { num: "I", title: "INTRODUCTORY RITES", icon: "", subtitle: "The Entrance Procession", detail: "Music: O Come, O Come, Emmanuel" },
+    { num: "II", title: "THE GREETING", icon: "", subtitle: "Priest says 'Grace to you...'", detail: null, response: "And with your spirit." },
+    { num: "III", title: "PENITENTIAL ACT", icon: "", subtitle: "Confiteor", detail: "I confess to almighty God..." },
+    { num: "IV", title: "KYRIE ELEISON", icon: "", subtitle: "Lord, have mercy", detail: "Kyrie Eleison — Christe Eleison — Kyrie Eleison" },
   ];
 
   return (
@@ -28,7 +28,7 @@ export default function SacraLiturgiaPage() {
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow">
-                <span className="text-white text-xs">✝</span>
+                <span className="text-white text-xs"></span>
               </div>
               <div>
                 <h1 className="text-xs font-bold text-stone-900 tracking-[0.2em] uppercase" style={{ fontFamily: "'Cinzel', serif" }}>
@@ -115,7 +115,7 @@ export default function SacraLiturgiaPage() {
               <div className="h-40 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #4A2E80 0%, #3B1F52 50%, #2D1340 100%)" }}>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-white/80 text-5xl">✝</div>
+                  <div className="text-white/80 text-5xl"></div>
                 </div>
                 <div className="absolute bottom-3 left-5">
                   <span className="px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[9px] font-bold uppercase tracking-wider text-white">
@@ -148,7 +148,7 @@ export default function SacraLiturgiaPage() {
 
                 <div className="flex justify-center pt-3">
                   <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/30">
-                    <span className="text-amber-600 text-base">📜</span>
+                    <span className="text-amber-600 text-base"></span>
                   </div>
                 </div>
               </div>
@@ -199,7 +199,7 @@ export default function SacraLiturgiaPage() {
               <div className="mt-4 bg-gradient-to-r from-amber-100 to-orange-50 rounded-2xl p-4 border border-amber-200">
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-amber-600 text-xs">✝</span>
+                    <span className="text-amber-600 text-xs"></span>
                   </div>
                   <div>
                     <h4 className="text-[9px] font-bold uppercase tracking-wider text-amber-600 mb-1.5">Congregational Response</h4>
@@ -237,7 +237,7 @@ export default function SacraLiturgiaPage() {
                 ].map((s) => (
                   <div key={s.name} className="flex items-center gap-3 p-2.5 rounded-xl bg-stone-50 border border-stone-200">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow" style={{ background: s.color }}>
-                      ✝
+
                     </div>
                     <div>
                       <div className="text-[11px] font-bold text-stone-700">{s.name}</div>
@@ -255,7 +255,7 @@ export default function SacraLiturgiaPage() {
             <div className="relative z-10 p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center">
-                  <span className="text-amber-600 text-xs">🕯</span>
+                  <span className="text-amber-600 text-xs"></span>
                 </div>
                 <h3 className="text-sm font-bold text-stone-900 tracking-wide uppercase" style={{ fontFamily: "'Cinzel', serif" }}>
                   Votive Lights &amp; Prayer

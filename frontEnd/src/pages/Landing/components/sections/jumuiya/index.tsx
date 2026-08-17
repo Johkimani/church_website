@@ -76,16 +76,16 @@ const JumuiyaSection: React.FC = () => {
               <div key={jumuiya.id} className="bg-blue-50 rounded-lg shadow-md p-4 md:p-6">
                 <h3 className="text-lg md:text-xl font-bold text-blue-800 mb-2">{jumuiya.name}</h3>
                 {jumuiya.location && (
-                  <p className="text-gray-600 text-xs md:text-sm mb-1">📍 {jumuiya.location}</p>
+                  <p className="text-gray-600 text-xs md:text-sm mb-1">{jumuiya.location}</p>
                 )}
                 {jumuiya.leader && (
-                  <p className="text-gray-600 text-xs md:text-sm mb-1">👤 Leader: {jumuiya.leader}</p>
+                  <p className="text-gray-600 text-xs md:text-sm mb-1">Leader: {jumuiya.leader}</p>
                 )}
                 {jumuiya.members_count && (
-                  <p className="text-gray-600 text-xs md:text-sm mb-2">👥 {jumuiya.members_count} members</p>
+                  <p className="text-gray-600 text-xs md:text-sm mb-2">{jumuiya.members_count} members</p>
                 )}
                 {jumuiya.meeting_day && (
-                  <p className="text-gray-600 text-xs md:text-sm mb-2">📅 Meets: {jumuiya.meeting_day}</p>
+                  <p className="text-gray-600 text-xs md:text-sm mb-2">Meets: {jumuiya.meeting_day}</p>
                 )}
                 {jumuiya.description && (
                   <p className="text-gray-700 text-xs md:text-sm">{jumuiya.description}</p>

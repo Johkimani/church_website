@@ -20,12 +20,12 @@ async function getJumuiyas() {
       `SELECT group_id, name, full_name FROM sub_groups ORDER BY name ASC`
     );
 
-    console.log(`\n✅ Found ${result.rows.length} Jumuiya(s):\n`);
+    console.log(`\nFound ${result.rows.length} Jumuiya(s):\n`);
     console.table(result.rows);
 
     process.exit(0);
   } catch (err) {
-    console.error('❌ Query failed:', err.message);
+    console.error('Query failed:', err.message);
     process.exit(1);
   }
 }

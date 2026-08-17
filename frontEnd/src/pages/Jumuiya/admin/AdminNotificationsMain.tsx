@@ -124,7 +124,7 @@ const AdminNotificationsMain: React.FC = () => {
                                     background: 'white'
                                 }}
                             >
-                                <option value="all">🌍 All Jumuiyas (Broadcast)</option>
+                                <option value="all">All Jumuiyas (Broadcast)</option>
                                 {jumuiyaList.map((jumuiya) => (
                                     <option key={jumuiya.id} value={jumuiya.id}>
                                         {jumuiya.name}
@@ -209,10 +209,10 @@ const AdminNotificationsMain: React.FC = () => {
                                     height: '100%'
                                 }}
                             >
-                                <option value="info">ℹ️ Info</option>
-                                <option value="success">✅ Success</option>
-                                <option value="warning">⚠️ Warning</option>
-                                <option value="urgent">🚨 Urgent</option>
+                                <option value="info">Info</option>
+                                <option value="success">Success</option>
+                                <option value="warning">Warning</option>
+                                <option value="urgent">Urgent</option>
                             </select>
                         </div>
                     </div>

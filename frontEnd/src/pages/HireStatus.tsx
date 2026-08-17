@@ -24,6 +24,9 @@ interface HireGroup {
   pickup_date: string;
   return_date: string;
   notes: string | null;
+  hire_mode?: string;
+  hours?: number;
+  pickup_time?: string | null;
 }
 
 const statusLabels: Record<string, string> = {
@@ -96,6 +99,9 @@ export default function HireStatus() {
         pickup_date: group.items[0]?.pickup_date || "",
         return_date: group.items[0]?.return_date || "",
         notes: group.items[0]?.notes || null,
+        hire_mode: group.items[0]?.hire_mode || 'daily',
+        hours: group.items[0]?.hours || 0,
+        pickup_time: group.items[0]?.pickup_time || null,
       });
     } catch (err: any) {
       setError(err?.response?.status === 404 ? "Hire request not found. Check your reference number." : "Failed to load request. Try again.");
@@ -253,24 +259,51 @@ export default function HireStatus() {
 
             {/* Dates */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Dates</h3>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <CalendarDays size={16} className="mx-auto mb-1 text-blue-500" />
-                  <p className="text-[10px] text-slate-500">Event</p>
-                  <p className="text-xs font-bold text-slate-800">{data.event_date ? new Date(data.event_date).toLocaleDateString() : "—"}</p>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+                {data.hire_mode === 'hourly' ? 'Hire Details' : 'Dates'}
+              </h3>
+              {data.hire_mode === 'hourly' ? (
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <CalendarDays size={16} className="mx-auto mb-1 text-blue-500" />
+                    <p className="text-[10px] text-slate-500">Date</p>
+                    <p className="text-xs font-bold text-slate-800">{data.pickup_date ? new Date(data.pickup_date).toLocaleDateString() : "—"}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <CalendarDays size={16} className="mx-auto mb-1 text-emerald-500" />
+                    <p className="text-[10px] text-slate-500">Time</p>
+                    <p className="text-xs font-bold text-slate-800">{data.pickup_time || "—"}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <CalendarDays size={16} className="mx-auto mb-1 text-amber-500" />
+                    <p className="text-[10px] text-slate-500">Duration</p>
+                    <p className="text-xs font-bold text-slate-800">{data.hours} hour{data.hours && data.hours > 1 ? 's' : ''}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <CalendarDays size={16} className="mx-auto mb-1 text-purple-500" />
+                    <p className="text-[10px] text-slate-500">Mode</p>
+                    <p className="text-xs font-bold text-slate-800">Hourly</p>
+                  </div>
                 </div>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <CalendarDays size={16} className="mx-auto mb-1 text-emerald-500" />
-                  <p className="text-[10px] text-slate-500">Pickup</p>
-                  <p className="text-xs font-bold text-slate-800">{data.pickup_date ? new Date(data.pickup_date).toLocaleDateString() : "—"}</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <CalendarDays size={16} className="mx-auto mb-1 text-blue-500" />
+                    <p className="text-[10px] text-slate-500">Event</p>
+                    <p className="text-xs font-bold text-slate-800">{data.event_date ? new Date(data.event_date).toLocaleDateString() : "—"}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <CalendarDays size={16} className="mx-auto mb-1 text-emerald-500" />
+                    <p className="text-[10px] text-slate-500">Pickup</p>
+                    <p className="text-xs font-bold text-slate-800">{data.pickup_date ? new Date(data.pickup_date).toLocaleDateString() : "—"}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <CalendarDays size={16} className="mx-auto mb-1 text-amber-500" />
+                    <p className="text-[10px] text-slate-500">Return</p>
+                    <p className="text-xs font-bold text-slate-800">{data.return_date ? new Date(data.return_date).toLocaleDateString() : "—"}</p>
+                  </div>
                 </div>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <CalendarDays size={16} className="mx-auto mb-1 text-amber-500" />
-                  <p className="text-[10px] text-slate-500">Return</p>
-                  <p className="text-xs font-bold text-slate-800">{data.return_date ? new Date(data.return_date).toLocaleDateString() : "—"}</p>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Notes */}

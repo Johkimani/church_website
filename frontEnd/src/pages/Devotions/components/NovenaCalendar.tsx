@@ -99,9 +99,7 @@ export default function NovenaCalendar({ onStartNovena, className = '' }: Novena
 
   return (
     <div className={className}>
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* HERO: What's Happening Now                                */}
-      {/* ═══════════════════════════════════════════════════════════ */}
+
       <div className="mb-8">
         {/* Active Novenas */}
         {activeNovenas.length > 0 && (
@@ -228,9 +226,7 @@ export default function NovenaCalendar({ onStartNovena, className = '' }: Novena
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* Year-Round Novenas                                        */}
-      {/* ═══════════════════════════════════════════════════════════ */}
+
       <div className="mb-8">
         <button
           onClick={() => setShowYearRound(!showYearRound)}
@@ -268,9 +264,7 @@ export default function NovenaCalendar({ onStartNovena, className = '' }: Novena
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* Month Tabs                                                */}
-      {/* ═══════════════════════════════════════════════════════════ */}
+
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
         {MONTHS.map((name, i) => {
           const count = calendar.filter((e) => e.startDate.getMonth() === i || e.endDate.getMonth() === i).length;
@@ -301,9 +295,7 @@ export default function NovenaCalendar({ onStartNovena, className = '' }: Novena
         })}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* Monthly Novena List                                       */}
-      {/* ═══════════════════════════════════════════════════════════ */}
+
       {monthNovenas.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-2xl border border-stone-200">
           <p className="text-sm text-stone-500">No novenas scheduled for {MONTHS[selectedMonth]}.</p>
@@ -431,9 +423,7 @@ export default function NovenaCalendar({ onStartNovena, className = '' }: Novena
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* Upcoming Novenas (Next 30 Days)                           */}
-      {/* ═══════════════════════════════════════════════════════════ */}
+
       {upcomingNovenas.length > 0 && (
         <div className="mt-8">
           <h3 className="text-sm font-bold text-stone-800 mb-3">All Upcoming Novenas</h3>

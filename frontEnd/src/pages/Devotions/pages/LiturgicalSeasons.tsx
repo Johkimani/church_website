@@ -394,7 +394,7 @@ function SeasonCard({ season }: { season: typeof SEASONS[0] }) {
             {/* Key Themes */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-gradient-to-br from-purple-950/30 to-pink-950/30 rounded-xl p-5 border border-purple-800/30">
-                <h5 className="text-base font-bold text-purple-300 mb-3">🌟 Key Themes</h5>
+                <h5 className="text-base font-bold text-purple-300 mb-3">Key Themes</h5>
                 <ul className="space-y-2">
                   {season.typicalThemes.map((theme, idx) => (
                     <li key={idx} className="text-sm text-slate-300 flex items-center gap-2">
@@ -405,7 +405,7 @@ function SeasonCard({ season }: { season: typeof SEASONS[0] }) {
               </div>
 
               <div className="bg-gradient-to-br from-blue-950/30 to-indigo-950/30 rounded-xl p-5 border border-blue-800/30">
-                <h5 className="text-base font-bold text-blue-300 mb-3">📖 Scripture Focus</h5>
+                <h5 className="text-base font-bold text-blue-300 mb-3">Scripture Focus</h5>
                 <ul className="space-y-2">
                   {season.scriptureFocus.map((scripture, idx) => (
                     <li key={idx} className="text-sm text-slate-300 italic">
@@ -418,7 +418,7 @@ function SeasonCard({ season }: { season: typeof SEASONS[0] }) {
 
             {/* Practices */}
             <div className="bg-gradient-to-br from-green-950/30 to-emerald-950/30 rounded-xl p-5 border border-green-800/30">
-              <h5 className="text-base font-bold text-green-300 mb-3">🙏 Common Practices</h5>
+              <h5 className="text-base font-bold text-green-300 mb-3">Common Practices</h5>
               <div className="grid md:grid-cols-2 gap-3">
                 {season.practices.map((practice, idx) => (
                   <div key={idx} className="flex items-start gap-2">
@@ -431,7 +431,7 @@ function SeasonCard({ season }: { season: typeof SEASONS[0] }) {
 
             {/* History */}
             <div className="bg-gradient-to-br from-amber-950/30 to-orange-950/30 rounded-xl p-5 border border-amber-800/30">
-              <h5 className="text-base font-bold text-amber-300 mb-3">📚 Historical Context</h5>
+              <h5 className="text-base font-bold text-amber-300 mb-3">Historical Context</h5>
               <p className="text-sm text-slate-300 leading-relaxed">{season.history}</p>
             </div>
 
@@ -448,12 +448,12 @@ function SeasonCard({ season }: { season: typeof SEASONS[0] }) {
 
             {/* Icons/Symbols */}
             <div className="bg-gradient-to-br from-red-950/30 to-rose-950/30 rounded-xl p-5 border border-red-800/30">
-              <h5 className="text-base font-bold text-red-300 mb-3">🎯 Seasonal Symbols</h5>
+              <h5 className="text-base font-bold text-red-300 mb-3">Seasonal Symbols</h5>
               <div className="grid md:grid-cols-3 gap-3">
                 {season.icons.map((icon, idx) => (
                   <div key={idx} className="text-center">
                     <div className="w-12 h-12 rounded-full bg-red-900/30 flex items-center justify-center mx-auto mb-2">
-                      <span className="text-red-300 text-xl">📖</span>
+                      <span className="text-red-300 text-xl"></span>
                     </div>
                     <p className="text-xs text-slate-300 font-medium">{icon.name}</p>
                     <p className="text-xs text-slate-500">{icon.description}</p>

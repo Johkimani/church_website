@@ -83,7 +83,7 @@ function main() {
   const outputPath = path.join(outputDir, 'bible-sw.json');
 
   if (!fs.existsSync(inputPath)) {
-    console.error(`❌ Input file not found: ${inputPath}`);
+    console.error(`Input file not found: ${inputPath}`);
     process.exit(1);
   }
 
@@ -91,7 +91,7 @@ function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  console.log('📖 Reading swahili-bible.json...');
+  console.log('Reading swahili-bible.json...');
   const old = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
 
   const bible = {
@@ -129,13 +129,13 @@ function main() {
     }
 
     const bookChapters = Object.keys(bible.books[code].chapters).length;
-    console.log(`  ✅ ${info.name} (${code}) - ${bookChapters} chapters`);
+    console.log(`  ${info.name} (${code}) - ${bookChapters} chapters`);
   }
 
   fs.writeFileSync(outputPath, JSON.stringify(bible, null, 2), 'utf8');
 
   console.log(`\n${'='.repeat(50)}`);
-  console.log(`✅ Swahili Bible restructured!`);
+  console.log(`Swahili Bible restructured!`);
   console.log(`   Books: ${Object.keys(bible.books).length}`);
   console.log(`   Total verses: ${totalVerses}`);
   console.log(`   Output: ${outputPath}`);

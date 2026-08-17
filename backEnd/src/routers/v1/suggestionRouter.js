@@ -26,20 +26,16 @@ const SUGGESTION_ADMIN_ROLES = [
 ];
 const suggestionAdminGate = requireRole(...SUGGESTION_ADMIN_ROLES);
 
-// ── List all non-deleted suggestions with member info (admin only) ──
 router.get("/", verifyToken, suggestionAdminGate, listSuggestions);
 
-// ── Bin (literal paths before parameterized) ──
 router.get("/bin", verifyToken, suggestionAdminGate, getBin);
 router.delete("/bin/clear", verifyToken, suggestionAdminGate, clearBin);
 router.delete("/bin/:id", verifyToken, suggestionAdminGate, permanentDelete);
 router.patch("/bin/:id/restore", verifyToken, suggestionAdminGate, restoreFromBin);
 
-// ── Role-specific unmask (token itself is the credential) ──
 router.get("/unmask/:role/:token", getRoleUnmaskRequest);
 router.post("/unmask/:role/:token/respond", respondRoleUnmask);
 
-// ── Admin actions ──
 router.post("/:id/reply", verifyToken, suggestionAdminGate, replyToSuggestion);
 router.patch("/:id/category", verifyToken, suggestionAdminGate, updateSuggestionCategory);
 router.post("/:id/request-unmask", verifyToken, suggestionAdminGate, requestUnmask);

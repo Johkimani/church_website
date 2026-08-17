@@ -31,7 +31,7 @@ async function setupChoirTables() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✔ hub_schedules table ready.");
+    console.log("hub_schedules table ready.");
 
     // 2. Music Classes
     await client.query(`
@@ -46,7 +46,7 @@ async function setupChoirTables() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✔ hub_music_classes table ready.");
+    console.log("hub_music_classes table ready.");
 
     // Seed data for Choir
     const choirSchedules = [
@@ -74,10 +74,10 @@ async function setupChoirTables() {
         `, c);
     }
 
-    console.log("✔ Seed data inserted for Choir.");
+    console.log("Seed data inserted for Choir.");
 
   } catch (err) {
-    console.error("❌ SETUP FAILED:", err.message);
+    console.error("SETUP FAILED:", err.message);
   } finally {
     client.release();
     await pool.end();

@@ -17,10 +17,10 @@ interface SliderImage {
 interface Props { sectionFilter?: string[] }
 
 const ALL_SECTIONS = [
-  { id: 'sacramentals', label: 'Sacramentals', icon: '✝️' },
-  { id: 'tshirts', label: 'T-Shirts', icon: '👕' },
-  { id: 'chairs', label: 'Chairs', icon: '🪑' },
-  { id: 'instruments', label: 'Instruments', icon: '🎸' },
+  { id: 'sacramentals', label: 'Sacramentals', icon: '' },
+  { id: 'tshirts', label: 'T-Shirts', icon: '' },
+  { id: 'chairs', label: 'Chairs', icon: '' },
+  { id: 'instruments', label: 'Instruments', icon: '' },
 ];
 
 export default function SliderManager({ sectionFilter }: Props) {

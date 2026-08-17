@@ -1,10 +1,8 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_13: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT FRANCIS XAVIER
   // novenaId: "novenas-saint-francis-xavier"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sfx-np-1",
@@ -88,10 +86,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saint Francis Xavier, on this final day of my novena, I commend myself to your powerful intercession. You who labored so faithfully for Christ in the mission fields of India, Japan, and Southeast Asia, and who died with the words of Jesus on your lips — "Increase, O Lord, our faith" — pray for me now. Help me to live each day as a missionary, wherever God has placed me — in my home, my workplace, my neighborhood, my parish. Let me never forget that the mission field is not only in distant lands but also in the hearts of those closest to me. Grant me the grace to labor faithfully for the heavenly harvest, to plant seeds of faith with patience, to water them with prayer, and to trust God for the increase. And when my earthly mission is complete, may I join you and all the saints in the eternal liturgy of heaven, where every tribe and tongue and nation worships the Lamb who was slain. O Saint Francis Xavier, Apostle of the Indies, pray for us and for all the missions of the Church. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT IGNATIUS OF LOYOLA
   // novenaId: "novenas-saint-ignatius-loyola"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sil-np-1",
@@ -175,10 +171,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saint Ignatius of Loyola, on this final day of my novena, I consecrate myself anew to the greater glory of God. You gave everything to God — your noble birth, your military career, your physical health, your intellectual gifts, your very life — and God gave you back a hundredfold. You who were once a proud soldier became a humble servant of Christ, the founder of a great religious order, a mystic of profound depth, and a saint whose influence continues to shape the Church and the world. I ask you to obtain for me the grace to give God everything in my own life — without reservation, without calculation, without fear. Help me to live each day for His greater glory, to make all my decisions in His light, and to trust that He who began the good work in me will bring it to completion. O Ignatius, whose life was entirely for God's greater glory, obtain for me the grace of complete surrender to the divine will. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT TERESA OF ÁVILA
   // novenaId: "novenas-saint-teresa-avila"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sta-np-1",
@@ -262,10 +256,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saint Teresa of Ávila, Doctor of the Church, on this final day of my novena, I implore your powerful intercession. You who ascended the seven dwelling places of the interior castle and reached the center where God dwells in perfect union, obtain for me the grace to continue my journey deeper into the life of prayer. I know that I cannot reach the heights of contemplation by my own efforts — it is the work of divine grace. But I can cooperate by being faithful to prayer, open to God's action, and detached from everything that hinders the soul's flight to God. I ask you to pray that the Holy Spirit may lead me from glory to glory, from one degree of holiness to the next, until I reach the fullness of union with God. Help me to remain faithful to the end, to persevere through dryness and darkness, and to trust that God is always at work in the deepest places of my soul. O Teresa, mystic and Doctor of the interior life, lead me to the living water that springs up to eternal life. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT JOHN OF THE CROSS
   // novenaId: "novenas-saint-john-cross"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sjc-np-1",
@@ -349,10 +341,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saint John of the Cross, Doctor of the Church and master of the mystical life, on this final day of my novena, I implore your intercession. You who passed through the darkest night and emerged into the brilliant dawn of divine union, pray for me. I may not reach the heights of mystical union in this life, but I pray that every day I may grow closer to God — through faith, through love, through the patient endurance of the dark nights that are part of every Christian's journey. Help me to persevere in prayer, to trust in God's purifying work, and to hope in the promises of Christ. When the darkness comes, remind me that the dawn is near. When I feel abandoned, remind me that God is closest when He seems most distant. When I am tempted to give up, remind me that the saints before me passed through the same darkness and emerged into the light of glory. O John of the Cross, mystic and poet of divine love, pray for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY MARTYRS
   // novenaId: "novenas-holy-martyrs"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "shm-np-1",
@@ -436,10 +426,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Holy Martyrs of Christ, on this final day of my novena, I honor your sacrifice and ask for your powerful intercession. You who fought the good fight, finished the race, and kept the faith, now wear the imperishable crown of righteousness that the righteous Judge has prepared for those who love His appearing. I pray that I may follow your example of courageous faithfulness, even if my own martyrdom takes the quieter form of daily self-denial and humble service. Help me to keep my eyes fixed on the prize — the eternal reward that awaits those who persevere to the end. When the trials of this life threaten to overwhelm me, remind me that they are temporary, but your reward is eternal. When I am tempted to give up, remind me that the martyrs endured far worse and did not surrender. O Holy Martyrs, who stand before the throne of God, pray for us now and always. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT HELENA
   // novenaId: "novenas-saint-helen"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sth-np-1",
@@ -523,10 +511,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saint Helena, Empress and Pilgrim, on this final day of my novena, I ask for your powerful intercession. You spent your final years in prayer and good works, distributing your wealth to the poor, building churches, and preparing your soul for the eternal encounter with the Lord. You died in peace, having found what you sought — the True Cross of Christ — and having given your life in service to the One who died upon it. I pray today that I may continue my pilgrimage of faith with the same devotion and generosity. Help me to keep my eyes fixed on heaven, the ultimate destination of every Christian soul. Help me to walk the path of faith with perseverance, to venerate the Cross with love, and to arrive at last in the heavenly Jerusalem, where I hope to see you, dear Saint Helena, and to thank you for your prayers. O Helena, pilgrim of heaven, guide me safely to my eternal home. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINTS JOACHIM AND ANNE
   // novenaId: "novenas-saint-joachim-anne"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sja-np-1",
@@ -610,10 +596,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saints Joachim and Anne, on this final day of my novena, I entrust to your intercession my family — living and departed. You who were reunited with your daughter Mary in the glory of heaven, pray that my family may one day be reunited in the heavenly homeland. For those family members who have died, I pray that they may be enjoying the peace of heaven. For those who are living, I pray that we may grow together in faith, love, and holiness, so that our earthly family may become an image of the heavenly family, where God is Father, Mary is Mother, and all the saints are brothers and sisters. Help me to live each day in a way that prepares me and my family for the eternal joy of heaven. O Saints Joachim and Anne, holy parents and grandparents, intercede for my family now and at the hour of our death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MATTHEW
   // novenaId: "novenas-saint-matthew"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "smt-np-1",
@@ -697,10 +681,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saint Matthew, Apostle and Evangelist, on this final day of my novena, I commend myself to your powerful intercession. You who were called from sin to grace, from wealth to poverty, from death to life, now stand in the presence of the Lord as a victorious apostle and a glorious saint. You who wrote the first Gospel, who preached in distant lands, who died for the faith, now enjoy the eternal reward that was promised to those who follow Christ. I pray today that I may live my life in such a way that I, too, will hear those blessed words: "Well done, good and faithful servant. Enter into the joy of your Lord." Help me to respond to God's call with the same generosity with which you responded. Help me to use my gifts for the glory of God and the good of souls. Help me to persevere in faith to the end, and to receive at last the crown of righteousness that awaits all the faithful. O Matthew, apostle and evangelist, pray for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT THOMAS THE APOSTLE
   // novenaId: "novenas-saint-thomas-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "stt-np-1",
@@ -784,10 +766,8 @@ export const NOVENA_PRAYERS_13: Prayer[] = [
     text: `O glorious Saint Thomas, Apostle of Christ, on this final day of my novena, I honor your journey from doubt to glory. You began as an honest skeptic, a man who refused to believe without proof. You encountered the risen Christ, and your doubt was transformed into the most profound profession of faith. You carried the Gospel to the ends of the earth, and you sealed your apostleship with your blood. Your journey is the journey of every Christian — from doubt to faith, from fear to courage, from death to resurrection. I pray today that I may follow this same path. When doubt assails me, help me to bring it honestly to Christ. When fear grips me, help me to trust in the risen Lord. When death approaches, help me to proclaim with you: "My Lord and my God!" O Thomas, whose doubt became glory, pray for me now and always. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT LUKE
   // novenaId: "novenas-saint-luke"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "slk-np-1",

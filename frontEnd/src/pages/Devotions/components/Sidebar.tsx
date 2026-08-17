@@ -384,7 +384,7 @@ export default function Sidebar() {
             </svg>
           </NavLink>
           <p className="text-[10px] text-center text-stone-400 tracking-wider mt-3">
-            ✦ DEVS: SACRED SPACE ✦
+            DEVS: SACRED SPACE
           </p>
           <div className="mt-3 flex justify-center">
             <NavLink

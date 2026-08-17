@@ -23,7 +23,6 @@ function runAll(loaders: Loader[]): Promise<PromiseSettledResult<unknown>[]> {
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
-// ── Devotions (Layout is the shell every devotions page needs) ──────────────
 const DEVOTIONS_LAYOUT: Loader = () => import("../pages/Devotions/components/Layout");
 
 const devotionsLoaders: Loader[] = [
@@ -65,7 +64,6 @@ const devotionsRouteLoaders: Record<string, Loader[]> = {
   "/devotions/bible": [DEVOTIONS_LAYOUT, () => import("../pages/Devotions/pages/Bible")],
 };
 
-// ── Core public routes ──────────────────────────────────────────────────────
 const coreLoaders: Loader[] = [
   () => import("../pages/Jumuiya/JumuiyaLanding"),
   () => import("../pages/Jumuiya/JumuiyaDetail"),
@@ -117,7 +115,6 @@ const coreRouteLoaders: Record<string, Loader[]> = {
   "/hire-status": [() => import("../pages/HireStatus")],
 };
 
-// ── Admin ───────────────────────────────────────────────────────────────────
 const adminShellLoaders: Loader[] = [
   () => import("../pages/Admin/UniversalAdmin"),
   () => import("../pages/Admin/pages/AdminDashboard"),

@@ -73,24 +73,19 @@ export const sansitiseAndParseQuestionBlock = (content) => {
 };
 
 
-// Upload a single file to Cloudinary and save its metadata in the database
 export async function uploadOneFile(file) {
   const result = await cloudinary.uploader.upload(file.path, {
-    resource_type: "auto", // this ensures the resource is directrly detected instead of us saying the resource is either a video or a url
+    resource_type: "auto",
   });
 
   if (!result || !result.secure_url) {
     throw new ApiError( 502 ,"Cloudinary upload failed")
   }
 
-  // Remove temporary file created by Multer to clean up disk storage , remeber this file "localfileuploads"
-  //  is included if you want to perform any kind of operation of the file like compression e.t.c
-  // but since we dont have anything to performing then we need to remove the file from the machine storage saving storage
   if (fs.existsSync(file.path)) {
     fs.unlinkSync(file.path);
   }
 
-  // Insert metadata into database table called upload as indicated in the schema for postgree
   const insertQuery =
     "INSERT INTO uploads (public_id, url, format, resource_type, created_at) VALUES ($1,$2,$3,$4,$5) RETURNING *";
   const values = [
@@ -103,22 +98,14 @@ export async function uploadOneFile(file) {
 
   const dbResult = await testDb.query(insertQuery, values);
 
-  // Return a structured response for the client
   return dbResult.rows[0];
 }
 
 
-// Upload multiple files to Cloudinary and save metadata in DB
-// Includes one retry attempt for failed uploads, then cleans up failed files
-// this function liks to the uploadOnefile as an abstraction for claen code structure as indicated in line 130
 export async function uploadManyFiles(files, retry = false) {
 
-  const successesUploadedFiles = []; // store successful uploads
-  const faildeToUploadFiles = []; // store failed uploads
-
-  // Try uploading all files in parallel rather than uploading one at a time , we will use promise.allsettled
-  // where we could use promise.all but the problem with that is if one file fails the entire continuation is rejected by the promise 
-  // we try to avoid looping caues it will inclease the time complexity
+  const successesUploadedFiles = [];
+  const faildeToUploadFiles = [];
 
   const settledResults = await Promise.allSettled(
     files.map((file) => uploadOneFile(file)),
@@ -127,9 +114,6 @@ export async function uploadManyFiles(files, retry = false) {
 
   console.log(settledResults , "settledResults fromuploadmanyfiles utility folder");
   
-  // Collect results though iteration
-  //.entries property gives us an array of [key ,  value] pairs
-  //where we are interating through each entrie distructuring each key and value pair and there attributes to help us indetify pas or failed uploade file
   for (const [index, result] of settledResults?.entries()) {
     if (result.status === "fulfilled") {
       successesUploadedFiles.push(result.value);
@@ -141,15 +125,12 @@ export async function uploadManyFiles(files, retry = false) {
     }
   }
 
-  // Retry once if there are faildeToUploadFiles and retry flag is false
-  // we should also ensure no looping as this might freeze the app if there exist a file that is always failling through a flag [rety]
   if (faildeToUploadFiles.length > 0 && !retry) {
     logger.info(`Retrying ${faildeToUploadFiles.length} failed upload(s)...`);
-    const retryResults = await uploadManyFiles(faildeToUploadFiles, true); // retry once to avoid endress looping incase a file never upload successifuly
+    const retryResults = await uploadManyFiles(faildeToUploadFiles, true);
     successesUploadedFiles.push(...retryResults?.successesUploadedFiles);
 
 
-    // Clean up any files that still failed after retry
     for (const failedFile of retryResults?.faildeToUploadFiles) {
       if (fs.existsSync(failedFile.path)) {
         fs.unlinkSync(failedFile.path);
@@ -157,9 +138,6 @@ export async function uploadManyFiles(files, retry = false) {
           `Deleted failed file from disk: ${failedFile.originalname}`,
         );
       }
-      // also we must enusre to clean up the  faildeToUploadFiles=[] 
-      // array after 1 retry to avoid the code going up to this upper if block again 
-      //  `if (faildeToUploadFiles.length > 0 && !retry)` since the faildeToUploadFiles will be empty
       retryResults.faildeToUploadFiles=[];
     }
 
@@ -172,7 +150,6 @@ export async function uploadManyFiles(files, retry = false) {
     };
   }
 
-  // Final structured response for client
   return {
     success: true,
     message: faildeToUploadFiles.length === 0 ? "All files uploaded successfully" : "Some files failed to upload",
@@ -182,20 +159,12 @@ export async function uploadManyFiles(files, retry = false) {
   };
 }
 
-//  * * *For example:**
-//  * * This can occur when product is created.
-//  * * In product creation process the images are getting uploaded before product gets created.
-//  * * Once images are uploaded and if there is an error creating a product, the uploaded images are unused.
-//  * * In such case, this function will remove those unused images.
-//  */
 export const removeUnusedMulterImageFilesOnError = (req) => {
   try {
     const multerFile = req.file;
     const multerFiles = req.files;
 
     if (multerFile) {
-      // If there is file uploaded and there is validation error
-      // We want to remove that file
       if (fs.existsSync(multerFile.path)) {
         fs.unlinkSync(multerFile.path);
       }
@@ -211,8 +180,6 @@ export const removeUnusedMulterImageFilesOnError = (req) => {
       } else {
         /** @type {Express.Multer.File[][]}  */
         const filesValueArray = Object.values(multerFiles);
-        // If there are multiple files uploaded for more than one fields
-        // We want to remove those files as well
         filesValueArray.forEach((fileFields) => {
           fileFields.forEach((fileObject) => {
             if (fs.existsSync(fileObject.path)) {

@@ -28,7 +28,6 @@ export interface JumuiyaRosterMember {
 const BASE = (jumuiyaId: string) => `/jumuiya-members/${jumuiyaId}`;
 
 export const memberService = {
-  // ── Seasons ──
   createSeason: (jumuiyaId: string, data: any) =>
     apiClient.post(`${BASE(jumuiyaId)}/seasons`, data).then(r => r.data),
 
@@ -41,7 +40,6 @@ export const memberService = {
   deleteSeason: (jumuiyaId: string, id: number) =>
     apiClient.delete(`${BASE(jumuiyaId)}/seasons/${id}`).then(r => r.data),
 
-  // ── Imports ──
   importMembers: (jumuiyaId: string, data: { members: any[]; season_id?: number; file_name?: string; academic_year?: string }) =>
     apiClient.post(`${BASE(jumuiyaId)}/import-members`, data).then(r => r.data),
 
@@ -54,11 +52,9 @@ export const memberService = {
   updateImportStatus: (jumuiyaId: string, importId: number, data: { status: string; notes?: string }) =>
     apiClient.patch(`${BASE(jumuiyaId)}/import-status/${importId}`, data).then(r => r.data),
 
-  // ── Validation ──
   validateImportData: (jumuiyaId: string, members: any[]) =>
     apiClient.post(`${BASE(jumuiyaId)}/validate-import`, { members }).then(r => r.data),
 
-  // ── Groups ──
   createGroups: (jumuiyaId: string, data: { groups: any[]; season_id?: number }) =>
     apiClient.post(`${BASE(jumuiyaId)}/create-groups`, data).then(r => r.data),
 
@@ -74,25 +70,21 @@ export const memberService = {
   getGroupMembers: (jumuiyaId: string, groupId: number) =>
     apiClient.get(`${BASE(jumuiyaId)}/groups/${groupId}/members`).then(r => r.data),
 
-  // ── Distribution ──
   autoDistribute: (jumuiyaId: string, data: { season_id?: number; strategy?: string; import_id?: number }) =>
     apiClient.post(`${BASE(jumuiyaId)}/auto-distribute`, data).then(r => r.data),
 
   reassignMember: (jumuiyaId: string, groupId: number, memberId: number) =>
     apiClient.patch(`${BASE(jumuiyaId)}/groups/${groupId}/reassign`, { member_id: memberId }).then(r => r.data),
 
-  // ── Jumuiya roster (any authenticated member of that jumuiya — server-scoped) ──
   getJumuiyaRoster: (jumuiya_id: string) =>
     apiClient.get(`/jumuiya-members`, { params: { jumuiya_id } }).then(r => r.data),
 
   getJumuiyaRegistered: (jumuiya_id: string) =>
     apiClient.get(`/jumuiya-members/registered`, { params: { jumuiya_id } }).then(r => r.data),
 
-  // ── Members ──
   getMembers: (jumuiyaId: string) =>
     apiClient.get(`${BASE(jumuiyaId)}/members`).then(r => r.data),
 
-  // ── Statistics ──
   getStatistics: (jumuiyaId: string) =>
     apiClient.get(`${BASE(jumuiyaId)}/statistics`).then(r => r.data),
 
@@ -105,13 +97,11 @@ export const memberService = {
   getDistributionHistory: (jumuiyaId: string) =>
     apiClient.get(`${BASE(jumuiyaId)}/distribution-history`).then(r => r.data),
 
-  // ── Individual record update / delete (for fixing validation errors) ──
   updateImportRecord: (jumuiyaId: string, recordId: number, data: any) =>
     apiClient.patch(`${BASE(jumuiyaId)}/import-records/${recordId}`, data).then(r => r.data),
   deleteImportRecord: (jumuiyaId: string, recordId: number) =>
     apiClient.delete(`${BASE(jumuiyaId)}/import-records/${recordId}`).then(r => r.data),
 
-  // ── CSA-Level (centralized admission & distribution) ──
   csaImportMembers: (data: { members: any[]; season_id?: number; file_name?: string; academic_year?: string }) =>
     apiClient.post(`/jumuiya-members/csa/import-members`, data).then(r => r.data),
 
@@ -130,7 +120,6 @@ export const memberService = {
   csaDistributeMembers: (data?: { strategy?: string; academic_year?: string }) =>
     apiClient.post(`/jumuiya-members/csa/distribute`, data || {}).then(r => r.data),
 
-  // ── Coordinator Approval Workflow ──
   csaSubmitForApproval: (data?: { academic_year?: string }) =>
     apiClient.post(`/jumuiya-members/csa/submit-for-approval`, data || {}).then(r => r.data),
 
@@ -164,18 +153,15 @@ export const memberService = {
   csaDeleteRejectedMember: (id: number) =>
     apiClient.delete(`/jumuiya-members/csa/rejected-members/${id}`).then(r => r.data),
 
-  // ── All Registered Members (across all jumuiyas, for CSA Secretary) ──
   getAllRegisteredMembers: () =>
     apiClient.get(`/jumuiya-members/registered/all`).then(r => r.data),
 
   manualRegisterMember: (data: { member_id: string; jumuiya_id: string; semesters?: string[]; serial_no?: number; amount?: number }) =>
     apiClient.post(`/jumuiya-members/registered/manual`, data).then(r => r.data),
 
-  // ── Jumuiya Secretary Manual Registration (creates pending payment) ──
   secretaryRegisterMember: (data: { member_id: string; jumuiya_id: string; jumuiya_name?: string; semesters?: string[]; serial_no?: number; amount?: number; registered_by?: string; registered_by_name?: string }) =>
     apiClient.post(`/jumuiya-members/secretary-register`, data).then(r => r.data),
 
-  // ── Pending Payments ──
   getPendingPayments: (params?: { jumuiya_id?: string }) =>
     apiClient.get(`/jumuiya-members/pending-payments`, { params }).then(r => r.data),
 
@@ -191,7 +177,6 @@ export const memberService = {
   batchSettlePendingPayments: (data: { jumuiya_id: string; settled_by?: string }) =>
     apiClient.post(`/jumuiya-members/pending-payments/batch-settle`, data).then(r => r.data),
 
-  // ── All Members (across all jumuiyas) ──
   getAllMembersAcrossJumuiyas: () =>
     apiClient.get(`/jumuiya-members/all`).then(r => r.data),
 
@@ -204,18 +189,15 @@ export const memberService = {
   deleteMember: (id: string) =>
     apiClient.delete(`/jumuiya-members/${encodeURIComponent(id)}`).then(r => r.data),
 
-  // ── Export ──
   exportMembers: (jumuiyaId: string) =>
     apiClient.get(`${BASE(jumuiyaId)}/export/members`).then(r => r.data),
 
   exportAssignments: (jumuiyaId: string) =>
     apiClient.get(`${BASE(jumuiyaId)}/export/assignments`).then(r => r.data),
 
-  // ── Member Lookup (for official registration) ──
   lookupMemberByRegNumber: (search: string) =>
     apiClient.get(`/jumuiya-members/lookup/reg-number/${encodeURIComponent(search)}`).then(r => r.data),
 
-  // ── Associates (alumni) ──
   getAssociatesPending: (params?: { jumuiya_id?: string }) =>
     apiClient.get(`/jumuiya-members/associates/pending`, { params }).then(r => r.data),
 
@@ -231,22 +213,18 @@ export const memberService = {
   undoAssociateMigration: (memberId: string) =>
     apiClient.post(`/jumuiya-members/associates/undo`, { member_id: memberId }).then(r => r.data),
 
-  // ── Stamp Card ──
   sendStampCard: (data: { email: string; pdfBase64: string; memberName: string; jumuiyaName: string }) =>
     apiClient.post(`/jumuiya-members/send-stamp-card`, data).then(r => r.data),
 
-  // ── Registration with Payment ──
   registerWithPayment: (data: { member_id: string; jumuiya_id: string; phoneNumber: string; amount: number }) =>
     apiClient.post(`/jumuiya-members/register-with-payment`, data).then(r => r.data),
 
   bulkRegisterWithPayment: (data: { member_ids: string[]; jumuiya_id: string; phoneNumber: string; amount: number }) =>
     apiClient.post(`/jumuiya-members/bulk-register-with-payment`, data).then(r => r.data),
 
-  // ── Jumuiya Lookup (resolve UUID to name) ──
   getJumuiyaLookup: () =>
     apiClient.get(`/jumuiya-members/lookup`).then(r => r.data),
 
-  // ── Analytics ──
   getAnalytics: () =>
     apiClient.get(`/jumuiya-members/analytics`).then(r => r.data),
 

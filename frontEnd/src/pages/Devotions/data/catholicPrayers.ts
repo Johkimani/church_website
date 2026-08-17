@@ -56,9 +56,7 @@ function sn(text: string, len = 120): string {
 }
 
 export const CATHOLIC_PRAYERS: CatholicPrayer[] = [
-  // ═══════════════════════════════════════════════════════
   // 1. MORNING PRAYERS (6)
-  // ═══════════════════════════════════════════════════════
   {
     id: "morning-offering",
     title: "Morning Offering",
@@ -166,9 +164,7 @@ Glory to the Father, and to the Son, and to the Holy Spirit, as it was in the be
     tags: ["lauds", "morning", "complete", "benedictus"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 2. DAYTIME PRAYERS (4)
-  // ═══════════════════════════════════════════════════════
   {
     id: "terce",
     title: "Midmorning Prayer (Terce)",
@@ -244,9 +240,7 @@ Let us pray: Pour forth, we beseech Thee, O Lord, Thy grace into our hearts; tha
     tags: ["angelus", "daytime", "mary", "incarnation"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 3. EVENING PRAYERS (3)
-  // ═══════════════════════════════════════════════════════
   {
     id: "evening-praise",
     title: "Evening Prayer Prelude (Phos Hilaron)",
@@ -295,9 +289,7 @@ O God, who gave light to this day, we thank you for the gifts of life, love, and
     tags: ["evening", "thanksgiving", "abide", "vespers"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 4. NIGHT PRAYERS (5)
-  // ═══════════════════════════════════════════════════════
   {
     id: "compline-intro",
     title: "Compline Intro",
@@ -372,9 +364,7 @@ Blessed Lord, who has given charge to your angels over me, let their presence go
     tags: ["guardian angel", "night", "sleep", "protection"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 5. MASS PRAYERS (6)
-  // ═══════════════════════════════════════════════════════
   {
     id: "confiteor",
     title: "Confiteor",
@@ -458,9 +448,7 @@ I implore you, in your great goodness, grant me grace to eat reverently the fles
     tags: ["communion", "mass", "eucharist", "preparation"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 6. THE ROSARY (8)
-  // ═══════════════════════════════════════════════════════
   {
     id: "apostles-creed",
     title: "Apostles' Creed",
@@ -569,9 +557,7 @@ After each decade, pray: O My Jesus, forgive us our sins, save us from the fires
     tags: ["rosary", "mysteries", "sorrowful", "glorious", "meditation"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 7. ESSENTIAL PRAYERS (5)
-  // ═══════════════════════════════════════════════════════
   {
     id: "lords-prayer",
     title: "The Lord's Prayer",
@@ -631,9 +617,7 @@ forever and ever. Amen.`,
     tags: ["st michael", "essential", "archangel", "protection", "spiritual warfare"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 8. ACTS OF VIRTUE (6)
-  // ═══════════════════════════════════════════════════════
   {
     id: "act-of-faith",
     title: "Act of Faith",
@@ -695,9 +679,7 @@ O Jesus, I trust in Your infinite mercy. I place all my confidence in You. I am 
     tags: ["spiritual communion", "acts", "eucharist", "jesus"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 9. LITANIES (6)
-  // ═══════════════════════════════════════════════════════
   {
     id: "litany-sacred-heart",
     title: "Litany of the Sacred Heart of Jesus",
@@ -1050,9 +1032,7 @@ Let us pray: We beseech Thee, Lord, hear the prayers of Thy servants, that we wh
     tags: ["litany", "saints", "litanies", "communion of saints"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 10. PRAYERS TO SAINTS (5)
-  // ═══════════════════════════════════════════════════════
   {
     id: "prayer-st-joseph-workers",
     title: "Prayer to St. Joseph for Workers",
@@ -1127,9 +1107,7 @@ By thy intercession, O blessed Patriarch, may we be delivered from the snares of
     tags: ["st benedict", "protection", "monastic", "saints"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 11. DEVOTIONS (17)
-  // ═══════════════════════════════════════════════════════
   {
     id: "divine-mercy-chaplet",
     title: "Chaplet of Divine Mercy",
@@ -1447,9 +1425,7 @@ O Mary, Undoer of Knots, pray for us who have recourse to thee. Amen.`,
     tags: ["mary", "undoer of knots", "intercession", "devotion"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 12. FASTING PRAYERS (7)
-  // ═══════════════════════════════════════════════════════
   {
     id: "fasting-beginning",
     title: "Beginning of a Fast",
@@ -1550,9 +1526,7 @@ I break this fast now in Your name, offering this food to You as a gift. Bless i
     tags: ["fasting", "ending", "gratitude", "thanksgiving"],
   },
 
-  // ═══════════════════════════════════════════════════════
   // 13. SPECIAL PRAYERS (18)
-  // ═══════════════════════════════════════════════════════
   {
     id: "anxiety-fear",
     title: "In Times of Anxiety and Fear",

@@ -7,9 +7,8 @@ export interface PositionInfo {
 }
 
 export const POSITION_INFO: Record<string, PositionInfo> = {
-  // ── Executive ──────────────────────────────────────────────────────────────
   'Chairperson': {
-    icon: '👑',
+    icon: '',
     description: 'The Chairperson is the head of the CSA and provides overall leadership and vision for the association. They are the primary representative of the CSA in all official capacities.',
     responsibilities: [
       'Presides over all CSA meetings and executive committee sessions',
@@ -22,7 +21,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Leadership', 'Communication', 'Vision', 'Integrity'],
   },
   'Vice Chairperson': {
-    icon: '🤝',
+    icon: '',
     description: 'The Vice Chairperson supports the Chairperson in all duties and steps in to lead whenever the Chairperson is unavailable. They also oversee specific portfolios as delegated.',
     responsibilities: [
       'Deputises the Chairperson in their absence',
@@ -34,7 +33,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Dependability', 'Leadership', 'Flexibility', 'Teamwork'],
   },
   'Organizing Secretary': {
-    icon: '📋',
+    icon: '',
     description: 'The Organizing Secretary is responsible for the logistical planning and coordination of all CSA events, meetings, and activities to ensure they run smoothly.',
     responsibilities: [
       'Plans, schedules, and publicises all CSA events and meetings',
@@ -47,7 +46,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Organisation', 'Attention to detail', 'Time management', 'Planning'],
   },
   'Secretary': {
-    icon: '📝',
+    icon: '',
     description: 'The Secretary is the official record-keeper of the CSA, responsible for all documentation, correspondence, and communication on behalf of the association.',
     responsibilities: [
       'Records accurate minutes of all meetings',
@@ -60,7 +59,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Accuracy', 'Confidentiality', 'Communication', 'Organisation'],
   },
   'Assistant Secretary': {
-    icon: '📎',
+    icon: '',
     description: 'The Assistant Secretary supports the Secretary in all clerical and administrative duties, and takes over the Secretary\'s role in their absence.',
     responsibilities: [
       'Assists the Secretary in recording meeting minutes',
@@ -72,7 +71,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Reliability', 'Accuracy', 'Punctuality', 'Teamwork'],
   },
   'Treasurer': {
-    icon: '💰',
+    icon: '',
     description: 'The Treasurer is the chief financial officer of the CSA. They are entrusted with safeguarding the association\'s funds and maintaining transparent financial records.',
     responsibilities: [
       'Receives and safely custodies all CSA funds and contributions',
@@ -86,9 +85,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Honesty', 'Numeracy', 'Accountability', 'Transparency'],
   },
 
-  // ── Jumuiya Coordinators ───────────────────────────────────────────────────
   'Jumuiya Coordinator': {
-    icon: '🏘️',
+    icon: '',
     description: 'The Jumuiya Coordinator is the primary bridge between the individual Jumuiya Small Christian Communities and the parish-wide CSA structure.',
     responsibilities: [
       'Coordinates activities between all Jumuiya groups and the CSA',
@@ -101,7 +99,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Interpersonal skills', 'Communication', 'Diplomacy', 'Community spirit'],
   },
   'Assistant Jumuiya Coordinator': {
-    icon: '🤲',
+    icon: '',
     description: 'Supports the Jumuiya Coordinator in all duties relating to the Small Christian Communities.',
     responsibilities: [
       'Assists in coordinating between Jumuiyas and the CSA',
@@ -112,9 +110,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Reliability', 'Community spirit', 'Communication', 'Teamwork'],
   },
 
-  // ── Bible Coordinators ─────────────────────────────────────────────────────
   'Bible Study Coordinator': {
-    icon: '📖',
+    icon: '',
     description: 'The Bible Study Coordinator leads the spiritual formation of CSA members through structured Bible study sessions and faith education programmes.',
     responsibilities: [
       'Plans and leads regular Bible study sessions for the CSA',
@@ -127,7 +124,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Biblical knowledge', 'Teaching ability', 'Spirituality', 'Passion for the Word'],
   },
   'Assistant Bible Study Coordinator': {
-    icon: '✝️',
+    icon: '',
     description: 'Supports the Bible Study Coordinator in planning and conducting Scripture-based activities.',
     responsibilities: [
       'Assists in preparing and facilitating Bible study sessions',
@@ -138,9 +135,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Spirituality', 'Reliability', 'Communication', 'Biblical knowledge'],
   },
 
-  // ── Rosary ─────────────────────────────────────────────────────────────────
   'Rosary Coordinator': {
-    icon: '📿',
+    icon: '',
     description: 'The Rosary Coordinator promotes devotion to Our Lady through the faithful praying of the Rosary within the CSA.',
     responsibilities: [
       'Organises and leads communal Rosary sessions',
@@ -152,7 +148,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Marian devotion', 'Prayerfulness', 'Leadership', 'Enthusiasm'],
   },
   'Assistant Rosary Coordinator': {
-    icon: '🕊️',
+    icon: '',
     description: 'Supports the Rosary Coordinator in promoting and leading Marian devotions.',
     responsibilities: [
       'Assists in leading Rosary sessions',
@@ -162,9 +158,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Marian devotion', 'Reliability', 'Prayerfulness'],
   },
 
-  // ── Pamphlet Managers ──────────────────────────────────────────────────────
   'Pamphlet Manager': {
-    icon: '📄',
+    icon: '',
     description: 'The Pamphlet Manager ensures that the CSA\'s information and communications are accurately produced and widely distributed to members and the parish.',
     responsibilities: [
       'Designs, produces, and distributes CSA newsletters and pamphlets',
@@ -176,7 +171,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Attention to detail', 'Communication', 'Design skills', 'Organisation'],
   },
   'Assistant Pamphlet Manager': {
-    icon: '🖨️',
+    icon: '',
     description: 'Supports the Pamphlet Manager in all publication and distribution activities.',
     responsibilities: [
       'Helps produce and proofread CSA publications',
@@ -186,9 +181,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Attention to detail', 'Reliability', 'Teamwork'],
   },
 
-  // ── Project Managers ───────────────────────────────────────────────────────
   'Project Manager': {
-    icon: '🏗️',
+    icon: '',
     description: 'The Project Manager spearheads the CSA\'s development projects and social outreach initiatives, ensuring they are delivered on time and within budget.',
     responsibilities: [
       'Plans, executes, and monitors CSA development projects',
@@ -200,7 +194,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Project management', 'Leadership', 'Problem-solving', 'Initiative'],
   },
   'Assistant Project Manager': {
-    icon: '🔧',
+    icon: '',
     description: 'Supports the Project Manager in all project planning, execution, and reporting activities.',
     responsibilities: [
       'Assists in coordinating project activities and volunteers',
@@ -210,9 +204,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Organisation', 'Teamwork', 'Reliability', 'Problem-solving'],
   },
 
-  // ── Liturgist ─────────────────────────────────────────────────────────────
   'Liturgist': {
-    icon: '⛪',
+    icon: '',
     description: 'The Liturgist ensures that all CSA worship experiences are conducted with reverence, dignity, and full adherence to the Church\'s liturgical norms.',
     responsibilities: [
       'Coordinates all liturgical aspects of CSA Masses and celebrations',
@@ -225,7 +218,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Liturgical knowledge', 'Prayerfulness', 'Attention to detail', 'Leadership'],
   },
   'Assistant Liturgist': {
-    icon: '🕯️',
+    icon: '',
     description: 'Supports the Liturgist in planning and executing all worship activities.',
     responsibilities: [
       'Assists in preparing members for liturgical roles',
@@ -235,9 +228,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Liturgical knowledge', 'Prayerfulness', 'Teamwork'],
   },
 
-  // ── Choir Officials ───────────────────────────────────────────────────────
   'Choir Chairperson': {
-    icon: '🎶',
+    icon: '',
     description: 'The Choir Chairperson provides leadership and governance to the CSA choir, ensuring it functions as a skilled and spiritually-grounded ministry.',
     responsibilities: [
       'Leads the CSA choir and presides over choir meetings',
@@ -249,7 +241,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Musical appreciation', 'Leadership', 'Organisation', 'Spirituality'],
   },
   'Choir Vice Chairperson': {
-    icon: '🎵',
+    icon: '',
     description: 'Supports the Choir Chairperson in managing the choir ministry.',
     responsibilities: [
       'Deputises the Choir Chairperson in their absence',
@@ -259,9 +251,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Musical appreciation', 'Leadership', 'Teamwork'],
   },
 
-  // ── Instrument Managers ───────────────────────────────────────────────────
   'Instrument Manager': {
-    icon: '🎸',
+    icon: '',
     description: 'The Instrument Manager is responsible for the procurement, maintenance, and safekeeping of all musical instruments used by the CSA.',
     responsibilities: [
       'Takes inventory and maintains all CSA musical instruments',
@@ -273,7 +264,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Responsibility', 'Technical knowledge', 'Organisation', 'Integrity'],
   },
   'Assistant Instrument Manager': {
-    icon: '🎹',
+    icon: '',
     description: 'Assists in managing and maintaining the CSA\'s musical instrument inventory.',
     responsibilities: [
       'Assists in instrument maintenance and inventory',
@@ -283,9 +274,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Responsibility', 'Teamwork', 'Technical aptitude'],
   },
 
-  // ── Liturgical Dancers ────────────────────────────────────────────────────
   'Dance Coordinator': {
-    icon: '💃',
+    icon: '',
     description: 'The Dance Coordinator leads the liturgical dance ministry, blending artistic movement with prayerful worship to glorify God.',
     responsibilities: [
       'Coordinates liturgical dance rehearsals and performances',
@@ -297,7 +287,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Dance skills', 'Spirituality', 'Creativity', 'Leadership'],
   },
   'Assistant Dance Coordinator': {
-    icon: '🎭',
+    icon: '',
     description: 'Assists the Dance Coordinator in leading the liturgical dance ministry.',
     responsibilities: [
       'Assists in dance rehearsals and choreography',
@@ -307,9 +297,8 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Dance skills', 'Reliability', 'Teamwork'],
   },
 
-  // ── Catechist ─────────────────────────────────────────────────────────────
   'Catechist': {
-    icon: '🎓',
+    icon: '',
     description: 'The Catechist is responsible for faith formation and religious education within the CSA, guiding members in a deeper understanding of the Catholic faith.',
     responsibilities: [
       'Provides structured catechesis and faith formation to CSA members',
@@ -325,7 +314,7 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
 
 // Fallback for unknown positions
 export const DEFAULT_POSITION_INFO: PositionInfo = {
-  icon: '👤',
+  icon: '',
   description: 'A valued member of the CSA executive team, contributing to the mission and activities of the association.',
   responsibilities: [
     'Supports the CSA\'s overall mission and activities',

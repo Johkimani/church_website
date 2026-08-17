@@ -32,7 +32,6 @@ function md(month: number, day: number): { startMonth: number; startDay: number 
  * End is always start + 8 (9 days total).
  */
 export const NOVENA_CALENDAR: NovenaEvent[] = [
-  // ── JANUARY ──
   {
     id: "cal-christ-unity",
     title: "Novena for Christian Unity",
@@ -50,7 +49,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of the Holy Name of Jesus",
   },
 
-  // ── FEBRUARY ──
   {
     id: "cal-lourdes",
     title: "Novena to Our Lady of Lourdes",
@@ -60,7 +58,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of Our Lady of Lourdes",
   },
 
-  // ── MARCH ──
   {
     id: "cal-joseph",
     title: "Novena to Saint Joseph",
@@ -78,7 +75,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of the Annunciation",
   },
 
-  // ── APRIL ──
   {
     id: "cal-catherine",
     title: "Novena to Saint Catherine of Siena",
@@ -88,7 +84,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of Saint Catherine of Siena (Apr 29)",
   },
 
-  // ── HOLY WEEK / EASTER (movable) ──
   {
     id: "cal-divine-mercy",
     title: "Novena to Divine Mercy",
@@ -106,7 +101,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Pentecost Sunday",
   },
 
-  // ── MAY ──
   {
     id: "cal-joseph-worker",
     title: "Novena to Saint Joseph the Worker",
@@ -124,7 +118,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of Our Lady of Fatima",
   },
 
-  // ── JUNE ──
   {
     id: "cal-sacred-heart",
     title: "Novena to the Sacred Heart",
@@ -158,7 +151,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of Our Lady of Perpetual Help",
   },
 
-  // ── JULY ──
   {
     id: "cal-mary-mountain",
     title: "Novena to Our Lady of Mount Carmel",
@@ -184,7 +176,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of Saint Dominic (Aug 8)",
   },
 
-  // ── AUGUST ──
   {
     id: "cal-assumption",
     title: "Novena to the Assumption of Mary",
@@ -210,7 +201,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of Saint Augustine (Aug 28)",
   },
 
-  // ── SEPTEMBER ──
   {
     id: "cal-sorrows",
     title: "Novena to Our Lady of Sorrows",
@@ -252,7 +242,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of Saint Thérèse of Lisieux",
   },
 
-  // ── OCTOBER ──
   {
     id: "cal-rosary",
     title: "Rosary Novena",
@@ -302,7 +291,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Solemnity of Christ the King",
   },
 
-  // ── NOVEMBER ──
   {
     id: "cal-all-souls",
     title: "Novena for the Holy Souls in Purgatory",
@@ -344,7 +332,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     feastDay: "Feast of the Dedication of the Basilicas",
   },
 
-  // ── DECEMBER ──
   {
     id: "cal-advent",
     title: "Advent Novena",
@@ -369,9 +356,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     color: "from-yellow-500 to-amber-600",
     feastDay: "Feast of the Holy Name of Jesus",
   },
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 9 — novenaPrayers9.ts
-  // ═══════════════════════════════════════════════════════════════
   {
     id: "cal-guadalupe",
     title: "Novena to Our Lady of Guadalupe",
@@ -404,9 +388,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     color: "from-cyan-500 to-blue-600",
     feastDay: "Feast of Saints Michael, Gabriel, and Raphael (Sep 29)",
   },
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 10 — novenaPrayers10.ts
-  // ═══════════════════════════════════════════════════════════════
   {
     id: "cal-saint-clare",
     title: "Novena to Saint Clare of Assisi",
@@ -431,10 +412,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     color: "from-red-600 to-rose-700",
     feastDay: "Feast of the Precious Blood (Jul 1)",
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 11 — novenaPrayers11.ts
-  // ═══════════════════════════════════════════════════════════════
   {
     id: "cal-michael-archangel",
     title: "Novena to Saint Michael the Archangel",
@@ -515,10 +492,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     color: "from-emerald-500 to-teal-600",
     feastDay: "Feast of Saint Elizabeth Ann Seton (Jan 4)",
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 12 — novenaPrayers12.ts
-  // ═══════════════════════════════════════════════════════════════
   {
     id: "cal-benedict",
     title: "Novena to Saint Benedict",
@@ -599,10 +572,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     color: "from-amber-500 to-yellow-600",
     feastDay: "Feast of Saint Bonaventure (Jul 15)",
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 13 — novenaPrayers13.ts
-  // ═══════════════════════════════════════════════════════════════
   {
     id: "cal-francis-xavier",
     title: "Novena to Saint Francis Xavier",
@@ -683,10 +652,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     color: "from-emerald-500 to-green-600",
     feastDay: "Feast of Saint Luke (Oct 18)",
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 14 — novenaPrayers14.ts
-  // ═══════════════════════════════════════════════════════════════
   {
     id: "cal-peter-apostle",
     title: "Novena to Saint Peter the Apostle",
@@ -767,10 +732,6 @@ export const NOVENA_CALENDAR: NovenaEvent[] = [
     color: "from-emerald-500 to-teal-600",
     feastDay: "Feast of Saint Martin de Porres (Nov 3)",
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 15 — novenaPrayers15.ts
-  // ═══════════════════════════════════════════════════════════════
   {
     id: "cal-anne",
     title: "Novena to Saint Anne",

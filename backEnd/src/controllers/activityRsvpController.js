@@ -1,14 +1,12 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
-// ─── RSVP ("who's coming?") for weekly / semester activities ────────────────
 const VALID_TYPES = ["weekly", "semester"];
 
 const memberIdOf = (user) => user?.member_id || user?.id;
 
 const activityTable = (type) => (type === "weekly" ? "weekly_activities" : "semester_activities");
 
-// ─── Member toggles their RSVP for an activity ──────────────────────────────
 export const setRsvp = async (req, res) => {
   const { activity_type, activity_id, going } = req.body;
   const memberId = memberIdOf(req.user);
@@ -61,7 +59,6 @@ export const setRsvp = async (req, res) => {
   }
 };
 
-// ─── Public: attendance count per activity (keyed for the cards) ─────────────
 export const getRsvpCounts = async (req, res) => {
   try {
     const type = req.query.activity_type;
@@ -83,7 +80,6 @@ export const getRsvpCounts = async (req, res) => {
   }
 };
 
-// ─── User: my RSVP states (which activities am I attending) ──────────────────
 export const getMyRsvps = async (req, res) => {
   const memberId = memberIdOf(req.user);
   try {
@@ -100,7 +96,6 @@ export const getMyRsvps = async (req, res) => {
   }
 };
 
-// ─── Admin: who's going to a specific activity (paginated) ───────────────────
 export const getRsvpList = async (req, res) => {
   const { activity_type, activity_id } = req.query;
   if (!VALID_TYPES.includes(activity_type) || !activity_id) {

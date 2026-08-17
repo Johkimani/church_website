@@ -31,16 +31,12 @@ const app = express();
 // would let attackers rotate IPs and bypass the rate limiters.
 app.set("trust proxy", 1);
 
-// Secure App with Helmet (Security Headers)
 app.use(helmet());
 
-// Performance: Compression for high-efficiency response delivery
 app.use(compression());
 
-// Prevent Parameter Pollution
 app.use(hpp());
 
-// app midlewares
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
@@ -73,7 +69,6 @@ app.use(requestIp.mw());
 
 app.use(cors(corsOptions));
 
-// ─── Rate limiters ─────────────────────────────────────────────────────────────
 // M-Pesa callbacks arrive from Safaricom's servers and can burst/retry, so they
 // get a much higher allowance than client-facing endpoints. Payment endpoints
 // (which trigger real-money STK pushes) get a tighter tier per client IP.
@@ -154,7 +149,6 @@ const authLimiter = rateLimit({
   },
 });
 
-// Rate limiter activation for DDoS protection (per-tier)
 app.use((req, res, next) => {
   if (isMpesaCallbackPath(req)) return callbackLimiter(req, res, next);
   if (isPaymentEndpoint(req)) return paymentLimiter(req, res, next);
@@ -186,12 +180,10 @@ app.use("/api", (req, res) => {
   res.status(404).json({ success: false, message: "Resource not found" });
 });
 
-// Organized Static Routes for locally uploaded media files
 app.use("/uploads", express.static(path.join(__dirname, "../localFileUploads")));
 app.use("/gallery-images", express.static(path.join(__dirname, "../galleryImages")));
 
 
-// Initialize Backend Data Service
 BackendDataService.init();
 
 // SPA: serve built frontend + fallback to index.html for non-API routes.

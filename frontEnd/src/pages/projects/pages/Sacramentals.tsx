@@ -12,20 +12,10 @@ import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
 
-/* ───────────────────────────────────────────────
-   SACRAMENTAL SUBCATEGORIES that exist in the DB
-   These are the `category` column values stored
-   for products that belong to the sacramentals
-   section. The admin can also set category =
-   "sacramentals" so we accept both.
-─────────────────────────────────────────────── */
 const SACRAMENTAL_SUBCATS = new Set([
     'rosaries', 'bibles', 'chains', 'crucifixes', 'statues', 'candles', 'sacramentals'
 ]);
 
-/* ───────────────────────────────────────────────
-   CATEGORY FILTER BAR
-─────────────────────────────────────────────── */
 const CategoryFilterBar: React.FC<{
     selected: SacramentalCategory;
     onChange: (c: SacramentalCategory) => void;
@@ -65,9 +55,6 @@ const CategoryFilterBar: React.FC<{
     );
 };
 
-/* ───────────────────────────────────────────────
-   PREMIUM PRODUCT CARD
-─────────────────────────────────────────────── */
 interface Product {
     id?: any;
     name: string;
@@ -171,9 +158,6 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
     );
 };
 
-/* ───────────────────────────────────────────────
-   SKELETON LOADER
-─────────────────────────────────────────────── */
 const SkeletonCard = () => (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-pulse">
         <div className="aspect-square bg-slate-200" />
@@ -186,9 +170,6 @@ const SkeletonCard = () => (
     </div>
 );
 
-/* ───────────────────────────────────────────────
-   MAIN SACRAMENTALS PAGE
-─────────────────────────────────────────────── */
 export const Sacramentals = () => {
     const { products: dbProducts, addToCart, sacCategory, setSacCategory, setIsCartOpen, isAdmin, isLoading } = useApp();
     const [search, setSearch] = React.useState('');
@@ -209,16 +190,13 @@ export const Sacramentals = () => {
         }
     }, [debouncedSearch, sacCategory, sortBy]);
 
-    /* ── Load admin-uploaded slider images from API ── */
     const { sliderImgs, sliderLoading, deleteSlide } = useSliderImages('sacramentals');
 
-    /* ── Delete slider image (admin only) ── */
     const handleDeleteSliderImage = async (id: number | string) => {
         if (!window.confirm('Delete this slide image?')) return;
         await deleteSlide(id);
     };
 
-    /* ── Filter DB products ── */
     const sourceProducts = React.useMemo(() => {
         return (dbProducts || [])
             .filter(p => {
@@ -237,7 +215,6 @@ export const Sacramentals = () => {
             }));
     }, [dbProducts]);
 
-    /* ── Category counts ── */
     const categoryCounts = React.useMemo(() => {
         const c: Record<string, number> = {};
         SACRAMENTAL_CATEGORIES.forEach(cat => { if (cat.id !== 'all') c[cat.id] = 0; });
@@ -248,7 +225,6 @@ export const Sacramentals = () => {
         return c;
     }, [sourceProducts]);
 
-    /* ── Final filtered + sorted list ── */
     const filtered = React.useMemo(() => {
         let result = sourceProducts.filter(p => {
             const sub = p.subcategory || p.category || '';
@@ -268,7 +244,6 @@ export const Sacramentals = () => {
         return result;
     }, [sourceProducts, sacCategory, debouncedSearch, sortBy]);
 
-    /* ── Add to cart ── */
     const handleAddToCart = (product: typeof sourceProducts[0]) => {
         addToCart({
             item: { ...product, img: product.image_url },
@@ -283,7 +258,6 @@ export const Sacramentals = () => {
     return (
         <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
-            {/* ══════════ HERO ══════════ */}
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
                     {sliderLoading ? (
@@ -306,7 +280,6 @@ export const Sacramentals = () => {
                 />
             </ProjectHero>
 
-            {/* ══════════ SEARCH + FILTER PANEL ══════════ */}
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -357,7 +330,6 @@ export const Sacramentals = () => {
                 </motion.div>
             </div>
 
-            {/* ══════════ PRODUCT SECTION ══════════ */}
             <motion.section
                 ref={productsRef}
                 id="sacramentals"
@@ -423,7 +395,6 @@ export const Sacramentals = () => {
                 )}
             </motion.section>
 
-            {/* ── VIEW CART LINK ── */}
             <div className="flex justify-center pb-4 px-4">
                 <button
                     onClick={() => setIsCartOpen(true)}
@@ -433,7 +404,6 @@ export const Sacramentals = () => {
                 </button>
             </div>
 
-            {/* ── TESTIMONIALS ── */}
             <TestimonialsSection variant="blue" />
 
         </div>

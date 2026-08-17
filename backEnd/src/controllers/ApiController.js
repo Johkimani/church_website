@@ -41,7 +41,6 @@ const sanitizeSuggestionRows = (rows) =>
 const maybeSanitize = (tableName, rows) =>
   tableName === 'suggestions' ? sanitizeSuggestionRows(rows) : rows;
 
-// ── Generic-write hardening ────────────────────────────────────────────────
 // Sensitive columns can NEVER be set through the generic create/update API,
 // regardless of table. These are only ever written by dedicated controllers
 // (auth, password policy, role management), so blocking them here cannot
@@ -209,7 +208,6 @@ export const getTableData = async (tableName, queryParams = {}) => {
   }
 };
 
-// Create a new record in a table
 export const createRecord = async (tableName, data) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   try {
@@ -244,7 +242,6 @@ export const createRecord = async (tableName, data) => {
   }
 };
 
-// Delete a record from a table
 export const deleteRecord = async (tableName, id) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';
@@ -258,7 +255,6 @@ export const deleteRecord = async (tableName, id) => {
   }
 };
 
-// Get all data from all tables
 export const getAllData = async () => {
   const tables = ['members', 'events', 'contributions', 'officials', 'projects', 'activities', 'gallery', 'jumuiya', 'mpesa_request', 'suggestions'];
   const data = {};
@@ -274,7 +270,6 @@ export const getAllData = async () => {
   
   return data;
 };
-// Update a record in a table
 export const updateRecord = async (tableName, id, data) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';

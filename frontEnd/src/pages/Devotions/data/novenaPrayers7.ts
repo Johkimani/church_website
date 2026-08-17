@@ -1,10 +1,8 @@
 import { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_7: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MARTIN DE PORRES
   // novenaId: "novenas-saint-martin"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "saint-martin-day-1",
@@ -88,10 +86,8 @@ export const NOVENA_PRAYERS_7: Prayer[] = [
     text: `O glorious Saint Martin de Porres, on this final day of the novena I consecrate myself entirely to the service of divine charity through your powerful intercession. As you offered every fiber of your being to the love of God and the love of neighbor without exception or reserve, so I now place my life, my talents, my time, and all that I possess under the patronage of your example and protection. Receive my solemn resolution to live henceforth as a true disciple of charity, making the works of mercy the very heartbeat of my daily existence. You who were welcomed into heavenly glory and stand before the throne of the Lamb, present my humble offering to the Lord Jesus, that He may purify my intentions and multiply my efforts for the building up of His Kingdom. O blessed Martin, faithful son of the Church and model of evangelical charity, pray for me now and at the hour of my death, that I may one day join you in the eternal embrace of the God who is Love itself. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // ADVENT NOVENA
   // novenaId: "novenas-advent"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "advent-day-1",
@@ -175,10 +171,8 @@ export const NOVENA_PRAYERS_7: Prayer[] = [
     text: `O Lord Jesus Christ, Alpha and Omega, Beginning and End of all things, this final day of the Advent novena I offer in joyful anticipation of Your coming. You came once in humility at Bethlehem to redeem the world by Your precious Blood; You come daily in the Sacred Liturgy and in the hearts of the faithful; and You will come again at the end of time in glory and majesty to judge the living and the dead. Prepare me, Lord, for each of these comings, that I may receive You worthily in the Holy Eucharist, welcome You joyfully in my daily life, and greet You with confidence at the hour of my death. As I celebrate the anniversary of Your Incarnation, may the mystery of God-with-us transform my entire existence and draw me ever closer to the heart of the Trinity. With the angels and the shepherds and the Magi, I cry out: Come, Lord Jesus, come quickly and do not delay. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY INFANT OF PRAGUE
   // novenaId: "novenas-holy-infant"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "holy-infant-day-1",
@@ -262,10 +256,8 @@ export const NOVENA_PRAYERS_7: Prayer[] = [
     text: `O divine Infant of Prague, on this final and most solemn day of the novena I consecrate myself entirely to You, placing my life, my soul, and all that I possess under Your adorable dominion. I choose You, Holy Infant, as my king, my treasure, and my all. I renounce the empty promises of the world, the flesh, and the devil, and I pledge henceforth to live only for Your greater glory. I give You my hands to do Your work, my feet to walk Your paths, my lips to speak Your praise, and my heart to love You above all things. As the holy nun Teresa of Ávila placed the miraculous statue in the place of honor in her convent and was rewarded with extraordinary graces, so I place You at the center of my life and my home. O Infant Jesus of Prague, faithful God and mighty Savior, I am Yours now and forever. Let every beat of my heart be an act of love for You, and may I one day see You face to face in the eternal joy of heaven. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA FOR CHRISTIAN UNITY
   // novenaId: "novenas-christian-unity"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "christian-unity-day-1",
@@ -349,9 +341,7 @@ export const NOVENA_PRAYERS_7: Prayer[] = [
     text: `O Lord Jesus Christ, Good Shepherd of the sheep, on this final day of the novena for Christian unity I lift up to You the grand hope of all Your disciples: that there may be one fold and one Shepherd. You who laid down Your life for the sheep of every flock and who gathered them from the four corners of the earth, I trust that You will not rest until Your prayer is fully answered and Your Church stands before the world as a single, holy, catholic, and apostolic communion. I consecrate myself to this cause of unity, resolving to pray and work for Christian reconciliation all the days of my life. May the Blessed Virgin Mary, Mother of the Church, intercede for all her children who are scattered and divided, and may she lead them all to her Son, Jesus Christ, the one Shepherd of our souls. O divine Shepherd, gather all the scattered sheep into one fold, feed them with one Eucharistic bread, and guide them with one voice through the safe paths of truth and love until we all reach the heavenly pasture where we shall see You face to face and be one with You forever. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO OUR LADY OF SORROWS (novenas-lady-sorrows)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "los-np-1",

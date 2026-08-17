@@ -75,4 +75,4 @@ export const getApiError = (err: any): string =>
   err?.response?.data?.error ||
   err?.response?.data?.message ||
   err?.message ||
-  "Something went wrong";
+  "Failed to load attendance data";

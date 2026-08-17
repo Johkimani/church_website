@@ -33,7 +33,7 @@ const dummyImages = [
 ];
 
 async function seedDummyGallery() {
-  console.log("🚀 Starting Dummy Gallery Seeding...");
+  console.log("Starting Dummy Gallery Seeding...");
   
   try {
     // Clear existing (optional - commented out to preserve real data if any)
@@ -71,12 +71,12 @@ async function seedDummyGallery() {
       ];
 
       await pool.query(query, values);
-      console.log(`✅ Seeded: ${values[3]} (${isAnniversary ? 'ANNIVERSARY' : 'NORMAL'})`);
+      console.log(`Seeded: ${values[3]} (${isAnniversary ? 'ANNIVERSARY' : 'NORMAL'})`);
     }
 
-    console.log("\n✨ Seeding Complete! Refresh the Gallery to see the 'Proximity Algorithm' in action.");
+    console.log("\nSeeding Complete! Refresh the Gallery to see the 'Proximity Algorithm' in action.");
   } catch (err) {
-    console.error("❌ Seeding Failed:", err);
+    console.error("Seeding Failed:", err);
   } finally {
     await pool.end();
   }

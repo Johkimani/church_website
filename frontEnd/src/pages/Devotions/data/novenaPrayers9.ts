@@ -1,11 +1,6 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_9: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
-  // NOVENA TO OUR LADY OF GUADALUPE
-  // novenaId: "novenas-our-lady-of-guadalupe"
-  // ═══════════════════════════════════════════════════════════════
-
   {
     id: "olg-np-1",
     novenaId: "novenas-our-lady-of-guadalupe",
@@ -87,11 +82,6 @@ export const NOVENA_PRAYERS_9: Prayer[] = [
     intention: "To trust in the victory of Mary's Immaculate Heart",
     text: `O Blessed Virgin Mary, Our Lady of Guadalupe, on the feast of your appearance, theAztec temples of human sacrifice were cast down and the Cross of Christ was raised in their place. You promised to hear the cry of those who trust in you, and you have kept that promise for nearly five centuries. I place my life in your hands today, dear Mother, with all its joys and sorrows, its hopes and fears, its successes and failures. I trust in your powerful intercession to bring me closer to your Son and to protect me from every danger of body and soul. Help me to carry my cross daily with patience and hope, to pray faithfully, to receive the sacraments worthily, and to love others as Christ has loved me. O Lady of Guadalupe, Star of the New Evangelization, Mother of the Americas, Mother of all peoples — I consecrate myself entirely to you this day, and I trust completely in your promise to hear and help those who call upon you. Amen.`,
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // NOVENA TO THE HOLY CROSS
-  // novenaId: "novenas-holy-cross"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "hc-np-1",
@@ -175,11 +165,6 @@ export const NOVENA_PRAYERS_9: Prayer[] = [
     text: `O Holy Cross of Christ, on this final day of my novena, I venerate you with all the love and reverence of my heart. You are the throne of grace, the altar of sacrifice, the sign of victory, the standard of the King. I adore You, O Cross, for bearing the weight of my Savior. I honor You, O Cross, for being the instrument of my redemption. I embrace You, O Cross, as my shield in battle, my comfort in sorrow, my hope in death. May I never be ashamed of the Cross, but proclaim it boldly to the world. May I never take it for granted, but honor it with holy fear. And may I carry my own cross with courage, knowing that after the Cross comes the crown, after Good Friday comes Easter Sunday, and after death comes the glorious resurrection. O Cross of Christ, my hope and my salvation, I will praise You now and forever. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
-  // NOVENA TO SAINT PATRICK
-  // novenaId: "novenas-saint-patrick"
-  // ═══════════════════════════════════════════════════════════════
-
   {
     id: "sp-np-1",
     novenaId: "novenas-saint-patrick",
@@ -261,11 +246,6 @@ export const NOVENA_PRAYERS_9: Prayer[] = [
     intention: "For the grace of a holy death",
     text: `O Saint Patrick, who labored faithfully for Christ for over sixty years and who received the reward of the just, pray for me now at the end of this novena. You once wrote: "I expect each day, be it business or anything else, that the murderer may cut me down, or that I may be reduced to slavery and die in chains — I am very much prepared for this, in whatever way it may come." You lived every day as if it were your last, and you died in peace, surrounded by the people you had brought to Christ. Help me to live with the same detachment, the same trust, and the same readiness to meet my Creator. Grant me a holy death, fortified by the sacraments of the Church, and after death, the eternal rest of heaven, where I hope to see you face to face and thank you for your prayers. O Patrick, guide us to the eternal homeland. Amen.`,
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // NOVENA TO SAINT RAPHAEL
-  // novenaId: "novenas-saint-raphael"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sr-np-1",

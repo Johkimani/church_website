@@ -11,7 +11,6 @@ function clearPublicCache() {
 }
 
 const activitiesService = {
-  // ── Weekly (public read, admin write) ──────────────────
   getWeekly: async () => {
     const res = await apiClient.get("/activities/weekly");
     return res.data.data || [];
@@ -69,7 +68,6 @@ const activitiesService = {
     return res.data.data;
   },
 
-  // ── Semester (public read, admin write) ────────────────
   getSemester: async () => {
     const res = await apiClient.get("/activities/semester");
     return res.data.data || [];
@@ -179,7 +177,6 @@ const activitiesService = {
 
 export default activitiesService;
 
-// ── Bookings (admin + public) ─────────────────────────
 export const bookingService = {
   getPaidActivities: async () => {
     const res = await apiClient.get("/activities/paid");
@@ -235,7 +232,6 @@ export const bookingService = {
   },
 };
 
-// ── RSVPs ("who's coming?") ───────────────────────────────
 export const rsvpService = {
   // Member toggles attendance for an activity (returns { activity_type, activity_id, going, count })
   setRsvp: async (activityType: string, activityId: number, going: boolean) => {

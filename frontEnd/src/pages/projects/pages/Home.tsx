@@ -89,7 +89,6 @@ export const Home = () => {
   return (
     <div className="w-full bg-slate-50 min-h-screen pb-24 text-slate-800 font-sans">
 
-      {/* ══════════ Hero Header ══════════ */}
       <ProjectHero>
         <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
           {sliderLoading ? (
@@ -174,7 +173,6 @@ export const Home = () => {
         </div>
       </ProjectHero>
 
-      {/* ══════════ Category Cards Grid ══════════ */}
       <div id="categories" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-12 sm:pt-14">
         <motion.div className="text-center mb-8 sm:mb-10">
           <span className="inline-block text-[11px] sm:text-xs font-bold text-blue-600 bg-blue-100 px-4 py-1.5 rounded-full uppercase tracking-widest mb-3">
@@ -238,7 +236,6 @@ export const Home = () => {
         )}
       </div>
 
-      {/* ══════════ Patron Saint Banner ══════════ */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-16 sm:pt-20">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

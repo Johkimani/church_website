@@ -21,8 +21,6 @@ import { useAuth }       from "./AuthContext";
 import { fetchNotifications } from "../api/axiosInstance";
 import type { Event }    from "../interface/api";
 
-// ── Context shape ─────────────────────────────────────────────────────────────
-
 interface NotificationContextType {
   notifications: Event[];
   unreadCount:   number;
@@ -36,8 +34,6 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
-
-// ── Provider ──────────────────────────────────────────────────────────────────
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -62,7 +58,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  // ── Initial REST fetch (notification history) ────────────────────────────
   const refreshNotifications = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -83,7 +78,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     refreshNotifications();
   }, [refreshNotifications]);
 
-  // ── SSE real-time subscriptions ──────────────────────────────────────────
   useEffect(() => {
     /**
      * notification_new  → prepend to the list (unread by default).
@@ -143,12 +137,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [subscribe, enrichNotificationsWithReadStatus]);
 
-  // ── Badge count (from SSE individual channel) ────────────────────────────
-  // The server sends the authoritative unread count on connect and after each
-  // CRUD operation — we also derive it locally from state for instant UI.
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // ── Mark all read for a category (local only) ────────────────────────────
   const markAllAsRead = useCallback((category: "csa" | "jumuiya") => {
     setNotifications((prev) => {
       const targets = prev.filter((n) => n.category === category && !n.read);
@@ -185,8 +175,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     </NotificationContext.Provider>
   );
 };
-
-// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export const useNotifications = () => {
   const ctx = useContext(NotificationContext);

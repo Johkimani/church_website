@@ -1,9 +1,7 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY SPIRIT
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "hs-np-1",
@@ -87,9 +85,7 @@ export const NOVENA_PRAYERS: Prayer[] = [
     text: `Come, Holy Spirit, Spirit of Renewal, and renew the face of the earth. Renew my heart with the fire of divine love, renew my mind with the light of truth, and renew my spirit with the gifts and fruits that produce holiness of life. Send me out as a faithful witness to the Resurrection, empowered to bring the transforming fire of Your divine presence to every corner of the world. Renew Your Church with the zeal of the early Christians, that she may proclaim the Gospel with boldness and live the Gospel with integrity in a new age of evangelization. Come, Holy Spirit, fill the hearts of Your faithful and enkindle in them the fire of Your love. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO OUR LADY OF PERPETUAL HELP
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "oph-np-1",
@@ -173,9 +169,7 @@ export const NOVENA_PRAYERS: Prayer[] = [
     text: `O Mother of Perpetual Help, on this final day of the novena I give myself entirely to you. I consecrate to you my body and soul, my thoughts and words, my actions and sufferings, my hopes and fears, my joys and sorrows — everything that I am and everything that I have. Take me under your special protection, O Mother, and guard me as your own. I place my life in your hands, confident that you will present me to your Son at the hour of my death, as you held him in your arms at his birth. Be truly my Mother, my intercessor, and my guide, that I may one day join you and all the Saints in the eternal kingdom of heaven. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE SACRED HEART OF JESUS
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sh-np-1",
@@ -259,9 +253,7 @@ export const NOVENA_PRAYERS: Prayer[] = [
     text: `O Sacred Heart of Jesus, on this final day of the novena I give myself entirely and without reserve to You. I consecrate to You my whole life — my thoughts, my words, my actions, my sufferings, and my joys. Be the King of my heart, the center of my existence, the goal of all my desires. I place my complete trust in You and abandon myself to Your loving care, confident that You will never let me perish. I pledge to honor Your Sacred Heart by prayer, by frequent Communion, by reparation for sin, and by spreading devotion to Your adorable Heart wherever I go. Sacred Heart of Jesus, I place my trust in You. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT JUDE
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sj-np-1",
@@ -345,9 +337,7 @@ export const NOVENA_PRAYERS: Prayer[] = [
     text: `Saint Jude, apostle and martyr of Jesus Christ, I thank God for your powerful intercession throughout this novena. Whether my petition has been granted as I hoped or in ways I do not yet understand, I offer my praise and thanksgiving to the Almighty, whose wisdom surpasses all human understanding. Help me to continue trusting, continue praying, and continue growing in holiness. May I never forget that you are always ready to intercede for me before the throne of God. I pledge to honor you, to spread devotion to you, and to remain steadfast in faith until God's perfect plan is fulfilled in my life. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT JOSEPH
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sjoseph-np-1",
@@ -431,9 +421,7 @@ export const NOVENA_PRAYERS: Prayer[] = [
     text: `Saint Joseph, on this final day of the novena I consecrate myself entirely to you and place my life under your holy patronage. Be my spiritual father, my faithful guide, my constant protector, and my powerful intercessor before the throne of God. Help me to grow in humility, as you were humble before the mystery of the Incarnation; in work, as you labored faithfully in the carpenter's shop; in prayer, as you attended the Temple with devotion; and in love, as you loved Mary and Jesus with your whole heart. Lead me always closer to Jesus and Mary, and obtain for me the grace of final perseverance, that I may one day join you in the eternal glory of heaven. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO DIVINE MERCY
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "dm-np-1",

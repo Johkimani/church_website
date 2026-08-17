@@ -117,7 +117,7 @@ export default function PrayerModule() {
     <div className="min-h-screen bg-transparent pb-12">
       <div className="max-w-6xl mx-auto px-4 py-8">
 
-        {/* ═══════════════ HEADER ═══════════════ */}
+
         <div className="relative rounded-3xl overflow-hidden mb-8 p-6 sm:p-8"
           style={{
             background: "linear-gradient(135deg, rgba(217,119,6,0.1), rgba(217,119,6,0.03))",
@@ -153,7 +153,7 @@ export default function PrayerModule() {
           </div>
         </div>
 
-        {/* ═══════════════ SEGMENTED TAB CONTROL ═══════════════ */}
+
         <div
           className="inline-flex rounded-xl p-1 mb-8 w-fit"
           style={{

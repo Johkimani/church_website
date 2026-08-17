@@ -1,9 +1,7 @@
 import { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_2: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO OUR LADY OF LOURDES (novenas-lady-of-lourdes)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "lol-1",
@@ -87,9 +85,7 @@ export const NOVENA_PRAYERS_2: Prayer[] = [
     text: `O Immaculate Virgin Mary, Our Lady of Lourdes, I come to the close of this novena with a heart overflowing with gratitude and love. Today I consecrate myself entirely to you, giving you my body and soul, my thoughts and actions, my joys and sorrows, my present and my future. I place all that I am and all that I have under your maternal protection, trusting that you will guide me safely to your Son, Jesus Christ. O Lady of Lourdes, I choose you this day as my Mother, my advocate, and my guide. Lead me always closer to the Sacred Heart of Jesus, intercede for me in all my necessities, and bring me at last to the blessed paradise where with you I shall praise God forever and ever. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY FAMILY (novenas-holy-family)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "hf-1",
@@ -173,9 +169,7 @@ export const NOVENA_PRAYERS_2: Prayer[] = [
     text: `O Holy Family,Holy Family of Nazareth, Jesus, Mary, and Joseph, I come to the conclusion of this novena with a heart overflowing with love and devotion. Today I consecrate myself and my entire family to your holy protection. Take us under your care, O Holy Family. Watch over our comings and goings, guard us in danger, and lead us always closer to the Sacred Heart of Jesus. O Holy Family, make our home a Nazareth on earth, a place where peace reigns, where love abides, and where God is served with joy. May we imitate your virtues, trust in your intercession, and one day be reunited with you in the heavenly home prepared for all who love God. We place all our hopes in your hands, confident that you will present our petitions before the throne of God. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO OUR LADY OF FATIMA (novenas-our-lady-of-fatima)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "olf-1",
@@ -259,9 +253,7 @@ export const NOVENA_PRAYERS_2: Prayer[] = [
     text: `O Immaculate Heart of Mary, Our Lady of Fatima, I come to the conclusion of this novena with a heart burning with love for you and your Divine Son. Today I consecrate myself entirely to your Immaculate Heart, as you requested at Fatima. I give you my heart, my body and soul, my prayers and sacrifices, my works and sufferings — all that I am and all that I have. Rule over me as your possession, and do with me according to your holy will. O Lady of Fatima, I place my trust in your Immaculate Heart, which will be my refuge and the way that leads to Jesus. May your Immaculate Heart triumph in my life and in the world, and may I be found worthy to dwell in your loving care for all eternity. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT TERESA OF AVILA (novenas-saint-teresa)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "st-1",
@@ -345,9 +337,7 @@ export const NOVENA_PRAYERS_2: Prayer[] = [
     text: `O glorious Saint Teresa of Avila, you who reached the highest summits of the spiritual life and experienced the transforming union of the soul with God, I come to you today at the conclusion of this novena with a heart yearning for union with my Creator. Though I may not receive the extraordinary graces you were granted, I pray that by your intercession I may attain the essential union with God's will that is the goal of every Christian life. Teach me to die to self, to abandon myself wholly to God, and to let His love transform me from within. Saint Teresa, intercede for me that I may one day attain the vision of God face to face, where with you and all the saints I shall praise Him forever. Until that day, help me to live in such a way that every thought, word, and deed is a loving surrender to the will of God. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT ANTHONY OF PADUA (novenas-saint-antonius)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sa-1",
@@ -431,9 +421,7 @@ export const NOVENA_PRAYERS_2: Prayer[] = [
     text: `O glorious Saint Anthony of Padua, I come to the close of this novena with a heart overflowing with gratitude for the graces I have received through your intercession. God has been generous in answering my prayers, and I acknowledge that every good gift comes from Him and from your kind advocacy on my behalf. I thank you, dear Saint Anthony, for not forgetting my petitions and for presenting them before the throne of God with your eloquent prayers. May my life be a continual thanksgiving to God for the blessings He has bestowed, and may I never cease to honor you as my powerful patron and friend. Saint Anthony, as I conclude this novena, I pledge to trust in your intercession in all the needs of my life and to make known to others the power of your help. Praise be to God in His saints. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT PADRE PIO (novenas-saint-padre-pio)
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sp-1",

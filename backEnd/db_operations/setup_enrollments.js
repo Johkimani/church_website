@@ -30,10 +30,10 @@ async function createEmbeddingsTable() {
         enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✔ enrollments table ready.");
+    console.log("enrollments table ready.");
 
   } catch (err) {
-    console.error("❌ SETUP FAILED:", err.message);
+    console.error("SETUP FAILED:", err.message);
   } finally {
     client.release();
     await pool.end();

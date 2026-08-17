@@ -408,7 +408,7 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                     textAlign: 'center'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
-                        <div style={{ fontSize: '1.5rem' }}>✨</div>
+                        <div style={{ fontSize: '1.5rem' }}></div>
                         <p style={{ color: '#475569', fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>
                             This is a preview of the official {jumuiyaName} registration card
                         </p>

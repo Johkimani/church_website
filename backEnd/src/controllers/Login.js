@@ -350,7 +350,6 @@ export const firstLoginSetup = async (req, res) => {
       return res.status(400).json({ status: false, message: policy.message });
     }
 
-    // ── Case A: email already recorded → change password, no verification ──
     if (existingEmail) {
       try {
         await assertNotRecentlyUsed(pool, member_id, newPassword);
@@ -386,7 +385,6 @@ export const firstLoginSetup = async (req, res) => {
       return res.json({ status: "success", message: "Password updated successfully" });
     }
 
-    // ── Case B: no email on file → MUST verify via OTP before committing ──
     // Reject recently-used passwords up front so the user isn't told at the
     // final OTP step.
     try {

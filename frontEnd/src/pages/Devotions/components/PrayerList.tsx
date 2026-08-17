@@ -18,10 +18,6 @@ const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string
   daily: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
 };
 
-// ═══════════════════════════════════════════════════════════
-// JUMUIYA (PARISH GROUPS)
-// ═══════════════════════════════════════════════════════════
-
 interface Jumuiya {
   id: string;
   name: string;
@@ -40,10 +36,6 @@ const JUMUIYAS: Jumuiya[] = [
   { id: 'monica', name: 'St. Monica', shortName: 'Monica', patron: 'novenas-saint-monica', novenaId: 'novenas-saint-monica', color: 'from-purple-500 to-violet-600' },
   { id: 'mary-goretti', name: 'St. Mary Goretti', shortName: 'Mary Goretti', patron: 'novenas-saint-mary-goretti', novenaId: 'novenas-saint-mary-goretti', color: 'from-pink-500 to-rose-600' },
 ];
-
-// ═══════════════════════════════════════════════════════════
-// NOVENA CATEGORIZATION
-// ═══════════════════════════════════════════════════════════
 
 type NovenaType = 'marian' | 'saint' | 'devotional';
 
@@ -247,10 +239,6 @@ const NOVENA_INTENTIONS: Record<string, string> = {
   'novenas-holy-cross-passion': 'Deepening Faith',
 };
 
-// ═══════════════════════════════════════════════════════════
-// DATE STATUS
-// ═══════════════════════════════════════════════════════════
-
 type CalendarEvent = ReturnType<typeof getNovenaCalendar>[number];
 
 function getNovenaStatus(novenaId: string, calendar: CalendarEvent[], today: Date) {
@@ -271,10 +259,6 @@ function getNovenaStatus(novenaId: string, calendar: CalendarEvent[], today: Dat
 }
 
 type NovenaStatus = ReturnType<typeof getNovenaStatus>;
-
-// ═══════════════════════════════════════════════════════════
-// COMPONENTS
-// ═══════════════════════════════════════════════════════════
 
 function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: NonNullable<NovenaStatus>; onStart: () => void }) {
   const active = status.status === 'active';
@@ -606,10 +590,6 @@ function NovenaCard({ novena, onStart, calendarStatus }: { novena: Novena; onSta
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-// LITANY + PRAYER CARDS
-// ═══════════════════════════════════════════════════════════
-
 function LitanyPreview({ prayer }: { prayer: Prayer }) {
   const sentences = prayer.text.split(/\.\s+/).filter(Boolean);
   const invocations: { name: string; response: string }[] = [];
@@ -701,10 +681,6 @@ function PrayerCard({ prayer, onClick, compact = false }: { prayer: Prayer; onCl
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-// MAIN EXPORT
-// ═══════════════════════════════════════════════════════════
-
 export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNovena, className = '' }: PrayerListProps) {
   const [activeJumuiya, setActiveJumuiya] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'upcoming' | 'past'>('all');
@@ -793,9 +769,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
 
   return (
     <div className={`space-y-12 ${className}`}>
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* HERO                                                   */}
-      {/* ═══════════════════════════════════════════════════════ */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-amber-200">
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(217,119,6,0.08) 40px, rgba(217,119,6,0.08) 41px)'
@@ -809,9 +782,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* JUMUIYA (PARISH GROUPS) — DARK SECTION                 */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {jumuiyaData.length > 0 && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-stone-200 p-6 sm:p-8">
           <div className="absolute inset-0 opacity-5" style={{
@@ -878,9 +848,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* WHAT IS A NOVENA?                                      */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && (
         <details className="group">
           <summary className="flex items-center gap-2 cursor-pointer text-sm text-stone-500 hover:text-amber-700 transition-colors select-none">
@@ -906,16 +873,10 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </details>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* HERO SPOTLIGHT                                         */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && heroNovena && heroNovena.status && (
         <HeroSpotlight novena={heroNovena.novena} status={heroNovena.status} onStart={() => onStartNovena?.(heroNovena.novena)} />
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* STATUS FILTER PILLS                                    */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {([
@@ -951,9 +912,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* ALL NOVENAS BY CATEGORY                                */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {novenas.length > 0 && (
         <>
           {(['marian', 'saint', 'devotional'] as const).map((type) => {
@@ -982,9 +940,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* LITANIES                                              */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {litanyPrayers.length > 0 && (
         <section>
           <div className="mb-4">
@@ -999,9 +954,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* PRAYERS TO SAINTS                                     */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {saintsPrayers.length > 0 && (
         <section>
           <div className="mb-4">
@@ -1016,9 +968,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* HEALING PRAYERS                                       */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {healingPrayers.length > 0 && (
         <section>
           <div className="mb-4">
@@ -1033,9 +982,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* DAILY PRAYERS                                         */}
-      {/* ═══════════════════════════════════════════════════════ */}
       {dailyPrayers.length > 0 && (
         <section>
           <div className="mb-4">

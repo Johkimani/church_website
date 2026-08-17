@@ -1,10 +1,8 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_8: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT AUGUSTINE
   // novenaId: "novenas-saint-augustine"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sa-np-1",
@@ -88,10 +86,8 @@ export const NOVENA_PRAYERS_8: Prayer[] = [
     text: `O God of hope and glory, who drew Saint Augustine from the darkness of error to the light of eternal truth, grant me through his intercession the grace to persevere in faith, hope, and charity until the day of my death. I believe in the resurrection of the body and the life everlasting, and I trust that the same God who converted the great Augustine will sustain me in my own journey toward heaven. Saint Augustine, who died at Hippo in the year 430 with the Psalms of David on his lips, teaches me that the Christian life is a pilgrimage — a journey through the valley of tears toward the promised land of eternal blessedness. Strengthen my hope when trials overwhelm me, when temptation assails me, and when the darkness of doubt clouds my mind. Grant me the grace to finish the race, to keep the faith, and to hear at the end of my days the words of the Master: "Well done, good and faithful servant, enter into the joy of your Lord." Through the intercession of Saint Augustine, may I one day join the blessed in heaven, praising the Father, the Son, and the Holy Spirit for all eternity. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT CATHERINE OF SIENA
   // novenaId: "novenas-saint-catherine-siena"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "scs-np-1",
@@ -175,10 +171,8 @@ export const NOVENA_PRAYERS_8: Prayer[] = [
     text: `O Lord Jesus Christ, who revealed to Saint Catherine the fire of divine love that consumed her entire being, grant me through her intercession the grace of complete self-offering that I may belong to You alone without reservation. I consecrate to You this day my body, my soul, my mind, my heart, my hands, my feet, my voice, my eyes — every part of me that You have created and redeemed by Your precious Blood. Like Saint Catherine, who held nothing back from You but gave herself entirely to Your service, I desire to become an instrument of Your love in the world, a living sacrifice acceptable and pleasing to God. Use me as You will, send me where You wish, grant me what You desire, and take from me whatever separates me from perfect union with Your heart. I place my life in Your sacred hands and trust that You will guide me according to Your most holy will. Through the intercession of Saint Catherine of Siena, may I become a beacon of Your truth, a vessel of Your grace, and a faithful servant of Your Church until the day I am called to the eternal kingdom where You live and reign with the Father and the Holy Spirit, one God, forever and ever. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT DOMINIC
   // novenaId: "novenas-saint-dominic"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sdo-np-1",
@@ -262,10 +256,8 @@ export const NOVENA_PRAYERS_8: Prayer[] = [
     text: `O God of all perseverance, who sustained Saint Dominic in his mission of preaching and teaching throughout his entire life, granting him the grace to persevere in holy labor until his death, grant me through his intercession the grace to remain faithful to the mission You have entrusted to me. I confess that I am often tempted to discouragement, that I lose heart when my efforts seem to bear no fruit, and that I am tempted to give up when the work becomes difficult or the results are disappointing. Saint Dominic, who walked barefoot across Europe, who slept on the ground, who ate only what was given to him, and who preached with tireless energy for the salvation of souls, teaches me that perseverance in the apostolate is a gift of God that must be sought through prayer, sustained by sacrifice, and confirmed by obedience. Grant me the grace to continue the work of evangelization in my own corner of the world, regardless of the obstacles, the opposition, or the apparent lack of success. Help me to remember that the results belong to God and that my only responsibility is to be faithful to the mission I have received. Through the intercession of Saint Dominic, may I run the race to the finish, keep the faith, and hear the Master's welcome at the end of my days. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT ELIZABETH OF HUNGARY
   // novenaId: "novenas-saint-elizabeth"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "seh-np-1",
@@ -349,10 +341,8 @@ export const NOVENA_PRAYERS_8: Prayer[] = [
     text: `O God of all the earth, who gave to Saint Elizabeth a heart that embraced the whole world in its charity, grant me through her intercession the grace to pray for the needs of all people, not just those who are near and dear to me. I confess that my prayers are often selfish, focused on my own needs and desires, and that I fail to intercede for the poor, the suffering, the persecuted, and the forgotten members of the human family. Saint Elizabeth, who prayed for the whole world, who loved the stranger as her own child, and who saw in every person the image of God, teaches me that the love of God knows no boundaries and that the charity of Christ extends to every corner of the globe. Grant me the grace to widen the circle of my prayers to include all peoples, all nations, all religions, and all those who are in any way afflicted or distressed. Help me to remember that we are all brothers and sisters under the fatherhood of God, and that the suffering of one is the concern of all. Through the intercession of Saint Elizabeth of Hungary, may God's mercy and peace descend upon the whole earth, and may every human heart come to know the love of the Father, the Son, and the Holy Spirit. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MARY GORETTI
   // novenaId: "novenas-saint-mary-goretti"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "smg-np-1",

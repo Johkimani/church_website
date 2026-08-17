@@ -204,7 +204,6 @@ const safeRate = (attendance, members, tallyDays) => {
   return denom > 0 ? attendance / denom : 0;
 };
 
-// ── GET /tally-context?date=YYYY-MM-DD ──────────────────────────────────
 export const getTallyContext = async (req, res) => {
   try {
     const date = normalizeDate(req.query.date) || todayStr();
@@ -256,9 +255,6 @@ export const getTallyContext = async (req, res) => {
   }
 };
 
-// ── Novena windows ──────────────────────────────────────────────────────
-// The coordinator schedules novena date ranges here so the tally app can
-// recognize every day inside a window as a valid tally day (novena).
 export const listNovenas = async (req, res) => {
   try {
     const result = await pool.query(
@@ -340,8 +336,6 @@ export const deleteNovena = async (req, res) => {
   }
 };
 
-
-// ── GET /sessions?date=YYYY-MM-DD ───────────────────────────────────────
 export const getSession = async (req, res) => {
   try {
     const date = normalizeDate(req.query.date) || todayStr();
@@ -361,7 +355,6 @@ export const getSession = async (req, res) => {
   }
 };
 
-// ── GET /recent-status?days=N ───────────────────────────────────────────
 export const getRecentStatus = async (req, res) => {
   try {
     const days = Math.min(Math.max(Number(req.query.days) || 14, 1), 31);
@@ -397,7 +390,6 @@ export const getRecentStatus = async (req, res) => {
   }
 };
 
-// ── POST /sessions ──────────────────────────────────────────────────────
 export const saveSession = async (req, res) => {
   const { date, counts, recordedBy, dimension = "jumuiya" } = req.body || {};
   const normalizedDate = normalizeDate(date);
@@ -520,7 +512,6 @@ export const saveSession = async (req, res) => {
   }
 };
 
-// ── DELETE /sessions/:date ──────────────────────────────────────────────
 export const deleteSession = async (req, res) => {
   try {
     const date = normalizeDate(req.params.date);
@@ -535,7 +526,6 @@ export const deleteSession = async (req, res) => {
   }
 };
 
-// ── GET /analytics?from=YYYY-MM-DD&to=YYYY-MM-DD&dimension=jumuiya|year ──
 const computeAnalytics = async (from, to, dimension = "jumuiya") => {
   const span = daysBetween(from, to);
   const prevFrom = addDays(from, -(span + 1));
@@ -804,7 +794,6 @@ export const getAnalytics = async (req, res) => {
   }
 };
 
-// ── GET /analytics/export?from=YYYY-MM-DD&to=YYYY-MM-DD (styled .xlsx) ──
 export const exportAnalyticsExcel = async (req, res) => {
   const from = normalizeDate(req.query.from);
   const to = normalizeDate(req.query.to);
@@ -908,7 +897,6 @@ export const exportAnalyticsExcel = async (req, res) => {
   }
 };
 
-// ── GET /history?from=&to= — tally log grouped by date ────────────────
 // One row per date with all 7 jumuiya counts together (St. Thomas is excluded).
 export const getHistory = async (req, res) => {
   try {
@@ -986,7 +974,6 @@ export const getHistory = async (req, res) => {
   }
 };
 
-// ── PATCH /history/:date — correct a whole day's tally at once ────────
 // Body: { counts: [{jumuiya_id, count}], recordedBy: 'coordinator'|'assistant' }.
 // Register-sourced counts are skipped (they are corrected in the secretary register).
 export const updateTally = async (req, res) => {

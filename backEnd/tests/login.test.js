@@ -8,7 +8,6 @@ import {
   silentLogger,
 } from "./helpers.js";
 
-// ── Mocks ───────────────────────────────────────────────────────────────────
 const { state: jwtState, mock: jwtMock } = createJwtMock();
 const { state: bcryptState, mock: bcryptMock } = createBcryptMock();
 
@@ -152,7 +151,6 @@ const defaultMember = () => ({
   roles: ["admin"],
 });
 
-// ── Tests ───────────────────────────────────────────────────────────────────
 test("Login: 400 when credentials missing", async () => {
   reset(defaultMember());
   const res = mockRes();

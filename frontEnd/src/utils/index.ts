@@ -1,9 +1,6 @@
-
-// Check if the code is running in a browser environment
 export const isBrowser = typeof window !== "undefined";
 
 export class LocalStorage {
-  // Get a value from local storage by key
   static get(key: string) {
     if (!isBrowser) return;
     const value = localStorage.getItem(key);
@@ -18,19 +15,16 @@ export class LocalStorage {
     return null;
   }
 
-  // Set a value in local storage by key
   static set(key: string, value: unknown) {
     if (!isBrowser) return;
     localStorage.setItem(key, JSON.stringify(value));
   }
 
-  // Remove a value from local storage by key
   static remove(key: string) {
     if (!isBrowser) return;
     localStorage.removeItem(key);
   }
 
-  // Clear all items from local storage
   static clear() {
     if (!isBrowser) return;
     localStorage.clear();
@@ -38,7 +32,6 @@ export class LocalStorage {
 }
 
 export class SessionStorage {
-  // Get a value from session storage by key
   static get(key: string) {
     if (!isBrowser) return;
     const value = sessionStorage.getItem(key);
@@ -53,26 +46,22 @@ export class SessionStorage {
     return null;
   }
 
-  // Set a value in session storage by key
   static set(key: string, value: unknown) {
     if (!isBrowser) return;
     sessionStorage.setItem(key, JSON.stringify(value));
   }
 
-  // Remove a value from session storage by key
   static remove(key: string) {
     if (!isBrowser) return;
     sessionStorage.removeItem(key);
   }
 
-  // Clear all items from session storage
   static clear() {
     if (!isBrowser) return;
     sessionStorage.clear();
   }
 }
 
-// Converts a date to a human-readable relative time string, e.g. "2 hours ago"
 export function timeAgo(date: string | Date): string {
   const now = new Date();
   const past = new Date(date);

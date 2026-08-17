@@ -19,8 +19,6 @@ import {
   FiBell,
 } from "react-icons/fi";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type NotificationAdminEvent = BaseEvent & {
   posted_to?: string;
   status?: string;
@@ -33,16 +31,12 @@ type NotificationAdminEvent = BaseEvent & {
 
 type ActiveTab = "csa" | "jumuiya";
 
-// ─── Role helpers ─────────────────────────────────────────────────────────────
-
 const detectCapabilities = (roles: string[]) => {
   const normalised = roles.map((r) => String(r).toLowerCase().trim());
   const isCSAOs    = normalised.some((r) => r === "os" || r === "csa_chair");
   const isJumuiyaOs = normalised.some((r) => r === "jumuiya_os" || r === "os" || r === "csa_chair");
   return { isCSAOs, isJumuiyaOs };
 };
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 const EmptyState: React.FC<{ channel: ActiveTab }> = ({ channel }) => (
   <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -128,8 +122,6 @@ const NotificationRow: React.FC<NotificationRowProps> = ({ n, canManage, onDelet
   );
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function AnnouncementsAdmin() {
   const { user } = useAuth();
 
@@ -148,7 +140,6 @@ export default function AnnouncementsAdmin() {
   const [notifications, setNotifications] = useState<NotificationAdminEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ── Fetch ────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -166,7 +157,6 @@ export default function AnnouncementsAdmin() {
     if (canAccessPage) load();
   }, [canAccessPage, load]);
 
-  // ── Filtered list for CSA announcements ─────────────────────────────────
   const filtered = useMemo(() => {
     return notifications.filter((n) => {
       const cat = (n.category ?? n.posted_to ?? "").toLowerCase();
@@ -174,7 +164,6 @@ export default function AnnouncementsAdmin() {
     });
   }, [notifications]);
 
-  // ── Create ───────────────────────────────────────────────────────────────
   const handleCreate = useCallback(
     async (data: NotificationPayload) => {
       try {
@@ -189,7 +178,6 @@ export default function AnnouncementsAdmin() {
     [load]
   );
 
-  // ── Edit / Update ─────────────────────────────────────────────────────────
   const handleUpdate = useCallback(
     async (data: NotificationPayload & { _editId?: string | number }) => {
       const id = (data as any)._editId ?? editingNotif?.id;
@@ -214,7 +202,6 @@ export default function AnnouncementsAdmin() {
     setEditingNotif(n);
   };
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = useCallback(
     async (id: string | number) => {
       if (!window.confirm("Delete this announcement? This cannot be undone.")) return;
@@ -229,7 +216,6 @@ export default function AnnouncementsAdmin() {
     [load]
   );
 
-  // ── Access denied ─────────────────────────────────────────────────────────
   if (!canAccessPage) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
@@ -246,7 +232,6 @@ export default function AnnouncementsAdmin() {
 
   return (
     <div>
-      {/* ── Page Header ───────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between mb-8 gap-4 flex-wrap">
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Announcements Management (CSA)</h2>
@@ -270,7 +255,6 @@ export default function AnnouncementsAdmin() {
       {!isCSAOs && <ReadOnlyBanner channel="csa" />}
 
 
-      {/* ── List ──────────────────────────────────────────────────────────── */}
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -297,7 +281,6 @@ export default function AnnouncementsAdmin() {
         </div>
       )}
 
-      {/* ── Create Modal ──────────────────────────────────────────────────── */}
       {showModal && (
         <NotificationModal
           roles={roles}
@@ -307,7 +290,6 @@ export default function AnnouncementsAdmin() {
         />
       )}
 
-      {/* ── Edit Modal ────────────────────────────────────────────────────── */}
       {editingNotif && (
         <NotificationModal
           roles={roles}

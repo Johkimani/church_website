@@ -17,7 +17,7 @@ async function run() {
     console.log("--- COMMUNITY HUB DATABASE SETUP SCRIPT COMPLETE ---");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Standalone Community Hub database setup failed:", err);
+    console.error("Standalone Community Hub database setup failed:", err);
     process.exit(1);
   }
 }

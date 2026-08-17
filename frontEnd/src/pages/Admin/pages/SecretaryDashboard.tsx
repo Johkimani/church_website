@@ -40,7 +40,6 @@ const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }
   ],
 };
 
-// ── Jumuiya config ──
 const JUMUIYAS: Record<string, { name: string; color: string; initials: string }> = {
   "st-anthony": { name: "St. Anthony", color: "#8b5cf6", initials: "SA" },
   "st-augustine": { name: "St. Augustine", color: "#3b82f6", initials: "AU" },
@@ -87,7 +86,6 @@ export default function SecretaryDashboard() {
     }).catch(() => {});
   }, [jumuiyaId]);
 
-  // ── Role detection ──
   const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
   const normalizedRoles = userRoles.map(r => String(r).toUpperCase().trim());
   const isChair = normalizedRoles.includes("JUMUIYA_CHAIRPERSON");
@@ -98,17 +96,14 @@ export default function SecretaryDashboard() {
 
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
 
-  // ── Overview data ──
   const [stats, setStats] = useState<any>(null);
   const [csaAllocations, setCsaAllocations] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // ── Members data ──
   const [members, setMembers] = useState<any[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
-  // ── Fetch overview stats ──
   const fetchOverview = useCallback(async () => {
     if (!jumuiyaId) return;
     setLoadingStats(true);
@@ -134,7 +129,6 @@ export default function SecretaryDashboard() {
     }
   }, [jumuiyaId]);
 
-  // ── Fetch members ──
   const fetchMembers = useCallback(async () => {
     if (!jumuiyaId) return;
     setLoadingMembers(true);
@@ -209,7 +203,6 @@ export default function SecretaryDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div
@@ -234,7 +227,6 @@ export default function SecretaryDashboard() {
         </button>
       </div>
 
-      {/* ── Tab Navigation ── */}
       <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 w-fit flex-wrap">
         {tabs.map(tab => (
           <button
@@ -251,7 +243,6 @@ export default function SecretaryDashboard() {
         ))}
       </div>
 
-      {/* ═══════════ OVERVIEW TAB ═══════════ */}
       {activeTab === "overview" && (
         <div className="space-y-6">
           {loadingStats ? (
@@ -423,7 +414,6 @@ export default function SecretaryDashboard() {
         </div>
       )}
 
-      {/* ═══════════ ANALYTICS TAB ═══════════ */}
       {activeTab === "analytics" && (
         <JumuiyaAnalyticsDashboard
           jumuiyaId={jumuiyaId}
@@ -437,7 +427,6 @@ export default function SecretaryDashboard() {
         />
       )}
 
-      {/* ═══════════ ATTENDANCE TAB (Secretary only) ═══════════ */}
       {activeTab === "attendance" && (
         <JumuiyaAttendanceRegister
           jumuiyaId={jumuiyaId}
@@ -446,22 +435,18 @@ export default function SecretaryDashboard() {
         />
       )}
 
-      {/* ═══════════ NEW ADMISSION TAB (Chair only) ═══════════ */}
       {activeTab === "import" && (
         <MemberImportForm jumuiyaId={jumuiyaId} />
       )}
 
-      {/* ═══════════ ORGANIZE TAB (Chair only) ═══════════ */}
       {activeTab === "organize" && (
         <OrganizationPanel jumuiyaId={jumuiyaId} />
       )}
 
-      {/* ═══════════ ALLOCATIONS TAB (Chair only) ═══════════ */}
       {activeTab === "allocations" && (
         <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} jumuiyaColor={jumuiyaInfo.color} />
       )}
 
-      {/* ═══════════ ANNOUNCEMENTS TAB (Jumuiya OS & Chair) ═══════════ */}
       {activeTab === "announcements" && (
         <JumuiyaAnnouncementsRegister
           jumuiyaId={jumuiyaId}
@@ -470,7 +455,6 @@ export default function SecretaryDashboard() {
         />
       )}
 
-      {/* ═══════════ GALLERY TAB (OS only) ═══════════ */}
       {activeTab === "gallery" && (
         <GalleryManager jumuiyaId={jumuiyaId} jumuiyaInfo={{ ...jumuiyaInfo, saintImage: stats?.saintImage || '' }} />
       )}

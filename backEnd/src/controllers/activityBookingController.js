@@ -4,7 +4,6 @@ import ExcelJS from "exceljs";
 import logger from "../logger/winston.js";
 import { formatPhoneForExcel } from "../utils/helpers.js";
 
-// ─── Book an activity ──────────────────────────────────────────────────────────
 export const bookActivity = async (req, res) => {
   const { activity_type, activity_id } = req.body;
   const user = req.user;
@@ -60,7 +59,6 @@ export const bookActivity = async (req, res) => {
   }
 };
 
-// ─── Pay via STK Push (lipa mdogo mdogo) ──────────────────────────────────────
 export const payBooking = async (req, res) => {
   const { booking_id, amount, phoneNumber } = req.body;
 
@@ -106,7 +104,6 @@ export const payBooking = async (req, res) => {
   }
 };
 
-// ─── Admin: list all bookings (paginated) ─────────────────────────────────────
 export const getBookings = async (req, res) => {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
@@ -165,7 +162,6 @@ export const getBookings = async (req, res) => {
   }
 };
 
-// ─── User: my bookings ─────────────────────────────────────────────────────────
 export const getMyBookings = async (req, res) => {
   const memberId = req.user.member_id || req.user.id;
   try {
@@ -196,7 +192,6 @@ export const getMyBookings = async (req, res) => {
   }
 };
 
-// ─── Admin: export bookings as a styled Excel workbook ─────────────────────────
 // Column order matches the admin bookings table (guest rows omit reg/jumuiya).
 export const exportBookingsExcel = async (req, res) => {
   try {
@@ -303,7 +298,6 @@ export const exportBookingsExcel = async (req, res) => {
   }
 };
 
-// ─── Admin: book an activity on behalf of a member OR a non-member guest ───────
 // Non-members (people not in the members table) can be added to a single event
 // only — this never creates/alters any member record. The OS/chair provides
 // guest_name (required) and optionally phone / year_of_study.
@@ -435,7 +429,6 @@ export const createBookingForMember = async (req, res) => {
   }
 };
 
-// ─── Admin: record a cash payment taken in person by the OS ────────────────────
 // Members may book online (M-Pesa) and later top up part of the fare in cash.
 export const recordCashPayment = async (req, res) => {
   const { id } = req.params;
@@ -498,7 +491,6 @@ export const recordCashPayment = async (req, res) => {
   }
 };
 
-// ─── Admin: cancel a booking (member could not make it to the event) ───────────
 export const cancelBooking = async (req, res) => {
   const { id } = req.params;
   try {
@@ -516,7 +508,6 @@ export const cancelBooking = async (req, res) => {
   }
 };
 
-// ─── Public: list paid activities ──────────────────────────────────────────────
 export const getPaidActivities = async (req, res) => {
   try {
     const weekly = await pool.query(
@@ -536,7 +527,6 @@ export const getPaidActivities = async (req, res) => {
   }
 };
 
-// ─── Check payment status for a checkout ─────────────────────────────────────────
 export const checkPaymentStatus = async (req, res) => {
   const { checkoutId } = req.params;
   try {

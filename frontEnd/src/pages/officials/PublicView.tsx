@@ -58,7 +58,6 @@ function OfficialCard({ off, cat, navigate }: OfficialCardProps) {
 
   return (
     <>
-      {/* ── MOBILE CARD (hidden on sm+): portrait aspect, object-top, bottom badge ── */}
       <article
         onClick={() => navigate(`/officials/${off.id}`)}
         className="sm:hidden group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer active:scale-95 transform-gpu"
@@ -119,7 +118,6 @@ function OfficialCard({ off, cat, navigate }: OfficialCardProps) {
         </div>
       </article>
 
-      {/* ── DESKTOP CARD (hidden on mobile, shown sm+): original design ── */}
       <article
         onClick={() => navigate(`/officials/${off.id}`)}
         className="hidden sm:block group bg-white border border-slate-200 rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"

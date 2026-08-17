@@ -72,12 +72,10 @@ export default function CsaSecretaryDashboard() {
   const [regSubmitting, setRegSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"members" | "analytics" | "pending">("members");
 
-  // ── Pending payments (from Jumuiya Secretaries) ──
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [csaPaymentFilter, setCsaPaymentFilter] = useState<"pending" | "all">("pending");
 
-  // ── Current semester (CSA-configured window) ──
   const [semester, setSemester] = useState<any>(null);
 
   useEffect(() => {
@@ -393,7 +391,6 @@ export default function CsaSecretaryDashboard() {
         <AnalyticsDashboard />
       ) : activeTab === "pending" ? (
         <>
-        {/* ═══════════ JUMUIYA PENDING PAYMENTS ═══════════ */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-bold text-slate-800">Jumuiya Payments</h2>

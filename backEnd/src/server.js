@@ -197,7 +197,7 @@ const initServer = async () => {
     });
 
     currentPort = await bindWithFallback({ primaryPort });
-    logger.info(`⚙️  Server is running on http://localhost:${currentPort}`);
+    logger.info(`Server is running on http://localhost:${currentPort}`);
 
     if (typeof startKeepAliveWorker === "function") {
       startKeepAliveWorker();

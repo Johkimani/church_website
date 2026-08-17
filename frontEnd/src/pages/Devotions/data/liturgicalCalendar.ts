@@ -30,12 +30,12 @@ export interface SeasonInfo {
 }
 
 const SEASONS: Record<LiturgicalSeasonName, { color: string; colorHex: string; description: string; icon: string }> = {
-  Advent: { color: "purple", colorHex: "#7B2D8E", description: "A season of expectant waiting and preparation for the coming of Christ", icon: "🕯️" },
-  Christmas: { color: "white", colorHex: "#F5E6CC", description: "Celebrating the birth of our Lord Jesus Christ", icon: "✝️" },
-  Lent: { color: "purple", colorHex: "#6B3A5A", description: "A season of repentance, fasting, and preparation for Easter", icon: "🙏" },
-  Triduum: { color: "white", colorHex: "#FFF5E6", description: "The sacred three days: Holy Thursday, Good Friday, Holy Saturday", icon: "🔥" },
-  Easter: { color: "white", colorHex: "#FFF8E7", description: "Celebrating the Resurrection of Jesus Christ", icon: "✝️" },
-  "Ordinary Time": { color: "green", colorHex: "#2D8E5A", description: "The season of growth in the life and teachings of Christ", icon: "🌿" },
+  Advent: { color: "purple", colorHex: "#7B2D8E", description: "A season of expectant waiting and preparation for the coming of Christ", icon: "" },
+  Christmas: { color: "white", colorHex: "#F5E6CC", description: "Celebrating the birth of our Lord Jesus Christ", icon: "" },
+  Lent: { color: "purple", colorHex: "#6B3A5A", description: "A season of repentance, fasting, and preparation for Easter", icon: "" },
+  Triduum: { color: "white", colorHex: "#FFF5E6", description: "The sacred three days: Holy Thursday, Good Friday, Holy Saturday", icon: "" },
+  Easter: { color: "white", colorHex: "#FFF8E7", description: "Celebrating the Resurrection of Jesus Christ", icon: "" },
+  "Ordinary Time": { color: "green", colorHex: "#2D8E5A", description: "The season of growth in the life and teachings of Christ", icon: "" },
 };
 
 export function calculateEaster(year: number): Date {

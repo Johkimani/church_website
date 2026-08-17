@@ -91,7 +91,7 @@ async function migrate() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✔ hub_modules table ready.");
+    console.log("hub_modules table ready.");
 
     // 2. Create related tables
     await client.query(`
@@ -134,7 +134,7 @@ async function migrate() {
         upload_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✔ Official, Activities, Announcements and Gallery tables ready.");
+    console.log("Official, Activities, Announcements and Gallery tables ready.");
 
     // 3. Populate hub_modules from hardcoded meta
     for (const meta of modulesMeta) {
@@ -152,7 +152,7 @@ async function migrate() {
             meta.fees_registration || 'Free', meta.fees_subscription || 'None', meta.fees_uniform || ''
         ]);
     }
-    console.log("✔ hub_modules populated/updated.");
+    console.log("hub_modules populated/updated.");
 
     // 4. Migrate JSON Data for each module
     const dataDir = path.join(__dirname, 'src', 'data');
@@ -204,11 +204,11 @@ async function migrate() {
             }
         }
     }
-    console.log("✔ JSON data successfully migrated to PostgreSQL tables.");
+    console.log("JSON data successfully migrated to PostgreSQL tables.");
 
     console.log("--- MIGRATION COMPLETED SUCCESSFULLY ---");
   } catch (err) {
-    console.error("❌ MIGRATION FAILED:", err.message);
+    console.error("MIGRATION FAILED:", err.message);
   } finally {
     client.release();
     await pool.end();

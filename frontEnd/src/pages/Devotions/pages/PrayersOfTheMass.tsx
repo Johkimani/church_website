@@ -139,7 +139,7 @@ export default function PrayersOfTheMass() {
         {/* Header */}
         <div className="text-center mb-10">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-white text-xl">✝</span>
+            <span className="text-white text-xl"></span>
           </div>
           <h1 className="text-3xl font-bold text-stone-900 tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>
             Prayers of the Mass

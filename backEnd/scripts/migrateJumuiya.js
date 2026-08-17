@@ -176,22 +176,22 @@ const tableNames = [
 
 async function migrate() {
   const client = await pool.connect();
-  console.log('✅ Connected to database');
+  console.log('Connected to database');
 
   try {
     await client.query('BEGIN');
 
     for (let i = 0; i < queries.length; i++) {
         await client.query(queries[i]);
-        console.log(`✅  Action: ${tableNames[i]}`);
+        console.log(`Action: ${tableNames[i]}`);
     }
 
     await client.query('COMMIT');
-    console.log('\n🎉 sub_groups altered and all new jumuiya_* tables created successfully!');
+    console.log('\nsub_groups altered and all new jumuiya_* tables created successfully!');
   } catch (err) {
     await client.query('ROLLBACK');
     import('fs').then(fs => fs.writeFileSync('error.json', JSON.stringify(err, Object.getOwnPropertyNames(err), 2)));
-    console.error('❌ Migration failed:', err);
+    console.error('Migration failed:', err);
     process.exit(1);
   } finally {
     client.release();

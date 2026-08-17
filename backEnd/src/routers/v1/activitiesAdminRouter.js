@@ -75,7 +75,6 @@ const permission = (action, resource) => {
 };
 const requireAdmin = (action, resource) => [verifyToken, permission(action, resource)];
 
-// ── Weekly (admin) ───────────────────────────────
 router.post("/weekly", ...requireAdmin('create', 'weekly_activities'), createWeeklyActivity);
 router.patch("/weekly/:id", ...requireAdmin('update', 'weekly_activities'), updateWeeklyActivity);
 router.delete("/weekly/:id", ...requireAdmin('delete', 'weekly_activities'), deleteWeeklyActivity);
@@ -110,7 +109,6 @@ router.post(
   reorderWeeklyActivities
 );
 
-// ── Semester (admin) ─────────────────────────────
 router.post("/semester", ...requireAdmin('create', 'semester_activities'), createSemesterActivity);
 router.patch("/semester/:id", ...requireAdmin('update', 'semester_activities'), updateSemesterActivity);
 router.delete("/semester/:id", ...requireAdmin('delete', 'semester_activities'), deleteSemesterActivity);
@@ -139,7 +137,6 @@ router.post(
   deactivateSemesterActivity
 );
 
-// ── Novena schedules (admin) ─────────────────────
 router.get(
   "/novena/schedules",
   ...requireAdmin('read', 'novena_schedules'),
@@ -171,7 +168,6 @@ router.post(
   deactivateNovenaSchedule
 );
 
-// ── Novena override activities (admin) ───────────
 router.get(
   "/novena/overrides",
   ...requireAdmin('read', 'novena_override_activities'),
@@ -200,7 +196,6 @@ router.post(
   reorderNovenaOverrides
 );
 
-// ── Bookings (admin) ────────────────────────────────
 // Booking lists expose member PII (name, email, phone, reg, jumuiya) and
 // payment info, so reads are gated to the same officials who may write to them.
 router.get("/bookings", verifyToken, requireRole("os", "csa_chair", "jumuiya_coordinator"), getBookings);
@@ -213,7 +208,6 @@ router.patch("/bookings/:id/payment", verifyToken, requireRole("os", "csa_chair"
 // OS (or chair) cancels a booking because the person couldn't make the event.
 router.patch("/bookings/:id/cancel", verifyToken, requireRole("os", "csa_chair"), cancelBooking);
 
-// ── RSVPs (admin: who's going to an activity) ──────────────────────
 router.get("/rsvps", verifyToken, requireRole("os", "csa_chair", "jumuiya_coordinator"), getRsvpList);
 
 export default router;

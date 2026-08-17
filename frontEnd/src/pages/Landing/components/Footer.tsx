@@ -25,9 +25,9 @@ function Footer() {
           <div className='third_footer'>
             <h4 className="text-white font-semibold text-lg mb-4">Resources</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-white transition-colors">Prayers</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Daily Readings</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Saints Info</a></li>
+              <li><a href="/devotions" className="hover:text-white transition-colors">Prayers & Devotions</a></li>
+              <li><a href="/devotions/bible" className="hover:text-white transition-colors">Daily Readings</a></li>
+              <li><a href="/projects" className="hover:text-white transition-colors">Projects & Hire</a></li>
             </ul>
           </div>
           
@@ -36,9 +36,8 @@ function Footer() {
             <h4 className="text-white font-semibold text-lg mb-4">Contact Us</h4>
             <ul className="space-y-2 text-sm">
               <li>St. Thomas Aquinas Kirinyaga</li>
-              <li>Kirinyaga, Kenya</li>
-              <li className="pt-2">Email: morrismaina077</li>
-              <li>Phone: +254 700 000000</li>
+              <li>Kirinyaga University, Kenya</li>
+              <li className="pt-2">csakyu.com</li>
             </ul>
           </div>
         </div>

@@ -22,7 +22,7 @@ export  const CompletionContainer: FC<CompletionContainerProps> = ({ onReset }) 
         </div>
 
         <h3 className="text-xl font-bold text-gray-800 mb-2">
-          🎉 Congratulations on Today’s Quiz!
+          Congratulations on Today's Quiz!
         </h3>
         <p className="text-gray-700 mb-4">
           You’ve earned recognition for your attempt — every step builds wisdom.
@@ -35,7 +35,7 @@ export  const CompletionContainer: FC<CompletionContainerProps> = ({ onReset }) 
         </div>
 
         <p className="mt-6 text-pink-600 font-medium">
-          🌟 Come back tomorrow for more quizzes and keep shining!
+          Come back tomorrow for more quizzes and keep shining!
         </p>
 
          <button

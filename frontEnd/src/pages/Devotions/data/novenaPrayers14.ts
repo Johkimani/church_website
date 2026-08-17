@@ -1,10 +1,8 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_14: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT PETER APOSTLE
   // novenaId: "novenas-saint-peter-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "spp-np-1",
@@ -88,10 +86,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint Peter, apostle and martyr, you who were crucified upside down in Rome because you did not consider yourself worthy to die in the same manner as our Lord — I honor you today and ask your powerful intercession. You who once denied Christ in fear became the supreme witness to Christ in death, shedding your blood for the faith you professed. Help me to persevere in my faith to the very end of my life, regardless of the cost. When I am tempted to compromise, to remain silent, to choose comfort over truth, remember me before the Lord. Obtain for me the grace of final perseverance, that I may die in the state of grace, faithful to Christ and His Church. O Saint Peter, rock of the Church, prince of the Apostles, glorious martyr — intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT PAUL APOSTLE
   // novenaId: "novenas-saint-paul-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "spa-np-1",
@@ -175,10 +171,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint Paul, apostle and martyr, you who were beheaded in Rome under the emperor Nero for the sake of the Gospel, I honor you today as one of the greatest saints in the communion of heaven. Your martyrdom completed the witness of your life — a life spent entirely in the service of Jesus Christ. You who once breathed threats against the disciples of the Lord became the most devoted servant of the Lord, pouring out your life like a libation for the sake of the faith. I consecrate myself today to the same spirit of total self-offering. Help me to hold nothing back from God — not my time, not my talents, not my resources, not my very life. May I say with you, "For to me, to live is Christ and to die is gain" (Philippians 1:21). O Saint Paul, glorious martyr and apostle, intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT JAMES THE GREATER APOSTLE
   // novenaId: "novenas-saint-james-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sjg-np-1",
@@ -262,10 +256,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint James the Greater, apostle and martyr, you were beheaded by the sword for the sake of Christ, and your faithful companion restored your body to its final resting place in Spain. Your death was not the end but the beginning of a legacy that has inspired millions of pilgrims to walk the Camino and seek God. I pray today for a holy death — that when my final hour comes, I may die in the state of grace, fortified by the sacraments of the Church, surrounded by the love of my family and friends, and confident in the mercy of God. Obtain for me the grace of final perseverance, that I may not lose my soul at the very end. Help me to live each day as if it were my last, so that death will be for me not a terror but a welcome friend, leading me into the arms of Christ. O Saint James, glorious martyr, intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT ANDREW APOSTLE
   // novenaId: "novenas-saint-andrew-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sa-np-1",
@@ -349,10 +341,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint Andrew, apostle and martyr, you who hung upon the cross for two days, preaching the love of God to all who gathered below, and who finally breathed your last in the presence of the Savior you had served so faithfully — I honor you today and ask your powerful intercession. Your death was not the end of your mission but its culmination. You who had spent your life drawing others to Christ drew your last breath in the arms of Christ. I consecrate my own life and death to God today, asking that I may live for His glory and die in His love. Help me to offer my life as a living sacrifice, holy and acceptable to God, so that when death comes, I may hear the words, "Well done, good and faithful servant." O Saint Andrew, glorious martyr of Christ, intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT PHILIP APOSTLE
   // novenaId: "novenas-saint-philip-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sph-np-1",
@@ -436,10 +426,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint Philip, apostle and martyr, you who were crucified at Hierapolis in Phrygia for the sake of Christ, I honor you today and ask your powerful intercession. Your martyrdom completed the witness of your life — a life spent in the service of Jesus Christ, bringing souls to faith, proclaiming the Gospel with gentleness and courage, and laying down your life as the ultimate act of love. I pray that I may follow your example of total self-offering to God. Help me to live each day for Christ, to use my gifts and talents for the building up of the Church, and to be ready to sacrifice everything for the sake of the Gospel. Obtain for me the grace of final perseverance, that I may die in the state of grace and hear the words of the Lord: "Well done, good and faithful servant." O Saint Philip, glorious martyr, intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT SIMON THE ZEALOT APOSTLE
   // novenaId: "novenas-saint-simon-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "ssz-np-1",
@@ -523,10 +511,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint Simon the Zealot, apostle and martyr, you who were martyred for the faith in Persia, cutting in half by a saw — I honor you today and ask your powerful intercession. Your death was the final and most complete expression of your zeal for Christ. You who burned with love for God throughout your life offered that love as a holocaust in your martyrdom, sealing your apostleship with your blood. I consecrate my own life and death to the Lord today, asking that I may burn with zealous love for God until my final breath. Help me to live each day as if it were my last, to love God with all my heart, soul, mind, and strength, and to die in the state of grace with the name of Jesus on my lips. O Saint Simon, glorious martyr of zealous love, intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT JUDE APOSTLE (HOPE OF THE HOPELESS)
   // novenaId: "novenas-saint-jude-apostle"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sjt-np-1",
@@ -610,10 +596,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint Jude Thaddeus, apostle and martyr, you who were martyred in Persia, possibly with Saint Simon the Zealot, for the sake of the Gospel you preached so faithfully — I honor you today and ask your powerful intercession. You who spent your life bringing hope to the hopeless now dwell in the eternal hope of heaven, where there is no more suffering, no more despair, no more impossible cases, for all things are made new in Christ. Help me to persevere through the trials of this life with the same faith and hope that characterized your earthly ministry. When I face my own "martyrdom" — the death of the old self, the sacrifice of my own will, the carrying of my cross — give me the courage to persevere. O Saint Jude, glorious martyr and hope of the hopeless, intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO OUR LADY, STAR OF EVANGELIZATION
   // novenaId: "novenas-our-lady-star-evangelization"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "ose-np-1",
@@ -697,10 +681,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O Blessed Virgin Mary, Star of the Sea, Star of Evangelization, you who have guided the Church safely through two thousand years of history — through persecutions, heresies, schisms, and every kind of trial — I place my life and my mission in your hands today. The storms of life often threaten to overwhelm me, but I know that as long as I keep my eyes fixed on you, the Star of my salvation, I will not be lost. Help me to navigate the challenges of my daily life with the confidence that you are leading me to Christ, the safe harbor of my soul. And when my earthly journey is complete, welcome me into the eternal kingdom where you reign with Christ forever. O Mary, Star of the Sea and Star of Evangelization, guide me safely home to heaven. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT ROSE OF LIMA
   // novenaId: "novenas-saint-rose-lima"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "srl-np-1",
@@ -784,10 +766,8 @@ export const NOVENA_PRAYERS_14: Prayer[] = [
     text: `O glorious Saint Rose of Lima, virgin and mystic, you who died at the age of thirty-one on August 24, 1617, and were canonized by Pope Clement IX in 1671, the first saint of the Americas — I honor you today and ask your powerful intercession. Your life was short but extraordinary — a life of prayer, penance, charity, and mystical union with God that produced a legacy of holiness that continues to inspire the universal Church. You who wore a crown of thorns on earth now wear a crown of glory in heaven. I pray that I may follow your example of total dedication to Jesus Christ, that I may use my life for God's glory, and that I may die in the state of grace, fortified by the sacraments of the Church. O Saint Rose of Lima, first rose of the Americas, glorious virgin and mystic, intercede for me now and at the hour of my death. Amen.`,
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MARTIN DE PORRES
   // novenaId: "novenas-saint-martin-de-porres"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "smdp-np-1",

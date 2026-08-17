@@ -67,12 +67,22 @@ const InstrumentCard: React.FC<{
 
                 {/* Price */}
                 <div className="bg-blue-50 rounded-2xl p-4 mb-4">
-                    <p className="text-xs text-slate-500 font-semibold">Daily rental rate</p>
-                    <p className="text-2xl font-bold text-slate-900">
-                        KES {price.toLocaleString()}
-                        <span className="text-xs font-bold text-slate-400"> /day</span>
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">Hourly rates also available</p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs text-slate-500 font-semibold">Daily rate</p>
+                            <p className="text-2xl font-bold text-slate-900">
+                                KES {price.toLocaleString()}
+                                <span className="text-xs font-bold text-slate-400"> /day</span>
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-slate-500 font-semibold">Hourly rate</p>
+                            <p className="text-lg font-bold text-blue-600">
+                                KES {Math.round(price / 8).toLocaleString()}
+                                <span className="text-xs font-bold text-slate-400"> /hr</span>
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Quantity + Hire */}
@@ -124,7 +134,6 @@ export const Instruments = () => {
 
             {isHireModalOpen && <HireModal onClose={() => setHireModalOpen(false)} />}
 
-            {/* ══════════ HERO ══════════ */}
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
                     {sliderLoading ? (
@@ -147,7 +156,6 @@ export const Instruments = () => {
                 />
             </ProjectHero>
 
-            {/* ══════════ INSTRUMENTS SHOWCASE ══════════ */}
             <motion.section
                 id="instruments"
                 initial={{ opacity: 0, y: 20 }}
@@ -188,8 +196,14 @@ export const Instruments = () => {
                             {instruments.map(inst => (
                                 <div key={inst.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
                                     <p className="font-bold text-sm">{inst.name}</p>
-                                    <p className="text-2xl font-bold mt-1">KES {Number(inst.price).toLocaleString()}<span className="text-sm font-bold text-white/60"> /day</span></p>
-                                    <p className="text-xs text-white/50 mt-1">Hourly: KES {Math.round(Number(inst.price) / 8).toLocaleString()}/hr</p>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <div>
+                                            <p className="text-2xl font-bold">KES {Number(inst.price).toLocaleString()}<span className="text-sm font-bold text-white/60"> /day</span></p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-bold">KES {Math.round(Number(inst.price) / 8).toLocaleString()}<span className="text-sm font-bold text-white/60"> /hr</span></p>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>

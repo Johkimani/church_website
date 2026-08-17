@@ -189,7 +189,7 @@ export default function Challenge() {
     );
   }
 
-  // ✅ NO ACTIVE CHALLENGE
+  // NO ACTIVE CHALLENGE
   if (status === "none") {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
@@ -214,7 +214,7 @@ export default function Challenge() {
     );
   }
 
-  // ✅ WELCOME
+  // WELCOME
   if (status === "welcome") {
     const allDone = questions.length > 0 && Object.keys(results).length === questions.length;
     return (
@@ -270,7 +270,7 @@ export default function Challenge() {
     );
   }
 
-  // ✅ PORTAL (EXAM MODE)
+  // PORTAL (EXAM MODE)
   if (status === "portal" && questions.length > 0) {
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
@@ -322,13 +322,13 @@ export default function Challenge() {
     );
   }
 
-  // ✅ COMPLETED (REVIEW MODE)
+  // COMPLETED (REVIEW MODE)
   return (
     <div className="min-h-screen bg-transparent px-4 py-12 flex justify-center overflow-y-auto no-scrollbar">
       <div className="w-full max-w-2xl">
         <div className="flex flex-col items-center sm:items-start mb-12 px-2 gap-5">
           <div className="flex items-center gap-5">
-            <div className="text-4xl sm:text-5xl animate-bounce">🏆</div>
+            <div className="text-4xl sm:text-5xl animate-bounce"></div>
             <div>
               <p className="text-[9px] font-black text-amber-700 uppercase tracking-[0.3em] italic">
                 Weekly Challenge

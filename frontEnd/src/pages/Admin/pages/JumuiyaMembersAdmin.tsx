@@ -354,7 +354,6 @@ export default function JumuiyaMembersAdmin() {
     [debouncedSearch]
   );
 
-  // ── Per-Jumuiya detail view ──
   if (id) {
     const jumuiya = JUMUIYAS.find((j) => j.id === id);
     if (!jumuiya) {
@@ -404,7 +403,6 @@ export default function JumuiyaMembersAdmin() {
     );
   }
 
-  // ── Global view with tabs ──
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -538,7 +536,6 @@ export default function JumuiyaMembersAdmin() {
             </div>
           )}
 
-          {/* ── Rejected Members ── */}
           {rejectedMembers.length > 0 && (
             <div className="bg-white rounded-xl border border-red-200 p-5 mt-6">
               <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">

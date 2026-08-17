@@ -171,7 +171,7 @@ function AIEngine({ onGenerated }: { onGenerated?: () => void }) {
                     {loadingText}
                   </>
                 ) : (
-                  "✦ Generate Question Batch"
+                  "Generate Question Batch"
                 )}
               </button>
 
@@ -265,7 +265,7 @@ function Carousel() {
       {/* Badge */}
       <div className="absolute top-4 left-4">
         <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full tracking-widest uppercase shadow-sm">
-          ★ Liturgical Portal
+           Liturgical Portal
         </span>
       </div>
 

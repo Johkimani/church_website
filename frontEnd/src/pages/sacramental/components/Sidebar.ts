@@ -45,7 +45,7 @@ export class Sidebar {
 
         const logoIcon = document.createElement('div');
         logoIcon.className = 'csa-choir-sidebar__logo-icon';
-        logoIcon.innerHTML = '✝'; // Cross symbol
+        logoIcon.innerHTML = ''; // Cross symbol
 
         const logoText = document.createElement('h2');
         logoText.className = 'csa-choir-sidebar__logo-text';
@@ -95,7 +95,7 @@ export class Sidebar {
         const backBtn = document.createElement('a');
         backBtn.href = '../admin.html';
         backBtn.className = 'csa-choir-back-btn';
-        backBtn.textContent = '⚙';
+        backBtn.textContent = '';
         backBtn.title = 'Admin Dashboard';
 
         footer.appendChild(backBtn);
@@ -106,7 +106,7 @@ export class Sidebar {
         // Mobile Toggle
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'csa-choir-mobile-toggle';
-        toggleBtn.innerHTML = '☰';
+        toggleBtn.innerHTML = '≡';
         toggleBtn.ariaLabel = 'Toggle Menu';
         toggleBtn.onclick = () => this.toggleMobileMenu();
         document.body.appendChild(toggleBtn);
@@ -140,7 +140,7 @@ export class Sidebar {
             overlay.classList.toggle('open');
 
             if (sidebar.classList.contains('open')) {
-                toggleBtn!.innerHTML = '✕';
+                toggleBtn!.innerHTML = '×';
             } else {
                 toggleBtn!.innerHTML = '☰';
             }

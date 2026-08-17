@@ -67,7 +67,6 @@ const Community: React.FC = () => {
 
   return (
     <div className="w-full bg-[#faf8f5] min-h-screen pb-28 text-stone-800 font-sans">
-      {/* ══════════ Hero ══════════ */}
       <div className="relative bg-[#0d0906] text-white overflow-hidden">
         {/* Layered warm glows */}
         <div className="absolute -top-32 -right-32 w-[34rem] h-[34rem] rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
@@ -141,7 +140,6 @@ const Community: React.FC = () => {
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#faf8f5] to-transparent pointer-events-none" />
       </div>
 
-      {/* ══════════ Section Heading ══════════ */}
       <div className="max-w-6xl mx-auto px-6 md:px-12 -mt-6 relative z-20">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -164,7 +162,6 @@ const Community: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* ══════════ Cards Grid ══════════ */}
         <motion.div
           variants={containerVariants}
           initial="hidden"

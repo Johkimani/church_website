@@ -21,14 +21,14 @@ export const GenerateQuestion = async (req, res) => {
           {
             role: "system",
             content:
-              "You are a helpful assistant that generates multiple-choice questions strictly about Christianity. Do not create questions about mathematics, science, or any other topics, ⚠️ IMPORTANT , outside Christian faith, scripture, theology, and church life.",
+              "You are a helpful assistant that generates multiple-choice questions strictly about Christianity. Do not create questions about mathematics, science, or any other topics, IMPORTANT , outside Christian faith, scripture, theology, and church life.",
           },
           {
             role: "user",
             content: `
                        Generate ${numberOfQuestions} thoughtful and challanging spiritual discussion questions about: "${topic}".
 
-    ⚠️ IMPORTANT: Follow this exact format for each question block:
+    IMPORTANT: Follow this exact format for each question block:
 
     1. Question text (numbered, bold)
        A) Option A
@@ -47,7 +47,7 @@ export const GenerateQuestion = async (req, res) => {
        Correct Answer: A) God’s unconditional love
        Explanation: The parable emphasizes forgiveness and mercy, showing God’s love for repentant sinners.
 
-    ✅ Rules:
+    Rules:
     - Always number questions sequentially.
     - Always provide exactly 4 options (A–D).
     - Always mark the correct answer with "Correct Answer: X)".

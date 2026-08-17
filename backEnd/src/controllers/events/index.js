@@ -7,16 +7,6 @@ import {
   sendToUser,
 } from "../../sse/sseManager.js";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Map a DB row + image URL array into the shape the frontend expects.
- * Key aliases kept for backward compatibility:
- *   posted_to  → category ("csa" | "jumuiya")
- *   title      → text
- *   is_read    → read
- *   created_at → createdAt
- */
 const normalizeNotification = (row, images = []) => ({
   id:          row.id,
   title:       row.title,
@@ -65,8 +55,6 @@ const sseEmit = (postedTo, eventName, payload) => {
   }
 };
 
-// ─── Controllers ──────────────────────────────────────────────────────────────
-
 /**
  * POST /notifications
  * Admin creates a new notification → saved to DB → broadcast via SSE immediately.
@@ -98,8 +86,7 @@ export const createNotification = async (req, res) => {
 
     const notif = rows[0];
 
-    // ── Link uploaded images ────────────────────────────────────────────────
-    let imageUrls = [];
+let imageUrls = [];
     if (Array.isArray(images) && images.length > 0) {
       const publicIds = images.map(img => img.public_id).filter(Boolean);
       if (publicIds.length > 0) {
@@ -124,8 +111,7 @@ export const createNotification = async (req, res) => {
 
     const payload = normalizeNotification(notif, imageUrls);
 
-    // ── Broadcast via SSE ──────────────────────────────────────────────────
-    sseEmit(posted_to, "notification_new", payload);
+sseEmit(posted_to, "notification_new", payload);
     logger.info(`[Notification] Created id:${notif.id} posted_to:${posted_to}`);
 
     return res.status(201).json(payload);

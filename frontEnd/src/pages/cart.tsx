@@ -5,7 +5,7 @@ export default function Cart() {
   const { cart, removeFromCart } = useCart();
   const navigate = useNavigate();
 
-  // 🧠 calculate total price
+  // calculate total price
   const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -13,7 +13,7 @@ export default function Cart() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <h2>🛒 Your Cart</h2>
+      <h2>Your Cart</h2>
 
       {/* EMPTY CART STATE */}
       {cart.length === 0 && (

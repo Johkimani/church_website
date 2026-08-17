@@ -41,8 +41,6 @@ import { jumuiyaAttendanceService } from "../../../api/jumuiyaAttendanceService"
 import { semesterServices, SemesterConfig } from "../../../api/semesterServices";
 import { useAuth } from "../../../context/AuthContext";
 
-// ── Types ────────────────────────────────────────────────────────────────
-
 interface JumuiyaContext {
   group_id: string;
   name: string;
@@ -196,8 +194,6 @@ interface HistoryRow {
   counts: HistoryCount[];
 }
 
-// ── Date helpers ─────────────────────────────────────────────────────────
-
 const fmt = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -306,8 +302,6 @@ function presetRange(key: PresetKey, now: Date, semester?: SemesterConfig | null
 const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`;
 const pts = (delta: number) => `${(delta * 100).toFixed(1)} pts`;
 
-// ── Small presentational helpers ─────────────────────────────────────────
-
 const inputCls =
   "w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400";
 
@@ -381,8 +375,6 @@ function TrendBadge({ delta }: { delta: number }) {
     </span>
   );
 }
-
-// ── Main component ───────────────────────────────────────────────────────
 
 export default function AttendanceTallyAdmin() {
   const { user } = useAuth();

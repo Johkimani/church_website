@@ -23,7 +23,7 @@ export default function Layout() {
 
    return (
      <div className="devotions-view-container relative" style={{ minHeight: '100vh', width: '100%', background: '#FAF8F5', display: 'flex' }}>
-       {/* ═══════════════ LIGHT AMBIENT BACKGROUND ═══════════════ */}
+
        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
          {/* Soft warm glows */}
          <div className="absolute inset-0" style={{
@@ -35,7 +35,7 @@ export default function Layout() {
          }} />
        </div>
 
-       {/* ═══════════════ CONTENT LAYER ═══════════════ */}
+
         <div className="relative z-10 flex w-full" style={{ flex: 1, minHeight: '100vh', color: '#1C1917' }}>
           {/* Sidebar - fixed column on desktop, inside drawer on mobile */}
           <div className="hidden md:flex flex-shrink-0 sticky top-16 lg:top-20 self-start z-30 h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)]">

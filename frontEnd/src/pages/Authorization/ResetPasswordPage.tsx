@@ -52,10 +52,8 @@ const ResetPasswordPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f7f4] px-6 py-12 font-sans overflow-hidden relative">
       
-      {/* ══════════ Main Container ══════════ */}
       <div className="w-full max-w-md lg:max-w-5xl flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-24 relative z-10">
 
-        {/* ══════════ LEFT — Branding (Desktop only) ══════════ */}
         <div className="hidden lg:flex flex-col justify-center w-1/2 pl-10">
           
           <div className="flex items-center gap-3 mb-10">
@@ -83,7 +81,6 @@ const ResetPasswordPage = () => {
           </p>
         </div>
 
-        {/* ══════════ RIGHT — Form Panel ══════════ */}
         <div className="w-full lg:w-[45%] px-0 sm:px-12 lg:px-0">
           
           {/* Back button */}

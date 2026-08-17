@@ -106,7 +106,6 @@ export const mpesaCallback = async (req, res) => {
         [mpesaReceipt, CheckoutRequestID]
       );
 
-      // ── Payment confirmation notification (fire-and-forget, never throws) ──
       if (orderUpdate.rows.length > 0) {
         try {
           await sendOrderPaymentConfirmation({
@@ -119,7 +118,6 @@ export const mpesaCallback = async (req, res) => {
         }
       }
 
-      // ── Activity booking payments (lipa mdogo mdogo) ──
       const payResult = await db.query(
         `UPDATE activity_payments SET status = 'paid', mpesa_receipt = $1
          WHERE checkout_id = $2 AND status = 'pending'
@@ -142,7 +140,7 @@ export const mpesaCallback = async (req, res) => {
         logger.info(`Activity payment applied: booking_id=${booking_id}, amount=${paidAmt}`);
       }
 
-      logger.info(`✅ Payment callback processed: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`);
+      logger.info(`Payment callback processed: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`);
 
     } else {
       await db.query(
@@ -169,7 +167,7 @@ export const mpesaCallback = async (req, res) => {
         [CheckoutRequestID]
       );
 
-      logger.warn(`❌ Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`);
+      logger.warn(`Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`);
     }
 
   } catch (error) {

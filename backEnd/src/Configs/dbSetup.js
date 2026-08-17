@@ -6,7 +6,6 @@ import { db, connectDb } from "./dbConfig.js";
 const setupDatabase = async () => {
   await connectDb();
 
-  // ─── Create Tables ────────────────────────────────────────────────
   await db.query(`
     CREATE TABLE IF NOT EXISTS weekly_activities (
       id SERIAL PRIMARY KEY,
@@ -17,7 +16,7 @@ const setupDatabase = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  console.log("✅ Table 'weekly_activities' ready");
+  console.log("Table 'weekly_activities' ready");
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS semester_activities (
@@ -29,9 +28,8 @@ const setupDatabase = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  console.log("✅ Table 'semester_activities' ready");
+  console.log("Table 'semester_activities' ready");
 
-  // ─── Seed Weekly Activities ───────────────────────────────────────
   const weeklyCount = await db.query("SELECT COUNT(*) FROM weekly_activities");
   if (parseInt(weeklyCount.rows[0].count) === 0) {
     const weekly = [
@@ -49,12 +47,11 @@ const setupDatabase = async () => {
         [w.day, w.time, w.activity, w.venue]
       );
     }
-    console.log("✅ Seeded weekly activities");
+    console.log("Seeded weekly activities");
   } else {
-    console.log("ℹ️  Weekly activities already seeded");
+    console.log("Weekly activities already seeded");
   }
 
-  // ─── Seed Semester Activities ─────────────────────────────────────
   const semCount = await db.query("SELECT COUNT(*) FROM semester_activities");
   if (parseInt(semCount.rows[0].count) === 0) {
     const semester = [
@@ -90,12 +87,12 @@ const setupDatabase = async () => {
         [s.title, s.date_time, s.venue, s.description]
       );
     }
-    console.log("✅ Seeded semester activities");
+    console.log("Seeded semester activities");
   } else {
-    console.log("ℹ️  Semester activities already seeded");
+    console.log("Semester activities already seeded");
   }
 
-  console.log("\n🎉 Database setup complete!");
+  console.log("\nDatabase setup complete!");
   process.exit(0);
 };
 

@@ -70,9 +70,6 @@ function getPrayers(novenaId: string): Prayer[] {
 }
 
 export const NOVENAS: Novena[] = [
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 1 — Core novenas from novenaPrayers.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-holy-spirit",
     "Novena to the Holy Spirit",
@@ -116,9 +113,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-divine-mercy")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 2 — Marian & Saint novenas from novenaPrayers2.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-lady-of-lourdes",
     "Novena to Our Lady of Lourdes",
@@ -162,9 +156,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-saint-padre-pio")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 3 — Devotion novenas from novenaPrayers3.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-immaculate-heart",
     "Novena to the Immaculate Heart of Mary",
@@ -201,9 +192,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-our-lady-of-victory")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 4 — Liturgical & Devotion novenas from novenaPrayers4.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-christ-the-king",
     "Novena to Christ the King",
@@ -240,9 +228,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-pentecost")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 5 — Marian novenas from novenaPrayers5.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-holy-name-jesus",
     "Novena to the Holy Name of Jesus",
@@ -272,9 +257,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-mary-magdalene")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 6 — Saint novenas from novenaPrayers6.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-monica",
     "Novena to Saint Monica",
@@ -304,9 +286,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-holy-souls")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 7 — Devotion novenas from novenaPrayers7.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-martin",
     "Novena to Saint Martin de Porres",
@@ -336,9 +315,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-christian-unity")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // ADDITIONAL NOVENAS
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-lady-sorrows",
     "Novena to Our Lady of Sorrows",
@@ -347,9 +323,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-lady-sorrows")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 8 — Patron Saint novenas from novenaPrayers8.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-augustine",
     "Novena to Saint Augustine",
@@ -385,9 +358,6 @@ export const NOVENAS: Novena[] = [
     "from-pink-500 to-rose-600",
     getPrayers("novenas-saint-mary-goretti")
   ),
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 9 — novenaPrayers9.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-our-lady-of-guadalupe",
     "Novena to Our Lady of Guadalupe",
@@ -416,9 +386,6 @@ export const NOVENAS: Novena[] = [
     "from-cyan-500 to-blue-600",
     getPrayers("novenas-saint-raphael")
   ),
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 10 — novenaPrayers10.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-clare",
     "Novena to Saint Clare of Assisi",
@@ -441,9 +408,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-precious-blood")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 11 — novenaPrayers11.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-michael-archangel",
     "Novena to Saint Michael the Archangel",
@@ -515,9 +479,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-saint-elizabeth-ann-seton")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 12 — novenaPrayers12.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-benedict",
     "Novena to Saint Benedict",
@@ -589,9 +550,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-saint-bonaventure")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 13 — novenaPrayers13.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-francis-xavier",
     "Novena to Saint Francis Xavier",
@@ -663,9 +621,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-saint-luke")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 14 — novenaPrayers14.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-peter-apostle",
     "Novena to Saint Peter the Apostle",
@@ -737,9 +692,6 @@ export const NOVENAS: Novena[] = [
     getPrayers("novenas-saint-martin-de-porres")
   ),
 
-  // ═══════════════════════════════════════════════════════════════
-  // BATCH 15 — novenaPrayers15.ts
-  // ═══════════════════════════════════════════════════════════════
   buildNovena(
     "novenas-saint-anne",
     "Novena to Saint Anne",

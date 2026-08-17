@@ -1,9 +1,7 @@
 import type { Prayer } from "./prayerCategories";
 
 export const NOVENA_PRAYERS_5: Prayer[] = [
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY NAME OF JESUS
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "hnj-np-1",
@@ -87,9 +85,7 @@ export const NOVENA_PRAYERS_5: Prayer[] = [
     text: `O Holy Name of Jesus, most precious jewel of our hearts, we consecrate ourselves entirely to You this day. We give to You our minds, that they may think of You alone; our lips, that they may praise Your Name; our hands, that they may labor for Your glory; and our hearts, that they may love You above all things. We renounce the spirit of the world, the flesh, and the devil, and we place ourselves under the standard of Your Name for the rest of our lives. Be our King, our Lord, and our all. May the Holy Name of Jesus be inscribed upon our hearts as a seal of fire, that we may belong to You alone and bear witness to Your love before all the world. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA BEFORE THE ANNUNCIATION
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "an-np-1",
@@ -173,9 +169,7 @@ export const NOVENA_PRAYERS_5: Prayer[] = [
     text: `O Blessed Virgin Mary, Mother of Jesus and our Mother, as we complete this novena in preparation for the feast of the Annunciation, we consecrate ourselves entirely to your Immaculate Heart. We give you our prayers, our works, our sufferings, and our joys, asking you to unite them all to the merits of your Son for the salvation of souls. Be our guide on the path to heaven, our comfort in sorrow, our protection in danger, and our intercessor before the throne of God. We entrust to you all that we are and all that we have, holding nothing back. O Mother of the Incarnate Word, pray for us sinners, now and at the hour of our death. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO OUR LADY OF MOUNT CARMEL
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "omc-np-1",
@@ -259,9 +253,7 @@ export const NOVENA_PRAYERS_5: Prayer[] = [
     text: `O Most Blessed Virgin Mary, Our Lady of Mount Carmel, Mother of Jesus and our Mother, on this final day of our novena we consecrate ourselves to you with all our hearts. We choose you this day as our Mother, our guide, and our Queen. We place under your patronage all that we are, all that we have, and all that we do. We take the scapular as the visible sign of our consecration and pledge to honor you, serve you, and spread your devotion throughout our lives. Accept, O Queen of Carmel, this humble offering of our hearts, and lead us safely to the kingdom of your divine Son, where we may praise you for all eternity. O Holy Mother of God, pray for us sinners, now and at the hour of our death. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT MARY MAGDALENE
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "smm-np-1",

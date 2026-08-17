@@ -29,9 +29,9 @@ interface AlbumView {
 }
 
 const CATEGORY_ICONS: Record<JumuiyaCategory, string> = {
-    'Family Prayer Meeting': '🙏',
-    'Events': '📅',
-    'Trips': '✈️',
+    'Family Prayer Meeting': '',
+    'Events': '',
+    'Trips': '',
 };
 
 const getPlatformIcon = (platform: string) => {

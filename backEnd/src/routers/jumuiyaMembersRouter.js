@@ -85,7 +85,6 @@ router.put('/:id', verifyToken, requireRole(...OFFICIAL_ROLES), updateJumuiyaMem
 router.delete('/:id', verifyToken, requireRole(...OFFICIAL_ROLES), deleteJumuiyaMember);
 router.delete('/unregister/:id', verifyToken, requireRole(...OFFICIAL_ROLES), unregisterJumuiyaMember);
 
-// ── Associates (alumni) routes (CSA executives only) ──
 router.get('/associates/pending', verifyToken, requireRole(...CSA_ROLES), getPendingMigrationMembers);
 router.post('/associates/migrate', verifyToken, requireRole(...CSA_ROLES), migrateToAssociates);
 router.get('/associates/list', verifyToken, requireRole(...CSA_ROLES), getAssociatesList);

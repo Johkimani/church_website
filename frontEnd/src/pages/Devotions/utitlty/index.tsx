@@ -29,7 +29,7 @@ export const mapDbQuestions = (dbQuestions: any[]): Question[] => {
   });
 };
 
-  // ✅ PARSER (DB TEXT → STRUCTURED)
+  // PARSER (DB TEXT → STRUCTURED)
  export const parseQuestionsFromText = (text: string): Question[] => {
     const blocks = text.split(/\n(?=\d+\.\s)/);
     return blocks.map((block, index) => {

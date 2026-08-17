@@ -80,7 +80,7 @@ const initializeSocketIO = (io) => {
       // it trusted client-sent memberId/jumuiyaId/isCorrect.
       // ?this handle disconnection , incase of wifi disconnects , or the serve is unhealthy/crushes or close the browser , thus not reachable this will definetly run 
       socket.on(ChatEventEnum.DISCONNECT_EVENT, () => {
-        console.log("user has disconnected 🚫. socketId: " + socket.id);
+        console.log("user has disconnected. socketId: " + socket.id);
         // we can also do some clean up here if we have any resources that we need to clean up when the user disconnects like removing the socket from the room or 
         // something like that but in our case we are not doing anything because socket.io will automatically remove the socket from the room when it disconnects so we don't have to worry about that
       });
@@ -88,7 +88,7 @@ const initializeSocketIO = (io) => {
       socket.emit(
         ChatEventEnum.SOCKET_ERROR_EVENT,
         error?.message ||
-        "Something went wrong while connecting to the socket.",
+        "Connection lost",
       );
     }
   });

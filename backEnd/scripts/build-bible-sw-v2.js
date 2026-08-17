@@ -154,7 +154,7 @@ function clearProgress() {
 }
 
 async function buildFromAPI() {
-  console.log('📖 Fetching Swahili book list from dailybible.ca...\n');
+  console.log('Fetching Swahili book list from dailybible.ca...\n');
   const booksUrl = `${BASE_URL}/books?translation=${TRANSLATION}`;
   const booksData = await fetchWithRetry(booksUrl);
 
@@ -162,7 +162,7 @@ async function buildFromAPI() {
     throw new Error('Unexpected API response: ' + JSON.stringify(booksData).slice(0, 500));
   }
 
-  console.log(`📚 Found ${booksData.books.length} books\n`);
+  console.log(`Found ${booksData.books.length} books\n`);
 
   const outputDir = path.join(__dirname, '..', 'src', 'data');
   if (!fs.existsSync(outputDir)) {
@@ -184,7 +184,7 @@ async function buildFromAPI() {
   if (saved && saved.completedBooks) {
     bible = saved.bible;
     completedBooks = saved.completedBooks;
-    console.log(`♻️  Resuming from progress file (${completedBooks.length} books already done)\n`);
+    console.log(`Resuming from progress file (${completedBooks.length} books already done)\n`);
   }
 
   const booksToFetch = booksData.books.filter(b => !completedBooks.includes(b.book_id));
@@ -200,7 +200,7 @@ async function buildFromAPI() {
       chapters: {}
     };
 
-    console.log(`\n📖 ${book.book_name} (${book.book_id}) - ${book.chapters} chapters`);
+    console.log(`\n${book.book_name} (${book.book_id}) - ${book.chapters} chapters`);
 
     for (let ch = 1; ch <= book.chapters; ch++) {
       totalChapters++;
@@ -228,18 +228,18 @@ async function buildFromAPI() {
 
       } catch (err) {
         failedChapters.push({ code: book.book_id, chapter: ch, error: err.message });
-        console.error(`\n  ❌ Failed: ${book.book_id} chapter ${ch} - ${err.message}`);
+        console.error(`\n  Failed: ${book.book_id} chapter ${ch} - ${err.message}`);
       }
 
       await sleep(DELAY_MS);
     }
 
     completedBooks.push(book.book_id);
-    console.log(`\n  ✅ Done: ${book.book_name} (${Object.keys(bible.books[book.book_id].chapters).length} chapters)`);
+    console.log(`\n  Done: ${book.book_name} (${Object.keys(bible.books[book.book_id].chapters).length} chapters)`);
 
     if (completedBooks.length % SAVE_EVERY === 0) {
       saveProgress(bible, completedBooks);
-      console.log(`  💾 Progress saved`);
+      console.log(`  Progress saved`);
     }
   }
 
@@ -248,7 +248,7 @@ async function buildFromAPI() {
   clearProgress();
 
   console.log(`\n${'='.repeat(50)}`);
-  console.log(`✅ Swahili Bible build complete (from API)!`);
+  console.log(`Swahili Bible build complete (from API)!`);
   console.log(`   Books: ${Object.keys(bible.books).length}`);
   console.log(`   Chapters fetched: ${fetchedChapters}/${totalChapters}`);
   console.log(`   Failed: ${failedChapters.length}`);
@@ -264,13 +264,13 @@ async function buildFromAPI() {
 
 function buildFromFallback() {
   if (!fs.existsSync(FALLBACK_FILE)) {
-    console.error(`❌ Fallback file not found: ${FALLBACK_FILE}`);
+    console.error(`Fallback file not found: ${FALLBACK_FILE}`);
     console.error(`   The Swahili translation is not available on dailybible.ca and no local swahili-bible.json exists.`);
     process.exit(1);
   }
 
-  console.log('📖 Swahili translation not available on dailybible.ca');
-  console.log('📖 Falling back to restructuring swahili-bible.json...\n');
+  console.log('Swahili translation not available on dailybible.ca');
+  console.log('Falling back to restructuring swahili-bible.json...\n');
 
   const outputDir = path.join(__dirname, '..', 'src', 'data');
   if (!fs.existsSync(outputDir)) {
@@ -314,13 +314,13 @@ function buildFromFallback() {
     }
 
     const bookChapters = Object.keys(bible.books[code].chapters).length;
-    console.log(`  ✅ ${info.name} (${code}) - ${bookChapters} chapters`);
+    console.log(`  ${info.name} (${code}) - ${bookChapters} chapters`);
   }
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(bible, null, 2), 'utf8');
 
   console.log(`\n${'='.repeat(50)}`);
-  console.log(`✅ Swahili Bible restructured (from fallback)!`);
+  console.log(`Swahili Bible restructured (from fallback)!`);
   console.log(`   Books: ${Object.keys(bible.books).length}`);
   console.log(`   Total verses: ${totalVerses}`);
   console.log(`   Output: ${OUTPUT_FILE}`);
@@ -331,7 +331,7 @@ async function main() {
   try {
     await buildFromAPI();
   } catch (err) {
-    console.warn(`\n⚠️  API fetch failed: ${err.message}`);
+    console.warn(`\nAPI fetch failed: ${err.message}`);
     console.warn(`   Falling back to local swahili-bible.json\n`);
     buildFromFallback();
   }

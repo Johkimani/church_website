@@ -489,7 +489,6 @@ export default function CSADistributionCenter() {
         </div>
       )}
 
-      {/* ── Import Card ── */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
@@ -654,7 +653,6 @@ export default function CSADistributionCenter() {
         )}
       </div>
 
-      {/* ── Stats + Distribution ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 bg-white rounded-xl border border-slate-200 p-5">
           <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -722,7 +720,6 @@ export default function CSADistributionCenter() {
         </div>
       </div>
 
-      {/* ── Distribution Preview ── */}
       {preview && (
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center gap-3 mb-4">
@@ -785,7 +782,6 @@ export default function CSADistributionCenter() {
         </div>
       )}
 
-      {/* ── Approval Status: Active Batches ── */}
       {activeBatches.length > 0 && (
         <div className="space-y-4">
           <h4 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -884,7 +880,6 @@ export default function CSADistributionCenter() {
         </div>
       )}
 
-      {/* ── Rejected Members ── */}
       {rejectedMembers.length > 0 && (
         <div className="bg-white rounded-xl border border-red-200 p-5">
           <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">

@@ -35,8 +35,7 @@ router.get("/availability", async (req, res) => {
        FROM hire_requests
        WHERE item_name = $1 
         AND status IN ('pending','approved','paid','ready_for_pickup','collected')
-       AND NOT (end_date < $2 OR start_date > $3)
-       AND id IS NOT NULL`,
+       AND pickup_date <= $3 AND return_date >= $2`,
       [product.name, start_date, end_date]
     );
 
@@ -51,6 +50,8 @@ router.get("/availability", async (req, res) => {
       booked_quantity: bookedQty,
       available_quantity: availableQty,
       can_fulfill: canFulfill,
+      daily_rate: product.price,
+      hourly_rate: Math.round(product.price / 8),
       message: canFulfill 
         ? `${availableQty} available for the selected dates`
         : `Only ${availableQty} available (requested ${qty})`
@@ -91,12 +92,13 @@ router.post("/availability/check", async (req, res) => {
       const product = productResult.rows[0];
       const totalStock = product.stock || 0;
 
+      // For same-day (hourly) or multi-day (daily) bookings
       const bookedResult = await pool.query(
         `SELECT COALESCE(SUM(quantity), 0) as booked_qty
          FROM hire_requests
          WHERE item_name = $1 
          AND status IN ('pending','approved','paid','ready_for_pickup','collected')
-         AND NOT (end_date < $2 OR start_date > $3)`,
+         AND pickup_date <= $3 AND return_date >= $2`,
         [product.name, start_date, end_date]
       );
 
@@ -113,6 +115,7 @@ router.post("/availability/check", async (req, res) => {
         available_quantity: availableQty,
         can_fulfill: canFulfill,
         daily_rate: product.price,
+        hourly_rate: Math.round(product.price / 8),
         found: true
       };
     }));

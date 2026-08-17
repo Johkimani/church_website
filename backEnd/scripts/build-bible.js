@@ -81,16 +81,16 @@ function clearProgress() {
 }
 
 async function main() {
-  console.log('📖 Fetching book list from dailybible.ca...\n');
+  console.log('Fetching book list from dailybible.ca...\n');
   const booksUrl = `${BASE_URL}/books?translation=${TRANSLATION}`;
   const booksData = await fetchWithRetry(booksUrl);
 
   if (!booksData.books || !Array.isArray(booksData.books)) {
-    console.error('❌ Unexpected API response:', JSON.stringify(booksData).slice(0, 500));
+    console.error('Unexpected API response:', JSON.stringify(booksData).slice(0, 500));
     process.exit(1);
   }
 
-  console.log(`📚 Found ${booksData.books.length} books\n`);
+  console.log(`Found ${booksData.books.length} books\n`);
 
   const outputDir = path.join(__dirname, '..', 'src', 'data');
   if (!fs.existsSync(outputDir)) {
@@ -112,7 +112,7 @@ async function main() {
   if (saved && saved.completedBooks) {
     bible = saved.bible;
     completedBooks = saved.completedBooks;
-    console.log(`♻️  Resuming from progress file (${completedBooks.length} books already done)\n`);
+    console.log(`Resuming from progress file (${completedBooks.length} books already done)\n`);
   }
 
   const booksToFetch = booksData.books.filter(b => !completedBooks.includes(b.book_id));
@@ -128,7 +128,7 @@ async function main() {
       chapters: {}
     };
 
-    console.log(`\n📖 ${book.book_name} (${book.book_id}) - ${book.chapters} chapters`);
+    console.log(`\n${book.book_name} (${book.book_id}) - ${book.chapters} chapters`);
 
     for (let ch = 1; ch <= book.chapters; ch++) {
       totalChapters++;
@@ -156,18 +156,18 @@ async function main() {
 
       } catch (err) {
         failedChapters.push({ code: book.book_id, chapter: ch, error: err.message });
-        console.error(`\n  ❌ Failed: ${book.book_id} chapter ${ch} - ${err.message}`);
+        console.error(`\n  Failed: ${book.book_id} chapter ${ch} - ${err.message}`);
       }
 
       await sleep(DELAY_MS);
     }
 
     completedBooks.push(book.book_id);
-    console.log(`\n  ✅ Done: ${book.book_name} (${Object.keys(bible.books[book.book_id].chapters).length} chapters)`);
+    console.log(`\n  Done: ${book.book_name} (${Object.keys(bible.books[book.book_id].chapters).length} chapters)`);
 
     if (completedBooks.length % SAVE_EVERY === 0) {
       saveProgress(bible, completedBooks);
-      console.log(`  💾 Progress saved`);
+      console.log(`  Progress saved`);
     }
   }
 
@@ -176,7 +176,7 @@ async function main() {
   clearProgress();
 
   console.log(`\n${'='.repeat(50)}`);
-  console.log(`✅ Build complete!`);
+  console.log(`Build complete!`);
   console.log(`   Books: ${Object.keys(bible.books).length}`);
   console.log(`   Chapters fetched: ${fetchedChapters}/${totalChapters}`);
   console.log(`   Failed: ${failedChapters.length}`);

@@ -21,6 +21,8 @@ export interface HireItem {
   category?: string;
   price: number;
   quantity: number;
+  hireMode?: 'daily' | 'hourly';
+  hours?: number;
 }
 import apiService from '../pages/Landing/services/api';
 import type { ToastMessage } from '../pages/projects/components/ToastContainer';

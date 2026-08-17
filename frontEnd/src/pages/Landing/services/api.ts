@@ -168,8 +168,6 @@ class ApiService {
     return response.data;
   }
 
-  /** ── RBAC Role Management ──────────────────────────── */
-
   /** Fetches all available roles (active) */
   async getRolesList(): Promise<any[]> {
     const response = await apiClient.get('/roles');
@@ -431,8 +429,6 @@ class ApiService {
     return this.deleteRecord('contributions', contributionId);
   }
 
-// ── Pending Payments (Treasury) ──────────────────────────────────────────────
-
    async getPendingPayments(): Promise<any[]> {
      const response = await apiClient.get(`/jumuiya-members/pending-payments`);
      return response.data;
@@ -456,7 +452,6 @@ class ApiService {
      return response.data;
    }
 
-   // ── Donations ────────────────────────────────────────────────────────
    async getDonations(): Promise<any[]> {
      const response = await apiClient.get(`/donations`);
      return response.data;
@@ -534,8 +529,6 @@ class ApiService {
     }
   }
 
-  // ── Category Cards (Home Page) ──
-
   async getCategoryCards(): Promise<any[]> {
     return this.cacheGet('category_cards', 300_000, async () => {
       try {
@@ -559,8 +552,6 @@ class ApiService {
     localStorage.removeItem('csa_cache_category_cards');
     return response.data;
   }
-
-  // ── Testimonials ──
 
   async getTestimonials(approvedOnly = false): Promise<any[]> {
     const cacheKey = approvedOnly ? 'testimonials_approved' : 'testimonials_all';

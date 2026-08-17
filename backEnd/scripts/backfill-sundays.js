@@ -24,40 +24,33 @@ function sleep(ms) {
 }
 
 function simplifyReference(ref) {
-  // Step 1: Basic cleanup
   let s = ref
-    .replace(/[\u2013\u2014]/g, "-")  // dashes
-    .replace(/[\u2018\u2019]/g, "'")  // apostrophes
-    .replace(/\u201C|\u201D/g, '"')   // quotes
-    .replace(/\s+or\s+.*$/i, "")      // remove "or ..." alternatives
-    .replace(/;\s*\d+.*$/, "")        // remove "; Chapter:..." (multi-chapter)
-    .replace(/\s+and\s+\d+.*$/i, "")  // remove "and verse..." at end
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\u201C|\u201D/g, '"')
+    .replace(/\s+or\s+.*$/i, "")
+    .replace(/;\s*\d+.*$/, "")
+    .replace(/\s+and\s+\d+.*$/i, "")
     .trim();
 
-  // Step 2: Extract book and chapter
   const match = s.match(/^([\d\s\w]+?)\s+(\d+):/);
   if (!match) return null;
   const book = match[1].trim();
   const chapter = match[2];
 
-  // Step 3: For psalms, always use chapter only (most reliable)
   if (/^Psalm/i.test(book)) {
     return `Psalm ${chapter}`;
   }
 
-  // Step 4: Check for complex verse selectors
   const afterColon = s.split(":")[1] || "";
   // If it has "a", "b", "ab" suffixes → too complex
   if (/\d+[ab]/.test(afterColon)) return null;
   // If it has "—" or multiple chapter references → too complex
   if (/\d+\s*-\s*\d+/.test(afterColon) && afterColon.includes(",")) return null;
 
-  // Step 5: Try simple reference like "Isaiah 55:1-3"
   const simpleMatch = s.match(/^([\d\s\w]+?)\s+(\d+):([\d,\s-]+)$/);
   if (simpleMatch) {
-    // Clean verse numbers
     let verses = simpleMatch[3].trim();
-    // If too many verse ranges, just use first range
     const parts = verses.split(",").map(v => v.trim());
     if (parts.length > 2) {
       verses = parts.slice(0, 2).join(", ");
@@ -65,7 +58,6 @@ function simplifyReference(ref) {
     return `${book} ${chapter}:${verses}`;
   }
 
-  // Step 6: Last resort — try just "Book Chapter"
   return `${book} ${chapter}`;
 }
 
@@ -105,7 +97,6 @@ async function main() {
 
   const entries = Object.entries(db);
   for (const [dateKey, entry] of entries) {
-    // Optional filter
     if (targetDay === "sunday") {
       const d = new Date(dateKey + "T12:00:00");
       if (d.getDay() !== 0) continue;

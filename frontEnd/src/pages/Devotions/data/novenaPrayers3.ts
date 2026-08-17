@@ -2,10 +2,8 @@ import { Prayer } from './prayerCategories';
 
 export const NOVENA_PRAYERS_3: Prayer[] = [
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE IMMACULATE HEART OF MARY
   // novenaId: "novenas-immaculate-heart"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "imh-1",
@@ -89,10 +87,8 @@ export const NOVENA_PRAYERS_3: Prayer[] = [
     text: `O Immaculate Heart of Mary, Mother of Mercy, Queen of Heaven and Earth, I come to the final day of this novena with a heart that is completely yours. I offer you the totality of my being — my past, my present, and my future; my joys and my sorrows; my successes and my failures; my life and my death. I hold nothing back, for I desire to belong entirely to you and through you to your Son. Take me as your possession, your child, your servant. May I live each remaining day of my life for the glory of God, the triumph of your Immaculate Heart, and the salvation of souls. I place my trust in you, my hope in you, and my love in you, now and at the hour of my death. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO SAINT FRANCIS OF ASSISI
   // novenaId: "novenas-saint-francis"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "sf-1",
@@ -176,10 +172,8 @@ export const NOVENA_PRAYERS_3: Prayer[] = [
     text: `Saint Francis, perfect follower of Christ, who spent your life conforming every thought, word, and deed to the example of our Lord, obtain for me the grace to live a life worthy of my Christian calling. You who stripped yourself of everything to put on Christ, help me to die to self that I may live for God. Grant me the faith that moves mountains, the hope that never fades, and the love that never fails. Lead me along the narrow path that leads to eternal life, walking always in the footsteps of Jesus. May I, like you, hear the voice of Christ calling me to rebuild His Church, to spread His love, and to bring His light into every corner of the world. I entrust my final perseverance to your prayers, that I may finish the race and receive the crown of righteousness. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO THE HOLY GUARDIAN ANGELS
   // novenaId: "novenas-holy-angels"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "ha-1",
@@ -263,10 +257,8 @@ export const NOVENA_PRAYERS_3: Prayer[] = [
     text: `O Holy Guardian Angel, I dedicate myself anew to you at the conclusion of this novena. From this day forward, I pledge to honor your presence in my life, to call upon your aid in every need, and to thank God daily for the gift of your companionship. I promise to follow your guidance, to heed your warnings, and to trust your intercession. I consecrate each day to you and to God, asking that you lead me ever closer to the Sacred Heart of Jesus and the Immaculate Heart of Mary. Watch over me in every moment, accompany me in every journey, and bring me at last to the vision of God in heaven, where together we shall praise Him for all eternity. I am yours, and you are mine. Guide me home. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO ALL SAINTS
   // novenaId: "novenas-all-saints"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "as-1",
@@ -350,10 +342,8 @@ export const NOVENA_PRAYERS_3: Prayer[] = [
     text: `O All Saints of God, great company of the redeemed, you who stand before the throne of the Lamb in white robes washed in the blood of Christ, I unite my prayers to your ceaseless intercession. Together you form the Church Triumphant, the communion of the blessed who have overcome the world. I ask you all to pray for me — that I may finish my earthly pilgrimage with faith, that I may overcome the trials and temptations of this life, and that I may one day join you in the beatific vision of God. You are my family, my examples, my helpers, and my hope. I entrust to your prayers every intention I carry, every person I love, and every soul that awaits the grace of salvation. Through your intercession, may God's will be done on earth as it is in heaven. Amen.`
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // NOVENA TO OUR LADY OF VICTORY (RANSOM)
   // novenaId: "novenas-our-lady-of-victory"
-  // ═══════════════════════════════════════════════════════════════
 
   {
     id: "olv-1",

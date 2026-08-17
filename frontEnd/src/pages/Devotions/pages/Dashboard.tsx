@@ -160,7 +160,7 @@ export default function Dashboard() {
         background: "linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%)",
       }}
     >
-      {/* ═══════════════ HERO — TODAY'S READINGS ═══════════════ */}
+
       <Link to="daily-liturgy" className="block group">
         <div
           className="rounded-3xl relative overflow-hidden transition-all duration-300"
@@ -182,7 +182,7 @@ export default function Dashboard() {
           <div className="absolute right-8 bottom-4 text-[150px] leading-none select-none" style={{
             color: "rgba(255, 255, 255, 0.045)",
             fontFamily: "'Cinzel', serif",
-          }}>✝</div>
+          }}></div>
 
           <div className="relative z-10 h-full flex flex-col justify-center p-8 sm:p-10">
             <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -227,7 +227,7 @@ export default function Dashboard() {
         </div>
       </Link>
 
-      {/* ═══════════════ STAT STRIP ═══════════════ */}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {stats.map((s) => (
           <Link
@@ -256,7 +256,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ═══════════════ MARY SPOTLIGHT — OUR BLESSED MOTHER ═══════════════ */}
+
       <div
         className="rounded-3xl relative overflow-hidden mb-8"
         style={{
@@ -331,7 +331,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ═══════════════ SECTION — JOURNEY ═══════════════ */}
+
       <div className="flex items-center gap-3 mb-5 px-1">
         <div className="w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
         <h2
@@ -343,7 +343,7 @@ export default function Dashboard() {
         <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
       </div>
 
-      {/* ═══════════════ 5 CARD GRID ═══════════════ */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
         {cards.map((card) => (
           <Link key={card.to} to={card.to} className="block group">
@@ -391,7 +391,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ═══════════════ ROSARY RITUAL CARD ═══════════════ */}
+
       <div
         className="rounded-3xl p-6 sm:p-7 relative overflow-hidden bg-white"
         style={{

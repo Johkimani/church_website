@@ -55,7 +55,7 @@ export const handleCallback = async (req, res) => {
     );
 
     if (ResultCode === 0) {
-      // ✅ Payment succeeded — extract metadata items
+      // Payment succeeded — extract metadata items
       const items = stkCallback.CallbackMetadata?.Item || [];
       const getMeta = (name) =>
         items.find((i) => i.Name === name)?.Value ?? null;
@@ -167,10 +167,10 @@ export const handleCallback = async (req, res) => {
       }
 
       logger.info(
-        `✅ Payment recorded: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`,
+        `Payment recorded: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`,
       );
     } else {
-      // ❌ Payment failed / cancelled
+      // Payment failed / cancelled
       await db.query(
         `INSERT INTO mpesa_request
           (checkout_id, merchant_request_id, status, result_code, result_desc)
@@ -199,7 +199,7 @@ export const handleCallback = async (req, res) => {
       );
 
       logger.warn(
-        `❌ Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`,
+        `Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`,
       );
     }
   } catch (error) {

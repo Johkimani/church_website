@@ -43,10 +43,6 @@ export const PRAYERS: Prayer[] = [
   ...NOVENA_PRAYERS_14,
   ...NOVENA_PRAYERS_15,
 
-  // ═══════════════════════════════════════════════════════════════
-  // LITANIES — Full prayers with proper invocation/response format
-  // ═══════════════════════════════════════════════════════════════
-
   { id: "lit-loreto", title: "Litany of Loreto (Litany of the Blessed Virgin Mary)", category: "litanies",
     intention: "Marian devotion",
     text: `Lord, have mercy on us. Christ, have mercy on us. Lord, have mercy on us. Christ, hear us. Christ, graciously hear us.
@@ -111,10 +107,6 @@ Come, Holy Spirit, fill the hearts of Your faithful, and enkindle in them the fi
 
 Let us pray: O God, who by the light of the Holy Spirit did instruct the hearts of the faithful, grant that by the same Holy Spirit we may be truly wise and ever rejoice in His consolation. Through Christ our Lord. Amen.` },
 
-  // ═══════════════════════════════════════════════════════════════
-  // HEALING PRAYERS
-  // ═══════════════════════════════════════════════════════════════
-
   { id: "heal-1", title: "Prayer for Physical Healing", category: "healing", intention: "Healing of the body",
     text: "Lord Jesus Christ, You passed through Galilee healing the sick. Stretch out Your healing hand upon me (or upon ______). Restore health to the body, strength to the limbs, and peace to the mind. If it is Your will, grant complete healing. If not, grant the grace to bear this cross with patience and trust in Your loving providence. Through the intercession of Our Lady of Lourdes and Saint Raphael the Archangel, heal us, Lord. Amen." },
   { id: "heal-2", title: "Prayer for Emotional Healing", category: "healing", intention: "Healing of the heart",
@@ -125,10 +117,6 @@ Let us pray: O God, who by the light of the Holy Spirit did instruct the hearts 
     text: "Glorious Archangel Saint Raphael, great prince of the heavenly court, you are illustrious for your gifts of wisdom and grace. You are a guide of those who journey by land or sea or air, consoler of the afflicted, and refuge of the sick. I beg you, assist me in all my needs and in all the sufferings of this life, as once you helped the young Tobias on his travels. Because you are the medicine of God, I humbly pray you to heal the many infirmities of my soul and the ills that afflict my body. Amen." },
   { id: "heal-5", title: "Prayer for Mental Peace", category: "healing", intention: "Peace of mind",
     text: "Come, O Holy Spirit, and bring peace to my troubled mind. Still my anxious thoughts, quiet my racing heart, and settle my restless spirit. You are the Spirit of Peace, the Comforter, the Consoler. Fill me with Your tranquility. Help me to cast all my anxieties upon You, for You care for me. Grant me the serenity to accept the things I cannot change, courage to change the things I can, and wisdom to know the difference. Amen." },
-
-  // ═══════════════════════════════════════════════════════════════
-  // DAILY CATHOLIC PRAYERS
-  // ═══════════════════════════════════════════════════════════════
 
   { id: "daily-1", title: "Morning Offering", category: "daily", intention: "Start the day with God",
     text: "O Jesus, through the Immaculate Heart of Mary, I offer You my prayers, works, joys, and sufferings of this day, for all the intentions of Your Sacred Heart, in union with the Holy Sacrifice of the Mass throughout the world, in reparation for my sins, for the intentions of all my associates, and in particular for the intentions of the Holy Father. Amen." },
@@ -148,10 +136,6 @@ Let us pray: O God, who by the light of the Holy Spirit did instruct the hearts 
     text: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen." },
   { id: "daily-9", title: "Fatima Prayer", category: "daily", intention: "Reparations",
     text: "O my Jesus, forgive us our sins, save us from the fires of hell, lead all souls to Heaven, especially those in most need of Thy mercy. Amen." },
-
-  // ═══════════════════════════════════════════════════════════════
-  // ADDITIONAL LITANIES
-  // ═══════════════════════════════════════════════════════════════
 
   { id: "lit-humility", title: "Litany of Humility", category: "litanies", intention: "Humility",
     text: `O Jesus, meek and humble of heart, hear me.
@@ -208,10 +192,6 @@ V. Lord, deliver us, we pray, from all evil.
 R. Past, present, and to come.
 
 Let us pray: O God, who give relief to your suppliants through the intercession of your saints, grant us your servants the grace of being helped by them in all our necessities, through Jesus Christ our Lord. Amen.` },
-
-  // ═══════════════════════════════════════════════════════════════
-  // PRAYERS TO SAINTS
-  // ═══════════════════════════════════════════════════════════════
 
   { id: "saint-joseph-workers", title: "Prayer to St. Joseph for Workers", category: "saints", intention: "Work and labor",
     text: "Glorious Saint Joseph, model of all those who labor, obtain for me the grace to do my work in a spirit of penance, to do it with fidelity and joy, and to offer it to the Blessed Trinity as a sacrifice of reparation for my sins and for the needs of all my brothers and sisters. Help me to find employment and to do my work faithfully. Through your intercession, may God bless my efforts and grant me what I need to support myself and those who depend on me. Saint Joseph, pray for us. Amen." },

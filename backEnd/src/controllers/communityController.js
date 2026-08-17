@@ -7,9 +7,6 @@ import { fetchOfficialsRows } from './communityViewController.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ─── Data fetched exclusively from PostgreSQL ───────────
-
-
 export const getIndex = (_req, res) => {
     const indexPath = path.resolve(__dirname, '../../../frontEnd/src/pages/sacramental/pages/index.html');
     res.sendFile(indexPath, (err) => {

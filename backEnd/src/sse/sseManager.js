@@ -13,8 +13,6 @@ import logger from "../logger/winston.js";
  */
 const clients = new Map();
 
-// ─── Internal helpers ──────────────────────────────────────────────────────────
-
 const writeEvent = (res, eventName, data) => {
   try {
     res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -22,8 +20,6 @@ const writeEvent = (res, eventName, data) => {
     logger.warn(`[SSE] Write failed: ${err.message}`);
   }
 };
-
-// ─── Public API ────────────────────────────────────────────────────────────────
 
 /**
  * Register a new SSE client.

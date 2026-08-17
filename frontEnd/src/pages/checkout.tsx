@@ -105,7 +105,7 @@ export default function Checkout() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <h2>💳 Checkout</h2>
+      <h2>Checkout</h2>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 

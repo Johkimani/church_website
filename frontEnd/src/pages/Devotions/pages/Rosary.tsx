@@ -360,7 +360,7 @@ function BeadDiagram() {
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: AMBER }} /> Large beads — Our Father</li>
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: "#D6D3D1" }} /> Small beads — Hail Mary</li>
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: GOLD }} /> Centerpiece — Glory Be</li>
-            <li className="flex items-center gap-2"><span className="text-amber-700">✝</span> Crucifix — Sign of the Cross & Creed</li>
+            <li className="flex items-center gap-2"><span className="text-amber-700"></span> Crucifix — Sign of the Cross & Creed</li>
           </ul>
         </div>
         <div className="rounded-xl p-4" style={CARD_STYLE}>
@@ -376,7 +376,6 @@ function BeadDiagram() {
   );
 }
 
-// ─── PRAYER GUIDE WITH AUDIO ─────────────────────────────────────────────
 
 const FULL_ROSARY_STEPS: { title: string; prayer: string; isOurFather?: boolean; isHailMary?: boolean; isGloryBe?: boolean; isFatima?: boolean; isCreed?: boolean; isSignOfCross?: boolean; isHailHolyQueen?: boolean; isConcluding?: boolean; isMysteryAnnouncement?: boolean; mysteryTitle?: string; instruction?: string; contemplation?: string }[] = [
   { title: "Sign of the Cross", prayer: "In the name of the Father, and of the Son, and of the Holy Spirit. Amen.", isSignOfCross: true },
@@ -576,7 +575,7 @@ function PrayGuide() {
          {/* Instruction */}
          {steps[currentStep]?.instruction && (
            <div className="rounded-xl p-3 mb-3 flex items-start gap-3" style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.15)" }}>
-<span className="text-amber-700 text-lg flex-shrink-0">✋</span>
+<span className="text-amber-700 text-lg flex-shrink-0"></span>
               <p className="text-xs text-stone-700 leading-relaxed">{steps[currentStep].instruction}</p>
            </div>
          )}
@@ -707,7 +706,6 @@ export default function Rosary() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 max-w-6xl mx-auto min-h-screen">
-      {/* ═══════════════ HERO ═══════════════ */}
       <div
         className="rounded-3xl relative overflow-hidden mb-8"
         style={{
@@ -717,7 +715,7 @@ export default function Rosary() {
       >
         <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
         <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.12), transparent 70%)" }} />
-        <div className="absolute right-8 bottom-2 text-[120px] leading-none select-none" style={{ color: "rgba(28,25,23,0.05)", fontFamily: "'Cinzel', serif" }}>✝</div>
+        <div className="absolute right-8 bottom-2 text-[120px] leading-none select-none" style={{ color: "rgba(28,25,23,0.05)", fontFamily: "'Cinzel', serif" }}></div>
         <div className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 hidden md:block w-44 lg:w-52" style={{ filter: "drop-shadow(0 12px 24px rgba(217,119,6,0.35))" }}>
           <div className="rounded-2xl overflow-hidden relative" style={{ border: "4px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 24px rgba(28,25,23,0.2)" }}>
             <img
@@ -747,7 +745,6 @@ export default function Rosary() {
         </div>
       </div>
 
-      {/* ═══════════════ TABS ═══════════════ */}
       <div className="flex flex-wrap gap-2 mb-8">
         {tabs.map((t) => (
           <button key={t.key} onClick={() => setView(t.key)} className="px-5 py-2.5 rounded-xl text-[12px] font-bold tracking-wider uppercase transition-all duration-200" style={TAB_STYLE(view === t.key)}>
@@ -756,7 +753,6 @@ export default function Rosary() {
         ))}
       </div>
 
-      {/* ═══════════════ OVERVIEW ═══════════════ */}
       {view === "overview" && (
         <div className="space-y-10">
           <section>
@@ -803,7 +799,6 @@ export default function Rosary() {
         </div>
       )}
 
-      {/* ═══════════════ ALL PRAYERS ═══════════════ */}
       {view === "prayers" && (
         <div className="space-y-10">
           <SectionHeader title="The Prayers of the Holy Rosary" subtitle="All the prayers in their traditional, approved form, in the order you pray them." />
@@ -833,7 +828,6 @@ export default function Rosary() {
         </div>
       )}
 
-      {/* ═══════════════ MYSTERIES ═══════════════ */}
       {view === "mysteries" && (
         <div className="space-y-10">
           <SectionHeader title="The Mysteries of the Rosary" subtitle="Twenty mysteries — Joyful, Luminous, Sorrowful, and Glorious — a compendium of the Gospel." />
@@ -907,10 +901,8 @@ export default function Rosary() {
         </div>
       )}
 
-      {/* ═══════════════ PRAY ═══════════════ */}
       {view === "pray" && <PrayGuide />}
 
-      {/* ═══════════════ BEAD GUIDE ═══════════════ */}
       {view === "beads" && (
         <div className="space-y-10">
           <SectionHeader title="The Rosary Beads" subtitle="A visual guide to the sacred beads and the prayers prayed upon them." />

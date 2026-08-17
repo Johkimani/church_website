@@ -25,7 +25,7 @@ const InlineLoader: React.FC<InlineLoaderProps> = ({ message, size = 'medium' })
                 <div className="spinner-ring ring-1 absolute inset-0"></div>
                 <div className="spinner-ring ring-2 absolute inset-0" style={{ width: '80%', height: '80%', margin: 'auto' }}></div>
                 <div className="spinner-ring ring-3 absolute inset-0" style={{ width: '60%', height: '60%', margin: 'auto' }}></div>
-                <div className={`loader-icon ${iconSizes[size]}`}>✝</div>
+                <div className={`loader-icon ${iconSizes[size]}`}></div>
             </div>
             {message && (
                 <div className="flex items-baseline">

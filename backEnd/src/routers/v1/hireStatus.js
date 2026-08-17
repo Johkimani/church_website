@@ -18,6 +18,7 @@ router.get("/group/:reference", async (req, res) => {
       `SELECT hire_reference, customer_name, phone_number, email,
               item_name, item_category, quantity,
               start_date, end_date, event_date, pickup_date, return_date,
+              hire_mode, hours, pickup_time,
               status, notes, total_cost,
               payment_status, payment_method, mpesa_receipt, paid_at,
               pickup_location, pickup_time
