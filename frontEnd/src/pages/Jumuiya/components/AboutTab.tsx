@@ -34,12 +34,9 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya, onQuickLink }) => {
         <div className="about-hero-text">
           <div className="about-hero-badge">
             <FaChurch style={{ fontSize: "0.75rem" }} />
-            <span>Jumuiya Community</span>
+            <span>{jumuiya.description || "Jumuiya Community"}</span>
           </div>
           <h1 className="about-hero-title">{jumuiya.fullName || jumuiya.name}</h1>
-          {jumuiya.description && (
-            <p className="about-hero-desc">"{jumuiya.description}"</p>
-          )}
         </div>
       </div>
 

@@ -86,7 +86,7 @@ export const jumuiyaList: JumuiyaData[] = [
     id: "st-anthony",
     name: "St. Anthony",
     fullName: "St. Anthony of Padua",
-    description: "The breath of Charity widens the narrows heart of sinners",
+    description: "Empowered By Grace",
     color: "#b00adab4",
     saintImage: "/images/Anthony.png",
     historyPdf: "/assets/files/SAINT_ANTHONY.pdf",
@@ -119,7 +119,7 @@ export const jumuiyaList: JumuiyaData[] = [
     tshirtOrders: [],
     about: "St. Anthony of Padua began life as Fernando, born into wealth in Lisbon. He joined a monastery, devoting himself to Scripture and prayer. His desire for radical service awakened after encountering martyred missionaries, leading him to join the Franciscans as Anthony. Though illness prevented him from becoming a missionary, an unexpected opportunity to preach revealed his extraordinary gift. Combining deep biblical wisdom with compelling speech, he became one of the era’s most powerful preachers, drawing vast crowds and calling people to justice, mercy, and authentic faith. His legacy is marked by reported miracles, including the famous story of fish listening to his sermon. After his early death at 36, devotion to him grew, especially as the patron saint of lost items. Yet his deeper gift is helping people rediscover not just objects, but hope, faith, and divine direction. His life poses a timeless question: when one path closes, might God be quietly opening another, greater one?",
     meetingSchedule: {
-      day: "On Sunday",
+      day: "Every Sunday",
       time: "2:00 PM - 4:00 PM",
       venue: "LH 24"
     },
@@ -194,7 +194,7 @@ export const jumuiyaList: JumuiyaData[] = [
     id: "st-augustine",
     name: "St. Augustine",
     fullName: "St. Augustine of Hippo",
-    description: "Seeking truth and wisdom in community, inspired by the life and teachings of St. Augustine of Hippo.",
+    description: "Our Hearts Are Restless",
     color: "#1d21edd6",
     saintImage: "/images/Augustine.png",
     notifications: [
@@ -226,9 +226,9 @@ export const jumuiyaList: JumuiyaData[] = [
     tshirtOrders: [],
     about: "Born in North Africa to a devout Christian mother, Monica, and a pagan father, Augustine was brilliant but rebellious. He pursued pleasure, ambition, and philosophical truth while resisting the faith his mother prayed he would embrace. Despite becoming a celebrated teacher, he remained internally restless and unsatisfied. Monica's relentless prayers followed him for decades. Augustine explored various belief systems but couldn't shake his longing for something more. His famous confession captures this universal struggle: 'Our hearts are restless until they rest in You.' The turning point came in a Milan garden. Overwhelmed by internal conflict, he heard a child's voice chant, 'Take and read.' Opening Scripture nearby, he read a passage calling him to abandon his old ways. In that moment, his resistance broke. He surrendered and was baptized. Augustine went on to become a bishop and one of Christianity's most influential theologians, writing works like Confessions and City of God that still shape Western thought. His intellectual legacy is immense, but his lasting power lies in his story—proof that holiness doesn't require perfection from the start. His life testifies that God meets us in our wandering, that grace outlasts our mistakes, and that it's never too late to come home.",
     meetingSchedule: {
-      day: "Every Friday",
-      time: "6:00 PM - 8:00 PM",
-      venue: "Parish Library"
+      day: "Every Thursday",
+      time: "5:00 PM - 6:50 PM",
+      venue: "Lower Dias"
     },
     officials: [],
     termOfOffice: {
@@ -301,7 +301,7 @@ export const jumuiyaList: JumuiyaData[] = [
     id: "st-catherine",
     name: "St. Catherine",
     fullName: "St. Catherine of Alexandria",
-    description: "Don't be afraid to fail be afraid not to try.",
+    description: "St. Catherine The Great Family",
     color: "#fc1f5a88",
     saintImage: "/images/Catherine.jpg",
     historyPdf: "/assets/files/SAINT_CATHERINE.pdf",
@@ -335,8 +335,8 @@ export const jumuiyaList: JumuiyaData[] = [
     about: "St. Catherine of Alexandria was a Christian princess and scholar in the early 4th century, renowned for her intelligence, eloquence, and unwavering faith. According to tradition, she was born into a noble family in Alexandria, Egypt. From a young age, she devoted herself to learning and the Christian faith. When Emperor Maxentius persecuted Christians, Catherine courageously confronted him, defending Christianity with such wisdom that many scholars sent to debate her converted instead. Infuriated, the emperor tried to persuade her to renounce her faith, but Catherine remained steadfast. She endured imprisonment and was subjected to torture, including the infamous breaking wheel, which miraculously shattered at her touch. Despite her suffering, she continued to pray and inspire others, converting many through her courage and faith. Eventually, Catherine was beheaded, becoming a martyr for her beliefs. Her life symbolized the triumph of faith, intellect, and virtue over tyranny. She became one of the most venerated saints in both Eastern and Western Christianity, often depicted with a wheel, a symbol of her torture, and a crown, representing her nobility. St. Catherine’s story inspired generations to uphold faith and wisdom, showing that courage and intellect can coexist with deep spiritual devotion. Her feast day is celebrated on November 25.",
     meetingSchedule: {
       day: "Every Wednesday",
-      time: "5:30 PM - 7:30 PM",
-      venue: "Parish Garden"
+      time: "5:00 PM - 6:50 PM",
+      venue: "Church Hall"
     },
     officials: [],
     termOfOffice: {
@@ -409,7 +409,7 @@ export const jumuiyaList: JumuiyaData[] = [
     id: "st-dominic",
     name: "St. Dominic",
     fullName: "St. Dominic Jumuiya",
-    description: "Following St. Dominic, we are committed to preaching the Gospel through study, prayer, and evangelization.",
+    description: "God Is Good, I'm A Witness",
     color: "#9ea1a0d1",
     saintImage: "/images/Dominic.png",
     historyPdf: "/assets/files/SAINT_DOMINIC.pdf",
@@ -442,9 +442,9 @@ export const jumuiyaList: JumuiyaData[] = [
     tshirtOrders: [],
     about: "St. Dominic responded to widespread confusion about faith not with anger, but with truth spoken in kindness. Born in Spain, his compassion was evident early—during a famine, he sold even his cherished books to feed the hungry, saying, ‘How can I study while people are starving?’ As he encountered those drawn away from the Church by persuasive but incorrect teachings, Dominic recognized a deeper problem: no one had taken time to genuinely explain the truth. Rather than condemn, he began walking from place to place, speaking gently, listening carefully, and reasoning patiently. He lived austerely—traveling on foot, eating little, spending nights in prayer—convinced that truth must be carried by love to truly reach hearts. His approach gave birth to the Dominican Order, a community dedicated to preaching, study, and teaching. His followers became renowned for deep learning paired with clear, compassionate communication. Dominic is also traditionally linked to the Rosary, encouraging meditation on Christ’s life as a path to reflection and peace. He never sought fame. He sought clarity. His quiet conviction proved that patience and humility could accomplish what force could not. Dominic’s legacy endures not in grand gestures, but in the simple, stubborn belief that truth, lovingly shared, still changes hearts.",
     meetingSchedule: {
-      day: "Every Tuesday",
-      time: "6:30 PM - 8:30 PM",
-      venue: "Parish Conference Room"
+      day: "Every Sunday",
+      time: "3:00 PM - 5:00 PM",
+      venue: "LH 20"
     },
     officials: [],
     termOfOffice: {
@@ -517,7 +517,7 @@ export const jumuiyaList: JumuiyaData[] = [
     id: "st-elizabeth",
     name: "St. Elizabeth",
     fullName: "St. Elizabeth of Hungary",
-    description: "Embodying the spirit of St. Elizabeth of Hungary, we serve the poor and vulnerable with joy and generosity.",
+    description: "Brothers and Sisters",
     color: "#136b1ac9",
     saintImage: "/images/Elizabeth.png",
     historyPdf: "/assets/files/SAINT_ELIZABETH.pdf",
@@ -550,9 +550,9 @@ export const jumuiyaList: JumuiyaData[] = [
     tshirtOrders: [],
     about: "Elizabeth was born into royalty. She grew up in castles, surrounded by wealth, comfort, and power. But her heart leaned toward something very different. From a young age, she was deeply moved by the suffering of the poor. As she grew older and became a queen, she had access to great riches. But instead of using them for luxury, she used them to help others. She often snuck food out of the castle to give to the hungry. She visited the sick personally, cared for the dying, and treated everyone with kindness. Some people admired her. Others thought she was foolish. One famous story tells of her carrying bread in her cloak to the poor. When someone stopped her and demanded to see what she was hiding, the bread turned into roses. Whether symbolic or real, the story reflects how people saw her generosity. After her husband died, Elizabeth lost much of her protection. She was pushed out of the palace and left with little. But instead of growing bitter, she chose a life of service. She worked in a hospital she founded, caring for the sick with her own hands. Elizabeth’s life reminds us that kindness is more powerful than status. She had everything — and gave it away for love.",
     meetingSchedule: {
-      day: "Every Thursday",
-      time: "3:00 PM - 5:00 PM",
-      venue: "Community Center"
+      day: "Every Wednesday",
+      time: "5:00 PM - 6:50 PM",
+      venue: "Upper Dias"
     },
     officials: [],
     termOfOffice: {
@@ -625,7 +625,7 @@ export const jumuiyaList: JumuiyaData[] = [
     id: "st-maria-goretti",
     name: "St. Maria Goretti",
     fullName: "St. Maria Goretti Jumuiya",
-    description: "Inspired by the purity and courage of St. Maria Goretti, we strive for holiness in all aspects of life.",
+    description: "With God's Grace",
     color: "#27b8f6ff",
     saintImage: "/images/MariaGoretti.png",
     historyPdf: "/assets/files/SAINT_MARIA_GORETTI.pdf",
@@ -660,7 +660,7 @@ export const jumuiyaList: JumuiyaData[] = [
     meetingSchedule: {
       day: "Every Sunday",
       time: "2:00 PM - 4:00 PM",
-      venue: "Youth Center"
+      venue: "LH 19"
     },
     officials: [],
     termOfOffice: {
@@ -733,7 +733,7 @@ export const jumuiyaList: JumuiyaData[] = [
     id: "st-monica",
     name: "St. Monica",
     fullName: "St. Monica Jumuiya",
-    description: "Nothing is far from God.",
+    description: "Tusimame Imara",
     color: "#f6080894",
     saintImage: "/images/Monica.png",
     historyPdf: "/assets/files/SAINT_MONICAH.pdf",
@@ -766,9 +766,9 @@ export const jumuiyaList: JumuiyaData[] = [
     tshirtOrders: [],
     about: "Monica is known as the mother who never gave up. She lived in North Africa and was married to a man who did not share her faith. He had a difficult temper. Her greatest sorrow, though, was her son Augustine. He was intelligent but stubborn, chasing pleasure and rejecting the faith she had taught him. For years, she prayed. Not for days. Not for months. For decades. She cried, pleaded, and trusted that one day he would change. People told her to stop worrying. But she refused. She followed him across cities, always hoping, always praying. Finally, her prayers were answered. Augustine converted and became one of the greatest thinkers in Christian history. Monica didn’t preach loudly. She didn’t argue constantly. She waited, trusted, and loved. Her story speaks to anyone who has ever hoped for someone to change. She reminds us that sometimes the greatest strength is simply refusing to give up.",
     meetingSchedule: {
-      day: "Every Monday",
-      time: "5:00 PM - 7:00 PM",
-      venue: "Prayer Chapel"
+      day: "Every Sunday",
+      time: "2:00 PM - 4:00 PM",
+      venue: "LH 17"
     },
     officials: [],
     termOfOffice: {

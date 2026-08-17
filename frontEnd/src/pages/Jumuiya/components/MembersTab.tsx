@@ -84,7 +84,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                             <tr>
                                 <th>Member Name</th>
                                 <th>Academic Year</th>
-                                <th>Jumuiya</th>
+                                <th>Course</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -146,7 +146,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                         </div>
                                     </td>
                                     <td>
-                                        {member.jumuiya_name ? (
+                                        {member.course ? (
                                             <span style={{
                                                 padding: '3px 10px',
                                                 borderRadius: '20px',
@@ -157,10 +157,10 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                                 border: `1px solid ${_c('30')}`,
                                                 display: 'inline-block'
                                             }}>
-                                                {member.jumuiya_name}
+                                                {member.course}
                                             </span>
                                         ) : (
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>Unassigned</span>
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>N/A</span>
                                         )}
                                     </td>
                                 </tr>
