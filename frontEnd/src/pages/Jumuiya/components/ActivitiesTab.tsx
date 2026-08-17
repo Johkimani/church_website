@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaPray, FaHandHoldingHeart, FaBook, FaFire, FaUsers, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaHistory, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaChevronUp, FaChevronDown, FaToggleOn, FaToggleOff } from "react-icons/fa";
-import activitiesService from '../../../../api/activitiesServices';
+import activitiesService from '../../../api/activitiesServices';
 import './TabsSystem.css';
 
 interface ActivitiesTabProps {
