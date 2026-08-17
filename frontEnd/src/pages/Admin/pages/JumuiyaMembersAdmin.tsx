@@ -12,7 +12,7 @@ import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import AllMembersTable from "./AllMembersTable";
 import AssociatesTable from "./AssociatesTable";
-import CopyWhatsAppButton from "../../Jumuiya/components/CopyWhatsAppButton";
+
 
 // Improved cache with longer TTL (60s) and memory efficiency
 let statsCache: { data: Record<string, any>; ts: number } | null = null;
@@ -402,7 +402,6 @@ export default function JumuiyaMembersAdmin() {
               <p className="text-sm text-slate-500">Member Management</p>
             </div>
           </div>
-          <CopyWhatsAppButton jumuiyaSlug={jumuiya.id} jumuiyaName={jumuiya.name} />
         </div>
 
         <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} />
