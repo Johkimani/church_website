@@ -387,23 +387,23 @@ export default function JumuiyaSelfRegister() {
           <div
             className="h-28 sm:h-32 relative flex items-end p-5 text-white overflow-hidden"
             style={{
-              background: `linear-gradient(135deg, ${primaryColor}dd, ${primaryColor})`,
+              background: primaryColor,
             }}
           >
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-transparent to-black" />
             <div className="relative z-10 w-full flex items-center justify-between">
               <div>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-white/20 backdrop-blur-md text-white border border-white/30">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-black/20 backdrop-blur-md text-white border border-white/30">
                   <Sparkles size={12} /> Self-Registration
                 </span>
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white drop-shadow-lg">
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.4)" }}>
                   {localJumuiya.name} Jumuiya
                 </h1>
               </div>
 
               {/* Saint Avatar */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md p-1 border-2 border-white/40 shadow-lg shrink-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-black/20 backdrop-blur-md p-1 border-2 border-white/40 shadow-lg shrink-0 overflow-hidden">
                 <img
                   src={localJumuiya.saintImage}
                   alt={localJumuiya.name}
@@ -438,10 +438,11 @@ export default function JumuiyaSelfRegister() {
               Registration Received
             </span>
             <h2 className="text-2xl font-black text-slate-800 tracking-tight">
-              Welcome, {submittedSession.name}!
+              Thank you, {submittedSession.name}!
             </h2>
-            <p className="text-sm text-slate-600 mt-2 max-w-sm mx-auto">
-              Your details for <strong className="text-slate-800">{submittedSession.jumuiyaName}</strong> have been submitted directly into the Jumuiya coordinator&apos;s pending admission queue.
+            <p className="text-sm text-slate-600 mt-2 max-w-sm mx-auto leading-relaxed">
+              Your details have been submitted into the Jumuiya coordinator&apos;s side for <strong className="text-slate-800">{submittedSession.jumuiyaName}</strong>.
+              Visit <span className="font-bold">csakyu.com</span> to learn more about CSA Kirinyaga.
             </p>
 
             {/* Member Details Pill */}
@@ -452,12 +453,21 @@ export default function JumuiyaSelfRegister() {
               </div>
               <div className="flex justify-between border-b border-slate-200/60 pb-2">
                 <span className="text-slate-500">Community:</span>
-                <span className="font-bold text-slate-900">{submittedSession.jumuiyaName} Jumuiya</span>
+                <span className="font-bold text-slate-900">{submittedSession.jumuiyaName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Submission Date:</span>
                 <span className="font-medium text-slate-700">{submittedSession.date}</span>
               </div>
+            </div>
+
+            {/* What happens next */}
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 leading-relaxed text-left">
+              <p className="font-bold mb-1">What happens next?</p>
+              <p>
+                The Jumuiya coordinator will review your details and add you to the system.
+                You will be able to log in using your Registration Number as your initial password.
+              </p>
             </div>
           </div>
         ) : (
@@ -654,12 +664,7 @@ export default function JumuiyaSelfRegister() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-4 px-6 rounded-2xl text-white font-bold text-sm shadow-lg hover:opacity-95 active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{
-                background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
-                boxShadow: `0 4px 14px ${primaryColor}40`,
-                color: "#fff",
-              }}
+              className="w-full py-4 px-6 rounded-2xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-white bg-slate-900 hover:bg-slate-800 shadow-lg hover:shadow-xl active:scale-[0.98]"
             >
               {submitting ? (
                 <>
