@@ -232,3 +232,58 @@ export const updateJumuiyaSaintImage = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to update patron saint image' });
   }
 };
+
+/**
+ * PATCH /jumuiya-data/:id
+ * Update description, fullName, about, color, and/or meetingSchedule for a jumuiya.
+ */
+export const updateJumuiyaData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, fullName, about, color, meetingSchedule } = req.body;
+
+    const sgResult = await pool.query(
+      `UPDATE sub_groups SET
+         description = COALESCE($1, description),
+         full_name   = COALESCE($2, full_name),
+         about       = COALESCE($3, about),
+         color       = COALESCE($4, color)
+       WHERE slug = $5 OR group_id::text = $5 OR LOWER(name) = LOWER($5)
+       RETURNING *`,
+      [description, fullName, about, color, id]
+    );
+
+    if (sgResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jumuiya not found' });
+    }
+
+    const groupId = sgResult.rows[0].group_id;
+
+    if (meetingSchedule) {
+      const existing = await pool.query(
+        'SELECT id FROM jumuiya_meeting_schedule WHERE jumuiya_id = $1',
+        [groupId]
+      );
+      if (existing.rows.length) {
+        await pool.query(
+          `UPDATE jumuiya_meeting_schedule
+           SET day = COALESCE($1, day), time = COALESCE($2, time), venue = COALESCE($3, venue)
+           WHERE jumuiya_id = $4`,
+          [meetingSchedule.day, meetingSchedule.time, meetingSchedule.venue, groupId]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO jumuiya_meeting_schedule (jumuiya_id, day, time, venue)
+           VALUES ($1, $2, $3, $4)`,
+          [groupId, meetingSchedule.day || '', meetingSchedule.time || '', meetingSchedule.venue || '']
+        );
+      }
+    }
+
+    logger.info(`Updated jumuiya data for ${id}`);
+    res.json({ success: true, data: sgResult.rows[0] });
+  } catch (error) {
+    logger.error('Error updating jumuiya data: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to update jumuiya data' });
+  }
+};

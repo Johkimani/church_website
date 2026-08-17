@@ -14,13 +14,13 @@ const client = new Client({
 
 // Days must match jumuiya_meeting_config (authoritative meeting-day mapping).
 const schedules = [
-    { slug: 'st-anthony', day: 'Every Sunday', time: '4:30 PM - 5:30 PM', venue: 'Catholic Centre / Local Homes' },
-    { slug: 'st-augustine', day: 'Every Thursday', time: '5:00 PM - 6:00 PM', venue: 'Chapel Side B' },
-    { slug: 'st-catherine', day: 'Every Wednesday', time: '11:00 AM - 12:00 PM', venue: 'St. Catherine Hall' },
-    { slug: 'st-dominic', day: 'Every Sunday', time: '7:00 PM - 8:00 PM', venue: 'Virtual / Library' },
-    { slug: 'st-elizabeth', day: 'Every Thursday', time: '5:30 PM - 6:30 PM', venue: 'Member Residencies' },
-    { slug: 'st-maria-goretti', day: 'Every Sunday', time: '4:00 PM - 5:00 PM', venue: 'Parish Hall' },
-    { slug: 'st-monica', day: 'Every Sunday', time: '6:00 PM - 7:00 PM', venue: 'Monica Gardens' }
+    { slug: 'st-anthony', day: 'Every Sunday', time: '2:00 PM - 4:00 PM', venue: 'LH 24' },
+    { slug: 'st-augustine', day: 'Every Thursday', time: '5:00 PM - 6:50 PM', venue: 'Lower Dias' },
+    { slug: 'st-catherine', day: 'Every Wednesday', time: '5:00 PM - 6:50 PM', venue: 'Church Hall' },
+    { slug: 'st-dominic', day: 'Every Sunday', time: '3:00 PM - 5:00 PM', venue: 'LH 20' },
+    { slug: 'st-elizabeth', day: 'Every Wednesday', time: '5:00 PM - 6:50 PM', venue: 'Upper Dias' },
+    { slug: 'st-maria-goretti', day: 'Every Sunday', time: '2:00 PM - 4:00 PM', venue: 'LH 19' },
+    { slug: 'st-monica', day: 'Every Sunday', time: '2:00 PM - 4:00 PM', venue: 'LH 17' }
 ];
 
 async function run() {

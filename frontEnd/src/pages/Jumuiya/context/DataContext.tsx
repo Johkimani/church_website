@@ -4,7 +4,7 @@ import { jumuiyaList as initialJumuiyaList } from '../data/jumuiyaData';
 import { apiClient } from '../../../api/axiosInstance';
 
 // Increment this whenever the data structure changes to force a localStorage reset
-const DATA_VERSION = '6';
+const DATA_VERSION = '7';
 
 interface DataContextType {
     jumuiyaList: JumuiyaData[];
