@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaPray, FaHandHoldingHeart, FaBook, FaFire, FaUsers, FaCalendarAlt, FaClock, FaMapMarkerAlt, FaHistory, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaChevronUp, FaChevronDown, FaToggleOn, FaToggleOff } from "react-icons/fa";
+import jumuiyaActivitiesService from '../../../api/jumuiyaActivitiesService';
 import './TabsSystem.css';
-
-let activitiesServicePromise: Promise<typeof import('../../../api/activitiesServices').default> | null = null;
-function getActivitiesService() {
-  if (!activitiesServicePromise) {
-    activitiesServicePromise = import('../../../api/activitiesServices').then(m => m.default);
-  }
-  return activitiesServicePromise;
-}
 
 interface ActivitiesTabProps {
     jumuiyaColor: string;
@@ -71,10 +64,10 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
         if (!jumuiyaId) return;
         setLoading(true);
         try {
-            const svc = await getActivitiesService();
+
             const [weekly, semester] = await Promise.all([
-                svc.getJumuiyaWeekly(jumuiyaId, canManage),
-                svc.getJumuiyaSemester(jumuiyaId, canManage),
+                jumuiyaActivitiesService.getJumuiyaWeekly(jumuiyaId, canManage),
+                jumuiyaActivitiesService.getJumuiyaSemester(jumuiyaId, canManage),
             ]);
             setWeeklyActivities(weekly.sort((a: WeeklyActivity, b: WeeklyActivity) => (a.sort_order || 0) - (b.sort_order || 0)));
             setSemesterActivities(semester);
@@ -115,11 +108,11 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
     const handleSaveWeekly = async (isNew: boolean, id?: number) => {
         setSaving(true); setError('');
         try {
-            const svc = await getActivitiesService();
+
             if (isNew) {
-                await svc.createJumuiyaWeekly(jumuiyaId!, weeklyForm);
+                await jumuiyaActivitiesService.createJumuiyaWeekly(jumuiyaId!, weeklyForm);
             } else if (id) {
-                await svc.updateJumuiyaWeekly(id, editWeeklyForm);
+                await jumuiyaActivitiesService.updateJumuiyaWeekly(id, editWeeklyForm);
             }
             setShowNewWeekly(false); setEditingWeekly(null);
             setWeeklyForm({ day: 'Monday', time: '', activity: '', venue: '', fare: '' });
@@ -133,8 +126,8 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
         if (!confirm('Delete this weekly activity?')) return;
         setSaving(true);
         try {
-            const svc = await getActivitiesService();
-            await svc.deleteJumuiyaWeekly(id);
+
+            await jumuiyaActivitiesService.deleteJumuiyaWeekly(id);
             await fetchData();
         } catch { setError('Failed to delete'); }
         finally { setSaving(false); }
@@ -143,8 +136,8 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
     const handleToggleWeekly = async (item: WeeklyActivity) => {
         setSaving(true);
         try {
-            const svc = await getActivitiesService();
-            await svc.updateJumuiyaWeekly(item.id, { is_active: !item.is_active });
+
+            await jumuiyaActivitiesService.updateJumuiyaWeekly(item.id, { is_active: !item.is_active });
             await fetchData();
         } catch { setError('Failed to toggle'); }
         finally { setSaving(false); }
@@ -153,11 +146,11 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
     const handleSaveSemester = async (isNew: boolean, id?: number) => {
         setSaving(true); setError('');
         try {
-            const svc = await getActivitiesService();
+
             if (isNew) {
-                await svc.createJumuiyaSemester(jumuiyaId!, semesterForm);
+                await jumuiyaActivitiesService.createJumuiyaSemester(jumuiyaId!, semesterForm);
             } else if (id) {
-                await svc.updateJumuiyaSemester(id, editSemesterForm);
+                await jumuiyaActivitiesService.updateJumuiyaSemester(id, editSemesterForm);
             }
             setShowNewSemester(false); setEditingSemester(null);
             setSemesterForm({ title: '', date_time: '', venue: '', description: '', fare: '' });
@@ -171,8 +164,8 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
         if (!confirm('Delete this event?')) return;
         setSaving(true);
         try {
-            const svc = await getActivitiesService();
-            await svc.deleteJumuiyaSemester(id);
+
+            await jumuiyaActivitiesService.deleteJumuiyaSemester(id);
             await fetchData();
         } catch { setError('Failed to delete'); }
         finally { setSaving(false); }
@@ -181,8 +174,8 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
     const handleToggleSemester = async (item: SemesterActivity) => {
         setSaving(true);
         try {
-            const svc = await getActivitiesService();
-            await svc.updateJumuiyaSemester(item.id, { is_active: !item.is_active });
+
+            await jumuiyaActivitiesService.updateJumuiyaSemester(item.id, { is_active: !item.is_active });
             await fetchData();
         } catch { setError('Failed to toggle'); }
         finally { setSaving(false); }
@@ -196,8 +189,8 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
         [sorted[idx].sort_order, sorted[swapIdx].sort_order] = [sorted[swapIdx].sort_order, sorted[idx].sort_order];
         setWeeklyActivities(sorted);
         try {
-            const svc = await getActivitiesService();
-            await svc.reorderJumuiyaWeekly(sorted.map((a, i) => ({ id: a.id, sort_order: i })));
+
+            await jumuiyaActivitiesService.reorderJumuiyaWeekly(sorted.map((a, i) => ({ id: a.id, sort_order: i })));
         } catch { await fetchData(); }
     };
 
