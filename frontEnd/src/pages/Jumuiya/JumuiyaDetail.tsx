@@ -32,6 +32,8 @@ const JumuiyaDetail: React.FC = () => {
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [hasNewNotif, setHasNewNotif] = useState(true); // Initial state for demo
     const isAdmin = user?.role === 'admin';
+    const isJumuiyaOfficial = isMemberOfThisJumuiya && ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(user?.role || '');
+    const canManageActivities = isAdmin || isJumuiyaOfficial;
 
     const jumuiyaId = id ? id.toLowerCase().replace(/[^a-z0-9]/g, '-') : '';
     const jumuiya = getJumuiyaById(jumuiyaId);
@@ -182,7 +184,7 @@ const JumuiyaDetail: React.FC = () => {
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
-        ...(isAdmin ? [{ id: 'admin' as TabType, label: 'Admin', icon: <FaCog className="animate-spin-slow" /> }] : []),
+        ...(canManageActivities ? [{ id: 'admin' as TabType, label: 'Admin', icon: <FaCog className="animate-spin-slow" /> }] : []),
         ...(isMemberOfThisJumuiya ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
     ];
 
@@ -206,7 +208,7 @@ const JumuiyaDetail: React.FC = () => {
             case 'registration':
                 return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaColor={detailColor} />;
             case 'activities':
-                return <ActivitiesTab jumuiyaColor={detailColor} />;
+                return <ActivitiesTab jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} canManage={canManageActivities} />;
             case 'channels':
                 return <ChannelsTab socialMedia={jumuiya.socialMedia || []} jumuiyaId={jumuiya.group_id || jumuiya.id} />;
             case 'tshirts':

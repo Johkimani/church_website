@@ -120,6 +120,61 @@ const activitiesService = {
     clearPublicCache();
     return res.data.data;
   },
+
+  // ── Jumuiya-scoped (for per-jumuiya CRUD) ─────────────
+  getJumuiyaWeekly: async (jumuiyaId: string, includeInactive = false) => {
+    const params = includeInactive ? '?all=true' : '';
+    const res = await apiClient.get(`/jumuiya-activities/${jumuiyaId}/weekly${params}`);
+    return res.data.data || [];
+  },
+
+  createJumuiyaWeekly: async (jumuiyaId: string, data: any) => {
+    const res = await apiClient.post(`/jumuiya-activities/${jumuiyaId}/weekly`, data);
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  updateJumuiyaWeekly: async (id: number, data: any) => {
+    const res = await apiClient.patch(`/jumuiya-activities/weekly/${id}`, data);
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  deleteJumuiyaWeekly: async (id: number) => {
+    const res = await apiClient.delete(`/jumuiya-activities/weekly/${id}`);
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  reorderJumuiyaWeekly: async (items: any[]) => {
+    const res = await apiClient.post("/jumuiya-activities/weekly/reorder", { items });
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  getJumuiyaSemester: async (jumuiyaId: string, includeInactive = false) => {
+    const params = includeInactive ? '?all=true' : '';
+    const res = await apiClient.get(`/jumuiya-activities/${jumuiyaId}/semester${params}`);
+    return res.data.data || [];
+  },
+
+  createJumuiyaSemester: async (jumuiyaId: string, data: any) => {
+    const res = await apiClient.post(`/jumuiya-activities/${jumuiyaId}/semester`, data);
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  updateJumuiyaSemester: async (id: number, data: any) => {
+    const res = await apiClient.patch(`/jumuiya-activities/semester/${id}`, data);
+    clearPublicCache();
+    return res.data.data;
+  },
+
+  deleteJumuiyaSemester: async (id: number) => {
+    const res = await apiClient.delete(`/jumuiya-activities/semester/${id}`);
+    clearPublicCache();
+    return res.data.data;
+  },
 };
 
 export default activitiesService;

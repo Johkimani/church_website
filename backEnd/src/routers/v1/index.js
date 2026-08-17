@@ -13,6 +13,7 @@ import communityViewRouter from "./communityViewRouter.js";
 import sliderRoutes from "./sliderRoutes.js";
 import activitiesPublicRouter from "./activitiesPublicRouter.js";
 import activitiesAdminRouter from "./activitiesAdminRouter.js";
+import jumuiyaActivitiesRouter from "./jumuiyaActivitiesRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import activityLogger from "../../middlewares/activityLogger.js"
@@ -79,6 +80,7 @@ router.use("/", sliderRoutes);
 // Activities (weekly/novena effective schedule = public read; management = admin-only)
 router.use("/activities", activitiesPublicRouter);
 router.use("/admin/activities", activitiesAdminRouter);
+router.use("/jumuiya-activities", jumuiyaActivitiesRouter);
 
 
 // Public Dynamic WhatsApp Self-Registration (no auth required)

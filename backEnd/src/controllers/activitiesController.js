@@ -13,7 +13,190 @@ export const getWeeklyActivities = async (req, res) => {
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
-    console.error("Error fetching weekly activities:", error.message);
+    await db.query("ROLLBACK").catch(() => {});
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// JUMUIYA-SCOPED WEEKLY ACTIVITIES
+// ─────────────────────────────────────────────
+
+export const getJumuiyaWeeklyActivities = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { all } = req.query;
+
+  try {
+    let query = `SELECT * FROM weekly_activities WHERE jumuiya_id = $1`;
+    if (all !== 'true') {
+      query += ` AND is_active = true`;
+    }
+    query += ` ORDER BY sort_order ASC, id ASC`;
+
+    const result = await db.query(query, [jumuiyaId]);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const createJumuiyaWeeklyActivity = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { day, time, activity, venue, fare } = req.body;
+
+  if (!day || !activity) {
+    return res.status(400).json({ success: false, error: "day and activity are required" });
+  }
+
+  try {
+    const maxOrder = await db.query(
+      `SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM weekly_activities WHERE jumuiya_id = $1`,
+      [jumuiyaId]
+    );
+
+    const result = await db.query(
+      `INSERT INTO weekly_activities (jumuiya_id, day, time, activity, venue, fare, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [jumuiyaId, day, time || null, activity, venue || null, fare || null, maxOrder.rows[0].next]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateJumuiyaWeeklyActivity = async (req, res) => {
+  const { id } = req.params;
+  const { day, time, activity, venue, fare, is_active } = req.body;
+
+  try {
+    const result = await db.query(
+      `UPDATE weekly_activities
+       SET day = COALESCE($1, day),
+           time = COALESCE($2, time),
+           activity = COALESCE($3, activity),
+           venue = COALESCE($4, venue),
+           fare = COALESCE($5, fare),
+           is_active = COALESCE($6, is_active)
+       WHERE id = $7 RETURNING *`,
+      [day, time, activity, venue, fare, is_active, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const deleteJumuiyaWeeklyActivity = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `DELETE FROM weekly_activities WHERE id = $1 RETURNING id`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// JUMUIYA-SCOPED SEMESTER ACTIVITIES
+// ─────────────────────────────────────────────
+
+export const getJumuiyaSemesterActivities = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { all } = req.query;
+
+  try {
+    let query = `SELECT * FROM semester_activities WHERE jumuiya_id = $1`;
+    if (all !== 'true') {
+      query += ` AND is_active = true`;
+    }
+    query += ` ORDER BY date_time ASC, id ASC`;
+
+    const result = await db.query(query, [jumuiyaId]);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const createJumuiyaSemesterActivity = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { title, date_time, venue, description, fare } = req.body;
+
+  if (!title || !date_time) {
+    return res.status(400).json({ success: false, error: "title and date_time are required" });
+  }
+
+  try {
+    const result = await db.query(
+      `INSERT INTO semester_activities (jumuiya_id, title, date_time, venue, description, fare)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [jumuiyaId, title, date_time, venue || null, description || null, fare || null]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateJumuiyaSemesterActivity = async (req, res) => {
+  const { id } = req.params;
+  const { title, date_time, venue, description, fare, is_active } = req.body;
+
+  try {
+    const result = await db.query(
+      `UPDATE semester_activities
+       SET title = COALESCE($1, title),
+           date_time = COALESCE($2, date_time),
+           venue = COALESCE($3, venue),
+           description = COALESCE($4, description),
+           fare = COALESCE($5, fare),
+           is_active = COALESCE($6, is_active)
+       WHERE id = $7 RETURNING *`,
+      [title, date_time, venue, description, fare, is_active, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const deleteJumuiyaSemesterActivity = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `DELETE FROM semester_activities WHERE id = $1 RETURNING id`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
