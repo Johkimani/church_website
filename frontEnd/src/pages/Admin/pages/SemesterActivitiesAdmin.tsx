@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import activitiesService from "../../../api/activitiesServices";
 import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, CalendarDays, CalendarClock, History, Image, Upload } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "../../../context/AuthContext";
 
 interface Event {
   id: number;
@@ -81,7 +82,13 @@ function relativeChip(dt: Date) {
   return null;
 }
 
+const GLOBAL_ROLES = ['csa_chair', 'jumuiya_coordinator', 'admin'];
+
 export default function SemesterActivitiesAdmin() {
+  const { user } = useAuth();
+  const isScoped = user?.jumuiya_id && !GLOBAL_ROLES.includes(user?.role || '');
+  const jumuiyaId = user?.jumuiya_id || '';
+
   const [events, setEvents] = useState<Event[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -104,7 +111,9 @@ export default function SemesterActivitiesAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const data = await activitiesService.getSemester();
+      const data = isScoped
+        ? await activitiesService.getJumuiyaSemester(jumuiyaId, true)
+        : await activitiesService.getSemester();
       setEvents(data || []);
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to load events";
@@ -141,9 +150,11 @@ export default function SemesterActivitiesAdmin() {
         date_time: new Date(form.date_time).toISOString(),
       };
       if (id) {
-        await activitiesService.updateSemester(id, payload);
+        await activitiesService.updateJumuiyaSemester(id, payload);
       } else {
-        const created = await activitiesService.createSemester(payload);
+        const created = isScoped
+          ? await activitiesService.createJumuiyaSemester(jumuiyaId, payload)
+          : await activitiesService.createSemester(payload);
         id = created?.id;
       }
       if (id && formFile) {
@@ -183,7 +194,7 @@ export default function SemesterActivitiesAdmin() {
     if (!confirm("Delete this event?")) return;
     setError(null);
     try {
-      await activitiesService.deleteSemester(id);
+      await activitiesService.deleteJumuiyaSemester(id);
       load();
       toast.success("Event deleted");
     } catch (err: any) {

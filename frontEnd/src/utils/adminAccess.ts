@@ -94,6 +94,8 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
       case "JUMUIYA_OS":
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
+        prefixes.add("/admin/weekly-activities");
+        prefixes.add("/admin/semester-activities");
         break;
       case "PROJECT_MANAGER":
         prefixes.add("/admin/sacramentals-banners");
@@ -123,6 +125,8 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/suggestion-bin");
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
+        prefixes.add("/admin/weekly-activities");
+        prefixes.add("/admin/semester-activities");
         break;
       case "JUMUIYA_SECRETARY":
         prefixes.add("/admin/secretary-dashboard");

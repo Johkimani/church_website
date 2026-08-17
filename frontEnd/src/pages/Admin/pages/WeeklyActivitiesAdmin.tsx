@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import activitiesService from "../../../api/activitiesServices";
 import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, CalendarDays, CheckCircle2, Ban, Image, Upload } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "../../../context/AuthContext";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_INDEX = Object.fromEntries(DAYS.map((d, i) => [d, i]));
@@ -87,7 +88,13 @@ function ActivityImage({ activity, onReplace, onRemove }: {
   );
 }
 
+const GLOBAL_ROLES = ['csa_chair', 'jumuiya_coordinator', 'admin'];
+
 export default function WeeklyActivitiesAdmin() {
+  const { user } = useAuth();
+  const isScoped = user?.jumuiya_id && !GLOBAL_ROLES.includes(user?.role || '');
+  const jumuiyaId = user?.jumuiya_id || '';
+
   const [activities, setActivities] = useState<Activity[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -110,7 +117,9 @@ export default function WeeklyActivitiesAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const data = await activitiesService.getWeekly();
+      const data = isScoped
+        ? await activitiesService.getJumuiyaWeekly(jumuiyaId, true)
+        : await activitiesService.getWeekly();
       setActivities(data || []);
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to load activities";
@@ -143,9 +152,11 @@ export default function WeeklyActivitiesAdmin() {
     let id = editingId;
     try {
       if (id) {
-        await activitiesService.updateWeekly(id, form);
+        await activitiesService.updateJumuiyaWeekly(id, form);
       } else {
-        const created = await activitiesService.createWeekly(form);
+        const created = isScoped
+          ? await activitiesService.createJumuiyaWeekly(jumuiyaId, form)
+          : await activitiesService.createWeekly(form);
         id = created?.id;
       }
       if (id && formFile) {
@@ -178,7 +189,7 @@ export default function WeeklyActivitiesAdmin() {
     if (!confirm("Delete this activity?")) return;
     setError(null);
     try {
-      await activitiesService.deleteWeekly(id);
+      await activitiesService.deleteJumuiyaWeekly(id);
       load();
       toast.success("Activity deleted");
     } catch (err: any) {
