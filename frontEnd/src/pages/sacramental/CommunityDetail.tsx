@@ -27,6 +27,28 @@ const MINISTRY_COLORS: Record<string, string> = {
   mentorship: '#6d28d9',
 };
 
+const TAB_ICONS: Record<TabType, React.ReactNode> = {
+  about: <FaInfoCircle />,
+  officials: <FaUserTie />,
+  members: <FaUsers />,
+  activities: <FaCalendarAlt />,
+  channels: <FaShareAlt />,
+  tshirts: <FaTshirt />,
+  settings: <FaKey />,
+};
+
+const TAB_LABELS: Record<TabType, string> = {
+  about: 'About',
+  officials: 'Officials',
+  members: 'Members',
+  activities: 'Activities',
+  channels: 'Channels',
+  tshirts: 'T-Shirts',
+  settings: 'Settings',
+};
+
+const TAB_ORDER: TabType[] = ['about', 'officials', 'members', 'activities', 'channels', 'tshirts', 'settings'];
+
 const CommunityDetail: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
@@ -55,9 +77,9 @@ const CommunityDetail: React.FC = () => {
   const moduleData: CommunityModule | undefined = serverModuleData || contextFallback;
 
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
-  const isMemberOfThisCommunity = !!(user?.role);
-
   const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
+
+  const notifCount = ((moduleData as any)?.announcements || []).length;
 
   const setTabWithUrl = (tab: TabType) => {
     setActiveTab(tab);
@@ -73,10 +95,7 @@ const CommunityDetail: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabFromUrl = params.get('tab') as TabType | null;
-    const validTab = tabFromUrl && [
-      'about', 'officials', 'channels', 'members',
-      'activities', 'tshirts', 'settings'
-    ].includes(tabFromUrl);
+    const validTab = tabFromUrl && TAB_ORDER.includes(tabFromUrl);
     if (validTab) setActiveTab(tabFromUrl);
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.search]);
@@ -89,16 +108,6 @@ const CommunityDetail: React.FC = () => {
     }
     return () => { document.body.style.overflow = ''; };
   }, [isSidebarOpen]);
-
-  const tabs = [
-    { id: 'about' as TabType, label: 'About', icon: <FaInfoCircle /> },
-    { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
-    { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
-    { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
-    { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
-    { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
-    { id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> },
-  ];
 
   const renderTabContent = () => {
     if (!moduleData) return null;
@@ -126,7 +135,10 @@ const CommunityDetail: React.FC = () => {
     return (
       <div className="detail-page" style={{ '--jumuiya-color': detailColor } as React.CSSProperties}>
         <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin text-amber-800"><i className="fas fa-circle-notch text-4xl"></i></div>
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-[3px] border-stone-200 border-t-amber-700 rounded-full animate-spin" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">Loading ministry…</p>
+          </div>
         </div>
       </div>
     );
@@ -136,11 +148,16 @@ const CommunityDetail: React.FC = () => {
     return (
       <div className="detail-page" style={{ '--jumuiya-color': detailColor } as React.CSSProperties}>
         <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center p-8 bg-white rounded-sm shadow-lg border border-stone-200/70 max-w-md">
-            <i className="fas fa-exclamation-triangle text-4xl text-amber-500 mb-4"></i>
+          <div className="text-center p-8 bg-white rounded-3xl shadow-xl border border-stone-200/70 max-w-md">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 mb-4">
+              <FaInfoCircle size={28} />
+            </div>
             <h2 className="text-xl font-bold text-stone-800 mb-2">Ministry Not Found</h2>
-            <p className="text-stone-500 mb-6">We could not find the community ministry you are looking for.</p>
-            <button onClick={() => navigate('/community')} className="px-6 py-2 bg-stone-900 text-white rounded-full font-medium cursor-pointer">
+            <p className="text-stone-500 mb-6 text-sm">We could not find the community ministry you are looking for.</p>
+            <button
+              onClick={() => navigate('/community')}
+              className="px-6 py-3 bg-stone-900 text-white rounded-2xl font-bold text-sm cursor-pointer hover:bg-stone-800 transition-all hover:scale-[1.02] shadow-lg"
+            >
               <FaArrowLeft style={{ marginRight: '8px' }} /> Back to Community
             </button>
           </div>
@@ -148,6 +165,8 @@ const CommunityDetail: React.FC = () => {
       </div>
     );
   }
+
+  const activeIndex = TAB_ORDER.indexOf(activeTab);
 
   return (
     <div
@@ -193,24 +212,39 @@ const CommunityDetail: React.FC = () => {
         </div>
 
         <nav className="sidebar-nav">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => {
-                setTabWithUrl(tab.id);
-                setIsSidebarOpen(false);
-              }}
-              style={activeTab === tab.id ? {
-                borderLeftColor: detailColor,
-                color: detailColor,
-                background: `linear-gradient(90deg, ${detailColor}10 0%, transparent 100%)`
-              } : {}}
-            >
-              <span className="nav-icon" style={activeTab === tab.id ? { color: detailColor } : {}}>{tab.icon}</span>
-              <span className="nav-label">{tab.label}</span>
-            </button>
-          ))}
+          {TAB_ORDER.map((tabId, idx) => {
+            const isActive = activeTab === tabId;
+            return (
+              <button
+                key={tabId}
+                className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  setTabWithUrl(tabId);
+                  setIsSidebarOpen(false);
+                }}
+                style={isActive ? {
+                  borderLeftColor: detailColor,
+                  color: detailColor,
+                  background: `linear-gradient(90deg, ${detailColor}10 0%, transparent 100%)`,
+                } : {}}
+              >
+                <span
+                  className="nav-icon"
+                  style={isActive ? { color: detailColor } : {}}
+                >
+                  {TAB_ICONS[tabId]}
+                </span>
+                <span className="nav-label">{TAB_LABELS[tabId]}</span>
+                {/* Active indicator bar */}
+                {isActive && (
+                  <span
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
+                    style={{ background: detailColor }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="sidebar-footer">
@@ -226,7 +260,7 @@ const CommunityDetail: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="main-content">
-        <div className="content-wrapper animate-fade-in">
+        <div className="content-wrapper animate-fade-in" key={activeTab}>
           {renderTabContent()}
         </div>
       </main>
@@ -244,7 +278,11 @@ const CommunityDetail: React.FC = () => {
             aria-label="Notifications"
           >
             <FaBell />
-            {hasNewNotif && <span className="notif-badge-pulsing" />}
+            {hasNewNotif && notifCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center px-1.5 shadow-lg animate-bounce">
+                {notifCount}
+              </span>
+            )}
           </button>
         </div>
       )}
