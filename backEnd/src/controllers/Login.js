@@ -73,6 +73,7 @@ export const Login = async (req, res) => {
         m.first_name, 
         m.last_name, 
         m.email,
+        m.year_of_study,
         m.failed_login_attempts,
         m.locked_until,
         COALESCE(
@@ -83,7 +84,7 @@ export const Login = async (req, res) => {
       LEFT JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
       LEFT JOIN roles r ON mr.role_id = r.role_id 
       WHERE m.member_id = $1
-      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.failed_login_attempts, m.locked_until`,
+      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.year_of_study, m.failed_login_attempts, m.locked_until`,
       [userReg],
     );
 
@@ -174,6 +175,7 @@ export const Login = async (req, res) => {
       name: `${user.first_name} ${user.last_name}`.trim(),
       email: user.email,
       jumuiya_id: user.jumuiya_id,
+      year: user.year_of_study || null,
       forcePasswordChange,
       hasEmail: !!user.email,
     });

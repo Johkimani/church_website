@@ -22,6 +22,7 @@ import {
   Megaphone,
   Globe,
   Store,
+  MessageCircle,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -101,6 +102,7 @@ const menuSections: NavSection[] = [
     label: 'System',
     items: [
       { id: 'activity-log', name: 'Activity Log', icon: Activity, path: '/admin/activity-log' },
+      { id: 'whatsapp-links', name: 'WhatsApp Groups', icon: MessageCircle, path: '/admin/whatsapp-links' },
       { id: 'developers', name: 'Developer Team', icon: Code2, path: '/admin/developers' },
       { id: 'settings', name: 'Settings', icon: Settings, path: '/admin/settings' },
     ],

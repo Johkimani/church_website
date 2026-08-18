@@ -9,6 +9,7 @@ import { PublicRoute, ProtectedRoute, AdminRoute } from "./Regulator";
 import { DataProvider } from "./pages/Jumuiya/context/DataContext";
 import Pageoulet from "./assets/Layouts/Pageoulet";
 import RafikiWidget from "./components/assistant/RafikiWidget";
+import WhatsAppWidget from "./components/WhatsAppWidget";
 import Authorisation from "./assets/Layouts/Authorisation";
 import Login from "./pages/Authorization/Login";
 import GalleryPage from "./pages/Landing/components/page/GalleryPage";
@@ -110,6 +111,7 @@ const AdminRsvps = lazy(() => import("./pages/Admin/pages/AdminRsvps"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashboard"));
 const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
+const WhatsAppLinksManager = lazy(() => import("./pages/Admin/pages/WhatsAppLinksManager"));
 const JumuiyaSelfRegister = lazy(() => import("./pages/Jumuiya/pages/JumuiyaSelfRegister"));
 const PublicJoin = lazy(() => import("./pages/PublicJoin"));
 
@@ -131,6 +133,7 @@ const App: React.FC = () => {
     <Suspense fallback={<FallBack />}>
       <Toaster position="top-right" reverseOrder={false} />
       {!hideRafiki && <RafikiWidget />}
+      {!hideRafiki && <WhatsAppWidget />}
       <Routes>
         {/* Authentication Routes */}
         <Route
@@ -183,6 +186,7 @@ const App: React.FC = () => {
           <Route path="bookings" element={<AdminBookings />} />
           <Route path="rsvps" element={<AdminRsvps />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="whatsapp-links" element={<WhatsAppLinksManager />} />
           <Route path="developers" element={<DeveloperTeamManager />} />
         </Route>
 

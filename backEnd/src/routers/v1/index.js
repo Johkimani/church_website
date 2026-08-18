@@ -44,6 +44,8 @@ import bibleRouter from "./bibleRoutes.js";
 import assistantRoutes from "./assistantRoutes.js";
 import activityLogRouter from "./activityLogRouter.js";
 import purchaseReceiptsRouter from "./purchaseReceipts.js";
+import whatsappLinksRouter from "./whatsappLinksRoutes.js";
+import profileRoutes from "./profileRoutes.js";
 
 // Audit trail: records every authenticated admin mutation (who/what/when).
 // Mounted first so it wraps every request in this router; it only writes on
@@ -148,6 +150,12 @@ router.use("/", bibleRouter);
 
 // Purchase receipts (guest-friendly "notifications bay" data source)
 router.use("/purchase-receipts", purchaseReceiptsRouter);
+
+// WhatsApp group links (user-scoped fetch + admin management)
+router.use("/whatsapp-links", whatsappLinksRouter);
+
+// User profile (self-service get + update)
+router.use("/profile", profileRoutes);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);
