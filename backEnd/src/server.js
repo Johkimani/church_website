@@ -40,6 +40,7 @@ import profileImageMigration from "./migrations/profileImageMigration.js";
 import practiceSchedulesMigration from "./migrations/practiceSchedulesMigration.js";
 import communityTshirtsMigration from "./migrations/communityTshirtsMigration.js";
 import communityEnrollmentMigration from "./migrations/communityEnrollmentMigration.js";
+import notificationsMigration from "./migrations/notificationsMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -197,6 +198,7 @@ const initServer = async () => {
     await practiceSchedulesMigration();
     await communityTshirtsMigration();
     await communityEnrollmentMigration();
+    await notificationsMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

@@ -51,6 +51,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/community-management",
   "/admin/activity-log",
   "/admin/whatsapp-links",
+  "/admin/community-updates",
 ];
 
 export const normalizeRoles = (role: unknown): string[] => {
@@ -83,6 +84,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");
         prefixes.add("/admin/activity-log");
+        prefixes.add("/admin/community-updates");
         break;
       case "OS":
         prefixes.add("/admin/announcements");
@@ -96,6 +98,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/weekly-activities");
         prefixes.add("/admin/semester-activities");
         prefixes.add("/admin/whatsapp-links");
+        prefixes.add("/admin/community-updates");
         break;
       case "PROJECT_MANAGER":
         prefixes.add("/admin/sacramentals-banners");
@@ -128,10 +131,12 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/weekly-activities");
         prefixes.add("/admin/semester-activities");
+        prefixes.add("/admin/community-updates");
         break;
       case "JUMUIYA_SECRETARY":
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
+        prefixes.add("/admin/community-updates");
         break;
       case "CHOIR_CHAIRPERSON":
       case "CHOIR_SECRETARY":

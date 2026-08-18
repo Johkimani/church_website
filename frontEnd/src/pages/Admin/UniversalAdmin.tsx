@@ -72,6 +72,7 @@ const menuSections: NavSection[] = [
         ],
       },
       { id: 'announcements', name: 'Announcements', icon: Megaphone, path: '/admin/announcements' },
+      { id: 'community-updates', name: 'Community Updates', icon: Bell, path: '/admin/community-updates' },
       { id: 'gallery', name: 'Gallery', icon: ImageIcon, path: '/admin/gallery' },
       { id: 'suggestions', name: 'Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
       { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },

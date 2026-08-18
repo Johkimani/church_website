@@ -214,7 +214,7 @@
 /* Notification FAB Styles */
 .notif-fab-container {
     position: fixed;
-    bottom: var(--space-2xl);
+    bottom: 100px;
     right: var(--space-2xl);
     z-index: 10000;
 }
