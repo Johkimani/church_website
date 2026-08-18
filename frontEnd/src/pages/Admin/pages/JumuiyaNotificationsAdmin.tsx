@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   FaBell,
   FaTrash,
@@ -10,9 +10,11 @@ import {
   FaSpinner,
   FaEdit,
 } from "react-icons/fa";
-import jumuiyaNotificationsService, {
-  type BackendNotification,
-} from "../../../api/jumuiyaNotificationsService";
+import { useAuth } from "../../../context/AuthContext";
+import jumuiyaNotificationsService from "../../../api/jumuiyaNotificationsService";
+import type { Notification } from "../../Jumuiya/data/jumuiyaData";
+
+const LS_KEY = "jumuiya_data";
 
 const TYPE_OPTIONS = [
   { value: "info", label: "Info", color: "#3b82f6", bg: "#eff6ff" },
@@ -37,68 +39,110 @@ const typeIcon = (type: string) => {
   }
 };
 
+function readNotificationsFromLS(jumuiyaId: string): Notification[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    const match = list.find((j: any) => j.id === jumuiyaId);
+    return match?.notifications || [];
+  } catch {
+    return [];
+  }
+}
+
+function writeNotificationsToLS(jumuiyaId: string, notifications: Notification[]) {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const list = JSON.parse(raw);
+    const updated = list.map((j: any) =>
+      j.id === jumuiyaId ? { ...j, notifications } : j
+    );
+    localStorage.setItem(LS_KEY, JSON.stringify(updated));
+  } catch {
+    // silent
+  }
+}
+
 export default function JumuiyaNotificationsAdmin() {
-  const [notifications, setNotifications] = useState<BackendNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const jumuiyaId = (user as any)?.jumuiya_id || "";
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [sending, setSending] = useState(false);
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [type, setType] = useState("info");
 
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editMessage, setEditMessage] = useState("");
   const [editType, setEditType] = useState("info");
 
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const data = await jumuiyaNotificationsService.list();
-      setNotifications(data);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadNotifications = useCallback(() => {
+    setNotifications(readNotificationsFromLS(jumuiyaId));
+  }, [jumuiyaId]);
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    loadNotifications();
+  }, [loadNotifications]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) return;
     setSending(true);
+
+    const newNotif: Notification = {
+      id: `n-${Date.now()}`,
+      title,
+      message,
+      type: type as Notification["type"],
+      date: new Date().toISOString(),
+      postedBy: user?.firstName
+        ? `${user.firstName} ${user.lastName ?? ""}`.trim()
+        : "Secretary",
+    };
+
+    const updated = [newNotif, ...notifications];
+    setNotifications(updated);
+    writeNotificationsToLS(jumuiyaId, updated);
+
+    setTitle("");
+    setMessage("");
+    setType("info");
+
     try {
-      await jumuiyaNotificationsService.create({ title, message, status: type });
-      setTitle("");
-      setMessage("");
-      setType("info");
-      await fetchNotifications();
+      await jumuiyaNotificationsService.create({
+        title: newNotif.title,
+        message: newNotif.message,
+        status: newNotif.type,
+      });
     } catch {
-      // silent
+      // backend sync failed — localStorage already updated
     } finally {
       setSending(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: string) => {
     if (!window.confirm("Delete this notification?")) return;
-    try {
-      await jumuiyaNotificationsService.remove(id);
-      await fetchNotifications();
-    } catch {
-      // silent
+    const updated = notifications.filter((n) => n.id !== id);
+    setNotifications(updated);
+    writeNotificationsToLS(jumuiyaId, updated);
+
+    const numericId = parseInt(id.replace(/\D/g, ""), 10);
+    if (!isNaN(numericId)) {
+      jumuiyaNotificationsService.remove(numericId).catch(() => {});
     }
   };
 
-  const startEdit = (n: BackendNotification) => {
+  const startEdit = (n: Notification) => {
     setEditingId(n.id);
     setEditTitle(n.title);
     setEditMessage(n.message);
-    setEditType(n.status || "info");
+    setEditType(n.type || "info");
   };
 
   const cancelEdit = () => {
@@ -108,18 +152,22 @@ export default function JumuiyaNotificationsAdmin() {
     setEditType("info");
   };
 
-  const saveEdit = async (id: number) => {
+  const saveEdit = (id: string) => {
     if (!editTitle.trim() || !editMessage.trim()) return;
-    try {
-      await jumuiyaNotificationsService.update(id, {
-        title: editTitle,
-        message: editMessage,
-        status: editType,
-      });
-      cancelEdit();
-      await fetchNotifications();
-    } catch {
-      // silent
+    const updated = notifications.map((n) =>
+      n.id === id
+        ? { ...n, title: editTitle, message: editMessage, type: editType as Notification["type"] }
+        : n
+    );
+    setNotifications(updated);
+    writeNotificationsToLS(jumuiyaId, updated);
+    cancelEdit();
+
+    const numericId = parseInt(id.replace(/\D/g, ""), 10);
+    if (!isNaN(numericId)) {
+      jumuiyaNotificationsService
+        .update(numericId, { title: editTitle, message: editMessage, status: editType })
+        .catch(() => {});
     }
   };
 
@@ -297,11 +345,7 @@ export default function JumuiyaNotificationsAdmin() {
         <FaBell /> Your Notifications ({notifications.length})
       </h3>
 
-      {loading ? (
-        <div style={{ textAlign: "center", padding: 48 }}>
-          <FaSpinner className="spin" style={{ fontSize: "2rem", opacity: 0.4 }} />
-        </div>
-      ) : notifications.length === 0 ? (
+      {notifications.length === 0 ? (
         <div
           style={{
             textAlign: "center",
@@ -323,7 +367,7 @@ export default function JumuiyaNotificationsAdmin() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {notifications.map((n) => {
-            const meta = typeMeta(n.status || "info");
+            const meta = typeMeta(n.type || "info");
             const isEditing = editingId === n.id;
 
             return (
@@ -445,15 +489,15 @@ export default function JumuiyaNotificationsAdmin() {
                             fontWeight: 700,
                           }}
                         >
-                          {typeIcon(n.status || "info")}{" "}
-                          {(n.status || "info").toUpperCase()}
+                          {typeIcon(n.type || "info")}{" "}
+                          {(n.type || "info").toUpperCase()}
                         </span>
                         <span
                           style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}
                         >
-                          {formatDate(n.created_at)}
+                          {formatDate(n.date)}
                         </span>
-                        {n.posted_by && (
+                        {n.postedBy && (
                           <span
                             style={{
                               fontSize: "0.75rem",
@@ -461,7 +505,7 @@ export default function JumuiyaNotificationsAdmin() {
                               fontStyle: "italic",
                             }}
                           >
-                            by {n.posted_by}
+                            by {n.postedBy}
                           </span>
                         )}
                       </div>
