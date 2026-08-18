@@ -21,11 +21,11 @@ import '../Jumuiya/JumuiyaDetail.css';
 type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'settings' | 'stampcard';
 
 const MINISTRY_COLORS: Record<string, string> = {
-  choir: '#7c2d12',
-  dancers: '#9a3412',
-  charismatic: '#b45309',
-  'st-francis': '#92400e',
-  youth: '#a16207',
+  choir: '#0f172a',
+  dancers: '#7c3aed',
+  charismatic: '#db2777',
+  'st-francis': '#064e3b',
+  youth: '#8e44ad',
   mentorship: '#6d28d9',
 };
 
