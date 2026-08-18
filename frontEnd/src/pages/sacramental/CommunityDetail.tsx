@@ -243,13 +243,17 @@ const CommunityDetail: React.FC = () => {
       {/* Sidebar Navigation */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div
-          className="sidebar-header"
+          className="sidebar-header relative overflow-hidden"
           style={{
-            background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}dd 50%, ${detailColor}bb 100%)`,
+            background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}ee 40%, ${detailColor}cc 100%)`,
           }}
         >
+          {/* Decorative circles */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'rgba(255,255,255,0.08)' }} />
+          <div className="absolute -bottom-16 -left-8 w-40 h-40 rounded-full pointer-events-none" style={{ background: 'rgba(0,0,0,0.08)' }} />
+
           <div
-            className="sidebar-icon"
+            className="sidebar-icon relative z-10"
             style={{
               color: 'white',
               backgroundImage: `url(${moduleData.saint_image_url || moduleData.image_url})`,
@@ -258,10 +262,10 @@ const CommunityDetail: React.FC = () => {
               backgroundRepeat: 'no-repeat',
               backgroundColor: 'rgba(255,255,255,0.15)',
               border: '3px solid rgba(255,255,255,0.3)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
             }}
           />
-          <h2 className="sidebar-title text-white drop-shadow-md">{moduleData.title}</h2>
+          <h2 className="sidebar-title text-white drop-shadow-md relative z-10">{moduleData.title}</h2>
         </div>
 
         <nav className="sidebar-nav">
@@ -319,7 +323,11 @@ const CommunityDetail: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="main-content">
+      <main className="main-content" style={{
+        background: `linear-gradient(180deg, ${detailColor}06 0%, ${detailColor}03 300px, var(--bg-soft) 600px)`,
+      }}>
+        {/* Color accent top bar */}
+        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${detailColor}, ${detailColor}88, ${detailColor})` }} />
         <div className="content-wrapper animate-fade-in" key={activeTab}>
           {renderTabContent()}
         </div>
