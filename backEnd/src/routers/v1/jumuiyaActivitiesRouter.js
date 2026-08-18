@@ -26,7 +26,18 @@ import {
 
 const router = Router();
 
-// All routes require auth + jumuiya official role
+// ── Public GET routes (no auth required) ──────
+router.get(
+  "/:jumuiyaId/weekly",
+  getJumuiyaWeeklyActivities
+);
+
+router.get(
+  "/:jumuiyaId/semester",
+  getJumuiyaSemesterActivities
+);
+
+// All other routes require auth + jumuiya official role
 router.use(verifyToken, requireRole(
   "jumuiya_os", "jumuiya_chairperson", "jumuiya_secretary",
   "csa_chair", "csa_secretary", "jumuiya_coordinator"
@@ -38,12 +49,6 @@ const JUMUIYA_ROLES = [
 ];
 
 // ── Weekly Activities (jumuiya-scoped) ──────
-router.get(
-  "/:jumuiyaId/weekly",
-  enforceJumuiyaScope(req => req.params.jumuiyaId),
-  getJumuiyaWeeklyActivities
-);
-
 router.post(
   "/:jumuiyaId/weekly",
   enforceJumuiyaScope(req => req.params.jumuiyaId),
@@ -85,12 +90,6 @@ router.post(
 );
 
 // ── Semester Activities (jumuiya-scoped) ─────
-router.get(
-  "/:jumuiyaId/semester",
-  enforceJumuiyaScope(req => req.params.jumuiyaId),
-  getJumuiyaSemesterActivities
-);
-
 router.post(
   "/:jumuiyaId/semester",
   enforceJumuiyaScope(req => req.params.jumuiyaId),
