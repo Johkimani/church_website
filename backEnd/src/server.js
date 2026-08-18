@@ -37,6 +37,8 @@ import activityLogMigration from "./migrations/activityLogMigration.js";
 import semesterConfigMigration from "./migrations/semesterConfigMigration.js";
 import whatsappLinksMigration from "./migrations/whatsappLinksMigration.js";
 import profileImageMigration from "./migrations/profileImageMigration.js";
+import practiceSchedulesMigration from "./migrations/practiceSchedulesMigration.js";
+import communityTshirtsMigration from "./migrations/communityTshirtsMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -191,6 +193,8 @@ const initServer = async () => {
     await semesterConfigMigration();
     await whatsappLinksMigration();
     await profileImageMigration();
+    await practiceSchedulesMigration();
+    await communityTshirtsMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
