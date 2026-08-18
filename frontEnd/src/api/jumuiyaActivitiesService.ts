@@ -49,6 +49,20 @@ const jumuiyaActivitiesService = {
     clearPublicCache();
     return res.data.data;
   },
+  uploadWeeklyImage: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await lightClient.post(`/jumuiya-activities/weekly/${id}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    clearPublicCache();
+    return res.data.data;
+  },
+  removeWeeklyImage: async (id: number) => {
+    const res = await lightClient.delete(`/jumuiya-activities/weekly/${id}/image`);
+    clearPublicCache();
+    return res.data.data;
+  },
   getJumuiyaSemester: async (jumuiyaId: string, includeInactive = false) => {
     const params = includeInactive ? "?all=true" : "";
     const res = await lightClient.get(`/jumuiya-activities/${jumuiyaId}/semester${params}`);
@@ -66,6 +80,20 @@ const jumuiyaActivitiesService = {
   },
   deleteJumuiyaSemester: async (id: number) => {
     const res = await lightClient.delete(`/jumuiya-activities/semester/${id}`);
+    clearPublicCache();
+    return res.data.data;
+  },
+  uploadSemesterImage: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await lightClient.post(`/jumuiya-activities/semester/${id}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    clearPublicCache();
+    return res.data.data;
+  },
+  removeSemesterImage: async (id: number) => {
+    const res = await lightClient.delete(`/jumuiya-activities/semester/${id}/image`);
     clearPublicCache();
     return res.data.data;
   },
