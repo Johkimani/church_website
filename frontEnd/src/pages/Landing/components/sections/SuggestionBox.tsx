@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, Heart, Star, EyeOff } from 'lucide-react';
-import apiService from '../../services/api';
+import apiService from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 
 const SuggestionBox: React.FC = () => {

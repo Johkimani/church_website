@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Star, X, Loader2 } from 'lucide-react';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { toast } from 'react-hot-toast';
 
 interface Props {

@@ -14,7 +14,7 @@ import {
   Lock,
   Save,
 } from 'lucide-react';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { apiClient } from '../../../api/axiosInstance';
 import { semesterServices, SemesterConfig } from '../../../api/semesterServices';
 import { useAuth } from '../../../context/AuthContext';

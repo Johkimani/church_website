@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import apiService from '../services/api'
+import apiService from '../../../services/api'
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa'
 
 interface GalleryItem {

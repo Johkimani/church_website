@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Star, Trash2, MessageCircle, CheckCircle, Clock } from 'lucide-react';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { toast } from 'react-hot-toast';
 import Skeleton from '../../../components/Skeleton';
 

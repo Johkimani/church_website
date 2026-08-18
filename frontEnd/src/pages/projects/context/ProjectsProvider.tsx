@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'react-hot-toast';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 
 interface ProjectsContextType {
   testimonials: any[];

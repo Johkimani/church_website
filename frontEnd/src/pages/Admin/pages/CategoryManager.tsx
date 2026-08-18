@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiService from "../../Landing/services/api";
+import apiService from "../../../services/api";
 import { toast } from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, Loader2, Tag, FolderOpen } from "lucide-react";
 import PanelHeader from "../components/PanelHeader";

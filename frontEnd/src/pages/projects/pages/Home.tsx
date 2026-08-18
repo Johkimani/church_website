@@ -5,7 +5,7 @@ import { HeroSlider } from '../components/HeroSlider';
 import ProjectHero from '../components/ProjectHero';
 import { ArrowUpRight, ShoppingBag, Shirt, ArmchairIcon, Guitar, BookHeart, GraduationCap, Church } from 'lucide-react';
 import PageLoader from '../../../assets/Layouts/PageLoader';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { useProjectsData } from '../context/ProjectsProvider';
 
 const CATEGORIES = [

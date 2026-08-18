@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaStar } from 'react-icons/fa';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { useProjectsData } from '../context/ProjectsProvider';
 
 interface Testimonial {

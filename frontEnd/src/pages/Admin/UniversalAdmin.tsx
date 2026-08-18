@@ -26,7 +26,7 @@ import {
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationDropdown, { type Notification } from './components/NotificationDropdown';
-import apiService from '../Landing/services/api';
+import apiService from '../../services/api';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';

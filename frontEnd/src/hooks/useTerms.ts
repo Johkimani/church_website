@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_TERMS, API_ARCHIVE, API_JUMUIYA_ARCHIVE, API_GROUP_ARCHIVE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { useAuth } from '../context/AuthContext';
-import apiService from '../../services/api';
+import apiService from '../services/api';
 
 export interface ElectionTerm {
   id: number;

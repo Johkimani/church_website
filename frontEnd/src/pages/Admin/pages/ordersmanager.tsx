@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiService from "../../Landing/services/api";
+import apiService from "../../../services/api";
 import { Package, RefreshCcw, Loader2, CheckCircle, MessageCircle, DollarSign, Ban, Archive, CookingPot, ShoppingBag } from "lucide-react";
 import Skeleton from "../../../components/Skeleton";
 import { toast } from "react-hot-toast";

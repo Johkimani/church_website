@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiService from "../../Landing/services/api";
+import apiService from "../../../services/api";
 import { BarChart3, RefreshCcw, Loader2, Download, TrendingUp, DollarSign, ShoppingCart, CalendarDays } from "lucide-react";
 
 interface Props { typeFilter: "sale" | "hire" }

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCachedData } from '../../../hooks/useCachedData';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { memberService } from '../../../api/jumuiyaMemberService';
 import {
   Users,

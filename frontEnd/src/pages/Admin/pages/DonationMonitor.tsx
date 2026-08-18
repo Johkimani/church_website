@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCachedData } from '../../../hooks/useCachedData';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { 
   Heart, 
   Search, 

@@ -4,7 +4,7 @@ import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar 
 import { POSITION_INFO, DEFAULT_POSITION_INFO, getAvatarForCategory } from './constants/positionInfo';
 import { getSafeImageUrl } from '../../api/config';
 
-import apiService from '../Landing/services/api'
+import apiService from '../../services/api'
 import { useSocket } from '../../context/SocketContext'
 
 const CATEGORY_COLORS: Record<string, string> = {

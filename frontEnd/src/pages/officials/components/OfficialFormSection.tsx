@@ -326,6 +326,7 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
           <>
             <span className="inline-flex items-center justify-center w-4 h-4 bg-green-100 text-green-700 rounded-full text-[10px] font-black">
             Fully Registered ({categoryStats[category].count}/{categoryStats[category].limit})
+            </span>
           </>
         ) : (
           `Available (${categoryStats[category].count}/${categoryStats[category].limit} filled)`
