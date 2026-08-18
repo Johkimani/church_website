@@ -14,9 +14,28 @@ export const createEnrollment = async (req, res) => {
 
     const phoneClean = phone.replace(/\s+/g, '').trim();
 
+    // If logged-in user, get their member_id and phone from the members table
+    let memberId = null;
+    let userPhone = phoneClean;
+    if (req.user?.id || req.user?.member_id) {
+      const mid = req.user.id || req.user.member_id;
+      const memberRes = await db.query(
+        `SELECT member_id, phone, first_name, last_name, email FROM members WHERE member_id = $1`,
+        [mid]
+      );
+      if (memberRes.rows.length > 0) {
+        const m = memberRes.rows[0];
+        memberId = m.member_id;
+        // Use the member's actual phone if available, otherwise use what they typed
+        if (m.phone) {
+          userPhone = m.phone.replace(/\s+/g, '').trim();
+        }
+      }
+    }
+
     const existing = await db.query(
       `SELECT id, status FROM enrollments WHERE module_id = $1 AND phone = $2`,
-      [moduleId, phoneClean]
+      [moduleId, userPhone]
     );
     if (existing.rows.length > 0) {
       const row = existing.rows[0];
@@ -28,13 +47,13 @@ export const createEnrollment = async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, year_of_study, voice_type, music_level, status, joined_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pending', NOW())
+      `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, year_of_study, voice_type, music_level, member_id, status, joined_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'Pending', NOW())
        RETURNING *`,
-      [moduleId, displayName.trim(), phoneClean, email || '', gender || null, course || null, yearOfStudy || null, voiceType || null, musicLevel || null]
+      [moduleId, displayName.trim(), userPhone, email || '', gender || null, course || null, yearOfStudy || null, voiceType || null, musicLevel || null, memberId]
     );
 
-    logger.info(`New enrollment: ${displayName} -> ${moduleId}`);
+    logger.info(`New enrollment: ${displayName} -> ${moduleId} (member_id: ${memberId || 'none'})`);
     return res.status(201).json(result.rows[0]);
   } catch (error) {
     logger.error("createEnrollment error:", error.message);
@@ -157,16 +176,41 @@ export const deleteEnrollment = async (req, res) => {
   }
 };
 
-// Auth: get communities the logged-in user has joined (by phone match)
+// Auth: get communities the logged-in user has joined
+// Matches by member_id first, then falls back to phone lookup from members table
 export const getMyCommunities = async (req, res) => {
   try {
-    const phone = req.user?.phone || req.user?.phoneNumber;
+    const memberId = req.user?.member_id || req.user?.id;
+    if (!memberId) {
+      return res.json({ communities: [] });
+    }
+
+    // Primary match: by member_id
+    const byMemberId = await db.query(
+      `SELECT e.*, m.title as module_title, m.theme_color, m.icon_class
+       FROM enrollments e
+       JOIN hub_modules m ON e.module_id = m.id
+       WHERE e.member_id = $1
+       ORDER BY e.joined_at DESC NULLS LAST, e.enrolled_at DESC`,
+      [memberId]
+    );
+
+    if (byMemberId.rows.length > 0) {
+      return res.json({ communities: byMemberId.rows });
+    }
+
+    // Fallback: look up member's phone from the members table, match by phone
+    const memberRes = await db.query(
+      `SELECT phone FROM members WHERE member_id = $1`,
+      [memberId]
+    );
+    const phone = memberRes.rows[0]?.phone;
     if (!phone) {
       return res.json({ communities: [] });
     }
 
     const phoneClean = phone.replace(/\s+/g, '').trim();
-    const result = await db.query(
+    const byPhone = await db.query(
       `SELECT e.*, m.title as module_title, m.theme_color, m.icon_class
        FROM enrollments e
        JOIN hub_modules m ON e.module_id = m.id
@@ -175,7 +219,15 @@ export const getMyCommunities = async (req, res) => {
       [phoneClean]
     );
 
-    return res.json({ communities: result.rows });
+    // Backfill member_id on any phone-matched records for future lookups
+    if (byPhone.rows.length > 0) {
+      await db.query(
+        `UPDATE enrollments SET member_id = $1 WHERE member_id IS NULL AND phone = $2`,
+        [memberId, phoneClean]
+      ).catch(err => logger.warn("member_id backfill failed:", err.message));
+    }
+
+    return res.json({ communities: byPhone.rows });
   } catch (error) {
     logger.error("getMyCommunities error:", error.message);
     return res.status(500).json({ error: "Failed to fetch communities" });

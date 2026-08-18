@@ -5,6 +5,7 @@ import { apiClient } from '../../api/axiosInstance';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUser, FaPhone, FaEnvelope, FaGraduationCap, FaMusic, FaCheck, FaArrowLeft, FaSpinner, FaExclamationCircle, FaHeart } from 'react-icons/fa';
 import { useCommunityData } from './context/CommunityDataContext';
+import { useAuth } from '../../context/AuthContext';
 import type { CommunityModule } from './context/CommunityDataContext';
 
 interface FormState {
@@ -41,14 +42,44 @@ const CommunityJoinPage: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const { getModuleById } = useCommunityData();
+  const { user } = useAuth();
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<'success' | 'duplicate' | 'error' | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [checking, setChecking] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
   const moduleIdClean = moduleId ? moduleId.toLowerCase().replace(/[^a-z0-9-]/g, '-') : '';
+
+  // Fetch user profile to pre-fill form
+  const { data: profile } = useQuery({
+    queryKey: ['profile-me'],
+    queryFn: async () => {
+      const res = await apiClient.get('/profile/me');
+      return res.data;
+    },
+    enabled: !!user,
+    staleTime: 300000,
+  });
+
+  // Pre-fill form with profile data
+  useEffect(() => {
+    if (profile && !prefilled) {
+      const name = [profile.firstName || profile.first_name, profile.lastName || profile.last_name].filter(Boolean).join(' ');
+      setForm(prev => ({
+        ...prev,
+        fullName: name || prev.fullName,
+        phone: profile.phone || prev.phone,
+        email: profile.email || prev.email,
+        gender: profile.gender || prev.gender,
+        course: profile.course || prev.course,
+        yearOfStudy: profile.yearOfStudy || profile.year_of_study || prev.yearOfStudy,
+      }));
+      setPrefilled(true);
+    }
+  }, [profile, prefilled]);
 
   const contextFallback = moduleIdClean ? getModuleById(moduleIdClean) : undefined;
 
