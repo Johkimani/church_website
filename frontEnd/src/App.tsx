@@ -119,6 +119,7 @@ const PublicJoin = lazy(() => import("./pages/PublicJoin"));
 import { CommunityProvider } from "./pages/sacramental/context/CommunityDataContext";
 const Community = lazy(() => import("./pages/sacramental/Community"));
 const CommunityDetail = lazy(() => import("./pages/sacramental/CommunityDetail"));
+const CommunityJoinPage = lazy(() => import("./pages/sacramental/CommunityJoinPage"));
 const NotificationPage = lazy(() => import("./pages/Devotions/pages/NotificationPage"));
 
 // Fallback component
@@ -265,6 +266,7 @@ const App: React.FC = () => {
             <Route element={<CommunityProvider><Outlet /></CommunityProvider>}>
               <Route path="community" element={<Community />} />
               <Route path="community/:moduleId" element={<CommunityDetail />} />
+              <Route path="community/:moduleId/join" element={<CommunityJoinPage />} />
             </Route>
 
             {/* Legal Pages */}

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCommunityData } from './context/CommunityDataContext';
+import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/axiosInstance';
+import { useQuery } from '@tanstack/react-query';
 import { motion, useInView } from 'framer-motion';
 import {
   ArrowRight,
@@ -17,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
+  FaUserPlus,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -111,8 +115,21 @@ const AnimatedCounter: React.FC<{ value: number; label: string }> = ({ value, la
 const Community: React.FC = () => {
   const navigate = useNavigate();
   const { modules, isLoading } = useCommunityData();
+  const { user } = useAuth();
   const [filter, setFilter] = useState<'all' | 'music' | 'prayer' | 'outreach'>('all');
   const [testimonialIdx, setTestimonialIdx] = useState(0);
+
+  const { data: myCommunitiesData } = useQuery({
+    queryKey: ['my-communities'],
+    queryFn: async () => {
+      const res = await apiClient.get('/community-enrollment/my-communities');
+      return res.data?.communities || [];
+    },
+    enabled: !!user,
+    staleTime: 60000,
+  });
+
+  const myCommunities = myCommunitiesData || [];
 
   const allowedIds = ['choir', 'dancers', 'st-francis', 'charismatic', 'youth', 'mentorship'];
   const activeModules = modules.filter((mod) => allowedIds.includes(mod.id));
@@ -252,6 +269,56 @@ const Community: React.FC = () => {
         </motion.div>
       </div>
 
+      {/* ── My Communities (logged-in users) ── */}
+      {myCommunities.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 md:px-12 mt-12 relative z-20">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="rounded-3xl p-6 md:p-8" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', boxShadow: '0 12px 40px rgba(15,52,96,0.2)' }}>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                  <FaUserPlus className="text-amber-300" size={16} />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-base">My Communities</h3>
+                  <p className="text-white/50 text-xs">Communities you've joined</p>
+                </div>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                {myCommunities.map((c: any) => {
+                  const accent = c.theme_color || '#b45309';
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => navigate(`/community/${c.module_id}`)}
+                      className="flex-shrink-0 rounded-2xl p-4 bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all cursor-pointer text-left min-w-[180px]"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-black" style={{ background: accent }}>
+                          {c.module_title?.charAt(0) || '?'}
+                        </div>
+                        <span className="text-white text-sm font-bold truncate">{c.module_title}</span>
+                      </div>
+                      <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                        c.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300' :
+                        c.status === 'rejected' ? 'bg-red-500/20 text-red-300' :
+                        'bg-amber-500/20 text-amber-300'
+                      }`}>
+                        {c.status || 'Pending'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* ── Section Header with Filters ── */}
       <div className="max-w-6xl mx-auto px-6 md:px-12 mt-16 relative z-20">
         <motion.div
@@ -387,14 +454,23 @@ const Community: React.FC = () => {
                     </p>
                   )}
 
-                  <div className="mt-auto pt-5 flex items-center justify-between border-t border-stone-100">
-                    <span className="text-sm font-bold text-stone-800">Explore ministry</span>
-                    <span
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 group-hover:translate-x-1 group-hover:bg-stone-900 group-hover:shadow-lg"
+                  <div className="mt-auto pt-5 border-t border-stone-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold text-stone-800">Explore ministry</span>
+                      <span
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-white transition-all duration-300 group-hover:translate-x-1 group-hover:bg-stone-900 group-hover:shadow-lg"
+                        style={{ background: accent }}
+                      >
+                        <ArrowRight size={15} />
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/community/${mod.id}/join`); }}
+                      className="w-full py-2 rounded-xl text-xs font-bold text-white transition-all hover:scale-[1.02] cursor-pointer"
                       style={{ background: accent }}
                     >
-                      <ArrowRight size={15} />
-                    </span>
+                      Join Now
+                    </button>
                   </div>
                 </div>
               </motion.article>

@@ -39,6 +39,7 @@ import whatsappLinksMigration from "./migrations/whatsappLinksMigration.js";
 import profileImageMigration from "./migrations/profileImageMigration.js";
 import practiceSchedulesMigration from "./migrations/practiceSchedulesMigration.js";
 import communityTshirtsMigration from "./migrations/communityTshirtsMigration.js";
+import communityEnrollmentMigration from "./migrations/communityEnrollmentMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -195,6 +196,7 @@ const initServer = async () => {
     await profileImageMigration();
     await practiceSchedulesMigration();
     await communityTshirtsMigration();
+    await communityEnrollmentMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

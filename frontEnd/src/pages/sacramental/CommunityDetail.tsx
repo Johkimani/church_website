@@ -12,7 +12,7 @@ import CommunityActivitiesTab from './components/tabs/CommunityActivitiesTab';
 import CommunityTshirtsTab from './components/tabs/CommunityTshirtsTab';
 import CommunitySettingsTab from './components/tabs/CommunitySettingsTab';
 import CommunityNotificationsTab from './components/tabs/CommunityNotificationsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
@@ -248,6 +248,13 @@ const CommunityDetail: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
+          <button
+            className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg cursor-pointer mb-2"
+            style={{ background: detailColor }}
+            onClick={() => navigate(`/community/${moduleIdClean}/join`)}
+          >
+            <FaUserPlus size={14} /> Join This Community
+          </button>
           <button
             className="btn-premium"
             onClick={() => navigate('/community')}
