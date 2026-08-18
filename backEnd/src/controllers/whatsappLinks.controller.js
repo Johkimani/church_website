@@ -23,6 +23,29 @@ const JUMUIYA_NAMES = {
   "st-monica": "St. Monica of Hippo",
 };
 
+const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+
+const getUserRoles = (req) => {
+  if (!req.user) return [];
+  return Array.isArray(req.user.role)
+    ? req.user.role
+    : req.user.role ? [req.user.role] : [];
+};
+
+const isGlobalAdmin = (req) => {
+  const roles = getUserRoles(req).map(r => String(r).toLowerCase().trim());
+  return roles.some(r => GLOBAL_ROLES.includes(r));
+};
+
+const resolveJumuiyaSlug = async (jumuiyaId) => {
+  if (!jumuiyaId) return null;
+  const slugRes = await db.query(
+    `SELECT slug FROM sub_groups WHERE group_id = $1`,
+    [jumuiyaId]
+  );
+  return slugRes.rows.length > 0 ? slugRes.rows[0].slug : null;
+};
+
 // GET /whatsapp-links — returns groups relevant to the authenticated user.
 // First Years get 4 groups: CSA General + CSA Year 1 + Jumuiya Main + Jumuiya Year 1
 // Year 2/3/4 get 2 groups: CSA General + Jumuiya Main (already in their year groups)
@@ -116,19 +139,33 @@ export const getWhatsAppLinks = async (req, res) => {
 };
 
 // PUT /whatsapp-links — admin-only bulk update
+// Scoped: jumuiya officials can only update their own jumuiya's links
 export const updateWhatsAppLinks = async (req, res) => {
   try {
     const { general, years, jumuiyas, jumuiyaYears } = req.body;
 
     const updates = [];
 
-    // CSA General
-    if (general !== undefined) {
+    // Determine scope
+    const scoped = !isGlobalAdmin(req);
+    let scopedSlug = null;
+    if (scoped) {
+      const jumuiyaId = req.user?.jumuiya_id;
+      if (jumuiyaId) {
+        scopedSlug = await resolveJumuiyaSlug(jumuiyaId);
+      }
+      if (!scopedSlug) {
+        return res.status(400).json({ error: "No jumuiya associated with your account" });
+      }
+    }
+
+    // CSA General — only global admins
+    if (!scoped && general !== undefined) {
       updates.push({ key: "whatsapp_general_link", value: general || "" });
     }
 
-    // CSA Year Groups (1-4)
-    if (years && typeof years === "object") {
+    // CSA Year Groups (1-4) — only global admins
+    if (!scoped && years && typeof years === "object") {
       for (const [year, link] of Object.entries(years)) {
         const y = parseInt(String(year).trim(), 10);
         if (y >= 1 && y <= 4) {
@@ -140,9 +177,10 @@ export const updateWhatsAppLinks = async (req, res) => {
     // Jumuiya Main Groups
     if (jumuiyas && typeof jumuiyas === "object") {
       for (const [slug, link] of Object.entries(jumuiyas)) {
-        if (JUMUIYA_SLUGS.includes(slug)) {
-          updates.push({ key: `whatsapp_jumuiya_${slug}_link`, value: link || "" });
-        }
+        if (!JUMUIYA_SLUGS.includes(slug)) continue;
+        // Scoped: only allow own jumuiya
+        if (scoped && slug !== scopedSlug) continue;
+        updates.push({ key: `whatsapp_jumuiya_${slug}_link`, value: link || "" });
       }
     }
 
@@ -150,6 +188,8 @@ export const updateWhatsAppLinks = async (req, res) => {
     if (jumuiyaYears && typeof jumuiyaYears === "object") {
       for (const [slug, yearLinks] of Object.entries(jumuiyaYears)) {
         if (!JUMUIYA_SLUGS.includes(slug)) continue;
+        // Scoped: only allow own jumuiya
+        if (scoped && slug !== scopedSlug) continue;
         if (typeof yearLinks !== "object") continue;
         for (const [year, link] of Object.entries(yearLinks || {})) {
           const y = parseInt(String(year).trim(), 10);
@@ -190,14 +230,30 @@ export const updateWhatsAppLinks = async (req, res) => {
   }
 };
 
-// GET /whatsapp-links/all — admin-only: returns ALL link settings
+// GET /whatsapp-links/all — admin-only: returns link settings
+// Scoped: jumuiya officials see only their jumuiya's data; global admins see everything
 export const getAllWhatsAppLinks = async (req, res) => {
   try {
     const result = await db.query(
       `SELECT key, value FROM system_settings WHERE key LIKE 'whatsapp_%_link' ORDER BY key`
     );
 
-    const data = { general: "", years: {}, jumuiyas: {}, jumuiyaYears: {} };
+    const data = { general: "", years: {}, jumuiyas: {}, jumuiyaYears: {}, scope: "global" };
+
+    // If user is a jumuiya official (not global), resolve their jumuiya slug
+    let scopedSlug = null;
+    if (!isGlobalAdmin(req)) {
+      const jumuiyaId = req.user?.jumuiya_id;
+      if (jumuiyaId) {
+        scopedSlug = await resolveJumuiyaSlug(jumuiyaId);
+      }
+      if (!scopedSlug) {
+        // No jumuiya resolved — return empty scoped data
+        data.scope = "none";
+        return res.json(data);
+      }
+      data.scope = scopedSlug;
+    }
 
     result.rows.forEach((row) => {
       const val = row.value || "";
@@ -218,6 +274,8 @@ export const getAllWhatsAppLinks = async (req, res) => {
       const jumYearMatch = row.key.match(/^whatsapp_jumuiya_(.+)_year_(\d+)_link$/);
       if (jumYearMatch) {
         const [, slug, year] = jumYearMatch;
+        // Scoped: skip other jumuiyas
+        if (scopedSlug && slug !== scopedSlug) return;
         if (!data.jumuiyaYears[slug]) data.jumuiyaYears[slug] = {};
         data.jumuiyaYears[slug][year] = val;
         return;
@@ -226,7 +284,10 @@ export const getAllWhatsAppLinks = async (req, res) => {
       // Jumuiya Main: whatsapp_jumuiya_SLUG_link
       const jumMainMatch = row.key.match(/^whatsapp_jumuiya_(.+)_link$/);
       if (jumMainMatch) {
-        data.jumuiyas[jumMainMatch[1]] = val;
+        const slug = jumMainMatch[1];
+        // Scoped: skip other jumuiyas
+        if (scopedSlug && slug !== scopedSlug) return;
+        data.jumuiyas[slug] = val;
       }
     });
 

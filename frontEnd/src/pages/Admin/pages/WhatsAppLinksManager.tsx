@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../../api/axiosInstance";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../../context/AuthContext";
 
 const JUMUIYAS = [
   { slug: "st-anthony", name: "St. Anthony of Padua", color: "#8b5cf6" },
@@ -32,13 +33,18 @@ interface LinkData {
   years: Record<string, string>;
   jumuiyas: Record<string, string>;
   jumuiyaYears: Record<string, Record<string, string>>;
+  scope?: string;
 }
 
 export default function WhatsAppLinksManager() {
+  const { user } = useAuth();
   const [data, setData] = useState<LinkData>({ general: "", years: {}, jumuiyas: {}, jumuiyaYears: {} });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedJumuiya, setExpandedJumuiya] = useState<string | null>(null);
+
+  const isScoped = data.scope && data.scope !== "global" && data.scope !== "none";
+  const scopedJumuiya = isScoped ? JUMUIYAS.find(j => j.slug === data.scope) : null;
 
   useEffect(() => { loadLinks(); }, []);
 
@@ -47,6 +53,10 @@ export default function WhatsAppLinksManager() {
     try {
       const { data: resp } = await apiClient.get("/whatsapp-links/all");
       setData(resp);
+      // Auto-expand for scoped users (only their jumuiya)
+      if (resp.scope && resp.scope !== "global" && resp.scope !== "none") {
+        setExpandedJumuiya(resp.scope);
+      }
     } catch {
       toast.error("Failed to load WhatsApp links");
     } finally {
@@ -63,7 +73,7 @@ export default function WhatsAppLinksManager() {
         jumuiyas: data.jumuiyas,
         jumuiyaYears: data.jumuiyaYears,
       });
-      toast.success("All WhatsApp links saved successfully");
+      toast.success("WhatsApp links saved successfully");
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to save links");
     } finally {
@@ -106,7 +116,9 @@ export default function WhatsAppLinksManager() {
             WhatsApp Groups
           </h1>
           <p className="text-slate-500 font-medium mt-1">
-            Manage invite links for CSA and Jumuiya WhatsApp groups.
+            {isScoped && scopedJumuiya
+              ? `Manage WhatsApp group links for ${scopedJumuiya.name}.`
+              : "Manage invite links for CSA and Jumuiya WhatsApp groups."}
           </p>
         </div>
         <button
@@ -115,7 +127,7 @@ export default function WhatsAppLinksManager() {
           className="flex items-center gap-2 px-6 py-3 bg-[#25D366] hover:bg-[#20ba5a] disabled:bg-[#25D366]/50 text-white font-bold rounded-xl text-sm transition-all shadow-sm shadow-[#25D366]/20 cursor-pointer"
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {saving ? "Saving..." : "Save All Links"}
+          {saving ? "Saving..." : "Save Links"}
         </button>
       </div>
 
@@ -128,65 +140,71 @@ export default function WhatsAppLinksManager() {
         </p>
       </div>
 
-      {/* How It Works */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl px-5 py-4">
-        <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider mb-2">Visibility Rules</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600">
-          <div className="flex items-start gap-2">
-            <span className="w-5 h-5 rounded-full bg-[#25D366] text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-            <p><strong>All Years:</strong> CSA Main + Jumuiya Main</p>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="w-5 h-5 rounded-full bg-[#34B7F1] text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-            <p><strong>Year 1 Only:</strong> CSA Year 1 + Jumuiya Year 1</p>
+      {/* How It Works — global admins only */}
+      {!isScoped && (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-5 py-4">
+          <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider mb-2">Visibility Rules</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600">
+            <div className="flex items-start gap-2">
+              <span className="w-5 h-5 rounded-full bg-[#25D366] text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+              <p><strong>All Years:</strong> CSA Main + Jumuiya Main</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="w-5 h-5 rounded-full bg-[#34B7F1] text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+              <p><strong>Year 1 Only:</strong> CSA Year 1 + Jumuiya Year 1</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Section 1: CSA General ──────────────────── */}
-      <Card
-        icon={<Users size={20} className="text-[#25D366]" />}
-        title="CSA Main Group"
-        description="All logged-in CSA members see this"
-        accent="#25D366"
-      >
-        <LinkInput
-          value={data.general}
-          onChange={updateGeneral}
-          placeholder="https://chat.whatsapp.com/..."
-          label="CSA General Link"
-        />
-      </Card>
+      {/* ── Section 1: CSA General — global admins only ──────── */}
+      {!isScoped && (
+        <Card
+          icon={<Users size={20} className="text-[#25D366]" />}
+          title="CSA Main Group"
+          description="All logged-in CSA members see this"
+          accent="#25D366"
+        >
+          <LinkInput
+            value={data.general}
+            onChange={updateGeneral}
+            placeholder="https://chat.whatsapp.com/..."
+            label="CSA General Link"
+          />
+        </Card>
+      )}
 
-      {/* ── Section 2: CSA Year Groups ──────────────── */}
-      <Card
-        icon={<GraduationCap size={20} className="text-[#34B7F1]" />}
-        title="CSA Year Groups"
-        description="Year-specific groups across all Jumuiyas"
-        accent="#34B7F1"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {YEARS.map((y) => (
-            <LinkInput
-              key={y}
-              value={data.years[String(y)] || ""}
-              onChange={(val) => updateYear(String(y), val)}
-              placeholder="https://chat.whatsapp.com/..."
-              label={`Year ${y}`}
-            />
-          ))}
-        </div>
-      </Card>
+      {/* ── Section 2: CSA Year Groups — global admins only ──── */}
+      {!isScoped && (
+        <Card
+          icon={<GraduationCap size={20} className="text-[#34B7F1]" />}
+          title="CSA Year Groups"
+          description="Year-specific groups across all Jumuiyas"
+          accent="#34B7F1"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {YEARS.map((y) => (
+              <LinkInput
+                key={y}
+                value={data.years[String(y)] || ""}
+                onChange={(val) => updateYear(String(y), val)}
+                placeholder="https://chat.whatsapp.com/..."
+                label={`Year ${y}`}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* ── Section 3: Jumuiya Groups ───────────────── */}
       <Card
         icon={<Church size={20} className="text-[#7C3AED]" />}
-        title="Jumuiya Groups"
-        description="Each Jumuiya has a main group + year-specific groups"
+        title={isScoped && scopedJumuiya ? scopedJumuiya.name : "Jumuiya Groups"}
+        description={isScoped && scopedJumuiya ? "Main group + year-specific groups" : "Each Jumuiya has a main group + year-specific groups"}
         accent="#7C3AED"
       >
         <div className="space-y-3">
-          {JUMUIYAS.map((j) => {
+          {(isScoped ? JUMUIYAS.filter(j => j.slug === data.scope) : JUMUIYAS).map((j) => {
             const isExpanded = expandedJumuiya === j.slug;
             const yearCount = YEARS.filter((y) => data.jumuiyaYears[j.slug]?.[String(y)]?.trim()).length;
             const mainHasValue = !!data.jumuiyas[j.slug]?.trim();

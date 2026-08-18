@@ -67,10 +67,8 @@ const menuSections: NavSection[] = [
         name: 'Activities',
         icon: CalendarDays,
         subItems: [
-          { id: 'weekly-activities', name: 'Weekly Activities', path: '/admin/weekly-activities' },
-          { id: 'semester-activities', name: 'Semester Activities', path: '/admin/semester-activities' },
-          { id: 'bookings', name: 'Bookings', path: '/admin/bookings' },
-          { id: 'rsvps', name: 'RSVPs', path: '/admin/rsvps' },
+          { id: 'weekly-activities', name: 'Weekly Schedule', path: '/admin/weekly-activities' },
+          { id: 'semester-activities', name: 'Upcoming Events', path: '/admin/semester-activities' },
         ],
       },
       { id: 'announcements', name: 'Announcements', icon: Megaphone, path: '/admin/announcements' },
