@@ -46,6 +46,8 @@ import activityLogRouter from "./activityLogRouter.js";
 import purchaseReceiptsRouter from "./purchaseReceipts.js";
 import whatsappLinksRouter from "./whatsappLinksRoutes.js";
 import profileRoutes from "./profileRoutes.js";
+import practiceSchedulesRouter from "./practiceSchedulesRouter.js";
+import communityTshirtsRouter from "./communityTshirtsRouter.js";
 
 // Audit trail: records every authenticated admin mutation (who/what/when).
 // Mounted first so it wraps every request in this router; it only writes on
@@ -156,6 +158,10 @@ router.use("/whatsapp-links", whatsappLinksRouter);
 
 // User profile (self-service get + update)
 router.use("/profile", profileRoutes);
+
+// Community practice schedules + tshirt orders
+router.use("/practice-schedules", practiceSchedulesRouter);
+router.use("/community-tshirts", communityTshirtsRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

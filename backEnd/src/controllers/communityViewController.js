@@ -72,7 +72,7 @@ const fetchOfficialsRows = async (moduleId) => {
 export { fetchOfficialsRows };
 
 // Build a module object from a db row + its related sub-data
-const buildModule = (mod, officials, activities, gallery, announcements) => ({
+const buildModule = (mod, officials, activities, gallery, announcements, practiceSchedules) => ({
   id: mod.id,
   title: mod.title,
   description: mod.description,
@@ -91,18 +91,18 @@ const buildModule = (mod, officials, activities, gallery, announcements) => ({
     subscription: mod.subscription_fee,
     uniform: mod.uniform_info,
   },
-  officials: officials.rows.map(o => ({
+  officials: (officials.rows || officials).map(o => ({
     id: String(o.id),
     name: o.name,
-    role: o.role,
-    photoUrl: o.photo_url,
+    role: o.role || o.position,
+    photoUrl: o.photo_url || o.photo,
     email: o.email,
-    phoneNumber: o.phone_number,
+    phoneNumber: o.phone_number || o.contact,
   })),
   activities: activities.rows.map(a => ({
     id: String(a.id),
     title: a.title,
-    date: a.activity_date,
+    date: a.activity_date || a.date_time,
     description: a.description,
     status: a.status || 'Upcoming',
   })),
@@ -116,6 +116,13 @@ const buildModule = (mod, officials, activities, gallery, announcements) => ({
     title: n.title,
     content: n.content,
     date: n.announcement_date,
+  })),
+  practiceSchedules: (practiceSchedules?.rows || []).map(ps => ({
+    id: String(ps.id),
+    day: ps.day,
+    startTime: ps.start_time,
+    endTime: ps.end_time,
+    location: ps.location,
   })),
 });
 
@@ -138,13 +145,14 @@ export const getCommunityModules = async (req, res) => {
 
     const modules = await Promise.all(
       modulesResult.rows.map(async (mod) => {
-        const [officialsRows, activities, gallery, announcements] = await Promise.all([
+        const [officialsRows, activities, gallery, announcements, practiceSchedules] = await Promise.all([
           fetchOfficialsRows(mod.id),
           pool.query(`SELECT * FROM hub_activities WHERE module_id = $1 ORDER BY activity_date DESC`, [mod.id]),
           pool.query(`SELECT * FROM hub_gallery WHERE module_id = $1`, [mod.id]),
           pool.query(`SELECT * FROM hub_announcements WHERE module_id = $1 ORDER BY announcement_date DESC`, [mod.id]),
+          pool.query(`SELECT * FROM hub_practice_schedules WHERE module_id = $1 AND is_active = true ORDER BY sort_order, id`, [mod.id]),
         ]);
-        return buildModule(mod, { rows: officialsRows }, activities, gallery, announcements);
+        return buildModule(mod, { rows: officialsRows }, activities, gallery, announcements, practiceSchedules);
       })
     );
 
@@ -177,14 +185,15 @@ export const getCommunityModuleById = async (req, res) => {
 
     const mod = modResult.rows[0];
 
-    const [officialsRows, activities, gallery, announcements] = await Promise.all([
+    const [officialsRows, activities, gallery, announcements, practiceSchedules] = await Promise.all([
       fetchOfficialsRows(mod.id),
       pool.query(`SELECT * FROM hub_activities WHERE module_id = $1 ORDER BY activity_date DESC`, [mod.id]),
       pool.query(`SELECT * FROM hub_gallery WHERE module_id = $1`, [mod.id]),
       pool.query(`SELECT * FROM hub_announcements WHERE module_id = $1 ORDER BY announcement_date DESC`, [mod.id]),
+      pool.query(`SELECT * FROM hub_practice_schedules WHERE module_id = $1 AND is_active = true ORDER BY sort_order, id`, [mod.id]),
     ]);
 
-    res.json(buildModule(mod, { rows: officialsRows }, activities, gallery, announcements));
+    res.json(buildModule(mod, { rows: officialsRows }, activities, gallery, announcements, practiceSchedules));
   } catch (error) {
     logger.error('Error fetching community module: ' + error.message);
     res.status(500).json({ message: 'Failed to fetch community module' });

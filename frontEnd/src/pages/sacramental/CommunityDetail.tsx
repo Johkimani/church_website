@@ -7,18 +7,16 @@ import { apiClient } from '../../api/axiosInstance';
 import CommunityAboutTab from './components/tabs/CommunityAboutTab';
 import CommunityOfficialsTab from './components/tabs/CommunityOfficialsTab';
 import CommunityMembersTab from './components/tabs/CommunityMembersTab';
-import CommunityRegistrationTab from './components/tabs/CommunityRegistrationTab';
-import CommunityStampCardTab from './components/tabs/CommunityStampCardTab';
 import CommunityChannelsTab from './components/tabs/CommunityChannelsTab';
 import CommunityActivitiesTab from './components/tabs/CommunityActivitiesTab';
 import CommunityTshirtsTab from './components/tabs/CommunityTshirtsTab';
 import CommunitySettingsTab from './components/tabs/CommunitySettingsTab';
 import CommunityNotificationsTab from './components/tabs/CommunityNotificationsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaStamp, FaTimes } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
-type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'settings' | 'stampcard';
+type TabType = 'about' | 'officials' | 'channels' | 'members' | 'activities' | 'tshirts' | 'settings';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e3a5f',
@@ -76,8 +74,8 @@ const CommunityDetail: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const tabFromUrl = params.get('tab') as TabType | null;
     const validTab = tabFromUrl && [
-      'about', 'officials', 'registration', 'channels', 'members',
-      'activities', 'tshirts', 'settings', 'stampcard'
+      'about', 'officials', 'channels', 'members',
+      'activities', 'tshirts', 'settings'
     ].includes(tabFromUrl);
     if (validTab) setActiveTab(tabFromUrl);
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -96,8 +94,6 @@ const CommunityDetail: React.FC = () => {
     { id: 'about' as TabType, label: 'About', icon: <FaInfoCircle /> },
     { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
     { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
-    { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
-    { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
     { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
     { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
     { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
@@ -113,10 +109,6 @@ const CommunityDetail: React.FC = () => {
         return <CommunityOfficialsTab module={moduleData} color={detailColor} isAdmin={isAdmin} />;
       case 'members':
         return <CommunityMembersTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
-      case 'registration':
-        return <CommunityRegistrationTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} module={moduleData} />;
-      case 'stampcard':
-        return <CommunityStampCardTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
       case 'activities':
         return <CommunityActivitiesTab moduleId={moduleIdClean} color={detailColor} module={moduleData} />;
       case 'channels':
