@@ -1,4 +1,4 @@
-import axiosInstance from "./axiosInstance";
+import { apiClient } from "./axiosInstance";
 
 export interface BackendNotification {
   id: number;
@@ -17,7 +17,7 @@ const BASE = "/jumuiya-notifications";
 
 const jumuiyaNotificationsService = {
   list: async (): Promise<BackendNotification[]> => {
-    const { data } = await axiosInstance.get(BASE);
+    const { data } = await apiClient.get(BASE);
     return data;
   },
 
@@ -26,7 +26,7 @@ const jumuiyaNotificationsService = {
     message: string;
     status?: string;
   }): Promise<BackendNotification> => {
-    const { data } = await axiosInstance.post(BASE, payload);
+    const { data } = await apiClient.post(BASE, payload);
     return data;
   },
 
@@ -34,12 +34,12 @@ const jumuiyaNotificationsService = {
     id: number,
     payload: { title?: string; message?: string; status?: string }
   ): Promise<BackendNotification> => {
-    const { data } = await axiosInstance.patch(`${BASE}/${id}`, payload);
+    const { data } = await apiClient.patch(`${BASE}/${id}`, payload);
     return data;
   },
 
   remove: async (id: number): Promise<void> => {
-    await axiosInstance.delete(`${BASE}/${id}`);
+    await apiClient.delete(`${BASE}/${id}`);
   },
 };
 

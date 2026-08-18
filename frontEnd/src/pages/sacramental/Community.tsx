@@ -20,7 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
-  FaUserPlus,
+  UserPlus,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -281,7 +281,7 @@ const Community: React.FC = () => {
             <div className="rounded-3xl p-6 md:p-8" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', boxShadow: '0 12px 40px rgba(15,52,96,0.2)' }}>
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-                  <FaUserPlus className="text-amber-300" size={16} />
+                  <UserPlus className="text-amber-300" size={16} />
                 </div>
                 <div>
                   <h3 className="text-white font-bold text-base">My Communities</h3>
