@@ -7,6 +7,7 @@ import { FaBell, FaReceipt, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 import AdminPanel from "../pages/Landing/components/AdminPanel";
 import { prefetchByPath } from "../utils/routePrefetch";
+import UserProfileDrawer from "../components/UserProfileDrawer";
 
 const prefetchNav = (path: string) => () => prefetchByPath(path);
 
@@ -27,6 +28,7 @@ const Headers = () => {
   const [animateBadge, setAnimateBadge] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     if (unreadCount > 0) {
@@ -189,12 +191,19 @@ const Headers = () => {
           {/* Auth */}
           {user ? (
             <div className="hidden md:flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200">
-              <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+              <button
+                onClick={() => setProfileOpen(true)}
+                className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-pointer"
+                title="My Profile"
+              >
                 {user.name?.charAt(0) || "U"}
-              </div>
-              <span className="text-sm font-semibold text-slate-700 hidden lg:block truncate max-w-[100px]">
+              </button>
+              <button
+                onClick={() => setProfileOpen(true)}
+                className="text-sm font-semibold text-slate-700 hidden lg:block truncate max-w-[100px] hover:text-blue-600 transition-colors cursor-pointer text-left"
+              >
                 {user.name}
-              </span>
+              </button>
               <button
                 className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg font-semibold text-xs hover:bg-emerald-50 transition-all"
                 onClick={() => navigate("/my-receipts")}
@@ -356,15 +365,27 @@ const Headers = () => {
               {user ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 px-4 py-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                    <button
+                      onClick={() => {
+                        setProfileOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-pointer shrink-0"
+                    >
                       {user.name?.charAt(0) || "U"}
-                    </div>
-                    <div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setProfileOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="text-left hover:opacity-80 transition-opacity cursor-pointer"
+                    >
                       <p className="font-bold text-sm text-slate-900">{user.name}</p>
                       <p className="text-xs text-slate-500">
                         {Array.isArray(user.role) ? user.role.join(", ") : user.role || "Member"}
                       </p>
-                    </div>
+                    </button>
                   </div>
                   <button
                     onClick={() => {
@@ -416,6 +437,7 @@ const Headers = () => {
           </div>
         </div>
       </div>
+      <UserProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
     </>
   );
 };

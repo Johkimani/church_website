@@ -99,11 +99,14 @@ export const Home = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-8 text-center relative z-10">
+          {/* Background glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-400/20 rounded-full blur-[120px] pointer-events-none" />
+
           <motion.span
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-block text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 bg-blue-50 border border-blue-100 px-4 py-1.5 rounded-full"
+            className="inline-block text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full"
           >
             KYU CSA Catholic Store
           </motion.span>
@@ -112,10 +115,10 @@ export const Home = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-5 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900"
+            className="mt-5 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight"
           >
             Welcome to{' '}
-            <span className="text-blue-600">
+            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
               Catholic Store
             </span>
           </motion.h1>
@@ -124,49 +127,74 @@ export const Home = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="mt-4 text-sm sm:text-base text-slate-500 max-w-2xl mx-auto"
+            className="mt-4 text-sm sm:text-base text-slate-500 max-w-2xl mx-auto leading-relaxed"
           >
             Sacred items, CSA merchandise, event rentals and worship equipment — everything the community needs, in one place.
           </motion.p>
 
+          {/* CTA Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:gap-4"
           >
+            <NavLink
+              to="#categories"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <ShoppingBag size={16} />
+              Explore Collections
+            </NavLink>
+            <NavLink
+              to="/sacramentals"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+            >
+              View Featured
+            </NavLink>
+          </motion.div>
+
+          {/* Feature Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto"
+          >
             {[
-              { id: 'kyu', label: 'Kirinyaga University', sub: 'KYU', icon: <GraduationCap size={16} />, tone: 'text-blue-600 bg-blue-50' },
-              { id: 'csa', label: 'Catholic Student Association', sub: 'CSA', icon: <Church size={16} />, tone: 'text-blue-600 bg-blue-50' },
-              { id: 'patron', label: 'St. Thomas of Aquinas', sub: 'Patron Saint', image: '/images/st-thomas-icon.jpg' },
+              { id: 'kyu', label: 'Kirinyaga University', sub: 'KYU', icon: <GraduationCap size={18} />, tone: 'bg-blue-50 text-blue-600 ring-blue-100', hover: 'hover:shadow-blue-100 hover:border-blue-200' },
+              { id: 'csa', label: 'Catholic Student Association', sub: 'CSA', icon: <Church size={18} />, tone: 'bg-indigo-50 text-indigo-600 ring-indigo-100', hover: 'hover:shadow-indigo-100 hover:border-indigo-200' },
+              { id: 'patron', label: 'St. Thomas of Aquinas', sub: 'Patron Saint', image: '/images/st-thomas-icon.jpg', tone: 'bg-amber-50 ring-amber-100', hover: 'hover:shadow-amber-100 hover:border-amber-200' },
             ].map((brand, i) => (
-              <div key={i} className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
-                <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+              <div
+                key={i}
+                className={`flex flex-col items-center gap-2.5 bg-white border border-slate-200 rounded-2xl px-3 py-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-default ${brand.hover}`}
+              >
+                <div className="w-11 h-11 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ring-2 ring-offset-1 ring-transparent">
                   {brand.image ? (
-                    <img
-                      src={brand.image}
-                      alt={brand.label}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={brand.image} alt={brand.label} className="w-full h-full object-cover" />
                   ) : (
-                    <div className={`w-full h-full ${brand.tone} flex items-center justify-center`}>
+                    <div className={`w-full h-full ${brand.tone} flex items-center justify-center rounded-xl`}>
                       {brand.icon}
                     </div>
                   )}
                 </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-800">{brand.sub}</p>
-                  <p className="text-[10px] sm:text-xs text-slate-500">{brand.label}</p>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-800 leading-tight">{brand.sub}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{brand.label}</p>
                 </div>
               </div>
             ))}
-            <NavLink to="/devotions" className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm hover:border-amber-300 hover:shadow-md transition-all group">
-              <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <BookHeart size={16} className="text-amber-500" />
+            <NavLink
+              to="/devotions"
+              className="flex flex-col items-center gap-2.5 bg-white border border-slate-200 rounded-2xl px-3 py-4 shadow-sm hover:shadow-amber-100 hover:border-amber-300 transition-all duration-300 group"
+            >
+              <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform ring-2 ring-offset-1 ring-transparent group-hover:ring-amber-100">
+                <BookHeart size={18} className="text-amber-500" />
               </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors">Daily Spiritual Life</p>
-                <p className="text-[10px] sm:text-xs text-slate-500">Prayer & Reflection</p>
+              <div className="text-center">
+                <p className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors leading-tight">Spiritual Life</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">Prayer & Reflection</p>
               </div>
             </NavLink>
           </motion.div>

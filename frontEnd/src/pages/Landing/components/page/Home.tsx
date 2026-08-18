@@ -1,5 +1,5 @@
 import ImageSlider from "../ImageSlider";
-import { AboutSection, CommunitySection, SupportSection, SuggestionBox, GalleryTeaser, MarianTeaser } from "../sections";
+import { AboutSection, CommunitySection, SupportSection, SuggestionBox, GalleryTeaser, MarianTeaser, ActivitiesSection } from "../sections";
 import { LiturgicalTicker } from "../LiturgicalTicker";
 import { useLiturgicalCalendar } from "../../../../hooks/useLiturgicalCalendar";
 
@@ -25,6 +25,7 @@ export const Home: React.FC = () => {
         <GalleryTeaser />
         <MarianTeaser />
         <CommunitySection />
+        <ActivitiesSection />
         <SuggestionBox />
         <SupportSection />
       </main>

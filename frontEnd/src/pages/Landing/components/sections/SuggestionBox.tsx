@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, Heart, Star, EyeOff } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, EyeOff } from 'lucide-react';
 import apiService from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 
@@ -68,14 +68,6 @@ const SuggestionBox: React.FC = () => {
       {/* Dynamic Background Elements - Subtler blurs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48 opacity-60"></div>
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-50/20 rounded-full blur-3xl -ml-48 -mb-48 opacity-60"></div>
-      
-      {/* Floating Decorative Elements - Positioned below the Suggestion Box header card on mobile, beside it on desktop */}
-      <div className="absolute top-24 md:top-10 left-4 md:left-10 text-red-500/80 animate-bounce direction-alternate-reverse duration-[3000ms]">
-        <Heart size={32} className="md:w-9 md:h-9" fill="currentColor" />
-      </div>
-      <div className="absolute bottom-10 right-4 md:right-10 text-amber-500/5 animate-pulse">
-        <Star size={48} fill="currentColor" />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-2xl mx-auto">
