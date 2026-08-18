@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useParams, useNavigate } from 'react-router-dom';
 import { FaBell, FaInfoCircle, FaUserTie, FaUsers, FaDatabase, FaCalendarAlt, FaArrowLeft } from 'react-icons/fa';
-import '../../Jumuiya/admin/AdminLayout.css';
+import '../../Jumuiya/admin/Admin.css';
 
 interface Props {
   color: string;

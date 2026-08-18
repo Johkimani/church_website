@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../../api/axiosInstance';
+import { apiClient } from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { FaSave } from 'react-icons/fa';
-import '../../Jumuiya/admin/AdminAbout.css';
+import '../../Jumuiya/admin/Admin.css';
 
 interface Props {
   color: string;
