@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { CommunityModule } from "../../context/CommunityDataContext";
 import { FaCalendarDay, FaClock, FaChurch, FaHeart, FaUsers, FaDownload, FaStar, FaPrayingHands } from "react-icons/fa";
-import '../../Jumuiya/components/TabsSystem.css';
+import '../../../Jumuiya/components/TabsSystem.css';
 
 interface Props {
   module: CommunityModule;
