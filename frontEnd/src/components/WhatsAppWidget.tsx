@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { apiClient } from "../../api/axiosInstance";
-import { LocalStorage } from "../../utils";
+import { useAuth } from "../context/AuthContext";
+import { apiClient } from "../api/axiosInstance";
+import { LocalStorage } from "../utils";
 import {
   MessageCircle,
   X,
