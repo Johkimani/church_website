@@ -50,14 +50,6 @@ export const notificationsMigration = async () => {
     `);
 
     await db.query(`
-      CREATE TABLE IF NOT EXISTS notification_uploads (
-        notification_id INTEGER REFERENCES notifications(id) ON DELETE CASCADE,
-        upload_id INTEGER REFERENCES uploads(id) ON DELETE CASCADE,
-        PRIMARY KEY (notification_id, upload_id)
-      );
-    `);
-
-    await db.query(`
       CREATE INDEX IF NOT EXISTS idx_notifications_posted_to
       ON notifications(posted_to);
     `);
@@ -79,9 +71,21 @@ export const notificationsMigration = async () => {
       logger.info(`Notifications migration: seeded ${SEED_NOTIFICATIONS.length} notifications`);
     }
 
-    logger.info("notifications and notification_uploads tables ensured");
+    logger.info("notifications table ensured");
   } catch (error) {
     logger.error("Notifications migration failed:", error.message);
+  }
+
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS notification_uploads (
+        notification_id INTEGER REFERENCES notifications(id) ON DELETE CASCADE,
+        upload_id INTEGER REFERENCES uploads(id) ON DELETE CASCADE,
+        PRIMARY KEY (notification_id, upload_id)
+      );
+    `);
+  } catch (error) {
+    logger.warn("notification_uploads table creation skipped:", error.message);
   }
 };
 
