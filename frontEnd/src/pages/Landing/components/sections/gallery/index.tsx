@@ -234,180 +234,142 @@ const GallerySection: React.FC = () => {
         </div>
       </div>
 
-        {/* Chronicle Explorer - 95% Canvas Logic */}
+        {/* Chronicle Explorer - Clean Three-Zone Layout */}
         <AnimatePresence>
           {selectedIdx !== null && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-0 md:p-6"
+              className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl flex flex-col"
             >
-               {/* Master Floating Canvas - Centered Museum Grade Hub */}
-               <motion.div 
-                 initial={{ scale: 0.95, opacity: 0 }}
-                 animate={{ scale: 1, opacity: 1 }}
-                 exit={{ scale: 0.95, opacity: 0 }}
-                 className="w-full h-full md:w-[95vw] md:h-[95vh] bg-blue-50/80 backdrop-blur-3xl md:rounded-[4rem] border-white/20 md:border md:shadow-[0_60px_120px_-30px_rgba(30,58,138,0.2)] flex flex-col relative overflow-hidden"
-               >
-                  {/* Top Navigation Strip */}
-                  <div className="absolute top-10 left-10 right-10 flex items-center justify-between z-[140]">
-                    <button 
-                      onClick={prevImage}
-                      className="flex items-center gap-4 text-slate-500 hover:text-slate-900 transition-all group pointer-events-auto"
-                    >
-                      <div className="w-12 h-12 rounded-full border border-slate-200 bg-white/50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all shadow-lg border-white">
-                        <ChevronLeft size={20} />
-                      </div>
-                      <span className="hidden md:inline text-[10px] font-black uppercase tracking-[0.5em]">Prev Archive</span>
-                    </button>
-
-                    <button 
-                      onClick={() => setSelectedIdx(null)}
-                      className="w-12 h-12 rounded-full border border-slate-200 bg-white/50 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-lg pointer-events-auto text-slate-500"
-                    >
-                      <X size={18} />
-                    </button>
-
-                    <button 
-                      onClick={nextImage}
-                      className="flex items-center gap-4 text-slate-400 hover:text-slate-900 transition-all group pointer-events-auto"
-                    >
-                      <span className="hidden md:inline text-[10px] font-black uppercase tracking-[0.5em]">Next Archive</span>
-                      <div className="w-12 h-12 rounded-full border border-slate-200 bg-white/50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all shadow-lg border-white">
-                        <ChevronRight size={20} />
-                      </div>
-                    </button>
+              {/* ── Header Bar ───────────────────────────── */}
+              <div className="shrink-0 flex items-center justify-between gap-4 px-4 md:px-8 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 z-[110]">
+                {/* Prev */}
+                <button
+                  onClick={prevImage}
+                  className="flex items-center gap-2 text-white/60 hover:text-white transition-all group shrink-0"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                    <ChevronLeft size={18} />
                   </div>
+                  <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
+                </button>
 
-
-                  {/* Centered Centered Witness Testimony - Top Horizontal Center */}
-                  <div className="absolute top-28 left-0 right-0 flex justify-center z-[130] pointer-events-none px-6">
-                    <motion.div 
-                      key={filteredItems[selectedIdx].id}
-                      initial={{ y: -20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      className="max-w-[500px] w-full bg-white/40 backdrop-blur-2xl border border-white/40 rounded-[2.5rem] p-6 shadow-xl pointer-events-auto"
-                    >
-                       <div className="flex flex-col items-center text-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
-                            <MessageSquare size={18} />
-                          </div>
-                          <p className="text-[15px] text-slate-900 font-medium italic leading-relaxed">
-                            "This day remains etched in our hearts as a testament of our collective faith and spirit."
-                          </p>
-                          <div className="flex items-center gap-3">
-                             <span className="w-4 h-px bg-slate-300"></span>
-                             <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Elder Witness Reflection</span>
-                             <span className="w-4 h-px bg-slate-300"></span>
-                          </div>
-                       </div>
-                    </motion.div>
+                {/* Title + Badge */}
+                <div className="flex-1 min-w-0 text-center">
+                  <motion.h2
+                    key={filteredItems[selectedIdx].id}
+                    initial={{ y: -8, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="text-sm md:text-base font-bold text-white truncate"
+                  >
+                    {filteredItems[selectedIdx].event_name}
+                  </motion.h2>
+                  <div className="flex items-center justify-center gap-3 mt-1">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2.5 py-0.5 rounded-full">
+                      {filteredItems[selectedIdx].module_id} Group
+                    </span>
+                    <span className="text-[9px] font-medium text-white/30">
+                      {new Date(filteredItems[selectedIdx].upload_date).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                    </span>
                   </div>
+                </div>
 
-                  {/* Main Visual Stage - Raw 95% Focus */}
-                  <div className="w-full h-full flex items-center justify-center p-8 md:p-24 z-[110]">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={filteredItems[selectedIdx].id}
-                          initial={{ opacity: 0, scale: 1.05 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                          className="w-full h-full flex items-center justify-center"
-                        >
-                           <img 
-                              src={filteredItems[selectedIdx].image_url} 
-                              className="w-full h-full object-contain"
-                              alt="Raw Chronicle"
-                           />
-                        </motion.div>
-                      </AnimatePresence>
-                  </div>
+                {/* Close + Next */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setSelectedIdx(null)}
+                    className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all"
+                  >
+                    <X size={16} />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="flex items-center gap-2 text-white/60 hover:text-white transition-all group"
+                  >
+                    <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Next</span>
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                      <ChevronRight size={18} />
+                    </div>
+                  </button>
+                </div>
+              </div>
 
-                  {/* Centered Centered Metadata & Carousel Hub - Bottom Alignment */}
-                  <div className="absolute bottom-12 left-0 right-0 flex flex-col items-center gap-10 z-[140] pointer-events-none px-6">
-                     
-                     {/* Metadata Command Strip - Thinner & Centered */}
-                     <motion.div 
-                        layoutId="metadata_strip"
-                        className="w-full max-w-[1300px] bg-white/30 backdrop-blur-3xl border border-white/30 shadow-2xl rounded-[2.5rem] p-4 flex flex-col md:flex-row items-center justify-between gap-10 pointer-events-auto"
+              {/* ── Image Canvas (unobstructed) ─────────── */}
+              <div className="flex-1 min-h-0 flex items-center justify-center px-4 md:px-16 py-4">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={filteredItems[selectedIdx].id}
+                    initial={{ opacity: 0, scale: 1.03 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                    className="w-full h-full flex items-center justify-center"
+                  >
+                    <img
+                      src={filteredItems[selectedIdx].image_url}
+                      alt={filteredItems[selectedIdx].event_name}
+                      className="max-w-full max-h-full object-contain rounded-2xl"
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* ── Footer Bar ──────────────────────────── */}
+              <div className="shrink-0 bg-white/5 backdrop-blur-xl border-t border-white/10 z-[110]">
+                {/* Quote / Reflection */}
+                <div className="hidden md:flex items-center justify-center gap-4 px-8 py-3 border-b border-white/5">
+                  <MessageSquare size={14} className="text-blue-400/60 shrink-0" />
+                  <p className="text-xs text-white/40 italic text-center max-w-lg">
+                    "This day remains etched in our hearts as a testament of our collective faith and spirit."
+                  </p>
+                  <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/20 shrink-0">Elder Witness</span>
+                </div>
+
+                {/* Actions + Thumbnails */}
+                <div className="flex items-center gap-4 px-4 md:px-8 py-3">
+                  {/* Acknowledge */}
+                  <button
+                    onClick={(e) => toggleLike(e, filteredItems[selectedIdx].id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 ${
+                      likedItems.has(filteredItems[selectedIdx].id)
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-white/10 text-white/50 hover:text-white hover:bg-white/20'
+                    }`}
+                  >
+                    <Heart size={14} fill={likedItems.has(filteredItems[selectedIdx].id) ? 'currentColor' : 'none'} />
+                    <span className="hidden sm:inline">Acknowledge</span>
+                  </button>
+
+                  {/* Share */}
+                  <button className="w-10 h-10 rounded-xl bg-white/10 text-white/50 hover:text-white hover:bg-white/20 flex items-center justify-center transition-all shrink-0">
+                    <Send size={16} />
+                  </button>
+
+                  {/* Thumbnail Strip */}
+                  <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto hide-scrollbar px-2">
+                    {filteredItems.slice(0, 12).map((thum, idx) => (
+                      <button
+                        key={thum.id}
+                        onClick={() => setSelectedIdx(idx)}
+                        className={`shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                          selectedIdx === idx
+                            ? 'border-blue-400 w-14 h-10 md:w-20 md:h-14 opacity-100'
+                            : 'border-white/10 w-10 h-8 md:w-14 md:h-10 opacity-40 hover:opacity-70'
+                        }`}
                       >
-                        <AnimatePresence mode="wait">
-                          <motion.div 
-                            key={filteredItems[selectedIdx].id}
-                            initial={{ x: 40, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: -40, opacity: 0 }}
-                            className="flex items-center gap-8 px-6 flex-1 min-w-0"
-                          >
-                             <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-lg">
-                                <Camera size={26} />
-                             </div>
-                             <div className="min-w-0 text-left">
-                                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-2 truncate">
-                                  {filteredItems[selectedIdx].event_name}
-                                </h2>
-                                <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-blue-600">
-                                   <span>{filteredItems[selectedIdx].module_id} Group</span>
-                                   <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                   <span className="text-slate-400">{new Date(filteredItems[selectedIdx].upload_date).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-                                </div>
-                             </div>
-                          </motion.div>
-                        </AnimatePresence>
-
-                        <div className="flex items-center gap-4 md:gap-6 px-4 sm:px-10 w-full md:w-auto justify-center shrink-0 flex-wrap">
-                           <button 
-                             onClick={(e) => toggleLike(e, filteredItems[selectedIdx].id)}
-                             className={`flex items-center gap-4 px-6 md:px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                               likedItems.has(filteredItems[selectedIdx].id) 
-                               ? 'bg-rose-600 text-white shadow-lg' 
-                               : 'bg-white/80 text-slate-500 hover:text-rose-600'
-                             }`}
-                           >
-                              <Heart size={20} fill={likedItems.has(filteredItems[selectedIdx].id) ? "currentColor" : "none"} />
-                              Acknowledge
-                           </button>
-                           <button className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg">
-                              <Send size={24} />
-                           </button>
-                        </div>
-                     </motion.div>
-
-                     {/* Digital Folder Carousel - Centered Below */}
-                     <div className="w-full max-w-5xl flex items-end justify-center gap-6 overflow-x-auto hide-scrollbar pointer-events-auto pb-4 px-10">
-                        {filteredItems.slice(0, 10).map((thum, idx) => (
-                           <div key={thum.id} className="flex flex-col items-center gap-4">
-                              <motion.div
-                                onClick={() => setSelectedIdx(idx)}
-                                animate={{ 
-                                  scale: selectedIdx === idx ? 1.4 : 0.85, 
-                                  opacity: selectedIdx === idx ? 1 : 0.4,
-                                  y: selectedIdx === idx ? -15 : 0
-                                }}
-                                transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                                className={`rounded-[1.2rem] md:rounded-[2rem] overflow-hidden cursor-pointer border-[4px] relative shrink-0 shadow-xl ${
-                                   selectedIdx === idx ? 'border-blue-500 w-28 h-20 md:w-52 md:h-36 z-[160]' : 'border-white/50 w-16 h-12 md:w-24 md:h-16'
-                                }`}
-                              >
-                                 <img src={thum.image_url} className="w-full h-full object-cover" />
-                                 {selectedIdx === idx && (
-                                    <div className="absolute inset-0 bg-blue-500/10 mix-blend-overlay" />
-                                 )}
-                              </motion.div>
-                              
-                              {selectedIdx === idx && (
-                                <motion.div 
-                                  layoutId="dot_indicator"
-                                  className="w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,1)] ring-4 ring-white relative active-dot"
-                                />
-                              )}
-                           </div>
-                        ))}
-                     </div>
+                        <img src={thum.image_url} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
                   </div>
-               </motion.div>
+
+                  {/* Counter */}
+                  <span className="text-[10px] font-bold text-white/30 shrink-0 tabular-nums">
+                    {selectedIdx + 1}/{filteredItems.length}
+                  </span>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
