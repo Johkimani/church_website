@@ -4,7 +4,7 @@ import { FaPhoneAlt, FaWhatsapp } from 'react-icons/fa'
 import { Users, ChevronRight } from 'lucide-react'
 import { useSocket } from '../../context/SocketContext'
 
-import apiService from '../../pages/Landing/services/api'
+import apiService from '../../../services/api'
 import { getSafeImageUrl } from '../../api/config'
 import { getAvatarForCategory } from './constants/positionInfo'
 

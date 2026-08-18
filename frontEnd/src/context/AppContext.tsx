@@ -24,7 +24,7 @@ export interface HireItem {
   hireMode?: 'daily' | 'hourly';
   hours?: number;
 }
-import apiService from '../pages/Landing/services/api';
+import apiService from '../services/api';
 import type { ToastMessage } from '../pages/projects/components/ToastContainer';
 
 interface AppContextType {

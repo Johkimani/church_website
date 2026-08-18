@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_GROUP_BASE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { apiClient } from '../api/axiosInstance';
-import apiService from '../pages/Landing/services/api';
+import apiService from '../../services/api';
 
 export interface GroupOfficial {
   id: number;

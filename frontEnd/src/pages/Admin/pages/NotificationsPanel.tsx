@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Bell, Package, CalendarDays, AlertTriangle, CheckCircle, Clock, DollarSign, ShoppingCart, RefreshCw } from "lucide-react";
-import apiService from "../../../pages/Landing/services/api";
+import apiService from "../../../services/api";
 
 type Notification = {
   id: string;

@@ -4,7 +4,7 @@ import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import type { Official } from './useOfficials';
 
 import { useAuth } from '../context/AuthContext';
-import apiService from '../pages/Landing/services/api';
+import apiService from '../../services/api';
 
 export interface HistoryResponse {
   data: Official[];

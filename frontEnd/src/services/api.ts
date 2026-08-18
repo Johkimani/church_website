@@ -1,5 +1,5 @@
 // Base URL for the API endpoints - using proxy
-import { apiClient } from "../../../api/axiosInstance";
+import { apiClient } from "../api/axiosInstance";
 
 /**
  * ApiService class provides methods to interact with the backend API.

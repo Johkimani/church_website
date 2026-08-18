@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageLoader from '../../assets/Layouts/PageLoader';
-import apiService from '../../pages/Landing/services/api';
+import apiService from '../../../services/api';
 import { FaArrowLeft, FaCheckCircle, FaSearch } from 'react-icons/fa';
 
 interface GalleryItem {
