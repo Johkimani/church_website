@@ -380,6 +380,7 @@ export default function WeeklyActivitiesAdmin() {
                   required
                 />
               </div>
+              {!isScoped && (
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Fare (KES) — optional</label>
                 <input
@@ -392,6 +393,7 @@ export default function WeeklyActivitiesAdmin() {
                   className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                 />
               </div>
+              )}
               <div className="flex gap-2 pt-2">
                 <button type="submit" disabled={saving || uploading} className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors">
                   {saving || uploading ? "Saving..." : editingId ? "Update" : "Add Activity"}
@@ -433,7 +435,7 @@ export default function WeeklyActivitiesAdmin() {
                     <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                       <span>{a.time}</span>
                       <span>{a.venue}</span>
-                      {a.fare ? <span className="font-semibold text-emerald-600">KES {Number(a.fare).toLocaleString()}</span> : null}
+                      {!isScoped && a.fare ? <span className="font-semibold text-emerald-600">KES {Number(a.fare).toLocaleString()}</span> : null}
                     </div>
                   </div>
 

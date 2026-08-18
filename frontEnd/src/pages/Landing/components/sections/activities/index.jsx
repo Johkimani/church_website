@@ -155,34 +155,36 @@ function WeeklyCard({ activity, onBook, bookingState, rsvpState, onToggleRsvp })
         <p className="flex items-center gap-2">
           <MapPin size={12} className="text-primary/60" />{activity.venue}
         </p>
-        {activity.fare && Number(activity.fare) > 0 && (
+        {!activity.jumuiya_id && activity.fare && Number(activity.fare) > 0 && (
           <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
             <span className="font-bold text-emerald-600">KES {Number(activity.fare).toLocaleString()}</span>
             {renderBookButton()}
           </div>
         )}
-        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
-            <Users size={12} className="text-primary/60" />
-            {rsvpState?.count || 0} going
-          </span>
-          {!user ? (
-            <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleRsvp(activity); }}
-              disabled={rsvpState?.busy}
-              className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
-                rsvpState?.going
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-              }`}
-            >
-              {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
-              {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
-            </button>
-          )}
-        </div>
+        {!activity.jumuiya_id && (
+          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
+              <Users size={12} className="text-primary/60" />
+              {rsvpState?.count || 0} going
+            </span>
+            {!user ? (
+              <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleRsvp(activity); }}
+                disabled={rsvpState?.busy}
+                className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
+                  rsvpState?.going
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                }`}
+              >
+                {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
+                {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -270,34 +272,36 @@ function SemesterCard({ event, onBook, bookingState, rsvpState, onToggleRsvp }) 
           <MapPin size={12} className="text-primary/60" />
           {event.venue}
         </p>
-        {event.fare && Number(event.fare) > 0 && (
+        {!event.jumuiya_id && event.fare && Number(event.fare) > 0 && (
           <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
             <span className="font-bold text-emerald-600">KES {Number(event.fare).toLocaleString()}</span>
             {renderBookButton()}
           </div>
         )}
-        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
-            <Users size={12} className="text-primary/60" />
-            {rsvpState?.count || 0} going
-          </span>
-          {!user ? (
-            <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleRsvp(event); }}
-              disabled={rsvpState?.busy}
-              className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
-                rsvpState?.going
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-              }`}
-            >
-              {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
-              {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
-            </button>
-          )}
-        </div>
+        {!event.jumuiya_id && (
+          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
+              <Users size={12} className="text-primary/60" />
+              {rsvpState?.count || 0} going
+            </span>
+            {!user ? (
+              <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleRsvp(event); }}
+                disabled={rsvpState?.busy}
+                className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
+                  rsvpState?.going
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                }`}
+              >
+                {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
+                {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

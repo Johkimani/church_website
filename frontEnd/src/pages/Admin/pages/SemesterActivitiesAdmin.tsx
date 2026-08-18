@@ -400,6 +400,7 @@ export default function SemesterActivitiesAdmin() {
                   required
                 />
               </div>
+              {!isScoped && (
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Fare (KES) — optional</label>
                 <input
@@ -412,6 +413,7 @@ export default function SemesterActivitiesAdmin() {
                   className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                 />
               </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Description</label>
                 <textarea
@@ -471,7 +473,7 @@ export default function SemesterActivitiesAdmin() {
                       <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                         <span>{dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
                         <span>{e.venue}</span>
-                        {e.fare ? <span className="font-semibold text-emerald-600">KES {Number(e.fare).toLocaleString()}</span> : null}
+                        {!isScoped && e.fare ? <span className="font-semibold text-emerald-600">KES {Number(e.fare).toLocaleString()}</span> : null}
                       </div>
                       {e.description && <p className="text-xs text-slate-400 mt-1 line-clamp-1">{e.description}</p>}
                     </div>

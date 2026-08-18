@@ -462,25 +462,27 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId, 
                                         </div>
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '200px' }}>
-                                            {item.image_url && (
-                                                <img src={item.image_url} alt={item.activity} style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
-                                            )}
-                                            <span style={{ fontWeight: 800, color: jumuiyaColor, minWidth: '100px' }}>{item.day}</span>
-                                            <span style={{ color: 'var(--text-secondary)' }}>{item.time || '—'}</span>
-                                            <span style={{ fontWeight: 600 }}>{item.activity}</span>
-                                            {item.venue && <span style={{ color: 'var(--text-secondary)' }}><FaMapMarkerAlt style={{ marginRight: '4px', fontSize: '0.75rem' }} />{item.venue}</span>}
-                                        </div>
-                                        {canManage && (
-                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                <button onClick={() => handleMoveWeekly(item, -1)} disabled={idx === 0} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', opacity: idx === 0 ? 0.3 : 1 }}><FaChevronUp /></button>
-                                                <button onClick={() => handleMoveWeekly(item, 1)} disabled={idx === weeklyActivities.length - 1} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', opacity: idx === weeklyActivities.length - 1 ? 0.3 : 1 }}><FaChevronDown /></button>
-                                                <button onClick={() => { setEditingWeekly(item.id); setEditWeeklyForm({ day: item.day, time: item.time || '', activity: item.activity, venue: item.venue || '' }); }} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }}><FaEdit /></button>
-                                                <button onClick={() => handleToggleWeekly(item)} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: item.is_active ? '#16a34a' : '#dc2626' }}>{item.is_active ? <FaToggleOn /> : <FaToggleOff />}</button>
-                                                <button onClick={() => handleDeleteWeekly(item.id)} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }}><FaTrash /></button>
-                                            </div>
+                                    <div>
+                                        {item.image_url && (
+                                            <img src={item.image_url} alt={item.activity} style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '12px', marginBottom: '12px' }} />
                                         )}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '200px' }}>
+                                                <span style={{ fontWeight: 800, color: jumuiyaColor, minWidth: '100px' }}>{item.day}</span>
+                                                <span style={{ color: 'var(--text-secondary)' }}>{item.time || '—'}</span>
+                                                <span style={{ fontWeight: 600 }}>{item.activity}</span>
+                                                {item.venue && <span style={{ color: 'var(--text-secondary)' }}><FaMapMarkerAlt style={{ marginRight: '4px', fontSize: '0.75rem' }} />{item.venue}</span>}
+                                            </div>
+                                            {canManage && (
+                                                <div style={{ display: 'flex', gap: '4px' }}>
+                                                    <button onClick={() => handleMoveWeekly(item, -1)} disabled={idx === 0} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', opacity: idx === 0 ? 0.3 : 1 }}><FaChevronUp /></button>
+                                                    <button onClick={() => handleMoveWeekly(item, 1)} disabled={idx === weeklyActivities.length - 1} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', opacity: idx === weeklyActivities.length - 1 ? 0.3 : 1 }}><FaChevronDown /></button>
+                                                    <button onClick={() => { setEditingWeekly(item.id); setEditWeeklyForm({ day: item.day, time: item.time || '', activity: item.activity, venue: item.venue || '' }); }} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }}><FaEdit /></button>
+                                                    <button onClick={() => handleToggleWeekly(item)} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: item.is_active ? '#16a34a' : '#dc2626' }}>{item.is_active ? <FaToggleOn /> : <FaToggleOff />}</button>
+                                                    <button onClick={() => handleDeleteWeekly(item.id)} style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }}><FaTrash /></button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
