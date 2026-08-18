@@ -41,4 +41,29 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+// Optional: sets req.user if a valid token is present, but continues without error if not
+export const optionalAuth = async (req, res, next) => {
+  const authHeader =
+    req.headers["authorization"] || req.headers["Authorization"];
+
+  try {
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return next();
+
+    const decoded = verifyAccessToken(token);
+    req.user = {
+      id: decoded.id,
+      member_id: decoded.id,
+      role: decoded.role,
+      jumuiya_id: decoded.jumuiya_id,
+      firstName: decoded.firstName,
+      lastName: decoded.lastName,
+      email: decoded.email,
+    };
+  } catch {
+    // Invalid/expired token — just continue without user
+  }
+  next();
+};
+
 export default verifyToken;

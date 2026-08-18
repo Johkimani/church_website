@@ -1,5 +1,5 @@
 import { Router } from "express";
-import verifyToken from "../../middlewares/Tokens.js";
+import verifyToken, { optionalAuth } from "../../middlewares/Tokens.js";
 import { requireRole } from "../../middlewares/roleMiddleware.js";
 import {
   createEnrollment,
@@ -20,8 +20,8 @@ const COMMUNITY_ADMIN_ROLES = [
   'mentorship_chair', 'youth_chair',
 ];
 
-// Public routes
-router.post("/:moduleId", createEnrollment);
+// Public routes (optionalAuth: captures user info if logged in, but doesn't require it)
+router.post("/:moduleId", optionalAuth, createEnrollment);
 router.get("/:moduleId/check-duplicate", checkDuplicate);
 
 // Authenticated: my communities
