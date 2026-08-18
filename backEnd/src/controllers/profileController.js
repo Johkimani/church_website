@@ -9,8 +9,8 @@ export const getMyProfile = async (req, res) => {
 
     const result = await db.query(
       `SELECT m.member_id, m.first_name, m.last_name, m.email, m.phone,
-              m.gender, m.course, m.year_of_study, m.join_date, m.status,
-              sg.name AS jumuiya_name, sg.slug AS jumuiya_slug
+              m.course, m.year_of_study, m.jumuiya_id, m.profile_image,
+              sg.name AS jumuiya_name
        FROM members m
        LEFT JOIN sub_groups sg ON sg.group_id = m.jumuiya_id
        WHERE m.member_id = $1`,
@@ -35,18 +35,13 @@ export const getMyProfile = async (req, res) => {
 
     res.json({
       member_id: row.member_id,
-      firstName: row.first_name,
-      lastName: row.last_name,
       name: `${row.first_name} ${row.last_name}`.trim(),
       email: row.email || "",
       phone: row.phone || "",
-      gender: row.gender || "",
+      profileImage: row.profile_image || "",
       course: row.course || "",
       yearOfStudy: row.year_of_study || "",
-      joinDate: row.join_date || "",
-      status: row.status || "",
       jumuiyaName: row.jumuiya_name || "",
-      jumuiyaSlug: row.jumuiya_slug || "",
       roles,
     });
   } catch (error) {
@@ -80,7 +75,7 @@ export const updateMyProfile = async (req, res) => {
     const userId = req.user?.id || req.user?.member_id;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-    const { phone, email } = req.body;
+    const { phone, email, profileImage } = req.body;
 
     // Reject any locked fields injected into the body
     for (const key of Object.keys(req.body)) {
@@ -94,6 +89,12 @@ export const updateMyProfile = async (req, res) => {
     const updates = [];
     const values = [];
     let idx = 1;
+
+    if (profileImage !== undefined) {
+      updates.push(`profile_image = $${idx}`);
+      values.push(profileImage || null);
+      idx++;
+    }
 
     if (phone !== undefined) {
       updates.push(`phone = $${idx}`);
@@ -133,7 +134,7 @@ export const updateMyProfile = async (req, res) => {
       `UPDATE members
        SET ${updates.join(", ")}
        WHERE member_id = $${idx}
-       RETURNING member_id, first_name, last_name, email, phone`,
+       RETURNING member_id, first_name, last_name, email, phone, profile_image`,
       values
     );
 
@@ -153,6 +154,7 @@ export const updateMyProfile = async (req, res) => {
         name: `${updated.first_name} ${updated.last_name}`.trim(),
         email: updated.email || "",
         phone: updated.phone || "",
+        profileImage: updated.profile_image || "",
       },
     });
   } catch (error) {

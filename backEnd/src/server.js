@@ -36,6 +36,7 @@ import jumuiyaAttendanceMigration from "./migrations/jumuiyaAttendanceMigration.
 import activityLogMigration from "./migrations/activityLogMigration.js";
 import semesterConfigMigration from "./migrations/semesterConfigMigration.js";
 import whatsappLinksMigration from "./migrations/whatsappLinksMigration.js";
+import profileImageMigration from "./migrations/profileImageMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -189,6 +190,7 @@ const initServer = async () => {
     await activityLogMigration();
     await semesterConfigMigration();
     await whatsappLinksMigration();
+    await profileImageMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

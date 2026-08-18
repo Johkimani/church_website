@@ -7,7 +7,7 @@
 
 // Export section components
 // export { default as JumuiyaSection } from './jumuiya';
-export { default as ActivitiesSection } from './activities';
+// export { default as ActivitiesSection } from './activities';
 // export { default as ProjectsSection } from './projects';
 // export { default as OfficialsSection } from './officials';
 

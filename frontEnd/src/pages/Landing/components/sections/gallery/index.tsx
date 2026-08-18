@@ -178,11 +178,11 @@ const GallerySection: React.FC = () => {
               </div>
 
               {/* Visual Component */}
-              <div className="relative overflow-hidden aspect-[4/5] md:aspect-auto mx-4 md:mx-0 rounded-[2rem] md:rounded-none border border-slate-100/50 md:border-none shadow-sm md:shadow-none">
-                <img 
-                  src={item.image_url} 
+              <div className="relative overflow-hidden mx-4 md:mx-0 rounded-[2rem] md:rounded-none border border-slate-100/50 md:border-none shadow-sm md:shadow-none">
+                <img
+                  src={item.image_url}
                   alt={item.event_name}
-                  className="w-full h-full object-cover transition-transform duration-[2500ms] group-hover:scale-105 rounded-[2rem] md:rounded-none"
+                  className="w-full h-64 md:h-72 object-cover transition-transform duration-[2500ms] group-hover:scale-105"
                 />
                 
                 {item.is_anniversary && (
@@ -296,24 +296,59 @@ const GallerySection: React.FC = () => {
                 </div>
               </div>
 
-              {/* ── Image Canvas (unobstructed) ─────────── */}
-              <div className="flex-1 min-h-0 flex items-center justify-center px-4 md:px-16 py-4">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={filteredItems[selectedIdx].id}
-                    initial={{ opacity: 0, scale: 1.03 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.97 }}
-                    transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                    className="w-full h-full flex items-center justify-center"
-                  >
-                    <img
-                      src={filteredItems[selectedIdx].image_url}
-                      alt={filteredItems[selectedIdx].event_name}
-                      className="max-w-full max-h-full object-contain rounded-2xl"
-                    />
-                  </motion.div>
-                </AnimatePresence>
+              {/* ── Image Canvas (2-3 images at once) ────── */}
+              <div className="flex-1 min-h-0 flex items-center justify-center px-3 md:px-10 py-4 overflow-hidden">
+                <div className="w-full h-full flex items-center justify-center gap-3 md:gap-5">
+                  {/* Prev image (visible on md+) */}
+                  {filteredItems.length > 2 && (
+                    <motion.button
+                      onClick={prevImage}
+                      initial={{ opacity: 0, x: 30 }}
+                      animate={{ opacity: 0.4, x: 0 }}
+                      className="hidden md:flex shrink-0 w-[18%] h-[70%] rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 hover:opacity-70 transition-all cursor-pointer group"
+                    >
+                      <img
+                        src={filteredItems[(selectedIdx - 1 + filteredItems.length) % filteredItems.length].image_url}
+                        alt=""
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </motion.button>
+                  )}
+
+                  {/* Current image (main) */}
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={filteredItems[selectedIdx].id}
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ type: 'spring', stiffness: 150, damping: 22 }}
+                      className="shrink-0 w-full md:w-[60%] h-full max-h-[70vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+                    >
+                      <img
+                        src={filteredItems[selectedIdx].image_url}
+                        alt={filteredItems[selectedIdx].event_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+
+                  {/* Next image (visible on md+) */}
+                  {filteredItems.length > 1 && (
+                    <motion.button
+                      onClick={nextImage}
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 0.4, x: 0 }}
+                      className="hidden md:flex shrink-0 w-[18%] h-[70%] rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 hover:opacity-70 transition-all cursor-pointer group"
+                    >
+                      <img
+                        src={filteredItems[(selectedIdx + 1) % filteredItems.length].image_url}
+                        alt=""
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </motion.button>
+                  )}
+                </div>
               </div>
 
               {/* ── Footer Bar ──────────────────────────── */}
