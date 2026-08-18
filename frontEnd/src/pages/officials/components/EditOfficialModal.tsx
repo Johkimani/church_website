@@ -195,7 +195,7 @@ export function EditOfficialModal({
       <span className={`text-[10px] font-bold flex items-center gap-1 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
         {categoryStats[category].isFull ? (
           <>
-            <span> Fully Filled ({categoryStats[category].count}/{categoryStats[category].limit})
+            <span> Fully Filled ({categoryStats[category].count}/{categoryStats[category].limit})</span>
           </>
         ) : (
           `Available (${categoryStats[category].count}/${categoryStats[category].limit})`
