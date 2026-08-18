@@ -11,15 +11,14 @@ import ChannelsTab from './components/ChannelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
 import SettingsTab from './components/SettingsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog, FaKey, FaStamp } from "react-icons/fa";
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaStamp } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
 import './JumuiyaDetail.css';
-import AdminPanelEmbed from './admin/AdminPanelEmbed';
 import { FaTimes } from 'react-icons/fa';
 
-type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'admin' | 'settings' | 'stampcard';
+type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'settings' | 'stampcard';
 
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -186,7 +185,6 @@ const JumuiyaDetail: React.FC = () => {
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
-        ...(canManageActivities ? [{ id: 'admin' as TabType, label: 'Admin', icon: <FaCog className="animate-spin-slow" /> }] : []),
         ...(isMemberOfThisJumuiya ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
     ];
 
@@ -210,7 +208,7 @@ const JumuiyaDetail: React.FC = () => {
             case 'registration':
                 return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaColor={detailColor} />;
             case 'activities':
-                return <ActivitiesTab jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} canManage={canManageActivities} />;
+                return <ActivitiesTab jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} />;
             case 'channels':
                 return <ChannelsTab socialMedia={jumuiya.socialMedia || []} jumuiyaId={jumuiya.group_id || jumuiya.id} />;
             case 'tshirts':
@@ -219,8 +217,6 @@ const JumuiyaDetail: React.FC = () => {
                 return <SettingsTab jumuiyaColor={detailColor} />;
             case 'stampcard':
                 return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />;
-            case 'admin':
-                return <AdminPanelEmbed jumuiya={jumuiya} />;
             default:
                 return null;
         }
