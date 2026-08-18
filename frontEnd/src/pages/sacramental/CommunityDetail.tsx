@@ -21,10 +21,10 @@ import '../Jumuiya/JumuiyaDetail.css';
 type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'settings' | 'stampcard';
 
 const MINISTRY_COLORS: Record<string, string> = {
-  choir: '#0f172a',
+  choir: '#1e3a5f',
   dancers: '#7c3aed',
   charismatic: '#db2777',
-  'st-francis': '#064e3b',
+  'st-francis': '#047857',
   youth: '#8e44ad',
   mentorship: '#6d28d9',
 };
@@ -178,7 +178,12 @@ const CommunityDetail: React.FC = () => {
 
       {/* Sidebar Navigation */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
+        <div
+          className="sidebar-header"
+          style={{
+            background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}dd 50%, ${detailColor}bb 100%)`,
+          }}
+        >
           <div
             className="sidebar-icon"
             style={{
@@ -187,10 +192,12 @@ const CommunityDetail: React.FC = () => {
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
-              backgroundColor: detailColor,
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              border: '3px solid rgba(255,255,255,0.3)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
             }}
           />
-          <h2 className="sidebar-title">{moduleData.title}</h2>
+          <h2 className="sidebar-title text-white drop-shadow-md">{moduleData.title}</h2>
         </div>
 
         <nav className="sidebar-nav">
