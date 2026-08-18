@@ -92,6 +92,10 @@ const CommunityDetail: React.FC = () => {
 
   const hasJoined = isAdmin || (myCommData || []).some((c: any) => c.module_id === moduleIdClean);
 
+  // Tabs that are publicly accessible (no join required)
+  const PUBLIC_TABS: TabType[] = ['about', 'officials', 'activities'];
+  const isPublicTab = PUBLIC_TABS.includes(activeTab);
+
   const notifCount = ((moduleData as any)?.announcements || []).length;
 
   const setTabWithUrl = (tab: TabType) => {
@@ -124,6 +128,29 @@ const CommunityDetail: React.FC = () => {
 
   const renderTabContent = () => {
     if (!moduleData) return null;
+
+    // Gated tabs: show join prompt if not joined
+    if (!hasJoined && !isPublicTab) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black mb-4 shadow-lg" style={{ background: detailColor }}>
+            <FaUserPlus size={28} />
+          </div>
+          <h3 className="text-xl font-black text-slate-800 mb-2">Join to Access</h3>
+          <p className="text-slate-500 text-sm mb-6 max-w-sm leading-relaxed">
+            Join {moduleData.title} to view {TAB_LABELS[activeTab].toLowerCase()}, connect with members, and be part of the community.
+          </p>
+          <button
+            onClick={() => navigate(`/community/${moduleIdClean}/join`)}
+            className="px-8 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer"
+            style={{ background: detailColor }}
+          >
+            <FaUserPlus className="inline mr-2" size={12} /> Join Now
+          </button>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'about':
         return <CommunityAboutTab module={moduleData} color={detailColor} onNavigateBack={() => navigate('/community')} onQuickLink={(tab) => setTabWithUrl(tab)} />;
@@ -172,46 +199,6 @@ const CommunityDetail: React.FC = () => {
               className="px-6 py-3 bg-stone-900 text-white rounded-2xl font-bold text-sm cursor-pointer hover:bg-stone-800 transition-all hover:scale-[1.02] shadow-lg"
             >
               <FaArrowLeft style={{ marginRight: '8px' }} /> Back to Community
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Gate: must have joined to view community details
-  if (myCommData !== undefined && !hasJoined) {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center">
-          <div
-            className="rounded-3xl overflow-hidden mb-6"
-            style={{ background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}cc 100%)`, height: '160px' }}
-          >
-            {(moduleData.saint_image_url || moduleData.image_url) ? (
-              <img src={moduleData.saint_image_url || moduleData.image_url} alt={moduleData.title} className="w-full h-full object-cover opacity-40" />
-            ) : null}
-          </div>
-          <div className="w-16 h-16 mx-auto -mt-10 mb-4 rounded-2xl flex items-center justify-center text-white text-2xl font-black relative z-10 ring-4 ring-[#faf8f5] shadow-lg" style={{ background: detailColor }}>
-            {(moduleData.title || '').charAt(0)}
-          </div>
-          <h1 className="text-2xl font-black text-slate-800 mb-2">{moduleData.title}</h1>
-          <p className="text-slate-500 text-sm mb-8 leading-relaxed">
-            Join {moduleData.title} to view activities, connect with members, and be part of the community.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate('/community')}
-              className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
-            >
-              <FaArrowLeft className="inline mr-2" size={12} /> Back
-            </button>
-            <button
-              onClick={() => navigate(`/community/${moduleIdClean}/join`)}
-              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer"
-              style={{ background: detailColor }}
-            >
-              <FaUserPlus className="inline mr-2" size={12} /> Join to View
             </button>
           </div>
         </div>
@@ -305,13 +292,15 @@ const CommunityDetail: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
-          <button
-            className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg cursor-pointer mb-2"
-            style={{ background: detailColor }}
-            onClick={() => navigate(`/community/${moduleIdClean}/join`)}
-          >
-            <FaUserPlus size={14} /> Join This Community
-          </button>
+          {!hasJoined && (
+            <button
+              className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg cursor-pointer mb-2"
+              style={{ background: detailColor }}
+              onClick={() => navigate(`/community/${moduleIdClean}/join`)}
+            >
+              <FaUserPlus size={14} /> Join This Community
+            </button>
+          )}
           <button
             className="btn-premium"
             onClick={() => navigate('/community')}
@@ -328,6 +317,24 @@ const CommunityDetail: React.FC = () => {
       }}>
         {/* Color accent top bar */}
         <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${detailColor}, ${detailColor}88, ${detailColor})` }} />
+
+        {/* Join banner for non-members */}
+        {!hasJoined && user && (
+          <div className="mx-4 mt-4 px-4 py-3 rounded-2xl flex items-center gap-3 text-sm" style={{ background: `${detailColor}10`, border: `1px solid ${detailColor}20` }}>
+            <FaUserPlus style={{ color: detailColor }} size={16} />
+            <span className="flex-1 text-slate-600">
+              You're viewing <strong>{moduleData.title}</strong> as a visitor. Join to access all features.
+            </span>
+            <button
+              onClick={() => navigate(`/community/${moduleIdClean}/join`)}
+              className="px-4 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-[1.02] shadow cursor-pointer whitespace-nowrap"
+              style={{ background: detailColor }}
+            >
+              Join Now
+            </button>
+          </div>
+        )}
+
         <div className="content-wrapper animate-fade-in" key={activeTab}>
           {renderTabContent()}
         </div>
