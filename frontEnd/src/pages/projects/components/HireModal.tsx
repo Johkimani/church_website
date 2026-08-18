@@ -49,7 +49,7 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
       });
     }
     return opts;
-  });
+  })();
 
   const defaultReturn = returnOptions[0]?.value || '';
 
