@@ -64,6 +64,28 @@ export const getWhatsAppLinks = async (req, res) => {
 
     const { year_of_study, jumuiya_id } = userRes.rows[0];
 
+    // Normalize year_of_study: "1"-"4" pass through, "2024-2025" → year level, "26"/"2026" → derive from current year
+    const normalizeYear = (val) => {
+      if (!val) return null;
+      const trimmed = String(val).trim();
+      if (/^[1-4]$/.test(trimmed)) return Number(trimmed);
+      // Handle "YYYY-YYYY" format
+      const rangeMatch = trimmed.match(/^(\d{4})-\d{4}$/);
+      if (rangeMatch) {
+        const level = new Date().getFullYear() - parseInt(rangeMatch[1], 10) + 1;
+        if (level >= 1 && level <= 4) return level;
+      }
+      // Handle raw 4-digit year (e.g. "2026") → treat as registration year, assume year 1
+      const num = parseInt(trimmed, 10);
+      if (num >= 2020 && num <= 2099) return 1; // new registrant = first year
+      // Handle 2-digit year (e.g. "26") → assume year 1
+      if (num >= 20 && num <= 40) return 1;
+      return null;
+    };
+
+    const yearNum = normalizeYear(year_of_study);
+    const isFirstYear = yearNum === 1;
+
     // Resolve jumuiya UUID → slug
     let jumuiyaSlug = null;
     if (jumuiya_id) {
@@ -73,9 +95,6 @@ export const getWhatsAppLinks = async (req, res) => {
       );
       if (slugRes.rows.length > 0) jumuiyaSlug = slugRes.rows[0].slug;
     }
-
-    const yearNum = year_of_study ? parseInt(String(year_of_study).trim(), 10) : null;
-    const isFirstYear = yearNum === 1;
 
     // Build keys to fetch based on year
     const keysToFetch = ["whatsapp_general_link"];
