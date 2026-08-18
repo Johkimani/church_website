@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ShoppingBag, Armchair, MapPin, Phone, Package, FileText, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ShoppingBag, Armchair, MapPin, Phone, FileText, CheckCircle2, Receipt, ArrowRight } from 'lucide-react';
 import { apiClient } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 
@@ -48,6 +49,7 @@ interface ReceiptsData {
 
 export const MyReceipts: React.FC = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [data, setData] = useState<ReceiptsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -111,11 +113,30 @@ export const MyReceipts: React.FC = () => {
             )}
 
             {!loading && !error && data && totalCount === 0 && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center">
-                    <Package size={36} className="mx-auto mb-3 text-slate-300" />
-                    <p className="text-slate-500 font-semibold text-sm">No receipts yet.</p>
-                    <p className="text-xs text-slate-400 mt-1">
-                        Once you complete a purchase with your account email, your receipt will appear here.
+                <div className="bg-white border border-slate-200/80 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-10 md:p-14 text-center">
+                    {/* Icon Badge */}
+                    <div className="w-20 h-20 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-6">
+                        <Receipt size={36} className="text-blue-500" strokeWidth={1.5} />
+                    </div>
+
+                    {/* Title + Description */}
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2">No receipts yet</h2>
+                    <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                        Once you complete a purchase or hire through the store, your receipts will appear here for easy access.
+                    </p>
+
+                    {/* CTA Button */}
+                    <button
+                        onClick={() => navigate('/gallery')}
+                        className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-xl shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97]"
+                    >
+                        Explore Gallery
+                        <ArrowRight size={16} />
+                    </button>
+
+                    {/* Secondary Hint */}
+                    <p className="mt-6 text-[11px] text-slate-400 font-medium">
+                        Receipts are linked to your account email — <span className="text-slate-500">{user?.email}</span>
                     </p>
                 </div>
             )}

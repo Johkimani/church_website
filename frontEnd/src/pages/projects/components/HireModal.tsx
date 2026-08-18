@@ -4,6 +4,7 @@ import { X, Loader2, CheckCircle2, CalendarDays, Armchair, Music, ShoppingBag, A
 import { apiClient } from "../../../api/axiosInstance";
 import { useApp } from "../../../context/AppContext";
 import { toast } from "react-hot-toast";
+import CalendarPicker from "../../../components/CalendarPicker";
 
 interface HireModalProps {
   onClose: () => void;
@@ -30,35 +31,10 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
   const initialMode = hireItems.some(i => i.hireMode === 'hourly') ? 'hourly' : 'daily';
   const [hireMode, setHireMode] = useState<'daily' | 'hourly'>(initialMode);
 
-  // Generate return date options: next 90 days grouped by week/month
-  const returnOptions = (() => {
-    const opts: { value: string; label: string; group: string }[] = [];
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    for (let i = 1; i <= 90; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const monthLabel = `${months[d.getMonth()]} ${y}`;
-      opts.push({
-        value: `${y}-${m}-${day}`,
-        label: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${y}`,
-        group: monthLabel,
-      });
-    }
-    return opts;
-  })();
-
-  const defaultReturn = returnOptions[0]?.value || '';
-
-  // Group return options by month
-  const groupedReturnOptions = returnOptions.reduce((acc, opt) => {
-    if (!acc[opt.group]) acc[opt.group] = [];
-    acc[opt.group].push(opt);
-    return acc;
-  }, {} as Record<string, typeof returnOptions>);
+  // Default return date = tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const defaultReturn = tomorrow.toISOString().split("T")[0];
 
   // Hourly duration options (1-24 hours)
   const hourlyOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -389,17 +365,23 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
             {/* Hire Dates */}
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Hire Details</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {showEventDate && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Event Date *</label>
-                    <input name="event_date" type="date" value={form.event_date} onChange={handleChange} min={today} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-                  </div>
+                  <CalendarPicker
+                    value={form.event_date}
+                    onChange={(val) => setForm(prev => ({ ...prev, event_date: val }))}
+                    min={today}
+                    label="Event Date"
+                    required
+                  />
                 )}
-                <div className={showEventDate ? '' : 'col-span-2'}>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Pickup Date *</label>
-                  <input name="pickup_date" type="date" value={form.pickup_date} onChange={handleChange} min={today} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-                </div>
+                <CalendarPicker
+                  value={form.pickup_date}
+                  onChange={(val) => setForm(prev => ({ ...prev, pickup_date: val }))}
+                  min={today}
+                  label="Pickup Date"
+                  required
+                />
 
                 {hireMode === 'hourly' ? (
                   <>
@@ -417,18 +399,13 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
                     </div>
                   </>
                 ) : (
-                  <div className="col-span-2">
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Return Date *</label>
-                    <select name="return_date" value={form.return_date} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white">
-                      {Object.entries(groupedReturnOptions).map(([month, opts]) => (
-                        <optgroup key={month} label={month}>
-                          {opts.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </div>
+                  <CalendarPicker
+                    value={form.return_date}
+                    onChange={(val) => setForm(prev => ({ ...prev, return_date: val }))}
+                    min={form.pickup_date || today}
+                    label="Return Date"
+                    required
+                  />
                 )}
               </div>
             </div>
