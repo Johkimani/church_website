@@ -31,13 +31,6 @@ interface SemesterActivity {
     is_active: boolean;
 }
 
-interface TimeRemaining {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-}
-
 const DAY_ICONS: Record<string, string> = {
     Monday: '📖', Tuesday: '🎵', Wednesday: '✝️', Thursday: '🙏',
     Friday: '⛪', Saturday: '🎶', Sunday: '🕊️',
@@ -52,7 +45,6 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId }
     const [weeklyActivities, setWeeklyActivities] = useState<WeeklyActivity[]>([]);
     const [semesterActivities, setSemesterActivities] = useState<SemesterActivity[]>([]);
     const [loading, setLoading] = useState(true);
-    const [timeRemaining, setTimeRemaining] = useState<TimeRemaining | null>(null);
 
     const fetchData = useCallback(async () => {
         if (!jumuiyaId) return;
@@ -77,28 +69,6 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId }
         .filter(a => a.is_active && new Date(a.date_time) >= new Date())
         .sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime());
 
-    const featuredEvent = upcomingEvents[0] || null;
-
-    useEffect(() => {
-        if (!featuredEvent) return;
-        const tick = () => {
-            const diff = new Date(featuredEvent.date_time).getTime() - Date.now();
-            if (diff > 0) {
-                setTimeRemaining({
-                    days: Math.floor(diff / 86400000),
-                    hours: Math.floor((diff % 86400000) / 3600000),
-                    minutes: Math.floor((diff % 3600000) / 60000),
-                    seconds: Math.floor((diff % 60000) / 1000),
-                });
-            } else {
-                setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-            }
-        };
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, [featuredEvent]);
-
     if (loading) {
         return (
             <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
@@ -120,111 +90,6 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId }
                     Join us in our spiritual gatherings, service missions, and community events.
                 </p>
             </div>
-
-            {/* Featured Upcoming Event */}
-            {featuredEvent && (
-                <div style={{ marginBottom: '48px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                        <div style={{ width: '32px', height: '3px', background: jumuiyaColor, borderRadius: '2px' }}></div>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: jumuiyaColor, letterSpacing: '1.5px' }}>Next Big Event</span>
-                    </div>
-
-                    <div style={{
-                        background: 'white',
-                        border: '1px solid var(--border)',
-                        borderRadius: '20px',
-                        overflow: 'hidden',
-                        boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-                    }}>
-                        {featuredEvent.image_url && (
-                            <div style={{ width: '100%', height: '280px', overflow: 'hidden' }}>
-                                <img
-                                    src={featuredEvent.image_url}
-                                    alt={featuredEvent.title}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                            </div>
-                        )}
-                        <div style={{ padding: '32px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '32px', alignItems: 'start' }}>
-                                <div>
-                                    <h2 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '16px', lineHeight: 1.2, color: 'var(--text-primary)' }}>
-                                        {featuredEvent.title}
-                                    </h2>
-                                    {featuredEvent.description && (
-                                        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '1rem', lineHeight: 1.7 }}>
-                                            {featuredEvent.description}
-                                        </p>
-                                    )}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                                            <FaCalendarAlt style={{ color: jumuiyaColor, width: '16px' }} />
-                                            <span>{new Date(featuredEvent.date_time).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                                            <FaClock style={{ color: jumuiyaColor, width: '16px' }} />
-                                            <span>{new Date(featuredEvent.date_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
-                                        </div>
-                                        {featuredEvent.venue && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                                                <FaMapMarkerAlt style={{ color: jumuiyaColor, width: '16px' }} />
-                                                <span>{featuredEvent.venue}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Countdown */}
-                                {timeRemaining && (
-                                    <div style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: '16px',
-                                        background: `${jumuiyaColor}08`,
-                                        border: `1px solid ${jumuiyaColor}20`,
-                                        borderRadius: '16px',
-                                        padding: '24px',
-                                        minWidth: '180px',
-                                    }}>
-                                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                            {[
-                                                { val: timeRemaining.days, label: 'Days' },
-                                                { val: String(timeRemaining.hours).padStart(2, '0'), label: 'Hrs' },
-                                                { val: String(timeRemaining.minutes).padStart(2, '0'), label: 'Min' },
-                                            ].map((item, i) => (
-                                                <React.Fragment key={item.label}>
-                                                    {i > 0 && <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--text-secondary)', opacity: 0.4 }}>:</div>}
-                                                    <div style={{ textAlign: 'center' }}>
-                                                        <div style={{ fontSize: '2rem', fontWeight: 900, color: jumuiyaColor, lineHeight: 1 }}>{item.val}</div>
-                                                        <div style={{ fontSize: '0.6rem', textTransform: 'uppercase', fontWeight: 700, marginTop: '4px', color: 'var(--text-secondary)', letterSpacing: '0.5px' }}>{item.label}</div>
-                                                    </div>
-                                                </React.Fragment>
-                                            ))}
-                                        </div>
-                                        <div style={{
-                                            width: '56px', height: '56px',
-                                            borderRadius: '12px',
-                                            background: jumuiyaColor,
-                                            color: 'white',
-                                            display: 'flex', flexDirection: 'column',
-                                            alignItems: 'center', justifyContent: 'center',
-                                            boxShadow: `0 4px 12px ${jumuiyaColor}40`,
-                                        }}>
-                                            <div style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>
-                                                {new Date(featuredEvent.date_time).toLocaleString('default', { month: 'short' })}
-                                            </div>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 900, lineHeight: 1.1 }}>
-                                                {new Date(featuredEvent.date_time).getDate()}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Weekly Schedule */}
             <div style={{ marginBottom: '48px' }}>
