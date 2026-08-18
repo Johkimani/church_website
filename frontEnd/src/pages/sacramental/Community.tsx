@@ -19,9 +19,9 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
-  FaUserPlus,
-  FaTimes,
-  FaCheck,
+  UserPlus,
+  X,
+  Check,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -199,7 +199,7 @@ const Community: React.FC = () => {
           <div className="rounded-3xl p-6 md:p-8" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', boxShadow: '0 12px 40px rgba(15,52,96,0.2)' }}>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-                <FaUserPlus className="text-amber-300" size={16} />
+                <UserPlus className="text-amber-300" size={16} />
               </div>
               <div>
                 <h3 className="text-white font-bold text-base">My Communities</h3>
@@ -322,7 +322,7 @@ const Community: React.FC = () => {
                   {isJoined && (
                     <div className="absolute top-3 right-3 z-10">
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-lg">
-                        <FaCheck size={8} /> Joined
+                        <Check size={8} /> Joined
                       </span>
                     </div>
                   )}
@@ -448,7 +448,7 @@ const Community: React.FC = () => {
                   onClick={() => setJoinModal(null)}
                   className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-all cursor-pointer"
                 >
-                  <FaTimes size={14} />
+                   <X size={14} />
                 </button>
                 <div className="absolute bottom-4 left-4 right-4">
                   <h3 className="text-white font-black text-xl drop-shadow-md">{joinModal.title}</h3>
@@ -478,7 +478,7 @@ const Community: React.FC = () => {
                     className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     style={{ background: joinModal.color }}
                   >
-                    <FaUserPlus size={13} /> Join Now
+                     <UserPlus size={13} /> Join Now
                   </button>
                 </div>
               </div>
