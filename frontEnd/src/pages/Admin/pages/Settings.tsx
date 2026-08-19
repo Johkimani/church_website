@@ -69,10 +69,9 @@ const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coor
 const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary'];
 const SUBGROUP_ROLES = ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator', 'st_francis_chair', 'charismatic_chair', 'dance_chair', 'mentorship_chair'];
 
-type TabKey = 'all' | 'csa' | 'jumuiya' | 'subgroup';
+type TabKey = 'csa' | 'jumuiya' | 'subgroup';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'all', label: 'All' },
   { key: 'csa', label: 'CSA' },
   { key: 'jumuiya', label: 'Jumuiya' },
   { key: 'subgroup', label: 'Sub Groups' },
@@ -86,8 +85,6 @@ const getPagesForRole = (roleName: string): string[] => {
 const roleBelongsToTab = (roleName: string, tab: TabKey): boolean => {
   const name = (roleName || '').toLowerCase().trim();
   switch (tab) {
-    case 'all':
-      return true;
     case 'jumuiya':
       return JUMUIYA_ROLES.includes(name) || name.includes('jumuiya');
     case 'subgroup':
@@ -98,7 +95,7 @@ const roleBelongsToTab = (roleName: string, tab: TabKey): boolean => {
 };
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [activeTab, setActiveTab] = useState<TabKey>('csa');
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -412,7 +409,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
                     {a.jumuiya_name}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400 font-medium">CSA (General)</span>
+                  <span className="text-[10px] text-slate-400 font-medium">—</span>
                 )}
               </td>
               <td className="px-3 py-3">
@@ -552,7 +549,7 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
                     {a.jumuiya_name}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400 font-medium">CSA (General)</span>
+                  <span className="text-[10px] text-slate-400 font-medium">—</span>
                 )}
               </td>
               <td className="px-3 py-3">
@@ -708,7 +705,7 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
                       {a.jumuiya_name}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-slate-400 font-medium">CSA (General)</span>
+                    <span className="text-[10px] text-slate-400 font-medium">—</span>
                   )}
                 </td>
                 <td className="px-3 py-3">

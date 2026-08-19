@@ -144,16 +144,18 @@ export const listAssignments = async (req, res) => {
              mr.approved_at, mr.jumuiya_id, mr.created_at,
              COALESCE(r.role_name, 'unknown') as role_name, 
              COALESCE(r.description, 'Role assignment') as role_description,
-             COALESCE(m.first_name, jo.name, mr.member_id) as first_name,
+             COALESCE(m.first_name, jo.name, o.name, mr.member_id) as first_name,
              COALESCE(m.last_name, '') as last_name,
-             COALESCE(sg.name, jo.category) as jumuiya_name,
+             COALESCE(sg.name, msg.name, jo.category, o.category) as jumuiya_name,
              ab.first_name as assigned_by_first, ab.last_name as assigned_by_last,
              apb.first_name as approved_by_first, apb.last_name as approved_by_last
       FROM member_roles mr
       LEFT JOIN roles r ON mr.role_id = r.role_id
       LEFT JOIN members m ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(m.member_id))
       LEFT JOIN jumuiya_officials jo ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(jo.reg_number))
+      LEFT JOIN officials o ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(o.reg_number))
       LEFT JOIN sub_groups sg ON mr.jumuiya_id = sg.group_id
+      LEFT JOIN sub_groups msg ON m.jumuiya_id = msg.group_id
       LEFT JOIN members ab ON LOWER(TRIM(mr.assigned_by)) = LOWER(TRIM(ab.member_id))
       LEFT JOIN members apb ON LOWER(TRIM(mr.approved_by)) = LOWER(TRIM(apb.member_id))
       WHERE 1=1
