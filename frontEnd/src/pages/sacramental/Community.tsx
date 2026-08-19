@@ -37,7 +37,7 @@ const iconFor = (id: string): React.ElementType => ICON_MAP[id] || DEFAULT_ICON;
 const COMMUNITY_IMAGES: Record<string, string> = {
   choir: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
   dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600',
-  charismatic: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=600',
+  charismatic: 'https://images.unsplash.com/photo-1550435041-0e521c830db3?auto=format&fit=crop&q=80&w=600',
   'st-francis': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600',
   youth: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
   mentorship: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
