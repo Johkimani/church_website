@@ -1,12 +1,14 @@
 import bcrypt from "bcrypt";
-import { testDb } from "./Configs/dbConfig.js";
-import verifyToken from "../middleWares/Tokens.js";
+import { db as testDb } from "../Configs/dbConfig.js";
+import verifyToken from "../middlewares/Tokens.js";
 import logger from "../logger/winston.js";
 import { signAccessToken } from "../utils/jwtConfig.js";
 
 
 
 
+
+const app = { post: () => {}, get: () => {} };
 
 app.post("/user", async (req, res) => {
   const { user, useruser } = req.body;

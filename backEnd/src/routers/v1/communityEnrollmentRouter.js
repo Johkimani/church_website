@@ -1,6 +1,6 @@
 import { Router } from "express";
 import verifyToken, { optionalAuth } from "../../middlewares/Tokens.js";
-import { requireRole } from "../../middlewares/roleMiddleware.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 import {
   createEnrollment,
   checkDuplicate,
