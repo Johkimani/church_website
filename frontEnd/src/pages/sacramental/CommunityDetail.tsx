@@ -277,7 +277,7 @@ const CommunityDetail: React.FC = () => {
               >
                 <span
                   className="nav-icon"
-                  style={isActive ? { color: detailColor } : {}}
+                  style={{ color: detailColor }}
                 >
                   {TAB_ICONS[tabId]}
                 </span>
