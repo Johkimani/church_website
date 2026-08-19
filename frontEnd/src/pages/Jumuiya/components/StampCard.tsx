@@ -51,6 +51,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
         id: user?.member_id || "CSA-DEMO-001",
         year: user?.year || "Year 3",
         joined_at: new Date().toISOString(),
+        serial_no: undefined,
         sem_1_reg: true,
         sem_2_reg: true,
         sem_3_reg: true,
@@ -337,6 +338,16 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                 </div>
                             )}
                         </div>
+                        {((displayRecord as JumuiyaRosterMember).serial_no != null) && (
+                            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.55rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Serial No
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
+                                    #{(displayRecord as JumuiyaRosterMember).serial_no}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Semester Stamp Grid */}

@@ -13,6 +13,7 @@ export interface JumuiyaRosterMember {
   course?: string;
   jumuiya_id?: string;
   jumuiya_name?: string;
+  serial_no?: number;
   is_registered?: boolean;
   is_current_jumuiya?: boolean;
   sem_1_reg?: boolean;
