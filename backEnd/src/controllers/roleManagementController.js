@@ -154,8 +154,12 @@ export const listAssignments = async (req, res) => {
       LEFT JOIN members m ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(m.member_id))
       LEFT JOIN jumuiya_officials jo ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(jo.reg_number))
       LEFT JOIN officials o ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(o.reg_number))
-      LEFT JOIN sub_groups sg ON mr.jumuiya_id = sg.group_id
-      LEFT JOIN sub_groups msg ON m.jumuiya_id = msg.group_id
+      LEFT JOIN sub_groups sg ON mr.jumuiya_id::text = sg.group_id::text
+      LEFT JOIN sub_groups msg ON (
+        m.jumuiya_id::text = msg.group_id::text 
+        OR LOWER(m.jumuiya_id::text) = LOWER(msg.slug) 
+        OR LOWER(m.jumuiya_id::text) = LOWER(msg.name)
+      )
       LEFT JOIN members ab ON LOWER(TRIM(mr.assigned_by)) = LOWER(TRIM(ab.member_id))
       LEFT JOIN members apb ON LOWER(TRIM(mr.approved_by)) = LOWER(TRIM(apb.member_id))
       WHERE 1=1
