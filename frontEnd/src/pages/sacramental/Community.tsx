@@ -54,8 +54,8 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 const TESTIMONIALS = [
-  { role: 'Choir Leader', text: 'Singing together has strengthened my faith in ways I never imagined. The choir's harmonies lift our prayers to heaven.' },
-  { role: 'Youth Chair', text: 'Our youth community is where friendships and faith grow side by side. It's a place where young people discover their purpose and build lifelong relationships in Christ.' },
+  { role: 'Choir Leader', text: 'Singing together has strengthened my faith in ways I never imagined. The choir\'s harmonies lift our prayers to heaven.' },
+  { role: 'Youth Chair', text: 'Our youth community is where friendships and faith grow side by side. It\'s a place where young people discover their purpose and build lifelong relationships in Christ.' },
   { role: 'Charismatic Prayer Group Leader', text: 'The prayer sessions have transformed my spiritual journey completely. Experiencing the Holy Spirit in daily life has brought renewal and hope to my walk with God.' }
 ];
 
