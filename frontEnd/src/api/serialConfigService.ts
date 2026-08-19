@@ -1,4 +1,4 @@
-import { apiClient } from "../api";
+import { apiClient } from "./axiosInstance";
 
 export interface SerialConfig {
   id: number;
