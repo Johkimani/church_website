@@ -1,5 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { getRoleNameForPosition } from "../utils/positionToRole.js";
 
 const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
 
@@ -25,6 +26,101 @@ const rejectIfNotAdmin = (req, res) => {
   return true;
 };
 
+export const syncPendingOfficialsToRoles = async () => {
+  try {
+    const officials = await pool.query(`
+      SELECT jo.id, jo.name, jo.category, jo.position, jo.contact, jo.reg_number
+      FROM jumuiya_officials jo
+      WHERE (jo.status = 'active' OR jo.status IS NULL)
+    `);
+
+    for (const off of officials.rows) {
+      const roleName = getRoleNameForPosition(off.position, true);
+      if (!roleName) continue;
+
+      // Ensure role exists
+      let roleRes = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [roleName]);
+      if (roleRes.rows.length === 0) {
+        roleRes = await pool.query(
+          "INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id",
+          [roleName, roleName.replace(/_/g, ' ')]
+        );
+      }
+      const roleId = roleRes.rows[0].role_id;
+
+      // Resolve memberId
+      let memberId = off.reg_number?.trim() || null;
+
+      // Resolve effectiveJumuiyaId
+      let effectiveJumuiyaId = null;
+      if (off.category) {
+        const catRes = await pool.query(
+          `SELECT group_id FROM sub_groups 
+           WHERE name = $1 
+              OR LOWER(TRIM(name)) = LOWER(TRIM($1))
+              OR LOWER(REPLACE(REPLACE(name, '.', ''), ' ', '-')) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
+              OR LOWER(slug) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
+           LIMIT 1`,
+          [off.category.trim()]
+        );
+        if (catRes.rows.length > 0) effectiveJumuiyaId = catRes.rows[0].group_id;
+      }
+
+      if (memberId) {
+        const mCheck = await pool.query("SELECT member_id FROM members WHERE member_id = $1", [memberId]);
+        if (mCheck.rows.length === 0) memberId = null;
+      }
+
+      if (!memberId && off.contact) {
+        const cleanPhone = off.contact.replace(/[^0-9]/g, '');
+        if (cleanPhone.length >= 8) {
+          const pMatch = await pool.query("SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1", [cleanPhone.slice(-8)]);
+          if (pMatch.rows.length > 0) memberId = pMatch.rows[0].member_id;
+        }
+      }
+
+      if (!memberId && off.name) {
+        const nMatch = await pool.query("SELECT member_id FROM members WHERE (first_name || ' ' || last_name) ILIKE $1 LIMIT 1", [`%${off.name.trim()}%`]);
+        if (nMatch.rows.length > 0) memberId = nMatch.rows[0].member_id;
+      }
+
+      if (!memberId) {
+        const nameParts = (off.name || 'Official').trim().split(/\s+/);
+        const fName = nameParts[0] || 'Official';
+        const lName = nameParts.slice(1).join(' ') || '';
+        const pDigits = off.contact ? off.contact.replace(/[^0-9]/g, '').slice(-5) : Math.floor(10000 + Math.random() * 90000);
+        memberId = `OFF/${pDigits}/${new Date().getFullYear().toString().slice(-2)}`;
+
+        await pool.query(
+          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, created_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())
+           ON CONFLICT (member_id) DO NOTHING`,
+          [memberId, fName, lName, off.contact || null, effectiveJumuiyaId]
+        );
+      }
+
+      if (off.reg_number !== memberId) {
+        await pool.query("UPDATE jumuiya_officials SET reg_number = $1 WHERE id = $2", [memberId, off.id]);
+      }
+
+      const existing = await pool.query(
+        "SELECT id FROM member_roles WHERE member_id = $1 AND role_id = $2",
+        [memberId, roleId]
+      );
+
+      if (existing.rows.length === 0) {
+        await pool.query(
+          `INSERT INTO member_roles (member_id, role_id, jumuiya_id, status, created_at)
+           VALUES ($1, $2, $3, 'pending', NOW())`,
+          [memberId, roleId, effectiveJumuiyaId]
+        );
+      }
+    }
+  } catch (err) {
+    logger.error("syncPendingOfficialsToRoles error: " + err.message);
+  }
+};
+
 export const listRoles = async (req, res) => {
   try {
     const result = await pool.query(
@@ -39,19 +135,23 @@ export const listRoles = async (req, res) => {
 
 export const listAssignments = async (req, res) => {
   try {
+    await syncPendingOfficialsToRoles();
+
     const { status, jumuiya_id } = req.query;
     let query = `
       SELECT mr.id, mr.member_id, mr.role_id, mr.status, mr.assigned_by, mr.approved_by,
              mr.approved_at, mr.jumuiya_id, mr.created_at,
-             r.role_name, r.description as role_description,
-             COALESCE(m.first_name, mr.member_id) as first_name,
+             COALESCE(r.role_name, 'unknown') as role_name, 
+             COALESCE(r.description, 'Role assignment') as role_description,
+             COALESCE(m.first_name, jo.name, mr.member_id) as first_name,
              COALESCE(m.last_name, '') as last_name,
-             sg.name as jumuiya_name,
+             COALESCE(sg.name, jo.category) as jumuiya_name,
              ab.first_name as assigned_by_first, ab.last_name as assigned_by_last,
              apb.first_name as approved_by_first, apb.last_name as approved_by_last
       FROM member_roles mr
-      JOIN roles r ON mr.role_id = r.role_id
+      LEFT JOIN roles r ON mr.role_id = r.role_id
       LEFT JOIN members m ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(m.member_id))
+      LEFT JOIN jumuiya_officials jo ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(jo.reg_number))
       LEFT JOIN sub_groups sg ON mr.jumuiya_id = sg.group_id
       LEFT JOIN members ab ON LOWER(TRIM(mr.assigned_by)) = LOWER(TRIM(ab.member_id))
       LEFT JOIN members apb ON LOWER(TRIM(mr.approved_by)) = LOWER(TRIM(apb.member_id))
@@ -59,8 +159,8 @@ export const listAssignments = async (req, res) => {
     `;
     const params = [];
     if (status) {
-      params.push(status);
-      query += ` AND mr.status = $${params.length}`;
+      params.push(status.trim().toLowerCase());
+      query += ` AND LOWER(mr.status) = $${params.length}`;
     }
     if (jumuiya_id) {
       params.push(jumuiya_id);
