@@ -107,28 +107,32 @@ const setupRoleSystem = async () => {
   await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'legacy'`)
     .catch(e => logger.warn("members.source: " + e.message));
 
-  // ── Step 7: suggestions table (if it exists) ───────────────────────────────
-  const suggCheck = await pool.query(
-    `SELECT 1 FROM information_schema.tables WHERE table_name='suggestions' AND table_schema='public'`
-  ).catch(() => ({ rows: [] }));
+  // ── Step 7: suggestions table ─────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS suggestions (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255),
+      email VARCHAR(255),
+      suggestion TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `).catch(e => logger.warn("suggestions table create: " + e.message));
 
-  if (suggCheck.rows.length > 0) {
-    const suggCols = [
-      "deleted_at TIMESTAMP", "deleted_by VARCHAR(255)", "status VARCHAR(50) DEFAULT 'pending'",
-      "unmask_token VARCHAR(255)", "unmask_requested_at TIMESTAMP", "user_id VARCHAR(255)",
-      "reply TEXT", "replied_at TIMESTAMP", "replied_by VARCHAR(255)",
-      "category VARCHAR(50) DEFAULT 'general'", "chair_unmask_token VARCHAR(255)",
-      "liturgist_unmask_token VARCHAR(255)", "chair_approved BOOLEAN DEFAULT FALSE",
-      "liturgist_approved BOOLEAN DEFAULT FALSE", "jumuiya_id VARCHAR(100) DEFAULT 'csa'",
-      "scope VARCHAR(20) DEFAULT 'csa'", "jumuiya_chair_token VARCHAR(255)",
-      "jumuiya_secretary_token VARCHAR(255)", "jumuiya_chair_approved BOOLEAN DEFAULT FALSE",
-      "jumuiya_secretary_approved BOOLEAN DEFAULT FALSE",
-    ];
-    for (const col of suggCols) {
-      const colName = col.split(' ')[0];
-      await pool.query(`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS ${col}`)
-        .catch(e => logger.warn(`suggestions.${colName}: ` + e.message));
-    }
+  const suggCols = [
+    "deleted_at TIMESTAMP", "deleted_by VARCHAR(255)", "status VARCHAR(50) DEFAULT 'pending'",
+    "unmask_token VARCHAR(255)", "unmask_requested_at TIMESTAMP", "user_id VARCHAR(255)",
+    "reply TEXT", "replied_at TIMESTAMP", "replied_by VARCHAR(255)",
+    "category VARCHAR(50) DEFAULT 'general'", "chair_unmask_token VARCHAR(255)",
+    "liturgist_unmask_token VARCHAR(255)", "chair_approved BOOLEAN DEFAULT FALSE",
+    "liturgist_approved BOOLEAN DEFAULT FALSE", "jumuiya_id VARCHAR(100) DEFAULT 'csa'",
+    "scope VARCHAR(20) DEFAULT 'csa'", "jumuiya_chair_token VARCHAR(255)",
+    "jumuiya_secretary_token VARCHAR(255)", "jumuiya_chair_approved BOOLEAN DEFAULT FALSE",
+    "jumuiya_secretary_approved BOOLEAN DEFAULT FALSE",
+  ];
+  for (const col of suggCols) {
+    const colName = col.split(' ')[0];
+    await pool.query(`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS ${col}`)
+      .catch(e => logger.warn(`suggestions.${colName}: ` + e.message));
   }
 
   // ── Step 8: Remove deprecated roles ────────────────────────────────────────
