@@ -11,6 +11,7 @@ const OFFICIAL_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
   "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
   "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
+  "jumuiya_vice_chairperson",
 ];
 
 const getUserRoles = (req) => {
