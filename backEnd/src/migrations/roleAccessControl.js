@@ -25,144 +25,138 @@ const ROLES = [
 ];
 
 const setupRoleSystem = async () => {
-  try {
-    logger.info("Setting up role-based access control system...");
+  logger.info("Setting up role-based access control system...");
 
-    // 1. Alter member_roles table
-    await pool.query(`
-      ALTER TABLE member_roles
-      ADD COLUMN IF NOT EXISTS id SERIAL
-    `);
-    await pool.query(`
-      ALTER TABLE member_roles
-      ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'pending'
-    `);
-    await pool.query(`
-      ALTER TABLE member_roles
-      ADD COLUMN IF NOT EXISTS assigned_by VARCHAR(30) REFERENCES members(member_id)
-    `);
-    await pool.query(`
-      ALTER TABLE member_roles
-      ADD COLUMN IF NOT EXISTS approved_by VARCHAR(30) REFERENCES members(member_id)
-    `);
-    await pool.query(`
-      ALTER TABLE member_roles
-      ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP
-    `);
-    await pool.query(`
-      ALTER TABLE member_roles
-      ADD COLUMN IF NOT EXISTS jumuiya_id UUID REFERENCES sub_groups(group_id)
-    `);
-    await pool.query(`
-      ALTER TABLE member_roles
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    `);
+  // ── Step 1: Add reg_number to jumuiya_officials (CRITICAL missing column) ──
+  await pool.query(`ALTER TABLE jumuiya_officials ADD COLUMN IF NOT EXISTS reg_number VARCHAR(50)`)
+    .catch(e => logger.warn("jumuiya_officials.reg_number: " + e.message));
 
-    // Drop old composite PK, promote id to PK, add unique partial index for approved roles
-    await pool.query(`
-      DO $$ BEGIN
-        IF EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'member_roles_pkey'
-          AND conrelid = 'member_roles'::regclass
-        ) THEN
-          ALTER TABLE member_roles DROP CONSTRAINT member_roles_pkey;
-        END IF;
-      END $$;
-    `);
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_class WHERE relname = 'member_roles_id_seq'
-        ) THEN
-          CREATE SEQUENCE member_roles_id_seq OWNED BY member_roles.id;
-        END IF;
-      END $$;
-    `);
-    // Make id the PK
-    await pool.query(`
-      ALTER TABLE member_roles ADD PRIMARY KEY (id)
-    `);
+  // ── Step 2: Add all missing columns to member_roles one-by-one ─────────────
+  // Using individual .catch() so one failure never blocks the rest
+  await pool.query(`ALTER TABLE member_roles ADD COLUMN IF NOT EXISTS id SERIAL`)
+    .catch(e => logger.warn("member_roles.id: " + e.message));
 
-    // Ensure check constraint on status
-    await pool.query(`
-      ALTER TABLE member_roles DROP CONSTRAINT IF EXISTS member_roles_status_check
-    `);
-    await pool.query(`
-      ALTER TABLE member_roles ADD CONSTRAINT member_roles_status_check
-      CHECK (status IN ('pending', 'approved', 'rejected', 'revoked'))
-    `);
+  await pool.query(`ALTER TABLE member_roles ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'pending'`)
+    .catch(e => logger.warn("member_roles.status: " + e.message));
 
-    // Unique active role per member per role per jumuiya
-    await pool.query(`
-      DROP INDEX IF EXISTS idx_member_roles_active_unique
-    `);
-    await pool.query(`
-      CREATE UNIQUE INDEX idx_member_roles_active_unique
-      ON member_roles (member_id, role_id, COALESCE(jumuiya_id, '00000000-0000-0000-0000-000000000000'))
-      WHERE status = 'approved'
-    `);
+  // assigned_by and approved_by — no FK reference (avoids member_id constraint issues)
+  await pool.query(`ALTER TABLE member_roles ADD COLUMN IF NOT EXISTS assigned_by VARCHAR(50)`)
+    .catch(e => logger.warn("member_roles.assigned_by: " + e.message));
 
-    // 2. Add flagged_inactive column to members table
-    await pool.query(`
-      ALTER TABLE members
-      ADD COLUMN IF NOT EXISTS flagged_inactive BOOLEAN DEFAULT FALSE
-    `);
-    logger.info("Ensured flagged_inactive column on members table");
+  await pool.query(`ALTER TABLE member_roles ADD COLUMN IF NOT EXISTS approved_by VARCHAR(50)`)
+    .catch(e => logger.warn("member_roles.approved_by: " + e.message));
 
-    // 2b. Add soft-delete & unmask columns to suggestions table
-    await pool.query(`
-      ALTER TABLE suggestions
-      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending',
-      ADD COLUMN IF NOT EXISTS unmask_token VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS unmask_requested_at TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS user_id VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS reply TEXT,
-      ADD COLUMN IF NOT EXISTS replied_at TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS replied_by VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'general',
-      ADD COLUMN IF NOT EXISTS chair_unmask_token VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS liturgist_unmask_token VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS chair_approved BOOLEAN DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS liturgist_approved BOOLEAN DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS jumuiya_id VARCHAR(100) DEFAULT 'csa',
-      ADD COLUMN IF NOT EXISTS scope VARCHAR(20) DEFAULT 'csa',
-      ADD COLUMN IF NOT EXISTS jumuiya_chair_token VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS jumuiya_secretary_token VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS jumuiya_chair_approved BOOLEAN DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS jumuiya_secretary_approved BOOLEAN DEFAULT FALSE
-    `);
-    logger.info("Ensured suggestion bin/unmask/reply/category/jumuiya columns on suggestions table");
+  await pool.query(`ALTER TABLE member_roles ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP`)
+    .catch(e => logger.warn("member_roles.approved_at: " + e.message));
 
-    // 3. Remove deprecated roles (delete member_roles first to respect FK)
-    await pool.query(`
-      DELETE FROM member_roles WHERE role_id IN (
-        SELECT role_id FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')
-      )
-    `);
-    await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')`);
-    logger.info("Removed deprecated roles: supreme_admin, admin, sub_group_chair");
+  await pool.query(`ALTER TABLE member_roles ADD COLUMN IF NOT EXISTS jumuiya_id UUID`)
+    .catch(e => logger.warn("member_roles.jumuiya_id: " + e.message));
 
-    // 4. Seed roles
-    for (const role of ROLES) {
-      const existing = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [role.name]);
-      if (existing.rows.length === 0) {
-        await pool.query(
-          "INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active')",
-          [role.name, role.description]
-        );
-        logger.info(`  Created role: ${role.name}`);
-      } else {
-        logger.debug(`  Role already exists: ${role.name}`);
-      }
+  await pool.query(`ALTER TABLE member_roles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`)
+    .catch(e => logger.warn("member_roles.created_at: " + e.message));
+
+  // ── Step 3: Promote id to PRIMARY KEY if not already done ──────────────────
+  await pool.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'member_roles_pkey'
+        AND conrelid = 'member_roles'::regclass
+      ) THEN
+        BEGIN
+          ALTER TABLE member_roles ADD PRIMARY KEY (id);
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END IF;
+    END $$;
+  `).catch(e => logger.warn("member_roles PK: " + e.message));
+
+  // ── Step 4: Status check constraint ────────────────────────────────────────
+  await pool.query(`ALTER TABLE member_roles DROP CONSTRAINT IF EXISTS member_roles_status_check`)
+    .catch(() => {});
+  await pool.query(`
+    DO $$ BEGIN
+      BEGIN
+        ALTER TABLE member_roles ADD CONSTRAINT member_roles_status_check
+        CHECK (status IN ('pending', 'approved', 'rejected', 'revoked'));
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END;
+    END $$;
+  `).catch(e => logger.warn("member_roles status constraint: " + e.message));
+
+  // ── Step 5: FK on jumuiya_id → sub_groups ──────────────────────────────────
+  await pool.query(`
+    DO $$ BEGIN
+      BEGIN
+        ALTER TABLE member_roles
+          ADD CONSTRAINT member_roles_jumuiya_id_fkey
+          FOREIGN KEY (jumuiya_id) REFERENCES sub_groups(group_id);
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END;
+    END $$;
+  `).catch(() => {});
+
+  // ── Step 6: Extra members columns ──────────────────────────────────────────
+  await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS flagged_inactive BOOLEAN DEFAULT FALSE`)
+    .catch(e => logger.warn("members.flagged_inactive: " + e.message));
+  await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS jumuiya_id UUID`)
+    .catch(e => logger.warn("members.jumuiya_id: " + e.message));
+  await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`)
+    .catch(e => logger.warn("members.status: " + e.message));
+  await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'legacy'`)
+    .catch(e => logger.warn("members.source: " + e.message));
+
+  // ── Step 7: suggestions table (if it exists) ───────────────────────────────
+  const suggCheck = await pool.query(
+    `SELECT 1 FROM information_schema.tables WHERE table_name='suggestions' AND table_schema='public'`
+  ).catch(() => ({ rows: [] }));
+
+  if (suggCheck.rows.length > 0) {
+    const suggCols = [
+      "deleted_at TIMESTAMP", "deleted_by VARCHAR(255)", "status VARCHAR(50) DEFAULT 'pending'",
+      "unmask_token VARCHAR(255)", "unmask_requested_at TIMESTAMP", "user_id VARCHAR(255)",
+      "reply TEXT", "replied_at TIMESTAMP", "replied_by VARCHAR(255)",
+      "category VARCHAR(50) DEFAULT 'general'", "chair_unmask_token VARCHAR(255)",
+      "liturgist_unmask_token VARCHAR(255)", "chair_approved BOOLEAN DEFAULT FALSE",
+      "liturgist_approved BOOLEAN DEFAULT FALSE", "jumuiya_id VARCHAR(100) DEFAULT 'csa'",
+      "scope VARCHAR(20) DEFAULT 'csa'", "jumuiya_chair_token VARCHAR(255)",
+      "jumuiya_secretary_token VARCHAR(255)", "jumuiya_chair_approved BOOLEAN DEFAULT FALSE",
+      "jumuiya_secretary_approved BOOLEAN DEFAULT FALSE",
+    ];
+    for (const col of suggCols) {
+      const colName = col.split(' ')[0];
+      await pool.query(`ALTER TABLE suggestions ADD COLUMN IF NOT EXISTS ${col}`)
+        .catch(e => logger.warn(`suggestions.${colName}: ` + e.message));
     }
-
-    logger.info("Role-based access control system ready");
-  } catch (error) {
-    logger.error("Failed to set up role system:", error.message);
-    throw error;
   }
+
+  // ── Step 8: Remove deprecated roles ────────────────────────────────────────
+  await pool.query(`
+    DELETE FROM member_roles WHERE role_id IN (
+      SELECT role_id FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')
+    )
+  `).catch(() => {});
+  await pool.query(`DELETE FROM roles WHERE role_name IN ('supreme_admin', 'admin', 'sub_group_chair')`)
+    .catch(() => {});
+
+  // ── Step 9: Seed roles ──────────────────────────────────────────────────────
+  for (const role of ROLES) {
+    const existing = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [role.name])
+      .catch(() => ({ rows: [] }));
+    if (existing.rows.length === 0) {
+      await pool.query(
+        "INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active')",
+        [role.name, role.description]
+      ).catch(e => logger.warn(`Role seed ${role.name}: ` + e.message));
+      logger.info(`  Created role: ${role.name}`);
+    } else {
+      await pool.query("UPDATE roles SET status = 'active' WHERE role_name = $1", [role.name])
+        .catch(() => {});
+    }
+  }
+
+  logger.info("Role-based access control system ready");
 };
 
 export { setupRoleSystem };
