@@ -11,7 +11,7 @@ import {
   FaEdit,
 } from "react-icons/fa";
 import { useAuth } from "../../../context/AuthContext";
-import { jumuiyaList } from "../../Jumuiya/data/jumuiyaData";
+import { apiClient } from "../../../api/axiosInstance";
 import jumuiyaNotificationsService from "../../../api/jumuiyaNotificationsService";
 
 const TYPE_OPTIONS = [
@@ -46,11 +46,19 @@ interface LocalNotification {
   postedBy: string;
 }
 
+interface JumuiyaInfo {
+  id: string;
+  name: string;
+  notifications: LocalNotification[];
+}
+
 export default function JumuiyaNotificationsAdmin() {
   const { user } = useAuth();
   const jumuiyaId = user?.jumuiya_id || "";
 
+  const [jumuiya, setJumuiya] = useState<JumuiyaInfo | null>(null);
   const [notifications, setNotifications] = useState<LocalNotification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -62,23 +70,54 @@ export default function JumuiyaNotificationsAdmin() {
   const [editMessage, setEditMessage] = useState("");
   const [editType, setEditType] = useState("info");
 
-  const loadNotifications = useCallback(() => {
-    const jumuiya = jumuiyaList.find((j) => j.id === jumuiyaId);
-    if (jumuiya?.notifications) {
-      setNotifications(jumuiya.notifications);
+  const loadJumuiyaData = useCallback(async () => {
+    if (!jumuiyaId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const response = await apiClient.get("/jumuiya-data/all");
+      if (response.data?.success) {
+        const backendList = response.data.data;
+        const found = backendList.find(
+          (b: any) => String(b.group_id) === String(jumuiyaId)
+        );
+        if (found) {
+          const notifs: LocalNotification[] = (found.notifications || []).map(
+            (n: any) => ({
+              id: n.id ?? String(Math.random()),
+              title: n.title,
+              message: n.message,
+              type: n.type || "info",
+              date: n.date || n.posted_at || new Date().toISOString(),
+              postedBy: n.postedBy || n.posted_by || "",
+            })
+          );
+          setJumuiya({ id: found.id, name: found.name, notifications: notifs });
+          setNotifications(notifs);
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
     }
   }, [jumuiyaId]);
 
   useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+    loadJumuiyaData();
+  }, [loadJumuiyaData]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) return;
     setSending(true);
     try {
-      const res = await jumuiyaNotificationsService.create({ title, message, status: type });
+      const res = await jumuiyaNotificationsService.create({
+        title,
+        message,
+        status: type,
+      });
       const newNotif: LocalNotification = {
         id: String(res.id || `custom-${Date.now()}`),
         title,
@@ -158,7 +197,13 @@ export default function JumuiyaNotificationsAdmin() {
       minute: "2-digit",
     });
 
-  const jumuiya = jumuiyaList.find((j) => j.id === jumuiyaId);
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: 64 }}>
+        <FaSpinner className="spin" style={{ fontSize: "2rem", opacity: 0.4 }} />
+      </div>
+    );
+  }
 
   if (!jumuiya) {
     return (
