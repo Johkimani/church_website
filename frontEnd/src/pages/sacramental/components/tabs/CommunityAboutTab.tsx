@@ -3,6 +3,16 @@ import type { CommunityModule } from "../../context/CommunityDataContext";
 import { FaCalendarDay, FaClock, FaChurch, FaHeart, FaUsers, FaDownload, FaStar, FaPrayingHands } from "react-icons/fa";
 import '../../../Jumuiya/components/TabsSystem.css';
 
+const COMMUNITY_IMAGES: Record<string, string> = {
+  choir: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
+  dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600',
+  charismatic: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=600',
+  'st-francis': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600',
+  youth: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+  mentorship: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+};
+const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600';
+
 interface Props {
   module: CommunityModule;
   color: string;
@@ -31,10 +41,10 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
             backgroundImage: `radial-gradient(circle at 20% 50%, ${color}44 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 40%)`,
           }}
         />
-        {(module.saint_image_url || module.image_url) && (
+        {(module.saint_image_url || module.image_url || COMMUNITY_IMAGES[module.id] || DEFAULT_COMMUNITY_IMAGE) && (
           <div className="absolute inset-0">
             <img
-              src={module.saint_image_url || module.image_url}
+              src={module.saint_image_url || module.image_url || COMMUNITY_IMAGES[module.id] || DEFAULT_COMMUNITY_IMAGE}
               alt={module.title}
               className={`w-full h-full object-cover transition-all duration-700 ${imgLoaded ? 'opacity-30 scale-100' : 'opacity-0 scale-105'}`}
               onLoad={() => setImgLoaded(true)}

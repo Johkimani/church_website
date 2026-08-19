@@ -27,6 +27,16 @@ const MINISTRY_COLORS: Record<string, string> = {
   mentorship: '#6d28d9',
 };
 
+const COMMUNITY_IMAGES: Record<string, string> = {
+  choir: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
+  dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600',
+  charismatic: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=600',
+  'st-francis': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600',
+  youth: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+  mentorship: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+};
+const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600';
+
 const TAB_ICONS: Record<TabType, React.ReactNode> = {
   about: <FaInfoCircle />,
   officials: <FaUserTie />,
@@ -239,7 +249,7 @@ const CommunityDetail: React.FC = () => {
             className="sidebar-icon relative z-10"
             style={{
               color: 'white',
-              backgroundImage: `url(${moduleData.saint_image_url || moduleData.image_url})`,
+              backgroundImage: `url(${moduleData.saint_image_url || moduleData.image_url || COMMUNITY_IMAGES[moduleIdClean] || DEFAULT_COMMUNITY_IMAGE})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',

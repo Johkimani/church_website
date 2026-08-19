@@ -37,6 +37,16 @@ const DEFAULT_ICON: React.ElementType = Users;
 
 const iconFor = (id: string): React.ElementType => ICON_MAP[id] || DEFAULT_ICON;
 
+const COMMUNITY_IMAGES: Record<string, string> = {
+  choir: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
+  dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600',
+  charismatic: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=600',
+  'st-francis': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600',
+  youth: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+  mentorship: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+};
+const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600';
+
 const CATEGORY_MAP: Record<string, string> = {
   choir: 'music',
   dancers: 'music',
@@ -112,8 +122,7 @@ const Community: React.FC = () => {
         title: mod.title,
         color: mod.color || '#b45309',
         description: mod.description,
-        saint_image_url: mod.saint_image_url,
-        image_url: mod.image_url,
+        saint_image_url: mod.saint_image_url || mod.image_url || COMMUNITY_IMAGES[mod.id] || DEFAULT_COMMUNITY_IMAGE,
       });
     }
   };
@@ -286,7 +295,7 @@ const Community: React.FC = () => {
           {filtered.map((mod) => {
             const accent = mod.color || '#b45309';
             const Icon = iconFor(mod.id);
-            const image = mod.saint_image_url || mod.image_url;
+            const image = mod.saint_image_url || mod.image_url || COMMUNITY_IMAGES[mod.id] || DEFAULT_COMMUNITY_IMAGE;
             const isJoined = myCommunityIds.has(mod.id);
 
             return (
@@ -433,8 +442,8 @@ const Community: React.FC = () => {
             >
               {/* Modal Header Image */}
               <div className="relative h-40 overflow-hidden">
-                {joinModal.saint_image_url || joinModal.image_url ? (
-                  <img src={joinModal.saint_image_url || joinModal.image_url} alt={joinModal.title} className="w-full h-full object-cover" />
+                {joinModal.saint_image_url ? (
+                  <img src={joinModal.saint_image_url} alt={joinModal.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${joinModal.color}, ${joinModal.color}cc)` }} />
                 )}
