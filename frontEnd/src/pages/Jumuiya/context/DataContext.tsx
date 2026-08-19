@@ -75,6 +75,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                                     termOfOffice: found.termOfOffice || item.termOfOffice,
                                     socialMedia: found.socialMedia && found.socialMedia.length > 0 ? found.socialMedia : item.socialMedia,
                                     tshirtOrders: found.tshirtOrders && found.tshirtOrders.length > 0 ? found.tshirtOrders : item.tshirtOrders,
+                                    notifications: found.notifications && found.notifications.length > 0 ? found.notifications : item.notifications,
                                 };
                             }
                             return item;
