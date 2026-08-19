@@ -107,7 +107,7 @@ async function fetchAllMembers(jumuiya_id, pagination = null) {
       m.jumuiya_id as jumuiya_uuid,
       sg.name as jumuiya_name,
       (r.member_id IS NOT NULL) as is_registered,
-      r."no" as reg_no,
+      r.row_no,
       r.serial_no,
       m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
       m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg,
@@ -163,7 +163,7 @@ async function fetchAllMembers(jumuiya_id, pagination = null) {
       jumuiya_name: row.jumuiya_name,
       jumuiya_id: jumuiya_id || row.jumuiya_uuid || row.jumuiya_name,
       is_registered: row.is_registered,
-      reg_no: row.reg_no,
+      row_no: row.row_no,
       serial_no: row.serial_no,
       sem_1_reg: row.sem_1_reg, sem_2_reg: row.sem_2_reg,
       sem_3_reg: row.sem_3_reg, sem_4_reg: row.sem_4_reg,
@@ -793,7 +793,7 @@ export const getAllRegisteredMembers = async (req, res) => {
 
     const selectBase = `
         r.id as registration_id,
-        r."no" as reg_no,
+        r.row_no,
         r.serial_no,
         r.registration_date,
         m.member_id as id,

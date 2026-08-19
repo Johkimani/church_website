@@ -103,7 +103,7 @@ export default function CsaSecretaryDashboard() {
   const semNum: 1 | 2 = semNumFromConfig(semester);
 
   const EXPORT_COLUMNS = [
-    { key: "reg_no", label: "No" },
+    { key: "row_no", label: "No" },
     { key: "serial_no", label: "Serial No" },
     { key: "reg_number", label: "Reg Number" },
     { key: "name", label: "Name" },
@@ -233,8 +233,8 @@ export default function CsaSecretaryDashboard() {
           row[c.label] = m.course || "—";
         } else if (c.key === "serial_no") {
           row[c.label] = m.serial_no ?? "—";
-        } else if (c.key === "reg_no") {
-          row[c.label] = m.reg_no ?? "—";
+        } else if (c.key === "row_no") {
+          row[c.label] = m.row_no ?? "—";
         } else {
           row[c.label] = m[c.key] ?? "—";
         }
@@ -329,7 +329,7 @@ export default function CsaSecretaryDashboard() {
 
   const renderRow = (m: any, i: number) => (
     <tr key={m.registration_id || `r${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-      <td className="px-4 py-3 text-xs font-mono text-slate-400">{m.reg_no ?? "—"}</td>
+      <td className="px-4 py-3 text-xs font-mono text-slate-400">{m.row_no ?? "—"}</td>
       <td className="px-4 py-3 text-xs font-mono text-slate-500">{m.serial_no ?? "—"}</td>
       <td className="px-4 py-3 font-medium text-slate-800">{`${m.first_name || ""} ${m.last_name || ""}`.trim()}</td>
       <td className="px-4 py-3">
@@ -666,7 +666,7 @@ export default function CsaSecretaryDashboard() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 {[
-                  { key: "reg_no", label: "No" },
+                  { key: "row_no", label: "No" },
                   { key: "serial_no", label: "Serial No" },
                   { key: "name", label: "Name" },
                   { key: "jumuiya_name", label: "Jumuiya" },
