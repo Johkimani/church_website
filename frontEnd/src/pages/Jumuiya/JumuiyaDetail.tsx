@@ -204,7 +204,7 @@ const JumuiyaDetail: React.FC = () => {
                     jumuiyaColor={detailColor}
                     isAdmin={isAdmin} jumuiyaName={''}                />;
             case 'members':
-                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} />
+                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} officials={jumuiya.officials || []} />
             case 'registration':
                 return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaColor={detailColor} />;
             case 'activities':

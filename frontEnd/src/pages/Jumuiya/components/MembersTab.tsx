@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FaCheck, FaUsers } from "react-icons/fa";
 import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
+import type { Official } from '../data/jumuiyaData';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
 
@@ -8,12 +9,18 @@ interface MembersTabProps {
     jumuiyaId: string;
     jumuiyaName: string;
     jumuiyaColor?: string;
+    officials?: Official[];
 }
 
-const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor = 'var(--primary-color)' }) => {
+const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor = 'var(--primary-color)', officials = [] }) => {
     const [activeSubTab, setActiveSubTab] = useState<'registered' | 'all'>('registered');
     const [members, setMembers] = useState<JumuiyaRosterMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const officialNames = useMemo(
+        () => new Set(officials.map(o => o.name?.toLowerCase().trim())),
+        [officials]
+    );
 
     useEffect(() => {
         let cancelled = false;
@@ -34,6 +41,16 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
     const displayedMembers = members;
 
     const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
+    const getMemberTag = (member: JumuiyaRosterMember) => {
+        if (officialNames.has(member.name?.toLowerCase().trim())) {
+            return { label: 'OFFICIAL', color: '#8b5cf6', bg: '#f5f3ff' };
+        }
+        if (member.is_registered) {
+            return { label: 'MEMBER', color: jumuiyaColor, bg: jumuiyaColor };
+        }
+        return { label: 'PENDING', color: '#9ca3af', bg: '#9ca3af' };
+    };
 
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
@@ -94,77 +111,70 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                         No members found in this category.
                                     </td>
                                 </tr>
-                            ) : displayedMembers.map(member => (
-                                <tr key={member.id}>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <div
-                                                        style={{
-                                                            width: '36px',
-                                                            height: '36px',
-                                                            borderRadius: '50%',
-                                                            background: member.is_registered ? jumuiyaColor : '#9ca3af',
-                                                            color: 'white',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontWeight: 700,
-                                                            fontSize: '0.8rem'
-                                                        }}
-                                                    >
-                                                        {member.name.split(' ').map(n => n[0]).join('')}
-                                                    </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontWeight: 600 }}>{member.name}</span>
-                                                    <span style={{
-                                                        fontSize: '0.65rem',
-                                                        background: member.is_registered ? jumuiyaColor : '#9ca3af',
+                            ) : displayedMembers.map(member => {
+                                const tag = getMemberTag(member);
+                                return (
+                                    <tr key={member.id}>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div
+                                                    style={{
+                                                        width: '36px',
+                                                        height: '36px',
+                                                        borderRadius: '50%',
+                                                        background: tag.color,
                                                         color: 'white',
-                                                        padding: '2px 6px',
-                                                        borderRadius: '10px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
                                                         fontWeight: 700,
-                                                        letterSpacing: '0.05em'
-                                                    }}>
-                                                        {member.is_registered ? 'MEMBER' : 'PENDING'}
-                                                    </span>
+                                                        fontSize: '0.8rem'
+                                                    }}
+                                                >
+                                                    {member.name.split(' ').map(n => n[0]).join('')}
                                                 </div>
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{member.id}</span>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontWeight: 600 }}>{member.name}</span>
+                                                        <span style={{
+                                                            fontSize: '0.65rem',
+                                                            background: tag.bg,
+                                                            color: tag.color === tag.bg ? 'white' : tag.color,
+                                                            padding: '2px 6px',
+                                                            borderRadius: '10px',
+                                                            fontWeight: 700,
+                                                            letterSpacing: '0.05em'
+                                                        }}>
+                                                            {tag.label}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        </td>
+                                        <td>
                                             <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{member.year || 'N/A'}</span>
-                                            <span style={{
-                                                fontSize: '0.75rem',
-                                                color: member.is_registered ? '#10b981' : '#9ca3af',
-                                                fontWeight: member.is_registered ? 700 : 400
-                                            }}>
-                                                {member.is_registered ? 'Registered' : 'Not Registered'}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {member.course ? (
-                                            <span style={{
-                                                padding: '3px 10px',
-                                                borderRadius: '20px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                background: `${_c('15')}`,
-                                                color: jumuiyaColor,
-                                                border: `1px solid ${_c('30')}`,
-                                                display: 'inline-block'
-                                            }}>
-                                                {member.course}
-                                            </span>
-                                        ) : (
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>N/A</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td>
+                                            {member.course ? (
+                                                <span style={{
+                                                    padding: '3px 10px',
+                                                    borderRadius: '20px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600,
+                                                    background: `${_c('15')}`,
+                                                    color: jumuiyaColor,
+                                                    border: `1px solid ${_c('30')}`,
+                                                    display: 'inline-block'
+                                                }}>
+                                                    {member.course}
+                                                </span>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>N/A</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 )}
