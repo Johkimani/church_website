@@ -231,6 +231,13 @@ export const createJumuiyaMember = async (req, res) => {
         [jumuiya_id, member_id]
       );
 
+      // 1b. Update any pending member_roles to match the new jumuiya_id
+      //    (so the member still appears on the CSA Chairperson's approval page)
+      await client.query(
+        `UPDATE member_roles SET jumuiya_id = $1 WHERE member_id = $2 AND status = 'pending'`,
+        [jumuiya_id, member_id]
+      );
+
       // 2. Fetch updated member with jumuiya name via JOIN
       const updateResult = await client.query(
         `SELECT m.*, sg.name as jumuiya_name
