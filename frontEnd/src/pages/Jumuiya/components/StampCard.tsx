@@ -12,11 +12,12 @@ interface StampCardProps {
     jumuiyaColor: string;
     latestSemester?: number;
     onClose?: () => void;
+    saintImage?: string;
 }
 
 const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
 
-const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, latestSemester, onClose }) => {
+const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, latestSemester, onClose, saintImage }) => {
     const { user } = useAuth();
     const [members, setMembers] = useState<JumuiyaRosterMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -246,13 +247,21 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                             <div style={{
-                                width: '48px', height: '48px', borderRadius: '14px',
+                                width: '52px', height: '52px', borderRadius: '50%',
                                 background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.4rem', fontWeight: 900,
-                                border: '1px solid rgba(255,255,255,0.3)'
+                                border: '2px solid rgba(255,255,255,0.4)',
+                                overflow: 'hidden', flexShrink: 0
                             }}>
-                                {getInitials(displayRecord.jumuiya_name || jumuiyaName)}
+                                {saintImage ? (
+                                    <img src={saintImage} alt="Patron Saint" style={{
+                                        width: '100%', height: '100%', objectFit: 'cover'
+                                    }} />
+                                ) : (
+                                    <span style={{ fontSize: '1.2rem', fontWeight: 900 }}>
+                                        {getInitials(displayRecord.jumuiya_name || jumuiyaName)}
+                                    </span>
+                                )}
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.85, letterSpacing: '1px' }}>
@@ -263,12 +272,24 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                 </div>
                             </div>
                         </div>
-                        <div style={{
-                            background: 'rgba(255,255,255,0.15)', padding: '5px 10px',
-                            borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700,
-                            letterSpacing: '0.5px', backdropFilter: 'blur(5px)'
-                        }}>
-                            {registeredCount}/8
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                                width: '36px', height: '36px', borderRadius: '10px',
+                                background: 'white', overflow: 'hidden',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                flexShrink: 0
+                            }}>
+                                <img src="/images/csa-logo.jpg" alt="CSA" style={{
+                                    width: '100%', height: '100%', objectFit: 'cover'
+                                }} />
+                            </div>
+                            <div style={{
+                                background: 'rgba(255,255,255,0.15)', padding: '5px 10px',
+                                borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700,
+                                letterSpacing: '0.5px', backdropFilter: 'blur(5px)'
+                            }}>
+                                {registeredCount}/8
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -216,7 +216,7 @@ const JumuiyaDetail: React.FC = () => {
             case 'settings':
                 return <SettingsTab jumuiyaColor={detailColor} />;
             case 'stampcard':
-                return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />;
+                return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} saintImage={jumuiya.saintImage} />;
             default:
                 return null;
         }
