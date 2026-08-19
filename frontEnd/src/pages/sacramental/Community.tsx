@@ -54,9 +54,9 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 const TESTIMONIALS = [
-  { name: 'Sr. Alice', role: 'Choir Leader', text: 'Singing together has strengthened my faith in ways I never imagined.' },
-  { name: 'Br. Kevin', role: 'Youth Chair', text: 'Our youth community is where friendships and faith grow side by side.' },
-  { name: 'Sr. Grace', role: 'Charismatic Lead', text: 'The prayer sessions have transformed my spiritual journey completely.' },
+  { role: 'Choir Leader', text: 'Singing together has strengthened my faith in ways I never imagined. The choir's harmonies lift our prayers to heaven.' },
+  { role: 'Youth Chair', text: 'Our youth community is where friendships and faith grow side by side. It's a place where young people discover their purpose and build lifelong relationships in Christ.' },
+  { role: 'Charismatic Prayer Group Leader', text: 'The prayer sessions have transformed my spiritual journey completely. Experiencing the Holy Spirit in daily life has brought renewal and hope to my walk with God.' }
 ];
 
 const containerVariants = {
@@ -360,7 +360,7 @@ const Community: React.FC = () => {
                   "{TESTIMONIALS[testimonialIdx].text}"
                 </motion.p>
               </AnimatePresence>
-              <p className="text-white font-bold text-sm mt-3">{TESTIMONIALS[testimonialIdx].name}</p>
+              <p className="text-white font-bold text-sm mt-3">{TESTIMONIALS[testimonialIdx].role}</p>
               <p className="text-amber-200/70 text-xs font-semibold">{TESTIMONIALS[testimonialIdx].role}</p>
             </div>
             <div className="flex justify-center gap-2 mt-5">
