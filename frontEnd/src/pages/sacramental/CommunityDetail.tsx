@@ -68,7 +68,6 @@ const CommunityDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('about');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [hasNewNotif, setHasNewNotif] = useState(true);
 
   const moduleIdClean = moduleId ? moduleId.toLowerCase().replace(/[^a-z0-9-]/g, '-') : '';
 
@@ -105,8 +104,6 @@ const CommunityDetail: React.FC = () => {
   // Tabs that are publicly accessible (no join required)
   const PUBLIC_TABS: TabType[] = ['about', 'officials', 'activities'];
   const isPublicTab = PUBLIC_TABS.includes(activeTab);
-
-  const notifCount = ((moduleData as any)?.announcements || []).length;
 
   const setTabWithUrl = (tab: TabType) => {
     setActiveTab(tab);
@@ -351,19 +348,11 @@ const CommunityDetail: React.FC = () => {
         <div className="notif-fab-container">
           <button
             className="notif-fab"
-            onClick={() => {
-              setIsNotifOpen(true);
-              setHasNewNotif(false);
-            }}
+            onClick={() => setIsNotifOpen(true)}
             style={{ backgroundColor: detailColor }}
             aria-label="Notifications"
           >
             <FaBell />
-            {hasNewNotif && notifCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center px-1.5 shadow-lg animate-bounce">
-                {notifCount}
-              </span>
-            )}
           </button>
         </div>
       )}

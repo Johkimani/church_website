@@ -14,11 +14,8 @@ import {
   HeartHandshake,
   BookOpen,
   Sparkles,
-  Clock,
   Heart,
   Star,
-  ChevronLeft,
-  ChevronRight,
   UserPlus,
   X,
   Check,
@@ -284,7 +281,7 @@ const Community: React.FC = () => {
           ))}
         </div>
 
-        {/* ── Compact Cards ── */}
+        {/* ── Cards ── */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -293,8 +290,6 @@ const Community: React.FC = () => {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
         >
           {filtered.map((mod) => {
-            const accent = mod.color || '#b45309';
-            const Icon = iconFor(mod.id);
             const image = mod.saint_image_url || mod.image_url || COMMUNITY_IMAGES[mod.id] || DEFAULT_COMMUNITY_IMAGE;
             const isJoined = myCommunityIds.has(mod.id);
 
@@ -306,23 +301,14 @@ const Community: React.FC = () => {
                 className="group relative bg-white rounded-2xl border border-stone-100 shadow-[0_1px_3px_rgba(28,25,23,0.06)] hover:shadow-[0_16px_40px_-16px_rgba(28,25,23,0.35)] transition-all duration-300 overflow-hidden cursor-pointer hover:-translate-y-1"
               >
                 {/* Image */}
-                <div className="aspect-[16/9] relative overflow-hidden bg-stone-100">
-                  {image ? (
-                    <>
-                      <img
-                        src={image}
-                        alt={mod.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}cc)` }} />
-                  )}
-
-                  {/* Top strip */}
-                  <div className="absolute top-0 inset-x-0 h-1 z-10" style={{ background: accent }} />
+                <div className="aspect-[16/9] relative overflow-hidden bg-slate-100">
+                  <img
+                    src={image}
+                    alt={mod.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
 
                   {/* Joined badge */}
                   {isJoined && (
@@ -333,35 +319,9 @@ const Community: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Title overlay on image */}
+                  {/* Title on image */}
                   <div className="absolute bottom-0 inset-x-0 p-4 z-10">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}>
-                        <Icon size={14} />
-                      </div>
-                      <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider">{CATEGORY_MAP[mod.id] || 'ministry'}</span>
-                    </div>
-                    <h3 className="text-white font-black text-lg leading-tight drop-shadow-md">{mod.title}</h3>
-                  </div>
-                </div>
-
-                {/* Body - compact */}
-                <div className="p-4">
-                  <p className="text-slate-500 text-xs leading-relaxed line-clamp-2 mb-3">{mod.description}</p>
-                  <div className="flex items-center justify-between">
-                    {mod.meetingSchedule && (
-                      <span className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
-                        <Clock size={10} style={{ color: accent }} />
-                        {mod.meetingSchedule.length > 25 ? mod.meetingSchedule.slice(0, 25) + '…' : mod.meetingSchedule}
-                      </span>
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleCardClick(mod); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-white transition-all hover:scale-105 cursor-pointer"
-                      style={{ background: accent }}
-                    >
-                      {isJoined ? 'View' : 'Join'} <ArrowRight size={10} />
-                    </button>
+                    <h3 className="text-white font-black text-lg leading-tight drop-shadow-md uppercase tracking-tight">{mod.title}</h3>
                   </div>
                 </div>
               </motion.article>
