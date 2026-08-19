@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { verifyToken, requireRole } from "../../middleware/authMiddleware.js";
+import verifyToken from "../../middlewares/Tokens.js";
+const requireRole = (...roles) => (req, res, next) => {
+  const userRoles = Array.isArray(req.user?.role) ? req.user.role : [req.user?.role];
+  if (roles.some(r => userRoles.includes(r))) return next();
+  return res.status(403).json({ success: false, message: 'Forbidden' });
+};
 import {
   getPracticeSchedules,
   createPracticeSchedule,
