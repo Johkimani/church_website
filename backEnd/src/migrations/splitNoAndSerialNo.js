@@ -22,22 +22,22 @@ const splitNoAndSerialNoMigration = async () => {
       ADD COLUMN IF NOT EXISTS "no" INTEGER
     `);
 
-    // 2. Backfill `no` from current serial_no values (they held the count before)
-    const { rows: check } = await pool.query(
-      `SELECT COUNT(*)::int AS cnt FROM registered WHERE "no" IS NOT NULL`
-    );
-    if (check[0].cnt === 0) {
-      await pool.query(`
-        UPDATE registered
-        SET "no" = sub.row_num
-        FROM (
-          SELECT id, ROW_NUMBER() OVER (ORDER BY registration_date, id) AS row_num
-          FROM registered
-        ) sub
-        WHERE registered.id = sub.id
-      `);
-      logger.info('Backfilled "no" from existing serial_no / registration order');
-    }
+    // 2. Backfill any rows where "no" is still NULL (idempotent — safe to re-run)
+    await pool.query(`
+      WITH max_no AS (
+        SELECT COALESCE(MAX("no"), 0) AS base FROM registered
+      ),
+      to_fix AS (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY registration_date, id) + (SELECT base FROM max_no) AS row_num
+        FROM registered
+        WHERE "no" IS NULL
+      )
+      UPDATE registered
+      SET "no" = to_fix.row_num
+      FROM to_fix
+      WHERE registered.id = to_fix.id
+    `);
+    logger.info('Backfilled any NULL "no" values from registration order');
 
     // 3. Replace the trigger function:
     //    - "no" is always auto-assigned (MAX + 1)
