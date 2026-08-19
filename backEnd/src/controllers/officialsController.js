@@ -559,14 +559,56 @@ export const createOfficial = async (req, res) => {
     let validatedRegNumber = null;
     if (reg_number && reg_number.trim()) {
       const memberResult = await pool.query(
-        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
+        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id ILIKE $2
          LIMIT 1`,
-        [reg_number.trim(), reg_number.trim().toUpperCase()]
+        [reg_number.trim(), reg_number.trim()]
       );
-      if (memberResult.rows.length === 0) {
-        return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}"` });
+      if (memberResult.rows.length > 0) {
+        validatedRegNumber = memberResult.rows[0].member_id;
       }
-      validatedRegNumber = memberResult.rows[0].member_id;
+    }
+
+    if (!validatedRegNumber && normalizedContact) {
+      const cleanPhone = normalizedContact.replace(/[^0-9]/g, '');
+      if (cleanPhone.length >= 8) {
+        const phoneMatch = await pool.query(
+          `SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1`,
+          [cleanPhone.slice(-8)]
+        );
+        if (phoneMatch.rows.length > 0) validatedRegNumber = phoneMatch.rows[0].member_id;
+      }
+    }
+
+    if (!validatedRegNumber && name) {
+      const nameMatch = await pool.query(
+        `SELECT member_id FROM members 
+         WHERE (first_name || ' ' || last_name) ILIKE $1 
+            OR (last_name || ' ' || first_name) ILIKE $1 
+         LIMIT 1`,
+        [`%${name.trim()}%`]
+      );
+      if (nameMatch.rows.length > 0) validatedRegNumber = nameMatch.rows[0].member_id;
+    }
+
+    if (!validatedRegNumber && name) {
+      const nameParts = name.trim().split(/\s+/);
+      const firstName = nameParts[0] || name.trim();
+      const lastName = nameParts.slice(1).join(' ') || '';
+      const rawReg = (reg_number && reg_number.trim()) ? reg_number.trim() : null;
+      let finalMemberId = rawReg;
+      if (!finalMemberId) {
+        const phoneDigits = normalizedContact ? normalizedContact.replace(/[^0-9]/g, '').slice(-5) : Math.floor(10000 + Math.random() * 90000);
+        finalMemberId = `OFF/${phoneDigits}/${new Date().getFullYear().toString().slice(-2)}`;
+      }
+      const existingMember = await pool.query(`SELECT member_id FROM members WHERE member_id = $1`, [finalMemberId]);
+      if (existingMember.rows.length === 0) {
+        await pool.query(
+          `INSERT INTO members (member_id, first_name, last_name, phone, created_at)
+           VALUES ($1, $2, $3, $4, NOW())`,
+          [finalMemberId, firstName, lastName, normalizedContact || null]
+        );
+      }
+      validatedRegNumber = finalMemberId;
     }
 
     // Build checking promises to run in parallel
