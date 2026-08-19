@@ -283,22 +283,8 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
   const loadPending = async () => {
     setLoading(true);
     try {
-      const [pendingData, csaOfficials, jumuiyaOfficials] = await Promise.all([
-        apiService.getRoleAssignments('pending'),
-        apiClient.get('/officials/list').then((r) => r.data?.data || r.data || []),
-        apiClient.get('/jumuiya-officials/list').then((r) => r.data?.data || r.data || []),
-      ]);
-
-      const allOfficialRegNumbers = new Set<string>();
-      for (const off of [...(Array.isArray(csaOfficials) ? csaOfficials : []), ...(Array.isArray(jumuiyaOfficials) ? jumuiyaOfficials : [])]) {
-        if (off.reg_number) allOfficialRegNumbers.add(off.reg_number);
-      }
-
-      setAssignments(
-        (Array.isArray(pendingData) ? pendingData : []).filter(
-          (a: Assignment) => allOfficialRegNumbers.has(a.member_id)
-        )
-      );
+      const pendingData = await apiService.getRoleAssignments('pending');
+      setAssignments(Array.isArray(pendingData) ? pendingData : []);
     } catch {
       toast.error('Failed to load pending assignments');
     } finally {
