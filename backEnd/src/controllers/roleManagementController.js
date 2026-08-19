@@ -44,16 +44,17 @@ export const listAssignments = async (req, res) => {
       SELECT mr.id, mr.member_id, mr.role_id, mr.status, mr.assigned_by, mr.approved_by,
              mr.approved_at, mr.jumuiya_id, mr.created_at,
              r.role_name, r.description as role_description,
-             m.first_name, m.last_name,
+             COALESCE(m.first_name, mr.member_id) as first_name,
+             COALESCE(m.last_name, '') as last_name,
              sg.name as jumuiya_name,
              ab.first_name as assigned_by_first, ab.last_name as assigned_by_last,
              apb.first_name as approved_by_first, apb.last_name as approved_by_last
       FROM member_roles mr
       JOIN roles r ON mr.role_id = r.role_id
-      JOIN members m ON mr.member_id = m.member_id
+      LEFT JOIN members m ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(m.member_id))
       LEFT JOIN sub_groups sg ON mr.jumuiya_id = sg.group_id
-      LEFT JOIN members ab ON mr.assigned_by = ab.member_id
-      LEFT JOIN members apb ON mr.approved_by = apb.member_id
+      LEFT JOIN members ab ON LOWER(TRIM(mr.assigned_by)) = LOWER(TRIM(ab.member_id))
+      LEFT JOIN members apb ON LOWER(TRIM(mr.approved_by)) = LOWER(TRIM(apb.member_id))
       WHERE 1=1
     `;
     const params = [];

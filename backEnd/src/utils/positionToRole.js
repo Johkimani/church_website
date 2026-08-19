@@ -11,8 +11,11 @@ const CSA_EXECUTIVE_ROLES = [
 export const CSA_POSITION_TO_ROLE = {
   'Chairperson': 'csa_chair',
   'Vice Chairperson': 'csa_vice_chair',
+  'Assistant Chairperson': 'csa_vice_chair',
   'Secretary': 'csa_secretary',
+  'Assistant Secretary': 'csa_secretary',
   'Jumuiya Coordinator': 'jumuiya_coordinator',
+  'Assistant Jumuiya Coordinator': 'jumuiya_coordinator',
   'Organizing Secretary': 'os',
   'Project Manager': 'project_manager',
   'Assistant Project Manager': 'project_manager',
@@ -26,14 +29,25 @@ export const CSA_POSITION_TO_ROLE = {
 
 export const JUMUIYA_POSITION_TO_ROLE = {
   'Chairperson': 'jumuiya_chairperson',
-  // All variations of the vice/assistant chairperson role
   'Ass Chairperson': 'jumuiya_vice_chairperson',
+  'Ass. Chairperson': 'jumuiya_vice_chairperson',
   'Vice Chairperson': 'jumuiya_vice_chairperson',
+  'Vice-Chairperson': 'jumuiya_vice_chairperson',
+  'Vice Chair': 'jumuiya_vice_chairperson',
+  'Ass Chair': 'jumuiya_vice_chairperson',
+  'Ass. Chair': 'jumuiya_vice_chairperson',
   'Assistant Chairperson': 'jumuiya_vice_chairperson',
   'Assistant Jumuiya Chairperson': 'jumuiya_vice_chairperson',
+  'Jumuiya Vice Chairperson': 'jumuiya_vice_chairperson',
   'VC': 'jumuiya_vice_chairperson',
   'Organizing Secretary': 'jumuiya_os',
   'Secretary': 'jumuiya_secretary',
+  'Ass Secretary': 'jumuiya_secretary',
+  'Ass. Secretary': 'jumuiya_secretary',
+  'Assistant Secretary': 'jumuiya_secretary',
+  'Liturgist': 'liturgist',
+  'Ass Liturgist': 'liturgist',
+  'Treasurer': 'treasurer',
 };
 
 const ROLE_IS_JUMUIYA_SCOPED = [
@@ -44,8 +58,37 @@ const ROLE_IS_JUMUIYA_SCOPED = [
 ];
 
 export const getRoleNameForPosition = (position, isJumuiya) => {
-  const map = isJumuiya ? JUMUIYA_POSITION_TO_ROLE : CSA_POSITION_TO_ROLE;
-  return map[position] || null;
+  if (!position) return null;
+  const clean = position.toString().trim();
+  
+  if (isJumuiya) {
+    if (JUMUIYA_POSITION_TO_ROLE[clean]) return JUMUIYA_POSITION_TO_ROLE[clean];
+    const lower = clean.toLowerCase();
+    if (lower.includes('chair') && (lower.includes('ass') || lower.includes('vice') || lower.includes('vc') || lower.includes('deputy') || lower.includes('sub'))) {
+      return 'jumuiya_vice_chairperson';
+    }
+    if (lower.includes('chair')) return 'jumuiya_chairperson';
+    if (lower.includes('organizing') || lower === 'os' || lower.includes(' os')) return 'jumuiya_os';
+    if (lower.includes('sec')) return 'jumuiya_secretary';
+    if (lower.includes('liturg')) return 'liturgist';
+    if (lower.includes('treasur')) return 'treasurer';
+    return null;
+  }
+  
+  if (CSA_POSITION_TO_ROLE[clean]) return CSA_POSITION_TO_ROLE[clean];
+  const lower = clean.toLowerCase();
+  if (lower.includes('jumuiya') && lower.includes('coord')) return 'jumuiya_coordinator';
+  if (lower.includes('chair') && (lower.includes('vice') || lower.includes('ass') || lower.includes('vc') || lower.includes('deputy'))) {
+    return 'csa_vice_chair';
+  }
+  if (lower.includes('chair')) return 'csa_chair';
+  if (lower.includes('project')) return 'project_manager';
+  if (lower.includes('instrument')) return 'instrument_manager';
+  if (lower.includes('liturg')) return 'liturgist';
+  if (lower.includes('treasur')) return 'treasurer';
+  if (lower.includes('organizing') || lower === 'os' || lower.includes(' os')) return 'os';
+  if (lower.includes('sec')) return 'csa_secretary';
+  return null;
 };
 
 export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, category, assignedBy) => {
@@ -53,33 +96,63 @@ export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, 
   if (!roleName) return null;
 
   if (!regNumber) return null;
+  const cleanReg = regNumber.toString().trim();
+  if (!cleanReg) return null;
 
   const memberResult = await pool.query(
-    `SELECT member_id, jumuiya_id FROM members WHERE member_id = $1`,
-    [regNumber]
+    `SELECT member_id, jumuiya_id FROM members 
+     WHERE member_id = $1 
+        OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+        OR member_id LIKE '%/' || $1 || '/%'
+        OR member_id ILIKE $2
+     ORDER BY CASE WHEN member_id = $1 THEN 1 ELSE 2 END
+     LIMIT 1`,
+    [cleanReg, `%${cleanReg}%`]
   );
-  if (memberResult.rows.length === 0) return null;
+  if (memberResult.rows.length === 0) {
+    logger.warn(`autoAssignRoleForOfficial: member "${cleanReg}" not found in members table`);
+    return null;
+  }
   const member = memberResult.rows[0];
 
-  const roleResult = await pool.query(
+  let roleResult = await pool.query(
     `SELECT role_id FROM roles WHERE role_name = $1 AND status = 'active'`,
     [roleName]
   );
   if (roleResult.rows.length === 0) {
-    logger.warn(`autoAssignRoleForOfficial: role "${roleName}" not found in roles table`);
-    return null;
+    // If not active or missing, try finding by name regardless of status or create it
+    const existingAny = await pool.query(`SELECT role_id FROM roles WHERE role_name = $1`, [roleName]);
+    if (existingAny.rows.length > 0) {
+      await pool.query(`UPDATE roles SET status = 'active' WHERE role_name = $1`, [roleName]);
+      roleResult = existingAny;
+    } else {
+      const desc = roleName.replace(/_/g, ' ');
+      roleResult = await pool.query(
+        `INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id`,
+        [roleName, desc]
+      );
+    }
   }
   const roleId = roleResult.rows[0].role_id;
 
   let effectiveJumuiyaId = null;
   if (ROLE_IS_JUMUIYA_SCOPED.includes(roleName)) {
-    if (isJumuiya) {
+    if (isJumuiya && category) {
+      const cleanCat = category.toString().trim();
       const jumuiyaResult = await pool.query(
-        `SELECT group_id FROM sub_groups WHERE name = $1`,
-        [category]
+        `SELECT group_id FROM sub_groups 
+         WHERE name = $1 
+            OR LOWER(TRIM(name)) = LOWER(TRIM($1))
+            OR LOWER(REPLACE(REPLACE(name, '.', ''), ' ', '-')) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
+            OR LOWER(slug) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
+            OR LOWER(name) = LOWER($1)
+         LIMIT 1`,
+        [cleanCat]
       );
       if (jumuiyaResult.rows.length > 0) {
         effectiveJumuiyaId = jumuiyaResult.rows[0].group_id;
+      } else {
+        effectiveJumuiyaId = member.jumuiya_id;
       }
     } else {
       effectiveJumuiyaId = member.jumuiya_id;
@@ -149,13 +222,15 @@ export const removeRoleForOfficial = async (regNumber, position, isJumuiya) => {
   if (!roleName || !regNumber) return;
 
   const memberResult = await pool.query(
-    `SELECT member_id FROM members WHERE member_id = $1`,
-    [regNumber]
+    `SELECT member_id FROM members 
+     WHERE member_id = $1 OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+     LIMIT 1`,
+    [regNumber.toString().trim()]
   );
   if (memberResult.rows.length === 0) return;
 
   const roleResult = await pool.query(
-    `SELECT role_id FROM roles WHERE role_name = $1 AND status = 'active'`,
+    `SELECT role_id FROM roles WHERE role_name = $1`,
     [roleName]
   );
   if (roleResult.rows.length === 0) return;
@@ -165,3 +240,4 @@ export const removeRoleForOfficial = async (regNumber, position, isJumuiya) => {
     [memberResult.rows[0].member_id, roleResult.rows[0].role_id]
   );
 };
+
