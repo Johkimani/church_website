@@ -4,13 +4,10 @@ export interface BackendNotification {
   id: number;
   title: string;
   message: string;
-  category: "csa" | "jumuiya";
-  posted_to: string;
+  type: string;
   posted_by: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string | null;
-  images: string[];
+  date: string | null;
+  posted_at: string | null;
 }
 
 const BASE = "/jumuiya-notifications";

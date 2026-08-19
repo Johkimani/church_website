@@ -113,23 +113,11 @@ export default function JumuiyaNotificationsAdmin() {
     if (!title.trim() || !message.trim()) return;
     setSending(true);
     try {
-      const res = await jumuiyaNotificationsService.create({
-        title,
-        message,
-        status: type,
-      });
-      const newNotif: LocalNotification = {
-        id: String(res.id || `custom-${Date.now()}`),
-        title,
-        message,
-        type,
-        date: new Date().toISOString(),
-        postedBy: user?.name || "Secretary",
-      };
-      setNotifications((prev) => [newNotif, ...prev]);
+      await jumuiyaNotificationsService.create({ title, message, status: type });
       setTitle("");
       setMessage("");
       setType("info");
+      await loadJumuiyaData();
     } catch {
       // silent
     } finally {
@@ -144,7 +132,7 @@ export default function JumuiyaNotificationsAdmin() {
       if (!isNaN(numId)) {
         await jumuiyaNotificationsService.remove(numId);
       }
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      await loadJumuiyaData();
     } catch {
       // silent
     }
@@ -175,14 +163,8 @@ export default function JumuiyaNotificationsAdmin() {
           status: editType,
         });
       }
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id
-            ? { ...n, title: editTitle, message: editMessage, type: editType }
-            : n
-        )
-      );
       cancelEdit();
+      await loadJumuiyaData();
     } catch {
       // silent
     }

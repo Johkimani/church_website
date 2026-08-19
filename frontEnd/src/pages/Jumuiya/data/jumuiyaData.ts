@@ -90,32 +90,6 @@ export const jumuiyaList: JumuiyaData[] = [
     color: "#b00adab4",
     saintImage: "/images/Anthony.png",
     historyPdf: "/assets/files/SAINT_ANTHONY.pdf",
-    notifications: [
-      {
-        id: "n1",
-        title: "Sunday Meeting Reminder",
-        message: "Reminder: Our weekly Sunday meeting is at 2:00 PM in LH 24. Please come prepared with your weekly dues.",
-        type: "info",
-        date: "2026-02-19T10:00:00Z",
-        postedBy: "Chairperson"
-      },
-      {
-        id: "n2",
-        title: "T-Shirt Orders Closing Soon",
-        message: "T-shirt orders close on 28th February. Please use the T-Shirts tab to submit your order before the deadline.",
-        type: "urgent",
-        date: "2026-02-18T08:00:00Z",
-        postedBy: "Secretary"
-      },
-      {
-        id: "n3",
-        title: "New Member Welcome",
-        message: "Please warmly welcome our new members who joined last Sunday. May they feel at home in our community!",
-        type: "success",
-        date: "2026-02-15T14:00:00Z",
-        postedBy: "Chairperson"
-      }
-    ],
     tshirtOrders: [],
     about: "St. Anthony of Padua began life as Fernando, born into wealth in Lisbon. He joined a monastery, devoting himself to Scripture and prayer. His desire for radical service awakened after encountering martyred missionaries, leading him to join the Franciscans as Anthony. Though illness prevented him from becoming a missionary, an unexpected opportunity to preach revealed his extraordinary gift. Combining deep biblical wisdom with compelling speech, he became one of the era’s most powerful preachers, drawing vast crowds and calling people to justice, mercy, and authentic faith. His legacy is marked by reported miracles, including the famous story of fish listening to his sermon. After his early death at 36, devotion to him grew, especially as the patron saint of lost items. Yet his deeper gift is helping people rediscover not just objects, but hope, faith, and divine direction. His life poses a timeless question: when one path closes, might God be quietly opening another, greater one?",
     meetingSchedule: {
@@ -197,32 +171,6 @@ export const jumuiyaList: JumuiyaData[] = [
     description: "Our Hearts Are Restless",
     color: "#1d21edd6",
     saintImage: "/images/Augustine.png",
-    notifications: [
-      {
-        id: "n1",
-        title: "Friday Evening Prayer",
-        message: "Our Friday evening prayer session starts at 6:00 PM in the Parish Library. All members are encouraged to attend.",
-        type: "info",
-        date: "2026-02-18T10:00:00Z",
-        postedBy: "Chairperson"
-      },
-      {
-        id: "n2",
-        title: "Lenten Retreat Registration",
-        message: "Early bird registration for the upcoming Lenten retreat is now open. Sign up in the Registration tab to secure your spot.",
-        type: "success",
-        date: "2026-02-19T09:00:00Z",
-        postedBy: "Secretary"
-      },
-      {
-        id: "n3",
-        title: "Library Maintenance Notice",
-        message: "The Parish Library will be closed for cleaning this Saturday. Please return any borrowed books by Friday evening.",
-        type: "warning",
-        date: "2026-02-20T08:30:00Z",
-        postedBy: "Treasurer"
-      }
-    ],
     tshirtOrders: [],
     about: "Born in North Africa to a devout Christian mother, Monica, and a pagan father, Augustine was brilliant but rebellious. He pursued pleasure, ambition, and philosophical truth while resisting the faith his mother prayed he would embrace. Despite becoming a celebrated teacher, he remained internally restless and unsatisfied. Monica's relentless prayers followed him for decades. Augustine explored various belief systems but couldn't shake his longing for something more. His famous confession captures this universal struggle: 'Our hearts are restless until they rest in You.' The turning point came in a Milan garden. Overwhelmed by internal conflict, he heard a child's voice chant, 'Take and read.' Opening Scripture nearby, he read a passage calling him to abandon his old ways. In that moment, his resistance broke. He surrendered and was baptized. Augustine went on to become a bishop and one of Christianity's most influential theologians, writing works like Confessions and City of God that still shape Western thought. His intellectual legacy is immense, but his lasting power lies in his story—proof that holiness doesn't require perfection from the start. His life testifies that God meets us in our wandering, that grace outlasts our mistakes, and that it's never too late to come home.",
     meetingSchedule: {
@@ -305,32 +253,6 @@ export const jumuiyaList: JumuiyaData[] = [
     color: "#fc1f5a88",
     saintImage: "/images/Catherine.jpg",
     historyPdf: "/assets/files/SAINT_CATHERINE.pdf",
-    notifications: [
-      {
-        id: "n1",
-        title: "Wednesday Meeting",
-        message: "Our weekly meeting this Wednesday is at 5:30 PM in the Parish Garden. Please bring your Bibles.",
-        type: "info",
-        date: "2026-02-17T09:00:00Z",
-        postedBy: "Chairperson"
-      },
-      {
-        id: "n2",
-        title: "Emergency Fund Contribution",
-        message: "We are launching an emergency fund for a member in need. Contributions can be made via the Treasurer during the Wednesday meeting.",
-        type: "urgent",
-        date: "2026-02-18T11:00:00Z",
-        postedBy: "Treasurer"
-      },
-      {
-        id: "n3",
-        title: "Garden Cleanup Success!",
-        message: "A big thank you to everyone who helped with the Parish Garden cleanup last Saturday. It looks beautiful!",
-        type: "success",
-        date: "2026-02-19T10:00:00Z",
-        postedBy: "Secretary"
-      }
-    ],
     tshirtOrders: [],
     about: "St. Catherine of Alexandria was a Christian princess and scholar in the early 4th century, renowned for her intelligence, eloquence, and unwavering faith. According to tradition, she was born into a noble family in Alexandria, Egypt. From a young age, she devoted herself to learning and the Christian faith. When Emperor Maxentius persecuted Christians, Catherine courageously confronted him, defending Christianity with such wisdom that many scholars sent to debate her converted instead. Infuriated, the emperor tried to persuade her to renounce her faith, but Catherine remained steadfast. She endured imprisonment and was subjected to torture, including the infamous breaking wheel, which miraculously shattered at her touch. Despite her suffering, she continued to pray and inspire others, converting many through her courage and faith. Eventually, Catherine was beheaded, becoming a martyr for her beliefs. Her life symbolized the triumph of faith, intellect, and virtue over tyranny. She became one of the most venerated saints in both Eastern and Western Christianity, often depicted with a wheel, a symbol of her torture, and a crown, representing her nobility. St. Catherine’s story inspired generations to uphold faith and wisdom, showing that courage and intellect can coexist with deep spiritual devotion. Her feast day is celebrated on November 25.",
     meetingSchedule: {
@@ -413,32 +335,6 @@ export const jumuiyaList: JumuiyaData[] = [
     color: "#9ea1a0d1",
     saintImage: "/images/Dominic.png",
     historyPdf: "/assets/files/SAINT_DOMINIC.pdf",
-    notifications: [
-      {
-        id: "n1",
-        title: "Tuesday Bible Study",
-        message: "This Tuesday we will be studying the Book of John. Meeting at 6:30 PM in the Parish Conference Room.",
-        type: "info",
-        date: "2026-02-17T08:00:00Z",
-        postedBy: "Secretary"
-      },
-      {
-        id: "n2",
-        title: "Theological Seminar Postponed",
-        message: "The theological seminar scheduled for this weekend has been postponed due to a venue conflict. New date to be announced soon.",
-        type: "warning",
-        date: "2026-02-18T15:00:00Z",
-        postedBy: "Chairperson"
-      },
-      {
-        id: "n3",
-        title: "New Study Materials Available",
-        message: "Hard copies of our new study materials for the Gospel of John are now available for collection.",
-        type: "success",
-        date: "2026-02-20T09:00:00Z",
-        postedBy: "Secretary"
-      }
-    ],
     tshirtOrders: [],
     about: "St. Dominic responded to widespread confusion about faith not with anger, but with truth spoken in kindness. Born in Spain, his compassion was evident early—during a famine, he sold even his cherished books to feed the hungry, saying, ‘How can I study while people are starving?’ As he encountered those drawn away from the Church by persuasive but incorrect teachings, Dominic recognized a deeper problem: no one had taken time to genuinely explain the truth. Rather than condemn, he began walking from place to place, speaking gently, listening carefully, and reasoning patiently. He lived austerely—traveling on foot, eating little, spending nights in prayer—convinced that truth must be carried by love to truly reach hearts. His approach gave birth to the Dominican Order, a community dedicated to preaching, study, and teaching. His followers became renowned for deep learning paired with clear, compassionate communication. Dominic is also traditionally linked to the Rosary, encouraging meditation on Christ’s life as a path to reflection and peace. He never sought fame. He sought clarity. His quiet conviction proved that patience and humility could accomplish what force could not. Dominic’s legacy endures not in grand gestures, but in the simple, stubborn belief that truth, lovingly shared, still changes hearts.",
     meetingSchedule: {
@@ -521,32 +417,6 @@ export const jumuiyaList: JumuiyaData[] = [
     color: "#136b1ac9",
     saintImage: "/images/Elizabeth.png",
     historyPdf: "/assets/files/SAINT_ELIZABETH.pdf",
-    notifications: [
-      {
-        id: "n1",
-        title: "Charity Drive This Month",
-        message: "We are collecting non-perishable food items for the needy this month. Drop-offs at the Community Center every Thursday.",
-        type: "success",
-        date: "2026-02-16T07:00:00Z",
-        postedBy: "Chairperson"
-      },
-      {
-        id: "n2",
-        title: "Volunteer Shortage",
-        message: "We urgently need volunteers for the food distribution this Thursday. Please sign up if you can help.",
-        type: "urgent",
-        date: "2026-02-17T10:00:00Z",
-        postedBy: "Secretary"
-      },
-      {
-        id: "n3",
-        title: "Monthly Community Lunch",
-        message: "Join us for our monthly community lunch immediately after our Thursday meeting.",
-        type: "info",
-        date: "2026-02-19T12:00:00Z",
-        postedBy: "Chairperson"
-      }
-    ],
     tshirtOrders: [],
     about: "Elizabeth was born into royalty. She grew up in castles, surrounded by wealth, comfort, and power. But her heart leaned toward something very different. From a young age, she was deeply moved by the suffering of the poor. As she grew older and became a queen, she had access to great riches. But instead of using them for luxury, she used them to help others. She often snuck food out of the castle to give to the hungry. She visited the sick personally, cared for the dying, and treated everyone with kindness. Some people admired her. Others thought she was foolish. One famous story tells of her carrying bread in her cloak to the poor. When someone stopped her and demanded to see what she was hiding, the bread turned into roses. Whether symbolic or real, the story reflects how people saw her generosity. After her husband died, Elizabeth lost much of her protection. She was pushed out of the palace and left with little. But instead of growing bitter, she chose a life of service. She worked in a hospital she founded, caring for the sick with her own hands. Elizabeth’s life reminds us that kindness is more powerful than status. She had everything — and gave it away for love.",
     meetingSchedule: {
@@ -629,32 +499,6 @@ export const jumuiyaList: JumuiyaData[] = [
     color: "#27b8f6ff",
     saintImage: "/images/MariaGoretti.png",
     historyPdf: "/assets/files/SAINT_MARIA_GORETTI.pdf",
-    notifications: [
-      {
-        id: "n1",
-        title: "Youth Prayer Night",
-        message: "Youth Prayer Night is this Sunday at 2:00 PM in the Youth Center. Invite a friend!",
-        type: "info",
-        date: "2026-02-19T07:00:00Z",
-        postedBy: "Secretary"
-      },
-      {
-        id: "n2",
-        title: "Talent Show Registration",
-        message: "Registration for the Jumuiya Talent Show closes this Friday. Show us your gifts for the glory of God!",
-        type: "warning",
-        date: "2026-02-18T14:00:00Z",
-        postedBy: "Secretary"
-      },
-      {
-        id: "n3",
-        title: "Mission Outreach Success",
-        message: "Our youth mission outreach last weekend was a blessing. Many hearts were touched by the Gospel.",
-        type: "success",
-        date: "2026-02-20T10:00:00Z",
-        postedBy: "Chairperson"
-      }
-    ],
     tshirtOrders: [],
     about: "Maria Goretti’s life was short, but its impact has lasted over a century. She was born into a poor farming family in Italy. Life was hard. Her father died when she was young, and her mother worked long hours. Maria helped take care of her siblings and managed the home. Despite the struggles, she was known for her gentle spirit and strong faith. At just 11 years old, her life took a tragic turn. A young man who lived nearby tried to harm her. She resisted, determined to protect her dignity. In anger, he attacked her. She was badly injured and taken to the hospital. Before she died, she did something extraordinary. She forgave him. She told those around her that she hoped he would one day be in heaven with her. Years later, that same man changed. He repented, turned his life around, and even attended her canonization. Maria’s story is painful, yet deeply powerful. It speaks of courage beyond her years and forgiveness that seems almost impossible. She reminds the world that even in darkness, light can still be chosen.",
     meetingSchedule: {
@@ -737,32 +581,6 @@ export const jumuiyaList: JumuiyaData[] = [
     color: "#f6080894",
     saintImage: "/images/Monica.png",
     historyPdf: "/assets/files/SAINT_MONICAH.pdf",
-    notifications: [
-      {
-        id: "n1",
-        title: "Monday Evening Meeting",
-        message: "Our Monday evening meeting is at 5:00 PM in the Prayer Chapel. Please come with your dues settled.",
-        type: "info",
-        date: "2026-02-19T08:00:00Z",
-        postedBy: "Chairperson"
-      },
-      {
-        id: "n2",
-        title: "Novena for Families",
-        message: "We are starting a 9-day novena for our families. Prayer guides will be distributed during Monday's meeting.",
-        type: "success",
-        date: "2026-02-18T16:00:00Z",
-        postedBy: "Secretary"
-      },
-      {
-        id: "n3",
-        title: "Chapel Closure for Renovations",
-        message: "The Prayer Chapel will be closed for minor renovations from Tuesday. Meeting venue for next week to be confirmed.",
-        type: "warning",
-        date: "2026-02-20T11:00:00Z",
-        postedBy: "Chairperson"
-      }
-    ],
     tshirtOrders: [],
     about: "Monica is known as the mother who never gave up. She lived in North Africa and was married to a man who did not share her faith. He had a difficult temper. Her greatest sorrow, though, was her son Augustine. He was intelligent but stubborn, chasing pleasure and rejecting the faith she had taught him. For years, she prayed. Not for days. Not for months. For decades. She cried, pleaded, and trusted that one day he would change. People told her to stop worrying. But she refused. She followed him across cities, always hoping, always praying. Finally, her prayers were answered. Augustine converted and became one of the greatest thinkers in Christian history. Monica didn’t preach loudly. She didn’t argue constantly. She waited, trusted, and loved. Her story speaks to anyone who has ever hoped for someone to change. She reminds us that sometimes the greatest strength is simply refusing to give up.",
     meetingSchedule: {
