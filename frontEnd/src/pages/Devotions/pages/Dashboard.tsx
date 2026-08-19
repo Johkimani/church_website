@@ -179,11 +179,6 @@ export default function Dashboard() {
           <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full" style={{
             background: "radial-gradient(circle, rgba(217, 119, 6, 0.28), transparent 70%)",
           }} />
-          <div className="absolute right-8 bottom-4 text-[150px] leading-none select-none" style={{
-            color: "rgba(255, 255, 255, 0.045)",
-            fontFamily: "'Cinzel', serif",
-          }}></div>
-
           <div className="relative z-10 h-full flex flex-col justify-center p-8 sm:p-10">
             <div className="flex flex-wrap items-center gap-2 mb-6">
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
@@ -361,14 +356,6 @@ export default function Dashboard() {
               <div className="absolute top-0 left-0 right-0 h-[2px] opacity-40 group-hover:opacity-100 transition-opacity" style={{
                 background: "linear-gradient(90deg, transparent, #D97706, transparent)",
               }} />
-
-              <div className="absolute top-4 left-4 w-9 h-9 rounded-xl flex items-center justify-center z-10"
-                style={{ background: "rgba(217, 119, 6, 0.2)", color: "#FBBF24", border: "1px solid rgba(217, 119, 6, 0.3)", backdropFilter: "blur(6px)" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d={card.icon} />
-                </svg>
-              </div>
 
               <div className="relative z-10 h-full flex flex-col justify-end p-6">
                 <div className="inline-flex self-start items-center gap-1.5 px-3 py-1 rounded-full mb-3"

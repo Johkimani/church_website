@@ -309,10 +309,7 @@ const Community: React.FC = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
                     </>
                   ) : (
-                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}cc)` }}>
-                      <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/15 blur-2xl" />
-                      <Icon className="absolute right-6 bottom-4 w-16 h-16 text-white/15" />
-                    </div>
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}cc)` }} />
                   )}
 
                   {/* Top strip */}
@@ -439,9 +436,7 @@ const Community: React.FC = () => {
                 {joinModal.saint_image_url || joinModal.image_url ? (
                   <img src={joinModal.saint_image_url || joinModal.image_url} alt={joinModal.title} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${joinModal.color}, ${joinModal.color}cc)` }}>
-                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/15 blur-2xl" />
-                  </div>
+                  <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${joinModal.color}, ${joinModal.color}cc)` }} />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <button

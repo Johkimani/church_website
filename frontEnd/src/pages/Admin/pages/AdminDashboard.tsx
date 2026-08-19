@@ -318,7 +318,6 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-4">
               <div className={`relative bg-gradient-to-br ${stat.chip} w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg ring-1 ring-inset ring-white/30 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3`}>
                 <stat.icon size={26} strokeWidth={2.2} />
-                <stat.icon size={44} strokeWidth={1} className="absolute -right-1.5 -bottom-1.5 opacity-20" />
               </div>
               <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white">
                 <ArrowUpRight size={16} />
