@@ -88,23 +88,6 @@ const CommunityDetail: React.FC = () => {
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
   const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
 
-  // Check if user has joined this community
-  const { data: myCommData } = useQuery({
-    queryKey: ['my-communities-check', moduleIdClean],
-    queryFn: async () => {
-      const res = await apiClient.get('/community-enrollment/my-communities');
-      return res.data?.communities || [];
-    },
-    enabled: !!user && !!moduleIdClean,
-    staleTime: 60000,
-  });
-
-  const hasJoined = isAdmin || (myCommData || []).some((c: any) => c.module_id === moduleIdClean);
-
-  // Tabs that are publicly accessible (no join required)
-  const PUBLIC_TABS: TabType[] = ['about', 'officials', 'activities'];
-  const isPublicTab = PUBLIC_TABS.includes(activeTab);
-
   const setTabWithUrl = (tab: TabType) => {
     setActiveTab(tab);
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
@@ -135,28 +118,6 @@ const CommunityDetail: React.FC = () => {
 
   const renderTabContent = () => {
     if (!moduleData) return null;
-
-    // Gated tabs: show join prompt if not joined
-    if (!hasJoined && !isPublicTab) {
-      return (
-        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black mb-4 shadow-lg" style={{ background: detailColor }}>
-            <FaUserPlus size={28} />
-          </div>
-          <h3 className="text-xl font-black text-slate-800 mb-2">Join to Access</h3>
-          <p className="text-slate-500 text-sm mb-6 max-w-sm leading-relaxed">
-            Join {moduleData.title} to view {TAB_LABELS[activeTab].toLowerCase()}, connect with members, and be part of the community.
-          </p>
-          <button
-            onClick={() => navigate(`/community/${moduleIdClean}/join`)}
-            className="px-8 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer"
-            style={{ background: detailColor }}
-          >
-            <FaUserPlus className="inline mr-2" size={12} /> Join Now
-          </button>
-        </div>
-      );
-    }
 
     switch (activeTab) {
       case 'about':
@@ -295,7 +256,7 @@ const CommunityDetail: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
-          {!hasJoined && (
+          (
             <button
               className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg cursor-pointer mb-2"
               style={{ background: detailColor }}
