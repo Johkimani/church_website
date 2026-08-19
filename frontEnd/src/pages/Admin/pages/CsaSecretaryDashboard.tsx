@@ -103,6 +103,7 @@ export default function CsaSecretaryDashboard() {
   const semNum: 1 | 2 = semNumFromConfig(semester);
 
   const EXPORT_COLUMNS = [
+    { key: "reg_no", label: "No" },
     { key: "serial_no", label: "Serial No" },
     { key: "reg_number", label: "Reg Number" },
     { key: "name", label: "Name" },
@@ -232,6 +233,8 @@ export default function CsaSecretaryDashboard() {
           row[c.label] = m.course || "—";
         } else if (c.key === "serial_no") {
           row[c.label] = m.serial_no ?? "—";
+        } else if (c.key === "reg_no") {
+          row[c.label] = m.reg_no ?? "—";
         } else {
           row[c.label] = m[c.key] ?? "—";
         }
@@ -326,7 +329,8 @@ export default function CsaSecretaryDashboard() {
 
   const renderRow = (m: any, i: number) => (
     <tr key={m.registration_id || `r${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-      <td className="px-4 py-3 text-xs font-mono text-slate-500">{m.serial_no ?? `S${m.registration_id}`}</td>
+      <td className="px-4 py-3 text-xs font-mono text-slate-400">{m.reg_no ?? "—"}</td>
+      <td className="px-4 py-3 text-xs font-mono text-slate-500">{m.serial_no ?? "—"}</td>
       <td className="px-4 py-3 font-medium text-slate-800">{`${m.first_name || ""} ${m.last_name || ""}`.trim()}</td>
       <td className="px-4 py-3">
         <span
@@ -597,7 +601,7 @@ export default function CsaSecretaryDashboard() {
           </span>
         )}
         <p className="w-full text-[11px] text-slate-400 -mt-2">
-          New first-years get numbers starting from this value. Existing members retain their physical card serial numbers.
+          New first-years get physical card serial numbers starting from this value. The "No" column is auto-counted. Existing members keep their physical card serial numbers.
         </p>
       </div>
 
@@ -662,6 +666,7 @@ export default function CsaSecretaryDashboard() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 {[
+                  { key: "reg_no", label: "No" },
                   { key: "serial_no", label: "Serial No" },
                   { key: "name", label: "Name" },
                   { key: "jumuiya_name", label: "Jumuiya" },
@@ -687,7 +692,7 @@ export default function CsaSecretaryDashboard() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     No registered members found
                   </td>

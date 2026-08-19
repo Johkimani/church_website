@@ -107,6 +107,7 @@ async function fetchAllMembers(jumuiya_id, pagination = null) {
       m.jumuiya_id as jumuiya_uuid,
       sg.name as jumuiya_name,
       (r.member_id IS NOT NULL) as is_registered,
+      r."no" as reg_no,
       r.serial_no,
       m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
       m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg,
@@ -162,6 +163,7 @@ async function fetchAllMembers(jumuiya_id, pagination = null) {
       jumuiya_name: row.jumuiya_name,
       jumuiya_id: jumuiya_id || row.jumuiya_uuid || row.jumuiya_name,
       is_registered: row.is_registered,
+      reg_no: row.reg_no,
       serial_no: row.serial_no,
       sem_1_reg: row.sem_1_reg, sem_2_reg: row.sem_2_reg,
       sem_3_reg: row.sem_3_reg, sem_4_reg: row.sem_4_reg,
@@ -791,6 +793,7 @@ export const getAllRegisteredMembers = async (req, res) => {
 
     const selectBase = `
         r.id as registration_id,
+        r."no" as reg_no,
         r.serial_no,
         r.registration_date,
         m.member_id as id,
@@ -903,13 +906,26 @@ export const manualRegisterMember = async (req, res) => {
         [jumuiya_id, ...semVals]
       );
 
-      // 3. Insert into registered (idempotent)
-      await client.query(
-        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
-         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
-         ON CONFLICT DO NOTHING`,
-        [member_id, jumuiya_id, serial_no || null]
+      // 3. Insert into registered (or update serial_no if already exists)
+      const existingReg = await client.query(
+        `SELECT id, serial_no FROM registered WHERE member_id = $1 AND jumuiya_id = $2`,
+        [member_id, jumuiya_id]
       );
+
+      if (existingReg.rows.length > 0) {
+        if (serial_no && existingReg.rows[0].serial_no !== serial_no) {
+          await client.query(
+            `UPDATE registered SET serial_no = $1 WHERE member_id = $2 AND jumuiya_id = $3`,
+            [serial_no, member_id, jumuiya_id]
+          );
+        }
+      } else {
+        await client.query(
+          `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)`,
+          [member_id, jumuiya_id, serial_no || null]
+        );
+      }
 
       // 4. Record the cash payment atomically with the registration so the
       //    Manual (Cash) analytics card never under-reports collected money.
@@ -990,13 +1006,26 @@ export const secretaryRegisterMember = async (req, res) => {
         [jumuiya_id, ...semVals]
       );
 
-      // 3. Insert into registered (idempotent)
-      await client.query(
-        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
-         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
-         ON CONFLICT DO NOTHING`,
-        [member_id, jumuiya_id, serial_no || null]
+      // 3. Insert into registered (or update serial_no if already exists)
+      const existingReg = await client.query(
+        `SELECT id, serial_no FROM registered WHERE member_id = $1 AND jumuiya_id = $2`,
+        [member_id, jumuiya_id]
       );
+
+      if (existingReg.rows.length > 0) {
+        if (serial_no && existingReg.rows[0].serial_no !== serial_no) {
+          await client.query(
+            `UPDATE registered SET serial_no = $1 WHERE member_id = $2 AND jumuiya_id = $3`,
+            [serial_no, member_id, jumuiya_id]
+          );
+        }
+      } else {
+        await client.query(
+          `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)`,
+          [member_id, jumuiya_id, serial_no || null]
+        );
+      }
 
       // 4. Build semester labels for the payment record
       const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
