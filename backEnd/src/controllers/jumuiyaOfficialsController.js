@@ -313,8 +313,9 @@ export const createJumuiyaOfficial = async (req, res) => {
       const existingMember = await pool.query(`SELECT member_id FROM members WHERE member_id = $1`, [finalMemberId]);
       if (existingMember.rows.length === 0) {
         await pool.query(
-          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, created_at)
-           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, join_date, status)
+           VALUES ($1, $2, $3, $4, $5, NOW(), 'active')
+           ON CONFLICT (member_id) DO NOTHING`,
           [finalMemberId, firstName, lastName, normalizedContact || null, sgId]
         );
       }

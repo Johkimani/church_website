@@ -44,71 +44,17 @@ const backfillJumuiyaViceChairRole = async () => {
       if (!roleName) continue;
 
       // Find role_id
-      const roleRes = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [roleName]);
-      if (roleRes.rows.length === 0) continue;
+      let roleRes = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [roleName]);
+      if (roleRes.rows.length === 0) {
+        roleRes = await pool.query(
+          "INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id",
+          [roleName, roleName.replace(/_/g, ' ')]
+        );
+      }
       const roleId = roleRes.rows[0].role_id;
 
-      // Find member
-      let memberId = null;
-      let memberJumuiyaId = null;
-
-      if (off.reg_number && off.reg_number.trim()) {
-        const cleanReg = off.reg_number.trim();
-        const memberRes = await pool.query(
-          `SELECT member_id, jumuiya_id FROM members 
-           WHERE member_id = $1 
-              OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
-              OR member_id LIKE '%/' || $1 || '/%'
-              OR member_id ILIKE $2
-           LIMIT 1`,
-          [cleanReg, `%${cleanReg}%`]
-        );
-        if (memberRes.rows.length > 0) {
-          memberId = memberRes.rows[0].member_id;
-          memberJumuiyaId = memberRes.rows[0].jumuiya_id;
-        }
-      }
-
-      // If not found by reg_number, try matching by contact/phone
-      if (!memberId && off.contact && off.contact.trim()) {
-        const cleanPhone = off.contact.trim().replace(/[^0-9]/g, '');
-        if (cleanPhone.length >= 8) {
-          const memberRes = await pool.query(
-            `SELECT member_id, jumuiya_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1`,
-            [cleanPhone.slice(-8)]
-          );
-          if (memberRes.rows.length > 0) {
-            memberId = memberRes.rows[0].member_id;
-            memberJumuiyaId = memberRes.rows[0].jumuiya_id;
-            await pool.query(`UPDATE jumuiya_officials SET reg_number = $1 WHERE id = $2`, [memberId, off.id]);
-          }
-        }
-      }
-
-      // If still not found, try matching by name
-      if (!memberId && off.name && off.name.trim()) {
-        const cleanName = off.name.trim();
-        const memberRes = await pool.query(
-          `SELECT member_id, jumuiya_id FROM members 
-           WHERE (first_name || ' ' || last_name) ILIKE $1 
-              OR (last_name || ' ' || first_name) ILIKE $1 
-           LIMIT 1`,
-          [`%${cleanName}%`]
-        );
-        if (memberRes.rows.length > 0) {
-          memberId = memberRes.rows[0].member_id;
-          memberJumuiyaId = memberRes.rows[0].jumuiya_id;
-          await pool.query(`UPDATE jumuiya_officials SET reg_number = $1 WHERE id = $2`, [memberId, off.id]);
-        }
-      }
-
-      if (!memberId) {
-        skipped++;
-        continue;
-      }
-
       // Resolve effective Jumuiya ID
-      let effectiveJumuiyaId = memberJumuiyaId;
+      let effectiveJumuiyaId = null;
       if (off.category) {
         const catRes = await pool.query(
           `SELECT group_id FROM sub_groups 
@@ -124,6 +70,72 @@ const backfillJumuiyaViceChairRole = async () => {
           effectiveJumuiyaId = catRes.rows[0].group_id;
         }
       }
+
+      // Find member
+      let memberId = null;
+
+      if (off.reg_number && off.reg_number.trim()) {
+        const cleanReg = off.reg_number.trim();
+        const memberRes = await pool.query(
+          `SELECT member_id FROM members 
+           WHERE member_id = $1 
+              OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+              OR member_id LIKE '%/' || $1 || '/%'
+              OR member_id ILIKE $2
+           LIMIT 1`,
+          [cleanReg, `%${cleanReg}%`]
+        );
+        if (memberRes.rows.length > 0) {
+          memberId = memberRes.rows[0].member_id;
+        }
+      }
+
+      // If not found by reg_number, try matching by contact/phone
+      if (!memberId && off.contact && off.contact.trim()) {
+        const cleanPhone = off.contact.trim().replace(/[^0-9]/g, '');
+        if (cleanPhone.length >= 8) {
+          const memberRes = await pool.query(
+            `SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1`,
+            [cleanPhone.slice(-8)]
+          );
+          if (memberRes.rows.length > 0) {
+            memberId = memberRes.rows[0].member_id;
+          }
+        }
+      }
+
+      // If still not found, try matching by name
+      if (!memberId && off.name && off.name.trim()) {
+        const cleanName = off.name.trim();
+        const memberRes = await pool.query(
+          `SELECT member_id FROM members 
+           WHERE (first_name || ' ' || last_name) ILIKE $1 
+              OR (last_name || ' ' || first_name) ILIKE $1 
+           LIMIT 1`,
+          [`%${cleanName}%`]
+        );
+        if (memberRes.rows.length > 0) {
+          memberId = memberRes.rows[0].member_id;
+        }
+      }
+
+      // If still no member, create one
+      if (!memberId) {
+        const nameParts = (off.name || 'Official').trim().split(/\s+/);
+        const firstName = nameParts[0] || 'Official';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        const phoneDigits = off.contact ? off.contact.replace(/[^0-9]/g, '').slice(-5) : Math.floor(10000 + Math.random() * 90000);
+        memberId = `OFF/${phoneDigits}/${new Date().getFullYear().toString().slice(-2)}`;
+
+        await pool.query(
+          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, join_date, status)
+           VALUES ($1, $2, $3, $4, $5, NOW(), 'active')
+           ON CONFLICT (member_id) DO NOTHING`,
+          [memberId, firstName, lastName, off.contact || null, effectiveJumuiyaId || null]
+        );
+      }
+
+      await pool.query(`UPDATE jumuiya_officials SET reg_number = $1 WHERE id = $2`, [memberId, off.id]);
 
       // Check if role assignment already exists
       const existing = await pool.query(`

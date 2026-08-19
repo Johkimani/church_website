@@ -92,10 +92,10 @@ export const syncPendingOfficialsToRoles = async () => {
         memberId = `OFF/${pDigits}/${new Date().getFullYear().toString().slice(-2)}`;
 
         await pool.query(
-          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, created_at)
-           VALUES ($1, $2, $3, $4, $5, NOW())
+          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, join_date, status)
+           VALUES ($1, $2, $3, $4, $5, NOW(), 'active')
            ON CONFLICT (member_id) DO NOTHING`,
-          [memberId, fName, lName, off.contact || null, effectiveJumuiyaId]
+          [memberId, fName, lName, off.contact || null, effectiveJumuiyaId || null]
         );
       }
 
@@ -112,8 +112,9 @@ export const syncPendingOfficialsToRoles = async () => {
         await pool.query(
           `INSERT INTO member_roles (member_id, role_id, jumuiya_id, status, created_at)
            VALUES ($1, $2, $3, 'pending', NOW())`,
-          [memberId, roleId, effectiveJumuiyaId]
+          [memberId, roleId, effectiveJumuiyaId || null]
         );
+        logger.info(`syncPendingOfficialsToRoles: Auto-created pending role ${roleName} for official ${off.name} (${off.category})`);
       }
     }
   } catch (err) {
