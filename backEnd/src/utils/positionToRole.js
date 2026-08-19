@@ -26,12 +26,17 @@ export const CSA_POSITION_TO_ROLE = {
 
 export const JUMUIYA_POSITION_TO_ROLE = {
   'Chairperson': 'jumuiya_chairperson',
+  'Vice Chairperson': 'jumuiya_vice_chairperson',
+  'Assistant Chairperson': 'jumuiya_vice_chairperson',
+  'Assistant Jumuiya Chairperson': 'jumuiya_vice_chairperson',
+  'VC': 'jumuiya_vice_chairperson',
   'Organizing Secretary': 'jumuiya_os',
   'Secretary': 'jumuiya_secretary',
 };
 
 const ROLE_IS_JUMUIYA_SCOPED = [
   'jumuiya_chairperson',
+  'jumuiya_vice_chairperson',
   'jumuiya_os',
   'jumuiya_secretary',
 ];

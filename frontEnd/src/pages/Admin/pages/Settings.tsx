@@ -50,6 +50,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   os: ['Announcements Management', 'Weekly Activities', 'Semester Activities', 'Gallery Manager'],
   csa_secretary: ['Registered Members (all Jumuiyas)'],
   jumuiya_chairperson: ['Members (scoped to their Jumuiya)'],
+  jumuiya_vice_chairperson: ['Suggestion Box (scoped to their Jumuiya)'],
   jumuiya_os: ['Gallery (scoped to their Jumuiya)'],
   jumuiya_secretary: ['Members (scoped to their Jumuiya)'],
   choir_chairperson: ['Community Management (Choir)'],
