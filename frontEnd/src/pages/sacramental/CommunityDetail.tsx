@@ -235,10 +235,6 @@ const CommunityDetail: React.FC = () => {
             background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}ee 40%, ${detailColor}cc 100%)`,
           }}
         >
-          {/* Decorative circles */}
-          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          <div className="absolute -bottom-16 -left-8 w-40 h-40 rounded-full pointer-events-none" style={{ background: 'rgba(0,0,0,0.08)' }} />
-
           <div
             className="sidebar-icon relative z-10"
             style={{

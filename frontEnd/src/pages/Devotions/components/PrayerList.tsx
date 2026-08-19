@@ -270,9 +270,6 @@ function HeroSpotlight({ novena, status, onStart }: { novena: Novena; status: No
       className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-amber-200 cursor-pointer group"
       onClick={onStart}
     >
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(217,119,6,0.15), transparent 60%), radial-gradient(circle at 70% 50%, rgba(217,119,6,0.08), transparent 60%)'
-      }} />
       <div className="relative p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
@@ -770,9 +767,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
   return (
     <div className={`space-y-12 ${className}`}>
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-amber-200">
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(217,119,6,0.08) 40px, rgba(217,119,6,0.08) 41px)'
-        }} />
         <div className="relative px-6 sm:px-8 py-8 text-center">
           <p className="text-[10px] font-bold text-amber-700/70 uppercase tracking-[0.3em] mb-3">Devotiones Ecclesiae</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">Novenas &amp; Litanies</h1>
@@ -784,9 +778,6 @@ export default function PrayerList({ prayers, novenas, onPrayerClick, onStartNov
 
       {jumuiyaData.length > 0 && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-stone-100 border border-stone-200 p-6 sm:p-8">
-          <div className="absolute inset-0 opacity-5" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(217,119,6,0.15), transparent 50%), radial-gradient(circle at 80% 50%, rgba(217,119,6,0.08), transparent 50%)'
-          }} />
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center border border-amber-200">

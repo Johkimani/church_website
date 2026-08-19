@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaIdCard, FaPrint, FaCheckCircle, FaRegCircle, FaUniversity } from 'react-icons/fa';
+import { FaIdCard, FaPrint, FaCheckCircle, FaRegCircle } from 'react-icons/fa';
 import { useAuth } from '../../../context/AuthContext';
 import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -130,14 +130,6 @@ const RegistrationCardTab: React.FC<RegistrationCardTabProps> = ({ jumuiyaId, ju
                         position: 'relative',
                         overflow: 'hidden',
                     }}>
-                        {/* Decorative elements */}
-                        <div style={{ position: 'absolute', right: '-30px', top: '-30px', fontSize: '10rem', opacity: 0.1, transform: 'rotate(10deg)' }}>
-                            <FaUniversity />
-                        </div>
-                        <div style={{ position: 'absolute', left: '-20px', bottom: '-40px', fontSize: '8rem', opacity: 0.08, transform: 'rotate(-5deg)' }}>
-                            <FaIdCard />
-                        </div>
-
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                 <div style={{

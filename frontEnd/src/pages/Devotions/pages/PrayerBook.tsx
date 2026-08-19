@@ -146,7 +146,6 @@ export default function PrayerBook() {
         @keyframes glowPulse { 0%,100%{box-shadow:0 0 12px ${theme.accent}25} 50%{box-shadow:0 0 20px ${theme.accent}38} }
         .pb-card { animation: fadeUp 0.4s ease both; transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease; }
         .pb-card:hover { transform: translateY(-4px) !important; box-shadow: 0 12px 32px -8px rgba(28,25,23,0.15), 0 0 0 1px ${theme.accent}30, 0 0 20px ${theme.accent}15 !important; border-color: ${theme.accent}50 !important; }
-        .pb-card:hover .pb-card-glow { opacity: 1 !important; }
         .pb-fav { transition: color 0.2s, transform 0.2s; }
         .pb-fav:hover { transform: scale(1.2); }
         .pb-fav:active { animation: pulse 0.3s ease; }
@@ -361,7 +360,6 @@ export default function PrayerBook() {
                       backdropFilter: "blur(12px)", animationDelay: `${Math.min(idx * 0.03, 0.3)}s`,
                       boxShadow: "0 4px 16px rgba(28,25,23,0.05)",
                     }}>
-                    <div className="pb-card-glow" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 50% 0%, ${t.accent}10 0%, transparent 60%)`, opacity: 0, transition: "opacity 0.3s", pointerEvents: "none" }} />
                     <div style={{ height: 3, background: t.gradient, opacity: 0.6 }} />
                     <div style={{ padding: "16px 18px 14px", position: "relative", zIndex: 1 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>

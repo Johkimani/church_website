@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { FaDownload, FaCheckCircle, FaStamp, FaUniversity, FaIdCard, FaEnvelope, FaSpinner, FaCheck } from 'react-icons/fa';
+import { FaDownload, FaCheckCircle, FaStamp, FaIdCard, FaEnvelope, FaSpinner, FaCheck } from 'react-icons/fa';
 import { useAuth } from '../../../context/AuthContext';
 import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -243,13 +243,6 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${_c('DD')} 100%)`,
                     padding: '24px 28px', color: 'white', position: 'relative', overflow: 'hidden'
                 }}>
-                    <div style={{ position: 'absolute', right: '-20px', top: '-20px', fontSize: '8rem', opacity: 0.08 }}>
-                        <FaUniversity />
-                    </div>
-                    <div style={{ position: 'absolute', left: '-15px', bottom: '-30px', fontSize: '6rem', opacity: 0.06 }}>
-                        <FaStamp />
-                    </div>
-
                     {/* University Header */}
                     <div style={{ textAlign: 'center', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
                         <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.9, lineHeight: 1.4 }}>

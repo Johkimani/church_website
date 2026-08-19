@@ -253,8 +253,6 @@ const OfficialProfile: React.FC = () => {
                     <div className="lg:col-span-4 space-y-10">
                         {/* Contact Card */}
                         <div className="bg-white rounded-[32px] border border-gray-100 shadow-xl p-8 overflow-hidden relative">
-                             <div className="absolute top-0 right-0 w-32 h-32 opacity-5 translate-x-1/2 -translate-y-1/2 rounded-full" style={{ backgroundColor: color }}></div>
-                            
                             <h4 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Connect with Official</h4>
                             <div className="space-y-4">
                                 {official.contact && (
@@ -295,11 +293,6 @@ const OfficialProfile: React.FC = () => {
 
                         {/* Core Qualities */}
                         <div className="bg-gray-900 rounded-[32px] p-8 text-white shadow-2xl relative overflow-hidden">
-                             <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-                                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                    <path d="M0 100 C 20 0 50 0 100 100" stroke="white" strokeWidth="0.1" fill="none" />
-                                </svg>
-                             </div>
                             <h4 className="text-lg font-bold mb-6 flex items-center gap-2">
                                 <FaStar className="text-yellow-400" /> Key Qualities
                             </h4>
