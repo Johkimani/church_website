@@ -92,129 +92,157 @@ export const getRoleNameForPosition = (position, isJumuiya) => {
 };
 
 export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, category, assignedBy) => {
-  const roleName = getRoleNameForPosition(position, isJumuiya);
-  if (!roleName) return null;
+  try {
+    const roleName = getRoleNameForPosition(position, isJumuiya);
+    if (!roleName) return null;
 
-  if (!regNumber) return null;
-  const cleanReg = regNumber.toString().trim();
-  if (!cleanReg) return null;
+    if (!regNumber) return null;
+    const cleanReg = regNumber.toString().trim();
+    if (!cleanReg) return null;
 
-  const memberResult = await pool.query(
-    `SELECT member_id, jumuiya_id FROM members 
-     WHERE member_id = $1 
-        OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
-        OR member_id LIKE '%/' || $1 || '/%'
-        OR member_id ILIKE $2
-     ORDER BY CASE WHEN member_id = $1 THEN 1 ELSE 2 END
-     LIMIT 1`,
-    [cleanReg, `%${cleanReg}%`]
-  );
-  if (memberResult.rows.length === 0) {
-    logger.warn(`autoAssignRoleForOfficial: member "${cleanReg}" not found in members table`);
-    return null;
-  }
-  const member = memberResult.rows[0];
-
-  let roleResult = await pool.query(
-    `SELECT role_id FROM roles WHERE role_name = $1 AND status = 'active'`,
-    [roleName]
-  );
-  if (roleResult.rows.length === 0) {
-    // If not active or missing, try finding by name regardless of status or create it
-    const existingAny = await pool.query(`SELECT role_id FROM roles WHERE role_name = $1`, [roleName]);
-    if (existingAny.rows.length > 0) {
-      await pool.query(`UPDATE roles SET status = 'active' WHERE role_name = $1`, [roleName]);
-      roleResult = existingAny;
-    } else {
-      const desc = roleName.replace(/_/g, ' ');
-      roleResult = await pool.query(
-        `INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id`,
-        [roleName, desc]
-      );
+    const memberResult = await pool.query(
+      `SELECT member_id, jumuiya_id FROM members 
+       WHERE member_id = $1 
+          OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+          OR member_id LIKE '%/' || $1 || '/%'
+          OR member_id ILIKE $2
+       ORDER BY CASE WHEN member_id = $1 THEN 1 ELSE 2 END
+       LIMIT 1`,
+      [cleanReg, `%${cleanReg}%`]
+    );
+    if (memberResult.rows.length === 0) {
+      logger.warn(`autoAssignRoleForOfficial: member "${cleanReg}" not found in members table`);
+      return null;
     }
-  }
-  const roleId = roleResult.rows[0].role_id;
+    const member = memberResult.rows[0];
 
-  let effectiveJumuiyaId = null;
-  if (ROLE_IS_JUMUIYA_SCOPED.includes(roleName)) {
-    if (isJumuiya && category) {
-      const cleanCat = category.toString().trim();
-      const jumuiyaResult = await pool.query(
-        `SELECT group_id FROM sub_groups 
-         WHERE name = $1 
-            OR LOWER(TRIM(name)) = LOWER(TRIM($1))
-            OR LOWER(REPLACE(REPLACE(name, '.', ''), ' ', '-')) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
-            OR LOWER(slug) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
-            OR LOWER(name) = LOWER($1)
-         LIMIT 1`,
-        [cleanCat]
-      );
-      if (jumuiyaResult.rows.length > 0) {
-        effectiveJumuiyaId = jumuiyaResult.rows[0].group_id;
+    let roleResult = await pool.query(
+      `SELECT role_id FROM roles WHERE role_name = $1 AND status = 'active'`,
+      [roleName]
+    );
+    if (roleResult.rows.length === 0) {
+      const existingAny = await pool.query(`SELECT role_id FROM roles WHERE role_name = $1`, [roleName]);
+      if (existingAny.rows.length > 0) {
+        await pool.query(`UPDATE roles SET status = 'active' WHERE role_name = $1`, [roleName]);
+        roleResult = existingAny;
+      } else {
+        const desc = roleName.replace(/_/g, ' ');
+        roleResult = await pool.query(
+          `INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id`,
+          [roleName, desc]
+        );
+      }
+    }
+    const roleId = roleResult.rows[0].role_id;
+
+    let effectiveJumuiyaId = null;
+    if (ROLE_IS_JUMUIYA_SCOPED.includes(roleName)) {
+      if (isJumuiya && category) {
+        const cleanCat = category.toString().trim();
+        const jumuiyaResult = await pool.query(
+          `SELECT group_id FROM sub_groups 
+           WHERE name = $1 
+              OR LOWER(TRIM(name)) = LOWER(TRIM($1))
+              OR LOWER(REPLACE(REPLACE(name, '.', ''), ' ', '-')) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
+              OR LOWER(slug) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
+              OR LOWER(name) = LOWER($1)
+           LIMIT 1`,
+          [cleanCat]
+        );
+        if (jumuiyaResult.rows.length > 0) {
+          effectiveJumuiyaId = jumuiyaResult.rows[0].group_id;
+        } else {
+          effectiveJumuiyaId = member.jumuiya_id;
+        }
       } else {
         effectiveJumuiyaId = member.jumuiya_id;
       }
+    }
+
+    // Validate effectiveJumuiyaId exists in sub_groups if set
+    let validJumuiyaId = null;
+    if (effectiveJumuiyaId) {
+      try {
+        const checkJumuiya = await pool.query(
+          `SELECT group_id FROM sub_groups WHERE group_id = $1::uuid LIMIT 1`,
+          [effectiveJumuiyaId]
+        );
+        if (checkJumuiya.rows.length > 0) {
+          validJumuiyaId = checkJumuiya.rows[0].group_id;
+        }
+      } catch {
+        validJumuiyaId = null;
+      }
+    }
+
+    // Validate assignedBy exists in members table to avoid FK error
+    let validAssignedBy = null;
+    if (assignedBy) {
+      const assignerCheck = await pool.query(
+        `SELECT member_id FROM members WHERE member_id = $1 OR LOWER(TRIM(member_id)) = LOWER(TRIM($1)) LIMIT 1`,
+        [assignedBy.toString().trim()]
+      );
+      if (assignerCheck.rows.length > 0) {
+        validAssignedBy = assignerCheck.rows[0].member_id;
+      }
+    }
+
+    // Enforce one CSA executive role per member
+    if (CSA_EXECUTIVE_ROLES.includes(roleName)) {
+      const existing = await pool.query(
+        `SELECT r.role_name FROM member_roles mr
+         JOIN roles r ON mr.role_id = r.role_id
+         WHERE mr.member_id = $1 AND mr.status IN ('approved', 'pending')
+           AND r.role_name = ANY($2) AND r.role_name != $3`,
+        [member.member_id, CSA_EXECUTIVE_ROLES, roleName]
+      );
+      if (existing.rows.length > 0) {
+        return { status: 'conflict', message: `Member already holds the "${existing.rows[0].role_name}" CSA executive role. Cannot assign "${roleName}".` };
+      }
+    }
+
+    // csa_chair is auto-approved for immediate access
+    const status = roleName === 'csa_chair' ? 'approved' : 'pending';
+
+    const existingApproved = await pool.query(
+      `SELECT id FROM member_roles
+       WHERE member_id = $1 AND role_id = $2
+         AND status = 'approved'`,
+      [member.member_id, roleId]
+    );
+    if (existingApproved.rows.length > 0) {
+      return { id: existingApproved.rows[0].id, status: 'approved', message: 'Already approved' };
+    }
+
+    const existingPending = await pool.query(
+      `SELECT id FROM member_roles
+       WHERE member_id = $1 AND role_id = $2
+         AND status = 'pending'`,
+      [member.member_id, roleId]
+    );
+
+    let result;
+    if (existingPending.rows.length > 0) {
+      result = await pool.query(
+        `UPDATE member_roles SET assigned_by = $1, jumuiya_id = $2, status = $3, created_at = NOW()
+         WHERE id = $4 RETURNING id, status`,
+        [validAssignedBy, validJumuiyaId, status, existingPending.rows[0].id]
+      );
     } else {
-      effectiveJumuiyaId = member.jumuiya_id;
+      result = await pool.query(
+        `INSERT INTO member_roles (member_id, role_id, assigned_by, jumuiya_id, status)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, status`,
+        [member.member_id, roleId, validAssignedBy, validJumuiyaId, status]
+      );
     }
+
+    const msg = status === 'approved' ? 'Role assigned and active.' : 'Role assigned. Pending approval.';
+    return { id: result.rows[0].id, status: result.rows[0].status, message: msg };
+  } catch (err) {
+    logger.error(`autoAssignRoleForOfficial failed for ${regNumber}, ${position}: ${err.message}`);
+    return null;
   }
-
-  // Enforce one CSA executive role per member
-  if (CSA_EXECUTIVE_ROLES.includes(roleName)) {
-    const existing = await pool.query(
-      `SELECT r.role_name FROM member_roles mr
-       JOIN roles r ON mr.role_id = r.role_id
-       WHERE mr.member_id = $1 AND mr.status IN ('approved', 'pending')
-         AND r.role_name = ANY($2) AND r.role_name != $3`,
-      [member.member_id, CSA_EXECUTIVE_ROLES, roleName]
-    );
-    if (existing.rows.length > 0) {
-      return { status: 'conflict', message: `Member already holds the "${existing.rows[0].role_name}" CSA executive role. Cannot assign "${roleName}".` };
-    }
-  }
-
-  // csa_chair is auto-approved for immediate access
-  const status = roleName === 'csa_chair' ? 'approved' : 'pending';
-
-  const existingApproved = await pool.query(
-    `SELECT id FROM member_roles
-     WHERE member_id = $1 AND role_id = $2
-       AND COALESCE(jumuiya_id, '00000000-0000-0000-0000-000000000000'::uuid)
-           = COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-       AND status = 'approved'`,
-    [member.member_id, roleId, effectiveJumuiyaId]
-  );
-  if (existingApproved.rows.length > 0) {
-    return { id: existingApproved.rows[0].id, status: 'approved', message: 'Already approved' };
-  }
-
-  const existingPending = await pool.query(
-    `SELECT id FROM member_roles
-     WHERE member_id = $1 AND role_id = $2
-       AND COALESCE(jumuiya_id, '00000000-0000-0000-0000-000000000000'::uuid)
-           = COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-       AND status = 'pending'`,
-    [member.member_id, roleId, effectiveJumuiyaId]
-  );
-
-  let result;
-  if (existingPending.rows.length > 0) {
-    result = await pool.query(
-      `UPDATE member_roles SET assigned_by = $1, status = $2, created_at = NOW()
-       WHERE id = $3 RETURNING id, status`,
-      [assignedBy, status, existingPending.rows[0].id]
-    );
-  } else {
-    result = await pool.query(
-      `INSERT INTO member_roles (member_id, role_id, assigned_by, jumuiya_id, status)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, status`,
-      [member.member_id, roleId, assignedBy, effectiveJumuiyaId, status]
-    );
-  }
-
-  const msg = status === 'approved' ? 'Role assigned and active.' : 'Role assigned. Pending approval.';
-  return { id: result.rows[0].id, status: result.rows[0].status, message: msg };
 };
 
 export const removeRoleForOfficial = async (regNumber, position, isJumuiya) => {

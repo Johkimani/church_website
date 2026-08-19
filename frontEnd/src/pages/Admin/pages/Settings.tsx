@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Sliders,
   Loader2,
@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Lock,
   Save,
+  RefreshCw,
 } from 'lucide-react';
 import apiService from '../../../services/api';
 import { apiClient } from '../../../api/axiosInstance';
@@ -282,11 +283,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadPending();
-  }, []);
-
-  const loadPending = async () => {
+  const loadPending = useCallback(async () => {
     setLoading(true);
     try {
       const pendingData = await apiService.getRoleAssignments('pending');
@@ -296,7 +293,11 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadPending();
+  }, [loadPending, activeTab]);
 
   const handleApprove = async (id: number) => {
     setActionLoading(id);
@@ -328,7 +329,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+      <div className="flex flex-col items-center justify-center h-64 space-y-4 bg-white rounded-3xl border border-slate-200">
         <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
         <p className="text-slate-500 font-medium animate-pulse">Loading approval queue...</p>
       </div>
@@ -343,7 +344,14 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
             <CheckCircle className="w-10 h-10 text-emerald-500" />
           </div>
           <h3 className="text-xl font-bold text-slate-900">All caught up!</h3>
-          <p className="text-slate-500">No pending {activeTab} role assignments need your approval.</p>
+          <p className="text-slate-500">No pending {activeTab === 'all' ? '' : activeTab} role assignments need your approval.</p>
+          <button
+            onClick={loadPending}
+            className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all mt-2"
+          >
+            <RefreshCw size={14} />
+            Refresh Queue
+          </button>
         </div>
       </div>
     );
@@ -351,7 +359,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
           <Clock className="w-5 h-5 text-amber-500" />
           Pending Approvals
@@ -359,6 +367,13 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
             {filtered.length}
           </span>
         </h2>
+        <button
+          onClick={loadPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
+        >
+          <RefreshCw size={13} />
+          Refresh
+        </button>
       </div>
       <table className="w-full text-left border-collapse table-fixed">
         <thead>
