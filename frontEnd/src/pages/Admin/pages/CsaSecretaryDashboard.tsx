@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { semesterServices } from "../../../api/semesterServices";
+import { serialConfigService, SerialConfig } from "../../../api/serialConfigService";
 import { semNumFromConfig, semColForYearSem } from "../../../utils/semester";
-import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign } from "lucide-react";
+import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign, Hash, Settings2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import AnalyticsDashboard from "./AnalyticsDashboard";
@@ -77,12 +78,26 @@ export default function CsaSecretaryDashboard() {
   const [csaPaymentFilter, setCsaPaymentFilter] = useState<"pending" | "all">("pending");
 
   const [semester, setSemester] = useState<any>(null);
+  const [serialConfig, setSerialConfig] = useState<SerialConfig | null>(null);
+  const [serialSeed, setSerialSeed] = useState<string>("");
+  const [serialSaving, setSerialSaving] = useState(false);
 
   useEffect(() => {
     semesterServices
       .getCurrent()
       .then((data) => setSemester(data || null))
       .catch(() => setSemester(null));
+  }, []);
+
+  useEffect(() => {
+    serialConfigService.get()
+      .then((res) => {
+        if (res?.data) {
+          setSerialConfig(res.data);
+          setSerialSeed(String(res.data.next_serial));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const semNum: 1 | 2 = semNumFromConfig(semester);
@@ -537,6 +552,53 @@ export default function CsaSecretaryDashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Serial Number Config */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 text-slate-600">
+          <Hash size={16} />
+          <span className="text-sm font-semibold">Auto-generate serial numbers from:</span>
+        </div>
+        <input
+          type="number"
+          value={serialSeed}
+          onChange={(e) => setSerialSeed(e.target.value)}
+          placeholder="e.g. 7250"
+          className="w-32 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        />
+        <button
+          onClick={async () => {
+            const val = parseInt(serialSeed, 10);
+            if (!val || val < 1) {
+              toast.error("Enter a valid positive number");
+              return;
+            }
+            setSerialSaving(true);
+            try {
+              const res = await serialConfigService.update(val);
+              setSerialConfig(res.data);
+              toast.success(`Serial numbers will now auto-generate from ${val}`);
+            } catch (err: any) {
+              toast.error(err?.response?.data?.error || "Failed to update");
+            } finally {
+              setSerialSaving(false);
+            }
+          }}
+          disabled={serialSaving}
+          className="px-4 py-1.5 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+        >
+          {serialSaving ? <Loader2 size={13} className="animate-spin" /> : <Settings2 size={13} />}
+          {serialSaving ? "Saving..." : "Save"}
+        </button>
+        {serialConfig && (
+          <span className="text-[11px] text-slate-400">
+            Current: #{serialConfig.next_serial} &middot; Updated {formatDate(serialConfig.updated_at)}
+          </span>
+        )}
+        <p className="w-full text-[11px] text-slate-400 -mt-2">
+          New first-years get numbers starting from this value. Existing members retain their physical card serial numbers.
+        </p>
       </div>
 
       {/* Search & Filters */}

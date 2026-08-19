@@ -216,7 +216,7 @@ export const getAllJumuiyaMembers = async (req, res) => {
  */
 export const createJumuiyaMember = async (req, res) => {
   try {
-    const { member_id, jumuiya_id } = req.body;
+    const { member_id, jumuiya_id, serial_no } = req.body;
 
     if (!member_id || !jumuiya_id) {
       return res.status(400).json({ success: false, message: "member_id and jumuiya_id are required" });
@@ -244,10 +244,10 @@ export const createJumuiyaMember = async (req, res) => {
 
       // 3. Insert into registered table
       await client.query(
-        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status) 
-         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active')
+        `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no) 
+         VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
          ON CONFLICT DO NOTHING`, 
-        [member_id, jumuiya_id]
+        [member_id, jumuiya_id, serial_no || null]
       );
 
       return updateResult.rows[0];
