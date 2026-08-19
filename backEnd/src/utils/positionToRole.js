@@ -26,6 +26,8 @@ export const CSA_POSITION_TO_ROLE = {
 
 export const JUMUIYA_POSITION_TO_ROLE = {
   'Chairperson': 'jumuiya_chairperson',
+  // All variations of the vice/assistant chairperson role
+  'Ass Chairperson': 'jumuiya_vice_chairperson',
   'Vice Chairperson': 'jumuiya_vice_chairperson',
   'Assistant Chairperson': 'jumuiya_vice_chairperson',
   'Assistant Jumuiya Chairperson': 'jumuiya_vice_chairperson',

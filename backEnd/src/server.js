@@ -44,6 +44,7 @@ import notificationsMigration from "./migrations/notificationsMigration.js";
 import serialConfigMigration from "./migrations/serialConfigMigration.js";
 import splitNoAndSerialNoMigration from "./migrations/splitNoAndSerialNo.js";
 import jumuiyaTshirtsMigration from "./migrations/jumuiyaTshirtsMigration.js";
+import backfillJumuiyaViceChairRole from "./migrations/backfillJumuiyaViceChairRole.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -205,6 +206,7 @@ const initServer = async () => {
     await serialConfigMigration();
     await splitNoAndSerialNoMigration();
     await jumuiyaTshirtsMigration();
+    await backfillJumuiyaViceChairRole();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
