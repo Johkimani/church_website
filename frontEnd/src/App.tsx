@@ -113,6 +113,7 @@ const SecretaryDashboard = lazy(() => import("./pages/Admin/pages/SecretaryDashb
 const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTeamManager"));
 const WhatsAppLinksManager = lazy(() => import("./pages/Admin/pages/WhatsAppLinksManager"));
 const JumuiyaNotificationsAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaNotificationsAdmin"));
+const JumuiyaTshirtsAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaTshirtsAdmin"));
 const JumuiyaSelfRegister = lazy(() => import("./pages/Jumuiya/pages/JumuiyaSelfRegister"));
 const PublicJoin = lazy(() => import("./pages/PublicJoin"));
 
@@ -190,6 +191,7 @@ const App: React.FC = () => {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="whatsapp-links" element={<WhatsAppLinksManager />} />
           <Route path="community-updates" element={<JumuiyaNotificationsAdmin />} />
+          <Route path="jumuiya-tshirts" element={<JumuiyaTshirtsAdmin />} />
           <Route path="developers" element={<DeveloperTeamManager />} />
         </Route>
 

@@ -42,10 +42,17 @@ export interface MeetingSchedule {
 export interface TshirtOrder {
   id: string;
   holderName: string;
-  payerName: string;
+  payerName?: string;
   phone: string;
   size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
   quantity: number;
+  unitPrice?: number;
+  totalAmount?: number;
+  mpesaCode?: string;
+  status?: 'pending_confirmation' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  rejectionReason?: string;
+  confirmedAt?: string;
+  completedAt?: string;
   submittedAt?: string;
 }
 

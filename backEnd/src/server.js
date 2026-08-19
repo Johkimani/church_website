@@ -43,6 +43,7 @@ import communityEnrollmentMigration from "./migrations/communityEnrollmentMigrat
 import notificationsMigration from "./migrations/notificationsMigration.js";
 import serialConfigMigration from "./migrations/serialConfigMigration.js";
 import splitNoAndSerialNoMigration from "./migrations/splitNoAndSerialNo.js";
+import jumuiyaTshirtsMigration from "./migrations/jumuiyaTshirtsMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -203,6 +204,7 @@ const initServer = async () => {
     await notificationsMigration();
     await serialConfigMigration();
     await splitNoAndSerialNoMigration();
+    await jumuiyaTshirtsMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

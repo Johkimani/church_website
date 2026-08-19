@@ -212,7 +212,7 @@ const JumuiyaDetail: React.FC = () => {
             case 'channels':
                 return <ChannelsTab socialMedia={jumuiya.socialMedia || []} jumuiyaId={jumuiya.group_id || jumuiya.id} />;
             case 'tshirts':
-                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={''} />;
+                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={jumuiya.name} />;
             case 'settings':
                 return <SettingsTab jumuiyaColor={detailColor} />;
             case 'stampcard':

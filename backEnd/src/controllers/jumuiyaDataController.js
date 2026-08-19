@@ -142,6 +142,10 @@ export const getAllJumuiyaData = async (req, res) => {
             phone: ts.phone || '',
             size: ts.size || 'M',
             quantity: ts.quantity || 1,
+            status: ts.status || 'pending_confirmation',
+            mpesaCode: ts.mpesa_code || '',
+            unitPrice: ts.unit_price ? parseFloat(ts.unit_price) : 1200,
+            totalAmount: ts.total_amount ? parseFloat(ts.total_amount) : (ts.quantity || 1) * 1200,
             submittedAt: ts.submitted_at ? new Date(ts.submitted_at).toISOString() : new Date().toISOString()
         }));
 
