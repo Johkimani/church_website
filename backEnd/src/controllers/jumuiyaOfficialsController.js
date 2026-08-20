@@ -75,10 +75,14 @@ export const VALID_JUMUIYAS = [
 export const VALID_ROLES = [
   'Chairperson',
   'Ass Chairperson',
+  'Ass. Chairperson',
+  'Vice Chairperson',
+  'Vice Chair',
   'Organizing Secretary',
   'Treasurer',
   'Secretary',
   'Ass Secretary',
+  'Ass. Secretary',
   'Liturgist',
   'Ass Liturgist'
 ];

@@ -1,15 +1,8 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import { getRoleNameForPosition } from "../utils/positionToRole.js";
+import { getRoleNameForPosition, CSA_EXECUTIVE_ROLES } from "../utils/positionToRole.js";
 
 const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
-
-// CSA executive roles — a member can only hold ONE of these at any time
-const CSA_EXECUTIVE_ROLES = [
-  "csa_chair", "csa_vice_chair", "csa_secretary",
-  "project_manager", "instrument_manager", "os",
-  "treasurer", "liturgist",
-];
 
 const rejectIfNotAdmin = (req, res) => {
   const userRoles = req.user?.role;
@@ -26,8 +19,15 @@ const rejectIfNotAdmin = (req, res) => {
   return true;
 };
 
+let _lastSyncTimestamp = 0;
+const SYNC_COOLDOWN_MS = 60_000;
+
 export const syncPendingOfficialsToRoles = async () => {
   try {
+    const now = Date.now();
+    if (now - _lastSyncTimestamp < SYNC_COOLDOWN_MS) return;
+    _lastSyncTimestamp = now;
+
     const officials = await pool.query(`
       SELECT jo.id, jo.name, jo.category, jo.position, jo.contact, jo.reg_number
       FROM jumuiya_officials jo

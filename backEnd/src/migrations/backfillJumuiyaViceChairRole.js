@@ -7,8 +7,10 @@ import { getRoleNameForPosition } from "../utils/positionToRole.js";
  * pending member_roles entries for any Jumuiya officials who do not yet have their role assigned.
  */
 const backfillJumuiyaViceChairRole = async () => {
+  const client = await pool.connect();
   try {
     logger.info("Running backfillJumuiyaViceChairRole...");
+    await client.query("BEGIN");
 
     // 1. Ensure essential roles exist in roles table
     const ROLES_TO_ENSURE = [
@@ -21,16 +23,16 @@ const backfillJumuiyaViceChairRole = async () => {
     ];
 
     for (const r of ROLES_TO_ENSURE) {
-      const existing = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [r.name]);
+      const existing = await client.query("SELECT role_id FROM roles WHERE role_name = $1", [r.name]);
       if (existing.rows.length === 0) {
-        await pool.query("INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active')", [r.name, r.description]);
+        await client.query("INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active')", [r.name, r.description]);
       } else {
-        await pool.query("UPDATE roles SET status = 'active' WHERE role_name = $1", [r.name]);
+        await client.query("UPDATE roles SET status = 'active' WHERE role_name = $1", [r.name]);
       }
     }
 
     // 2. Fetch all active Jumuiya officials
-    const officialsRes = await pool.query(`
+    const officialsRes = await client.query(`
       SELECT id, name, category, position, contact, reg_number
       FROM jumuiya_officials
       WHERE (status = 'active' OR status IS NULL)
@@ -38,15 +40,16 @@ const backfillJumuiyaViceChairRole = async () => {
 
     let created = 0;
     let skipped = 0;
+    let unresolved = 0;
 
     for (const off of officialsRes.rows) {
       const roleName = getRoleNameForPosition(off.position, true);
       if (!roleName) continue;
 
       // Find role_id
-      let roleRes = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [roleName]);
+      let roleRes = await client.query("SELECT role_id FROM roles WHERE role_name = $1", [roleName]);
       if (roleRes.rows.length === 0) {
-        roleRes = await pool.query(
+        roleRes = await client.query(
           "INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id",
           [roleName, roleName.replace(/_/g, ' ')]
         );
@@ -56,13 +59,12 @@ const backfillJumuiyaViceChairRole = async () => {
       // Resolve effective Jumuiya ID
       let effectiveJumuiyaId = null;
       if (off.category) {
-        const catRes = await pool.query(
-          `SELECT group_id FROM sub_groups 
-           WHERE name = $1 
+        const catRes = await client.query(
+          `SELECT group_id FROM sub_groups
+           WHERE name = $1
               OR LOWER(TRIM(name)) = LOWER(TRIM($1))
               OR LOWER(REPLACE(REPLACE(name, '.', ''), ' ', '-')) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
               OR LOWER(slug) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
-              OR LOWER(name) = LOWER($1)
            LIMIT 1`,
           [off.category.trim()]
         );
@@ -71,30 +73,35 @@ const backfillJumuiyaViceChairRole = async () => {
         }
       }
 
-      // Find member
+      // Find member — use exact match first, then progressively looser matches
       let memberId = null;
 
       if (off.reg_number && off.reg_number.trim()) {
         const cleanReg = off.reg_number.trim();
-        const memberRes = await pool.query(
-          `SELECT member_id FROM members 
-           WHERE member_id = $1 
-              OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
-              OR member_id LIKE '%/' || $1 || '/%'
-              OR member_id ILIKE $2
-           LIMIT 1`,
-          [cleanReg, `%${cleanReg}%`]
+        // Exact match first
+        const exactRes = await client.query(
+          `SELECT member_id FROM members WHERE member_id = $1 LIMIT 1`,
+          [cleanReg]
         );
-        if (memberRes.rows.length > 0) {
-          memberId = memberRes.rows[0].member_id;
+        if (exactRes.rows.length > 0) {
+          memberId = exactRes.rows[0].member_id;
+        } else {
+          // Case-insensitive exact match
+          const ciRes = await client.query(
+            `SELECT member_id FROM members WHERE LOWER(TRIM(member_id)) = LOWER(TRIM($1)) LIMIT 1`,
+            [cleanReg]
+          );
+          if (ciRes.rows.length > 0) {
+            memberId = ciRes.rows[0].member_id;
+          }
         }
       }
 
-      // If not found by reg_number, try matching by contact/phone
+      // If not found by reg_number, try matching by contact/phone (exact suffix)
       if (!memberId && off.contact && off.contact.trim()) {
         const cleanPhone = off.contact.trim().replace(/[^0-9]/g, '');
         if (cleanPhone.length >= 8) {
-          const memberRes = await pool.query(
+          const memberRes = await client.query(
             `SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1`,
             [cleanPhone.slice(-8)]
           );
@@ -104,41 +111,36 @@ const backfillJumuiyaViceChairRole = async () => {
         }
       }
 
-      // If still not found, try matching by name
+      // If still not found, try exact full-name match only (no fuzzy ILIKE)
       if (!memberId && off.name && off.name.trim()) {
-        const cleanName = off.name.trim();
-        const memberRes = await pool.query(
-          `SELECT member_id FROM members 
-           WHERE (first_name || ' ' || last_name) ILIKE $1 
-              OR (last_name || ' ' || first_name) ILIKE $1 
-           LIMIT 1`,
-          [`%${cleanName}%`]
-        );
-        if (memberRes.rows.length > 0) {
-          memberId = memberRes.rows[0].member_id;
+        const cleanName = off.name.trim().toLowerCase();
+        const parts = cleanName.split(/\s+/);
+        if (parts.length >= 2) {
+          const firstName = parts[0];
+          const lastName = parts.slice(1).join(' ');
+          const memberRes = await client.query(
+            `SELECT member_id FROM members
+             WHERE LOWER(first_name) = $1 AND LOWER(last_name) = $2
+            LIMIT 1`,
+            [firstName, lastName]
+          );
+          if (memberRes.rows.length > 0) {
+            memberId = memberRes.rows[0].member_id;
+          }
         }
       }
 
-      // If still no member, create one
+      // Skip officials whose member cannot be resolved — do NOT create phantom members
       if (!memberId) {
-        const nameParts = (off.name || 'Official').trim().split(/\s+/);
-        const firstName = nameParts[0] || 'Official';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        const phoneDigits = off.contact ? off.contact.replace(/[^0-9]/g, '').slice(-5) : Math.floor(10000 + Math.random() * 90000);
-        memberId = `OFF/${phoneDigits}/${new Date().getFullYear().toString().slice(-2)}`;
-
-        await pool.query(
-          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, join_date, status)
-           VALUES ($1, $2, $3, $4, $5, NOW(), 'active')
-           ON CONFLICT (member_id) DO NOTHING`,
-          [memberId, firstName, lastName, off.contact || null, effectiveJumuiyaId || null]
-        );
+        skipped++;
+        logger.warn(`backfillJumuiyaViceChairRole: skipping official "${off.name}" (id=${off.id}) — member not found by reg_number, phone, or exact name`);
+        continue;
       }
 
-      await pool.query(`UPDATE jumuiya_officials SET reg_number = $1 WHERE id = $2`, [memberId, off.id]);
+      await client.query(`UPDATE jumuiya_officials SET reg_number = $1 WHERE id = $2`, [memberId, off.id]);
 
       // Check if role assignment already exists
-      const existing = await pool.query(`
+      const existing = await client.query(`
         SELECT id, status FROM member_roles
         WHERE member_id = $1 AND role_id = $2
       `, [memberId, roleId]);
@@ -149,7 +151,7 @@ const backfillJumuiyaViceChairRole = async () => {
       }
 
       // Insert as pending
-      await pool.query(`
+      await client.query(`
         INSERT INTO member_roles (member_id, role_id, jumuiya_id, status, created_at)
         VALUES ($1, $2, $3, 'pending', NOW())
       `, [memberId, roleId, effectiveJumuiyaId || null]);
@@ -158,9 +160,13 @@ const backfillJumuiyaViceChairRole = async () => {
       logger.info(`backfillJumuiyaViceChairRole: created pending ${roleName} for member ${memberId}`);
     }
 
+    await client.query("COMMIT");
     logger.info(`backfillJumuiyaViceChairRole completed: ${created} roles created, ${skipped} skipped.`);
   } catch (err) {
+    await client.query("ROLLBACK");
     logger.error("backfillJumuiyaViceChairRole failed: " + err.message);
+  } finally {
+    client.release();
   }
 };
 

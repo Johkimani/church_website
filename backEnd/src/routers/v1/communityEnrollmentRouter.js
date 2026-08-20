@@ -20,12 +20,12 @@ const COMMUNITY_ADMIN_ROLES = [
   'mentorship_chair', 'youth_chair',
 ];
 
+// Authenticated: my communities (MUST be before /:moduleId to avoid route capture)
+router.get("/my-communities", verifyToken, getMyCommunities);
+
 // Public routes (optionalAuth: captures user info if logged in, but doesn't require it)
 router.post("/:moduleId", optionalAuth, createEnrollment);
 router.get("/:moduleId/check-duplicate", checkDuplicate);
-
-// Authenticated: my communities
-router.get("/my-communities", verifyToken, getMyCommunities);
 
 // Admin routes
 router.get("/:moduleId", verifyToken, requireRole(...COMMUNITY_ADMIN_ROLES), getModuleEnrollments);

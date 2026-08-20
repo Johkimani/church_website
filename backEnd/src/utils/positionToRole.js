@@ -2,7 +2,7 @@ import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
 // CSA executive roles — a member can only hold ONE of these at a time
-const CSA_EXECUTIVE_ROLES = [
+export const CSA_EXECUTIVE_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary",
   "project_manager", "instrument_manager", "os",
   "treasurer", "liturgist",
@@ -264,7 +264,7 @@ export const removeRoleForOfficial = async (regNumber, position, isJumuiya) => {
   if (roleResult.rows.length === 0) return;
 
   await pool.query(
-    `DELETE FROM member_roles WHERE member_id = $1 AND role_id = $2`,
+    `UPDATE member_roles SET status = 'revoked', updated_at = NOW() WHERE member_id = $1 AND role_id = $2 AND status != 'revoked'`,
     [memberResult.rows[0].member_id, roleResult.rows[0].role_id]
   );
 };
