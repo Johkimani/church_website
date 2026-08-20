@@ -2,22 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../api/axiosInstance';
 import toast from 'react-hot-toast';
-import {
-  MessageSquare,
-  CheckCircle2,
-  XCircle,
-  Shield,
-  Reply,
-  Clock,
-  Filter,
-  Search,
-  Trash2,
-  Eye,
-  ChevronDown,
-  User,
-  Mail,
-  Calendar,
-} from 'lucide-react';
 
 interface Suggestion {
   id: number;
@@ -33,50 +17,7 @@ interface Suggestion {
   member_jumuiya?: string;
 }
 
-const JUMUIYA_LIST = [
-  { id: 'st-anthony', name: 'St. Anthony', color: '#8b5cf6', badge: 'bg-purple-50 text-purple-700 border-purple-200' },
-  { id: 'st-augustine', name: 'St. Augustine', color: '#3b82f6', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { id: 'st-catherine', name: 'St. Catherine', color: '#800000', badge: 'bg-rose-50 text-rose-800 border-rose-200' },
-  { id: 'st-dominic', name: 'St. Dominic', color: '#64748b', badge: 'bg-slate-50 text-slate-700 border-slate-200' },
-  { id: 'st-elizabeth', name: 'St. Elizabeth', color: '#059669', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { id: 'st-maria-goretti', name: 'St. Maria Goretti', color: '#0284c7', badge: 'bg-sky-50 text-sky-700 border-sky-200' },
-  { id: 'st-monica', name: 'St. Monica', color: '#dc2626', badge: 'bg-red-50 text-red-700 border-red-200' },
-];
-
 const STATUSES = ['all', 'pending', 'replied', 'approved', 'rejected', 'unmask_requested'] as const;
-
-const STATUS_META: Record<string, { icon: any; active: string; inactive: string }> = {
-  all:                { icon: Filter,      active: 'bg-slate-800 text-white border-slate-800 shadow-md',          inactive: 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50' },
-  pending:            { icon: Clock,       active: 'bg-amber-600 text-white border-amber-600 shadow-md',          inactive: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50' },
-  replied:            { icon: Reply,       active: 'bg-blue-600 text-white border-blue-600 shadow-md',            inactive: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50' },
-  approved:           { icon: CheckCircle, active: 'bg-emerald-600 text-white border-emerald-600 shadow-md',      inactive: 'bg-white text-emerald-700 border-emerald-700 hover:bg-emerald-50' },
-  rejected:           { icon: XCircle,     active: 'bg-rose-600 text-white border-rose-600 shadow-md',            inactive: 'bg-white text-rose-700 border-rose-700 hover:bg-rose-50' },
-  unmask_requested:   { icon: Shield,      active: 'bg-purple-600 text-white border-purple-600 shadow-md',        inactive: 'bg-white text-purple-700 border-purple-700 hover:bg-purple-50' },
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  replied: 'bg-blue-50 text-blue-700 border-blue-200',
-  approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  rejected: 'bg-rose-50 text-rose-700 border-rose-200',
-  unmask_requested: 'bg-purple-50 text-purple-700 border-purple-200',
-};
-
-const CATEGORIES = ['general', 'worship', 'progress', 'feedback', 'other', 'officials', 'jumuiya', 'members', 'ideas', 'requests', 'events'] as const;
-
-const CATEGORY_COLORS: Record<string, string> = {
-  general: 'bg-slate-100 text-slate-600 border-slate-200',
-  worship: 'bg-indigo-50 text-indigo-600 border-indigo-200',
-  progress: 'bg-teal-50 text-teal-600 border-teal-200',
-  feedback: 'bg-amber-50 text-amber-600 border-amber-200',
-  other: 'bg-slate-100 text-slate-500 border-slate-200',
-  officials: 'bg-orange-50 text-orange-600 border-orange-200',
-  jumuiya: 'bg-cyan-50 text-cyan-600 border-cyan-200',
-  members: 'bg-green-50 text-green-600 border-green-200',
-  ideas: 'bg-violet-50 text-violet-600 border-violet-200',
-  requests: 'bg-rose-50 text-rose-600 border-rose-200',
-  events: 'bg-yellow-50 text-yellow-600 border-yellow-200',
-};
 
 export default function JumuiyaSuggestionsAdmin() {
   const { user, isAuthenticated } = useAuth();
@@ -111,7 +52,7 @@ export default function JumuiyaSuggestionsAdmin() {
       const data = Array.isArray(res.data?.data) ? res.data.data : [];
       setSuggestions(data);
     } catch (err: any) {
-      console.error('Error fetching jumuiya suggestions:', err);
+      console.error('Error fetching jumuiya suggestions:', err.message);
       setError(err.message || 'Failed to load suggestions');
       setSuggestions([]);
     } finally {
@@ -143,7 +84,7 @@ export default function JumuiyaSuggestionsAdmin() {
       toast.success('Reply sent');
       loadSuggestions();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to send reply');
+      toast.error('Failed to send reply: ' + err.message);
     }
   };
 
@@ -154,7 +95,7 @@ export default function JumuiyaSuggestionsAdmin() {
       toast.success('Unmask request sent to Chair and Secretary');
       loadSuggestions();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to request unmask');
+      toast.error('Failed to request unmask: ' + err.message);
     }
   };
 
@@ -179,7 +120,9 @@ export default function JumuiyaSuggestionsAdmin() {
       {isAuthenticated ? (
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-6">
-            <Shield className="w-5 h-5 text-indigo-600" />
+            <div className="w-8 h-8 rounded-bg-indigo-600 text-white flex items-center justify-center text-sm font-bold">
+              SUG
+            </div>
             <div>
               <h2 className="text-xl font-bold text-slate-900">Jumuiya Suggestions</h2>
               <p className="text-sm text-slate-500">View and manage suggestions from {user?.jumuiya_id ? user?.jumuiya_id : 'your'} members</p>
@@ -188,18 +131,18 @@ export default function JumuiyaSuggestionsAdmin() {
 
           {loading ? (
             <div className="py-20 text-center text-slate-400">
-              <Clock className="w-8 h-8 animate-spin mx-auto mb-3 text-indigo-500" />
+              <span className="text-3xl font-bold text-indigo-500 animate-spin mb-3">S</span>
               <p className="text-sm font-semibold">Loading suggestions...</p>
             </div>
           ) : suggestions.length === 0 ? (
             <div className="py-12 text-center text-slate-400">
-              <MessageSquare className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <span className="text-2xl font-bold text-indigo-600">S</span>
               <h3 className="text-base font-bold text-slate-700">No suggestions yet</h3>
               <p className="text-sm text-slate-500">When members submit suggestions, they'll appear here.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Status Filter Pill Section */}
+              {/* Status Filter */}
               <div className="flex gap-2 mb-4">
                 {STATUSES.map(s => {
                   const count = countByStatus(s);
@@ -207,7 +150,7 @@ export default function JumuiyaSuggestionsAdmin() {
                     <button
                       key={s}
                       onClick={() => setStatusFilter(s as any)}
-                      className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${
+                      className={`flex-1 px-4 py-2 rounded text-sm font-medium transition-colors ${
                         statusFilter === s ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-indigo-100'
                       }`}
                     >
@@ -219,7 +162,7 @@ export default function JumuiyaSuggestionsAdmin() {
 
               {/* Search */}
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
                 <input
                   type="text"
                   value={searchTerm}
@@ -229,80 +172,84 @@ export default function JumuiyaSuggestionsAdmin() {
                 />
               </div>
 
-              {/* Suggestions List */}
+              {/* Suggestions List - plain text, no icons */}
               <div className="space-y-4" aria-live="polite">
                 {filteredSuggestions.map((s) => {
                   const isAnonymous = !s.name && !s.email;
                   const fullName = `${s.member_first_name || ''} ${s.member_last_name || ''}`.trim();
                   const displayName = isAnonymous ? 'Anonymous' : fullName || s.name || 'Unknown';
-                  const statusInfo: Record<string, { color: string; label: string }> = {
-                    pending: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Pending' },
-                    replied: { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Replied' },
-                    approved: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Approved' },
-                    rejected: { color: 'bg-rose-100 text-rose-700 border-rose-200', label: 'Rejected' },
-                    unmask_requested: { color: 'bg-purple-100 text-purple-700 border-purple-200', label: 'Unmask Pending' },
+                  const statusLabel: Record<string, string> = {
+                    pending: 'Pending',
+                    replied: 'Replied',
+                    approved: 'Approved',
+                    rejected: 'Rejected',
+                    unmask_requested: 'Unmask Pending',
                   };
-                  const statusColor = statusInfo[s.status]?.color || 'bg-slate-100 text-slate-400';
-                  const statusLabel = statusInfo[s.status]?.label || s.status;
+                  const statusColor: Record<string, string> = {
+                    pending: 'bg-amber-100 text-amber-700 border-amber-200',
+                    replied: 'bg-blue-100 text-blue-700 border-blue-200',
+                    approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                    rejected: 'bg-rose-100 text-rose-700 border-rose-200',
+                    unmask_requested: 'bg-purple-100 text-purple-700 border-purple-200',
+                  };
 
                   return (
                     <div
                       key={s.id}
-                      className="bg-slate-50 rounded-xl border border-slate-200 p-5 hover:bg-white transition-shadow max-w-md"
+                      className="bg-slate-50 rounded border border-slate-200 p-4 border-t border-b hover:bg-white transition"
                     >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-3 h-3 rounded-full ${
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full ${
                           isAnonymous ? 'bg-slate-400' : 'bg-indigo-600'
                         } shrink-0" />
-                        <div>
-                          <p className="text-slate-700 font-medium">{displayName}</p>
-                          <p className="text-xs text-slate-500">{s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}</p>
-                        </div>
+                        <span className="font-medium text-slate-700">{displayName}</span>
+                        <span className="text-xs text-slate-500 ms-2">{s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}</span>
                       </div>
 
                       <p className="text-slate-600 whitespace-pre-wrap text-sm line-clamp-3 line-clamp max-w-none">{s.suggestion}</p>
 
-                      <div className="flex items-center gap-2 mt-3 text-xs text-slate-500">
-                        <span className={`px-2 py-1 rounded-full ${statusColor}`}>
-                          {statusLabel}
+                      <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+                        <span className={`px-2 py-1 rounded ${
+                          statusColor[s.status] || 'bg-slate-100 text-slate-400'
+                        }`}>
+                          {statusLabel[s.status]}
                         </span>
                         {s.category && <span className="mx-2 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">#{s.category}</span>}
-                        {s.member_jumuiya && <span className="text-indigo-500 text-xs">• {s.member_jumuiya}</span>}
+                        {s.member_jumuiya && <span className="text-indigo-600 text-xs">• {s.member_jumuiya}</span>}
                       </div>
-
-                      {isVC && (
-                        <div className="mt-3 pt-3 border-t border-slate-100">
-                          <button
-                            onClick={() => handleReply(s.id)}
-                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1"
-                            title="Reply to suggestion"
-                          >
-                            <Reply className="w-3 h-3" /> Reply
-                          </button>
-                          {s.status !== 'unmask_requested' && (
-                            <button
-                              onClick={() => handleRequestUnmask(s.id)}
-                              className="text-purple-600 hover:text-purple-800 text-sm font-medium flex items-center gap-1"
-                              title="Request to unmask author"
-                            >
-                              <Shield className="w-3 h-3" /> Unmask
-                            </button>
-                          )}
-                          {s.status === 'pending' && (
-                            <button
-                              onClick={() => window.open(`/suggestions/unmask/jumuiya_vice_chairperson/${s.id}`)} // placeholder
-                              className="text-rose-600 hover:text-rose-800 text-sm font-medium"
-                              title="Soft delete suggestion"
-                            >
-                              <Trash2 className="w-3 h-3" /> Delete
-                            </button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
+
+              {/* VC Actions - plain text */}
+              {isVC && (
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => window.alert('Reply feature coming soon')}
+                      className="px-3 py-1 bg-indigo-600 text-white rounded text-sm font-medium"
+                      title="Reply"
+                    >
+                      Reply
+                    </button>
+                    <button
+                      onClick={() => window.alert('Unmask feature coming soon')}
+                      className="px-3 py-1 bg-purple-600 text-white rounded text-sm font-medium"
+                      title="Unmask"
+                    >
+                      Unmask
+                    </button>
+                    <button
+                      onClick={() => window.alert('Delete feature coming soon')}
+                      className="px-3 py-1 bg-rose-600 text-white rounded text-sm font-medium"
+                      title="Delete"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
