@@ -72,8 +72,8 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 24px;
-    height: 5px;
+    width: 22px;
+    height: 3px;
     border-radius: 999px;
     background: var(--primary-color, #2563eb);
     box-shadow: 0 1px 4px color-mix(in srgb, var(--primary-color, #2563eb), transparent 55%);
@@ -81,7 +81,9 @@
 }
 
 .loader-icon::after {
-    transform: translate(-50%, -50%) rotate(90deg);
+    width: 3px;
+    height: 32px;
+    transform: translate(-50%, -35%);
 }
 
 .loader-text-wrap {
