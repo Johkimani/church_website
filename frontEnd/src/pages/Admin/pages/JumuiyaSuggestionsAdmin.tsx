@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
+import { memberService } from '../../../api/jumuiyaMemberService';
 import {
   MessageSquare,
   Trash2,
@@ -68,6 +69,17 @@ const CATEGORY_COLORS: Record<string, string> = {
   events: 'bg-yellow-50 text-yellow-600 border-yellow-200',
 };
 
+// Known slug → name map (slugs come from the DB sub_groups table)
+const SLUG_NAME_MAP: Record<string, string> = {
+  'st-anthony': 'St. Anthony',
+  'st-augustine': 'St. Augustine',
+  'st-catherine': 'St. Catherine',
+  'st-dominic': 'St. Dominic',
+  'st-elizabeth': 'St. Elizabeth',
+  'st-maria-goretti': 'St. Maria Goretti',
+  'st-monica': 'St. Monica',
+};
+
 const JUMUIYA_OPTIONS = [
   { id: '', name: 'All Jumuiyas' },
   { id: 'st-anthony', name: 'St. Anthony' },
@@ -89,6 +101,8 @@ export default function JumuiyaSuggestionsAdmin() {
 
   const userJumuiyaId = user?.jumuiya_id || '';
   const [selectedJumuiya, setSelectedJumuiya] = useState<string>(userJumuiyaId);
+  // Resolved human-readable name for UUIDs not in the slug map
+  const [resolvedName, setResolvedName] = useState<string>('');
 
   // Sync selectedJumuiya if user's jumuiya becomes available
   useEffect(() => {
@@ -97,14 +111,35 @@ export default function JumuiyaSuggestionsAdmin() {
     }
   }, [userJumuiyaId]);
 
+  // Resolve UUID → human-readable jumuiya name via lookup API
+  useEffect(() => {
+    const activeId = selectedJumuiya || userJumuiyaId;
+    if (!activeId) return;
+    // If it's already a known slug, no lookup needed
+    if (SLUG_NAME_MAP[activeId]) {
+      setResolvedName(SLUG_NAME_MAP[activeId]);
+      return;
+    }
+    memberService.getJumuiyaLookup()
+      .then((res: any) => {
+        const data = res?.data || res || {};
+        const entry = data[activeId];
+        if (entry) {
+          setResolvedName(entry.name || entry.fullName || activeId);
+        } else {
+          setResolvedName('');
+        }
+      })
+      .catch(() => setResolvedName(''));
+  }, [selectedJumuiya, userJumuiyaId]);
+
   const isGlobalRole = userRoles.some((r: any) =>
     ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'admin', 'developer'].includes(r)
   );
 
-  const matchedJumuiya = JUMUIYA_OPTIONS.find(
-    (j) => j.id && j.id.toLowerCase() === String(selectedJumuiya || userJumuiyaId).toLowerCase()
-  );
-  const displayName = matchedJumuiya ? matchedJumuiya.name : (selectedJumuiya || 'Jumuiya');
+  const activeId = selectedJumuiya || userJumuiyaId;
+  // Priority: resolved API name > known slug map > fall back to 'Jumuiya'
+  const displayName = resolvedName || SLUG_NAME_MAP[activeId] || (activeId ? 'Jumuiya' : 'All Jumuiyas');
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
