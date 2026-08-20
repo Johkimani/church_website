@@ -98,6 +98,15 @@ const CommunityDetail: React.FC = () => {
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
+  // Sync activeTab with URL query parameter (e.g. ?tab=members)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab') as TabType;
+    if (tabParam && TAB_ORDER.includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
+
   useEffect(() => {
     if (isSidebarOpen) {
       document.body.style.overflow = 'hidden';
