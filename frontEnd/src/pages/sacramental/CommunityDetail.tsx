@@ -125,8 +125,8 @@ const CommunityDetail: React.FC = () => {
       <div className="detail-page" style={{ '--jumuiya-color': detailColor } as React.CSSProperties}>
         <div className="flex-1 flex items-center justify-center min-h-[60vh]">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-[3px] border-stone-200 border-t-amber-700 rounded-full animate-spin" />
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">Loading ministry…</p>
+            <div className="w-12 h-12 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/60">Loading ministry…</p>
           </div>
         </div>
       </div>
@@ -137,15 +137,16 @@ const CommunityDetail: React.FC = () => {
     return (
       <div className="detail-page" style={{ '--jumuiya-color': detailColor } as React.CSSProperties}>
         <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center p-8 bg-white rounded-3xl shadow-xl border border-stone-200/70 max-w-md">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 mb-4">
+          <div className="text-center p-8 rounded-3xl shadow-xl max-w-md" style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${detailColor}, black 15%), color-mix(in srgb, ${detailColor}, black 25%))`, border: `1px solid color-mix(in srgb, ${detailColor}, transparent 60%)` }}>
+            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-white mb-4" style={{ background: `rgba(255, 255, 255, 0.15)` }}>
               <FaInfoCircle size={28} />
             </div>
-            <h2 className="text-xl font-bold text-stone-800 mb-2">Ministry Not Found</h2>
-            <p className="text-stone-500 mb-6 text-sm">We could not find the community ministry you are looking for.</p>
+            <h2 className="text-xl font-bold text-white mb-2">Ministry Not Found</h2>
+            <p className="text-white/70 mb-6 text-sm">We could not find the community ministry you are looking for.</p>
             <button
               onClick={() => navigate('/community')}
-              className="px-6 py-3 bg-stone-900 text-white rounded-2xl font-bold text-sm cursor-pointer hover:bg-stone-800 transition-all hover:scale-[1.02] shadow-lg"
+              className="px-6 py-3 text-white rounded-2xl font-bold text-sm cursor-pointer transition-all hover:scale-[1.02] shadow-lg"
+              style={{ background: `rgba(255, 255, 255, 0.2)`, border: `1px solid rgba(255, 255, 255, 0.15)` }}
             >
               <FaArrowLeft style={{ marginRight: '8px' }} /> Back to Community
             </button>
@@ -165,6 +166,7 @@ const CommunityDetail: React.FC = () => {
         '--jumuiya-color-light': `${detailColor}20`,
         '--jumuiya-color-medium': `${detailColor}50`,
         '--jumuiya-color-dark': `${detailColor}dd`,
+        '--bg-soft': '#f0f0f0',
       } as React.CSSProperties}
     >
       {/* Mobile Menu Toggle */}
@@ -212,14 +214,14 @@ const CommunityDetail: React.FC = () => {
                   setIsSidebarOpen(false);
                 }}
                 style={isActive ? {
-                  borderLeftColor: detailColor,
-                  color: detailColor,
-                  background: `linear-gradient(90deg, ${detailColor}10 0%, transparent 100%)`,
+                  borderLeftColor: 'white',
+                  color: 'white',
+                  background: 'rgba(255, 255, 255, 0.1)',
                 } : {}}
               >
                 <span
                   className="nav-icon"
-                  style={{ color: detailColor }}
+                  style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.65)' }}
                 >
                   {TAB_ICONS[tabId]}
                 </span>
@@ -228,7 +230,7 @@ const CommunityDetail: React.FC = () => {
                 {isActive && (
                   <span
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
-                    style={{ background: detailColor }}
+                    style={{ background: 'white' }}
                   />
                 )}
               </button>
