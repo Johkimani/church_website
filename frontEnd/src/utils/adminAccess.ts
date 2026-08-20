@@ -53,6 +53,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/whatsapp-links",
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
+  "/admin/jumuiya-suggestions",
 ];
 
 export const normalizeRoles = (role: unknown): string[] => {
