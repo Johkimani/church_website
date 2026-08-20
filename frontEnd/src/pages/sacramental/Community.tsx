@@ -287,43 +287,79 @@ const Community: React.FC = () => {
           initial="hidden"
           animate="show"
           key={filter}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-2"
         >
           {filtered.map((mod) => {
             const image = mod.saint_image_url || mod.image_url || COMMUNITY_IMAGES[mod.id] || DEFAULT_COMMUNITY_IMAGE;
             const isJoined = myCommunityIds.has(mod.id);
+            const modColor = MINISTRY_COLORS[mod.id] || '#7c2d12';
 
             return (
               <motion.article
                 key={mod.id}
                 variants={cardVariants}
                 onClick={() => handleCardClick(mod)}
-                className="group relative bg-white rounded-2xl border border-stone-100 shadow-[0_1px_3px_rgba(28,25,23,0.06)] hover:shadow-[0_16px_40px_-16px_rgba(28,25,23,0.35)] transition-all duration-300 overflow-hidden cursor-pointer hover:-translate-y-1"
+                className="group relative cursor-pointer"
+                style={{ perspective: '1000px' }}
               >
-                {/* Image */}
-                <div className="aspect-[16/9] relative overflow-hidden bg-slate-100">
-                  <img
-                    src={image}
-                    alt={mod.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
+                {/* Hanging string */}
+                <div className="flex justify-center -mb-1 relative z-10">
+                  <div className="w-[2px] h-6 rounded-full" style={{ background: `linear-gradient(180deg, ${modColor}90, ${modColor}40)` }} />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2" style={{ borderColor: modColor, background: `${modColor}20` }} />
+                </div>
 
-                  {/* Joined badge */}
-                  {isJoined && (
-                    <div className="absolute top-3 right-3 z-10">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-lg">
-                        <Check size={8} /> Joined
-                      </span>
+                {/* Card body */}
+                <div
+                  className="relative rounded-2xl overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl"
+                  style={{
+                    boxShadow: `0 8px 24px -4px ${modColor}25, 0 4px 12px -2px rgba(0,0,0,0.08)`,
+                  }}
+                >
+                  {/* Image */}
+                  <div className="aspect-[16/10] relative overflow-hidden">
+                    <img
+                      src={image}
+                      alt={mod.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                    {/* Color accent glow */}
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{ background: `radial-gradient(ellipse at bottom, ${modColor}40 0%, transparent 70%)` }}
+                    />
+
+                    {/* Joined badge */}
+                    {isJoined && (
+                      <div className="absolute top-3 right-3 z-10">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white shadow-lg backdrop-blur-sm" style={{ background: `${modColor}cc` }}>
+                          <Check size={8} /> Joined
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Title + color bar on image */}
+                    <div className="absolute bottom-0 inset-x-0 p-4 z-10">
+                      <div className="flex items-end gap-3">
+                        <div className="w-1 h-8 rounded-full flex-shrink-0 mb-0.5" style={{ background: `linear-gradient(180deg, white, ${modColor})` }} />
+                        <div>
+                          <h3 className="text-white font-black text-lg leading-tight drop-shadow-lg uppercase tracking-wide">{mod.title}</h3>
+                          <p className="text-white/60 text-[11px] font-semibold mt-0.5 uppercase tracking-widest">Tap to explore</p>
+                        </div>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Title on image */}
-                  <div className="absolute bottom-0 inset-x-0 p-4 z-10">
-                    <h3 className="text-white font-black text-lg leading-tight drop-shadow-md uppercase tracking-tight">{mod.title}</h3>
                   </div>
                 </div>
+
+                {/* Hanging shadow on ground */}
+                <div
+                  className="mx-auto mt-2 h-2 rounded-full opacity-20 group-hover:opacity-40 group-hover:w-4/5 transition-all duration-500"
+                  style={{ background: `radial-gradient(ellipse, ${modColor}60, transparent)`, width: '60%' }}
+                />
               </motion.article>
             );
           })}
