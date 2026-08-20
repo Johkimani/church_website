@@ -307,6 +307,24 @@ export const importMembers = async (req, res) => {
     // table and can log in right away (no 5-minute sync job wait).
     await syncNewImportRecords();
 
+    // Clean up original pending WhatsApp self-registration records for this
+    // jumuiya whose cleaned_reg_number now exists in the members table.
+    // This prevents them from continuing to appear in the pending queue.
+    if (jumuiya_id && jumuiya_id !== 'csa') {
+      await pool.query(
+        `UPDATE import_records ir SET status = 'processed'
+         FROM member_imports mi
+         WHERE ir.import_id = mi.id
+           AND mi.jumuiya_id = $1
+           AND mi.file_name = 'whatsapp-self-registration'
+           AND ir.status = 'pending'
+           AND EXISTS (
+             SELECT 1 FROM members m WHERE m.member_id = ir.cleaned_reg_number
+           )`,
+        [jumuiya_id]
+      );
+    }
+
     res.status(201).json({
       status: "success",
       data: {
@@ -530,6 +548,14 @@ export const updateImportStatus = async (req, res) => {
         );
         createdMembers.push(insertResult.rows[0]);
       }
+
+      // Mark all valid/warning import_records in this batch as 'processed'
+      // so they no longer appear in the pending self-registrations list.
+      await pool.query(
+        `UPDATE import_records SET status = 'processed'
+         WHERE import_id = $1 AND status IN ('valid', 'warning')`,
+        [importId]
+      );
     }
 
     const result = await pool.query(
