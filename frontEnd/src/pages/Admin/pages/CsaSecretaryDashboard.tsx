@@ -543,17 +543,35 @@ export default function CsaSecretaryDashboard() {
         <>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-3 text-white">
+        <button
+          type="button"
+          onClick={() => setFilterJumuiya("all")}
+          aria-pressed={filterJumuiya === "all"}
+          className={`text-left bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-3 text-white transition-all hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
+            filterJumuiya === "all" ? "ring-2 ring-blue-300 ring-offset-2" : "opacity-85"
+          }`}
+        >
           <p className="text-2xl font-bold">{members.length}</p>
           <p className="text-[10px] text-blue-100 font-medium mt-0.5">Total</p>
-        </div>
+        </button>
         {JUMUIYAS.map(j => {
           const count = jumuiyaCounts[j.id] || 0;
           return (
-            <div key={j.id} className="bg-white rounded-xl border border-slate-200 p-3 text-center">
+            <button
+              key={j.id}
+              type="button"
+              onClick={() => setFilterJumuiya(j.id)}
+              aria-pressed={filterJumuiya === j.id}
+              aria-label={`Show ${j.name} registered members`}
+              className={`bg-white rounded-xl border p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
+                filterJumuiya === j.id
+                  ? "border-blue-400 ring-2 ring-blue-100 ring-offset-1"
+                  : "border-slate-200"
+              }`}
+            >
               <p className="text-xl font-bold" style={{ color: j.color }}>{count}</p>
               <p className="text-[10px] text-slate-500 font-medium truncate">{j.name.replace("St. ", "")}</p>
-            </div>
+            </button>
           );
         })}
       </div>
