@@ -149,7 +149,7 @@ function WeeklyCard({ activity, onBook, bookingState }) {
               alt={activity.activity}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
-              onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+              onError={(e) => { e.currentTarget.parentElement?.style && (e.currentTarget.parentElement.style.display = 'none'); }}
             />
           </div>
         )}
@@ -242,7 +242,7 @@ function SemesterCard({ event, onBook, bookingState, defaultImage = null }) {
               alt={event.title}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
-              onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+              onError={(e) => { e.currentTarget.parentElement?.style && (e.currentTarget.parentElement.style.display = 'none'); }}
             />
           </div>
         )}

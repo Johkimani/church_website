@@ -40,13 +40,13 @@ class ApiService {
 
     // Case 1: API already returns array
     if (Array.isArray(rawData)) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(rawData));
+      if (!bypassCache) localStorage.setItem(CACHE_KEY, JSON.stringify(rawData));
       return rawData;
     }
 
     // Case 2: API returns { data: [...] }
     if (Array.isArray(rawData?.data)) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(rawData.data));
+      if (!bypassCache) localStorage.setItem(CACHE_KEY, JSON.stringify(rawData.data));
       return rawData.data;
     }
 
