@@ -63,7 +63,7 @@ const TAB_LABELS: Record<TabType, string> = {
   request: 'Request',
 };
 
-const TAB_ORDER: TabType[] = ['about', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions', 'settings'];
+const TAB_ORDER: TabType[] = ['about', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
 
 const CommunityDetail: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
