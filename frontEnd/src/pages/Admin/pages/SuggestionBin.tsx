@@ -3,6 +3,7 @@ import { Trash2, Trash, Loader2, MessageSquare, XCircle, Shield } from 'lucide-r
 import { apiClient } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 
 export default function SuggestionBin() {
   const { user } = useAuth();
@@ -56,12 +57,7 @@ export default function SuggestionBin() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <div className="w-12 h-12 border-4 border-orange-100 border-t-orange-600 rounded-full animate-spin" />
-        <p className="text-slate-500 font-medium">Loading suggestion bin...</p>
-      </div>
-    );
+    return <PageLoader message="Loading suggestion bin" />;
   }
 
   return (

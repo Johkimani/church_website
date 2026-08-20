@@ -26,6 +26,7 @@ import {
   Check,
   X
 } from 'lucide-react';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 
 type TabType = 'about' | 'activities' | 'announcements' | 'members' | 'gallery' | 'tshirts' | 'suggestions';
 
@@ -427,12 +428,7 @@ export default function CommunityDetailEditor() {
   ];
 
   if (loading && !moduleMeta) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh]">
-        <Loader2 size={40} className="text-blue-600 animate-spin mb-4" />
-        <p className="text-slate-500 font-bold">Connecting to {categoryId} dashboard...</p>
-      </div>
-    );
+    return <PageLoader message={`Connecting to ${categoryId} dashboard`} fullScreen />;
   }
 
   return (
@@ -761,10 +757,7 @@ export default function CommunityDetailEditor() {
           {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members') && (
             <>
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 size={32} className="text-blue-500 animate-spin mb-4" />
-                  <p className="text-slate-400 text-sm">Synchronizing table data...</p>
-                </div>
+                <PageLoader message="Synchronizing table data" />
               ) : data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">

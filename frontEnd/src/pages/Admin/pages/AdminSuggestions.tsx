@@ -3,6 +3,7 @@ import { apiClient } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
 import { MessageSquare, Trash2, Search, Calendar, User, Mail, RefreshCcw, Loader2, Shield, Reply, CheckCircle, Check, Filter, Clock, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 
 const STATUSES = ['all', 'pending', 'replied', 'approved', 'rejected', 'unmask_requested'] as const;
 
@@ -201,9 +202,8 @@ export default function AdminSuggestions() {
       </div>
 
       {loading && suggestions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white/60 backdrop-blur-sm rounded-3xl border border-dashed border-slate-200">
-          <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
-          <p className="text-slate-500 font-bold">Connecting to database...</p>
+        <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-dashed border-slate-200">
+          <PageLoader message="Connecting to database" />
         </div>
       ) : filteredSuggestions.length > 0 ? (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
