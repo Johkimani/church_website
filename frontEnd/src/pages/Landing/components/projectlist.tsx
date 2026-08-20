@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import apiService from "../../../services/api";
 import { getSafeImageUrl } from "../../../api/config";
+import PageLoader from "../../../assets/Layouts/PageLoader";
 
 interface Project {
   id?: string | number;
@@ -41,7 +42,7 @@ const ProjectList = ({ category }: Props) => {
   }, [category]);
 
   if (loading) {
-    return <p>Loading Projects...</p>;
+    return <PageLoader message="Loading projects" />;
   }
 
   return (

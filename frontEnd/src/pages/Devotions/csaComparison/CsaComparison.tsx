@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { fetchPublishedComparison, fetchComparisonOptions } from "../../../api/axiosInstance";
 import type { JumuiData } from "../../../interface/api";
 import { Trophy, Award, Medal, Activity, Sparkles, CalendarRange } from "lucide-react";
+import PageLoader from "../../../assets/Layouts/PageLoader";
 
 const JUMUIYA_META: Record<string, { name: string; shortName: string; color: string }> = {
   "st-anthony": { name: "St. Anthony of Padua", shortName: "St. Anthony", color: "#8b5cf6" },
@@ -184,14 +185,7 @@ export default function JumuiComparison() {
   }));
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center text-stone-500">
-        <div className="flex flex-col items-center gap-3">
-          <Activity className="w-8 h-8 text-amber-500 animate-spin" />
-          <p className="text-xs font-bold uppercase tracking-widest text-stone-500">Loading Leaderboard...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Loading leaderboard" fullScreen />;
   }
 
   const filterButton = (m: FilterMode, label: string) => (

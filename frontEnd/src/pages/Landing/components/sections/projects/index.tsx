@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../../../../services/api';
 import { getSafeImageUrl } from '../../../../../api/config';
+import PageLoader from '../../../../../../assets/Layouts/PageLoader';
 
 interface Project {
   id: number;
@@ -46,9 +47,7 @@ const ProjectsSection: React.FC = () => {
   if (loading) {
     return (
       <div id="projects" className="py-8 md:py-16 bg-white">
-        <div className="container mx-auto px-3 md:px-4 text-center">
-          <p className="text-gray-500">Loading projects...</p>
-        </div>
+        <PageLoader message="Loading projects" />
       </div>
     );
   }

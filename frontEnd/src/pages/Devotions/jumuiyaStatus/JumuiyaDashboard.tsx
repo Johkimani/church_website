@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { fetchPublishedJumuiyaDashboard } from "../../../api/axiosInstance";
 import Card from "../components/Card";
+import PageLoader from "../../../assets/Layouts/PageLoader";
 
 interface JumuiyaStats {
   totalAttempts: number;
@@ -30,11 +31,7 @@ export default function JumuiyaDashboard({ jumuiyaId }: { jumuiyaId: string; jum
   }, [jumuiyaId]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-48 text-gray-500">
-        <p className="text-sm animate-pulse">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard" />;
   }
 
   if (!stats || stats.totalAttempts === 0) {

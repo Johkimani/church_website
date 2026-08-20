@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import apiService from '../../../../services/api';
+import PageLoader from '../../../../../../assets/Layouts/PageLoader';
 
 interface Jumuiya {
   id: number;
@@ -43,9 +44,7 @@ const JumuiyaSection: React.FC = () => {
   if (loading) {
     return (
       <div id="jumuiya" className="py-8 md:py-16 bg-white">
-        <div className="container mx-auto px-3 md:px-4 text-center">
-          <p className="text-gray-500">Loading Jumuiya groups...</p>
-        </div>
+        <PageLoader message="Loading Jumuiya groups" />
       </div>
     );
   }

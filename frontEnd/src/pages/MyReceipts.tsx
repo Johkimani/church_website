@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Armchair, MapPin, Phone, FileText, CheckCircle2, Receipt, ArrowRight } from 'lucide-react';
 import { apiClient } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
+import PageLoader from '../assets/Layouts/PageLoader';
 
 interface ReceiptItem {
     name: string;
@@ -98,8 +99,7 @@ export const MyReceipts: React.FC = () => {
 
             {loading && (
                 <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center">
-                    <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-sm text-slate-400 font-medium">Loading your receipts…</p>
+                    <PageLoader message="Loading your receipts" />
                 </div>
             )}
 

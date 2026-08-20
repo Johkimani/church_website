@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { SocialMedia } from '../data/jumuiyaData';
 import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaYoutube, FaEnvelope, FaGlobe, FaTiktok, FaImages, FaArrowLeft, FaArrowRight, FaTimes, FaShareAlt } from "react-icons/fa";
 import { apiClient } from '../../../api/axiosInstance';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
 
 interface ChannelsTabProps {
@@ -170,10 +171,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, jumuiyaId }) => 
                 </div>
 
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '48px 0', opacity: 0.5 }}>
-                        <FaImages style={{ fontSize: '2rem', marginBottom: '12px' }} />
-                        <p style={{ fontWeight: 700, fontSize: '0.85rem' }}>Loading gallery...</p>
-                    </div>
+                    <PageLoader message="Loading gallery" />
                 ) : albums.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '48px 0', opacity: 0.4 }}>
                         <FaImages style={{ fontSize: '2.5rem', marginBottom: '12px' }} />

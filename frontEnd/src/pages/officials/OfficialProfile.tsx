@@ -6,6 +6,7 @@ import { getSafeImageUrl } from '../../api/config';
 
 import apiService from '../../services/api'
 import { useSocket } from '../../context/SocketContext'
+import PageLoader from '../../assets/Layouts/PageLoader'
 
 const CATEGORY_COLORS: Record<string, string> = {
     'Executive': 'from-purple-600 to-purple-800',
@@ -150,11 +151,7 @@ const OfficialProfile: React.FC = () => {
         };
     }, [socket, id]);
 
-    if (loading) return (
-        <div className="h-full flex items-center justify-center bg-gray-50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-        </div>
-    );
+    if (loading) return <PageLoader message="Loading official profile" fullScreen />;
 
     if (error || !official) return (
         <div className="h-full flex flex-col items-center justify-center bg-gray-50 p-6">

@@ -4,6 +4,7 @@ import {
 } from "recharts";
 import { fetchPublishedMemberProgress } from "../../../api/axiosInstance";
 import { useAuth } from "../../../context/AuthContext";
+import PageLoader from "../../../assets/Layouts/PageLoader";
 
 interface WeekEntry {
   week: number;
@@ -141,18 +142,7 @@ export default function MemberDashboard() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-amber-50/30 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-5">
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 rounded-full border-4 border-amber-200" />
-            <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin" />
-            <span className="absolute inset-0 flex items-center justify-center text-xl"></span>
-          </div>
-          <p className="text-sm font-semibold text-amber-700 tracking-wide">Loading your journey...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Loading your journey" fullScreen />;
   }
 
   return (

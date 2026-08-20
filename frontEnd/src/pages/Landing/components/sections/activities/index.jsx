@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useCachedData } from "../../../../../hooks/useCachedData";
 import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, X, Smartphone, Loader2, CheckCircle2, AlertCircle, Users } from "lucide-react";
 import apiService from "../../../../../services/api";
+import PageLoader from "../../../../../assets/Layouts/PageLoader";
 import toast from "react-hot-toast";
 import useCountdown from "../../../../../hooks/useCountdown";
 import { useAuth } from "../../../../../context/AuthContext";
@@ -549,9 +550,7 @@ const ActivitiesSection = () => {
   if (loading) {
     return (
       <div id="activities" className="py-8 md:py-16 bg-gray-50">
-        <div className="container mx-auto px-3 md:px-4 text-center">
-          <p className="text-gray-500">Loading activities...</p>
-        </div>
+        <PageLoader message="Loading activities" />
       </div>
     );
   }
@@ -662,4 +661,4 @@ const ActivitiesSection = () => {
   );
 };
 
-export default ActivitiesSection;
+export default ActivitiesSection;

@@ -15,6 +15,7 @@ import {
 import { useCachedData } from '../../../../../hooks/useCachedData';
 import { apiClient } from '../../../../../api/axiosInstance';
 import { motion, AnimatePresence } from 'framer-motion';
+import PageLoader from '../../../../../assets/Layouts/PageLoader';
 
 interface GalleryItem {
   id: number;
@@ -82,11 +83,7 @@ const GallerySection: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <PageLoader message="Loading gallery" fullScreen />;
   }
 
   return (

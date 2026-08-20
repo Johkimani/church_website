@@ -7,6 +7,7 @@ import { useSocket } from '../../context/SocketContext'
 import apiService from '../../services/api'
 import { getSafeImageUrl } from '../../api/config'
 import { getAvatarForCategory } from './constants/positionInfo'
+import PageLoader from '../../assets/Layouts/PageLoader'
 
 const CATEGORY_ORDER = [
   'Executive','Jumuiya Coordinators','Bible Coordinators','Rosary',
@@ -521,9 +522,7 @@ export default function PublicView() {
             <button onClick={fetchOfficials} className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm font-bold">Retry</button>
           </div>
         ) : loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          </div>
+          <PageLoader message="Loading officials" />
         ) : (
           <>
             {groupedCategories.map((row, index) => {

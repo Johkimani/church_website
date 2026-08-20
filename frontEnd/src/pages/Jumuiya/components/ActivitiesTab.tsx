@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaList } from "react-icons/fa";
 import jumuiyaActivitiesService from '../../../api/jumuiyaActivitiesService';
+import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
 
 interface ActivitiesTabProps {
@@ -72,9 +73,7 @@ const ActivitiesTab: React.FC<ActivitiesTabProps> = ({ jumuiyaColor, jumuiyaId }
     if (loading) {
         return (
             <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Loading activities...</div>
-                </div>
+                <PageLoader message="Loading activities" />
             </div>
         );
     }
