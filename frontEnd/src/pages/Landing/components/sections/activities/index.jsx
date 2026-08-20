@@ -208,14 +208,14 @@ function SemesterCard({ event, onBook, bookingState }) {
 
   return (
     <div
-      className={`group bg-white rounded-[1.5rem] border border-slate-100
-        hover:border-slate-200 hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)]
-        transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] p-5 sm:p-6 cursor-default overflow-hidden min-w-0 break-words flex flex-col justify-between
+      className={`group bg-white rounded-2xl border border-slate-200/80
+        hover:border-slate-300 hover:shadow-[0_12px_35px_-10px_rgba(0,0,0,0.08)]
+        transition-all duration-500 p-4 sm:p-5 cursor-default overflow-hidden min-w-0 break-words flex flex-col justify-between
         ${isPast ? "opacity-60" : ""}`}
     >
       <div>
-        {event.image_url && (
-          <div className="w-full aspect-video sm:aspect-[16/9] max-h-60 overflow-hidden rounded-xl mb-4 bg-slate-100">
+        {event.image_url ? (
+          <div className="w-full aspect-video sm:aspect-[16/9] max-h-48 overflow-hidden rounded-xl mb-4 bg-slate-100">
             <img
               src={event.image_url}
               alt={event.title}
@@ -223,31 +223,40 @@ function SemesterCard({ event, onBook, bookingState }) {
               loading="lazy"
             />
           </div>
+        ) : (
+          <div className="w-full aspect-video sm:aspect-[16/9] max-h-48 overflow-hidden rounded-xl mb-4 bg-slate-100">
+            <img
+              src={DEFAULT_ACTIVITY_IMAGE}
+              alt={event.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
         )}
-        <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             {isPast && (
-              <span className="inline-block text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full tracking-widest uppercase mb-2">
+              <span className="inline-block text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full tracking-widest uppercase mb-1.5">
                 Past Event
               </span>
             )}
-            <h3 className="text-lg font-black text-slate-900 mb-1 group-hover:text-primary transition-colors duration-300 break-words">
+            <h3 className="text-base font-black text-slate-800 group-hover:text-primary transition-colors duration-300 break-words">
               {event.title}
             </h3>
             {event.description && (
-              <p className="text-slate-500 text-sm font-medium leading-relaxed break-words">
+              <p className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed break-words mt-1 line-clamp-3">
                 {event.description}
               </p>
             )}
           </div>
         </div>
 
-        <div className="h-px w-full bg-slate-100 mb-4" />
+        <div className="h-px w-full bg-slate-100 my-3" />
 
-        <div className="space-y-2 text-xs font-medium text-slate-500">
+        <div className="space-y-1.5 text-xs font-medium text-slate-500">
           <p className="flex items-center gap-2">
             <Calendar size={12} className="text-primary/60 shrink-0" />
-            <span>{dt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+            <span>{dt.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</span>
           </p>
           <p className="flex items-center gap-2">
             <Clock size={12} className="text-primary/60 shrink-0" />
@@ -473,7 +482,7 @@ const ActivitiesSection = () => {
   const [bookingTarget, setBookingTarget] = useState(null); // { activity, type, existingBooking }
   const [userBookings, setUserBookings] = useState([]);
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
-    'csa_cache_public_activities',
+    'csa_cache_public_activities_v3',
     async () => {
       const [weeklyData, semesterData] = await Promise.all([
         apiService.getWeeklyActivities(),
@@ -568,7 +577,7 @@ const ActivitiesSection = () => {
               <p className="text-slate-400 font-medium text-sm">No weekly activities yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {weekly.map((a) => (
                 <WeeklyCard
                   key={a.id}
@@ -596,7 +605,7 @@ const ActivitiesSection = () => {
               <p className="text-slate-400 font-medium text-sm">No semester events yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {semester.map((e) => (
                 <SemesterCard
                   key={e.id}
@@ -609,6 +618,7 @@ const ActivitiesSection = () => {
           )}
         </div>
       </div>
+
 
       {bookingTarget && (
         <BookingModal
