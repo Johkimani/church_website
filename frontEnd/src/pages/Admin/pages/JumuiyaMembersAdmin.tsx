@@ -11,6 +11,7 @@ import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import AllMembersTable from "./AllMembersTable";
 import AssociatesTable from "./AssociatesTable";
+import { SkeletonCardGrid, SkeletonSummaryBar } from "../../../components/Skeleton";
 
 
 // Improved cache with longer TTL (60s) and memory efficiency
@@ -483,47 +484,39 @@ export default function JumuiyaMembersAdmin() {
 
       {globalTab === "jumuiyas" && (
         <div>
-          {!loading && <SummaryBarMemo stats={stats} />}
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-500">Select a Jumuiya to manage member registration, validation, organization, and distribution.</p>
-            <button
-              onClick={() => { clearCache(); setRefreshKey(k => k + 1); }}
-              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              <RefreshCw size={14} /> Refresh
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-6 max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Jumuiya..."
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-            />
-          </div>
-
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 animate-pulse">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-slate-200" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-slate-200 rounded w-3/4" />
-                      <div className="h-3 bg-slate-100 rounded w-1/2" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-slate-100 rounded w-1/3" />
-                    <div className="h-3 bg-slate-100 rounded w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <>
+              <SkeletonSummaryBar count={4} />
+              <SkeletonCardGrid count={7} />
+            </>
           ) : (
+            <>
+              <SummaryBarMemo stats={stats} />
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-slate-500">
+                  Select a Jumuiya to manage member registration, validation, organization, and distribution.
+                </p>
+                <button
+                  onClick={() => {
+                    clearCache();
+                    setRefreshKey((k) => k + 1);
+                  }}
+                  className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                >
+                  <RefreshCw size={14} /> Refresh
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="relative mb-6 max-w-xs">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search Jumuiya..."
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                />
+              </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filtered.map((j) => {
                 const canClick = !isJumuiyaOfficial || userJumuiyaSlug === j.id;
@@ -542,6 +535,7 @@ export default function JumuiyaMembersAdmin() {
                 </div>
               )}
             </div>
+            </>
           )}
 
           {rejectedMembers.length > 0 && (

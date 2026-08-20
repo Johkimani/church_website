@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { RefreshCw, Users, Search, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { SkeletonTable } from "../../../components/Skeleton";
+
 
 interface Props {
   jumuiyaId: string;
@@ -143,9 +145,12 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
 
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        <div className="h-8 bg-slate-200 rounded-lg w-1/4" />
-        <div className="h-48 bg-slate-100 rounded-xl" />
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="skeleton-shimmer h-6 w-32 rounded-lg" />
+          <div className="skeleton-shimmer h-8 w-48 rounded-lg" />
+        </div>
+        <SkeletonTable rows={8} cols={7} />
       </div>
     );
   }

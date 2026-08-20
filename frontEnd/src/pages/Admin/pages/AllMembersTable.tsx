@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle } from "lucide-react";
 import * as XLSX from "xlsx";
+import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton";
+
+
 
 const JUMUIYAS = [
   { id: "st-anthony", name: "St. Anthony" },
@@ -276,9 +279,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
 
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        <div className="h-8 bg-slate-200 rounded-lg w-1/4" />
-        <div className="h-48 bg-slate-100 rounded-xl" />
+      <div className="space-y-6">
+        <SkeletonSummaryBar count={3} />
+        <SkeletonTable rows={8} cols={7} />
       </div>
     );
   }

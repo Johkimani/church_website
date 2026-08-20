@@ -131,10 +131,10 @@ export default function JumuiyaAnnouncementsRegister({
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse">
-              <div className="h-4 bg-slate-100 rounded-full w-24 mb-3" />
-              <div className="h-5 bg-slate-100 rounded-full w-1/2 mb-2" />
-              <div className="h-4 bg-slate-100 rounded-full w-3/4" />
+            <div key={i} className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2.5 shadow-2xs">
+              <div className="h-4 skeleton-shimmer rounded-full w-24 mb-1" />
+              <div className="h-5 skeleton-shimmer rounded-full w-1/2" />
+              <div className="h-4 skeleton-shimmer rounded-full w-3/4" />
             </div>
           ))}
         </div>

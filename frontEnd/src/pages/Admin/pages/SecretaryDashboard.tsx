@@ -15,6 +15,8 @@ import JumuiyaAnalyticsDashboard from "../../Jumuiya/admin/JumuiyaAnalyticsDashb
 import JumuiyaAttendanceRegister from "./JumuiyaAttendanceRegister";
 import JumuiyaAnnouncementsRegister from "./JumuiyaAnnouncementsRegister";
 import { Megaphone } from "lucide-react";
+import { SkeletonSummaryBar } from "../../../components/Skeleton";
+
 
 type DashboardTab = "overview" | "import" | "organize" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements";
 
@@ -246,11 +248,7 @@ export default function SecretaryDashboard() {
       {activeTab === "overview" && (
         <div className="space-y-6">
           {loadingStats ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-28 bg-white rounded-xl border border-slate-200 animate-pulse" />
-              ))}
-            </div>
+            <SkeletonSummaryBar count={4} />
           ) : (
             <>
               {/* Stat Cards */}

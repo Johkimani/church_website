@@ -337,9 +337,15 @@ export default function ActivityLog() {
       </div>
 
       {loading ? (
-        <div className="space-y-3 animate-pulse">
+        <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-20 bg-white rounded-2xl border border-slate-200/60 p-4" />
+            <div key={i} className="h-20 bg-white rounded-2xl border border-slate-200/80 p-5 flex items-center gap-4 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl skeleton-shimmer shrink-0" />
+              <div className="flex-1 space-y-2.5">
+                <div className="h-4 skeleton-shimmer rounded w-48" />
+                <div className="h-3 skeleton-shimmer rounded w-32" />
+              </div>
+            </div>
           ))}
         </div>
       ) : logs.length === 0 ? (

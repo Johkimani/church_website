@@ -660,9 +660,9 @@ export default function CSADistributionCenter() {
             {filterYear ? filterYear : "All Time"}
           </h4>
           {loadingData ? (
-            <div className="animate-pulse space-y-3">
-              <div className="h-8 bg-slate-100 rounded w-1/2" />
-              <div className="h-4 bg-slate-100 rounded w-3/4" />
+            <div className="space-y-3">
+              <div className="h-8 skeleton-shimmer rounded w-1/2" />
+              <div className="h-4 skeleton-shimmer rounded w-3/4" />
             </div>
           ) : (
             <>
@@ -692,7 +692,11 @@ export default function CSADistributionCenter() {
             Current Member Distribution {filterYear ? `(${filterYear})` : "(All Time)"}
           </h4>
           {loadingData ? (
-            <div className="space-y-2">{Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-6 bg-slate-100 rounded animate-pulse" />)}</div>
+            <div className="space-y-2.5">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-6 skeleton-shimmer rounded-full" />
+              ))}
+            </div>
           ) : jumuiyaStats?.jumuiyas ? (
             <div className="space-y-2">
               {jumuiyaStats.jumuiyas.map((j: any) => {

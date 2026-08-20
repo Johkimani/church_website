@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Calendar, Users, CheckCircle, AlertTriangle, GitMerge, RefreshCw, GraduationCap } from "lucide-react";
+import { SkeletonSummaryBar, SkeletonTable } from "../../../components/Skeleton";
+
 
 interface Props {
   jumuiyaId: string;
@@ -67,14 +69,9 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-10 bg-slate-200 rounded-lg w-1/3" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-slate-100 rounded-xl" />
-          ))}
-        </div>
-        <div className="h-64 bg-slate-100 rounded-xl" />
+      <div className="space-y-6">
+        <SkeletonSummaryBar count={4} />
+        <SkeletonTable rows={5} cols={4} />
       </div>
     );
   }

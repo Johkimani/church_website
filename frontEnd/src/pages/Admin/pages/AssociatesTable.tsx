@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Search, X, RefreshCw, GraduationCap, Download, Undo2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton";
+
+
 
 export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: number }) {
   const [associates, setAssociates] = useState<any[]>([]);
@@ -126,10 +129,12 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
   };
 
   if (loading) {
-    return <div className="space-y-3 animate-pulse">
-      <div className="h-8 bg-slate-200 rounded-lg w-1/4" />
-      <div className="h-48 bg-slate-100 rounded-xl" />
-    </div>;
+    return (
+      <div className="space-y-6">
+        <SkeletonSummaryBar count={2} />
+        <SkeletonTable rows={8} cols={7} />
+      </div>
+    );
   }
 
   return (
