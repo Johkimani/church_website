@@ -34,6 +34,15 @@ const DEFAULT_ICON: React.ElementType = Users;
 
 const iconFor = (id: string): React.ElementType => ICON_MAP[id] || DEFAULT_ICON;
 
+const MINISTRY_COLORS: Record<string, string> = {
+  choir: '#1e3a5f',
+  dancers: '#7c3aed',
+  charismatic: '#db2777',
+  'st-francis': '#047857',
+  youth: '#8e44ad',
+  mentorship: '#6d28d9',
+};
+
 const COMMUNITY_IMAGES: Record<string, string> = {
   choir: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
   dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600',
