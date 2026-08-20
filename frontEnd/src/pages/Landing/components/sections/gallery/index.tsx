@@ -92,24 +92,30 @@ const GallerySection: React.FC = () => {
   return (
     <div className={`min-h-screen pt-16 pb-32 transition-colors duration-1000 ${theme === 'Christmas' ? 'bg-slate-50' : 'bg-white'}`}>
       <div className="container mx-auto px-6">
-        {/* Gallery Header - Sharp & Authoritative */}
+        {/* Gallery Header */}
         <div className="max-w-4xl mx-auto text-center mb-12">
-          <h1 className="text-4xl md:text-7xl font-black text-slate-900 mb-6 tracking-tighter leading-tight">
-             The Living <span className="text-primary">Heritage</span>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <span className="w-12 h-px bg-amber-400" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600">Parish Archives</span>
+            <span className="w-12 h-px bg-amber-400" />
+          </div>
+          <h1 className="font-serif text-4xl md:text-6xl font-bold text-stone-900 mb-3 tracking-tight leading-[1.1]">
+            The Living <span className="text-amber-700">Heritage</span>
           </h1>
+          <p className="text-stone-400 font-semibold text-sm max-w-md mx-auto">Moments from our life together, preserved in faith</p>
 
-          {/* Premium Smart Search Station - Minimalist Overhaul */}
-          <div className="mt-8 relative z-20 max-w-4xl mx-auto flex flex-col items-center gap-8">
-            {/* Unified Search Entry */}
-            <div className="w-full max-w-2xl bg-white/90 backdrop-blur-2xl shadow-[0_30px_70px_-20px_rgba(0,0,0,0.08)] rounded-[2.2rem] border-2 border-primary/10 flex items-center p-2 focus-within:border-primary/40 transition-all">
-              <div className={`w-12 h-12 rounded-[1.5rem] flex items-center justify-center transition-all shrink-0 ${searchTerm ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-50 text-slate-300'}`}>
-                <Search size={18} strokeWidth={2.5} className={searchTerm ? 'animate-pulse' : ''} />
+          {/* Search + Filters */}
+          <div className="mt-8 relative z-20 max-w-4xl mx-auto flex flex-col items-center gap-6">
+            {/* Search */}
+            <div className="w-full max-w-xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.04)] rounded-2xl border border-stone-200/80 flex items-center p-1.5 focus-within:border-amber-400 focus-within:shadow-[0_2px_20px_rgba(180,120,20,0.08)] transition-all">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${searchTerm ? 'bg-amber-600 text-white shadow-sm' : 'bg-stone-50 text-stone-300'}`}>
+                <Search size={16} strokeWidth={2.5} />
               </div>
 
               <input 
                 type="text" 
                 placeholder="Search our gallery..."
-                className="flex-1 self-stretch bg-transparent border-none outline-none px-6 text-slate-700 font-bold placeholder:text-slate-300/80 placeholder:italic text-sm tracking-tight"
+                className="flex-1 self-stretch bg-transparent border-none outline-none px-4 text-stone-700 font-semibold placeholder:text-stone-300 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -121,7 +127,7 @@ const GallerySection: React.FC = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.5 }}
                     onClick={() => setSearchTerm('')}
-                    className="w-12 h-12 bg-slate-50/80 rounded-[1.5rem] text-slate-400 hover:text-slate-900 transition-all flex items-center justify-center shrink-0 mr-1"
+                    className="w-10 h-10 bg-stone-50 rounded-xl text-stone-400 hover:text-stone-700 transition-all flex items-center justify-center shrink-0 mr-0.5 cursor-pointer"
                   >
                     <X size={14} strokeWidth={3} />
                   </motion.button>
@@ -129,16 +135,16 @@ const GallerySection: React.FC = () => {
               </AnimatePresence>
             </div>
 
-            {/* Grouped Floating Chips */}
+            {/* Category Chips */}
             <div className="flex flex-wrap justify-center gap-2">
-              {['All', 'general', 'choir', 'youth', 'jumuiya'].map(cat => (
+              {['All', 'general', 'choir', 'youth'].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setFilterCategory(cat)}
-                  className={`px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all relative border ${
+                  className={`px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
                     filterCategory === cat 
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/10' 
-                    : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:text-slate-600'
+                    ? 'bg-stone-900 text-white border-stone-900 shadow-md' 
+                    : 'bg-white text-stone-400 border-stone-200/80 hover:border-stone-300 hover:text-stone-600'
                   }`}
                 >
                   {cat}
