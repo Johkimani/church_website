@@ -15,8 +15,6 @@ import {
 const router = Router();
 
 const TSHIRT_ADMIN_ROLES = [
-  "csa_chair",
-  "jumuiya_coordinator",
   "jumuiya_chairperson",
   "jumuiya_vice_chairperson"
 ];

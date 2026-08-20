@@ -70,6 +70,8 @@ export const isChair = (roles: string[]): boolean => roles.includes(CHAIR_ROLE);
 const CHAIR_FORBIDDEN_PATHS = [
   "/admin/attendance-tally",
   "/admin/secretary-dashboard",
+  "/admin/jumuiya-tshirts",
+  "/admin/jumuiya-suggestions",
 ];
 
 export const hasAnyAdminAccess = (roles: string[]): boolean =>
@@ -87,7 +89,6 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/attendance-tally");
         prefixes.add("/admin/activity-log");
         prefixes.add("/admin/community-updates");
-        prefixes.add("/admin/jumuiya-tshirts");
         break;
       case "OS":
         prefixes.add("/admin/announcements");
@@ -128,6 +129,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         break;
       case "JUMUIYA_CHAIRPERSON":
         prefixes.add("/admin/suggestions");
+        prefixes.add("/admin/jumuiya-suggestions");
         prefixes.add("/admin/suggestion-bin");
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
