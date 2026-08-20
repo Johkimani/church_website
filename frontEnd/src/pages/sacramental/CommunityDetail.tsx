@@ -12,11 +12,12 @@ import CommunityActivitiesTab from './components/tabs/CommunityActivitiesTab';
 import CommunityTshirtsTab from './components/tabs/CommunityTshirtsTab';
 import CommunitySettingsTab from './components/tabs/CommunitySettingsTab';
 import CommunityNotificationsTab from './components/tabs/CommunityNotificationsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus } from 'react-icons/fa';
+import CommunityRequestTab from './components/tabs/CommunityRequestTab';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
-type TabType = 'about' | 'officials' | 'channels' | 'members' | 'activities' | 'tshirts' | 'settings';
+type TabType = 'about' | 'officials' | 'channels' | 'members' | 'activities' | 'tshirts' | 'settings' | 'request';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e3a5f',
@@ -45,6 +46,7 @@ const TAB_ICONS: Record<TabType, React.ReactNode> = {
   channels: <FaShareAlt />,
   tshirts: <FaTshirt />,
   settings: <FaKey />,
+  request: <FaHandPaper />,
 };
 
 const TAB_LABELS: Record<TabType, string> = {
@@ -55,9 +57,10 @@ const TAB_LABELS: Record<TabType, string> = {
   channels: 'Channels',
   tshirts: 'T-Shirts',
   settings: 'Settings',
+  request: 'Request',
 };
 
-const TAB_ORDER: TabType[] = ['about', 'officials', 'members', 'activities', 'channels', 'tshirts', 'settings'];
+const TAB_ORDER: TabType[] = ['about', 'officials', 'members', 'activities', 'channels', 'tshirts', 'request', 'settings'];
 
 const CommunityDetail: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -115,6 +118,8 @@ const CommunityDetail: React.FC = () => {
         return <CommunityTshirtsTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
       case 'settings':
         return <CommunitySettingsTab color={detailColor} />;
+      case 'request':
+        return <CommunityRequestTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} module={moduleData} />;
       default:
         return null;
     }
