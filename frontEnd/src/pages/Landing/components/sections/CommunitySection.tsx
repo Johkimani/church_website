@@ -113,13 +113,7 @@ const CommunitySection: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-900/70 via-stone-900/10 to-transparent" />
 
-                {/* Accent icon chip */}
-                <div
-                  className="absolute top-4 right-4 w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg"
-                  style={{ backgroundColor: item.accent }}
-                >
-                  {item.icon}
-                </div>
+
               </div>
 
               {/* Body */}
