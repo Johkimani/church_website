@@ -361,7 +361,6 @@ const Community: React.FC = () => {
                 </motion.p>
               </AnimatePresence>
               <p className="text-white font-bold text-sm mt-3">{TESTIMONIALS[testimonialIdx].role}</p>
-              <p className="text-amber-200/70 text-xs font-semibold">{TESTIMONIALS[testimonialIdx].role}</p>
             </div>
             <div className="flex justify-center gap-2 mt-5">
               {TESTIMONIALS.map((_, i) => (

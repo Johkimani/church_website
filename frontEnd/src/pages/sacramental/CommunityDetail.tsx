@@ -263,23 +263,6 @@ const CommunityDetail: React.FC = () => {
         {/* Color accent top bar */}
         <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${detailColor}, ${detailColor}88, ${detailColor})` }} />
 
-        {/* Join banner for non-members */}
-        {!hasJoined && user && (
-          <div className="mx-4 mt-4 px-4 py-3 rounded-2xl flex items-center gap-3 text-sm" style={{ background: `${detailColor}10`, border: `1px solid ${detailColor}20` }}>
-            <FaUserPlus style={{ color: detailColor }} size={16} />
-            <span className="flex-1 text-slate-600">
-              You're viewing <strong>{moduleData.title}</strong> as a visitor. Join to access all features.
-            </span>
-            <button
-              onClick={() => navigate(`/community/${moduleIdClean}/join`)}
-              className="px-4 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-[1.02] shadow cursor-pointer whitespace-nowrap"
-              style={{ background: detailColor }}
-            >
-              Join Now
-            </button>
-          </div>
-        )}
-
         <div className="content-wrapper animate-fade-in" key={activeTab}>
           {renderTabContent()}
         </div>
