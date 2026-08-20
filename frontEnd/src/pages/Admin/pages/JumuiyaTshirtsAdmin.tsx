@@ -289,24 +289,11 @@ export default function JumuiyaTshirtsAdmin() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {isGlobalAdmin ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase text-slate-400">Jumuiya:</span>
-              <select
-                value={selectedJumuiya}
-                onChange={(e) => setSelectedJumuiya(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 shadow-sm"
-              >
-                {JUMUIYA_LIST.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
-              </select>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50/80 border border-indigo-200 rounded-xl">
-              <Shield className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm font-bold text-indigo-900">{activeJumuiyaInfo.name}</span>
-              <span className="text-xs font-medium bg-indigo-200/60 text-indigo-800 px-2 py-0.5 rounded-full">Vice-Chair</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50/80 border border-indigo-200 rounded-xl">
+            <Shield className="w-4 h-4 text-indigo-600" />
+            <span className="text-sm font-bold text-indigo-900">{activeJumuiyaInfo.name}</span>
+            <span className="text-xs font-medium bg-indigo-200/60 text-indigo-800 px-2 py-0.5 rounded-full">Jumuiya Officer</span>
+          </div>
           <button onClick={refreshAll} className="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition border border-slate-200" title="Refresh">
             <RefreshCw className={`w-4 h-4 ${loadingOrders ? 'animate-spin' : ''}`} />
           </button>
