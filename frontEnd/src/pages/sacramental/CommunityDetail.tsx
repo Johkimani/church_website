@@ -88,13 +88,6 @@ const CommunityDetail: React.FC = () => {
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
   const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
 
-    const params = new URLSearchParams(location.search);
-    const tabFromUrl = params.get('tab') as TabType | null;
-    const validTab = tabFromUrl && TAB_ORDER.includes(tabFromUrl);
-    if (validTab) setActiveTab(tabFromUrl);
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [location.search]);
-
   useEffect(() => {
     if (isSidebarOpen) {
       document.body.style.overflow = 'hidden';
