@@ -44,6 +44,41 @@ const JUMUIYA_LIST = [
   { id: 'st-monica', name: 'St. Monica', color: '#dc2626', badge: 'bg-red-50 text-red-700 border-red-200' },
 ];
 
+const STATUSES = ['all', 'pending', 'replied', 'approved', 'rejected', 'unmask_requested'] as const;
+
+const STATUS_META: Record<string, { icon: any; active: string; inactive: string }> = {
+  all:                { icon: Filter,      active: 'bg-slate-800 text-white border-slate-800 shadow-md',          inactive: 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50' },
+  pending:            { icon: Clock,       active: 'bg-amber-600 text-white border-amber-600 shadow-md',          inactive: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50' },
+  replied:            { icon: Reply,       active: 'bg-blue-600 text-white border-blue-600 shadow-md',            inactive: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50' },
+  approved:           { icon: CheckCircle, active: 'bg-emerald-600 text-white border-emerald-600 shadow-md',      inactive: 'bg-white text-emerald-700 border-emerald-700 hover:bg-emerald-50' },
+  rejected:           { icon: XCircle,     active: 'bg-rose-600 text-white border-rose-600 shadow-md',            inactive: 'bg-white text-rose-700 border-rose-700 hover:bg-rose-50' },
+  unmask_requested:   { icon: Shield,      active: 'bg-purple-600 text-white border-purple-600 shadow-md',        inactive: 'bg-white text-purple-700 border-purple-700 hover:bg-purple-50' },
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  replied: 'bg-blue-50 text-blue-700 border-blue-200',
+  approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+  unmask_requested: 'bg-purple-50 text-purple-700 border-purple-200',
+};
+
+const CATEGORIES = ['general', 'worship', 'progress', 'feedback', 'other', 'officials', 'jumuiya', 'members', 'ideas', 'requests', 'events'] as const;
+
+const CATEGORY_COLORS: Record<string, string> = {
+  general: 'bg-slate-100 text-slate-600 border-slate-200',
+  worship: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+  progress: 'bg-teal-50 text-teal-600 border-teal-200',
+  feedback: 'bg-amber-50 text-amber-600 border-amber-200',
+  other: 'bg-slate-100 text-slate-500 border-slate-200',
+  officials: 'bg-orange-50 text-orange-600 border-orange-200',
+  jumuiya: 'bg-cyan-50 text-cyan-600 border-cyan-200',
+  members: 'bg-green-50 text-green-600 border-green-200',
+  ideas: 'bg-violet-50 text-violet-600 border-violet-200',
+  requests: 'bg-rose-50 text-rose-600 border-rose-200',
+  events: 'bg-yellow-50 text-yellow-600 border-yellow-200',
+};
+
 export default function JumuiyaSuggestionsAdmin() {
   const { user, isAuthenticated } = useAuth();
   const userRoles = useMemo(() => {
@@ -165,35 +200,25 @@ export default function JumuiyaSuggestionsAdmin() {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Status Filter */}
+              {/* Status Filter Pill Section — ORIGINAL ADMINSUGGESTIONS DESIGN */}
               <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${
-                    statusFilter === 'all'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-200 text-slate-600 hover:bg-indigo-100'
-                  }`}
-                >
-                  All <span className="text-xs ml-1">({suggestions.length})</span>
-                </button>
-                {['pending', 'replied', 'approved', 'rejected', 'unmask_requested'].map(s => {
+                {STATUSES.map(s => {
                   const count = countByStatus(s);
                   return (
                     <button
                       key={s}
                       onClick={() => setStatusFilter(s as any)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${
+                      className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${
                         statusFilter === s ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-indigo-100'
                       }`}
                     >
-                      {s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} <span className="text-xs ml-1">({count})</span>
+                      {s === 'all' ? 'All' : s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} <span className="text-xs ml-1">({count})</span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Search */}
+              {/* Search — ORIGINAL ADMINSUGGESTIONS DESIGN */}
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -205,47 +230,42 @@ export default function JumuiyaSuggestionsAdmin() {
                 />
               </div>
 
-              {/* Suggestions List */}
+              {/* Suggestions List — using original AdminSuggestions card layout */}
               <div className="space-y-4" aria-live="polite">
                 {filteredSuggestions.map((s) => {
                   const isAnonymous = !s.name && !s.email;
                   const fullName = `${s.member_first_name || ''} ${s.member_last_name || ''}`.trim();
                   const displayName = isAnonymous ? 'Anonymous' : fullName || s.name || 'Unknown';
-                  const statusColor: Record<string, string> = {
-                    pending: 'bg-amber-100 text-amber-700 border-amber-200',
-                    replied: 'bg-blue-100 text-blue-700 border-blue-200',
-                    approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                    rejected: 'bg-rose-100 text-rose-700 border-rose-200',
-                    unmask_requested: 'bg-purple-100 text-purple-700 border-purple-200',
+                  const statusInfo: Record<string, { color: string; label: string }> = {
+                    pending: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Pending' },
+                    replied: { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Replied' },
+                    approved: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Approved' },
+                    rejected: { color: 'bg-rose-100 text-rose-700 border-rose-200', label: 'Rejected' },
+                    unmask_requested: { color: 'bg-purple-100 text-purple-700 border-purple-200', label: 'Unmask Pending' },
                   };
-                  const statusLabel: Record<string, string> = {
-                    pending: 'Pending',
-                    replied: 'Replied',
-                    approved: 'Approved',
-                    rejected: 'Rejected',
-                    unmask_requested: 'Unmask Pending',
-                  };
+                  const statusColor = statusInfo[s.status]?.color || 'bg-slate-100 text-slate-400';
+                  const statusLabel = statusInfo[s.status]?.label || s.status;
 
                   return (
                     <div
                       key={s.id}
-                      className="bg-slate-50 rounded-xl border border-slate-200 p-5 hover:bg-white transition-shadow"
+                      className="bg-slate-50 rounded-xl border border-slate-200 p-5 hover:bg-white transition-shadow max-w-md"
                     >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-3 h-3 rounded-full ${
+                        <div className="w-3 h-3 rounded-full ${
                           isAnonymous ? 'bg-slate-400' : 'bg-indigo-600'
-                        } shrink-0`} />
+                        } shrink-0" />
                         <div>
                           <p className="text-slate-700 font-medium">{displayName}</p>
                           <p className="text-xs text-slate-500">{s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}</p>
                         </div>
                       </div>
 
-                      <p className="text-slate-600 whitespace-pre-wrap text-sm line-clamp-3">{s.suggestion}</p>
+                      <p className="text-slate-600 whitespace-pre-wrap text-sm line-clamp-3 line-clamp max-w-none">{s.suggestion}</p>
 
                       <div className="flex items-center gap-2 mt-3 text-xs text-slate-500">
-                        <span className={`px-2 py-1 rounded-full ${statusColor[s.status] || 'bg-slate-100 text-slate-400'}`}>
-                          {statusLabel[s.status]}
+                        <span className={`px-2 py-1 rounded-full ${statusColor}`}>
+                          {statusLabel}
                         </span>
                         {s.category && <span className="mx-2 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">#{s.category}</span>}
                         {s.member_jumuiya && <span className="text-indigo-500 text-xs">• {s.member_jumuiya}</span>}
