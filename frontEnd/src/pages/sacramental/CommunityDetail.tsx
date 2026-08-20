@@ -77,18 +77,20 @@ const CommunityDetail: React.FC = () => {
 
   const moduleIdClean = moduleId ? moduleId.toLowerCase().replace(/[^a-z0-9-]/g, '-') : '';
 
-  const { data: serverModuleData, isLoading, isError } = useQuery({
+  const contextFallback = moduleIdClean ? getModuleById(moduleIdClean) : undefined;
+
+  const { data: serverModuleData, isLoading } = useQuery({
     queryKey: ['community', moduleIdClean],
     queryFn: async () => {
       const res = await apiClient.get(`/community-view/${moduleIdClean}`);
       if (res.data?.isMissing || res.data?.isServerError) throw new Error('Not available');
       return res.data;
     },
+    initialData: () => contextFallback,
     retry: 1,
     staleTime: 300000,
   });
 
-  const contextFallback = moduleIdClean ? getModuleById(moduleIdClean) : undefined;
   const moduleData: CommunityModule | undefined = serverModuleData || contextFallback;
 
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
@@ -146,7 +148,7 @@ const CommunityDetail: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (!moduleData && isLoading) {
     return (
       <div className="detail-page" style={{ '--jumuiya-color': detailColor } as React.CSSProperties}>
         <div className="flex-1 flex items-center justify-center min-h-[60vh]">
