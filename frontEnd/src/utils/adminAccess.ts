@@ -138,7 +138,6 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
       case "JUMUIYA_VICE_CHAIRPERSON":
         prefixes.add("/admin/jumuiya-tshirts");
         prefixes.add("/admin/suggestions");
-        prefixes.add("/admin/suggestion-bin");
         break;
       case "JUMUIYA_SECRETARY":
         prefixes.add("/admin/secretary-dashboard");

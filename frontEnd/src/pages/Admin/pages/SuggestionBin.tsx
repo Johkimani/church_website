@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 export default function SuggestionBin() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
-  const isChair = userRoles.some((r: any) => r === 'csa_chair');
+  const isChair = userRoles.some((r: any) => ['csa_chair', 'jumuiya_chairperson'].includes(r));
 
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

@@ -25,13 +25,14 @@ const SUGGESTION_ADMIN_ROLES = [
   "jumuiya_chairperson", "jumuiya_vice_chairperson",
 ];
 const suggestionAdminGate = requireRole(...SUGGESTION_ADMIN_ROLES);
+const suggestionBinGate = requireRole("csa_chair", "jumuiya_chairperson");
 
 router.get("/", verifyToken, suggestionAdminGate, listSuggestions);
 
-router.get("/bin", verifyToken, suggestionAdminGate, getBin);
-router.delete("/bin/clear", verifyToken, suggestionAdminGate, clearBin);
-router.delete("/bin/:id", verifyToken, suggestionAdminGate, permanentDelete);
-router.patch("/bin/:id/restore", verifyToken, suggestionAdminGate, restoreFromBin);
+router.get("/bin", verifyToken, suggestionBinGate, getBin);
+router.delete("/bin/clear", verifyToken, suggestionBinGate, clearBin);
+router.delete("/bin/:id", verifyToken, suggestionBinGate, permanentDelete);
+router.patch("/bin/:id/restore", verifyToken, suggestionBinGate, restoreFromBin);
 
 router.get("/unmask/:role/:token", getRoleUnmaskRequest);
 router.post("/unmask/:role/:token/respond", respondRoleUnmask);
