@@ -22,9 +22,9 @@ const InlineLoader: React.FC<InlineLoaderProps> = ({ message, size = 'medium' })
     return (
         <div className="flex flex-col items-center justify-center gap-3">
             <div className={`loader-core relative ${sizeClasses[size]} flex items-center justify-center`}>
-                <div className="spinner-ring ring-1 absolute inset-0"></div>
-                <div className="spinner-ring ring-2 absolute inset-0" style={{ width: '80%', height: '80%', margin: 'auto' }}></div>
-                <div className="spinner-ring ring-3 absolute inset-0" style={{ width: '60%', height: '60%', margin: 'auto' }}></div>
+                <div className="spinner-ring loader-ring-outer absolute inset-0"></div>
+                <div className="spinner-ring loader-ring-middle absolute inset-0" style={{ width: '80%', height: '80%', margin: 'auto' }}></div>
+                <div className="spinner-ring loader-ring-inner absolute inset-0" style={{ width: '60%', height: '60%', margin: 'auto' }}></div>
                 <div className={`loader-icon ${iconSizes[size]}`}></div>
             </div>
             {message && (

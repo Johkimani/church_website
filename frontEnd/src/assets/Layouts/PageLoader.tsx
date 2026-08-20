@@ -10,9 +10,9 @@ const PageLoader: React.FC<PageLoaderProps> = ({ message = 'Loading...', fullScr
     return (
         <div className={`premium-loader-container ${fullScreen ? 'fullscreen' : ''}`}>
             <div className="loader-core">
-                <div className="spinner-ring ring-1"></div>
-                <div className="spinner-ring ring-2"></div>
-                <div className="spinner-ring ring-3"></div>
+                <div className="spinner-ring loader-ring-outer"></div>
+                <div className="spinner-ring loader-ring-middle"></div>
+                <div className="spinner-ring loader-ring-inner"></div>
                 <div className="loader-icon"></div>
             </div>
             <div className="loader-text-wrap">
