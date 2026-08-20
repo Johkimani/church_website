@@ -8,7 +8,7 @@ const router = Router();
 
 const JUMUIYA_ROLES = [
   "jumuiya_secretary", "jumuiya_chairperson", "jumuiya_os",
-  "csa_secretary", "csa_chair", "jumuiya_coordinator",
+  "jumuiya_vice_chairperson",
 ];
 
 const getUserRoles = (req) => {
@@ -16,11 +16,6 @@ const getUserRoles = (req) => {
   return Array.isArray(req.user.role)
     ? req.user.role
     : req.user.role ? [req.user.role] : [];
-};
-
-const isGlobalAdmin = (req) => {
-  const roles = getUserRoles(req).map(r => String(r).toLowerCase().trim());
-  return roles.some(r => ["csa_secretary", "csa_chair", "jumuiya_coordinator"].includes(r));
 };
 
 const normalizeNotification = (row) => ({
@@ -45,16 +40,10 @@ router.get(
         return res.status(400).json({ error: "Jumuiya ID not found on your account" });
       }
 
-      const global = isGlobalAdmin(req);
-
-      const { rows } = global
-        ? await db.query(
-            `SELECT * FROM jumuiya_notifications ORDER BY posted_at DESC`
-          )
-        : await db.query(
-            `SELECT * FROM jumuiya_notifications WHERE jumuiya_id = $1 ORDER BY posted_at DESC`,
-            [String(jumuiyaId)]
-          );
+      const { rows } = await db.query(
+        `SELECT * FROM jumuiya_notifications WHERE jumuiya_id = $1 ORDER BY posted_at DESC`,
+        [String(jumuiyaId)]
+      );
 
       return res.json(rows.map(normalizeNotification));
     } catch (err) {
@@ -126,7 +115,7 @@ router.patch(
       }
 
       const notif = existing[0];
-      if (!isGlobalAdmin(req) && String(notif.jumuiya_id) !== String(jumuiyaId)) {
+      if (String(notif.jumuiya_id) !== String(jumuiyaId)) {
         return res.status(404).json({ error: "Notification not found" });
       }
 
@@ -169,7 +158,7 @@ router.delete(
       }
 
       const notif = existing[0];
-      if (!isGlobalAdmin(req) && String(notif.jumuiya_id) !== String(jumuiyaId)) {
+      if (String(notif.jumuiya_id) !== String(jumuiyaId)) {
         return res.status(404).json({ error: "Notification not found" });
       }
 
