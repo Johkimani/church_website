@@ -68,14 +68,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   events: 'bg-yellow-50 text-yellow-600 border-yellow-200',
 };
 
-const JUMUIYA_LIST = [
-  { id: 'st-anthony', name: 'St. Anthony', color: '#8b5cf6' },
-  { id: 'st-augustine', name: 'St. Augustine', color: '#3b82f6' },
-  { id: 'st-catherine', name: 'St. Catherine', color: '#800000' },
-  { id: 'st-dominic', name: 'St. Dominic', color: '#64748b' },
-  { id: 'st-elizabeth', name: 'St. Elizabeth', color: '#059669' },
-  { id: 'st-maria-goretti', name: 'St. Maria Goretti', color: '#0284c7' },
-  { id: 'st-monica', name: 'St. Monica', color: '#dc2626' },
+const JUMUIYA_OPTIONS = [
+  { id: '', name: 'All Jumuiyas' },
+  { id: 'st-anthony', name: 'St. Anthony' },
+  { id: 'st-augustine', name: 'St. Augustine' },
+  { id: 'st-catherine', name: 'St. Catherine' },
+  { id: 'st-dominic', name: 'St. Dominic' },
+  { id: 'st-elizabeth', name: 'St. Elizabeth' },
+  { id: 'st-maria-goretti', name: 'St. Maria Goretti' },
+  { id: 'st-monica', name: 'St. Monica' },
 ];
 
 export default function JumuiyaSuggestionsAdmin() {
@@ -86,24 +87,24 @@ export default function JumuiyaSuggestionsAdmin() {
     return roles.map((r: any) => String(r).toLowerCase().trim());
   }, [user?.role]);
 
-  const isVC = userRoles.some((r: any) =>
-    [
-      'jumuiya_vice_chairperson',
-      'jumuiya_chairperson',
-      'csa_vice_chair',
-      'csa_chair',
-      'csa_secretary',
-      'jumuiya_coordinator',
-      'admin',
-      'developer',
-    ].includes(r)
+  const userJumuiyaId = user?.jumuiya_id || '';
+  const [selectedJumuiya, setSelectedJumuiya] = useState<string>(userJumuiyaId);
+
+  // Sync selectedJumuiya if user's jumuiya becomes available
+  useEffect(() => {
+    if (userJumuiyaId && !selectedJumuiya) {
+      setSelectedJumuiya(userJumuiyaId);
+    }
+  }, [userJumuiyaId]);
+
+  const isGlobalRole = userRoles.some((r: any) =>
+    ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'admin', 'developer'].includes(r)
   );
 
-  const userJumuiyaId = user?.jumuiya_id || '';
-  const currentJumuiya = JUMUIYA_LIST.find(
-    (j) => j.id.toLowerCase() === String(userJumuiyaId).toLowerCase()
+  const matchedJumuiya = JUMUIYA_OPTIONS.find(
+    (j) => j.id && j.id.toLowerCase() === String(selectedJumuiya || userJumuiyaId).toLowerCase()
   );
-  const jumuiyaDisplayName = currentJumuiya?.name || userJumuiyaId || 'Jumuiya';
+  const displayName = matchedJumuiya ? matchedJumuiya.name : (selectedJumuiya || 'Jumuiya');
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +120,8 @@ export default function JumuiyaSuggestionsAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const params = userJumuiyaId ? { jumuiya_id: userJumuiyaId } : {};
+      const activeJumuiya = selectedJumuiya || userJumuiyaId;
+      const params = activeJumuiya ? { jumuiya_id: activeJumuiya } : {};
       const res = await apiClient.get('/suggestions', { params });
       const data = Array.isArray(res.data?.data) ? res.data.data : [];
       const sortedData = data.sort(
@@ -136,7 +138,7 @@ export default function JumuiyaSuggestionsAdmin() {
 
   useEffect(() => {
     loadSuggestions();
-  }, [userJumuiyaId]);
+  }, [selectedJumuiya, userJumuiyaId]);
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this suggestion?')) {
@@ -218,22 +220,33 @@ export default function JumuiyaSuggestionsAdmin() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-white/40 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full blur-3xl -mr-32 -mt-32 opacity-40 pointer-events-none"></div>
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-              {jumuiyaDisplayName} Suggestions
+              {displayName} Suggestions
             </h2>
-            {currentJumuiya && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                <Sparkles size={12} />
-                Jumuiya Portal
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <Sparkles size={12} />
+              Jumuiya Portal
+            </span>
           </div>
           <p className="text-slate-500 font-medium uppercase tracking-wider text-xs">
-            Manage feedback, ideas, and suggestions from {jumuiyaDisplayName} members
+            Manage community feedback, ideas, and suggestions for {displayName}
           </p>
         </div>
-        <div className="flex items-center gap-3 relative z-10">
+        <div className="flex items-center gap-3 relative z-10 flex-wrap">
+          {isGlobalRole && (
+            <select
+              value={selectedJumuiya}
+              onChange={(e) => setSelectedJumuiya(e.target.value)}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer"
+            >
+              {JUMUIYA_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.name}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             onClick={loadSuggestions}
             disabled={loading}
@@ -260,7 +273,7 @@ export default function JumuiyaSuggestionsAdmin() {
         />
       </div>
 
-      {/* Status Filter Pills */}
+      {/* Status Filter Buttons (All, Pending, Replied, Approved, Rejected, Unmask Requested) */}
       <div className="flex flex-wrap gap-2">
         {STATUSES.map((s) => {
           const meta = STATUS_META[s];
@@ -326,15 +339,13 @@ export default function JumuiyaSuggestionsAdmin() {
                       </span>
                     )}
                   </div>
-                  {isVC && (
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                      title="Delete suggestion"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    title="Delete suggestion"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
 
                 <p className="text-slate-800 text-lg font-medium leading-relaxed mb-6 italic">
@@ -345,7 +356,7 @@ export default function JumuiyaSuggestionsAdmin() {
                   <div className="mb-6 p-4 bg-blue-50 rounded-2xl border border-blue-100">
                     <div className="flex items-center gap-2 text-blue-600 text-xs font-bold uppercase tracking-wider mb-2">
                       <Reply size={14} />
-                      Reply from Jumuiya Admin
+                      Reply from Admin
                     </div>
                     <p className="text-slate-700 text-sm">{item.reply}</p>
                     {item.replied_at && (
@@ -383,7 +394,7 @@ export default function JumuiyaSuggestionsAdmin() {
                       </span>
                       <span className="text-xs text-slate-300">|</span>
                       <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">
-                        {item.member_jumuiya || jumuiyaDisplayName}
+                        {item.member_jumuiya || displayName}
                       </span>
                     </div>
                   ) : (
@@ -449,21 +460,18 @@ export default function JumuiyaSuggestionsAdmin() {
                         <Reply size={14} />
                         Reply
                       </button>
-                      {isVC && (
-                        <select
-                          value={item.category || 'general'}
-                          onChange={(e) => handleCategoryChange(item.id, e.target.value)}
-                          className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold outline-none focus:border-indigo-400 transition-all cursor-pointer"
-                        >
-                          {CATEGORIES.map((c) => (
-                            <option key={c} value={c}>
-                              {c.charAt(0).toUpperCase() + c.slice(1)}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {isVC &&
-                        !item.name &&
+                      <select
+                        value={item.category || 'general'}
+                        onChange={(e) => handleCategoryChange(item.id, e.target.value)}
+                        className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold outline-none focus:border-indigo-400 transition-all cursor-pointer"
+                      >
+                        {CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c.charAt(0).toUpperCase() + c.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                      {!item.name &&
                         !item.email &&
                         item.status !== 'unmask_requested' && (
                           <button
@@ -501,7 +509,7 @@ export default function JumuiyaSuggestionsAdmin() {
           <p className="text-slate-500 mt-2">
             {statusFilter !== 'all'
               ? `No suggestions with status "${statusFilter.replace(/_/g, ' ')}".`
-              : `When ${jumuiyaDisplayName} members share ideas, they'll appear here.`}
+              : `When ${displayName} members share ideas, they'll appear here.`}
           </p>
         </div>
       )}
