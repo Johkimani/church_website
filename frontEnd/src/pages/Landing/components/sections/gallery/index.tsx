@@ -137,7 +137,7 @@ const GallerySection: React.FC = () => {
 
             {/* Category Chips */}
             <div className="flex flex-wrap justify-center gap-2">
-              {['All', 'general', 'choir', 'youth'].map(cat => (
+              {['All', 'general', 'choir', 'jumuiya'].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setFilterCategory(cat)}

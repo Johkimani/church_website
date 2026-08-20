@@ -210,12 +210,7 @@ export default function PublicHistoryView() {
           </div>
         )}
 
-        {/* Footer Info */}
-        <div className="mt-16 text-center border-t border-gray-100 pt-8 pb-12">
-           <p className="text-sm text-gray-400 font-medium">
-             &copy; {new Date().getFullYear()} Church Symbols Association. All rights reserved.
-           </p>
-        </div>
+
       </div>
     </div>
   );
