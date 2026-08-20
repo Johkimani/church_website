@@ -91,6 +91,13 @@ const CommunityDetail: React.FC = () => {
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
   const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
 
+  const setTabWithUrl = (tab: TabType) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(location.search);
+    params.set('tab', tab);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+  };
+
   useEffect(() => {
     if (isSidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -244,7 +251,6 @@ const CommunityDetail: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
-          (
             <button
               className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg cursor-pointer mb-2"
               style={{ background: detailColor }}
@@ -252,7 +258,6 @@ const CommunityDetail: React.FC = () => {
             >
               <FaUserPlus size={14} /> Join This Community
             </button>
-          )}
           <button
             className="btn-premium"
             onClick={() => navigate('/community')}
