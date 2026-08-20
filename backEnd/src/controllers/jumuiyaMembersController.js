@@ -2030,6 +2030,10 @@ export const getPendingSelfRegistrations = async (req, res) => {
        JOIN member_imports mi ON mi.id = ir.import_id
        WHERE ir.status = 'pending'
          AND mi.jumuiya_id = $1
+         AND NOT EXISTS (
+           SELECT 1 FROM members m
+           WHERE m.member_id = ir.cleaned_reg_number
+         )
        ORDER BY ir.created_at ASC`,
       [jumuiyaId]
     );
