@@ -19,6 +19,7 @@ const PUBLIC_SAFE_KEYS = new Set([
   "explore_officials_image",
   "explore_background_image",
   "gallery_items",
+  "semester_default_image",
 ]);
 
 // Keys that the settings write endpoint will accept. Anything else is dropped,
@@ -38,6 +39,7 @@ const WRITE_ALLOWED_KEYS = new Set([
   "explore_officials_image",
   "explore_background_image",
   "gallery_items",
+  "semester_default_image",
 ]);
 
 // GET all settings — only public-safe keys are returned to anonymous clients.

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import activitiesService from "../../../api/activitiesServices";
-import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, CalendarDays, CalendarClock, History, Image, Upload } from "lucide-react";
+import apiService from "../../../services/api";
+import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, CalendarDays, CalendarClock, History, Image, Upload, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -100,13 +101,52 @@ export default function SemesterActivitiesAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
 
-  useEffect(() => { load(); }, []);
+  // Default image state
+  const [defaultImage, setDefaultImage] = useState<string | null>(null);
+  const [defaultImageUploading, setDefaultImageUploading] = useState(false);
+  const defaultImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => { load(); loadDefaultImage(); }, []);
+
+  async function loadDefaultImage() {
+    try {
+      const settings = await apiService.getPublicSettings();
+      setDefaultImage(settings?.semester_default_image || null);
+    } catch { /* ignore */ }
+  }
 
   // Revoke object URL previews when they change or the component unmounts
   useEffect(() => {
     const url = formPreview;
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [formPreview]);
+
+  async function handleUploadDefaultImage(file: File) {
+    setDefaultImageUploading(true);
+    try {
+      const result = await activitiesService.uploadSemesterDefaultImage(file);
+      setDefaultImage(result.image_url);
+      toast.success("Default image updated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "Upload failed");
+    } finally {
+      setDefaultImageUploading(false);
+    }
+  }
+
+  async function handleRemoveDefaultImage() {
+    if (!confirm("Remove the default event image?")) return;
+    setDefaultImageUploading(true);
+    try {
+      await activitiesService.removeSemesterDefaultImage();
+      setDefaultImage(null);
+      toast.success("Default image removed");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "Failed to remove");
+    } finally {
+      setDefaultImageUploading(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -308,6 +348,60 @@ export default function SemesterActivitiesAdmin() {
           <div>
             <p className="text-2xl font-black text-slate-800 leading-none">{pastCount}</p>
             <p className="text-xs text-slate-500 font-medium mt-1">Past</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Default Event Image Panel */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-semibold text-slate-800 text-sm">Default Event Image</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Shown on events that have no custom image uploaded.</p>
+          </div>
+          {defaultImage && (
+            <button
+              onClick={handleRemoveDefaultImage}
+              disabled={defaultImageUploading}
+              className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <X size={13} /> Remove
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative w-32 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+            {defaultImage ? (
+              <img src={defaultImage} alt="Default event" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1">
+                <Image size={20} />
+                <span className="text-[9px] font-semibold">None set</span>
+              </div>
+            )}
+            {defaultImageUploading && (
+              <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                <RefreshCw size={16} className="animate-spin text-indigo-500" />
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg cursor-pointer transition-colors w-fit">
+              <Upload size={13} />
+              {defaultImage ? "Replace Image" : "Set Default Image"}
+              <input
+                ref={defaultImageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleUploadDefaultImage(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <p className="text-[10px] text-slate-400">Max 10 MB · JPG, PNG, WebP</p>
           </div>
         </div>
       </div>

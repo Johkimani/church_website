@@ -37,6 +37,8 @@ import {
   deactivateSemesterActivity,
   uploadSemesterImage,
   removeSemesterImage,
+  uploadSemesterDefaultImage,
+  removeSemesterDefaultImage,
 } from "../../controllers/activitiesController.js";
 
 import {
@@ -113,6 +115,18 @@ router.patch("/semester/:id", ...requireAdmin('update', 'semester_activities'), 
 router.delete("/semester/:id", ...requireAdmin('delete', 'semester_activities'), deleteSemesterActivity);
 
 // Semester event image (upload / remove)
+// Default image routes MUST come before :id routes to avoid route collision
+router.post(
+  "/semester/default-image",
+  ...requireAdmin('update', 'semester_activities'),
+  uploadMiddleware,
+  uploadSemesterDefaultImage
+);
+router.delete(
+  "/semester/default-image",
+  ...requireAdmin('update', 'semester_activities'),
+  removeSemesterDefaultImage
+);
 router.post(
   "/semester/:id/image",
   ...requireAdmin('update', 'semester_activities'),

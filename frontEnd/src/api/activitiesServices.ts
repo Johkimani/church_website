@@ -6,6 +6,9 @@ function clearPublicCache() {
     "csa_cache_activities/semester",
     "csa_cache_activities/weekly",
     "csa_cache_public_activities",
+    "csa_cache_public_activities_v3",
+    "csa_cache_public_activities_v4",
+    "csa_cache_settings",
   ];
   keys.forEach((k) => localStorage.removeItem(k));
 }
@@ -105,6 +108,24 @@ const activitiesService = {
     const res = await apiClient.delete(`/admin/activities/semester/${id}/image`);
     clearPublicCache();
     return res.data.data;
+  },
+
+  /** Upload (or replace) the global default image for semester events. */
+  uploadSemesterDefaultImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await apiClient.post("/admin/activities/semester/default-image", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    clearPublicCache();
+    return res.data.data as { image_url: string };
+  },
+
+  /** Remove the global default image for semester events. */
+  removeSemesterDefaultImage: async () => {
+    const res = await apiClient.delete("/admin/activities/semester/default-image");
+    clearPublicCache();
+    return res.data;
   },
 
   activateSemester: async (id: number) => {

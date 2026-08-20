@@ -511,6 +511,37 @@ export const removeSemesterImage = async (req, res) => {
   }
 };
 
+// Upload the global default image for semester events (shown when no per-event image is set)
+export const uploadSemesterDefaultImage = async (req, res) => {
+  if (!req.file?.path) {
+    return res.status(400).json({ success: false, error: "No image file uploaded" });
+  }
+
+  try {
+    const imageUrl = req.file.path; // Cloudinary secure_url via multer
+    await db.query(
+      `INSERT INTO system_settings (key, value, updated_at) VALUES ($1, $2, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
+      ["semester_default_image", imageUrl]
+    );
+    res.json({ success: true, data: { image_url: imageUrl } });
+  } catch (error) {
+    console.error("Error uploading semester default image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Remove the global default image for semester events
+export const removeSemesterDefaultImage = async (req, res) => {
+  try {
+    await db.query(`DELETE FROM system_settings WHERE key = $1`, ["semester_default_image"]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error removing semester default image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export const deleteSemesterActivity = async (req, res) => {
   const { id } = req.params;
 

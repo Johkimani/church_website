@@ -273,11 +273,25 @@ class ApiService {
   }
 
   async getWeeklyActivities(): Promise<any[]> {
-    return this.fetchTableData('activities/weekly');
+    // bypass the inner fetchTableData cache so only useCachedData manages caching
+    return this.fetchTableData('activities/weekly', true);
   }
 
   async getSemesterActivities(): Promise<any[]> {
-    return this.fetchTableData('activities/semester');
+    // bypass the inner fetchTableData cache so only useCachedData manages caching
+    return this.fetchTableData('activities/semester', true);
+  }
+
+  /** Fetch public-safe settings (includes semester_default_image). Cached for 5 minutes. */
+  async getPublicSettings(): Promise<Record<string, string>> {
+    return this.cacheGet('settings', 300_000, async () => {
+      try {
+        const { data } = await apiClient.get('/settings');
+        return data || {};
+      } catch {
+        return {};
+      }
+    });
   }
 
   /**

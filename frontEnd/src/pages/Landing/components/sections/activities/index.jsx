@@ -186,7 +186,7 @@ function WeeklyCard({ activity, onBook, bookingState }) {
   );
 }
 
-function SemesterCard({ event, onBook, bookingState }) {
+function SemesterCard({ event, onBook, bookingState, defaultImage = null }) {
   const { user } = useAuth();
   const rawDate = event?.date_time ? String(event.date_time).replace(" ", "T") : null;
   const dt = rawDate ? new Date(rawDate) : null;
@@ -195,6 +195,10 @@ function SemesterCard({ event, onBook, bookingState }) {
 
   const { isValid, days, hours, minutes, seconds } = useCountdown(isDateValid ? dt : null);
   const timerText = !isValid ? "Date TBA" : isPast ? "Event Concluded" : days > 0 ? `Starts in ${days}d ${hours}h ${minutes}m` : `Starts in ${hours}h ${minutes}m ${seconds}s`;
+
+  // Use event's custom image, or fall back to admin-chosen default (if set)
+  const displayImage = event.image_url || defaultImage || null;
+
 
   const renderBookButton = () => {
     if (!user) return <span className="text-[9px] text-slate-400 italic">Login to book</span>;
@@ -230,11 +234,11 @@ function SemesterCard({ event, onBook, bookingState }) {
         transition-all duration-500 p-4 sm:p-5 cursor-default overflow-hidden min-w-0 break-words flex flex-col justify-between`}
     >
       <div>
-        {/* Only display image if user actually uploaded one */}
-        {event.image_url && (
+        {/* Display image: event custom image, or admin-set default if configured */}
+        {displayImage && (
           <div className="w-full aspect-video sm:aspect-[16/9] max-h-48 overflow-hidden rounded-xl mb-4 bg-slate-100">
             <img
-              src={event.image_url}
+              src={displayImage}
               alt={event.title}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
@@ -494,8 +498,10 @@ const ActivitiesSection = () => {
   const navigate = useNavigate();
   const [bookingTarget, setBookingTarget] = useState(null); // { activity, type, existingBooking }
   const [userBookings, setUserBookings] = useState([]);
+  const [semesterDefaultImage, setSemesterDefaultImage] = useState(null);
+
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
-    'csa_cache_public_activities_v3',
+    'csa_cache_public_activities_v4',
     async () => {
       const [weeklyData, semesterData] = await Promise.all([
         apiService.getWeeklyActivities(),
@@ -508,6 +514,15 @@ const ActivitiesSection = () => {
 
   const weekly = activitiesData.weekly || [];
   const semester = activitiesData.semester || [];
+
+  // Fetch the admin-chosen default image for semester events
+  useEffect(() => {
+    apiService.getPublicSettings().then((settings) => {
+      if (settings?.semester_default_image) {
+        setSemesterDefaultImage(settings.semester_default_image);
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     refreshBookings();
@@ -623,6 +638,7 @@ const ActivitiesSection = () => {
                 <SemesterCard
                   key={e.id}
                   event={e}
+                  defaultImage={semesterDefaultImage}
                   bookingState={bookingMap[`semester:${e.id}`]}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
