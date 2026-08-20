@@ -76,18 +76,26 @@ function WeeklyCard({ activity, onBook, bookingState }) {
 
   const getNextWeeklyOccurrence = () => {
     const dayToIndex = {
-      Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+      sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
     };
-    const targetDayIndex = dayToIndex[(activity.day || "").trim()];
+    const key = String(activity?.day || "").trim().toLowerCase();
+    const targetDayIndex = dayToIndex[key];
     if (targetDayIndex === undefined) return null;
-    const timeStr = String(activity.time || "").trim();
+    const timeStr = String(activity?.time || "").trim();
     const now = new Date();
-    let hours = 0; let minutes = 0;
-    const m24 = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-    if (m24) { hours = Number(m24[1]); minutes = Number(m24[2]); } else {
-      const m12 = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (m12) { hours = Number(m12[1]); minutes = Number(m12[2]); const ampm = m12[3].toUpperCase(); if (ampm === "PM" && hours < 12) hours += 12; if (ampm === "AM" && hours === 12) hours = 0; }
+    let hours = 0;
+    let minutes = 0;
+
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (match) {
+      hours = Number(match[1]);
+      minutes = Number(match[2]);
+      const ampm = match[3]?.toUpperCase();
+      if (ampm === "PM" && hours < 12) hours += 12;
+      if (ampm === "AM" && hours === 12) hours = 0;
     }
+
     const daysUntil = (targetDayIndex - now.getDay() + 7) % 7;
     const target = new Date(now);
     target.setDate(now.getDate() + daysUntil);
@@ -134,14 +142,17 @@ function WeeklyCard({ activity, onBook, bookingState }) {
         hover:-translate-y-0.5 cursor-default group overflow-hidden min-w-0 break-words flex flex-col justify-between`}
     >
       <div>
-        <div className="w-full aspect-video sm:aspect-[16/9] max-h-56 overflow-hidden rounded-xl mb-4 bg-slate-100">
-          <img
-            src={imgSrc}
-            alt={activity.activity}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        </div>
+        {imgSrc && (
+          <div className="w-full aspect-video sm:aspect-[16/9] max-h-56 overflow-hidden rounded-xl mb-4 bg-slate-100">
+            <img
+              src={imgSrc}
+              alt={activity.activity}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+            />
+          </div>
+        )}
         <div className="flex items-start justify-between mb-3">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">{activity.day}</p>
@@ -151,13 +162,17 @@ function WeeklyCard({ activity, onBook, bookingState }) {
           </div>
         </div>
         <div className="space-y-1.5 text-xs font-medium text-slate-500">
-          <p className="flex items-center gap-2">
-            <Clock size={12} className="text-primary/60 shrink-0" /><span className="truncate">{activity.time}</span>
-          </p>
+          {activity.time && (
+            <p className="flex items-center gap-2">
+              <Clock size={12} className="text-primary/60 shrink-0" /><span className="truncate">{activity.time}</span>
+            </p>
+          )}
           <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
-          <p className="flex items-center gap-2">
-            <MapPin size={12} className="text-primary/60 shrink-0" /><span className="break-words">{activity.venue}</span>
-          </p>
+          {activity.venue && (
+            <p className="flex items-center gap-2">
+              <MapPin size={12} className="text-primary/60 shrink-0" /><span className="break-words">{activity.venue}</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -173,11 +188,13 @@ function WeeklyCard({ activity, onBook, bookingState }) {
 
 function SemesterCard({ event, onBook, bookingState }) {
   const { user } = useAuth();
-  const dt = new Date(event.date_time);
-  const isPast = dt < new Date();
+  const rawDate = event?.date_time ? String(event.date_time).replace(" ", "T") : null;
+  const dt = rawDate ? new Date(rawDate) : null;
+  const isDateValid = dt && !isNaN(dt.getTime());
+  const isPast = isDateValid ? dt < new Date() : false;
 
-  const { isValid, days, hours, minutes, seconds } = useCountdown(event.date_time ?? null);
-  const timerText = !isValid ? "No date set" : days > 0 ? `Starts in ${days}d ${hours}h ${minutes}m` : `Starts in ${hours}h ${minutes}m ${seconds}s`;
+  const { isValid, days, hours, minutes, seconds } = useCountdown(isDateValid ? dt : null);
+  const timerText = !isValid ? "Date TBA" : isPast ? "Event Concluded" : days > 0 ? `Starts in ${days}d ${hours}h ${minutes}m` : `Starts in ${hours}h ${minutes}m ${seconds}s`;
 
   const renderBookButton = () => {
     if (!user) return <span className="text-[9px] text-slate-400 italic">Login to book</span>;
@@ -210,26 +227,18 @@ function SemesterCard({ event, onBook, bookingState }) {
     <div
       className={`group bg-white rounded-2xl border border-slate-200/80
         hover:border-slate-300 hover:shadow-[0_12px_35px_-10px_rgba(0,0,0,0.08)]
-        transition-all duration-500 p-4 sm:p-5 cursor-default overflow-hidden min-w-0 break-words flex flex-col justify-between
-        ${isPast ? "opacity-60" : ""}`}
+        transition-all duration-500 p-4 sm:p-5 cursor-default overflow-hidden min-w-0 break-words flex flex-col justify-between`}
     >
       <div>
-        {event.image_url ? (
+        {/* Only display image if user actually uploaded one */}
+        {event.image_url && (
           <div className="w-full aspect-video sm:aspect-[16/9] max-h-48 overflow-hidden rounded-xl mb-4 bg-slate-100">
             <img
               src={event.image_url}
               alt={event.title}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
-            />
-          </div>
-        ) : (
-          <div className="w-full aspect-video sm:aspect-[16/9] max-h-48 overflow-hidden rounded-xl mb-4 bg-slate-100">
-            <img
-              src={DEFAULT_ACTIVITY_IMAGE}
-              alt={event.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
+              onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
             />
           </div>
         )}
@@ -256,17 +265,20 @@ function SemesterCard({ event, onBook, bookingState }) {
         <div className="space-y-1.5 text-xs font-medium text-slate-500">
           <p className="flex items-center gap-2">
             <Calendar size={12} className="text-primary/60 shrink-0" />
-            <span>{dt.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</span>
+            <span>{isDateValid ? dt.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : String(event.date_time || "Date TBA")}</span>
           </p>
-          <p className="flex items-center gap-2">
-            <Clock size={12} className="text-primary/60 shrink-0" />
-            <span>{dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
-          </p>
+          {isDateValid && (
+            <p className="flex items-center gap-2">
+              <Clock size={12} className="text-primary/60 shrink-0" />
+              <span>{dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+            </p>
+          )}
           <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
-          <p className="flex items-center gap-2">
-            <MapPin size={12} className="text-primary/60 shrink-0" />
-            <span className="break-words">{event.venue}</span>
-          </p>
+          {event.venue && (
+            <p className="flex items-center gap-2">
+              <MapPin size={12} className="text-primary/60 shrink-0" /><span className="break-words">{event.venue}</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -279,6 +291,7 @@ function SemesterCard({ event, onBook, bookingState }) {
     </div>
   );
 }
+
 
 function BookingModal({ activity, activityType, onClose, existingBooking, onPaymentComplete }) {
   const [step, setStep] = useState(existingBooking?.id ? "paying" : "book");
