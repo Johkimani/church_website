@@ -88,18 +88,6 @@ const CommunityDetail: React.FC = () => {
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
   const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
 
-  const setTabWithUrl = (tab: TabType) => {
-    setActiveTab(tab);
-    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-    const params = new URLSearchParams(location.search);
-    params.set('tab', tab);
-    navigate({
-      pathname: location.pathname,
-      search: params.toString() ? `?${params.toString()}` : '',
-    }, { replace: false });
-  };
-
-  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabFromUrl = params.get('tab') as TabType | null;
     const validTab = tabFromUrl && TAB_ORDER.includes(tabFromUrl);
