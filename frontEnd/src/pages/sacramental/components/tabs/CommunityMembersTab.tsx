@@ -15,17 +15,28 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
 
-  const { data: enrollments = [], isLoading } = useQuery({
+  const { data: enrollmentsData = { enrollments: [], stats: { total: 0, approved: 0, pending: 0, rejected: 0 } }, isLoading } = useQuery({
     queryKey: ['enrollments', moduleId],
     queryFn: async () => {
+      try {
+        const res = await apiClient.get(`/community-enrollment/${moduleId}`, { params: { status: 'all' } });
+        if (res.data && Array.isArray(res.data.enrollments)) {
+          return res.data;
+        }
+      } catch (e) {
+        // fallback
+      }
       const res = await apiClient.get('/enrollments');
-      return Array.isArray(res.data)
+      const items = Array.isArray(res.data)
         ? res.data.filter((e: any) => e.class_id === moduleId || e.module_id === moduleId)
         : [];
+      return { enrollments: items, stats: { total: items.length, approved: items.filter((x: any) => x.status === 'Approved').length, pending: items.filter((x: any) => x.status === 'Pending').length, rejected: items.filter((x: any) => x.status === 'Rejected').length } };
     },
     retry: 1,
-    staleTime: 300000,
+    staleTime: 60000,
   });
+
+  const enrollments = enrollmentsData.enrollments || [];
 
   const filtered = useMemo(() => {
     let result = enrollments as any[];

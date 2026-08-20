@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCachedData } from '../../../hooks/useCachedData';
 import { apiClient } from '../../../api/axiosInstance';
 import {
   Users,
-  Settings2,
-  Plus,
+  Clock,
   Search,
   ExternalLink,
   Loader2,
   RefreshCcw,
-  LayoutGrid
+  LayoutGrid,
+  CheckCircle2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ClickableCard from '../../../components/ClickableCard';
@@ -25,8 +25,17 @@ const COMMUNITY_IMAGES: Record<string, string> = {
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600";
 
+interface ModuleStats {
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+}
+
 export default function CommunityManager() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [moduleStats, setModuleStats] = useState<Record<string, ModuleStats>>({});
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const { data: modules = [], loading, refetch: loadModules } = useCachedData<any[]>(
     'csa_cache_hub_modules',
@@ -38,6 +47,42 @@ export default function CommunityManager() {
     },
     []
   );
+
+  // Fetch real enrollment stats for each module
+  useEffect(() => {
+    if (modules.length === 0) return;
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      const statsMap: Record<string, ModuleStats> = {};
+      await Promise.all(
+        modules.map(async (mod: any) => {
+          try {
+            const res = await apiClient.get(`/community-enrollment/${mod.id}`, {
+              params: { status: 'all' },
+            });
+            const s = res.data?.stats;
+            if (s) {
+              statsMap[mod.id] = {
+                total: Number(s.total) || 0,
+                approved: Number(s.approved) || 0,
+                pending: Number(s.pending) || 0,
+                rejected: Number(s.rejected) || 0,
+              };
+            }
+          } catch {
+            // If endpoint fails (e.g. no auth), fallback to zero
+            statsMap[mod.id] = { total: 0, approved: 0, pending: 0, rejected: 0 };
+          }
+        })
+      );
+      setModuleStats(statsMap);
+      setStatsLoading(false);
+    };
+    fetchStats();
+  }, [modules]);
+
+  const totalEnrollment = Object.values(moduleStats).reduce((sum, s) => sum + s.total, 0);
+  const totalPending = Object.values(moduleStats).reduce((sum, s) => sum + s.pending, 0);
 
   const filteredModules = modules.filter(m => 
     m.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -69,14 +114,10 @@ export default function CommunityManager() {
           >
             <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-            <Plus size={20} />
-            Create Module
-          </button>
         </div>
       </div>
 
-      {/* Stats Overview */}
+      {/* Stats Overview — Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-4">
@@ -96,18 +137,22 @@ export default function CommunityManager() {
             </div>
             <div>
               <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Enrollment</p>
-              <p className="text-2xl font-black text-slate-800">42</p>
+              <p className="text-2xl font-black text-slate-800">
+                {statsLoading ? <Loader2 size={20} className="animate-spin inline" /> : totalEnrollment}
+              </p>
             </div>
           </div>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="bg-amber-100 p-3 rounded-xl text-amber-600">
-              <Settings2 size={24} />
+              <Clock size={24} />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Pending Updates</p>
-              <p className="text-2xl font-black text-slate-800">0</p>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Pending Approvals</p>
+              <p className="text-2xl font-black text-slate-800">
+                {statsLoading ? <Loader2 size={20} className="animate-spin inline" /> : totalPending}
+              </p>
             </div>
           </div>
         </div>
@@ -129,7 +174,9 @@ export default function CommunityManager() {
 
       {/* Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredModules.length > 0 ? filteredModules.map((module) => (
+        {filteredModules.length > 0 ? filteredModules.map((module) => {
+          const stats = moduleStats[module.id];
+          return (
           <ClickableCard
             key={module.id}
             to={`/admin/community-management/${module.id}`}
@@ -144,6 +191,19 @@ export default function CommunityManager() {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent" />
+              {/* Enrollment badge overlay */}
+              {stats && (
+                <div className="absolute top-3 right-3 flex gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-white/90 text-emerald-700 shadow-sm backdrop-blur-sm">
+                    <CheckCircle2 size={10} /> {stats.approved}
+                  </span>
+                  {stats.pending > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100/90 text-amber-700 shadow-sm backdrop-blur-sm">
+                      <Clock size={10} /> {stats.pending}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Card Content */}
@@ -151,6 +211,11 @@ export default function CommunityManager() {
               <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase group-hover:text-blue-600 transition-colors">
                 {module.title}
               </h3>
+              {stats && (
+                <p className="text-xs text-slate-400 font-semibold mt-1">
+                  {stats.total} member{stats.total !== 1 ? 's' : ''} enrolled
+                </p>
+              )}
             </div>
             
             {/* Card Footer */}
@@ -165,7 +230,8 @@ export default function CommunityManager() {
                </Link>
             </div>
           </ClickableCard>
-        )) : (
+          );
+        }) : (
           <div className="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
             <LayoutGrid size={48} className="mx-auto text-slate-200 mb-4" />
             <h3 className="text-slate-500 font-bold">No modules found matching your search.</h3>

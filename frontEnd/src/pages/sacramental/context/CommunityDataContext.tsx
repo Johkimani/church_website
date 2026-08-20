@@ -239,7 +239,12 @@ export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children 
     }, []);
 
     const getModuleById = (id: string) => {
-        return modules.find(m => m.id === id);
+        const clean = (id || '').toLowerCase().trim();
+        const found = modules.find(m => m.id?.toLowerCase() === clean);
+        if (found) return found;
+        if (clean === 'mentorship') return modules.find(m => m.id?.toLowerCase() === 'youth');
+        if (clean === 'youth') return modules.find(m => m.id?.toLowerCase() === 'mentorship');
+        return undefined;
     };
 
     return (

@@ -36,6 +36,7 @@ export default function CommunityDetailEditor() {
   const [searchTerm, setSearchTerm] = useState('');
   const [aboutSaving, setAboutSaving] = useState(false);
   const [aboutForm, setAboutForm] = useState({ biography: '', saint_image_url: '', history_pdf_url: '' });
+  const [enrollmentStats, setEnrollmentStats] = useState<{ total: string; approved: string; pending: string; rejected: string } | null>(null);
 
   useEffect(() => {
     loadCategoryData();
@@ -69,16 +70,33 @@ export default function CommunityDetailEditor() {
         setLoading(false);
         return;
       }
+
+      // Members use the dedicated enrollment endpoint with server-side filtering + stats
+      if (activeTab === 'members') {
+        try {
+          const res = await apiClient.get(`/community-enrollment/${categoryId}`, {
+            params: { status: 'all' },
+          });
+          setData(res.data?.enrollments || []);
+          setEnrollmentStats(res.data?.stats || null);
+        } catch {
+          // Fallback to generic table API if dedicated endpoint fails
+          const response = await apiClient.get('/enrollments');
+          const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+          setData(items.filter((item: any) => (item.module_id === categoryId) || (item.class_id === categoryId)));
+        }
+        setLoading(false);
+        return;
+      }
+
       let tableName = '';
       switch (activeTab) {
         case 'activities': tableName = 'hub_activities'; break;
         case 'announcements': tableName = 'hub_announcements'; break;
-        case 'members': tableName = 'enrollments'; break;
       }
 
       const response = await apiClient.get(`/${tableName}`);
       const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      // Filter by module_id (or class_id for members)
       const filtered = items.filter((item: any) =>
         (item.module_id === categoryId) || (item.class_id === categoryId)
       );
@@ -233,7 +251,8 @@ export default function CommunityDetailEditor() {
     try { (window as any).toast && (window as any).toast(msg); } catch { }
   };
 
-  const isAboutEnabled = categoryId === 'charismatic' || categoryId === 'st-francis';
+  // About tab enabled for all community modules
+  const isAboutEnabled = true;
 
   const handleSaveAbout = async () => {
     if (!categoryId) return;
@@ -304,9 +323,14 @@ export default function CommunityDetailEditor() {
               <p className="text-slate-500 text-sm mt-0.5">Admin Level Access • Manage {categoryId} resources and growth.</p>
             </div>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+          <a
+            href={`/community/${categoryId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+          >
             <ExternalLink size={16} /> Public Preview
-          </button>
+          </a>
         </div>
       </div>
 
@@ -424,7 +448,23 @@ export default function CommunityDetailEditor() {
           ) : activeTab !== 'about' ? (
             <div className="overflow-x-auto">
               {activeTab === 'members' ? (
-                /* Members Table */
+                /* Members Table with Stats */
+                <>
+                {enrollmentStats && (
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    {[
+                      { label: 'Total', value: enrollmentStats.total, color: 'blue' },
+                      { label: 'Approved', value: enrollmentStats.approved, color: 'emerald' },
+                      { label: 'Pending', value: enrollmentStats.pending, color: 'amber' },
+                      { label: 'Rejected', value: enrollmentStats.rejected, color: 'rose' },
+                    ].map((stat) => (
+                      <div key={stat.label} className={`rounded-xl p-3 text-center bg-${stat.color}-50 border border-${stat.color}-100`}>
+                        <p className={`text-xl font-black text-${stat.color}-700`}>{stat.value}</p>
+                        <p className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">{stat.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100">
@@ -533,6 +573,7 @@ export default function CommunityDetailEditor() {
                     ))}
                   </tbody>
                 </table>
+                </>
               ) : (
                 /* List View for Activities/Announcements */
                 <div className="space-y-4">

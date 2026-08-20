@@ -124,7 +124,7 @@ const CommunityDetail: React.FC = () => {
       case 'tshirts':
         return <CommunityTshirtsTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
       case 'settings':
-        return <CommunitySettingsTab color={detailColor} />;
+        return <CommunitySettingsTab moduleId={moduleIdClean} module={moduleData} color={detailColor} isAdmin={isAdmin} />;
       case 'request':
         return <CommunityRequestTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} module={moduleData} />;
       default:

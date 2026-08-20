@@ -4,7 +4,6 @@ import {
   Upload, Plus, Trash2, FileSpreadsheet, CheckCircle,
   AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Edit2, Save, QrCode,
 } from "lucide-react";
-import QRCode from "qrcode";
 import * as XLSX from "xlsx";
 
 const JUMUIYAS = [
