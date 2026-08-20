@@ -130,7 +130,7 @@ const CommunityDetail: React.FC = () => {
       case 'officials':
         return <CommunityOfficialsTab module={moduleData} color={detailColor} isAdmin={isAdmin} />;
       case 'members':
-        return <CommunityMembersTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
+        return <CommunityMembersTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} isAdmin={isAdmin} />;
       case 'activities':
         return <CommunityActivitiesTab moduleId={moduleIdClean} color={detailColor} module={moduleData} />;
       case 'channels':
