@@ -21,14 +21,18 @@ const ENTITY_LABELS = {
   suggestions: "suggestion",
   activities: "activity",
   weekly_activities: "weekly activity",
+  "weekly-activities": "weekly activity",
   semester_activities: "semester activity",
+  "semester-activities": "semester activity",
   bookings: "activity booking",
   attendance: "attendance tally",
   "jumuiya-attendance": "attendance register",
   "jumuiya-members": "jumuiya member",
   "jumuiya-officials": "jumuiya official",
+  "jumuiya-tshirts": "jumuiya t-shirt",
   "group-officials": "group official",
   role: "role assignment",
+  roles: "role",
   settings: "setting",
   gallery: "gallery item",
   projects: "project",
@@ -43,12 +47,12 @@ const ENTITY_LABELS = {
   announcements: "announcement",
   "slider-items": "slider item",
   "publish-stats": "published statistics",
-  "roles": "role",
+  "whatsapp-links": "WhatsApp link",
 };
 
 // Higher-value jumuiya/attendance operations deserve precise labels.
 const SPECIAL_ACTIONS = [
-  { match: /\/jumuiya-members\/csa\/finalize\//, label: "Finalized distribution", type: "member distribution" },
+  { match: /\/jumuiya-members\/csa\/finalize\//, label: "Finalized member distribution", type: "member distribution" },
   { match: /\/jumuiya-members\/csa\/distribute$/, label: "Ran member distribution", type: "member distribution" },
   { match: /\/jumuiya-members\/csa\/submit-for-approval/, label: "Submitted distribution for approval", type: "member distribution" },
   { match: /\/jumuiya-members\/csa\/approvals\/.*\/batch-review/, label: "Batch-reviewed allocations", type: "member allocation" },
@@ -59,11 +63,19 @@ const SPECIAL_ACTIONS = [
   { match: /\/jumuiya-members\/.*\/flag$/, label: "Flagged member", type: "jumuiya member" },
   { match: /\/jumuiya-members\/.*\/unflag$/, label: "Unflagged member", type: "jumuiya member" },
   { match: /\/jumuiya-members\/.*\/csa-allocations/, label: "Managed allocations", type: "member allocation" },
-  { match: /\/attendance\//, label: "Updated attendance", type: "attendance tally" },
+  { match: /\/suggestions\/.*\/reply/, label: "Replied to suggestion", type: "suggestion" },
+  { match: /\/suggestions\/.*\/category/, label: "Updated suggestion category", type: "suggestion" },
+  { match: /\/suggestions\/.*\/request-unmask/, label: "Requested unmask for suggestion", type: "suggestion" },
+  { match: /\/suggestions\/.*\/unmask.*\/respond/, label: "Responded to unmask request", type: "suggestion" },
+  { match: /\/attendance\//, label: "Updated attendance tally", type: "attendance tally" },
   { match: /\/publish-stats/, label: "Published statistics", type: "statistics" },
   { match: /\/admin\/activities\/bookings\/\d+\/payment$/, label: "Recorded cash payment", type: "activity payment" },
   { match: /\/admin\/activities\/bookings\/\d+\/cancel$/, label: "Cancelled booking", type: "activity booking" },
   { match: /\/admin\/activities\/bookings/, label: "Created booking for member", type: "activity booking" },
+  { match: /\/whatsapp-links/, label: "Updated WhatsApp group link", type: "WhatsApp link" },
+  { match: /\/jumuiya-tshirts/, label: "Updated Jumuiya T-shirts", type: "jumuiya t-shirt" },
+  { match: /\/gallery/, label: "Managed gallery", type: "gallery item" },
+  { match: /\/announcements/, label: "Managed announcement", type: "announcement" },
 ];
 
 const isIdSegment = (seg) => /^\d+$/.test(seg) || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(seg);
@@ -76,7 +88,12 @@ const describe = (req, method) => {
 
   for (const spec of SPECIAL_ACTIONS) {
     if (spec.match.test(path)) {
-      return { action: spec.label, entityType: spec.type, entityId: req._activityEntityId ?? null };
+      const verb = ACTION_VERB[method] || "Managed";
+      let actionLabel = spec.label;
+      if (method === "DELETE" && !actionLabel.toLowerCase().includes("delete") && !actionLabel.toLowerCase().includes("cancel")) {
+        actionLabel = `Deleted ${spec.type}`;
+      }
+      return { action: actionLabel, entityType: spec.type, entityId: req._activityEntityId ?? null };
     }
   }
 
@@ -89,17 +106,14 @@ const describe = (req, method) => {
     (lastSeg && lastSeg !== first && isIdSegment(lastSeg) ? lastSeg : null);
 
   return {
-    action: `${ACTION_VERB[method] || "Modified"} ${entityLabel}`,
+    action: `${ACTION_VERB[method] || "Modified"} ${entityLabel}${entityId ? ` #${entityId}` : ""}`,
     entityType: entityLabel,
     entityId,
   };
 };
 
 /**
- * Audit middleware for the /api/v1 router. Sits before the concrete routers and
- * records every authenticated mutation once it has responded. req.user may be
- * populated by a later route/auth middleware — by the time 'finish' fires it is
- * present, which is why the write happens on res 'finish'.
+ * Audit middleware for the /api/v1 router.
  */
 const activityLogger = (req, res, next) => {
   const method = (req.method || "").toUpperCase();
@@ -110,7 +124,7 @@ const activityLogger = (req, res, next) => {
   res.json = (body) => {
     try {
       if (body && typeof body === "object" && !req._activityEntityId) {
-        const candidate = body.id ?? body.record?.id ?? body.recordId;
+        const candidate = body.id ?? body.record?.id ?? body.recordId ?? body.data?.id;
         if (candidate != null) req._activityEntityId = String(candidate);
       }
     } catch { /* ignore */ }
@@ -130,7 +144,11 @@ const activityLogger = (req, res, next) => {
         action,
         entityType,
         entityId,
-        details: {},
+        details: {
+          method,
+          path,
+          query: Object.keys(req.query || {}).length > 0 ? req.query : undefined,
+        },
       });
     } catch { /* audit must never break the request */ }
   });

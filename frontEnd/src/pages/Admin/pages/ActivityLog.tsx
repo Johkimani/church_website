@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../../api/axiosInstance";
+import { useAuth } from "../../../context/AuthContext";
 import { timeAgo } from "../../../utils";
 import {
   RefreshCw,
@@ -12,11 +13,16 @@ import {
   ShieldCheck,
   Users,
   Filter,
+  Trash2,
+  Sparkles,
+  Shield,
+  Layers,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface LogEntry {
   id: number;
-  actor_id: number | null;
+  actor_id: string | number | null;
   actor_name: string;
   actor_role: string | null;
   jumuiya_id: string | null;
@@ -30,38 +36,73 @@ interface LogEntry {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  csa_chair: "bg-purple-50 text-purple-700 border-purple-200",
-  jumuiya_coordinator: "bg-blue-50 text-blue-700 border-blue-200",
-  jumuiya_secretary: "bg-teal-50 text-teal-700 border-teal-200",
-  jumuiya_chairperson: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  jumuiya_vice_chairperson: "bg-sky-50 text-sky-700 border-sky-200",
-  jumuiya_os: "bg-cyan-50 text-cyan-700 border-cyan-200",
-  os: "bg-amber-50 text-amber-700 border-amber-200",
-  csa_secretary: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  csa_vice_chair: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
-  project_manager: "bg-orange-50 text-orange-700 border-orange-200",
-  treasurer: "bg-lime-50 text-lime-700 border-lime-200",
-  liturgist: "bg-rose-50 text-rose-700 border-rose-200",
+  "csa chair": "bg-purple-100 text-purple-800 border-purple-200",
+  "csa vice chair": "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
+  "csa secretary": "bg-emerald-100 text-emerald-800 border-emerald-200",
+  "jumuiya coordinator": "bg-blue-100 text-blue-800 border-blue-200",
+  "jumuiya chairperson": "bg-indigo-100 text-indigo-800 border-indigo-200",
+  "jumuiya vice chairperson": "bg-sky-100 text-sky-800 border-sky-200",
+  "jumuiya secretary": "bg-teal-100 text-teal-800 border-teal-200",
+  "jumuiya os": "bg-cyan-100 text-cyan-800 border-cyan-200",
+  "os": "bg-amber-100 text-amber-800 border-amber-200",
+  "project manager": "bg-orange-100 text-orange-800 border-orange-200",
+  "treasurer": "bg-lime-100 text-lime-800 border-lime-200",
+  "liturgist": "bg-rose-100 text-rose-800 border-rose-200",
+  "developer": "bg-violet-100 text-violet-800 border-violet-200",
+  "admin": "bg-purple-100 text-purple-800 border-purple-200",
 };
 
-const roleColor = (role: string) =>
-  ROLE_COLORS[String(role).toLowerCase().trim()] || "bg-slate-50 text-slate-600 border-slate-200";
+const JUMUIYA_COLORS: Record<string, string> = {
+  "st. anthony": "bg-purple-50 text-purple-700 border-purple-200",
+  "st. augustine": "bg-blue-50 text-blue-700 border-blue-200",
+  "st. catherine": "bg-rose-50 text-rose-800 border-rose-200",
+  "st. dominic": "bg-slate-100 text-slate-700 border-slate-200",
+  "st. elizabeth": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "st. maria goretti": "bg-sky-50 text-sky-700 border-sky-200",
+  "st. monica": "bg-red-50 text-red-700 border-red-200",
+};
+
+const getRoleBadgeStyle = (role: string | null) => {
+  if (!role) return "bg-slate-50 text-slate-600 border-slate-200";
+  const normalized = role.toLowerCase().replace(/_/g, " ").trim();
+  for (const [key, val] of Object.entries(ROLE_COLORS)) {
+    if (normalized.includes(key)) return val;
+  }
+  return "bg-indigo-50 text-indigo-700 border-indigo-200";
+};
+
+const getJumuiyaBadgeStyle = (name: string | null) => {
+  if (!name) return "bg-slate-50 text-slate-600 border-slate-200";
+  const normalized = name.toLowerCase().trim();
+  for (const [key, val] of Object.entries(JUMUIYA_COLORS)) {
+    if (normalized.includes(key)) return val;
+  }
+  return "bg-slate-50 text-slate-600 border-slate-200";
+};
 
 const actionColor = (action: string) => {
   const a = action.toLowerCase();
-  if (a.startsWith("deleted") || a.includes("remove")) return "text-rose-700 bg-rose-50 border-rose-200";
-  if (a.startsWith("created") || a.includes("import") || a.startsWith("added")) return "text-emerald-700 bg-emerald-50 border-emerald-200";
-  if (a.startsWith("flagged") || a.includes("reject")) return "text-red-700 bg-red-50 border-red-200";
-  if (a.includes("finalized") || a.includes("distributed") || a.includes("published") || a.includes("submitted")) return "text-indigo-700 bg-indigo-50 border-indigo-200";
-  if (a.includes("approved") || a.includes("validated") || a.startsWith("unflagged") || a.includes("batch-review")) return "text-blue-700 bg-blue-50 border-blue-200";
-  if (a.startsWith("updated") || a.includes("managed") || a.includes("reviewed")) return "text-amber-700 bg-amber-50 border-amber-200";
-  return "text-slate-600 bg-slate-50 border-slate-200";
+  if (a.startsWith("deleted") || a.includes("remove") || a.includes("cancel"))
+    return "text-rose-700 bg-rose-50 border-rose-200";
+  if (a.startsWith("created") || a.includes("import") || a.startsWith("added"))
+    return "text-emerald-700 bg-emerald-50 border-emerald-200";
+  if (a.startsWith("flagged") || a.includes("reject"))
+    return "text-red-700 bg-red-50 border-red-200";
+  if (a.includes("finalized") || a.includes("distributed") || a.includes("published") || a.includes("submitted"))
+    return "text-indigo-700 bg-indigo-50 border-indigo-200";
+  if (a.includes("approved") || a.includes("validated") || a.startsWith("unflagged") || a.includes("batch-review"))
+    return "text-blue-700 bg-blue-50 border-blue-200";
+  if (a.startsWith("updated") || a.includes("managed") || a.includes("reviewed") || a.includes("replied"))
+    return "text-amber-700 bg-amber-50 border-amber-200";
+  return "text-slate-700 bg-slate-100 border-slate-200";
 };
 
 export default function ActivityLog() {
+  const { user } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("");
@@ -75,6 +116,11 @@ export default function ActivityLog() {
     roles: string[];
   }>({ actions: [], jumuiyas: [], roles: [] });
   const limit = 30;
+
+  const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
+  const canClearLogs = userRoles.some((r: any) =>
+    ["csa_chair", "jumuiya_coordinator", "admin", "developer"].includes(String(r).toLowerCase().trim())
+  );
 
   const hasFilters = search || actionFilter || jumuiyaFilter || roleFilter || dateFrom || dateTo;
 
@@ -117,6 +163,23 @@ export default function ActivityLog() {
     fetchFilters();
   }, [fetchFilters]);
 
+  const handleClearLogs = async () => {
+    if (!window.confirm("Are you sure you want to permanently clear all activity logs? This action cannot be undone.")) {
+      return;
+    }
+    setClearing(true);
+    try {
+      await apiClient.delete("/activity-logs/clear");
+      toast.success("Activity logs cleared successfully");
+      fetchLogs();
+      fetchFilters();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to clear logs");
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const resetPageAndFetch = (setter: (v: string) => void) => (v: string) => {
     setter(v);
     setPage(1);
@@ -157,46 +220,69 @@ export default function ActivityLog() {
       .join("") || "?";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Activity size={20} className="text-indigo-600" /> Activity Log
-          </h2>
-          <p className="text-xs text-slate-500">
-            Who did what and when across the admin system · {total} entries
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header Banner with Glassmorphism */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-white/40 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full blur-3xl -mr-32 -mt-32 opacity-40 pointer-events-none"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
+              <Activity className="text-indigo-600" size={28} />
+              Activity Audit Log
+            </h2>
+            <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <Sparkles size={12} />
+              Real-time
+            </span>
+          </div>
+          <p className="text-slate-500 font-medium uppercase tracking-wider text-xs">
+            Reliable audit trail recording official actions, jumuiya names, and timestamps · {total} recorded events
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative z-10 flex-wrap">
+          {canClearLogs && (
+            <button
+              onClick={handleClearLogs}
+              disabled={clearing || total === 0}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95 disabled:opacity-40"
+              title="Clear all logs"
+            >
+              <Trash2 size={16} />
+              {clearing ? "Clearing..." : "Clear Logs"}
+            </button>
+          )}
           <button
             onClick={fetchLogs}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
           >
-            <RefreshCw size={14} /> Refresh
+            <RefreshCw size={16} className={loading ? "animate-spin text-indigo-600" : ""} />
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Filter size={14} className="text-slate-400" /> Filters
+      {/* Filters Bar */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-4 shadow-sm">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+          <Filter size={14} className="text-indigo-500" /> Filter Logs
           {hasFilters && (
-            <button onClick={clearFilters} className="ml-auto flex items-center gap-1 text-rose-500 hover:text-rose-600">
-              <X size={12} /> Clear all
+            <button onClick={clearFilters} className="ml-auto flex items-center gap-1 text-rose-600 hover:text-rose-700 font-bold normal-case">
+              <X size={13} /> Clear filters
             </button>
           )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => resetPageAndFetch(setSearch)(e.target.value)}
-              placeholder="Search name, role, action..."
-              className="w-full pl-8 pr-8 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              placeholder="Search official, role, action..."
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
             />
             {search && (
-              <button onClick={() => resetPageAndFetch(setSearch)("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <button onClick={() => resetPageAndFetch(setSearch)("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                 <X size={14} />
               </button>
             )}
@@ -204,7 +290,7 @@ export default function ActivityLog() {
           <select
             value={actionFilter}
             onChange={(e) => resetPageAndFetch(setActionFilter)(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="text-xs font-semibold bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
           >
             <option value="">All Actions</option>
             {filterOptions.actions.map((a) => (
@@ -214,11 +300,11 @@ export default function ActivityLog() {
           <select
             value={jumuiyaFilter}
             onChange={(e) => resetPageAndFetch(setJumuiyaFilter)(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="text-xs font-semibold bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
           >
             <option value="">All Jumuiyas</option>
             {filterOptions.jumuiyas.map((j) => (
-              <option key={j.jumuiya_id} value={j.jumuiya_id}>
+              <option key={j.jumuiya_id || j.jumuiya_name} value={j.jumuiya_name || j.jumuiya_id}>
                 {j.jumuiya_name || j.jumuiya_id}
               </option>
             ))}
@@ -226,7 +312,7 @@ export default function ActivityLog() {
           <select
             value={roleFilter}
             onChange={(e) => resetPageAndFetch(setRoleFilter)(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="text-xs font-semibold bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
           >
             <option value="">All Roles</option>
             {filterOptions.roles.map((r) => (
@@ -237,93 +323,132 @@ export default function ActivityLog() {
             type="date"
             value={dateFrom}
             onChange={(e) => resetPageAndFetch(setDateFrom)(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="text-xs font-semibold bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             title="From date"
           />
           <input
             type="date"
             value={dateTo}
             onChange={(e) => resetPageAndFetch(setDateTo)(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="text-xs font-semibold bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             title="To date"
           />
         </div>
       </div>
 
       {loading ? (
-        <div className="space-y-2 animate-pulse">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-16 bg-slate-100 rounded-xl" />
+        <div className="space-y-3 animate-pulse">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-20 bg-white rounded-2xl border border-slate-200/60 p-4" />
           ))}
         </div>
       ) : logs.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-          <Activity size={36} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm font-medium">No activity logs found.</p>
-          <p className="text-xs text-slate-400 mt-1">
-            {hasFilters ? "Try adjusting or clearing the filters." : "Admin actions will appear here as officials make changes."}
+        <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-16 text-center">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
+            <Activity size={32} />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800">No Activity Recorded Yet</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
+            {hasFilters
+              ? "No events matched your current search filters. Try resetting the filters."
+              : "As officials manage members, activities, suggestions, and announcements, their actions will be securely logged here."}
           </p>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
-            {logs.map((log) => (
-              <div key={log.id} className="px-5 py-4 flex items-start gap-4 hover:bg-slate-50 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 mt-0.5 text-indigo-600 font-bold text-sm">
-                  {initials(log.actor_name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-slate-800">{log.actor_name}</span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase ${roleColor(log.actor_role || "")}`}>
-                      {log.actor_role || "Member"}
-                    </span>
-                    {log.jumuiya_name && (
-                      <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-slate-50 border-slate-200 text-slate-600">
-                        <Users size={10} /> {log.jumuiya_name}
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm divide-y divide-slate-100 overflow-hidden">
+            {logs.map((log) => {
+              const roleStyle = getRoleBadgeStyle(log.actor_role);
+              const jumuiyaStyle = getJumuiyaBadgeStyle(log.jumuiya_name);
+
+              return (
+                <div
+                  key={log.id}
+                  className="px-6 py-5 flex items-start gap-4 hover:bg-slate-50/80 transition-colors group"
+                >
+                  {/* Official Avatar */}
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 text-white font-black text-sm shadow-md shadow-indigo-500/20">
+                    {initials(log.actor_name)}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    {/* Official & Role Row */}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="text-sm font-bold text-slate-900 leading-tight">
+                        {log.actor_name}
                       </span>
-                    )}
-                  </div>
-                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${actionColor(log.action)}`}>
-                      {log.action}
-                    </span>
-                    {log.entity_id && (
-                      <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                        <ShieldCheck size={11} className="text-slate-400" />
-                        {log.entity_type || "record"} #{log.entity_id}
+                      <span
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-2xs ${roleStyle}`}
+                      >
+                        {log.actor_role || "Official"}
                       </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} /> {formatDate(log.created_at)}
-                    </span>
-                    <span title="Time ago">{timeAgo(log.created_at)}</span>
+                      {log.jumuiya_name && (
+                        <span
+                          className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-2xs ${jumuiyaStyle}`}
+                        >
+                          <Users size={11} /> {log.jumuiya_name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Action Description */}
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`text-xs font-bold px-3 py-1 rounded-xl border ${actionColor(
+                          log.action
+                        )}`}
+                      >
+                        {log.action}
+                      </span>
+                      {log.entity_id && (
+                        <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
+                          <ShieldCheck size={13} className="text-slate-400" />
+                          {log.entity_type || "record"} #{log.entity_id}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Timestamp & Metadata */}
+                    <div className="flex items-center gap-3 mt-2 text-xs text-slate-400 font-medium">
+                      <span className="flex items-center gap-1 text-slate-500">
+                        <Clock size={12} className="text-slate-400" />
+                        {formatDate(log.created_at)}
+                      </span>
+                      <span>•</span>
+                      <span title="Relative time">{timeAgo(log.created_at)}</span>
+                      {log.ip_address && (
+                        <>
+                          <span>•</span>
+                          <span className="font-mono text-[10px] text-slate-400">
+                            IP: {log.ip_address}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500">
+            <div className="flex items-center justify-between bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+              <p className="text-xs font-semibold text-slate-600">
                 Page {page} of {totalPages} ({total} entries)
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1}
-                  className="p-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <span className="text-xs text-slate-600 font-semibold px-2">{page}</span>
+                <span className="text-xs text-slate-700 font-bold px-2">{page}</span>
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
-                  className="p-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronRight size={16} />
                 </button>

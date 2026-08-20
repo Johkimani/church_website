@@ -4,13 +4,17 @@ import { requireRole } from "../../middlewares/requireRole.js";
 import {
   getActivityLogs,
   getActivityLogFilters,
+  clearActivityLogs,
 } from "../../controllers/activityLogController.js";
 
 const router = Router();
 
-// The audit log is read-only and visible only to the two overseer roles:
-// the CSA chairperson (universal admin) and the jumuiya coordinator.
-router.get("/", verifyToken, requireRole("csa_chair", "jumuiya_coordinator"), getActivityLogs);
-router.get("/filters", verifyToken, requireRole("csa_chair", "jumuiya_coordinator"), getActivityLogFilters);
+// Overseer roles allowed to access and manage the audit log:
+// CSA chairperson, jumuiya coordinator, admin, developer
+const OVERSEER_ROLES = ["csa_chair", "jumuiya_coordinator", "admin", "developer"];
+
+router.get("/", verifyToken, requireRole(...OVERSEER_ROLES), getActivityLogs);
+router.get("/filters", verifyToken, requireRole(...OVERSEER_ROLES), getActivityLogFilters);
+router.delete("/clear", verifyToken, requireRole(...OVERSEER_ROLES), clearActivityLogs);
 
 export default router;
