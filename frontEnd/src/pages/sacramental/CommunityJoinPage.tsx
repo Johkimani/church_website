@@ -31,8 +31,8 @@ const GENDER_OPTIONS = ['Male', 'Female'];
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e3a5f',
-  dancers: '#7c3aed',
-  charismatic: '#db2777',
+  dancers: '#db2777',
+  charismatic: '#7c3aed',
   'st-francis': '#047857',
   youth: '#8e44ad',
   mentorship: '#6d28d9',

@@ -289,56 +289,60 @@ export default function JumuiyaSuggestionsAdmin() {
                   return (
                     <div
                       key={s.id}
-                      className="bg-white rounded-xl border border-slate-200/80 p-4 hover:shadow-sm transition-shadow"
+                      className="bg-slate-50 rounded border border-slate-200 p-4 border-t border-b hover:bg-white transition"
                     >
                       <div className="flex items-center gap-2 mb-2">
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${isAnonymous ? 'bg-slate-400' : 'bg-indigo-600'}`} />
+                        <div className={`w-2 h-2 rounded-full ${
+                          isAnonymous ? 'bg-slate-400' : 'bg-indigo-600'
+                        } shrink-0`} />
                         <span className="font-medium text-slate-700">{displayName}</span>
-                        <span className="text-xs text-slate-500 ml-2">{s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}</span>
+                        <span className="text-xs text-slate-500 ms-2">{s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}</span>
                       </div>
 
-                      <p className="text-slate-600 whitespace-pre-wrap text-sm line-clamp-3 max-w-none">{s.suggestion}</p>
+                      <p className="text-slate-600 whitespace-pre-wrap text-sm line-clamp-3 line-clamp max-w-none">{s.suggestion}</p>
 
                       <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                        <span className={`px-2 py-1 rounded ${statusColor[s.status] || 'bg-slate-100 text-slate-400'}`}>
+                        <span className={`px-2 py-1 rounded ${
+                          statusColor[s.status] || 'bg-slate-100 text-slate-400'
+                        }`}>
                           {statusLabel[s.status]}
                         </span>
                         {s.category && <span className="mx-2 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">#{s.category}</span>}
                         {s.member_jumuiya && <span className="text-indigo-600 text-xs">• {s.member_jumuiya}</span>}
                       </div>
-
-                      {/* VC Actions — per card */}
-                      {isVC && (
-                        <div className="mt-3 pt-3 border-t border-slate-100">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleReply(s.id)}
-                              className="px-3 py-1 bg-indigo-600 text-white rounded text-sm font-medium hover:bg-indigo-700 transition-colors"
-                              title="Reply"
-                            >
-                              Reply
-                            </button>
-                            <button
-                              onClick={() => handleRequestUnmask(s.id)}
-                              className="px-3 py-1 bg-purple-600 text-white rounded text-sm font-medium hover:bg-purple-700 transition-colors"
-                              title="Request Unmask"
-                            >
-                              Unmask
-                            </button>
-                            <button
-                              onClick={() => handleDelete(s.id)}
-                              className="px-3 py-1 bg-rose-600 text-white rounded text-sm font-medium hover:bg-rose-700 transition-colors"
-                              title="Delete"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
+
+              {/* VC Actions */}
+              {isVC && (
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => window.alert('Reply feature coming soon')}
+                      className="px-3 py-1 bg-indigo-600 text-white rounded text-sm font-medium"
+                      title="Reply"
+                    >
+                      Reply
+                    </button>
+                    <button
+                      onClick={() => window.alert('Unmask feature coming soon')}
+                      className="px-3 py-1 bg-purple-600 text-white rounded text-sm font-medium"
+                      title="Unmask"
+                    >
+                      Unmask
+                    </button>
+                    <button
+                      onClick={() => window.alert('Delete feature coming soon')}
+                      className="px-3 py-1 bg-rose-600 text-white rounded text-sm font-medium"
+                      title="Delete"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

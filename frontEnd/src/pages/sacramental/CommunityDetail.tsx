@@ -13,38 +13,40 @@ import CommunityTshirtsTab from './components/tabs/CommunityTshirtsTab';
 import CommunitySettingsTab from './components/tabs/CommunitySettingsTab';
 import CommunityNotificationsTab from './components/tabs/CommunityNotificationsTab';
 import CommunityRequestTab from './components/tabs/CommunityRequestTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper } from 'react-icons/fa';
+import CommunitySuggestionsTab from './components/tabs/CommunitySuggestionsTab';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
-type TabType = 'about' | 'officials' | 'channels' | 'members' | 'activities' | 'tshirts' | 'settings' | 'request';
+type TabType = 'about' | 'officials' | 'activities' | 'members' | 'channels' | 'tshirts' | 'suggestions' | 'settings' | 'request';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e3a5f',
-  dancers: '#7c3aed',
-  charismatic: '#db2777',
+  dancers: '#db2777',
+  charismatic: '#7c3aed',
   'st-francis': '#047857',
   youth: '#8e44ad',
   mentorship: '#6d28d9',
 };
 
 const COMMUNITY_IMAGES: Record<string, string> = {
-  choir: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
-  dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600',
-  charismatic: 'https://images.unsplash.com/photo-1550435041-0e521c830db3?auto=format&fit=crop&q=80&w=600',
-  'st-francis': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600',
-  youth: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
-  mentorship: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+  choir: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=800',
+  dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=800',
+  charismatic: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800',
+  'st-francis': 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&q=80&w=800',
+  youth: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=800',
+  mentorship: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=800',
 };
-const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600';
+const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=800';
 
 const TAB_ICONS: Record<TabType, React.ReactNode> = {
   about: <FaInfoCircle />,
   officials: <FaUserTie />,
-  members: <FaUsers />,
   activities: <FaCalendarAlt />,
+  members: <FaUsers />,
   channels: <FaShareAlt />,
   tshirts: <FaTshirt />,
+  suggestions: <FaCommentDots />,
   settings: <FaKey />,
   request: <FaHandPaper />,
 };
@@ -52,15 +54,16 @@ const TAB_ICONS: Record<TabType, React.ReactNode> = {
 const TAB_LABELS: Record<TabType, string> = {
   about: 'About',
   officials: 'Officials',
-  members: 'Members',
   activities: 'Activities',
+  members: 'Members',
   channels: 'Channels',
   tshirts: 'T-Shirts',
+  suggestions: 'Suggestions',
   settings: 'Settings',
   request: 'Request',
 };
 
-const TAB_ORDER: TabType[] = ['about', 'officials', 'members', 'activities', 'channels', 'tshirts', 'request', 'settings'];
+const TAB_ORDER: TabType[] = ['about', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions', 'settings'];
 
 const CommunityDetail: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -132,6 +135,8 @@ const CommunityDetail: React.FC = () => {
         return <CommunityChannelsTab moduleId={moduleIdClean} module={moduleData} color={detailColor} />;
       case 'tshirts':
         return <CommunityTshirtsTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
+      case 'suggestions':
+        return <CommunitySuggestionsTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} module={moduleData} />;
       case 'settings':
         return <CommunitySettingsTab moduleId={moduleIdClean} module={moduleData} color={detailColor} isAdmin={isAdmin} />;
       case 'request':

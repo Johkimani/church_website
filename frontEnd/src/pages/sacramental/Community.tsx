@@ -35,22 +35,22 @@ const iconFor = (id: string): React.ElementType => ICON_MAP[id] || DEFAULT_ICON;
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e3a5f',
-  dancers: '#7c3aed',
-  charismatic: '#db2777',
+  dancers: '#db2777',
+  charismatic: '#7c3aed',
   'st-francis': '#047857',
   youth: '#8e44ad',
   mentorship: '#6d28d9',
 };
 
 const COMMUNITY_IMAGES: Record<string, string> = {
-  choir: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600',
-  dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=600',
-  charismatic: 'https://images.unsplash.com/photo-1550435041-0e521c830db3?auto=format&fit=crop&q=80&w=600',
-  'st-francis': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600',
-  youth: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
-  mentorship: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&q=80&w=600',
+  choir: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=800',
+  dancers: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&q=80&w=800',
+  charismatic: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800',
+  'st-francis': 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&q=80&w=800',
+  youth: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=800',
+  mentorship: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=800',
 };
-const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=600';
+const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=800';
 
 const CATEGORY_MAP: Record<string, string> = {
   choir: 'music',
@@ -284,78 +284,194 @@ const Community: React.FC = () => {
           initial="hidden"
           animate="show"
           key={filter}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-2"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 px-2 sm:px-4"
         >
-          {filtered.map((mod) => {
+          {filtered.map((mod, idx) => {
             const image = mod.saint_image_url || mod.image_url || COMMUNITY_IMAGES[mod.id] || DEFAULT_COMMUNITY_IMAGE;
             const isJoined = myCommunityIds.has(mod.id);
             const modColor = MINISTRY_COLORS[mod.id] || '#7c2d12';
+            const Icon = iconFor(mod.id);
+
+            // Meaningful sub-descriptions & schedules for hanging plaques
+            const subtitleMap: Record<string, { tagline: string; schedule: string; categoryLabel: string }> = {
+              choir: {
+                tagline: 'Leading sacred worship and mass through sublime hymns & vocal praise.',
+                schedule: 'Tues 6PM & Sat 1PM @ Church Hall',
+                categoryLabel: 'Liturgical Music & Praise',
+              },
+              dancers: {
+                tagline: 'Expressing joyful faith and reverent prayer through sacred choreography.',
+                schedule: 'Every Saturday, 4:00 PM @ School Compound',
+                categoryLabel: 'Sacred Liturgical Dance',
+              },
+              charismatic: {
+                tagline: 'Experiencing the transformative power of the Holy Spirit, praise & healing prayer.',
+                schedule: 'Every Saturday, 5:00 PM @ Parish Hall',
+                categoryLabel: 'Holy Spirit Prayer & Adoration',
+              },
+              'st-francis': {
+                tagline: 'Living Christ\'s compassion through simplicity, peace & community outreach.',
+                schedule: 'Every Sunday, 5:00 PM @ LH 21',
+                categoryLabel: 'Charity, Peace & Outreach',
+              },
+              youth: {
+                tagline: 'Empowering Catholic young adults in friendship, faith & spiritual purpose.',
+                schedule: 'Every Sunday after Youth Mass',
+                categoryLabel: 'Youth & Fellowship',
+              },
+              mentorship: {
+                tagline: 'Walking together in academic, career, and spiritual discipleship.',
+                schedule: 'Bi-weekly Fellowship & Guidance',
+                categoryLabel: 'Faith & Mentorship',
+              },
+            };
+
+            const info = subtitleMap[mod.id] || {
+              tagline: mod.description || 'A vibrant community of faith and fellowship.',
+              schedule: mod.meetingSchedule || 'Contact leadership for schedules',
+              categoryLabel: 'Parish Ministry',
+            };
+
+            const tiltAngle = idx % 2 === 0 ? '-1.5deg' : '1.5deg';
 
             return (
               <motion.article
                 key={mod.id}
                 variants={cardVariants}
                 onClick={() => handleCardClick(mod)}
-                className="group relative cursor-pointer"
-                style={{ perspective: '1000px' }}
+                className="group relative cursor-pointer pt-6 pb-2"
+                style={{ perspective: '1200px' }}
               >
-                {/* Hanging string */}
-                <div className="flex justify-center -mb-1 relative z-10">
-                  <div className="w-[2px] h-6 rounded-full" style={{ background: `linear-gradient(180deg, ${modColor}90, ${modColor}40)` }} />
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2" style={{ borderColor: modColor, background: `${modColor}20` }} />
+                {/* ── Realistic Suspension Mechanism ── */}
+                <div className="absolute top-0 inset-x-0 flex justify-center items-start pointer-events-none z-30">
+                  {/* Brass wall mount peg / hook */}
+                  <div
+                    className="w-5 h-5 rounded-full shadow-lg flex items-center justify-center -mt-1 border border-amber-200/60"
+                    style={{
+                      background: 'radial-gradient(circle at 35% 35%, #ffd700 0%, #b8860b 60%, #8b6508 100%)',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.7)',
+                    }}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-stone-900/50 shadow-inner" />
+                  </div>
+
+                  {/* Left & Right suspension wires */}
+                  <div
+                    className="absolute top-2 left-1/2 -translate-x-[75px] w-[80px] h-[30px] border-t-2 border-r-2 rounded-tr-3xl -rotate-[22deg] origin-right pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity"
+                    style={{ borderColor: `${modColor}88` }}
+                  />
+                  <div
+                    className="absolute top-2 right-1/2 translate-x-[75px] w-[80px] h-[30px] border-t-2 border-l-2 rounded-tl-3xl rotate-[22deg] origin-left pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity"
+                    style={{ borderColor: `${modColor}88` }}
+                  />
                 </div>
 
-                {/* Card body */}
+                {/* ── Main Hanging Plaque Body ── */}
                 <div
-                  className="relative rounded-2xl overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl"
+                  className="relative rounded-3xl overflow-hidden bg-white transition-all duration-500 group-hover:-translate-y-3 group-hover:scale-[1.02]"
                   style={{
-                    boxShadow: `0 8px 24px -4px ${modColor}25, 0 4px 12px -2px rgba(0,0,0,0.08)`,
+                    boxShadow: `0 20px 45px -10px ${modColor}30, 0 8px 20px -6px rgba(0,0,0,0.12), 0 0 0 1px ${modColor}25`,
+                    transformOrigin: 'top center',
                   }}
                 >
-                  {/* Image */}
-                  <div className="aspect-[16/10] relative overflow-hidden">
+                  {/* Top Brass Eyelets on Card Frame */}
+                  <div className="absolute top-2 inset-x-8 flex justify-between z-30 pointer-events-none">
+                    <div
+                      className="w-3.5 h-3.5 rounded-full border-2 border-white/80 shadow-md"
+                      style={{ background: 'radial-gradient(circle, #ffd700 0%, #b8860b 100%)' }}
+                    />
+                    <div
+                      className="w-3.5 h-3.5 rounded-full border-2 border-white/80 shadow-md"
+                      style={{ background: 'radial-gradient(circle, #ffd700 0%, #b8860b 100%)' }}
+                    />
+                  </div>
+
+                  {/* Image Container with Cinematic Height */}
+                  <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-stone-900">
                     <img
                       src={image}
                       alt={mod.title}
                       loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
                     />
 
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                    {/* Color accent glow */}
+                    {/* Rich multi-layer atmospheric overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                     <div
                       className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      style={{ background: `radial-gradient(ellipse at bottom, ${modColor}40 0%, transparent 70%)` }}
+                      style={{ background: `radial-gradient(ellipse at bottom, ${modColor}50 0%, transparent 75%)` }}
                     />
 
-                    {/* Joined badge */}
-                    {isJoined && (
-                      <div className="absolute top-3 right-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white shadow-lg backdrop-blur-sm" style={{ background: `${modColor}cc` }}>
-                          <Check size={8} /> Joined
-                        </span>
-                      </div>
-                    )}
+                    {/* Top Badges */}
+                    <div className="absolute top-4 inset-x-4 flex justify-between items-start z-20">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-white shadow-xl backdrop-blur-md"
+                        style={{
+                          background: `linear-gradient(135deg, ${modColor}ee 0%, ${modColor}bb 100%)`,
+                          border: '1px solid rgba(255,255,255,0.3)',
+                        }}
+                      >
+                        <Icon size={11} className="text-white" />
+                        {info.categoryLabel}
+                      </span>
 
-                    {/* Title + color bar on image */}
-                    <div className="absolute bottom-0 inset-x-0 p-4 z-10">
-                      <div className="flex items-end gap-3">
-                        <div className="w-1 h-8 rounded-full flex-shrink-0 mb-0.5" style={{ background: `linear-gradient(180deg, white, ${modColor})` }} />
-                        <div>
-                          <h3 className="text-white font-black text-lg leading-tight drop-shadow-lg uppercase tracking-wide">{mod.title}</h3>
-                          <p className="text-white/60 text-[11px] font-semibold mt-0.5 uppercase tracking-widest">Tap to explore</p>
-                        </div>
-                      </div>
+                      {isJoined && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black text-white bg-emerald-600/90 shadow-xl backdrop-blur-md border border-white/30">
+                          <Check size={10} /> Joined
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Title overlay on photo base */}
+                    <div className="absolute bottom-3 inset-x-5 z-20">
+                      <h3 className="text-white font-black text-xl sm:text-2xl leading-snug drop-shadow-md tracking-tight">
+                        {mod.title}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Information & Action Content Section */}
+                  <div className="p-6 bg-white space-y-4">
+                    {/* Meaningful Spiritual Motto / Tagline */}
+                    <p className="text-stone-600 text-xs sm:text-sm leading-relaxed font-medium line-clamp-2">
+                      {info.tagline}
+                    </p>
+
+                    {/* Gathering / Practice Schedule Pill */}
+                    <div
+                      className="flex items-center gap-2 p-2.5 rounded-xl text-xs font-semibold text-stone-700"
+                      style={{ background: `${modColor}0c`, border: `1px solid ${modColor}18` }}
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: modColor }} />
+                      <span className="truncate">{info.schedule}</span>
+                    </div>
+
+                    {/* Bottom CTA Row */}
+                    <div className="pt-2 flex items-center justify-between border-t border-stone-100">
+                      <span
+                        className="text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
+                        style={{ color: modColor }}
+                      >
+                        Explore Ministry <ArrowRight size={13} className="transition-transform group-hover:translate-x-1.5" />
+                      </span>
+                      <span
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs transition-transform duration-300 group-hover:scale-110 shadow-md"
+                        style={{ background: modColor }}
+                      >
+                        <ArrowRight size={12} />
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Hanging shadow on ground */}
+                {/* ── Realistic Hanging Ambient Ground Shadow ── */}
                 <div
-                  className="mx-auto mt-2 h-2 rounded-full opacity-20 group-hover:opacity-40 group-hover:w-4/5 transition-all duration-500"
-                  style={{ background: `radial-gradient(ellipse, ${modColor}60, transparent)`, width: '60%' }}
+                  className="mx-auto mt-3 h-3 rounded-full opacity-25 group-hover:opacity-45 group-hover:scale-x-110 transition-all duration-500 pointer-events-none"
+                  style={{
+                    background: `radial-gradient(ellipse, ${modColor}80 0%, transparent 70%)`,
+                    width: '75%',
+                    filter: 'blur(4px)',
+                  }}
                 />
               </motion.article>
             );
