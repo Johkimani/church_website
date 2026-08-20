@@ -114,6 +114,7 @@ const DeveloperTeamManager = lazy(() => import("./pages/Admin/pages/DeveloperTea
 const WhatsAppLinksManager = lazy(() => import("./pages/Admin/pages/WhatsAppLinksManager"));
 const JumuiyaNotificationsAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaNotificationsAdmin"));
 const JumuiyaTshirtsAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaTshirtsAdmin"));
+const JumuiyaSuggestionsAdmin = lazy(() => import("./pages/Admin/pages/JumuiyaSuggestionsAdmin"));
 const JumuiyaSelfRegister = lazy(() => import("./pages/Jumuiya/pages/JumuiyaSelfRegister"));
 const PublicJoin = lazy(() => import("./pages/PublicJoin"));
 

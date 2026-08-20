@@ -232,19 +232,19 @@ export default function JumuiyaSuggestionsAdmin() {
                       className="bg-slate-50 rounded-xl border border-slate-200 p-5 hover:bg-white transition-shadow"
                     >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-3 h-3 rounded-full ${
+                        <div className={`w-3 h-3 rounded-full ${
                           isAnonymous ? 'bg-slate-400' : 'bg-indigo-600'
-                        } shrink-0" />
+                        } shrink-0`} />
                         <div>
                           <p className="text-slate-700 font-medium">{displayName}</p>
                           <p className="text-xs text-slate-500">{s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}</p>
                         </div>
                       </div>
 
-                      <p className="text-slate-600 whitespace-pre-wrap text-sm line-clamp-3 line-clamp Maxw-none">{s.suggestion}</p>
+                      <p className="text-slate-600 whitespace-pre-wrap text-sm line-clamp-3">{s.suggestion}</p>
 
                       <div className="flex items-center gap-2 mt-3 text-xs text-slate-500">
-                        <span className={`px-2 py-1 rounded-full ${statusStatusColor[s.status] || 'bg-slate-100 text-slate-400'}`}>
+                        <span className={`px-2 py-1 rounded-full ${statusColor[s.status] || 'bg-slate-100 text-slate-400'}`}>
                           {statusLabel[s.status]}
                         </span>
                         {s.category && <span className="mx-2 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">#{s.category}</span>}
