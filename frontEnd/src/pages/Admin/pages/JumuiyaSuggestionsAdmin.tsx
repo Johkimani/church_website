@@ -4,7 +4,6 @@ import { apiClient } from '../../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import {
   MessageSquare,
-  Sender,
   CheckCircle2,
   XCircle,
   Shield,
@@ -200,7 +199,7 @@ export default function JumuiyaSuggestionsAdmin() {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Status Filter Pill Section — ORIGINAL ADMINSUGGESTIONS DESIGN */}
+              {/* Status Filter Pill Section */}
               <div className="flex gap-2 mb-4">
                 {STATUSES.map(s => {
                   const count = countByStatus(s);
@@ -218,7 +217,7 @@ export default function JumuiyaSuggestionsAdmin() {
                 })}
               </div>
 
-              {/* Search — ORIGINAL ADMINSUGGESTIONS DESIGN */}
+              {/* Search */}
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -230,7 +229,7 @@ export default function JumuiyaSuggestionsAdmin() {
                 />
               </div>
 
-              {/* Suggestions List — using original AdminSuggestions card layout */}
+              {/* Suggestions List */}
               <div className="space-y-4" aria-live="polite">
                 {filteredSuggestions.map((s) => {
                   const isAnonymous = !s.name && !s.email;
