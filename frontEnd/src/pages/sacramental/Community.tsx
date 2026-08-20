@@ -17,7 +17,6 @@ import {
   Heart,
   Star,
   UserPlus,
-  X,
   Check,
 } from 'lucide-react';
 
@@ -84,7 +83,6 @@ const Community: React.FC = () => {
   const { user } = useAuth();
   const [filter, setFilter] = useState<'all' | 'music' | 'prayer' | 'outreach'>('all');
   const [testimonialIdx, setTestimonialIdx] = useState(0);
-  const [joinModal, setJoinModal] = useState<{ id: string; title: string; color: string; description: string; saint_image_url?: string; image_url?: string } | null>(null);
 
   const { data: myCommunitiesData } = useQuery({
     queryKey: ['my-communities'],
@@ -120,17 +118,7 @@ const Community: React.FC = () => {
   }
 
   const handleCardClick = (mod: any) => {
-    if (myCommunityIds.has(mod.id)) {
-      navigate(`/community/${mod.id}`);
-    } else {
-      setJoinModal({
-        id: mod.id,
-        title: mod.title,
-        color: mod.color || '#b45309',
-        description: mod.description,
-        saint_image_url: mod.saint_image_url || mod.image_url || COMMUNITY_IMAGES[mod.id] || DEFAULT_COMMUNITY_IMAGE,
-      });
-    }
+    navigate(`/community/${mod.id}`);
   };
 
   return (
@@ -425,75 +413,6 @@ const Community: React.FC = () => {
         </p>
         <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">Matthew 18:20</p>
       </div>
-
-      {/* ── Join Gate Modal ── */}
-      <AnimatePresence>
-        {joinModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-            onClick={() => setJoinModal(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white rounded-3xl overflow-hidden max-w-sm w-full shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header Image */}
-              <div className="relative h-40 overflow-hidden">
-                {joinModal.saint_image_url ? (
-                  <img src={joinModal.saint_image_url} alt={joinModal.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${joinModal.color}, ${joinModal.color}cc)` }} />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <button
-                  onClick={() => setJoinModal(null)}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-all cursor-pointer"
-                >
-                   <X size={14} />
-                </button>
-                <div className="absolute bottom-4 left-4 right-4">
-                  <h3 className="text-white font-black text-xl drop-shadow-md">{joinModal.title}</h3>
-                </div>
-              </div>
-
-              {/* Modal Body */}
-              <div className="p-6">
-                <p className="text-slate-500 text-sm leading-relaxed mb-6">{joinModal.description}</p>
-
-                <p className="text-slate-700 text-sm font-semibold mb-4 text-center">
-                  Would you like to join this community?
-                </p>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setJoinModal(null)}
-                    className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
-                  >
-                    Not Now
-                  </button>
-                  <button
-                    onClick={() => {
-                      setJoinModal(null);
-                      navigate(`/community/${joinModal.id}/join`);
-                    }}
-                    className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer flex items-center justify-center gap-2"
-                    style={{ background: joinModal.color }}
-                  >
-                     <UserPlus size={13} /> Join Now
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
