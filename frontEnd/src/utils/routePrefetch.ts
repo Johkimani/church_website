@@ -156,7 +156,6 @@ const adminRouteLoaders: Record<string, Loader[]> = {
   "/admin/secretary-dashboard": [...adminShellLoaders, () => import("../pages/Admin/pages/SecretaryDashboard")],
   "/admin/activity-log": [...adminShellLoaders, () => import("../pages/Admin/pages/ActivityLog")],
   "/admin/bookings": [...adminShellLoaders, () => import("../pages/Admin/pages/AdminBookings")],
-  "/admin/rsvps": [...adminShellLoaders, () => import("../pages/Admin/pages/AdminRsvps")],
   "/admin/settings": [...adminShellLoaders, () => import("../pages/Admin/pages/Settings")],
   "/admin/developers": [...adminShellLoaders, () => import("../pages/Admin/pages/DeveloperTeamManager")],
 };

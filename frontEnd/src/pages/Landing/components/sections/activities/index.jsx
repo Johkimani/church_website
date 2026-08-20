@@ -3,12 +3,12 @@
 // same loading/error states, same card design system (white bg, slate text, blue accents)
 import { useState, useEffect, useRef } from "react";
 import { useCachedData } from "../../../../../hooks/useCachedData";
-import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, X, Smartphone, Loader2, CheckCircle2, AlertCircle, Users, Check } from "lucide-react";
+import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, X, Smartphone, Loader2, CheckCircle2, AlertCircle, Users } from "lucide-react";
 import apiService from "../../../../../services/api";
 import toast from "react-hot-toast";
 import useCountdown from "../../../../../hooks/useCountdown";
 import { useAuth } from "../../../../../context/AuthContext";
-import { bookingService, rsvpService } from "../../../../../api/activitiesServices";
+import { bookingService } from "../../../../../api/activitiesServices";
 import { useNavigate } from "react-router-dom";
 
 const ACTIVITY_ICONS = {
@@ -66,7 +66,7 @@ const getWeeklyActivityImage = (activity) => {
   return null;
 };
 
-function WeeklyCard({ activity, onBook, bookingState, rsvpState, onToggleRsvp }) {
+function WeeklyCard({ activity, onBook, bookingState }) {
   const { user } = useAuth();
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
   const icon = ACTIVITY_ICONS[activity.activity] || "";
@@ -129,68 +129,49 @@ function WeeklyCard({ activity, onBook, bookingState, rsvpState, onToggleRsvp })
 
   return (
     <div
-      className={`bg-white rounded-2xl border-l-4 ${colorClass} border border-slate-100 p-5
+      className={`bg-white rounded-2xl border-l-4 ${colorClass} border border-slate-100 p-4 sm:p-5
         hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.08)] transition-all duration-500
-        hover:-translate-y-0.5 cursor-default group`}
+        hover:-translate-y-0.5 cursor-default group overflow-hidden min-w-0 break-words flex flex-col justify-between`}
     >
-      <img
-        src={imgSrc}
-        alt={activity.activity}
-        className="w-full h-56 object-cover rounded-xl mb-4"
-        loading="lazy"
-      />
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">{activity.day}</p>
-          <h4 className="text-base font-black text-slate-800 group-hover:text-primary transition-colors duration-300">
-            {icon} {activity.activity}
-          </h4>
+      <div>
+        <div className="w-full aspect-video sm:aspect-[16/9] max-h-56 overflow-hidden rounded-xl mb-4 bg-slate-100">
+          <img
+            src={imgSrc}
+            alt={activity.activity}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        </div>
+        <div className="flex items-start justify-between mb-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">{activity.day}</p>
+            <h4 className="text-base font-black text-slate-800 group-hover:text-primary transition-colors duration-300 break-words">
+              {icon} {activity.activity}
+            </h4>
+          </div>
+        </div>
+        <div className="space-y-1.5 text-xs font-medium text-slate-500">
+          <p className="flex items-center gap-2">
+            <Clock size={12} className="text-primary/60 shrink-0" /><span className="truncate">{activity.time}</span>
+          </p>
+          <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
+          <p className="flex items-center gap-2">
+            <MapPin size={12} className="text-primary/60 shrink-0" /><span className="break-words">{activity.venue}</span>
+          </p>
         </div>
       </div>
-      <div className="space-y-1.5 text-xs font-medium text-slate-500">
-        <p className="flex items-center gap-2">
-          <Clock size={12} className="text-primary/60" />{activity.time}
-        </p>
-        <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
-        <p className="flex items-center gap-2">
-          <MapPin size={12} className="text-primary/60" />{activity.venue}
-        </p>
-        {!activity.jumuiya_id && activity.fare && Number(activity.fare) > 0 && (
-          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-            <span className="font-bold text-emerald-600">KES {Number(activity.fare).toLocaleString()}</span>
-            {renderBookButton()}
-          </div>
-        )}
-        {!activity.jumuiya_id && (
-          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
-              <Users size={12} className="text-primary/60" />
-              {rsvpState?.count || 0} going
-            </span>
-            {!user ? (
-              <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
-            ) : (
-              <button
-                onClick={(e) => { e.stopPropagation(); onToggleRsvp(activity); }}
-                disabled={rsvpState?.busy}
-                className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
-                  rsvpState?.going
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                }`}
-              >
-                {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
-                {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+
+      {!activity.jumuiya_id && activity.fare && Number(activity.fare) > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 mt-3 border-t border-slate-100">
+          <span className="font-bold text-emerald-600 text-xs sm:text-sm">KES {Number(activity.fare).toLocaleString()}</span>
+          {renderBookButton()}
+        </div>
+      )}
     </div>
   );
 }
 
-function SemesterCard({ event, onBook, bookingState, rsvpState, onToggleRsvp }) {
+function SemesterCard({ event, onBook, bookingState }) {
   const { user } = useAuth();
   const dt = new Date(event.date_time);
   const isPast = dt < new Date();
@@ -229,80 +210,63 @@ function SemesterCard({ event, onBook, bookingState, rsvpState, onToggleRsvp }) 
     <div
       className={`group bg-white rounded-[1.5rem] border border-slate-100
         hover:border-slate-200 hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)]
-        transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] p-6 cursor-default
+        transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] p-5 sm:p-6 cursor-default overflow-hidden min-w-0 break-words flex flex-col justify-between
         ${isPast ? "opacity-60" : ""}`}
     >
-      {event.image_url && (
-        <img
-          src={event.image_url}
-          alt={event.title}
-          className="w-full h-56 object-cover rounded-xl mb-4"
-          loading="lazy"
-        />
-      )}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex-1">
-          {isPast && (
-            <span className="inline-block text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full tracking-widest uppercase mb-2">
-              Past Event
-            </span>
-          )}
-          <h3 className="text-lg font-black text-slate-900 mb-1 group-hover:text-primary transition-colors duration-300">
-            {event.title}
-          </h3>
-          <p className="text-slate-500 text-sm font-medium leading-relaxed">
-            {event.description}
+      <div>
+        {event.image_url && (
+          <div className="w-full aspect-video sm:aspect-[16/9] max-h-60 overflow-hidden rounded-xl mb-4 bg-slate-100">
+            <img
+              src={event.image_url}
+              alt={event.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
+        )}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex-1 min-w-0">
+            {isPast && (
+              <span className="inline-block text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full tracking-widest uppercase mb-2">
+                Past Event
+              </span>
+            )}
+            <h3 className="text-lg font-black text-slate-900 mb-1 group-hover:text-primary transition-colors duration-300 break-words">
+              {event.title}
+            </h3>
+            {event.description && (
+              <p className="text-slate-500 text-sm font-medium leading-relaxed break-words">
+                {event.description}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="h-px w-full bg-slate-100 mb-4" />
+
+        <div className="space-y-2 text-xs font-medium text-slate-500">
+          <p className="flex items-center gap-2">
+            <Calendar size={12} className="text-primary/60 shrink-0" />
+            <span>{dt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+          </p>
+          <p className="flex items-center gap-2">
+            <Clock size={12} className="text-primary/60 shrink-0" />
+            <span>{dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+          </p>
+          <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
+          <p className="flex items-center gap-2">
+            <MapPin size={12} className="text-primary/60 shrink-0" />
+            <span className="break-words">{event.venue}</span>
           </p>
         </div>
       </div>
 
-      <div className="h-px w-full bg-slate-100 mb-4" />
-
-      <div className="space-y-2 text-xs font-medium text-slate-500">
-        <p className="flex items-center gap-2">
-          <Calendar size={12} className="text-primary/60" />
-          {dt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
-        <p className="flex items-center gap-2">
-          <Clock size={12} className="text-primary/60" />
-          {dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-        </p>
-        <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
-        <p className="flex items-center gap-2">
-          <MapPin size={12} className="text-primary/60" />
-          {event.venue}
-        </p>
-        {!event.jumuiya_id && event.fare && Number(event.fare) > 0 && (
-          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-            <span className="font-bold text-emerald-600">KES {Number(event.fare).toLocaleString()}</span>
-            {renderBookButton()}
-          </div>
-        )}
-        {!event.jumuiya_id && (
-          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500">
-              <Users size={12} className="text-primary/60" />
-              {rsvpState?.count || 0} going
-            </span>
-            {!user ? (
-              <span className="text-[9px] text-slate-400 italic">Login to RSVP</span>
-            ) : (
-              <button
-                onClick={(e) => { e.stopPropagation(); onToggleRsvp(event); }}
-                disabled={rsvpState?.busy}
-                className={`inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider transition-all ${
-                  rsvpState?.going
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                }`}
-              >
-                {rsvpState?.busy ? <Loader2 size={12} className="animate-spin" /> : rsvpState?.going ? <Check size={12} /> : null}
-                {rsvpState?.busy ? "..." : rsvpState?.going ? "Going" : "RSVP"}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+      {!event.jumuiya_id && event.fare && Number(event.fare) > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 mt-3 border-t border-slate-100">
+          <span className="font-bold text-emerald-600 text-xs sm:text-sm">KES {Number(event.fare).toLocaleString()}</span>
+          {renderBookButton()}
+        </div>
+      )}
     </div>
   );
 }
@@ -508,9 +472,6 @@ const ActivitiesSection = () => {
   const navigate = useNavigate();
   const [bookingTarget, setBookingTarget] = useState(null); // { activity, type, existingBooking }
   const [userBookings, setUserBookings] = useState([]);
-  const [rsvpCounts, setRsvpCounts] = useState({}); // `${type}:${id}` -> going count
-  const [myRsvps, setMyRsvps] = useState({});       // `${type}:${id}` -> true when going
-  const [rsvpBusy, setRsvpBusy] = useState({});     // `${type}:${id}` -> true while pending
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
     'csa_cache_public_activities',
     async () => {
@@ -528,48 +489,7 @@ const ActivitiesSection = () => {
 
   useEffect(() => {
     refreshBookings();
-    loadRsvps();
   }, [user]);
-
-  async function loadRsvps() {
-    try {
-      const counts = await rsvpService.getCounts();
-      const map = {};
-      (counts || []).forEach((c) => { map[`${c.activity_type}:${c.activity_id}`] = c.going_count; });
-      setRsvpCounts(map);
-    } catch (_) {}
-    if (user) {
-      try {
-        const mine = await rsvpService.getMyRsvps();
-        const m = {};
-        (mine || []).forEach((r) => { if (r.going) m[`${r.activity_type}:${r.activity_id}`] = true; });
-        setMyRsvps(m);
-      } catch (_) {}
-    } else {
-      setMyRsvps({});
-    }
-  }
-
-  async function handleToggleRsvp(activity, type) {
-    const key = `${type}:${activity.id}`;
-    if (rsvpBusy[key]) return;
-    const wasGoing = !!myRsvps[key];
-    const prevCount = rsvpCounts[key] || 0;
-
-    setMyRsvps((prev) => { const n = { ...prev }; if (wasGoing) delete n[key]; else n[key] = true; return n; });
-    setRsvpCounts((prev) => ({ ...prev, [key]: Math.max(0, prevCount + (wasGoing ? -1 : 1)) }));
-    setRsvpBusy((prev) => ({ ...prev, [key]: true }));
-    try {
-      const res = await rsvpService.setRsvp(type, activity.id, !wasGoing);
-      setRsvpCounts((prev) => ({ ...prev, [key]: res.count }));
-    } catch (err) {
-      setMyRsvps((prev) => { const n = { ...prev }; if (wasGoing) n[key] = true; else delete n[key]; return n; });
-      setRsvpCounts((prev) => ({ ...prev, [key]: prevCount }));
-      toast.error(err?.response?.data?.error || err?.message || "Failed to update RSVP");
-    } finally {
-      setRsvpBusy((prev) => { const n = { ...prev }; delete n[key]; return n; });
-    }
-  }
 
   async function refreshBookings() {
     if (user) {
@@ -619,7 +539,7 @@ const ActivitiesSection = () => {
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-[clamp(2.5rem,8vw,4.5rem)] leading-none tracking-[-0.03em] mb-6 bg-gradient-to-br from-slate-900 to-blue-800 bg-clip-text text-transparent">
+          <h2 className="text-[clamp(2.5rem,8vw,4.5rem)] leading-tight tracking-[-0.03em] mb-6 bg-gradient-to-br from-slate-900 to-blue-800 bg-clip-text text-transparent pb-1">
             CSA Activities
           </h2>
           <p className="text-slate-600 text-xl leading-[1.6] max-w-[650px] mx-auto">
@@ -654,12 +574,6 @@ const ActivitiesSection = () => {
                   key={a.id}
                   activity={a}
                   bookingState={bookingMap[`weekly:${a.id}`]}
-                  rsvpState={{
-                    count: rsvpCounts[`weekly:${a.id}`] || 0,
-                    going: !!myRsvps[`weekly:${a.id}`],
-                    busy: !!rsvpBusy[`weekly:${a.id}`],
-                  }}
-                  onToggleRsvp={(act) => handleToggleRsvp(act, 'weekly')}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
               ))}
@@ -688,12 +602,6 @@ const ActivitiesSection = () => {
                   key={e.id}
                   event={e}
                   bookingState={bookingMap[`semester:${e.id}`]}
-                  rsvpState={{
-                    count: rsvpCounts[`semester:${e.id}`] || 0,
-                    going: !!myRsvps[`semester:${e.id}`],
-                    busy: !!rsvpBusy[`semester:${e.id}`],
-                  }}
-                  onToggleRsvp={(act) => handleToggleRsvp(act, 'semester')}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
               ))}
@@ -715,4 +623,4 @@ const ActivitiesSection = () => {
   );
 };
 
-export default ActivitiesSection;
+export default ActivitiesSection;

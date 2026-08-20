@@ -141,7 +141,7 @@ export default function Privacy() {
                     { title: "Profile Data", desc: "Optional information such as profile picture, ministry interests, and emergency contact details." },
                     { title: "Transaction Records", desc: "Donation history, merchandise orders, rental bookings, and payment confirmations." },
                     { title: "Communications", desc: "Correspondence sent through our contact forms, support requests, schedule suggestions, and feedback submissions." },
-                    { title: "Event Participation", desc: "RSVP status, attendance history, and preferences for CSA events and activities." },
+                    { title: "Event Participation", desc: "Attendance history and preferences for CSA events and activities." },
                   ]} borderColor="border-blue-100" />
                 </div>
 

@@ -46,7 +46,6 @@ import {
   recordCashPayment,
   cancelBooking,
 } from "../../controllers/activityBookingController.js";
-import { getRsvpList } from "../../controllers/activityRsvpController.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 
 const router = Router();
@@ -207,8 +206,6 @@ router.post("/bookings", verifyToken, requireRole("os", "csa_chair"), createBook
 router.patch("/bookings/:id/payment", verifyToken, requireRole("os", "csa_chair"), recordCashPayment);
 // OS (or chair) cancels a booking because the person couldn't make the event.
 router.patch("/bookings/:id/cancel", verifyToken, requireRole("os", "csa_chair"), cancelBooking);
-
-router.get("/rsvps", verifyToken, requireRole("os", "csa_chair", "jumuiya_coordinator"), getRsvpList);
 
 export default router;
 

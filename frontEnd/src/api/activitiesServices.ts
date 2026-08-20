@@ -231,26 +231,3 @@ export const bookingService = {
     return res.data.data;
   },
 };
-
-export const rsvpService = {
-  // Member toggles attendance for an activity (returns { activity_type, activity_id, going, count })
-  setRsvp: async (activityType: string, activityId: number, going: boolean) => {
-    const res = await apiClient.post("/activities/rsvp", { activity_type: activityType, activity_id: activityId, going });
-    return res.data.data;
-  },
-  // Public: going-count per activity → [{ activity_type, activity_id, going_count }]
-  getCounts: async () => {
-    const res = await apiClient.get("/activities/rsvp/counts");
-    return res.data.data || [];
-  },
-  // Member's own RSVP states → [{ activity_type, activity_id, going }]
-  getMyRsvps: async () => {
-    const res = await apiClient.get("/activities/my-rsvps");
-    return res.data.data || [];
-  },
-  // Admin: who's going to a specific activity (paginated, { data, total, limit, offset })
-  getAdminList: async (activityType: string, activityId: number, offset = 0, limit = 100) => {
-    const res = await apiClient.get(`/admin/activities/rsvps?activity_type=${activityType}&activity_id=${activityId}&offset=${offset}&limit=${limit}`);
-    return res.data;
-  },
-};
