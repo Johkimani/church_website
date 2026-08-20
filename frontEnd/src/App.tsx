@@ -192,6 +192,7 @@ const App: React.FC = () => {
           <Route path="whatsapp-links" element={<WhatsAppLinksManager />} />
           <Route path="community-updates" element={<JumuiyaNotificationsAdmin />} />
           <Route path="jumuiya-tshirts" element={<JumuiyaTshirtsAdmin />} />
+          <Route path="jumuiya-suggestions" element={<JumuiyaSuggestionsAdmin />} />
           <Route path="developers" element={<DeveloperTeamManager />} />
         </Route>
 
