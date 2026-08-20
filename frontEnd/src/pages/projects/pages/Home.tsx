@@ -238,9 +238,7 @@ export const Home = () => {
                         {getTag(cat.id)}
                       </span>
                     )}
-                    <div className="absolute top-4 right-4 w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg text-white">
-                      {cat.icon}
-                    </div>
+
                     <div className="absolute bottom-4 left-6 right-6">
                       <h3 className="text-xl font-bold text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors">
                         {cat.label}
