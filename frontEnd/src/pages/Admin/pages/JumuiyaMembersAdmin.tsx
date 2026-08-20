@@ -87,10 +87,18 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
 
 const SummaryBarMemo = memo(SummaryBar);
 
-const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string; isJumuiyaOfficial?: boolean }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, isJumuiyaOfficial }) => {
+const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string; isJumuiyaOfficial?: boolean; canImport?: boolean }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, isJumuiyaOfficial, canImport }) => {
   const [activeTab, setActiveTab] = useState<SubTab>("dashboard");
 
-  const visibleTabs = (Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]);
+  const visibleTabs = useMemo(() => {
+    const all = (Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]);
+    if (canImport) return all;
+    return all.filter(([id]) => id !== "import");
+  }, [canImport]);
+
+  useEffect(() => {
+    if (!canImport && activeTab === "import") setActiveTab("dashboard");
+  }, [canImport, activeTab]);
 
   return (
     <div>
@@ -398,7 +406,7 @@ export default function JumuiyaMembersAdmin() {
           </div>
         </div>
 
-        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} />
+        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} canImport={normalizedRoles.includes("CSA_CHAIR") || normalizedRoles.includes("JUMUIYA_COORDINATOR")} />
       </div>
     );
   }
