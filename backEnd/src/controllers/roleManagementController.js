@@ -1,6 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import { getRoleNameForPosition, CSA_EXECUTIVE_ROLES } from "../utils/positionToRole.js";
+import { getRoleNameForPosition, CSA_EXECUTIVE_ROLES, getGroupRoleName } from "../utils/positionToRole.js";
 
 const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
 
@@ -115,6 +115,79 @@ export const syncPendingOfficialsToRoles = async () => {
           [memberId, roleId, effectiveJumuiyaId || null]
         );
         logger.info(`syncPendingOfficialsToRoles: Auto-created pending role ${roleName} for official ${off.name} (${off.category})`);
+      }
+    }
+
+    const groupOfficials = await pool.query(`
+      SELECT go.id, go.name, go.category, go.position, go.contact, go.reg_number
+      FROM group_officials go
+      WHERE (go.status = 'active' OR go.status IS NULL)
+    `);
+
+    for (const off of groupOfficials.rows) {
+      const roleName = getGroupRoleName(off.category, off.position);
+      if (!roleName) continue;
+
+      let roleRes = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [roleName]);
+      if (roleRes.rows.length === 0) {
+        roleRes = await pool.query(
+          "INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id",
+          [roleName, roleName.replace(/_/g, ' ')]
+        );
+      }
+      const roleId = roleRes.rows[0].role_id;
+
+      let memberId = off.reg_number?.trim() || null;
+
+      if (memberId) {
+        const mCheck = await pool.query("SELECT member_id FROM members WHERE member_id = $1", [memberId]);
+        if (mCheck.rows.length === 0) memberId = null;
+      }
+
+      if (!memberId && off.contact) {
+        const cleanPhone = off.contact.replace(/[^0-9]/g, '');
+        if (cleanPhone.length >= 8) {
+          const pMatch = await pool.query("SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1", [cleanPhone.slice(-8)]);
+          if (pMatch.rows.length > 0) memberId = pMatch.rows[0].member_id;
+        }
+      }
+
+      if (!memberId && off.name) {
+        const nMatch = await pool.query("SELECT member_id FROM members WHERE (first_name || ' ' || last_name) ILIKE $1 LIMIT 1", [`%${off.name.trim()}%`]);
+        if (nMatch.rows.length > 0) memberId = nMatch.rows[0].member_id;
+      }
+
+      if (!memberId) {
+        const nameParts = (off.name || 'Official').trim().split(/\s+/);
+        const fName = nameParts[0] || 'Official';
+        const lName = nameParts.slice(1).join(' ') || '';
+        const pDigits = off.contact ? off.contact.replace(/[^0-9]/g, '').slice(-5) : Math.floor(10000 + Math.random() * 90000);
+        memberId = `OFF/${pDigits}/${new Date().getFullYear().toString().slice(-2)}`;
+
+        await pool.query(
+          `INSERT INTO members (member_id, first_name, last_name, phone, join_date, status)
+           VALUES ($1, $2, $3, $4, NOW(), 'active')
+           ON CONFLICT (member_id) DO NOTHING`,
+          [memberId, fName, lName, off.contact || null]
+        );
+      }
+
+      if (off.reg_number !== memberId) {
+        await pool.query("UPDATE group_officials SET reg_number = $1 WHERE id = $2", [memberId, off.id]);
+      }
+
+      const existing = await pool.query(
+        "SELECT id FROM member_roles WHERE member_id = $1 AND role_id = $2",
+        [memberId, roleId]
+      );
+
+      if (existing.rows.length === 0) {
+        await pool.query(
+          `INSERT INTO member_roles (member_id, role_id, status, created_at)
+           VALUES ($1, $2, 'pending', NOW())`,
+          [memberId, roleId]
+        );
+        logger.info(`syncPendingOfficialsToRoles: Auto-created pending role ${roleName} for group official ${off.name} (${off.category})`);
       }
     }
   } catch (err) {

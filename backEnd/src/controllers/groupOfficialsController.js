@@ -11,6 +11,7 @@ import {
   formatPhoneForExcel 
 } from '../utils/helpers.js';
 import { isOfficial } from '../middlewares/requireRole.js';
+import { autoAssignRoleForOfficial, removeRoleForOfficial } from '../utils/positionToRole.js';
 import logger from "../logger/winston.js";
 import { emitSocketEvent } from "../socket/index.js";
 
@@ -289,6 +290,15 @@ export const createGroupOfficial = async (req, res) => {
 
     await syncCurrentTerm(term_of_service);
 
+    if (validatedRegNumber && position) {
+      const roleResult = await autoAssignRoleForOfficial(
+        validatedRegNumber, position, false, category, req.user?.member_id || null, category
+      );
+      if (roleResult) {
+        logger.info(`Auto-assigned role for group official ${name}: ${JSON.stringify(roleResult)}`);
+      }
+    }
+
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_group", data: result.rows[0] });
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -384,6 +394,27 @@ export const updateGroupOfficial = async (req, res) => {
       [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
+    const oldPosition = existing.rows[0].position;
+    const oldRegNumber = existing.rows[0].reg_number;
+    const oldCategory = existing.rows[0].category;
+    const newPosition = result.rows[0].position;
+    const newRegNumber = result.rows[0].reg_number;
+    const newCategory = result.rows[0].category;
+
+    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber || oldCategory !== newCategory) {
+      if (oldRegNumber && oldPosition) {
+        await removeRoleForOfficial(oldRegNumber, oldPosition, false, oldCategory);
+      }
+      if (newRegNumber && newPosition) {
+        const roleResult = await autoAssignRoleForOfficial(
+          newRegNumber, newPosition, false, newCategory, req.user?.member_id || null, newCategory
+        );
+        if (roleResult) {
+          logger.info(`Auto-assigned role for updated group official: ${JSON.stringify(roleResult)}`);
+        }
+      }
+    }
+
     if (term_of_service) {
       await syncCurrentTerm(term_of_service);
     }
@@ -407,6 +438,10 @@ export const deleteGroupOfficial = async (req, res) => {
     }
 
     const official = result.rows[0];
+
+    if (official.reg_number && official.position) {
+      await removeRoleForOfficial(official.reg_number, official.position, false, official.category);
+    }
 
     if (official.photo) {
       if (official.photo.startsWith('http')) {

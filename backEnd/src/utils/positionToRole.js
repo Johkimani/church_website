@@ -8,6 +8,49 @@ export const CSA_EXECUTIVE_ROLES = [
   "treasurer", "liturgist",
 ];
 
+export const GROUP_CATEGORY_POSITION_TO_ROLE = {
+  'Choir': {
+    'Choir Master': 'choir_chairperson',
+    'Choir Mistress': 'choir_chairperson',
+    'Secretary': 'choir_secretary',
+    'Project Manager': 'choir_project_coordinator',
+  },
+  'Dancers': {
+    'Chairperson': 'dance_chair',
+  },
+  'Charismatic': {
+    'Chairperson': 'charismatic_chair',
+  },
+  'St. Francis': {
+    'Chairperson': 'st_francis_chair',
+  },
+  'Mentorship': {
+    'Coordinator': 'mentorship_chair',
+  },
+};
+
+export const GROUP_ROLES = [
+  'choir_chairperson', 'choir_secretary', 'choir_project_coordinator',
+  'dance_chair', 'charismatic_chair', 'st_francis_chair', 'mentorship_chair',
+];
+
+export const getGroupRoleName = (category, position) => {
+  if (!category || !position) return null;
+  const groupMap = GROUP_CATEGORY_POSITION_TO_ROLE[category];
+  if (!groupMap) return null;
+  const cleanPos = position.toString().trim();
+  if (groupMap[cleanPos]) return groupMap[cleanPos];
+  const lower = cleanPos.toLowerCase();
+  if (category === 'Choir' && (lower.includes('master') || lower.includes('mistress'))) return 'choir_chairperson';
+  if (category === 'Mentorship' && lower.includes('coordinator') && !lower.includes('vice')) return 'mentorship_chair';
+  if (lower.includes('chair') && !lower.includes('vice')) {
+    if (category === 'Dancers') return 'dance_chair';
+    if (category === 'Charismatic') return 'charismatic_chair';
+    if (category === 'St. Francis') return 'st_francis_chair';
+  }
+  return null;
+};
+
 export const CSA_POSITION_TO_ROLE = {
   'Chairperson': 'csa_chair',
   'Vice Chairperson': 'csa_vice_chair',
@@ -91,9 +134,9 @@ export const getRoleNameForPosition = (position, isJumuiya) => {
   return null;
 };
 
-export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, category, assignedBy) => {
+export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, category, assignedBy, groupCategory) => {
   try {
-    const roleName = getRoleNameForPosition(position, isJumuiya);
+    const roleName = groupCategory ? getGroupRoleName(groupCategory, position) : getRoleNameForPosition(position, isJumuiya);
     if (!roleName) return null;
 
     if (!regNumber) return null;
@@ -245,8 +288,8 @@ export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, 
   }
 };
 
-export const removeRoleForOfficial = async (regNumber, position, isJumuiya) => {
-  const roleName = getRoleNameForPosition(position, isJumuiya);
+export const removeRoleForOfficial = async (regNumber, position, isJumuiya, groupCategory) => {
+  const roleName = groupCategory ? getGroupRoleName(groupCategory, position) : getRoleNameForPosition(position, isJumuiya);
   if (!roleName || !regNumber) return;
 
   const memberResult = await pool.query(
