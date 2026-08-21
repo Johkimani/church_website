@@ -762,53 +762,69 @@ export default function CommunityDetailEditor() {
           <div className="flex-1 overflow-y-auto p-6">
           {/* ABOUT TAB */}
           {activeTab === 'about' && (
-            <div className="space-y-6 max-w-2xl">
-              <p className="text-sm text-slate-500 font-medium">
-                Manage the biography, image, and PDF history document displayed on the public About tab.
-              </p>
-              <div>
-                <label className="text-sm font-bold text-slate-700 block mb-1">Biography / Description</label>
-                <textarea
-                  rows={8}
-                  className="w-full border border-slate-200 px-4 py-3 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
-                  placeholder="Enter a biography or description for this community..."
-                  value={aboutForm.biography}
-                  onChange={(e) => setAboutForm(v => ({ ...v, biography: e.target.value }))}
-                />
+            <div className="space-y-5 max-w-2xl">
+              <div
+                className="rounded-2xl px-5 py-4 flex items-center gap-3 border"
+                style={{ background: `${accentColor}10`, borderColor: `${accentColor}30` }}
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${accentColor}20`, color: accentColor }}>
+                  <FilePdf size={16} />
+                </div>
+                <p className="text-xs font-bold leading-relaxed" style={{ color: accentColor }}>
+                  Manage the biography, image, and PDF history document displayed on the public About tab.
+                </p>
               </div>
-              <div>
-                <label className="text-sm font-bold text-slate-700 block mb-1">Saint / Community Image URL</label>
-                <input
-                  type="url"
-                  className="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="https://... (direct image link)"
-                  value={aboutForm.saint_image_url}
-                  onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
-                />
-                {aboutForm.saint_image_url && (
-                  <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border shadow-sm" />
-                )}
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-6 shadow-sm">
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Biography / Description</label>
+                  <textarea
+                    rows={8}
+                    className="w-full border border-slate-300 bg-white px-4 py-3 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 resize-y"
+                    style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
+                    placeholder="Enter a biography or description for this community..."
+                    value={aboutForm.biography}
+                    onChange={(e) => setAboutForm(v => ({ ...v, biography: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image URL</label>
+                  <input
+                    type="url"
+                    className="w-full border border-slate-300 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
+                    placeholder="https://... (direct image link)"
+                    value={aboutForm.saint_image_url}
+                    onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
+                  />
+                  {aboutForm.saint_image_url && (
+                    <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border-2 border-slate-200 shadow-md" />
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">History PDF URL</label>
+                  <input
+                    type="url"
+                    className="w-full border border-slate-300 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
+                    placeholder="https://... (link to PDF document)"
+                    value={aboutForm.history_pdf_url}
+                    onChange={(e) => setAboutForm(v => ({ ...v, history_pdf_url: e.target.value }))}
+                  />
+                  {aboutForm.history_pdf_url && (
+                    <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-600 font-bold hover:underline">
+                      <FilePdf size={16} /> Preview PDF
+                    </a>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-bold text-slate-700 block mb-1">History PDF URL</label>
-                <input
-                  type="url"
-                  className="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="https://... (link to PDF document)"
-                  value={aboutForm.history_pdf_url}
-                  onChange={(e) => setAboutForm(v => ({ ...v, history_pdf_url: e.target.value }))}
-                />
-                {aboutForm.history_pdf_url && (
-                  <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-600 font-bold hover:underline">
-                    <FilePdf size={16} /> Preview PDF
-                  </a>
-                )}
-              </div>
-              <div className="flex justify-end pt-2">
+
+              <div className="flex justify-end pt-1">
                 <button
                   onClick={handleSaveAbout}
                   disabled={aboutSaving}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl transition-all shadow-md disabled:opacity-60"
+                  style={{ background: accentColor }}
                 >
                   {aboutSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {aboutSaving ? 'Saving...' : 'Save About Content'}
