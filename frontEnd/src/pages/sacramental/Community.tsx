@@ -1,7 +1,14 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useCommunityData } from './context/CommunityDataContext';
-import '../Jumuiya/JumuiyaLanding.css';
+import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/axiosInstance';
+import CommunityDetail from './CommunityDetail';
+import CommunityAboutTab from './components/tabs/CommunityAboutTab';
+import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots } from 'react-icons/fa';
+import { FaBars } from 'react-icons/fa';
+import '../../../Jumuiya/components/TabsSystem.css';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e3a5f',
@@ -23,12 +30,65 @@ const COMMUNITY_IMAGES: Record<string, string> = {
 
 const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396-1e831a7fa6d8?auto=format&fit=crop&q=80&w=800';
 
+const TAB_ICONS: Record<string, React.ReactNode> = {
+  choir: <FaUserTie />,
+  dancers: <FaUsers />,
+  charismatic: <FaShareAlt />,
+  'st-francis': <FaBars />,
+  mentorship: <FaUsers />,
+};
+
+const TAB_LABELS: Record<string, string> = {
+  choir: 'Choir',
+  dancers: 'Dancers',
+  charismatic: 'Charismatic',
+  'st-francis': 'St. Francis',
+  mentorship: 'Mentorship',
+};
+
+const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
+  choir: ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator'],
+  dancers: ['dance_chair'],
+  charismatic: ['charismatic_chair'],
+  'st-francis': ['st_francis_chair'],
+  mentorship: ['mentorship_chair'],
+};
+
 const Community: React.FC = () => {
   const navigate = useNavigate();
   const { modules } = useCommunityData();
+  const { user } = useAuth();
 
-  const allowedIds = ['choir', 'dancers', 'charismatic', 'st-francis', 'youth', 'mentorship'];
-  const activeModules = (modules || []).filter((mod) => allowedIds.includes(mod.id));
+  // Determine which modules the user can access based on their role
+  let activeModules = modules || [];
+
+  if (user?.role) {
+    const userRoles = Array.isArray(user.role) ? user.role : [user.role];
+    const userRoleUpper = userRoles.map((r) => String(r).toUpperCase().trim());
+
+    // If user is global admin (CSA chair), show all modules
+    const isGlobalAdmin = userRoleUpper.includes('CSA_CHAIR') || userRoleUpper.includes('OS') || userRoleUpper.includes('JUMUIYA_COORDINATOR');
+
+    if (isGlobalAdmin) {
+      // Show all modules
+      activeModules = modules || [];
+    } else {
+      // Filter modules based on user's group role
+      const userModule = userRoles.find((r) => GROUP_ROLES_BY_MODULE[r]);
+      if (userModule) {
+        const allowed = GROUP_ROLES_BY_MODULE[userModule];
+        activeModules = (modules || []).filter((mod) =>
+          allowed.some((role) => userRoles.includes(role))
+        );
+      } else {
+        // No matching group role; show no modules or fallback
+        activeModules = [];
+      }
+    }
+  } else {
+    // No user data; show all modules as default
+    activeModules = modules || [];
+  }
 
   const handleCardClick = (moduleId: string) => {
     navigate(`/community/${moduleId}`);
