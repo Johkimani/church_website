@@ -1,39 +1,48 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import PhoneInput from 'react-phone-number-input/input';
-import { isValidPhoneNumber } from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
-import { Upload, X, Check, BarChart2, Search, UserCheck } from 'lucide-react';
-import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
-import { resizeImage } from '../../../utils/imageOptimization';
-import { memberService } from '../../../api/jumuiyaMemberService';
+ import React, { useState, useEffect, useCallback, useRef } from 'react';
+ import PhoneInput from 'react-phone-number-input/input';
+ import { isValidPhoneNumber } from 'react-phone-number-input';
+ import 'react-phone-number-input/style.css';
+ import { Upload, X, Check, BarChart2, Search, UserCheck } from 'lucide-react';
+ import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
+ import { resizeImage } from '../../../utils/imageOptimization';
+ import { memberService } from '../../../api/jumuiyaMemberService';
 
-interface OfficialFormSectionProps {
- onSubmit: (formData: FormData) => Promise<void>;
- isSubmitting: boolean;
- displayTerm?: string;
- officialsExist: boolean;
- mode?: 'csa' | 'jumuiya' | 'groups';
- allOfficials?: any[];
-}
+ interface OfficialFormSectionProps {
+  onSubmit: (formData: FormData) => Promise<void>;
+  isSubmitting: boolean;
+  displayTerm?: string;
+  officialsExist: boolean;
+  mode?: 'csa' | 'jumuiya' | 'groups';
+  allOfficials?: any[];
+ }
 
-export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, officialsExist, mode = 'csa', allOfficials = [] }: OfficialFormSectionProps) {
- const [name, setName] = useState('');
- const [category, setCategory] = useState('');
- const [position, setPosition] = useState('');
- const [contact, setContact] = useState('');
- const [contactError, setContactError] = useState('');
- const [termOfService, setTermOfService] = useState('');
- const [photo, setPhoto] = useState<File | null>(null);
- const [preview, setPreview] = useState<string | null>(null);
- const [showProgressModal, setShowProgressModal] = useState(false);
- const [regNumber, setRegNumber] = useState('');
- const [lookupResults, setLookupResults] = useState<any[]>([]);
- const [lookupLoading, setLookupLoading] = useState(false);
- const [lookupError, setLookupError] = useState('');
- const [showLookupDropdown, setShowLookupDropdown] = useState(false);
- const [memberFound, setMemberFound] = useState(false);
- const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
- const dropdownRef = useRef<HTMLDivElement>(null);
+ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, officialsExist, mode = 'csa', allOfficials = [] }: OfficialFormSectionProps) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [position, setPosition] = useState('');
+  const [contact, setContact] = useState('');
+  const [contactError, setContactError] = useState('');
+  const [termOfService, setTermOfService] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [regNumber, setRegNumber] = useState('');
+  const [lookupResults, setLookupResults] = useState<any[]>([]);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+  const [showLookupDropdown, setShowLookupDropdown] = useState(false);
+  const [memberFound, setMemberFound] = useState(false);
+  const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const nameDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Name lookup state
+  const [nameLookupResults, setNameLookupResults] = useState<any[]>([]);
+  const [nameLookupLoading, setNameLookupLoading] = useState(false);
+  const [nameLookupError, setNameLookupError] = useState('');
+  const [showNameLookupDropdown, setShowNameLookupDropdown] = useState(false);
+  const [nameMemberFound, setNameMemberFound] = useState(false);
+  const nameLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const categoryStats = React.useMemo(() => {
     const stats: Record<string, { count: number; limit: number; isFull: boolean }> = {};
@@ -65,11 +74,14 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  }
  }, [displayTerm]);
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowLookupDropdown(false);
+      }
+      if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
+        setShowNameLookupDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -106,13 +118,17 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
        const m = data[0];
        setName(`${m.first_name} ${m.last_name}`);
        if (m.phone) setContact(m.phone);
+       if (mode === 'jumuiya' && m.jumuiya_name) {
+         const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+         if (matched) { setCategory(matched); setPosition(''); }
+       }
        setMemberFound(true);
        setShowLookupDropdown(false);
      } else if (data.length > 1) {
        setShowLookupDropdown(true);
        setMemberFound(false);
      } else {
-       setLookupError('No member found with that registration number');
+       setLookupError('No member found');
        setMemberFound(false);
        setShowLookupDropdown(false);
      }
@@ -121,7 +137,7 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
    } finally {
      setLookupLoading(false);
    }
- }, []);
+ }, [mode]);
 
  const handleRegNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
    const val = e.target.value;
@@ -134,6 +150,10 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  const selectLookupResult = (m: any) => {
    setName(`${m.first_name} ${m.last_name}`);
    if (m.phone) setContact(m.phone);
+   if (mode === 'jumuiya' && m.jumuiya_name) {
+     const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+     if (matched) { setCategory(matched); setPosition(''); }
+   }
    setMemberFound(true);
    setShowLookupDropdown(false);
    setLookupResults([]);
@@ -144,6 +164,74 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
    setMemberFound(false);
    setLookupResults([]);
    setLookupError('');
+ };
+
+ // ── Name field lookup ──
+ const nameLookup = useCallback(async (value: string) => {
+   if (value.trim().length < 2) {
+     setNameLookupResults([]);
+     setNameLookupError('');
+     setNameMemberFound(false);
+     setShowNameLookupDropdown(false);
+     return;
+   }
+   setNameLookupLoading(true);
+   setNameLookupError('');
+   try {
+     const res = await memberService.lookupMemberByRegNumber(value.trim());
+     const data = res.data || [];
+     setNameLookupResults(data);
+     if (data.length === 1) {
+       const m = data[0];
+       setRegNumber(m.member_id || '');
+       if (m.phone) setContact(m.phone);
+       if (mode === 'jumuiya' && m.jumuiya_name) {
+         const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+         if (matched) { setCategory(matched); setPosition(''); }
+       }
+       setNameMemberFound(true);
+       setShowNameLookupDropdown(false);
+     } else if (data.length > 1) {
+       setShowNameLookupDropdown(true);
+       setNameMemberFound(false);
+     } else {
+       setNameLookupError('No member found');
+       setNameMemberFound(false);
+       setShowNameLookupDropdown(false);
+     }
+   } catch {
+     setNameLookupError('Lookup failed');
+   } finally {
+     setNameLookupLoading(false);
+   }
+ }, [mode]);
+
+ const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+   const val = e.target.value;
+   setName(val);
+   setNameMemberFound(false);
+   if (nameLookupTimerRef.current) clearTimeout(nameLookupTimerRef.current);
+   nameLookupTimerRef.current = setTimeout(() => nameLookup(val), 500);
+ };
+
+ const selectNameLookupResult = (m: any) => {
+   setName(`${m.first_name} ${m.last_name}`);
+   setRegNumber(m.member_id || '');
+   if (m.phone) setContact(m.phone);
+   if (mode === 'jumuiya' && m.jumuiya_name) {
+     const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+     if (matched) { setCategory(matched); setPosition(''); }
+   }
+   setNameMemberFound(true);
+   setShowNameLookupDropdown(false);
+   setNameLookupResults([]);
+ };
+
+ const clearNameLink = () => {
+   setName('');
+   setNameMemberFound(false);
+   setNameLookupResults([]);
+   setNameLookupError('');
  };
 
   const availableJumuiyaRoles = React.useMemo(() => {
@@ -199,6 +287,9 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  setMemberFound(false);
  setLookupResults([]);
  setLookupError('');
+ setNameMemberFound(false);
+ setNameLookupResults([]);
+ setNameLookupError('');
  } catch (err) {
  console.error('Submission error:', err);
  }
@@ -266,16 +357,54 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 ">Name *</label>
-                    <input 
-                      value={name} 
-                      onChange={e => setName(e.target.value)} 
-                      placeholder="Auto-filled from member lookup" 
-                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none" 
-                      required 
-                    />
-                  </div>
+                   <div className="space-y-2" ref={nameDropdownRef}>
+                     <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                       <Search className="w-3.5 h-3.5 text-gray-400" />
+                       Name <span className="text-xs font-normal text-gray-400">(type to search & auto-fill)</span>
+                     </label>
+                     <div className="relative">
+                       <input
+                         value={name}
+                         onChange={handleNameChange}
+                         placeholder="e.g. John Doe"
+                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none"
+                         required
+                       />
+                       {nameLookupLoading && (
+                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                         </div>
+                       )}
+                       {nameMemberFound && (
+                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                           <UserCheck className="w-4 h-4" />
+                         </div>
+                       )}
+                     </div>
+                     {nameLookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{nameLookupError}</div>}
+                     {nameMemberFound && (
+                       <div className="text-green-600 text-xs font-medium flex items-center gap-1">
+                         <Check className="w-3 h-3" />Member found — reg & phone auto-filled
+                         <button type="button" onClick={clearNameLink} className="ml-2 text-red-500 hover:text-red-700 underline text-[10px]">Clear</button>
+                       </div>
+                     )}
+                     {showNameLookupDropdown && nameLookupResults.length > 1 && (
+                       <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                         {nameLookupResults.map((m: any, i: number) => (
+                           <button
+                             key={i}
+                             type="button"
+                             onClick={() => selectNameLookupResult(m)}
+                             className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                           >
+                             <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
+                             <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
+                             {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
+                           </button>
+                         ))}
+                       </div>
+                     )}
+                   </div>
 
  <div className="space-y-2">
  <div className="flex justify-between items-center mb-1">
