@@ -640,36 +640,46 @@ export const getGroupOfficialsByTerm = async (req, res) => {
   try {
     const { termId } = req.params;
     const includeArchived = req.query.include_archived === 'true';
+    const categoryFilter = req.query.category || null;
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
 
     let queryBase;
     let params = [];
+    let paramIdx = 1;
+
+    const addCategoryWhere = (existingWhere) => {
+      if (!categoryFilter) return '';
+      const clause = ` AND LOWER(o.category) = LOWER($${paramIdx})`;
+      paramIdx++;
+      return clause;
+    };
 
     if (termId) {
       queryBase = `
         FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
-        WHERE o.election_term_id = $1 AND o.status = 'archived'`;
+        WHERE o.election_term_id = $${paramIdx} AND o.status = 'archived'${addCategoryWhere()}`;
       params = [termId];
+      if (categoryFilter) params.push(categoryFilter);
     } else if (req.query.only_archived === 'true') {
       queryBase = `
         FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
-        WHERE o.status = 'archived'`;
-      params = [];
+        WHERE o.status = 'archived'${addCategoryWhere()}`;
+      params = categoryFilter ? [categoryFilter] : [];
     } else if (includeArchived) {
       queryBase = `
         FROM group_officials o
-        LEFT JOIN election_terms et ON o.election_term_id = et.id`;
-      params = [];
+        LEFT JOIN election_terms et ON o.election_term_id = et.id${addCategoryWhere()}`;
+      params = categoryFilter ? [categoryFilter] : [];
     } else {
       queryBase = `
         FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
-        WHERE o.status = 'active' OR o.status IS NULL`;
-      params = [];
+        WHERE (o.status = 'active' OR o.status IS NULL)${addCategoryWhere()}`;
+      params = categoryFilter ? [categoryFilter] : [];
     }
 
     const countQuery = `SELECT COUNT(*) ${queryBase}`;
@@ -680,7 +690,7 @@ export const getGroupOfficialsByTerm = async (req, res) => {
       SELECT o.*, et.name as term_name, et.year as term_year 
       ${queryBase} 
       ${termId || req.query.only_archived === 'true' ? `ORDER BY et.year DESC ${GROUP_SORT_SQL.replace('ORDER BY', ',')}` : GROUP_SORT_SQL}
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
 

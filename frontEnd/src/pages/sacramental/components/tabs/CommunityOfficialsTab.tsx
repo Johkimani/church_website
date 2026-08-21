@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CommunityModule } from '../../context/CommunityDataContext';
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaUserTie, FaIdBadge } from 'react-icons/fa';
-import '../../../Jumuiya/components/TabsSystem.css';
+import { apiClient } from '../../../api/axiosInstance';
+import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaUserTie, FaHistory, FaIdBadge } from 'react-icons/fa';
+import '../../../pages/Jumuiya/components/TabsSystem.css';
 
 interface Props {
   module: CommunityModule;
@@ -9,18 +10,81 @@ interface Props {
   isAdmin?: boolean;
 }
 
+interface ArchivedOfficial {
+  id: string;
+  name: string;
+  position: string;
+  photo: string | null;
+  contact: string | null;
+  category: string;
+  term_name: string | null;
+  term_year: number | null;
+}
+
 const LEADER_KEYWORDS = ['chair', 'leader', 'president', 'head', 'coordinator', 'chaplain'];
+
+const MODULE_TO_CATEGORY: Record<string, string> = {
+  choir: 'Choir',
+  dancers: 'Dancers',
+  charismatic: 'Charismatic',
+  'st-francis': 'St. Francis',
+};
+
+const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md' | 'lg' }> = ({ name, image, size = 'md' }) => {
+  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const fontSize = size === 'xs' ? '0.65rem' : size === 'sm' ? '0.85rem' : '1.2rem';
+
+  if (image) {
+    return (
+      <div className="w-full h-full">
+        <img src={image} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center font-bold"
+      style={{
+        background: 'var(--jumuiya-color)',
+        color: 'white',
+        fontSize: size === 'lg' ? '2.5rem' : fontSize
+      }}
+    >
+      {initials}
+    </div>
+  );
+};
 
 const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
   const officials = module.officials || [];
-  const [flippedId, setFlippedId] = useState<string | null>(null);
+  const moduleId = module.id || '';
+  const [formerOfficials, setFormerOfficials] = useState<ArchivedOfficial[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const leader = officials.find((o: any) =>
     LEADER_KEYWORDS.some((k) => (o.role || o.position || '').toLowerCase().includes(k))
   );
   const others = officials.filter((o: any) => o !== leader);
 
+  const _c = (s: string) => color.length > 7 ? color.slice(0, 7) + s : color + s;
+
   const formatPhone = (phone: string) => phone.replace(/\D/g, '').replace(/^0/, '254');
+
+  useEffect(() => {
+    const category = MODULE_TO_CATEGORY[moduleId];
+    if (!category) return;
+
+    setLoadingHistory(true);
+    apiClient.get('/group-officials/term', {
+      params: { only_archived: 'true', category, limit: 100 }
+    })
+      .then((res) => {
+        const data = Array.isArray(res.data?.data) ? res.data.data : [];
+        setFormerOfficials(data);
+      })
+      .catch(() => setFormerOfficials([]))
+      .finally(() => setLoadingHistory(false));
+  }, [moduleId]);
 
   return (
     <div className="tab-system-content" style={{ '--jumuiya-color': color } as React.CSSProperties}>
@@ -84,100 +148,65 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
             </div>
           )}
 
-          {/* Other officials grid */}
+          {/* Other officials grid — matching jumuiya OfficialsTab style */}
           {others.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
               {others.map((official: any) => {
                 const initials = (official.name || '').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-                const isFlipped = flippedId === official.id;
                 return (
-                  <div
+                  <article
                     key={official.id}
-                    className="relative group"
-                    style={{ perspective: '1000px', minHeight: '200px' }}
+                    className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px] border border-gray-100"
                   >
-                    <div
-                      className="relative w-full h-full transition-transform duration-500"
-                      style={{
-                        transformStyle: 'preserve-3d',
-                        transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                      }}
-                    >
-                      {/* Front */}
-                      <div
-                        className="absolute inset-0 rounded-2xl p-6 overflow-hidden cursor-pointer"
-                        style={{
-                          backfaceVisibility: 'hidden',
-                          background: 'white',
-                          border: `1px solid ${color}15`,
-                          boxShadow: `0 2px 12px ${color}08`,
-                        }}
-                        onClick={() => setFlippedId(isFlipped ? null : official.id)}
-                      >
-                        <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
-                        <div className="flex items-start gap-4 mt-1">
-                          <div
-                            className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 shadow-lg transition-transform group-hover:scale-105"
-                            style={{ border: `3px solid ${color}20` }}
-                          >
-                            {(official.photoUrl || official.photo_url) ? (
-                              <img src={official.photoUrl || official.photo_url} alt={official.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center font-black text-xl text-white" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
-                                {initials}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-black text-slate-800 text-base truncate">{official.name}</h3>
-                            <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg mt-1" style={{ background: `${color}12`, color }}>
-                              {official.role || official.position}
-                            </span>
-                            <p className="text-[10px] text-slate-400 font-semibold mt-2">Tap to reveal contact →</p>
-                          </div>
-                        </div>
-                      </div>
+                    {/* Photo Container */}
+                    <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
+                      <Avatar name={official.name} image={official.photoUrl || official.photo_url} size="lg" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
 
-                      {/* Back - Contact strip */}
-                      <div
-                        className="absolute inset-0 rounded-2xl p-6 overflow-hidden cursor-pointer"
-                        style={{
-                          backfaceVisibility: 'hidden',
-                          transform: 'rotateY(180deg)',
-                          background: `linear-gradient(135deg, ${color}08 0%, white 100%)`,
-                          border: `1px solid ${color}20`,
-                          boxShadow: `0 2px 12px ${color}08`,
-                        }}
-                        onClick={() => setFlippedId(null)}
-                      >
-                        <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
-                        <div className="flex flex-col items-center justify-center h-full gap-4">
-                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: `${color}15` }}>
-                            <FaIdBadge size={24} style={{ color }} />
-                          </div>
-                          <h3 className="font-black text-slate-800 text-base">{official.name}</h3>
-                          <div className="flex gap-2 flex-wrap justify-center">
-                            {(official.phoneNumber || official.phone) && (
-                              <a href={`tel:${official.phoneNumber || official.phone}`} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105" style={{ background: `${color}15`, color }}>
-                                <FaPhoneAlt size={11} /> Call
-                              </a>
-                            )}
-                            {(official.phoneNumber || official.phone) && (
-                              <a href={`https://wa.me/${formatPhone(official.phoneNumber || official.phone)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-emerald-600 bg-emerald-50 transition-all hover:scale-105">
-                                <FaWhatsapp size={11} /> WhatsApp
-                              </a>
-                            )}
-                            {official.email && (
-                              <a href={`mailto:${official.email}`} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50 transition-all hover:scale-105">
-                                <FaEnvelope size={11} /> Email
-                              </a>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-slate-400 font-semibold">← Tap to flip back</p>
-                        </div>
+                    {/* Content */}
+                    <div className="p-5 text-center">
+                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
+                        {official.name}
+                      </h3>
+                      <p className="text-sm font-semibold mt-2 px-3 py-1 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] rounded-full inline-block">
+                        {official.role || official.position}
+                      </p>
+
+                      {/* Contact Actions */}
+                      <div className="mt-5 pt-4 border-t border-gray-50 flex justify-center gap-3">
+                        {(official.phoneNumber || official.phone) && (
+                          <>
+                            <a
+                              href={`tel:${(official.phoneNumber || official.phone).replace(/[^+0-9]/g, '')}`}
+                              className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:bg-[var(--jumuiya-color)] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                              title="Call Official"
+                            >
+                              <FaPhoneAlt size={14} />
+                            </a>
+                            <a
+                              href={`https://wa.me/${formatPhone(official.phoneNumber || official.phone)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                              title="WhatsApp"
+                            >
+                              <FaWhatsapp size={18} />
+                            </a>
+                          </>
+                        )}
+                        {official.email && (
+                          <a
+                            href={`mailto:${official.email}`}
+                            className="w-10 h-10 rounded-xl bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                            title="Email Official"
+                          >
+                            <FaEnvelope size={14} />
+                          </a>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
@@ -189,6 +218,61 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
             <FaUserTie style={{ color: `${color}40` }} size={28} />
           </div>
           <p className="font-semibold text-slate-400 text-sm">Leadership team information coming soon.</p>
+        </div>
+      )}
+
+      {/* Leadership History */}
+      {formerOfficials.length > 0 && (
+        <div className="mt-20">
+          <div className="flex items-center gap-4 mb-8 opacity-60">
+            <FaHistory />
+            <span className="text-xs font-black uppercase tracking-widest">Leadership History</span>
+            <div className="flex-1 h-px bg-gray-200"></div>
+          </div>
+
+          <div className="space-y-10">
+            {(() => {
+              const groups = formerOfficials.reduce<Record<string, ArchivedOfficial[]>>((acc, f) => {
+                const termLabel = f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term');
+                acc[termLabel] = acc[termLabel] ? [...acc[termLabel], f] : [f];
+                return acc;
+              }, {});
+
+              return Object.entries(groups)
+                .sort(([a], [b]) => b.localeCompare(a))
+                .map(([term, members]) => (
+                  <div key={term} className="flex flex-col md:flex-row gap-6">
+                    <div className="md:w-32 flex-shrink-0">
+                      <span className="px-4 py-1.5 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] font-bold rounded-lg text-sm sticky top-24">
+                        {term}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-4 flex-1">
+                      {members.map(f => (
+                        <div key={f.id} className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow min-w-[200px]">
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                            <Avatar name={f.name} image={f.photo || undefined} size="sm" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-900">{f.name}</h4>
+                            <p className="text-xs text-gray-500">{f.position}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ));
+            })()}
+          </div>
+        </div>
+      )}
+
+      {loadingHistory && (
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+            <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+            Loading history...
+          </div>
         </div>
       )}
     </div>
