@@ -47,17 +47,17 @@ export default function Layout() {
            <Outlet />
          </main>
 
-          {/* Mobile: hamburger to open the same sidebar in a left drawer */}
+          {/* Mobile: hamburger — sits inside the top header strip, next to the logo */}
           <button
             onClick={() => setMobileNavOpen(!mobileNavOpen)}
             aria-label="Toggle Devotions navigation"
-            className="md:hidden fixed left-3 top-[4.5rem] z-[60] w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95"
+            className="md:hidden fixed left-3 top-4 z-[200] w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95"
             style={{
-              background: mobileNavOpen ? "rgba(217, 119, 6, 0.12)" : "rgba(250, 248, 245, 0.97)",
+              background: mobileNavOpen ? "rgba(217, 119, 6, 0.15)" : "rgba(250, 248, 245, 0.97)",
               backdropFilter: "blur(20px) saturate(1.8)",
               WebkitBackdropFilter: "blur(20px) saturate(1.8)",
-              border: mobileNavOpen ? "1px solid rgba(217, 119, 6, 0.35)" : "1px solid rgba(28, 25, 23, 0.08)",
-              boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
+              border: mobileNavOpen ? "1px solid rgba(217, 119, 6, 0.4)" : "1px solid rgba(28, 25, 23, 0.1)",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
               color: "#B45309",
             }}
           >
@@ -75,23 +75,23 @@ export default function Layout() {
             )}
           </button>
 
-          {/* Mobile drawer overlay — covers full screen including logo area */}
+          {/* Mobile drawer overlay — full screen, z above sticky header */}
           {mobileNavOpen && (
             <div
-              className="md:hidden fixed inset-0 top-0 bg-black/40 backdrop-blur-sm z-[55]"
+              className="md:hidden fixed inset-0 top-0 bg-black/50 backdrop-blur-sm z-[190]"
               onClick={() => setMobileNavOpen(false)}
             />
           )}
 
-          {/* Mobile drawer — slides in from left, covering the logo/header area */}
+          {/* Mobile drawer — slides in from left, covers entire screen including header/logo */}
           <div
-            className={`md:hidden fixed left-0 top-0 bottom-0 z-[58] w-64 max-w-[82vw] transition-transform duration-300 ease-out ${
+            className={`md:hidden fixed left-0 top-0 bottom-0 z-[195] w-64 max-w-[82vw] transition-transform duration-300 ease-out ${
               mobileNavOpen ? "translate-x-0" : "-translate-x-full"
             }`}
-            style={{ boxShadow: "8px 0 48px rgba(0,0,0,0.18)" }}
+            style={{ boxShadow: "8px 0 48px rgba(0,0,0,0.22)" }}
           >
-            {/* Close button inside drawer header */}
-            <div className="flex items-center justify-between px-4 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(217,119,6,0.12)" }}>
+            {/* Drawer header — replaces the site logo in this panel */}
+            <div className="flex items-center justify-between px-4 pt-5 pb-3" style={{ background: "rgba(250,248,245,0.98)", borderBottom: "1px solid rgba(217,119,6,0.15)" }}>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #D97706, #B45309)", boxShadow: "0 4px 12px rgba(217,119,6,0.3)" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z"/></svg>
