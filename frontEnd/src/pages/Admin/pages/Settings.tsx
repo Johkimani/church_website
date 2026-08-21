@@ -55,19 +55,36 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   jumuiya_os: ['Gallery (scoped to their Jumuiya)'],
   jumuiya_secretary: ['Members (scoped to their Jumuiya)'],
   choir_chairperson: ['Community Management (Choir)'],
+  choir_vice_secretary: ['Community Management (Choir)'],
   choir_secretary: ['Community Management (Choir)'],
+  choir_treasurer: ['Community Management (Choir)'],
   choir_project_coordinator: ['Community Management (Choir Gallery)'],
+  choir_male_representative: ['Community Management (Choir)'],
+  choir_female_representative: ['Community Management (Choir)'],
   st_francis_chair: ['Community Management (St. Francis)'],
+  st_francis_vice_chair: ['Community Management (St. Francis)'],
   charismatic_chair: ['Community Management (Charismatic)'],
-  dance_chair: ['Community Management (Dance)'],
+  charismatic_vice_chair: ['Community Management (Charismatic)'],
+  charismatic_secretary: ['Community Management (Charismatic)'],
+  charismatic_treasurer: ['Community Management (Charismatic)'],
+  dance_chair: ['Community Management (Dancers)'],
+  dance_vice_chair: ['Community Management (Dancers)'],
   mentorship_chair: ['Community Management (Mentorship)'],
+  mentorship_vice_chair: ['Community Management (Mentorship)'],
   liturgist: ['Devotions & AI'],
   treasurer: ['Donation Monitor'],
 };
 
 const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist'];
 const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary'];
-const SUBGROUP_ROLES = ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator', 'st_francis_chair', 'charismatic_chair', 'dance_chair', 'mentorship_chair'];
+const SUBGROUP_ROLES = [
+  'choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
+  'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
+  'st_francis_chair', 'st_francis_vice_chair',
+  'charismatic_chair', 'charismatic_vice_chair', 'charismatic_secretary', 'charismatic_treasurer',
+  'dance_chair', 'dance_vice_chair',
+  'mentorship_chair', 'mentorship_vice_chair',
+];
 
 type TabKey = 'csa' | 'jumuiya' | 'subgroup';
 

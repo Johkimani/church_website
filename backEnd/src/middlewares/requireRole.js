@@ -12,8 +12,12 @@ const OFFICIAL_ROLES = [
   "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
   "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
   "jumuiya_vice_chairperson",
-  "choir_secretary", "choir_project_coordinator",
-  "dance_chair", "charismatic_chair", "st_francis_chair", "mentorship_chair",
+  "choir_secretary", "choir_vice_secretary", "choir_treasurer", "choir_project_coordinator",
+  "choir_male_representative", "choir_female_representative",
+  "dance_chair", "dance_vice_chair",
+  "charismatic_chair", "charismatic_vice_chair", "charismatic_secretary", "charismatic_treasurer",
+  "st_francis_chair", "st_francis_vice_chair",
+  "mentorship_chair", "mentorship_vice_chair",
 ];
 
 const getUserRoles = (req) => {

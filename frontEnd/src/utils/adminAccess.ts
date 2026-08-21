@@ -20,12 +20,22 @@ const KNOWN_ADMIN_ROLES = new Set([
   "JUMUIYA_VICE_CHAIRPERSON",
   "JUMUIYA_SECRETARY",
   "CHOIR_CHAIRPERSON",
+  "CHOIR_VICE_SECRETARY",
   "CHOIR_SECRETARY",
+  "CHOIR_TREASURER",
   "CHOIR_PROJECT_COORDINATOR",
+  "CHOIR_MALE_REPRESENTATIVE",
+  "CHOIR_FEMALE_REPRESENTATIVE",
   "ST_FRANCIS_CHAIR",
+  "ST_FRANCIS_VICE_CHAIR",
   "CHARISMATIC_CHAIR",
+  "CHARISMATIC_VICE_CHAIR",
+  "CHARISMATIC_SECRETARY",
+  "CHARISMATIC_TREASURER",
   "DANCE_CHAIR",
+  "DANCE_VICE_CHAIR",
   "MENTORSHIP_CHAIR",
+  "MENTORSHIP_VICE_CHAIR",
 ]);
 
 // Ordered list of admin destinations used to redirect a user to their first
@@ -82,12 +92,22 @@ export const hasAnyAdminAccess = (roles: string[]): boolean =>
 // Module ids match hub_modules ids used by CommunityManager/CommunityDetailEditor.
 const COMMUNITY_MODULES_BY_ROLE: Record<string, string[]> = {
   CHOIR_CHAIRPERSON: ["choir"],
+  CHOIR_VICE_SECRETARY: ["choir"],
   CHOIR_SECRETARY: ["choir"],
+  CHOIR_TREASURER: ["choir"],
   CHOIR_PROJECT_COORDINATOR: ["choir"],
+  CHOIR_MALE_REPRESENTATIVE: ["choir"],
+  CHOIR_FEMALE_REPRESENTATIVE: ["choir"],
   DANCE_CHAIR: ["dancers"],
+  DANCE_VICE_CHAIR: ["dancers"],
   CHARISMATIC_CHAIR: ["charismatic"],
+  CHARISMATIC_VICE_CHAIR: ["charismatic"],
+  CHARISMATIC_SECRETARY: ["charismatic"],
+  CHARISMATIC_TREASURER: ["charismatic"],
   ST_FRANCIS_CHAIR: ["st-francis"],
+  ST_FRANCIS_VICE_CHAIR: ["st-francis"],
   MENTORSHIP_CHAIR: ["mentorship", "youth"], // mentorship community historically lives under both ids
+  MENTORSHIP_VICE_CHAIR: ["mentorship", "youth"],
 };
 
 /**
@@ -174,24 +194,34 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/community-updates");
         break;
       case "CHOIR_CHAIRPERSON":
+      case "CHOIR_VICE_SECRETARY":
       case "CHOIR_SECRETARY":
+      case "CHOIR_TREASURER":
       case "CHOIR_PROJECT_COORDINATOR":
+      case "CHOIR_MALE_REPRESENTATIVE":
+      case "CHOIR_FEMALE_REPRESENTATIVE":
         prefixes.add("/admin/community-management");
         prefixes.add("/admin/community-management/choir");
         break;
       case "ST_FRANCIS_CHAIR":
+      case "ST_FRANCIS_VICE_CHAIR":
         prefixes.add("/admin/community-management");
         prefixes.add("/admin/community-management/st-francis");
         break;
       case "CHARISMATIC_CHAIR":
+      case "CHARISMATIC_VICE_CHAIR":
+      case "CHARISMATIC_SECRETARY":
+      case "CHARISMATIC_TREASURER":
         prefixes.add("/admin/community-management");
         prefixes.add("/admin/community-management/charismatic");
         break;
       case "DANCE_CHAIR":
+      case "DANCE_VICE_CHAIR":
         prefixes.add("/admin/community-management");
         prefixes.add("/admin/community-management/dancers");
         break;
       case "MENTORSHIP_CHAIR":
+      case "MENTORSHIP_VICE_CHAIR":
         prefixes.add("/admin/community-management");
         prefixes.add("/admin/community-management/mentorship");
         break;

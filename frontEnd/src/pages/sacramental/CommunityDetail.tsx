@@ -73,11 +73,11 @@ const TAB_LABELS: Record<TabType, string> = {
 const TAB_ORDER: TabType[] = ['about', 'noticeboard', 'schedule', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
 
 const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
-  choir: ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator'],
-  dancers: ['dance_chair'],
-  charismatic: ['charismatic_chair'],
-  'st-francis': ['st_francis_chair'],
-  mentorship: ['mentorship_chair'],
+  choir: ['choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer', 'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative'],
+  dancers: ['dance_chair', 'dance_vice_chair'],
+  charismatic: ['charismatic_chair', 'charismatic_vice_chair', 'charismatic_secretary', 'charismatic_treasurer'],
+  'st-francis': ['st_francis_chair', 'st_francis_vice_chair'],
+  mentorship: ['mentorship_chair', 'mentorship_vice_chair'],
 };
 
 const CommunityDetail: React.FC = () => {

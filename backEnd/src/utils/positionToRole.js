@@ -13,25 +13,39 @@ export const GROUP_CATEGORY_POSITION_TO_ROLE = {
     'Choir Master': 'choir_chairperson',
     'Choir Mistress': 'choir_chairperson',
     'Secretary': 'choir_secretary',
+    'Vice Secretary': 'choir_vice_secretary',
+    'Treasurer': 'choir_treasurer',
     'Project Manager': 'choir_project_coordinator',
+    'Male Representative': 'choir_male_representative',
+    'Female Representative': 'choir_female_representative',
   },
   'Dancers': {
     'Chairperson': 'dance_chair',
+    'Vice Chairperson': 'dance_vice_chair',
   },
   'Charismatic': {
     'Chairperson': 'charismatic_chair',
+    'Vice Chairperson': 'charismatic_vice_chair',
+    'Secretary': 'charismatic_secretary',
+    'Treasurer': 'charismatic_treasurer',
   },
   'St. Francis': {
     'Chairperson': 'st_francis_chair',
+    'Vice Chairperson': 'st_francis_vice_chair',
   },
   'Mentorship': {
     'Coordinator': 'mentorship_chair',
+    'Vice Coordinator': 'mentorship_vice_chair',
   },
 };
 
 export const GROUP_ROLES = [
-  'choir_chairperson', 'choir_secretary', 'choir_project_coordinator',
-  'dance_chair', 'charismatic_chair', 'st_francis_chair', 'mentorship_chair',
+  'choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
+  'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
+  'dance_chair', 'dance_vice_chair',
+  'charismatic_chair', 'charismatic_vice_chair', 'charismatic_secretary', 'charismatic_treasurer',
+  'st_francis_chair', 'st_francis_vice_chair',
+  'mentorship_chair', 'mentorship_vice_chair',
 ];
 
 export const getGroupRoleName = (category, position) => {
@@ -42,12 +56,23 @@ export const getGroupRoleName = (category, position) => {
   if (groupMap[cleanPos]) return groupMap[cleanPos];
   const lower = cleanPos.toLowerCase();
   if (category === 'Choir' && (lower.includes('master') || lower.includes('mistress'))) return 'choir_chairperson';
-  if (category === 'Mentorship' && lower.includes('coordinator') && !lower.includes('vice')) return 'mentorship_chair';
-  if (lower.includes('chair') && !lower.includes('vice')) {
-    if (category === 'Dancers') return 'dance_chair';
-    if (category === 'Charismatic') return 'charismatic_chair';
-    if (category === 'St. Francis') return 'st_francis_chair';
+  if (category === 'Mentorship' && lower.includes('coordinator')) {
+    return lower.includes('vice') ? 'mentorship_vice_chair' : 'mentorship_chair';
   }
+  if (lower.includes('chair')) {
+    const isVice = lower.includes('vice');
+    if (category === 'Dancers') return isVice ? 'dance_vice_chair' : 'dance_chair';
+    if (category === 'Charismatic') return isVice ? 'charismatic_vice_chair' : 'charismatic_chair';
+    if (category === 'St. Francis') return isVice ? 'st_francis_vice_chair' : 'st_francis_chair';
+  }
+  if (category === 'Choir' && lower.includes('secretary')) {
+    return lower.includes('vice') ? 'choir_vice_secretary' : 'choir_secretary';
+  }
+  if (category === 'Choir' && lower.includes('treasurer')) return 'choir_treasurer';
+  if (category === 'Choir' && lower.includes('male') && lower.includes('representative')) return 'choir_male_representative';
+  if (category === 'Choir' && lower.includes('female') && lower.includes('representative')) return 'choir_female_representative';
+  if (category === 'Charismatic' && lower.includes('secretary')) return 'charismatic_secretary';
+  if (category === 'Charismatic' && lower.includes('treasurer')) return 'charismatic_treasurer';
   return null;
 };
 
