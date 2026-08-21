@@ -400,11 +400,6 @@ export default function PublicView() {
           {renderDesktopFlex(topRow)}
           {remaining.length > 0 && (
             <div className="pt-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-xs uppercase font-bold tracking-wider text-slate-400">Additional Executive Leadership</span>
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
               {renderGrid(remaining)}
               {renderDesktopFlex(remaining)}
             </div>
