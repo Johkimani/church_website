@@ -63,6 +63,27 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [lightboxOfficial, setLightboxOfficial] = useState<ArchivedOfficial | null>(null);
 
+  const allFilteredOfficials = React.useMemo(() => {
+    const result: ArchivedOfficial[] = [];
+    const terms = historyFilter === 'all' ? historyTerms : [historyFilter];
+    for (const term of terms) {
+      for (const f of filteredHistory) {
+        const t = f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term');
+        if (t === term) result.push(f);
+      }
+    }
+    return result;
+  }, [filteredHistory, historyFilter, historyTerms]);
+
+  const lightboxIndex = lightboxOfficial ? allFilteredOfficials.findIndex(f => f.id === lightboxOfficial.id) : -1;
+
+  const navigateLightbox = (dir: number) => {
+    if (lightboxIndex < 0) return;
+    const next = (lightboxIndex + dir + allFilteredOfficials.length) % allFilteredOfficials.length;
+    const nextOff = allFilteredOfficials[next];
+    if (nextOff.photo) setLightboxOfficial(nextOff);
+  };
+
   const _c = (s: string) => color.length > 7 ? color.slice(0, 7) + s : color + s;
 
   const formatPhone = (phone: string) => phone.replace(/\D/g, '').replace(/^0/, '254');
@@ -253,7 +274,7 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
                         {term}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 flex-1">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-0 sm:flex sm:flex-wrap sm:gap-4 flex-1">
                       {termOfficials.map(f => (
                         <div
                           key={f.id}
@@ -282,28 +303,53 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
       {/* Image Lightbox */}
       {lightboxOfficial && lightboxOfficial.photo && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
           onClick={() => setLightboxOfficial(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+            else if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            else if (e.key === 'Escape') setLightboxOfficial(null);
+          }}
+          tabIndex={0}
+          ref={(el) => el?.focus()}
         >
           <div
-            className="relative max-w-sm w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
+            className="relative max-w-sm w-full mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={lightboxOfficial.photo}
-              alt={lightboxOfficial.name}
-              className="w-full aspect-[3/4] object-cover"
-            />
-            <div className="p-4 text-center">
+            <div className="relative flex-shrink-0">
+              <img
+                src={lightboxOfficial.photo}
+                alt={lightboxOfficial.name}
+                className="w-full aspect-[3/4] object-cover"
+              />
+              <button
+                onClick={() => setLightboxOfficial(null)}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg font-bold"
+              >
+                ×
+              </button>
+              {allFilteredOfficials.length > 1 && (
+                <>
+                  <button
+                    onClick={() => navigateLightbox(-1)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    onClick={() => navigateLightbox(1)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="p-4 text-center overflow-y-auto">
               <h3 className="font-bold text-gray-900">{lightboxOfficial.name}</h3>
               <p className="text-sm text-gray-500 mt-1">{lightboxOfficial.position}</p>
             </div>
-            <button
-              onClick={() => setLightboxOfficial(null)}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg font-bold"
-            >
-              ×
-            </button>
           </div>
         </div>
       )}
