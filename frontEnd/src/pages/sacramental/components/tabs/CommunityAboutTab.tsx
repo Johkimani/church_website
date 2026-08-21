@@ -873,7 +873,32 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
   const [showSongbookModal, setShowSongbookModal] = useState(false);
   const [playingVoiceAudio, setPlayingVoiceAudio] = useState(false);
   const [copiedSheetSolfa, setCopiedSheetSolfa] = useState(false);
-  const [activeSongbookTab, setActiveSongbookTab] = useState<'solfa' | 'swahili' | 'english'>('solfa');
+  const [activeSongbookTab, setActiveSongbookTab] = useState<'solfa' | 'swahili' | 'english' | 'dual'>('solfa');
+  const [songbookPlaybackSpeed, setSongbookPlaybackSpeed] = useState<number>(1.0);
+  const [highlightedVoicePart, setHighlightedVoicePart] = useState<'all' | 'soprano' | 'alto' | 'tenor' | 'bass'>('all');
+  const [medleyPlaying, setMedleyPlaying] = useState(false);
+  const [medleyIndex, setMedleyIndex] = useState(0);
+
+  // Web Audio Reference Pitch Pipe
+  const playPitchPipe = (freq: number) => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.8);
+    } catch {
+      // AudioContext fallback
+    }
+  };
 
   // Next Practice / Gathering Countdown calculation
   const practiceSchedules: PracticeSchedule[] = useMemo(() => {
@@ -1369,15 +1394,19 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
 
       {/* CHOIR SPECIAL: LITURGY & HYMN OF THE WEEK CARD */}
       {isChoir && (
-        <div className="mb-8 rounded-3xl bg-white p-6 md:p-8 shadow-sm border border-slate-200/80 relative overflow-hidden">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="mb-8 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 md:p-8 text-white shadow-2xl border border-indigo-500/30 relative overflow-hidden">
+          {/* Decorative glow mesh */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 flex-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 flex items-center gap-1.5 shadow-xs">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse shadow-[0_0_8px_#34d399]"></span>
                   Liturgical Color: {UPCOMING_SUNDAY_LITURGY.liturgicalColor}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-indigo-100 text-indigo-800">
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
                   {UPCOMING_SUNDAY_LITURGY.sundayTitle}
                 </span>
                 <span className="text-xs font-bold text-slate-400 font-mono">
@@ -1386,58 +1415,103 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
               </div>
 
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
                   Upcoming Sunday Mass Liturgy & Hymnal Lineup
                 </h2>
-                <p className="text-xs font-bold text-emerald-700 mt-1 flex items-center gap-2">
-                  <FaTshirt /> Vestment Code: <span className="text-slate-800 font-semibold">{UPCOMING_SUNDAY_LITURGY.uniformCode}</span>
+                <p className="text-xs font-bold text-emerald-400 mt-1.5 flex items-center gap-2">
+                  <FaTshirt /> Vestment Code: <span className="text-slate-200 font-semibold">{UPCOMING_SUNDAY_LITURGY.uniformCode}</span>
                 </p>
               </div>
 
-              <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                Theme of Mass: <strong>"{UPCOMING_SUNDAY_LITURGY.theme}"</strong> · {UPCOMING_SUNDAY_LITURGY.massTime}
+              <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                Theme of Mass: <strong className="text-amber-300">"{UPCOMING_SUNDAY_LITURGY.theme}"</strong> · {UPCOMING_SUNDAY_LITURGY.massTime}
               </p>
 
-              {/* Mass Hymn Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Entrance Processional
-                  </span>
-                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.entranceHymn.title}</p>
-                  <span className="text-[10px] font-bold text-indigo-600">{UPCOMING_SUNDAY_LITURGY.entranceHymn.key} · {UPCOMING_SUNDAY_LITURGY.entranceHymn.number}</span>
+              {/* Interactive Mass Hymn Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-3">
+                <div
+                  onClick={() => {
+                    setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-1']);
+                    setShowSongbookModal(true);
+                  }}
+                  className="p-3.5 rounded-2xl bg-slate-800/80 hover:bg-indigo-900/50 border border-indigo-500/20 hover:border-indigo-400/50 transition-all cursor-pointer group shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400">
+                      Entrance Processional
+                    </span>
+                    <span className="text-[9px] font-extrabold text-indigo-300 opacity-0 group-hover:opacity-100 transition">View Solfa →</span>
+                  </div>
+                  <p className="text-xs font-extrabold text-white line-clamp-1 group-hover:text-amber-300 transition">{UPCOMING_SUNDAY_LITURGY.entranceHymn.title}</p>
+                  <span className="text-[10px] font-bold text-slate-400 block mt-1">{UPCOMING_SUNDAY_LITURGY.entranceHymn.key} · {UPCOMING_SUNDAY_LITURGY.entranceHymn.number}</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Gloria & Kyrie Setting
-                  </span>
-                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.gloriaSetting.title}</p>
-                  <span className="text-[10px] font-bold text-pink-600">{UPCOMING_SUNDAY_LITURGY.gloriaSetting.key} · {UPCOMING_SUNDAY_LITURGY.gloriaSetting.setting}</span>
+                <div
+                  onClick={() => {
+                    setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-2']);
+                    setShowSongbookModal(true);
+                  }}
+                  className="p-3.5 rounded-2xl bg-slate-800/80 hover:bg-pink-900/50 border border-pink-500/20 hover:border-pink-400/50 transition-all cursor-pointer group shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-pink-400">
+                      Gloria & Kyrie Setting
+                    </span>
+                    <span className="text-[9px] font-extrabold text-pink-300 opacity-0 group-hover:opacity-100 transition">View Solfa →</span>
+                  </div>
+                  <p className="text-xs font-extrabold text-white line-clamp-1 group-hover:text-amber-300 transition">{UPCOMING_SUNDAY_LITURGY.gloriaSetting.title}</p>
+                  <span className="text-[10px] font-bold text-slate-400 block mt-1">{UPCOMING_SUNDAY_LITURGY.gloriaSetting.key} · {UPCOMING_SUNDAY_LITURGY.gloriaSetting.setting}</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Responsorial Psalm Tone
-                  </span>
-                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.psalmTone.title}</p>
-                  <span className="text-[10px] font-bold text-amber-600">{UPCOMING_SUNDAY_LITURGY.psalmTone.tone}</span>
+                <div
+                  onClick={() => {
+                    setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-3']);
+                    setShowSongbookModal(true);
+                  }}
+                  className="p-3.5 rounded-2xl bg-slate-800/80 hover:bg-amber-900/50 border border-amber-500/20 hover:border-amber-400/50 transition-all cursor-pointer group shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                      Responsorial Psalm Tone
+                    </span>
+                    <span className="text-[9px] font-extrabold text-amber-300 opacity-0 group-hover:opacity-100 transition">View Solfa →</span>
+                  </div>
+                  <p className="text-xs font-extrabold text-white line-clamp-1 group-hover:text-amber-300 transition">{UPCOMING_SUNDAY_LITURGY.psalmTone.title}</p>
+                  <span className="text-[10px] font-bold text-slate-400 block mt-1">{UPCOMING_SUNDAY_LITURGY.psalmTone.tone}</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Communion Motet
-                  </span>
-                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.communionMotet.title}</p>
-                  <span className="text-[10px] font-bold text-purple-600">{UPCOMING_SUNDAY_LITURGY.communionMotet.composer}</span>
+                <div
+                  onClick={() => {
+                    setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-5']);
+                    setShowSongbookModal(true);
+                  }}
+                  className="p-3.5 rounded-2xl bg-slate-800/80 hover:bg-purple-900/50 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer group shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">
+                      Communion Motet
+                    </span>
+                    <span className="text-[9px] font-extrabold text-purple-300 opacity-0 group-hover:opacity-100 transition">View Solfa →</span>
+                  </div>
+                  <p className="text-xs font-extrabold text-white line-clamp-1 group-hover:text-amber-300 transition">{UPCOMING_SUNDAY_LITURGY.communionMotet.title}</p>
+                  <span className="text-[10px] font-bold text-slate-400 block mt-1">{UPCOMING_SUNDAY_LITURGY.communionMotet.composer}</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 sm:col-span-2 md:col-span-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Recessional Hymn
-                  </span>
-                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.recessionalHymn.title}</p>
-                  <span className="text-[10px] font-bold text-emerald-600">{UPCOMING_SUNDAY_LITURGY.recessionalHymn.key}</span>
+                <div
+                  onClick={() => {
+                    setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-1']);
+                    setShowSongbookModal(true);
+                  }}
+                  className="p-3.5 rounded-2xl bg-slate-800/80 hover:bg-emerald-900/50 border border-emerald-500/20 hover:border-emerald-400/50 transition-all cursor-pointer group shadow-sm sm:col-span-2 md:col-span-2"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                      Recessional Hymn
+                    </span>
+                    <span className="text-[9px] font-extrabold text-emerald-300 opacity-0 group-hover:opacity-100 transition">View Solfa →</span>
+                  </div>
+                  <p className="text-xs font-extrabold text-white line-clamp-1 group-hover:text-amber-300 transition">{UPCOMING_SUNDAY_LITURGY.recessionalHymn.title}</p>
+                  <span className="text-[10px] font-bold text-slate-400 block mt-1">{UPCOMING_SUNDAY_LITURGY.recessionalHymn.key}</span>
                 </div>
               </div>
             </div>
@@ -1448,7 +1522,7 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
                   setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-1']);
                   setShowSongbookModal(true);
                 }}
-                className="px-5 py-3 rounded-2xl font-black text-xs text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 w-full"
+                className="px-6 py-3.5 rounded-2xl font-black text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg hover:shadow-indigo-500/25 transition-all cursor-pointer flex items-center justify-center gap-2 w-full border border-indigo-400/30"
               >
                 <FaBookOpen /> Open Digital Songbook
               </button>
@@ -1457,7 +1531,7 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
                   setSelectedVoiceSection(VOICE_SECTIONS[0]);
                   setShowVoiceModal(true);
                 }}
-                className="px-5 py-3 rounded-2xl font-black text-xs text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer flex items-center justify-center gap-2 w-full"
+                className="px-6 py-3.5 rounded-2xl font-black text-xs text-slate-200 bg-slate-800/90 hover:bg-slate-700 border border-slate-700 transition-all cursor-pointer flex items-center justify-center gap-2 w-full"
               >
                 <FaHeadphones /> Section Audio Leads
               </button>
@@ -1465,6 +1539,7 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
           </div>
         </div>
       )}
+
 
       {/* 2. MENTORSHIP PROGRAM PILLARS & TRACKS (Mentorship Special) */}
       {isMentorship && (
@@ -3471,6 +3546,35 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
               </div>
             </div>
 
+            {/* Pitch Pipe Reference Tuner */}
+            <div className="p-3.5 rounded-2xl bg-slate-900 text-white mb-4 border border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  Pitch Pipe Reference (Web Synthesizer)
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">1-Click Audio</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { note: 'Middle C (C4)', freq: 261.63 },
+                  { note: 'Pitch E4', freq: 329.63 },
+                  { note: 'Pitch G4', freq: 392.00 },
+                  { note: 'High C (C5)', freq: 523.25 },
+                ].map((p, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => playPitchPipe(p.freq)}
+                    className="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-900 border border-slate-700 text-[10px] font-black text-slate-200 transition-all cursor-pointer text-center"
+                    title={`Play ${p.note} pitch tone`}
+                  >
+                    🎵 {p.note.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Section Announcement */}
             <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100 mb-4">
               <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 block mb-1 flex items-center gap-1">
@@ -3518,15 +3622,17 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-between gap-3">
               <button
+                type="button"
                 onClick={() => {
                   setShowVoiceModal(false);
-                  setPlayingVoiceAudio(false);
+                  setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-1']);
+                  setShowSongbookModal(true);
                 }}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5"
               >
-                Close
+                <FaBookOpen /> Open Full Score
               </button>
               <a
                 href={selectedVoiceSection.whatsappGroup}
@@ -3534,69 +3640,133 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
                 rel="noopener noreferrer"
                 className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <FaWhatsapp size={13} /> Join {selectedVoiceSection.name} WhatsApp Section
+                <FaWhatsapp size={13} /> Join {selectedVoiceSection.name} WhatsApp
               </a>
             </div>
           </div>
         </div>
       )}
 
+
       {/* MODAL: DIGITAL SONGBOOK & SHEET MUSIC VIEWER */}
       {showSongbookModal && selectedSongbookSheet && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-indigo-500/30 text-white rounded-3xl p-6 md:p-8 max-w-3xl w-full shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
             <button
               onClick={() => setShowSongbookModal(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-all cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-all cursor-pointer"
             >
               <FaTimes size={14} />
             </button>
 
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-xl">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 flex items-center justify-center font-black text-xl">
                 <FaBookOpen size={22} />
               </div>
               <div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-700">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
                   {selectedSongbookSheet.part}
                 </span>
-                <h3 className="text-xl font-black text-slate-900">{selectedSongbookSheet.title}</h3>
-                <p className="text-xs text-slate-500 font-bold">{selectedSongbookSheet.composer}</p>
+                <h3 className="text-xl md:text-2xl font-black text-white">{selectedSongbookSheet.title}</h3>
+                <p className="text-xs text-slate-400 font-bold">{selectedSongbookSheet.composer}</p>
               </div>
             </div>
 
             {/* Song Meta Header */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-100 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 mb-4">
               <div>
                 <span className="text-[10px] font-black uppercase text-slate-400 block">Key Signature</span>
-                <span className="text-xs font-black text-slate-800">{selectedSongbookSheet.keySignature}</span>
+                <span className="text-xs font-black text-amber-300">{selectedSongbookSheet.keySignature}</span>
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase text-slate-400 block">Tempo & Time</span>
-                <span className="text-xs font-black text-slate-800">{selectedSongbookSheet.tempo}</span>
+                <span className="text-xs font-black text-indigo-300">{selectedSongbookSheet.tempo}</span>
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase text-slate-400 block">Score Format</span>
-                <span className="text-xs font-black text-emerald-600">Tonic Solfa + Staff</span>
+                <span className="text-xs font-black text-emerald-400 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Tonic Solfa + Dual Lyrics
+                </span>
               </div>
             </div>
 
+            {/* Interactive Rehearsal Audio Player & Speed Bar */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950 to-slate-900 border border-indigo-500/30 mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => playPitchPipe(261.63)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition"
+                >
+                  <FaHeadphones size={12} /> Play Pitch Pipe (C4)
+                </button>
+                <span className="text-xs font-extrabold text-slate-300 hidden sm:inline">Practice Speed:</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {[
+                  { label: '0.75x Slow', speed: 0.75 },
+                  { label: '1.0x Normal', speed: 1.0 },
+                  { label: '1.25x Fast', speed: 1.25 },
+                ].map((s) => (
+                  <button
+                    key={s.speed}
+                    type="button"
+                    onClick={() => setSongbookPlaybackSpeed(s.speed)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                      songbookPlaybackSpeed === s.speed
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SATB Voice Part Highlight Controls */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">SATB Voice Focus:</span>
+              {[
+                { id: 'all', label: 'All SATB' },
+                { id: 'soprano', label: 'Soprano' },
+                { id: 'alto', label: 'Alto' },
+                { id: 'tenor', label: 'Tenor' },
+                { id: 'bass', label: 'Bass' },
+              ].map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setHighlightedVoicePart(v.id as any)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                    highlightedVoicePart === v.id
+                      ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+
             {/* Tabs for Solfa vs Lyrics */}
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-4 border-b border-slate-800 pb-3">
               <button
                 type="button"
                 onClick={() => setActiveSongbookTab('solfa')}
                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  activeSongbookTab === 'solfa' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  activeSongbookTab === 'solfa' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                 }`}
               >
-                Tonic Solfa Score
+                🎼 Tonic Solfa Score
               </button>
               <button
                 type="button"
                 onClick={() => setActiveSongbookTab('swahili')}
                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  activeSongbookTab === 'swahili' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  activeSongbookTab === 'swahili' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                 }`}
               >
                 Swahili Lyrics
@@ -3605,57 +3775,91 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
                 type="button"
                 onClick={() => setActiveSongbookTab('english')}
                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  activeSongbookTab === 'english' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  activeSongbookTab === 'english' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                 }`}
               >
                 English Lyrics
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSongbookTab('dual')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeSongbookTab === 'dual' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                🌐 Dual Side-by-Side View
               </button>
             </div>
 
             {/* Tab Body */}
             {activeSongbookTab === 'solfa' && (
-              <div className="p-4 rounded-2xl bg-slate-900 text-amber-300 font-mono text-sm leading-relaxed mb-4 overflow-x-auto whitespace-pre border border-slate-800 shadow-inner">
+              <div className="p-5 rounded-2xl bg-slate-900 text-amber-300 font-mono text-sm leading-relaxed mb-4 overflow-x-auto whitespace-pre border border-slate-800 shadow-inner">
+                <div className="text-[10px] text-indigo-400 uppercase font-sans font-black mb-2">
+                  Tonic Solfa Score Notation {highlightedVoicePart !== 'all' && `(Focused: ${highlightedVoicePart.toUpperCase()})`}
+                </div>
                 {selectedSongbookSheet.solfa}
               </div>
             )}
 
             {activeSongbookTab === 'swahili' && (
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-sm font-medium leading-relaxed mb-4 whitespace-pre-line">
+              <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 text-slate-200 text-sm font-medium leading-relaxed mb-4 whitespace-pre-line">
                 {selectedSongbookSheet.lyricsSwahili}
               </div>
             )}
 
             {activeSongbookTab === 'english' && (
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-sm font-medium leading-relaxed mb-4 whitespace-pre-line">
+              <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 text-slate-200 text-sm font-medium leading-relaxed mb-4 whitespace-pre-line">
                 {selectedSongbookSheet.lyricsEnglish}
+              </div>
+            )}
+
+            {activeSongbookTab === 'dual' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 text-xs font-medium leading-relaxed whitespace-pre-line">
+                  <span className="text-[10px] font-black uppercase text-indigo-400 block mb-2">Swahili Version</span>
+                  {selectedSongbookSheet.lyricsSwahili}
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 text-xs font-medium leading-relaxed whitespace-pre-line">
+                  <span className="text-[10px] font-black uppercase text-purple-400 block mb-2">English Translation</span>
+                  {selectedSongbookSheet.lyricsEnglish}
+                </div>
               </div>
             )}
 
             {/* Performance Notes */}
             {selectedSongbookSheet.notes && (
-              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 mb-6 font-medium">
-                <strong>Performance Notes:</strong> {selectedSongbookSheet.notes}
+              <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-800/80 text-xs text-amber-200 mb-6 font-medium">
+                <strong className="text-amber-300">Performance Notes:</strong> {selectedSongbookSheet.notes}
               </div>
             )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${selectedSongbookSheet.title}\n\nSolfa:\n${selectedSongbookSheet.solfa}`);
-                  setCopiedSheetSolfa(true);
-                  setTimeout(() => setCopiedSheetSolfa(false), 2000);
-                }}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                {copiedSheetSolfa ? <FaCheck className="text-emerald-600" /> : <FaCopy />}
-                {copiedSheetSolfa ? 'Copied to Clipboard!' : 'Copy Solfa Notation'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${selectedSongbookSheet.title}\n\nSolfa:\n${selectedSongbookSheet.solfa}`);
+                    setCopiedSheetSolfa(true);
+                    setTimeout(() => setCopiedSheetSolfa(false), 2000);
+                  }}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  {copiedSheetSolfa ? <FaCheck className="text-emerald-400" /> : <FaCopy />}
+                  {copiedSheetSolfa ? 'Copied!' : 'Copy Solfa'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  🖨️ Print Score
+                </button>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowSongbookModal(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer"
                 >
                   Close
                 </button>
@@ -3663,7 +3867,7 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
                   href={`https://wa.me/?text=${encodeURIComponent(`Check out the sheet music and solfa for "${selectedSongbookSheet.title}":\n\n${selectedSongbookSheet.solfa}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <FaWhatsapp size={13} /> Share Sheet Score
                 </a>
@@ -3677,3 +3881,4 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
 };
 
 export default CommunityAboutTab;
+
