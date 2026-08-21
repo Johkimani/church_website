@@ -628,16 +628,16 @@ export const archiveCurrentGroupOfficials = async (req, res) => {
       await client.query('UPDATE election_terms SET is_current = TRUE WHERE id = $1', [termId]);
     }
 
-    let activeFilter = "(status = 'active' OR status IS NULL)";
-    let params = [];
+    let selectFilter = "(status = 'active' OR status IS NULL)";
+    let selectParams = [];
     if (category) {
-       activeFilter = "(status = 'active' OR status IS NULL) AND category = $1";
-       params.push(category);
+       selectFilter = "(status = 'active' OR status IS NULL) AND category = $1";
+       selectParams.push(category);
     }
 
     const currentOfficials = await client.query(
-      `SELECT * FROM group_officials WHERE ${activeFilter}`,
-      params
+      `SELECT * FROM group_officials WHERE ${selectFilter}`,
+      selectParams
     );
 
     if (currentOfficials.rows.length === 0) {
@@ -648,13 +648,20 @@ export const archiveCurrentGroupOfficials = async (req, res) => {
       });
     }
 
+    let updateFilter = "(status = 'active' OR status IS NULL)";
+    let updateParams = [termId];
+    if (category) {
+      updateFilter = "(status = 'active' OR status IS NULL) AND category = $2";
+      updateParams.push(category);
+    }
+
     await client.query(
       `UPDATE group_officials 
        SET status = 'archived', 
            election_term_id = $1, 
            updated_at = CURRENT_TIMESTAMP 
-       WHERE (status = 'active' OR status IS NULL)`,
-      [termId]
+       WHERE ${updateFilter}`,
+      updateParams
     );
 
     const termInfo = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
@@ -690,37 +697,55 @@ export const getGroupOfficialsByTerm = async (req, res) => {
     let params = [];
     let paramIdx = 1;
 
-    const addCategoryWhere = (existingWhere) => {
-      if (!categoryFilter) return '';
-      const clause = ` AND LOWER(o.category) = LOWER($${paramIdx})`;
-      paramIdx++;
-      return clause;
-    };
-
     if (termId) {
+      params.push(termId);
+      paramIdx++;
+      const addCategory = () => {
+        if (!categoryFilter) return '';
+        const clause = ` AND LOWER(o.category) = LOWER($${paramIdx})`;
+        params.push(categoryFilter);
+        paramIdx++;
+        return clause;
+      };
       queryBase = `
         FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
-        WHERE o.election_term_id = $${paramIdx} AND o.status = 'archived'${addCategoryWhere()}`;
-      params = [termId];
-      if (categoryFilter) params.push(categoryFilter);
+        WHERE o.election_term_id = $1 AND o.status = 'archived'${addCategory()}`;
     } else if (req.query.only_archived === 'true') {
+      const addCategory = () => {
+        if (!categoryFilter) return '';
+        const clause = ` AND LOWER(o.category) = LOWER($${paramIdx})`;
+        params.push(categoryFilter);
+        paramIdx++;
+        return clause;
+      };
       queryBase = `
         FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
-        WHERE o.status = 'archived'${addCategoryWhere()}`;
-      params = categoryFilter ? [categoryFilter] : [];
+        WHERE o.status = 'archived'${addCategory()}`;
     } else if (includeArchived) {
+      const addCategory = () => {
+        if (!categoryFilter) return '';
+        const clause = ` WHERE LOWER(o.category) = LOWER($${paramIdx})`;
+        params.push(categoryFilter);
+        paramIdx++;
+        return clause;
+      };
       queryBase = `
         FROM group_officials o
-        LEFT JOIN election_terms et ON o.election_term_id = et.id${addCategoryWhere()}`;
-      params = categoryFilter ? [categoryFilter] : [];
+        LEFT JOIN election_terms et ON o.election_term_id = et.id${addCategory()}`;
     } else {
+      const addCategory = () => {
+        if (!categoryFilter) return '';
+        const clause = ` AND LOWER(o.category) = LOWER($${paramIdx})`;
+        params.push(categoryFilter);
+        paramIdx++;
+        return clause;
+      };
       queryBase = `
         FROM group_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
-        WHERE (o.status = 'active' OR o.status IS NULL)${addCategoryWhere()}`;
-      params = categoryFilter ? [categoryFilter] : [];
+        WHERE (o.status = 'active' OR o.status IS NULL)${addCategory()}`;
     }
 
     const countQuery = `SELECT COUNT(*) ${queryBase}`;
