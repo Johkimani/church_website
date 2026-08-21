@@ -452,7 +452,7 @@ export default function UniversalAdmin() {
           )}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-200 group"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-200 group cursor-pointer"
           >
             <LogOut size={19} className="shrink-0" />
             {isSidebarOpen && <span className="text-[13px] font-medium">Sign out</span>}
@@ -460,13 +460,13 @@ export default function UniversalAdmin() {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-950">
         {/* Top Header */}
-        <header className="h-16 lg:h-[4.25rem] bg-white/95 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-4 md:px-6 lg:px-8 shrink-0 shadow-sm z-20">
+        <header className="h-16 lg:h-[4.25rem] bg-slate-900/95 backdrop-blur-xl border-b border-slate-800 flex items-center justify-between px-4 md:px-6 lg:px-8 shrink-0 shadow-md z-20">
           <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-all shadow-sm"
+              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border border-slate-800 bg-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-all shadow-sm cursor-pointer"
               aria-label="Toggle sidebar"
             >
               <Menu size={19} />
@@ -474,11 +474,11 @@ export default function UniversalAdmin() {
 
             {/* Breadcrumb */}
             <nav className="hidden sm:flex items-center gap-1.5 text-sm ml-1 min-w-0">
-              <Link to="/" className="text-slate-400 hover:text-blue-600 font-medium whitespace-nowrap">Home</Link>
-              <ChevronRight size={14} className="text-slate-300 shrink-0" />
-              <Link to="/admin" className="text-slate-400 hover:text-blue-600 font-medium whitespace-nowrap">Admin</Link>
-              <ChevronRight size={14} className="text-slate-300 shrink-0" />
-              <span className="font-bold text-slate-800 truncate">{currentPage}</span>
+              <Link to="/" className="text-slate-400 hover:text-blue-400 font-medium whitespace-nowrap">Home</Link>
+              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <Link to="/admin" className="text-slate-400 hover:text-blue-400 font-medium whitespace-nowrap">Admin</Link>
+              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <span className="font-bold text-white truncate">{currentPage}</span>
             </nav>
           </div>
 
@@ -489,14 +489,14 @@ export default function UniversalAdmin() {
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 className={`relative w-10 h-10 flex items-center justify-center rounded-xl border transition-all shadow-sm ${
                   isNotificationsOpen
-                    ? 'border-blue-200 bg-blue-50 text-blue-600'
-                    : 'border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:border-blue-200'
+                    ? 'border-blue-500 bg-blue-600 text-white'
+                    : 'border-slate-800 bg-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
                 }`}
                 aria-label="Notifications"
               >
                 <Bell size={19} />
                 {notifications.filter(n => !n.isRead).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-slate-900" />
                 )}
               </button>
 
@@ -510,20 +510,20 @@ export default function UniversalAdmin() {
               )}
             </div>
 
-            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <div className="h-8 w-px bg-slate-800 hidden sm:block" />
 
             {/* Profile */}
             <div className="flex items-center gap-3 pl-1">
               <div className="text-right hidden md:block">
-                <p className="text-sm font-bold text-slate-800 leading-tight">{user?.name || 'Admin'}</p>
+                <p className="text-sm font-bold text-white leading-tight">{user?.name || 'Admin'}</p>
                 <p className="text-[10px] text-slate-400 font-medium capitalize truncate max-w-[160px]">{roleLabel}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-md ring-2 ring-white">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-md ring-2 ring-slate-700">
                 {user?.name?.[0] ?? 'A'}
               </div>
               <button
                 onClick={handleLogout}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all text-xs font-semibold shadow-sm"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-800 bg-slate-800 text-slate-300 hover:text-rose-400 hover:border-rose-900/50 hover:bg-rose-950/40 transition-all text-xs font-semibold shadow-sm cursor-pointer"
               >
                 <LogOut size={14} />
                 Sign out

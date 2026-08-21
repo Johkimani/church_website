@@ -522,9 +522,13 @@ export default function CommunityDetailEditor() {
     return <PageLoader message={`Connecting to ${categoryId} dashboard`} fullScreen />;
   }
 
-  // Community accent color
-  const accentColor = moduleMeta?.theme_color ||
-    (isChoirAdmin ? '#1e3a5f' : isDancersAdmin ? '#db2777' : isCharismaticAdmin ? '#7c3aed' : isStFrancisAdmin ? '#047857' : isMentorshipAdmin ? '#8e44ad' : '#3b82f6');
+  // Community accent color (guaranteeing dark vibrant contrast, ignoring white/light overrides)
+  const rawThemeColor = moduleMeta?.theme_color;
+  const isInvalidWhite = !rawThemeColor || rawThemeColor === '#ffffff' || rawThemeColor === '#fff' || rawThemeColor.toLowerCase() === 'white' || rawThemeColor === '#f8fafc' || rawThemeColor === '#f1f5f9';
+  
+  const accentColor = !isInvalidWhite
+    ? rawThemeColor
+    : (isChoirAdmin ? '#1e3a5f' : isDancersAdmin ? '#db2777' : isCharismaticAdmin ? '#7c3aed' : isStFrancisAdmin ? '#047857' : isMentorshipAdmin ? '#8e44ad' : '#2563eb');
 
   const accentGradient = isChoirAdmin
     ? 'from-[#1e3a5f] via-[#1e4080] to-[#0f2044]'
@@ -654,23 +658,29 @@ export default function CommunityDetailEditor() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`group relative flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-xl text-left text-xs font-bold transition-all ${
+                className={`group relative flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-xl text-left text-xs font-black transition-all ${
                   isActive
-                    ? 'text-white shadow-lg'
+                    ? 'text-white shadow-xl ring-1 ring-white/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
                 }`}
-                style={isActive ? { background: accentColor } : {}}
+                style={isActive ? {
+                  background: isChoirAdmin
+                    ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+                    : `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                  boxShadow: `0 4px 14px ${accentColor}66`
+                } : {}}
               >
                 {isActive && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/60" />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 )}
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
-                  isActive ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700'
+                  isActive ? 'bg-white/25 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-white group-hover:bg-slate-700'
                 }`}>
-                  <tab.icon size={14} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'} />
+                  <tab.icon size={14} className="text-current" />
                 </div>
-                <span className="leading-tight">{tab.label}</span>
+                <span className="leading-tight tracking-wide">{tab.label}</span>
               </button>
+
             );
           })}
 
