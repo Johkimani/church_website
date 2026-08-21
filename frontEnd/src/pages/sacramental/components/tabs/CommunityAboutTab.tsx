@@ -614,11 +614,121 @@ const DEFAULT_CHOIR_TRACKS: FeaturedAudioTrack[] = [
 ];
 
 const VOICE_SECTIONS = [
-  { name: 'Soprano', desc: 'High Female Voice', role: 'Melody lines, descants, and crisp vocal ornamentation.', badge: 'Treble' },
-  { name: 'Alto', desc: 'Warm Lower Female Voice', role: 'Rich harmonic counter-melodies and deep vocal warmth.', badge: 'Harmony' },
-  { name: 'Tenor', desc: 'Bright High Male Voice', role: 'Upper harmonic clarity, solos, and radiant polyphony.', badge: 'Tenor Clef' },
-  { name: 'Bass', desc: 'Resonant Deep Male Voice', role: 'Harmonic foundation, rhythmic drive, and rich undertones.', badge: 'Bass Clef' },
+  {
+    id: 'soprano',
+    name: 'Soprano',
+    desc: 'High Female Voice (C4 – C6)',
+    role: 'Melody lines, descants, and crisp vocal ornamentation.',
+    badge: 'Treble Clef',
+    leader: 'Sister Maria K. (Soprano Leader)',
+    announcement: 'Sopranos note: We are practicing the high G descant in Ave Verum at 5:30 PM prior to Tuesday rehearsal.',
+    trackTitle: 'Ave Verum Corpus - Soprano Lead Rehearsal Track',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    solfaSnippet: 'd : r : m | s : - : f | m : r : d | d : - : -',
+    whatsappGroup: 'https://chat.whatsapp.com/demo-soprano'
+  },
+  {
+    id: 'alto',
+    name: 'Alto',
+    desc: 'Warm Lower Female Voice (F3 – F5)',
+    role: 'Rich harmonic counter-melodies and deep vocal warmth.',
+    badge: 'Harmony',
+    leader: 'Sister Christine M. (Alto Leader)',
+    announcement: 'Altos: Please review the middle-tier harmony for Missa De Angelis (Misa ya VIII) before Saturday.',
+    trackTitle: 'Missa De Angelis - Alto Harmony Lead Track',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    solfaSnippet: 'm : f : s | d\' : - : t | l : s : f | m : - : -',
+    whatsappGroup: 'https://chat.whatsapp.com/demo-alto'
+  },
+  {
+    id: 'tenor',
+    name: 'Tenor',
+    desc: 'Bright High Male Voice (C3 – A4)',
+    role: 'Upper harmonic clarity, solos, and radiant polyphony.',
+    badge: 'Tenor Clef',
+    leader: 'Brother Kevin O. (Tenor Leader)',
+    announcement: 'Tenors: Extra 30-minute sectionals in LH 32 on Thursday at 4:30 PM for Panis Angelicus high notes.',
+    trackTitle: 'Panis Angelicus - Tenor Solfa & Polyphony Track',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    solfaSnippet: 's : l : t | d\' : - : s | m\' : r\' : d\' | t : - : -',
+    whatsappGroup: 'https://chat.whatsapp.com/demo-tenor'
+  },
+  {
+    id: 'bass',
+    name: 'Bass',
+    desc: 'Resonant Deep Male Voice (E2 – E4)',
+    role: 'Harmonic foundation, rhythmic drive, and rich undertones.',
+    badge: 'Bass Clef',
+    leader: 'Brother Joseph T. (Bass Leader)',
+    announcement: 'Basses: Focus on the cadential pedal points for Tolea Sadaka. Rhythmic precision is key.',
+    trackTitle: 'Tolea Sadaka Yako - Bass Foundation Track',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+    solfaSnippet: 'd : d : d | s, : - : s, | l, : t, : d | d : - : -',
+    whatsappGroup: 'https://chat.whatsapp.com/demo-bass'
+  }
 ];
+
+const UPCOMING_SUNDAY_LITURGY = {
+  sundayTitle: '21st Sunday in Ordinary Time (Year B)',
+  date: 'Sunday, August 23, 2026',
+  massTime: '10:00 AM Solemn Parish Mass',
+  theme: 'Standing Firm in Faith & Divine Wisdom',
+  liturgicalColor: 'Green',
+  colorHex: '#16a34a',
+  uniformCode: 'Cream Robes with Green Stoles & Black Dress Shoes',
+  entranceHymn: { title: 'Come, Christians, Join to Sing', key: 'D Major', number: 'Nyimbo za Sifa #142' },
+  gloriaSetting: { title: 'Utukufu Juu Mbinguni', key: 'F Major', setting: 'Missa Jubilate (Solfa)' },
+  psalmTone: { title: 'Psalm 34: Taste and see the goodness of the Lord', tone: 'Tone 8G Solfa' },
+  communionMotet: { title: 'Ave Verum Corpus / Panis Angelicus', composer: 'W.A. Mozart & César Franck' },
+  recessionalHymn: { title: 'Sing with All the Saints in Glory', key: 'F Major (Ode to Joy)' }
+};
+
+const DIGITAL_SONGBOOK_SHEETS: Record<string, any> = {
+  'rep-1': {
+    title: 'Come, Christians, Join to Sing',
+    composer: 'Christian H. Bateman (1843)',
+    keySignature: 'D Major',
+    tempo: '4/4 Allegro Brillante',
+    part: 'Entrance Hymn',
+    solfa: `d : r | m : s | f : m | r : -\nm : f | s : d' | t : l | s : -\ns : m | l : s | f : m | r : -\nd : m | s : d' | m : r | d : -`,
+    lyricsSwahili: `1. Njoni Wakristo wote, Tumwimbie Bwana Yesu;\n   Paza sauti zenu, Kwa sifa na shukrani.\n\n2. Yeye ni Mfalme wetu, Ametupa uzima;\n   Wema wake ni mkuu, Milele na milele.`,
+    lyricsEnglish: `1. Come, Christians, join to sing: Alleluia! Amen!\n   Loud praise to Christ our King: Alleluia! Amen!\n   Let all, with heart and voice, before His throne rejoice;\n   Praise is His gracious choice: Alleluia! Amen!`,
+    notes: 'Focus on crisp consonants on beat 1 and majestic crescendo into verse 2.'
+  },
+  'rep-2': {
+    title: 'Utukufu Juu Mbinguni (Missa Jubilate)',
+    composer: 'Gregorian Chant / Swahili Liturgical',
+    keySignature: 'F Major',
+    tempo: '3/4 Moderato Reverent',
+    part: 'Gloria Response',
+    solfa: `m : m : f | s : - : s | l : s : f | m : - : -\ns : s : l | t : - : d' | s : f : m | r : - : -\nd : m : s | d' : - : t | l : s : f | m : - : -`,
+    lyricsSwahili: `Utukufu juu kwa Mungu, Na amani duniani kwa watu wenye mapenzi mema.\nTunakusifu, tunakuheshimu, Tunakuabudu, tunakutukuza,\nTunakushukuru kwa ajili ya utukufu wako mkuu.`,
+    lyricsEnglish: `Glory to God in the highest, and on earth peace to people of good will.\nWe praise you, we bless you, we adore you, we glorify you,\nwe give you thanks for your great glory.`,
+    notes: 'Reverent bows at holy name invocations with fluid, sweeping arm extensions.'
+  },
+  'rep-3': {
+    title: 'Psalm 34: Taste and See',
+    composer: 'Tone 8G Liturgical Setting',
+    keySignature: 'G Major',
+    tempo: 'Andante',
+    part: 'Responsorial Psalm',
+    solfa: `s : m : d | f : m : r | d : - : -\ns : d' : t | l : s : f | m : - : -`,
+    lyricsSwahili: `Kiitikio: Onjeni muone jinsi Bwana alivyo mwema; Aheri mtu yule anayemtumainia.`,
+    lyricsEnglish: `Refrain: Taste and see the goodness of the Lord; blessed is the one who takes refuge in Him.`,
+    notes: 'Cantor leads refrain twice before choir and congregation join.'
+  },
+  'rep-5': {
+    title: 'Ave Verum Corpus (K. 618)',
+    composer: 'Wolfgang Amadeus Mozart',
+    keySignature: 'D Major',
+    tempo: 'Adagio Sostenuto',
+    part: 'Communion Motet',
+    solfa: `s : - | m : - | f : m | r : -\ns : - | d' : - | t : l | s : -\nm' : r' | d' : t | l : s | s : -`,
+    lyricsSwahili: `Salamu, Mwili wa kweli, uliozaliwa na Bikira Maria;\nUlioteswa kweli na kutolewa sadaka msalabani kwa ajili ya mwanadamu.`,
+    lyricsEnglish: `Hail, true Body, born of the Virgin Mary, having truly suffered, sacrificed on the cross for mankind, from whose pierced side flowed water and blood.`,
+    notes: 'Keep dynamic level under control. Pianissimo at "O Jesu dulcis, O Jesu pie".'
+  }
+};
 
 const CHARISMATIC_RESOURCES = [
   {
@@ -755,6 +865,15 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
     track: 'Career Guidance',
     goals: '',
   });
+
+  // Choir Modal & Interactive Hub states
+  const [selectedVoiceSection, setSelectedVoiceSection] = useState<typeof VOICE_SECTIONS[0] | null>(null);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [selectedSongbookSheet, setSelectedSongbookSheet] = useState<any | null>(null);
+  const [showSongbookModal, setShowSongbookModal] = useState(false);
+  const [playingVoiceAudio, setPlayingVoiceAudio] = useState(false);
+  const [copiedSheetSolfa, setCopiedSheetSolfa] = useState(false);
+  const [activeSongbookTab, setActiveSongbookTab] = useState<'solfa' | 'swahili' | 'english'>('solfa');
 
   // Next Practice / Gathering Countdown calculation
   const practiceSchedules: PracticeSchedule[] = useMemo(() => {
@@ -1247,6 +1366,105 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
           </div>
         </div>
       </div>
+
+      {/* CHOIR SPECIAL: LITURGY & HYMN OF THE WEEK CARD */}
+      {isChoir && (
+        <div className="mb-8 rounded-3xl bg-white p-6 md:p-8 shadow-sm border border-slate-200/80 relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-3 flex-1">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 flex items-center gap-1.5 shadow-xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
+                  Liturgical Color: {UPCOMING_SUNDAY_LITURGY.liturgicalColor}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-indigo-100 text-indigo-800">
+                  {UPCOMING_SUNDAY_LITURGY.sundayTitle}
+                </span>
+                <span className="text-xs font-bold text-slate-400 font-mono">
+                  {UPCOMING_SUNDAY_LITURGY.date}
+                </span>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  Upcoming Sunday Mass Liturgy & Hymnal Lineup
+                </h2>
+                <p className="text-xs font-bold text-emerald-700 mt-1 flex items-center gap-2">
+                  <FaTshirt /> Vestment Code: <span className="text-slate-800 font-semibold">{UPCOMING_SUNDAY_LITURGY.uniformCode}</span>
+                </p>
+              </div>
+
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                Theme of Mass: <strong>"{UPCOMING_SUNDAY_LITURGY.theme}"</strong> · {UPCOMING_SUNDAY_LITURGY.massTime}
+              </p>
+
+              {/* Mass Hymn Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
+                    Entrance Processional
+                  </span>
+                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.entranceHymn.title}</p>
+                  <span className="text-[10px] font-bold text-indigo-600">{UPCOMING_SUNDAY_LITURGY.entranceHymn.key} · {UPCOMING_SUNDAY_LITURGY.entranceHymn.number}</span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
+                    Gloria & Kyrie Setting
+                  </span>
+                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.gloriaSetting.title}</p>
+                  <span className="text-[10px] font-bold text-pink-600">{UPCOMING_SUNDAY_LITURGY.gloriaSetting.key} · {UPCOMING_SUNDAY_LITURGY.gloriaSetting.setting}</span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
+                    Responsorial Psalm Tone
+                  </span>
+                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.psalmTone.title}</p>
+                  <span className="text-[10px] font-bold text-amber-600">{UPCOMING_SUNDAY_LITURGY.psalmTone.tone}</span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
+                    Communion Motet
+                  </span>
+                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.communionMotet.title}</p>
+                  <span className="text-[10px] font-bold text-purple-600">{UPCOMING_SUNDAY_LITURGY.communionMotet.composer}</span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 sm:col-span-2 md:col-span-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
+                    Recessional Hymn
+                  </span>
+                  <p className="text-xs font-extrabold text-slate-800 line-clamp-1">{UPCOMING_SUNDAY_LITURGY.recessionalHymn.title}</p>
+                  <span className="text-[10px] font-bold text-emerald-600">{UPCOMING_SUNDAY_LITURGY.recessionalHymn.key}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex lg:flex-col items-center gap-3 shrink-0 pt-2 lg:pt-0">
+              <button
+                onClick={() => {
+                  setSelectedSongbookSheet(DIGITAL_SONGBOOK_SHEETS['rep-1']);
+                  setShowSongbookModal(true);
+                }}
+                className="px-5 py-3 rounded-2xl font-black text-xs text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 w-full"
+              >
+                <FaBookOpen /> Open Digital Songbook
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedVoiceSection(VOICE_SECTIONS[0]);
+                  setShowVoiceModal(true);
+                }}
+                className="px-5 py-3 rounded-2xl font-black text-xs text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer flex items-center justify-center gap-2 w-full"
+              >
+                <FaHeadphones /> Section Audio Leads
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. MENTORSHIP PROGRAM PILLARS & TRACKS (Mentorship Special) */}
       {isMentorship && (
@@ -2190,25 +2408,45 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
             </p>
           </div>
 
-          {/* Voice Sections for Choir */}
+          {/* Voice Sections for Choir (Interactive Voice Hubs) */}
           {isChoir && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {VOICE_SECTIONS.map((v, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl p-4 backdrop-blur-md voice-card-hover"
-                  style={{ background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255, 255, 255, 0.2)' }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-base font-black text-white">{v.name}</span>
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-white/20 text-amber-300">
-                      {v.badge}
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-amber-200 mb-1">{v.desc}</p>
-                  <p className="text-[11px] text-white/75 leading-relaxed">{v.role}</p>
-                </div>
-              ))}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                  <FaHeadphones /> Interactive Voice Section Hubs · Click Card to View Rehearsal Leads & Announcements
+                </span>
+                <span className="text-[10px] font-bold text-white/70 font-mono">SATB 4-Part Harmony</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {VOICE_SECTIONS.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedVoiceSection(v);
+                      setShowVoiceModal(true);
+                    }}
+                    className="rounded-2xl p-4 backdrop-blur-md text-left transition-all duration-300 hover:scale-[1.03] hover:bg-white/20 cursor-pointer group relative overflow-hidden"
+                    style={{ background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255, 255, 255, 0.25)' }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-base font-black text-white group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+                        {v.name} <FaChevronRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </span>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-white/20 text-amber-300">
+                        {v.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-amber-200 mb-1">{v.desc}</p>
+                    <p className="text-[11px] text-white/75 leading-relaxed line-clamp-2">{v.role}</p>
+
+                    <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/90 font-bold">
+                      <span className="flex items-center gap-1"><FaVolumeUp size={10} className="text-amber-300" /> Play Lead Audio</span>
+                      <span className="text-amber-300 font-mono text-[9px]">Hub &rarr;</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -2380,6 +2618,69 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
                   </a>
                 </div>
               ))}
+            </div>
+          </div>
+        ) : isChoir ? (
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
+              <FaBookOpen className="text-indigo-600" /> Active Hymnody, Solfa Scores & Digital Songbook
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+              {DEFAULT_CHOIR_REPERTOIRE.map((item) => {
+                const sheetData = DIGITAL_SONGBOOK_SHEETS[item.id] || {
+                  title: item.title,
+                  composer: item.composer,
+                  keySignature: item.keySignature,
+                  tempo: item.tempo,
+                  part: item.part,
+                  solfa: `d : m | s : d' | m : r | d : -`,
+                  lyricsSwahili: `1. Tumwimbie Bwana kwa sifa na vigelegele.\n2. Wema wake hudumu milele na milele.`,
+                  lyricsEnglish: `1. Sing to the Lord with praise and joyful shouting.\n2. His mercy endures forever and ever.`,
+                  notes: `Key signature: ${item.keySignature}`
+                };
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800">
+                          {item.part}
+                        </span>
+                        <span className="text-[10px] font-mono font-bold text-indigo-600">{item.keySignature}</span>
+                      </div>
+                      <h4 className="font-extrabold text-slate-900 text-sm mb-1">{item.title}</h4>
+                      <p className="text-xs text-slate-500 font-semibold mb-3">{item.composer}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSongbookSheet(sheetData);
+                          setShowSongbookModal(true);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <FaBookOpen size={11} /> Solfa Score
+                      </button>
+                      {(module.history_pdf_url || (module as any).pdf_url) && (
+                        <a
+                          href={module.history_pdf_url || (module as any).pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl text-slate-600 bg-slate-200 hover:bg-slate-300 transition-all"
+                          title="Download PDF"
+                        >
+                          <FaDownload size={11} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -3137,6 +3438,237 @@ const CommunityAboutTab: React.FC<Props> = ({ module, color, onQuickLink }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CHOIR VOICE SECTION REHEARSAL HUB */}
+      {showVoiceModal && selectedVoiceSection && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => {
+                setShowVoiceModal(false);
+                setPlayingVoiceAudio(false);
+              }}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-all cursor-pointer"
+            >
+              <FaTimes size={14} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xl">
+                <FaHeadphones size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-black text-slate-900">{selectedVoiceSection.name} Voice Hub</h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-700">
+                    {selectedVoiceSection.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-bold">{selectedVoiceSection.leader}</p>
+              </div>
+            </div>
+
+            {/* Section Announcement */}
+            <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100 mb-4">
+              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 block mb-1 flex items-center gap-1">
+                <FaExclamationCircle size={10} /> Section Announcement
+              </span>
+              <p className="text-xs font-semibold text-slate-700 leading-relaxed">
+                {selectedVoiceSection.announcement}
+              </p>
+            </div>
+
+            {/* Voice Audio Rehearsal Lead Track */}
+            <div className="p-4 rounded-2xl bg-slate-900 text-white mb-4 shadow-md">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 block mb-1">
+                Audio Practice Lead Track
+              </span>
+              <h4 className="font-extrabold text-sm text-white mb-2">{selectedVoiceSection.trackTitle}</h4>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setPlayingVoiceAudio(!playingVoiceAudio)}
+                  className="px-4 py-2 rounded-xl text-xs font-black text-slate-900 bg-amber-400 hover:bg-amber-300 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                >
+                  {playingVoiceAudio ? <FaPause size={12} /> : <FaPlay size={12} />}
+                  {playingVoiceAudio ? 'Pause Voice Track' : 'Play Rehearsal Lead'}
+                </button>
+                <a
+                  href={selectedVoiceSection.audioUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-white bg-white/15 hover:bg-white/25 transition-all flex items-center gap-1.5"
+                >
+                  <FaDownload size={11} /> MP3
+                </a>
+              </div>
+            </div>
+
+            {/* Tonic Solfa Reference Snippet */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 mb-6">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
+                Key Solfa Passage Snippet
+              </span>
+              <p className="text-xs font-mono font-bold text-slate-800 bg-white p-2.5 rounded-xl border border-slate-200">
+                {selectedVoiceSection.solfaSnippet}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowVoiceModal(false);
+                  setPlayingVoiceAudio(false);
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Close
+              </button>
+              <a
+                href={selectedVoiceSection.whatsappGroup}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <FaWhatsapp size={13} /> Join {selectedVoiceSection.name} WhatsApp Section
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DIGITAL SONGBOOK & SHEET MUSIC VIEWER */}
+      {showSongbookModal && selectedSongbookSheet && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowSongbookModal(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-all cursor-pointer"
+            >
+              <FaTimes size={14} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-xl">
+                <FaBookOpen size={22} />
+              </div>
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-700">
+                  {selectedSongbookSheet.part}
+                </span>
+                <h3 className="text-xl font-black text-slate-900">{selectedSongbookSheet.title}</h3>
+                <p className="text-xs text-slate-500 font-bold">{selectedSongbookSheet.composer}</p>
+              </div>
+            </div>
+
+            {/* Song Meta Header */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-100 mb-4">
+              <div>
+                <span className="text-[10px] font-black uppercase text-slate-400 block">Key Signature</span>
+                <span className="text-xs font-black text-slate-800">{selectedSongbookSheet.keySignature}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase text-slate-400 block">Tempo & Time</span>
+                <span className="text-xs font-black text-slate-800">{selectedSongbookSheet.tempo}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase text-slate-400 block">Score Format</span>
+                <span className="text-xs font-black text-emerald-600">Tonic Solfa + Staff</span>
+              </div>
+            </div>
+
+            {/* Tabs for Solfa vs Lyrics */}
+            <div className="flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
+              <button
+                type="button"
+                onClick={() => setActiveSongbookTab('solfa')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeSongbookTab === 'solfa' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Tonic Solfa Score
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSongbookTab('swahili')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeSongbookTab === 'swahili' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Swahili Lyrics
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSongbookTab('english')}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  activeSongbookTab === 'english' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                English Lyrics
+              </button>
+            </div>
+
+            {/* Tab Body */}
+            {activeSongbookTab === 'solfa' && (
+              <div className="p-4 rounded-2xl bg-slate-900 text-amber-300 font-mono text-sm leading-relaxed mb-4 overflow-x-auto whitespace-pre border border-slate-800 shadow-inner">
+                {selectedSongbookSheet.solfa}
+              </div>
+            )}
+
+            {activeSongbookTab === 'swahili' && (
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-sm font-medium leading-relaxed mb-4 whitespace-pre-line">
+                {selectedSongbookSheet.lyricsSwahili}
+              </div>
+            )}
+
+            {activeSongbookTab === 'english' && (
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-sm font-medium leading-relaxed mb-4 whitespace-pre-line">
+                {selectedSongbookSheet.lyricsEnglish}
+              </div>
+            )}
+
+            {/* Performance Notes */}
+            {selectedSongbookSheet.notes && (
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 mb-6 font-medium">
+                <strong>Performance Notes:</strong> {selectedSongbookSheet.notes}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${selectedSongbookSheet.title}\n\nSolfa:\n${selectedSongbookSheet.solfa}`);
+                  setCopiedSheetSolfa(true);
+                  setTimeout(() => setCopiedSheetSolfa(false), 2000);
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                {copiedSheetSolfa ? <FaCheck className="text-emerald-600" /> : <FaCopy />}
+                {copiedSheetSolfa ? 'Copied to Clipboard!' : 'Copy Solfa Notation'}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowSongbookModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Check out the sheet music and solfa for "${selectedSongbookSheet.title}":\n\n${selectedSongbookSheet.solfa}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <FaWhatsapp size={13} /> Share Sheet Score
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}
