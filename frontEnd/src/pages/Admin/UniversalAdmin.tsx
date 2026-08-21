@@ -285,11 +285,11 @@ export default function UniversalAdmin() {
     item.subItems?.some((child) => location.pathname === child.path) || false;
 
   return (
-    <div className="h-screen bg-slate-100 flex overflow-hidden">
+    <div className="h-screen bg-slate-50 text-slate-800 flex overflow-hidden font-sans">
       {/* Mobile backdrop */}
       {isMobile && isSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
           onClick={closeSidebarIfMobile}
         />
       )}
@@ -298,23 +298,23 @@ export default function UniversalAdmin() {
         className={`${isMobile
             ? `fixed inset-y-0 left-0 w-72 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
             : `${isSidebarOpen ? 'w-72' : 'w-[4.5rem]'} transition-all duration-300 ease-in-out`
-          } bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col z-50 shadow-2xl`}
+          } bg-white border-r border-slate-200/90 text-slate-700 flex flex-col z-50 shadow-lg`}
       >
         {/* Brand */}
         <div className="h-[4.25rem] flex items-center gap-3 px-5 shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/40 ring-1 ring-white/10">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 ring-2 ring-blue-100">
             <span className="text-white font-black text-lg tracking-tight">C</span>
           </div>
           {isSidebarOpen && (
             <div className="min-w-0">
-              <h1 className="text-white font-black text-[15px] tracking-wide truncate leading-tight">CSA Kirinyaga</h1>
-              <p className="text-[10px] text-slate-400 tracking-[0.18em] uppercase truncate">Admin Console</p>
+              <h1 className="text-slate-900 font-black text-[15px] tracking-wide truncate leading-tight">CSA Kirinyaga</h1>
+              <p className="text-[10px] text-slate-500 tracking-[0.18em] uppercase truncate font-bold">Admin Console</p>
             </div>
           )}
         </div>
 
         {/* Divider */}
-        <div className="mx-5 h-px bg-gradient-to-r from-transparent via-slate-700/60 to-transparent" />
+        <div className="mx-5 h-px bg-slate-200" />
 
         {/* Navigation */}
         <nav
@@ -325,11 +325,11 @@ export default function UniversalAdmin() {
           {allowedSections.map((section, sIdx) => (
             <div key={section.label}>
               {isSidebarOpen ? (
-                <p className="px-3 mt-5 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                <p className="px-3 mt-5 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                   {section.label}
                 </p>
               ) : (
-                sIdx > 0 && <div className="mx-3 my-4 h-px bg-slate-800/80" />
+                sIdx > 0 && <div className="mx-3 my-4 h-px bg-slate-200" />
               )}
 
               <div className="space-y-1">
@@ -344,15 +344,14 @@ export default function UniversalAdmin() {
                           rememberNavScroll();
                           closeSidebarIfMobile();
                         }}
-                        className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group ${
+                        className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 group ${
                           active
-                            ? 'text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                            ? 'text-white shadow-md shadow-blue-500/20'
+                            : 'text-slate-600 hover:text-blue-600 hover:bg-slate-100/80'
                         }`}
                         style={active
                           ? {
-                              background: 'linear-gradient(135deg, rgba(59,130,246,0.95), rgba(37,99,235,0.85))',
-                              boxShadow: '0 8px 20px rgba(30,64,175,0.35)',
+                              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                             }
                           : undefined}
                       >
@@ -362,10 +361,10 @@ export default function UniversalAdmin() {
                         <item.icon
                           size={19}
                           strokeWidth={active ? 2.2 : 1.8}
-                          className={active ? 'text-white' : 'text-slate-400 group-hover:text-blue-200'}
+                          className={active ? 'text-white' : 'text-slate-500 group-hover:text-blue-600'}
                         />
                         {isSidebarOpen && (
-                          <span className={`flex-1 truncate leading-tight ${active ? 'font-semibold' : ''}`}>
+                          <span className={`flex-1 truncate leading-tight ${active ? 'font-black' : ''}`}>
                             {item.name}
                           </span>
                         )}
@@ -384,29 +383,29 @@ export default function UniversalAdmin() {
                           toggleMenu(item.id);
                           if (!isSidebarOpen) setIsSidebarOpen(true);
                         }}
-                        className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 w-full text-left group ${
+                        className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 w-full text-left group ${
                           accent
-                            ? 'text-blue-300 bg-white/[0.06]'
-                            : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                            ? 'text-blue-600 bg-blue-50 font-black'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                         }`}
                       >
                         {childActive && (
                           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-amber-400" />
                         )}
-                        <item.icon size={19} strokeWidth={1.8} className="shrink-0 text-slate-400 group-hover:text-blue-200" />
+                        <item.icon size={19} strokeWidth={1.8} className="shrink-0 text-slate-500 group-hover:text-blue-600" />
                         {isSidebarOpen && (
                           <>
-                            <span className={`flex-1 truncate leading-tight ${accent ? 'text-blue-200' : ''}`}>
+                            <span className={`flex-1 truncate leading-tight ${accent ? 'text-blue-700' : ''}`}>
                               {item.name}
                             </span>
                             {isOpen
-                              ? <ChevronDown size={14} className="shrink-0 text-slate-500" />
-                              : <ChevronRight size={14} className="shrink-0 text-slate-500" />}
+                              ? <ChevronDown size={14} className="shrink-0 text-slate-400" />
+                              : <ChevronRight size={14} className="shrink-0 text-slate-400" />}
                           </>
                         )}
                       </button>
                       {isSidebarOpen && isOpen && (
-                        <div className="ml-[1.35rem] pl-4 border-l border-slate-800 space-y-1 mt-1">
+                        <div className="ml-[1.35rem] pl-4 border-l border-slate-200 space-y-1 mt-1">
                           {item.subItems.map((child) => {
                             const childActivePath = location.pathname === child.path;
                             return (
@@ -417,10 +416,10 @@ export default function UniversalAdmin() {
                                   rememberNavScroll();
                                   closeSidebarIfMobile();
                                 }}
-                                className={`block px-3 py-2 rounded-lg text-[12px] font-medium transition-colors duration-200 ${
+                                className={`block px-3 py-2 rounded-lg text-[12px] font-bold transition-colors duration-200 ${
                                   childActivePath
-                                    ? 'text-white bg-blue-600/80 shadow-md shadow-blue-900/30'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    ? 'text-blue-700 bg-blue-100/80 font-black shadow-xs'
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                                 }`}
                               >
                                 {child.name}
@@ -438,35 +437,35 @@ export default function UniversalAdmin() {
         </nav>
 
         {/* Profile + Logout */}
-        <div className="p-3 border-t border-slate-800/80 shrink-0">
+        <div className="p-3 border-t border-slate-200 shrink-0 bg-slate-50/50">
           {isSidebarOpen && (
-            <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-white/[0.04] ring-1 ring-white/[0.06]">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-black text-sm shrink-0">
+            <div className="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-xl bg-white border border-slate-200 shadow-xs">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-black text-sm shrink-0 shadow-xs">
                 {user?.name?.[0] ?? 'A'}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold text-white truncate leading-tight">{user?.name || 'Admin'}</p>
-                <p className="text-[10px] text-slate-400 truncate capitalize">{roleLabel}</p>
+                <p className="text-[13px] font-extrabold text-slate-900 truncate leading-tight">{user?.name || 'Admin'}</p>
+                <p className="text-[10px] text-slate-500 font-bold capitalize truncate">{roleLabel}</p>
               </div>
             </div>
           )}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-200 group cursor-pointer"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 group cursor-pointer font-bold text-xs"
           >
-            <LogOut size={19} className="shrink-0" />
-            {isSidebarOpen && <span className="text-[13px] font-medium">Sign out</span>}
+            <LogOut size={18} className="shrink-0 text-slate-400 group-hover:text-rose-600" />
+            {isSidebarOpen && <span>Sign out</span>}
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-950">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
         {/* Top Header */}
-        <header className="h-16 lg:h-[4.25rem] bg-slate-900/95 backdrop-blur-xl border-b border-slate-800 flex items-center justify-between px-4 md:px-6 lg:px-8 shrink-0 shadow-md z-20">
+        <header className="h-16 lg:h-[4.25rem] bg-white/95 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-4 md:px-6 lg:px-8 shrink-0 shadow-xs z-20">
           <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border border-slate-800 bg-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-all shadow-sm cursor-pointer"
+              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-all shadow-xs cursor-pointer"
               aria-label="Toggle sidebar"
             >
               <Menu size={19} />
@@ -474,28 +473,27 @@ export default function UniversalAdmin() {
 
             {/* Breadcrumb */}
             <nav className="hidden sm:flex items-center gap-1.5 text-sm ml-1 min-w-0">
-              <Link to="/" className="text-slate-400 hover:text-blue-400 font-medium whitespace-nowrap">Home</Link>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
-              <Link to="/admin" className="text-slate-400 hover:text-blue-400 font-medium whitespace-nowrap">Admin</Link>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
-              <span className="font-bold text-white truncate">{currentPage}</span>
+              <Link to="/" className="text-slate-500 hover:text-blue-600 font-semibold whitespace-nowrap">Home</Link>
+              <ChevronRight size={14} className="text-slate-300 shrink-0" />
+              <Link to="/admin" className="text-slate-500 hover:text-blue-600 font-semibold whitespace-nowrap">Admin</Link>
+              <ChevronRight size={14} className="text-slate-300 shrink-0" />
+              <span className="font-extrabold text-slate-900 truncate">{currentPage}</span>
             </nav>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Profile */}
             <div className="flex items-center gap-3 pl-1">
-
               <div className="text-right hidden md:block">
-                <p className="text-sm font-bold text-white leading-tight">{user?.name || 'Admin'}</p>
-                <p className="text-[10px] text-slate-400 font-medium capitalize truncate max-w-[160px]">{roleLabel}</p>
+                <p className="text-sm font-extrabold text-slate-900 leading-tight">{user?.name || 'Admin'}</p>
+                <p className="text-[10px] text-slate-500 font-bold capitalize truncate max-w-[160px]">{roleLabel}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-md ring-2 ring-slate-700">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black shadow-sm ring-2 ring-slate-100">
                 {user?.name?.[0] ?? 'A'}
               </div>
               <button
                 onClick={handleLogout}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-800 bg-slate-800 text-slate-300 hover:text-rose-400 hover:border-rose-900/50 hover:bg-rose-950/40 transition-all text-xs font-semibold shadow-sm cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all text-xs font-bold shadow-xs cursor-pointer"
               >
                 <LogOut size={14} />
                 Sign out
@@ -505,7 +503,7 @@ export default function UniversalAdmin() {
         </header>
 
         {/* Dynamic Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-3 sm:p-5 lg:p-8 w-full max-w-[1600px] mx-auto">
             {hasAccess ? <Outlet /> : <ArtDeco404 />}
           </div>

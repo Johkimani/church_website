@@ -656,12 +656,12 @@ export default function CommunityDetailEditor() {
       </div>
 
       {/* ══════════════════════════════════════════════════════
-          MAIN CONTENT: RESPONSIVE TABS + CONTENT PANEL (DARK THEME)
+          MAIN CONTENT: RESPONSIVE TABS + CONTENT PANEL (LIGHT THEME)
       ══════════════════════════════════════════════════════ */}
-      <div className="flex flex-col lg:flex-row gap-0 min-h-[600px] bg-slate-900 border-x border-b border-slate-800 rounded-b-3xl overflow-hidden shadow-2xl">
+      <div className="flex flex-col lg:flex-row gap-0 min-h-[600px] bg-white border border-slate-200/90 rounded-b-3xl overflow-hidden shadow-xl">
 
         {/* ── Sidebar / Mobile Horizontal Tab Navigation ── */}
-        <div className="w-full lg:w-56 shrink-0 bg-slate-950/90 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible py-2 px-2 lg:px-0 no-scrollbar">
+        <div className="w-full lg:w-56 shrink-0 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible py-2 px-2 lg:px-0 no-scrollbar">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -670,21 +670,21 @@ export default function CommunityDetailEditor() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`group relative flex items-center gap-2.5 px-3.5 lg:px-4 py-2.5 lg:py-3 lg:mx-2 my-0.5 rounded-xl text-left text-xs font-black transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'text-white shadow-xl ring-1 ring-white/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    ? 'text-white shadow-md ring-1 ring-blue-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                 }`}
                 style={isActive ? {
                   background: isChoirAdmin
-                    ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+                    ? 'linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%)'
                     : `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
-                  boxShadow: `0 4px 14px ${accentColor}66`
+                  boxShadow: `0 4px 14px ${accentColor}44`
                 } : {}}
               >
                 {isActive && (
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white animate-pulse hidden lg:block" />
                 )}
                 <div className={`w-6 h-6 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
-                  isActive ? 'bg-white/25 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-white group-hover:bg-slate-700'
+                  isActive ? 'bg-white/25 text-white' : 'bg-slate-200/80 text-slate-600 group-hover:text-slate-900 group-hover:bg-slate-300/80'
                 }`}>
                   <tab.icon size={13} className="text-current" />
                 </div>
@@ -694,30 +694,29 @@ export default function CommunityDetailEditor() {
           })}
 
           {/* Sidebar footer (desktop only) */}
-          <div className="hidden lg:block mt-auto px-4 py-4 border-t border-slate-800">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Admin Panel</p>
-            <p className="text-[10px] text-slate-400 font-medium mt-0.5">{moduleMeta?.title || categoryId}</p>
+          <div className="hidden lg:block mt-auto px-4 py-4 border-t border-slate-200">
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Admin Panel</p>
+            <p className="text-[10px] text-slate-600 font-bold mt-0.5">{moduleMeta?.title || categoryId}</p>
           </div>
         </div>
 
         {/* ── Tab Content Area ── */}
-        <div className="flex-1 overflow-hidden flex flex-col min-w-0 bg-slate-900">
-
+        <div className="flex-1 overflow-hidden flex flex-col min-w-0 bg-white">
 
           {/* ── Content Inner Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-200 bg-white shrink-0">
             <div className="flex items-center gap-3">
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: `${accentColor}25`, color: '#38bdf8' }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-xs"
+                style={{ background: `${accentColor}15`, color: accentColor }}
               >
                 {(() => { const tab = tabs.find(t => t.id === activeTab); return tab ? <tab.icon size={16} /> : null; })()}
               </div>
               <div>
-                <h2 className="text-sm font-black text-white leading-tight">
+                <h2 className="text-sm font-black text-slate-900 leading-tight">
                   {tabs.find(t => t.id === activeTab)?.label}
                 </h2>
-                <p className="text-[11px] text-slate-400 font-medium">{moduleMeta?.title || categoryId} · Administration Command Center</p>
+                <p className="text-[11px] text-slate-500 font-bold">{moduleMeta?.title || categoryId} · Administration Command Center</p>
               </div>
             </div>
 
@@ -730,14 +729,14 @@ export default function CommunityDetailEditor() {
                     placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 pr-3 py-2 border border-slate-700 rounded-xl text-xs font-semibold text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-500 bg-slate-800 w-36 md:w-48"
+                    className="pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 bg-slate-50 w-36 md:w-48"
                   />
                 </div>
               )}
               {activeTab === 'activities' || activeTab === 'announcements' ? (
                 <button
                   onClick={openAddModal}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
                   style={{ background: accentColor }}
                 >
                   <Plus size={14} /> Add {activeTab === 'activities' ? 'Activity' : 'Announcement'}
@@ -745,7 +744,7 @@ export default function CommunityDetailEditor() {
               ) : activeTab === 'members' ? (
                 <button
                   onClick={openAddModal}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
                   style={{ background: accentColor }}
                 >
                   <Plus size={14} /> Add Member
@@ -753,7 +752,7 @@ export default function CommunityDetailEditor() {
               ) : activeTab === 'schedules' ? (
                 <button
                   onClick={openAddModal}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
                   style={{ background: accentColor }}
                 >
                   <Plus size={14} /> Add Session
@@ -761,7 +760,7 @@ export default function CommunityDetailEditor() {
               ) : activeTab === 'gallery' ? (
                 <button
                   onClick={() => setGalleryModal(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
                   style={{ background: accentColor }}
                 >
                   <Plus size={14} /> Add Photo
@@ -769,7 +768,7 @@ export default function CommunityDetailEditor() {
               ) : activeTab === 'tshirts' ? (
                 <button
                   onClick={() => setProductModal(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
                   style={{ background: accentColor }}
                 >
                   <Plus size={14} /> Manage Product
@@ -779,7 +778,8 @@ export default function CommunityDetailEditor() {
           </div>
 
           {/* ── Tab Content ── */}
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-900 text-slate-100">
+          <div className="flex-1 overflow-y-auto p-6 bg-white text-slate-800">
+
 
           {/* ABOUT TAB */}
           {activeTab === 'about' && (
@@ -796,12 +796,12 @@ export default function CommunityDetailEditor() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-slate-800/60 p-6 space-y-6 shadow-md">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 space-y-6 shadow-sm">
                 <div>
-                  <label className="text-xs font-black text-slate-300 block mb-1.5 uppercase tracking-wide">Biography / Description</label>
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Biography / Description</label>
                   <textarea
                     rows={8}
-                    className="w-full border border-slate-700 bg-slate-900 px-4 py-3 rounded-xl text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 resize-y"
+                    className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 resize-y shadow-xs"
                     style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
                     placeholder="Enter a biography or description for this community..."
                     value={aboutForm.biography}
@@ -809,36 +809,37 @@ export default function CommunityDetailEditor() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-300 block mb-1.5 uppercase tracking-wide">Saint / Community Image URL</label>
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image URL</label>
                   <input
                     type="url"
-                    className="w-full border border-slate-700 bg-slate-900 px-4 py-2.5 rounded-xl text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2"
+                    className="w-full border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
                     style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
                     placeholder="https://... (direct image link)"
                     value={aboutForm.saint_image_url}
                     onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
                   />
                   {aboutForm.saint_image_url && (
-                    <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border-2 border-slate-700 shadow-md" />
+                    <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border-2 border-slate-200 shadow-md" />
                   )}
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-300 block mb-1.5 uppercase tracking-wide">History PDF URL</label>
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">History PDF URL</label>
                   <input
                     type="url"
-                    className="w-full border border-slate-700 bg-slate-900 px-4 py-2.5 rounded-xl text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2"
+                    className="w-full border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
                     style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
                     placeholder="https://... (link to PDF document)"
                     value={aboutForm.history_pdf_url}
                     onChange={(e) => setAboutForm(v => ({ ...v, history_pdf_url: e.target.value }))}
                   />
                   {aboutForm.history_pdf_url && (
-                    <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-400 font-bold hover:underline">
+                    <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-600 font-bold hover:underline">
                       <FilePdf size={16} /> Preview PDF
                     </a>
                   )}
                 </div>
               </div>
+
 
               <div className="flex justify-end pt-1">
                 <button
@@ -1059,12 +1060,12 @@ export default function CommunityDetailEditor() {
                     <>
                       {/* Choir specific filter bar in admin */}
                       {categoryId === 'choir' && (
-                        <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 mb-4">
-                          <span className="text-xs font-black uppercase tracking-wider text-amber-300">Filter Choir:</span>
+                        <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-4">
+                          <span className="text-xs font-black uppercase tracking-wider text-blue-700">Filter Choir:</span>
                           <select
                             value={choirVoiceFilter}
                             onChange={(e: any) => setChoirVoiceFilter(e.target.value)}
-                            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none"
+                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
                           >
                             <option value="all">All Voices (S-A-T-B)</option>
                             <option value="soprano">Soprano</option>
@@ -1076,7 +1077,7 @@ export default function CommunityDetailEditor() {
                           <select
                             value={choirGenderFilter}
                             onChange={(e: any) => setChoirGenderFilter(e.target.value)}
-                            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none"
+                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
                           >
                             <option value="all">All Members (Gents & Ladies)</option>
                             <option value="male">Gents (Male)</option>
@@ -1093,31 +1094,31 @@ export default function CommunityDetailEditor() {
                             { label: 'Pending', value: enrollmentStats.pending, color: 'amber' },
                             { label: 'Rejected', value: enrollmentStats.rejected, color: 'rose' },
                           ].map((stat) => (
-                            <div key={stat.label} className="rounded-xl p-3 text-center bg-slate-800/80 border border-slate-700">
-                              <p className="text-xl font-black text-white">{stat.value}</p>
-                              <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">{stat.label}</p>
+                            <div key={stat.label} className="rounded-xl p-3 text-center bg-slate-50 border border-slate-200 shadow-xs">
+                              <p className="text-xl font-black text-slate-900">{stat.value}</p>
+                              <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{stat.label}</p>
                             </div>
                           ))}
                         </div>
                       )}
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="border-b border-slate-800 text-slate-400">
-                            <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Full Name</th>
+                          <tr className="border-b border-slate-200 text-slate-500 bg-slate-50">
+                            <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Full Name</th>
                             {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
                               <>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
+                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
+                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
                               </>
                             ) : (
                               <>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Gender</th>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Skill Level</th>
+                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
+                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Gender</th>
+                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Skill Level</th>
                               </>
                             )}
-                            <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Status</th>
-                            <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
+                            <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Status</th>
+                            <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1135,49 +1136,49 @@ export default function CommunityDetailEditor() {
                             }
                             return true;
                           }).map((member) => (
-                            <tr key={member.id} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-slate-200">
-                              <td className="py-4 px-4 font-bold text-white">{member.fullName || member.full_name}</td>
+                            <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-slate-800">
+                              <td className="py-3.5 px-4 font-extrabold text-slate-900">{member.fullName || member.full_name}</td>
                               {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
                                 <>
-                                  <td className="py-4 px-4 text-sm text-slate-400">{member.phoneNumber || member.phone || 'N/A'}</td>
-                                  <td className="py-4 px-4 text-sm text-slate-400">{member.email || 'N/A'}</td>
+                                  <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.phoneNumber || member.phone || 'N/A'}</td>
+                                  <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.email || 'N/A'}</td>
                                 </>
                               ) : (
                                 <>
-                                  <td className="py-4 px-4 text-sm font-bold">
-                                    <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${
-                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-950 text-pink-300 border border-pink-800' :
-                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-950 text-amber-300 border border-amber-800' :
-                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-950 text-sky-300 border border-sky-800' :
-                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-950 text-indigo-300 border border-indigo-800' : 'bg-slate-800 text-slate-300'
+                                  <td className="py-3.5 px-4 text-sm font-bold">
+                                    <span className={`px-2.5 py-0.5 rounded-md text-xs font-black uppercase ${
+                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800 border border-pink-200' :
+                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800 border border-sky-200' :
+                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                                     }`}>
                                       {member.voice_type || 'General'}
                                     </span>
                                   </td>
-                                  <td className="py-4 px-4 text-sm text-slate-300 capitalize">{member.gender || 'N/A'}</td>
-                                  <td className="py-4 px-4 text-sm text-slate-300 capitalize">{member.music_level || 'Beginner'}</td>
+                                  <td className="py-3.5 px-4 text-sm text-slate-700 font-semibold capitalize">{member.gender || 'N/A'}</td>
+                                  <td className="py-3.5 px-4 text-sm text-slate-700 font-semibold capitalize">{member.music_level || 'Beginner'}</td>
                                 </>
                               )}
-                              <td className="py-4 px-4">
-                                <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
-                                  member.status === 'Pending' ? 'bg-amber-950 text-amber-300 border border-amber-800' : member.status === 'Approved' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                                  member.status === 'Pending' ? 'bg-amber-100 text-amber-800 border border-amber-200' : member.status === 'Approved' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
                                 }`}>
                                   {member.status}
                                 </span>
                               </td>
-                              <td className="py-4 px-4 text-right">
+                              <td className="py-3.5 px-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   {member.status !== 'Approved' && (
-                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch { alert('Approve failed'); } }} className="p-2 text-emerald-400 hover:bg-emerald-950 rounded-lg transition" title="Approve">
+                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch { alert('Approve failed'); } }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer" title="Approve">
                                       <CheckCircle size={18} />
                                     </button>
                                   )}
                                   {member.status !== 'Rejected' && (
-                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Rejected' }); showToast('Member rejected'); await loadCategoryData(); } catch { alert('Reject failed'); } }} className="p-2 text-rose-400 hover:bg-rose-950 rounded-lg transition" title="Reject">
+                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Rejected' }); showToast('Member rejected'); await loadCategoryData(); } catch { alert('Reject failed'); } }} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer" title="Reject">
                                       <XCircle size={18} />
                                     </button>
                                   )}
-                                  <button onClick={(e) => { e.stopPropagation(); handleDelete(member.id); }} className="p-2 text-rose-400 hover:bg-rose-950 rounded-lg transition" title="Delete">
+                                  <button onClick={(e) => { e.stopPropagation(); handleDelete(member.id); }} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer" title="Delete">
                                     <Trash2 size={18} />
                                   </button>
                                 </div>
@@ -1253,83 +1254,56 @@ export default function CommunityDetailEditor() {
 
       {/* Modal for Activities / Announcements / Members */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-white">
-            <h3 className="text-xl font-bold mb-4">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : activeTab === 'schedules' ? 'Practice Schedule' : 'Member'}</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 md:p-8 text-slate-900 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-black mb-4 text-slate-900">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : activeTab === 'schedules' ? 'Practice Schedule' : 'Member'}</h3>
+            <div className="space-y-3.5">
               {activeTab === 'schedules' && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-bold text-slate-300">Day of Week *</label>
-                      <select value={formValues.day || (isStFrancisAdmin ? 'Sunday' : isDancersAdmin ? 'Saturday' : isCharismaticAdmin ? 'Thursday' : 'Tuesday')} onChange={(e) => setFormValues(v => ({ ...v, day: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
+                      <label className="text-xs font-bold text-slate-700">Day of Week *</label>
+                      <select value={formValues.day || (isStFrancisAdmin ? 'Sunday' : isDancersAdmin ? 'Saturday' : isCharismaticAdmin ? 'Thursday' : 'Tuesday')} onChange={(e) => setFormValues(v => ({ ...v, day: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
                           <option key={d} value={d}>{d}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-bold text-slate-300">{isStFrancisAdmin ? 'Venue / Meeting Point *' : 'Venue / Room *'}</label>
-                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. LH 21 / Neighborhood Block' : 'e.g. School Compound / Main Hall'} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1 placeholder:text-slate-500" />
+                      <label className="text-xs font-bold text-slate-700">{isStFrancisAdmin ? 'Venue / Meeting Point *' : 'Venue / Room *'}</label>
+                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. LH 21 / Neighborhood Block' : 'e.g. School Compound / Main Hall'} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-bold text-slate-300">Start Time *</label>
-                      <input type="text" value={formValues.start_time || ''} onChange={(e) => setFormValues(v => ({ ...v, start_time: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. 17:00 or 5:00 PM' : 'e.g. 16:00 or 4:00 PM'} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1 placeholder:text-slate-500" />
+                      <label className="text-xs font-bold text-slate-700">Start Time *</label>
+                      <input type="text" value={formValues.start_time || ''} onChange={(e) => setFormValues(v => ({ ...v, start_time: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. 17:00 or 5:00 PM' : 'e.g. 16:00 or 4:00 PM'} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
-                      <label className="text-sm font-bold text-slate-300">End Time</label>
-                      <input type="text" value={formValues.end_time || ''} onChange={(e) => setFormValues(v => ({ ...v, end_time: e.target.value }))} placeholder="e.g. 18:30 or 6:30 PM" className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1 placeholder:text-slate-500" />
+                      <label className="text-xs font-bold text-slate-700">End Time</label>
+                      <input type="text" value={formValues.end_time || ''} onChange={(e) => setFormValues(v => ({ ...v, end_time: e.target.value }))} placeholder="e.g. 18:30 or 6:30 PM" className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" />
                     </div>
                   </div>
-                  {isStFrancisAdmin && (
-                    <div>
-                      <label className="text-sm font-bold text-slate-300">Session Type / Focus</label>
-                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
-                        <option value="">Select session focus...</option>
-                        <option value="Community Fellowship & SCC Prayer">Community Fellowship & SCC Prayer</option>
-                        <option value="Laudato Si' Eco-Care & Tree Planting">Laudato Si' Eco-Care & Tree Planting</option>
-                        <option value="Charity Drive & Food Basket Distribution">Charity Drive & Food Basket Distribution</option>
-                        <option value="Hospital & Elderly Visitation Ministry">Hospital & Elderly Visitation Ministry</option>
-                        <option value="Member Welfare & Emergency Fund Meeting">Member Welfare & Emergency Fund Meeting</option>
-                        <option value="Neighborhood Jumuiya Block Prayer">Neighborhood Jumuiya Block Prayer</option>
-                      </select>
-                    </div>
-                  )}
-                  {isMentorshipAdmin && (
-                    <div>
-                      <label className="text-sm font-bold text-slate-300">Mentorship Track / Focus</label>
-                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
-                        <option value="">Select mentorship track...</option>
-                        <option value="Group Cohort Sessions & Life Skills">Group Cohort Sessions & Life Skills</option>
-                        <option value="Career Workshops, Mock Interviews & Seminars">Career Workshops, Mock Interviews & Seminars</option>
-                        <option value="One-on-One Mentor Check-ins & Academic Coaching">One-on-One Mentor Check-ins & Academic Coaching</option>
-                        <option value="Spiritual Formation & Vocation Discernment">Spiritual Formation & Vocation Discernment</option>
-                        <option value="Personal Finance & Leadership Masterclass">Personal Finance & Leadership Masterclass</option>
-                      </select>
-                    </div>
-                  )}
                 </>
               )}
               {(activeTab === 'activities' || activeTab === 'announcements') && (
                 <>
                   <div>
-                    <label className="text-sm font-bold text-slate-300">Title</label>
-                    <input value={formValues.title || ''} onChange={(e) => setFormValues(v => ({ ...v, title: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
+                    <label className="text-xs font-bold text-slate-700">Title</label>
+                    <input value={formValues.title || ''} onChange={(e) => setFormValues(v => ({ ...v, title: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium focus:outline-none focus:border-blue-500" />
                   </div>
                   <div>
-                    <label className="text-sm font-bold text-slate-300">Description / Content</label>
-                    <textarea value={formValues.description || formValues.content || ''} onChange={(e) => setFormValues(v => ({ ...v, description: e.target.value, content: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" rows={4} />
+                    <label className="text-xs font-bold text-slate-700">Description / Content</label>
+                    <textarea value={formValues.description || formValues.content || ''} onChange={(e) => setFormValues(v => ({ ...v, description: e.target.value, content: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium focus:outline-none focus:border-blue-500" rows={4} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-bold text-slate-300">Venue / Location</label>
-                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
+                      <label className="text-xs font-bold text-slate-700">Venue / Location</label>
+                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
-                      <label className="text-sm font-bold text-slate-300">Date</label>
-                      <input type="date" value={formValues.activity_date?.slice?.(0, 10) || formValues.announcement_date?.slice?.(0, 10) || ''} onChange={(e) => setFormValues(v => ({ ...v, activity_date: e.target.value, announcement_date: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
+                      <label className="text-xs font-bold text-slate-700">Date</label>
+                      <input type="date" value={formValues.activity_date?.slice?.(0, 10) || formValues.announcement_date?.slice?.(0, 10) || ''} onChange={(e) => setFormValues(v => ({ ...v, activity_date: e.target.value, announcement_date: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium focus:outline-none focus:border-blue-500" />
                     </div>
                   </div>
                 </>
@@ -1338,26 +1312,26 @@ export default function CommunityDetailEditor() {
               {activeTab === 'members' && (
                 <>
                   <div>
-                    <label className="text-sm font-bold text-slate-300">Full name</label>
-                    <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
+                    <label className="text-xs font-bold text-slate-700">Full name</label>
+                    <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium focus:outline-none focus:border-blue-500" />
                   </div>
                   {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
                     <>
                       <div>
-                        <label className="text-sm font-bold text-slate-300">Phone Number</label>
-                        <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" placeholder="e.g. 0712345678" />
+                        <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                        <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" placeholder="e.g. 0712345678" />
                       </div>
                       <div>
-                        <label className="text-sm font-bold text-slate-300">Email Address (optional)</label>
-                        <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" placeholder="e.g. email@example.com" />
+                        <label className="text-xs font-bold text-slate-700">Email Address (optional)</label>
+                        <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" placeholder="e.g. email@example.com" />
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-sm font-bold text-slate-300">Voice Section (SATB)</label>
-                          <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
+                          <label className="text-xs font-bold text-slate-700">Voice Section (SATB)</label>
+                          <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
                             <option value="">Select Voice...</option>
                             <option value="Soprano">Soprano (High Female)</option>
                             <option value="Alto">Alto (Low Female)</option>
@@ -1366,8 +1340,8 @@ export default function CommunityDetailEditor() {
                           </select>
                         </div>
                         <div>
-                          <label className="text-sm font-bold text-slate-300">Gender (Gent / Lady)</label>
-                          <select value={formValues.gender || ''} onChange={(e) => setFormValues(v => ({ ...v, gender: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
+                          <label className="text-xs font-bold text-slate-700">Gender (Gent / Lady)</label>
+                          <select value={formValues.gender || ''} onChange={(e) => setFormValues(v => ({ ...v, gender: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
                             <option value="">Select Gender...</option>
                             <option value="Male">Gent (Male)</option>
                             <option value="Female">Lady (Female)</option>
@@ -1376,12 +1350,12 @@ export default function CommunityDetailEditor() {
                       </div>
                       <div className="grid grid-cols-2 gap-3 mt-3">
                         <div>
-                          <label className="text-sm font-bold text-slate-300">Phone Number</label>
-                          <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" placeholder="e.g. 0712345678" />
+                          <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                          <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" placeholder="e.g. 0712345678" />
                         </div>
                         <div>
-                          <label className="text-sm font-bold text-slate-300">Music Skill Level</label>
-                          <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
+                          <label className="text-xs font-bold text-slate-700">Music Skill Level</label>
+                          <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
                             <option value="Beginner">Beginner (Solfa Learner)</option>
                             <option value="Intermediate">Intermediate (Sight-reader)</option>
                             <option value="Advanced">Advanced (Soloist / Trainer)</option>
@@ -1391,8 +1365,8 @@ export default function CommunityDetailEditor() {
                     </>
                   )}
                   <div>
-                    <label className="text-sm font-bold text-slate-300">Status</label>
-                    <select value={formValues.status || 'Pending'} onChange={(e) => setFormValues(v => ({ ...v, status: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
+                    <label className="text-xs font-bold text-slate-700">Status</label>
+                    <select value={formValues.status || 'Pending'} onChange={(e) => setFormValues(v => ({ ...v, status: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
                       <option value="Pending">Pending</option>
                       <option value="Approved">Approved</option>
                       <option value="Rejected">Rejected</option>
@@ -1402,17 +1376,17 @@ export default function CommunityDetailEditor() {
               )}
 
               <div>
-                <label className="text-sm font-bold text-slate-300">Attachment / Image (optional)</label>
-                <input type="file" onChange={handleFileChange} className="w-full mt-1 text-slate-300" />
-                {formValues.image_url && <img src={formValues.image_url} alt="preview" className="w-32 h-20 object-cover mt-2 rounded-xl border border-slate-700" />}
+                <label className="text-xs font-bold text-slate-700">Attachment / Image (optional)</label>
+                <input type="file" onChange={handleFileChange} className="w-full mt-1 text-xs text-slate-600" />
+                {formValues.image_url && <img src={formValues.image_url} alt="preview" className="w-32 h-20 object-cover mt-2 rounded-xl border border-slate-200" />}
               </div>
 
-              <div className="flex justify-end gap-3 mt-4">
-                <button onClick={closeModal} className="px-4 py-2 rounded-xl bg-slate-800 font-bold text-xs text-slate-300 hover:bg-slate-700 transition">Cancel</button>
+              <div className="flex justify-end gap-3 mt-4 pt-2 border-t border-slate-100">
+                <button onClick={closeModal} className="px-4 py-2 rounded-xl bg-slate-100 font-bold text-xs text-slate-600 hover:bg-slate-200 transition cursor-pointer">Cancel</button>
                 <button
                   disabled={uploading}
                   onClick={handleSave}
-                  className="px-5 py-2 rounded-xl text-white font-bold text-xs transition-all shadow-md disabled:opacity-60"
+                  className="px-5 py-2 rounded-xl text-white font-bold text-xs transition-all shadow-md cursor-pointer disabled:opacity-60"
                   style={{ background: accentColor }}
                 >
                   {uploading ? 'Uploading...' : (editingItem ? 'Save Changes' : 'Create')}
@@ -1425,52 +1399,52 @@ export default function CommunityDetailEditor() {
 
       {/* Modal for Gallery Add */}
       {galleryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-white">
-            <div className="flex items-center justify-between mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 text-slate-900 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-lg font-black text-white">Add Photo to Gallery</h3>
-                <p className="text-xs text-slate-400 font-medium">{moduleMeta?.title || categoryId} • Community Gallery</p>
+                <h3 className="text-lg font-black text-slate-900">Add Photo to Gallery</h3>
+                <p className="text-xs text-slate-500 font-medium">{moduleMeta?.title || categoryId} • Community Gallery</p>
               </div>
-              <button onClick={() => setGalleryModal(false)} className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition text-slate-300"><X size={14} /></button>
+              <button onClick={() => setGalleryModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition text-slate-600 cursor-pointer"><X size={14} /></button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-300">Event / Caption Name</label>
+                <label className="text-xs font-bold text-slate-700">Event / Caption Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Easter Choir Rehearsal"
                   value={newImageForm.event_name}
                   onChange={(e) => setNewImageForm(v => ({ ...v, event_name: e.target.value }))}
-                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-300">Category Tag (optional)</label>
+                <label className="text-xs font-bold text-slate-700">Category Tag (optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. Concerts, Sunday Mass"
                   value={newImageForm.category}
                   onChange={(e) => setNewImageForm(v => ({ ...v, category: e.target.value }))}
-                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-300">Direct Image URL</label>
+                <label className="text-xs font-bold text-slate-700">Direct Image URL</label>
                 <input
                   type="url"
                   placeholder="https://..."
                   value={newImageForm.image_url}
                   onChange={(e) => setNewImageForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
                 />
               </div>
               {newImageForm.image_url && (
-                <img src={newImageForm.image_url} alt="preview" className="w-full h-36 object-cover rounded-xl border border-slate-700 mt-2" />
+                <img src={newImageForm.image_url} alt="preview" className="w-full h-36 object-cover rounded-xl border border-slate-200 mt-2" />
               )}
-              <div className="flex justify-end gap-2 pt-3">
-                <button onClick={() => setGalleryModal(false)} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition">Cancel</button>
-                <button onClick={handleAddGalleryImage} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition" style={{ background: accentColor }}>Upload Photo</button>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button onClick={() => setGalleryModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer">Cancel</button>
+                <button onClick={handleAddGalleryImage} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer" style={{ background: accentColor }}>Upload Photo</button>
               </div>
             </div>
           </div>
@@ -1479,73 +1453,74 @@ export default function CommunityDetailEditor() {
 
       {/* Modal for T-Shirt Product */}
       {productModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-white">
-            <div className="flex items-center justify-between mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 text-slate-900 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-lg font-black text-white">Manage Merchandise</h3>
-                <p className="text-xs text-slate-400 font-medium">{moduleMeta?.title || categoryId} • Attire & Orders</p>
+                <h3 className="text-lg font-black text-slate-900">Manage Merchandise</h3>
+                <p className="text-xs text-slate-500 font-medium">{moduleMeta?.title || categoryId} • Attire & Orders</p>
               </div>
-              <button onClick={() => setProductModal(false)} className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition text-slate-300"><X size={14} /></button>
+              <button onClick={() => setProductModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition text-slate-600 cursor-pointer"><X size={14} /></button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-300">Product Title</label>
+                <label className="text-xs font-bold text-slate-700">Product Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Official Choir Polo T-Shirt"
                   value={productForm.name}
                   onChange={(e) => setProductForm(v => ({ ...v, name: e.target.value }))}
-                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-300">Price (KES)</label>
+                  <label className="text-xs font-bold text-slate-700">Price (KES)</label>
                   <input
                     type="number"
                     value={productForm.price}
                     onChange={(e) => setProductForm(v => ({ ...v, price: Number(e.target.value) }))}
-                    className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500"
+                    className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-medium"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-300">Sizes (comma separated)</label>
+                  <label className="text-xs font-bold text-slate-700">Sizes (comma separated)</label>
                   <input
                     type="text"
                     value={productForm.sizes}
                     onChange={(e) => setProductForm(v => ({ ...v, sizes: e.target.value }))}
-                    className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500"
+                    className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-medium"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-300">Image URL</label>
+                <label className="text-xs font-bold text-slate-700">Image URL</label>
                 <input
                   type="url"
                   placeholder="https://..."
                   value={productForm.image_url}
                   onChange={(e) => setProductForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-300">Description</label>
+                <label className="text-xs font-bold text-slate-700">Description</label>
                 <textarea
                   rows={2}
                   value={productForm.description}
                   onChange={(e) => setProductForm(v => ({ ...v, description: e.target.value }))}
-                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-3">
-                <button onClick={() => setProductModal(false)} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition">Cancel</button>
-                <button onClick={handleSaveProduct} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition" style={{ background: accentColor }}>Save Product</button>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button onClick={() => setProductModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer">Cancel</button>
+                <button onClick={handleSaveProduct} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer" style={{ background: accentColor }}>Save Product</button>
               </div>
             </div>
           </div>
         </div>
       )}
+
 
     </div>
   </div>
