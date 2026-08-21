@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { CommunityModule } from '../../context/CommunityDataContext';
 import { apiClient } from '../../../../api/axiosInstance';
 import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaUserTie, FaHistory, FaIdBadge } from 'react-icons/fa';
-import '../../../pages/Jumuiya/components/TabsSystem.css';
+import '../../../Jumuiya/components/TabsSystem.css';
 
 interface Props {
   module: CommunityModule;
