@@ -24,6 +24,7 @@ import {
   Store,
   MessageCircle,
   Shirt,
+  Wallet,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -79,6 +80,7 @@ const menuSections: NavSection[] = [
       { id: 'jumuiya-suggestions', name: 'Jumuiya Suggestions', icon: MessageSquare, path: '/admin/jumuiya-suggestions' },
       { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
       { id: 'donations', name: 'Donations', icon: HandCoins, path: '/admin/donations' },
+      { id: 'treasury', name: 'Treasury Hub', icon: Wallet, path: '/admin/treasury' },
     ],
   },
   {

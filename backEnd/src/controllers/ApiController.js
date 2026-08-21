@@ -87,6 +87,8 @@ const WRITE_COLUMN_ALLOWLISTS = {
   categories: ["name", "description", "order", "status"],
   testimonials: ["name", "message", "rating", "status"],
   suggestions: ["suggestion", "category", "scope", "jumuiya_id", "name", "email", "user_id", "status", "reply", "replied_at", "replied_by", "approved", "is_approved", "requested_unmask", "unmask_response"],
+  finance_ledger: ["entry_type", "title", "amount", "category", "payment_method", "receipt_url", "notes", "entry_date", "recorded_by"],
+  finance_budgets: ["event_name", "target_amount", "collected_amount", "spent_amount", "status", "notes"],
 };
 
 const sanitizeWritePayload = (tableName, data) => {

@@ -39,6 +39,8 @@ const allowedTables = [
   "product_categories",
   "categories",
   "testimonials",
+  "finance_ledger",
+  "finance_budgets",
 ];
 
 // Middleware to validate table name
@@ -62,6 +64,8 @@ const PROTECTED_READ_TABLES = new Set([
   "orders",
   "hire_requests",
   "suggestions",
+  "finance_ledger",
+  "finance_budgets",
 ]);
 
 // Tables with a legitimate PUBLIC write (public registration / feedback / suggestions)
@@ -84,6 +88,8 @@ const SENSITIVE_ROLE_READ_TABLES = new Set([
   "orders",
   "hire_requests",
   "suggestions",
+  "finance_ledger",
+  "finance_budgets",
 ]);
 
 // Authz: lock down reads of sensitive tables and ALL writes except public POSTs.

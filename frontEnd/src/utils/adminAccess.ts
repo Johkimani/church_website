@@ -55,6 +55,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/hire-requests",
   "/admin/projects",
   "/admin/donations",
+  "/admin/treasury",
   "/admin/suggestions",
   "/admin/devotions",
   "/admin/registered-members",
@@ -161,6 +162,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         break;
       case "TREASURER":
         prefixes.add("/admin/donations");
+        prefixes.add("/admin/treasury");
         break;
       case "CSA_VICE_CHAIR":
         prefixes.add("/admin/suggestions");

@@ -317,6 +317,31 @@ export const setupCommunityDatabase = async () => {
         ALTER TABLE hub_gallery ADD COLUMN IF NOT EXISTS moderation_status VARCHAR(30) DEFAULT 'Approved';
         ALTER TABLE hub_gallery ADD COLUMN IF NOT EXISTS public_id TEXT;
       `).catch(() => {}),
+      // Treasurer's Financial Hub: manual cash/bank ledger entries
+      db.query(`CREATE TABLE IF NOT EXISTS finance_ledger (
+        id SERIAL PRIMARY KEY,
+        entry_type VARCHAR(10) NOT NULL DEFAULT 'income',
+        title VARCHAR(255) NOT NULL,
+        amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        category VARCHAR(100) DEFAULT 'General',
+        payment_method VARCHAR(50) DEFAULT 'cash',
+        receipt_url TEXT,
+        notes TEXT,
+        entry_date DATE DEFAULT CURRENT_DATE,
+        recorded_by VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`).catch(() => {}),
+      // Treasurer's Financial Hub: event/project budget targets vs actuals
+      db.query(`CREATE TABLE IF NOT EXISTS finance_budgets (
+        id SERIAL PRIMARY KEY,
+        event_name VARCHAR(255) NOT NULL,
+        target_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        collected_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        spent_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        status VARCHAR(30) DEFAULT 'active',
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`).catch(() => {}),
     ]);
     logger.info("weekly_activities columns verified");
     logger.info("semester_activities columns verified");
