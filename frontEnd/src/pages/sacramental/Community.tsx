@@ -8,7 +8,6 @@ import CommunityDetail from './CommunityDetail';
 import CommunityAboutTab from './components/tabs/CommunityAboutTab';
 import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots } from 'react-icons/fa';
 import { FaBars } from 'react-icons/fa';
-import '../../../Jumuiya/components/TabsSystem.css';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e3a5f',
