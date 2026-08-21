@@ -212,25 +212,25 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
   }
 
   return (
-    <div className="py-4">
+    <div className="py-5 px-4 sm:px-6 bg-white rounded-3xl border border-slate-200/90 shadow-xl text-slate-800 my-2">
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-2 mb-6">
         {steps.map((s, i) => (
           <React.Fragment key={i}>
             <button
               onClick={() => i < step && setStep(i)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold transition-all cursor-pointer shadow-xs"
               style={{
-                background: i === step ? `${color}40` : i < step ? `${color}20` : 'rgba(255,255,255,0.05)',
-                color: i <= step ? 'white' : 'rgba(255,255,255,0.3)',
-                border: `1px solid ${i === step ? `${color}60` : 'transparent'}`,
+                background: i === step ? color : i < step ? '#dbeafe' : '#f1f5f9',
+                color: i === step ? 'white' : i < step ? '#1e40af' : '#64748b',
+                border: `1px solid ${i === step ? color : i < step ? '#bfdbfe' : '#cbd5e1'}`,
               }}
             >
               {s.icon}
               <span className="hidden sm:inline">{s.title}</span>
             </button>
             {i < steps.length - 1 && (
-              <div className="w-6 h-[1px]" style={{ background: i < step ? `${color}60` : 'rgba(255,255,255,0.1)' }} />
+              <div className="w-6 h-[2px] rounded-full" style={{ background: i < step ? color : '#e2e8f0' }} />
             )}
           </React.Fragment>
         ))}
@@ -245,23 +245,22 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.2 }}
         >
-          <h4 className="text-white font-bold text-base mb-4 flex items-center gap-2">
+          <h4 className="text-slate-900 font-black text-lg mb-5 flex items-center gap-2 border-b border-slate-100 pb-3">
             {steps[step].icon}
             {steps[step].title}
           </h4>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Full Name */}
             {steps[step].fields.includes('fullName') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Full Name *</label>
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Full Name *</label>
                 <input
                   type="text"
                   value={form.fullName}
                   onChange={e => handleChange('fullName', e.target.value)}
                   placeholder="Enter your full name"
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none transition-all focus:ring-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid rgba(255,255,255,0.1)`, focusRingColor: color }}
+                  className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-xs"
                 />
               </div>
             )}
@@ -269,17 +268,16 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
             {/* Phone */}
             {steps[step].fields.includes('phone') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Phone Number *</label>
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Phone Number *</label>
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={e => handleChange('phone', e.target.value)}
                   placeholder="0712 345 678"
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none transition-all focus:ring-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid rgba(255,255,255,0.1)` }}
+                  className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-xs"
                 />
                 {form.phone.length >= 10 && (
-                  <p className="text-white/30 text-[10px] mt-1">WhatsApp preferred</p>
+                  <p className="text-slate-500 text-[11px] font-bold mt-1">WhatsApp preferred</p>
                 )}
               </div>
             )}
@@ -287,19 +285,17 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
             {/* Gender */}
             {steps[step].fields.includes('gender') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Gender</label>
-                <div className="flex gap-2">
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Gender</label>
+                <div className="flex gap-2.5">
                   {GENDER_OPTIONS.map(g => (
                     <button
                       key={g}
                       type="button"
                       onClick={() => handleChange('gender', g)}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer"
-                      style={{
-                        background: form.gender === g ? `${color}40` : 'rgba(255,255,255,0.05)',
-                        color: form.gender === g ? 'white' : 'rgba(255,255,255,0.4)',
-                        border: `1px solid ${form.gender === g ? `${color}60` : 'rgba(255,255,255,0.08)'}`,
-                      }}
+                      className={`flex-1 py-3 rounded-xl text-sm font-black transition-all cursor-pointer shadow-xs ${
+                        form.gender === g ? 'text-white shadow-md' : 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200'
+                      }`}
+                      style={form.gender === g ? { background: color } : {}}
                     >
                       {g}
                     </button>
@@ -311,14 +307,13 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
             {/* Email */}
             {steps[step].fields.includes('email') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Email (Optional)</label>
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Email (Optional)</label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={e => handleChange('email', e.target.value)}
                   placeholder="email@example.com"
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none transition-all focus:ring-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid rgba(255,255,255,0.1)` }}
+                  className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-xs"
                 />
               </div>
             )}
@@ -326,16 +321,15 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
             {/* Course */}
             {steps[step].fields.includes('course') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Course / Programme</label>
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Course / Programme</label>
                 <select
                   value={form.course}
                   onChange={e => handleChange('course', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all cursor-pointer"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid rgba(255,255,255,0.1)` }}
+                  className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-slate-900 bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer shadow-xs"
                 >
-                  <option value="" className="bg-slate-800">Select course</option>
+                  <option value="" className="bg-white text-slate-700">Select course</option>
                   {COURSE_OPTIONS.map(c => (
-                    <option key={c} value={c} className="bg-slate-800">{c}</option>
+                    <option key={c} value={c} className="bg-white text-slate-900">{c}</option>
                   ))}
                 </select>
               </div>
@@ -344,19 +338,17 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
             {/* Year of Study */}
             {steps[step].fields.includes('yearOfStudy') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Year of Study</label>
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Year of Study</label>
                 <div className="grid grid-cols-3 gap-2">
                   {YEAR_OPTIONS.map(y => (
                     <button
                       key={y}
                       type="button"
                       onClick={() => handleChange('yearOfStudy', y)}
-                      className="py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
-                      style={{
-                        background: form.yearOfStudy === y ? `${color}40` : 'rgba(255,255,255,0.05)',
-                        color: form.yearOfStudy === y ? 'white' : 'rgba(255,255,255,0.4)',
-                        border: `1px solid ${form.yearOfStudy === y ? `${color}60` : 'rgba(255,255,255,0.08)'}`,
-                      }}
+                      className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs ${
+                        form.yearOfStudy === y ? 'text-white shadow-md' : 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200'
+                      }`}
+                      style={form.yearOfStudy === y ? { background: color } : {}}
                     >
                       {y}
                     </button>
@@ -368,19 +360,17 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
             {/* Voice Type (Choir only) */}
             {steps[step].fields.includes('voiceType') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Voice Type *</label>
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Voice Type *</label>
                 <div className="grid grid-cols-3 gap-2">
                   {VOICE_TYPES.map(v => (
                     <button
                       key={v}
                       type="button"
                       onClick={() => handleChange('voiceType', v)}
-                      className="py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
-                      style={{
-                        background: form.voiceType === v ? `${color}40` : 'rgba(255,255,255,0.05)',
-                        color: form.voiceType === v ? 'white' : 'rgba(255,255,255,0.4)',
-                        border: `1px solid ${form.voiceType === v ? `${color}60` : 'rgba(255,255,255,0.08)'}`,
-                      }}
+                      className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs ${
+                        form.voiceType === v ? 'text-white shadow-md' : 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200'
+                      }`}
+                      style={form.voiceType === v ? { background: color } : {}}
                     >
                       {v}
                     </button>
@@ -392,19 +382,17 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
             {/* Music Level (Choir only) */}
             {steps[step].fields.includes('musicLevel') && (
               <div>
-                <label className="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1 block">Skill Level</label>
+                <label className="text-slate-700 text-xs font-black uppercase tracking-wider mb-1.5 block">Skill Level</label>
                 <div className="grid grid-cols-2 gap-2">
                   {MUSIC_LEVELS.map(m => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => handleChange('musicLevel', m)}
-                      className="py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
-                      style={{
-                        background: form.musicLevel === m ? `${color}40` : 'rgba(255,255,255,0.05)',
-                        color: form.musicLevel === m ? 'white' : 'rgba(255,255,255,0.4)',
-                        border: `1px solid ${form.musicLevel === m ? `${color}60` : 'rgba(255,255,255,0.08)'}`,
-                      }}
+                      className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs ${
+                        form.musicLevel === m ? 'text-white shadow-md' : 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200'
+                      }`}
+                      style={form.musicLevel === m ? { background: color } : {}}
                     >
                       {m}
                     </button>
@@ -417,12 +405,11 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
       </AnimatePresence>
 
       {/* Navigation buttons */}
-      <div className="flex items-center gap-3 mt-6">
+      <div className="flex items-center gap-3 mt-8 pt-4 border-t border-slate-100">
         {step > 0 && (
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer"
-            style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition-all cursor-pointer shadow-xs"
           >
             <FaArrowLeft size={12} /> Back
           </button>
@@ -432,8 +419,8 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
           <button
             onClick={handleNext}
             disabled={!canProceed()}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: color, color: 'white' }}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white transition-all cursor-pointer shadow-lg hover:brightness-110 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: color }}
           >
             Next <FaArrowRight size={12} />
           </button>
@@ -441,8 +428,8 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
           <button
             onClick={handleSubmit}
             disabled={!canProceed() || submitMutation.isPending}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: color, color: 'white' }}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white transition-all cursor-pointer shadow-lg hover:brightness-110 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: color }}
           >
             {submitMutation.isPending ? (
               <>
@@ -458,11 +445,12 @@ const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, mod
       </div>
 
       {/* Footer note */}
-      <p className="text-white/30 text-[10px] text-center mt-4">
+      <p className="text-slate-500 text-xs font-bold text-center mt-5">
         By submitting, you agree to be contacted by the {moduleName} coordinator.
       </p>
     </div>
   );
+
 };
 
 export default CommunityRequestTab;

@@ -307,7 +307,7 @@ const CommunityJoinPage: React.FC = () => {
                         required
                       />
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Phone Number *</label>
+                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Phone Number *</label>
                         <div className="relative">
                           <FaPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                           <input
@@ -315,22 +315,22 @@ const CommunityJoinPage: React.FC = () => {
                             required
                             value={form.phone}
                             onChange={(e) => handleChange('phone', e.target.value)}
-                            className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none transition-all"
+                            className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 bg-slate-50 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-xs"
                             placeholder="0712 345 678"
                           />
                           {checking && <FaSpinner className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" size={14} />}
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Gender *</label>
+                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Gender *</label>
                         <div className="flex gap-2">
                           {GENDER_OPTIONS.map((g) => (
                             <button
                               key={g}
                               type="button"
                               onClick={() => handleChange('gender', g)}
-                              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                                form.gender === g ? 'text-white shadow-md' : 'text-slate-500 bg-slate-50 border border-slate-200 hover:border-slate-300'
+                              className={`flex-1 py-3 rounded-xl text-sm font-black transition-all cursor-pointer shadow-xs ${
+                                form.gender === g ? 'text-white shadow-md' : 'text-slate-700 bg-slate-100 border border-slate-300 hover:bg-slate-200'
                               }`}
                               style={form.gender === g ? { background: color } : {}}
                             >
@@ -346,13 +346,13 @@ const CommunityJoinPage: React.FC = () => {
                   {step === 1 && (
                     <>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Course *</label>
+                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Course *</label>
                         <div className="relative">
                           <FaGraduationCap className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                           <select
                             value={form.course}
                             onChange={(e) => handleChange('course', e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none appearance-none bg-white"
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-sm font-semibold text-slate-900 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none appearance-none shadow-xs"
                           >
                             <option value="">Select course</option>
                             {COURSE_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -360,15 +360,15 @@ const CommunityJoinPage: React.FC = () => {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Year of Study *</label>
+                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Year of Study *</label>
                         <div className="grid grid-cols-3 gap-2">
                           {YEAR_OPTIONS.map((y) => (
                             <button
                               key={y}
                               type="button"
                               onClick={() => handleChange('yearOfStudy', y)}
-                              className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                form.yearOfStudy === y ? 'text-white shadow-md' : 'text-slate-500 bg-slate-50 border border-slate-200 hover:border-slate-300'
+                              className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs ${
+                                form.yearOfStudy === y ? 'text-white shadow-md' : 'text-slate-700 bg-slate-100 border border-slate-300 hover:bg-slate-200'
                               }`}
                               style={form.yearOfStudy === y ? { background: color } : {}}
                             >
@@ -393,7 +393,7 @@ const CommunityJoinPage: React.FC = () => {
                   {step === 2 && isChoir && (
                     <>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Choir Voice Section (SATB) *</label>
+                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Choir Voice Section (SATB) *</label>
                         <div className="grid grid-cols-2 gap-2.5">
                           {[
                             { key: 'Soprano', label: 'Soprano', sub: 'High Female Voice' },
@@ -405,19 +405,19 @@ const CommunityJoinPage: React.FC = () => {
                               key={v.key}
                               type="button"
                               onClick={() => handleChange('voiceType', v.key)}
-                              className={`p-3 rounded-2xl text-left transition-all cursor-pointer border ${
-                                form.voiceType === v.key ? 'text-white shadow-md border-transparent' : 'text-slate-700 bg-slate-50 border-slate-200 hover:border-slate-300'
+                              className={`p-3 rounded-2xl text-left transition-all cursor-pointer border shadow-xs ${
+                                form.voiceType === v.key ? 'text-white shadow-md border-transparent' : 'text-slate-800 bg-slate-50 border-slate-300 hover:bg-slate-100'
                               }`}
                               style={form.voiceType === v.key ? { background: color } : {}}
                             >
                               <div className="font-black text-sm">{v.label}</div>
-                              <div className={`text-[10px] font-semibold mt-0.5 ${form.voiceType === v.key ? 'text-white/80' : 'text-slate-400'}`}>{v.sub}</div>
+                              <div className={`text-[10px] font-semibold mt-0.5 ${form.voiceType === v.key ? 'text-white/80' : 'text-slate-500'}`}>{v.sub}</div>
                             </button>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Sight-Reading & Music Level</label>
+                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Sight-Reading & Music Level</label>
                         <div className="grid grid-cols-3 gap-2">
                           {[
                             { key: 'Beginner', label: 'Beginner', desc: 'Solfa Learner' },
@@ -428,13 +428,13 @@ const CommunityJoinPage: React.FC = () => {
                               key={l.key}
                               type="button"
                               onClick={() => handleChange('musicLevel', l.key)}
-                              className={`p-2.5 rounded-xl text-center transition-all cursor-pointer border ${
-                                form.musicLevel === l.key ? 'text-white shadow-md border-transparent' : 'text-slate-600 bg-slate-50 border-slate-200 hover:border-slate-300'
+                              className={`p-2.5 rounded-xl text-center transition-all cursor-pointer border shadow-xs ${
+                                form.musicLevel === l.key ? 'text-white shadow-md border-transparent' : 'text-slate-700 bg-slate-50 border-slate-300 hover:bg-slate-100'
                               }`}
                               style={form.musicLevel === l.key ? { background: color } : {}}
                             >
                               <div className="font-bold text-xs">{l.label}</div>
-                              <div className={`text-[9px] mt-0.5 ${form.musicLevel === l.key ? 'text-white/80' : 'text-slate-400'}`}>{l.desc}</div>
+                              <div className={`text-[9px] font-semibold mt-0.5 ${form.musicLevel === l.key ? 'text-white/80' : 'text-slate-500'}`}>{l.desc}</div>
                             </button>
                           ))}
                         </div>
@@ -448,7 +448,7 @@ const CommunityJoinPage: React.FC = () => {
                   {step > 0 && (
                     <button
                       onClick={() => setStep(step - 1)}
-                      className="px-5 py-3 rounded-2xl text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
+                      className="px-5 py-3 rounded-2xl text-sm font-bold text-slate-600 bg-slate-100 border border-slate-300 hover:bg-slate-200 transition-all cursor-pointer shadow-xs"
                     >
                       Back
                     </button>
@@ -457,7 +457,7 @@ const CommunityJoinPage: React.FC = () => {
                     <button
                       onClick={() => setStep(step + 1)}
                       disabled={!canProceed()}
-                      className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg"
+                      className="flex-1 py-3.5 rounded-2xl text-sm font-black text-white transition-all hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg"
                       style={{ background: color }}
                     >
                       Continue
@@ -466,7 +466,7 @@ const CommunityJoinPage: React.FC = () => {
                     <button
                       onClick={handleSubmit}
                       disabled={submitting || !canProceed()}
-                      className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg flex items-center justify-center gap-2"
+                      className="flex-1 py-3.5 rounded-2xl text-sm font-black text-white transition-all hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg flex items-center justify-center gap-2"
                       style={{ background: color }}
                     >
                       {submitting ? (
@@ -497,7 +497,7 @@ const FieldInput: React.FC<{
   required?: boolean;
 }> = ({ icon, label, placeholder, value, onChange, type = 'text', required }) => (
   <div>
-    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">{label}{required && ' *'}</label>
+    <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">{label}{required && ' *'}</label>
     <div className="relative">
       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>
       <input
@@ -505,7 +505,7 @@ const FieldInput: React.FC<{
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none transition-all"
+        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-xs"
         placeholder={placeholder}
       />
     </div>
