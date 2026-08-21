@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { CommunityModule } from '../../context/CommunityDataContext';
 import { apiClient } from '../../../../api/axiosInstance';
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaHistory, FaFilter } from 'react-icons/fa';
+import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaHistory, FaFilter, FaChevronDown } from 'react-icons/fa';
 import '../../../Jumuiya/components/TabsSystem.css';
 
 interface Props {
@@ -60,6 +60,7 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
   const [formerOfficials, setFormerOfficials] = useState<ArchivedOfficial[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<string>('all');
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const _c = (s: string) => color.length > 7 ? color.slice(0, 7) + s : color + s;
 
@@ -167,13 +168,32 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
         </div>
       )}
 
-      {/* Leadership History — always shown */}
+      {/* Leadership History — collapsible */}
       <div className="mt-20">
-        <div className="flex items-center gap-4 mb-8 opacity-60">
-          <FaHistory />
+        <button
+          onClick={() => setHistoryOpen(!historyOpen)}
+          className="flex items-center gap-3 w-full group cursor-pointer"
+        >
+          <FaHistory className="opacity-60" />
           <span className="text-xs font-black uppercase tracking-widest">Leadership History</span>
           <div className="flex-1 h-px bg-gray-200"></div>
-        </div>
+          <div className={`flex items-center gap-1.5 text-xs font-semibold text-gray-400 group-hover:text-gray-600 transition-colors ${historyOpen ? 'text-gray-600' : ''}`}>
+            {loadingHistory ? 'Loading...' : formerOfficials.length > 0 ? `${formerOfficials.length} past official${formerOfficials.length !== 1 ? 's' : ''}` : 'No records'}
+            <FaChevronDown
+              size={10}
+              className="transition-transform duration-300"
+              style={{ transform: historyOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            />
+          </div>
+        </button>
+
+        <div
+          className="overflow-hidden transition-all duration-500"
+          style={{
+            maxHeight: historyOpen ? '2000px' : '0px',
+            opacity: historyOpen ? 1 : 0,
+          }}
+        >
 
         {loadingHistory ? (
           <div className="text-center py-12">
@@ -250,6 +270,7 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );
