@@ -528,10 +528,10 @@ export default function CommunityDetailEditor() {
   
   const accentColor = !isInvalidWhite
     ? rawThemeColor
-    : (isChoirAdmin ? '#1e3a5f' : isDancersAdmin ? '#db2777' : isCharismaticAdmin ? '#7c3aed' : isStFrancisAdmin ? '#047857' : isMentorshipAdmin ? '#8e44ad' : '#2563eb');
+    : (isChoirAdmin ? '#1e40af' : isDancersAdmin ? '#db2777' : isCharismaticAdmin ? '#7c3aed' : isStFrancisAdmin ? '#047857' : isMentorshipAdmin ? '#8e44ad' : '#2563eb');
 
   const accentGradient = isChoirAdmin
-    ? 'from-[#1e3a5f] via-[#1e4080] to-[#0f2044]'
+    ? 'from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a]'
     : isDancersAdmin
     ? 'from-[#db2777] via-[#be185d] to-[#9d174d]'
     : isCharismaticAdmin

@@ -483,37 +483,9 @@ export default function UniversalAdmin() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className={`relative w-10 h-10 flex items-center justify-center rounded-xl border transition-all shadow-sm ${
-                  isNotificationsOpen
-                    ? 'border-blue-500 bg-blue-600 text-white'
-                    : 'border-slate-800 bg-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
-                }`}
-                aria-label="Notifications"
-              >
-                <Bell size={19} />
-                {notifications.filter(n => !n.isRead).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-slate-900" />
-                )}
-              </button>
-
-              {isNotificationsOpen && (
-                <NotificationDropdown
-                  notifications={notifications}
-                  onClose={() => setIsNotificationsOpen(false)}
-                  onMarkAsRead={handleMarkAsRead}
-                  onClearAll={handleClearAll}
-                />
-              )}
-            </div>
-
-            <div className="h-8 w-px bg-slate-800 hidden sm:block" />
-
             {/* Profile */}
             <div className="flex items-center gap-3 pl-1">
+
               <div className="text-right hidden md:block">
                 <p className="text-sm font-bold text-white leading-tight">{user?.name || 'Admin'}</p>
                 <p className="text-[10px] text-slate-400 font-medium capitalize truncate max-w-[160px]">{roleLabel}</p>
