@@ -63,27 +63,6 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [lightboxOfficial, setLightboxOfficial] = useState<ArchivedOfficial | null>(null);
 
-  const allFilteredOfficials = React.useMemo(() => {
-    const result: ArchivedOfficial[] = [];
-    const terms = historyFilter === 'all' ? historyTerms : [historyFilter];
-    for (const term of terms) {
-      for (const f of filteredHistory) {
-        const t = f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term');
-        if (t === term) result.push(f);
-      }
-    }
-    return result;
-  }, [filteredHistory, historyFilter, historyTerms]);
-
-  const lightboxIndex = lightboxOfficial ? allFilteredOfficials.findIndex(f => f.id === lightboxOfficial.id) : -1;
-
-  const navigateLightbox = (dir: number) => {
-    if (lightboxIndex < 0) return;
-    const next = (lightboxIndex + dir + allFilteredOfficials.length) % allFilteredOfficials.length;
-    const nextOff = allFilteredOfficials[next];
-    if (nextOff.photo) setLightboxOfficial(nextOff);
-  };
-
   const _c = (s: string) => color.length > 7 ? color.slice(0, 7) + s : color + s;
 
   const formatPhone = (phone: string) => phone.replace(/\D/g, '').replace(/^0/, '254');
@@ -107,6 +86,27 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
   const filteredHistory = formerOfficials;
 
   const historyTerms = [...new Set(filteredHistory.map(f => f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')))].sort().reverse();
+
+  const allFilteredOfficials = React.useMemo(() => {
+    const result: ArchivedOfficial[] = [];
+    const terms = historyFilter === 'all' ? historyTerms : [historyFilter];
+    for (const term of terms) {
+      for (const f of filteredHistory) {
+        const t = f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term');
+        if (t === term) result.push(f);
+      }
+    }
+    return result;
+  }, [filteredHistory, historyFilter, historyTerms]);
+
+  const lightboxIndex = lightboxOfficial ? allFilteredOfficials.findIndex(f => f.id === lightboxOfficial.id) : -1;
+
+  const navigateLightbox = (dir: number) => {
+    if (lightboxIndex < 0) return;
+    const next = (lightboxIndex + dir + allFilteredOfficials.length) % allFilteredOfficials.length;
+    const nextOff = allFilteredOfficials[next];
+    if (nextOff.photo) setLightboxOfficial(nextOff);
+  };
 
   return (
     <div className="tab-system-content" style={{ '--jumuiya-color': color } as React.CSSProperties}>
