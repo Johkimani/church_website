@@ -51,38 +51,63 @@ export default function Layout() {
           <button
             onClick={() => setMobileNavOpen(!mobileNavOpen)}
             aria-label="Toggle Devotions navigation"
-            className="md:hidden fixed left-3 top-20 z-50 w-11 h-11 rounded-xl flex items-center justify-center transition-transform active:scale-95"
+            className="md:hidden fixed left-3 top-[4.5rem] z-[60] w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95"
             style={{
-              background: "rgba(250, 248, 245, 0.95)",
+              background: mobileNavOpen ? "rgba(217, 119, 6, 0.12)" : "rgba(250, 248, 245, 0.97)",
               backdropFilter: "blur(20px) saturate(1.8)",
               WebkitBackdropFilter: "blur(20px) saturate(1.8)",
-              border: "1px solid rgba(28, 25, 23, 0.08)",
-              boxShadow: "0 2px 16px rgba(0,0,0,0.1)",
+              border: mobileNavOpen ? "1px solid rgba(217, 119, 6, 0.35)" : "1px solid rgba(28, 25, 23, 0.08)",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
               color: "#B45309",
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
+            {mobileNavOpen ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
           </button>
 
-          {/* Mobile drawer overlay */}
+          {/* Mobile drawer overlay — covers full screen including logo area */}
           {mobileNavOpen && (
             <div
-              className="md:hidden fixed inset-0 top-16 bg-black/30 backdrop-blur-sm z-40"
+              className="md:hidden fixed inset-0 top-0 bg-black/40 backdrop-blur-sm z-[55]"
               onClick={() => setMobileNavOpen(false)}
             />
           )}
 
-          {/* Mobile drawer — the exact same sidebar as desktop */}
+          {/* Mobile drawer — slides in from left, covering the logo/header area */}
           <div
-            className={`md:hidden fixed left-0 top-16 bottom-0 z-50 w-60 max-w-[80vw] transition-transform duration-300 ease-out ${
+            className={`md:hidden fixed left-0 top-0 bottom-0 z-[58] w-64 max-w-[82vw] transition-transform duration-300 ease-out ${
               mobileNavOpen ? "translate-x-0" : "-translate-x-full"
             }`}
-            style={{ boxShadow: "8px 0 40px rgba(0,0,0,0.12)" }}
+            style={{ boxShadow: "8px 0 48px rgba(0,0,0,0.18)" }}
           >
+            {/* Close button inside drawer header */}
+            <div className="flex items-center justify-between px-4 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(217,119,6,0.12)" }}>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #D97706, #B45309)", boxShadow: "0 4px 12px rgba(217,119,6,0.3)" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z"/></svg>
+                </div>
+                <span className="text-sm font-bold text-stone-900" style={{ fontFamily: "'Cinzel', serif" }}>SPIRITUAL</span>
+              </div>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-all"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
             <Sidebar />
           </div>
        </div>
