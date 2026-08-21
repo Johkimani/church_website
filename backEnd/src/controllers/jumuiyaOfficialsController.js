@@ -226,6 +226,10 @@ export const createJumuiyaOfficial = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Name, Jumuiya, and Position are required' });
     }
 
+    if (!reg_number || !reg_number.trim()) {
+      return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
+    }
+
     const normalizedContact = normalizePhone(contact);
     if (contact && !isValidPhone(contact)) {
       logger.warn(`Invalid phone number: ${contact}`);
@@ -242,89 +246,20 @@ export const createJumuiyaOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid Role. Must be one of: ${VALID_ROLES.join(', ')}` });
     }
 
-    // Validate or auto-resolve reg_number
-    let validatedRegNumber = null;
-    if (reg_number && reg_number.trim()) {
-      const lookup = await resolveMemberForRegNumber(reg_number);
-      if (lookup?.member) {
-        const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
-        const targetJumuiyaSlug = toJumuiyaSlug(category);
-        if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
-          return res.status(409).json({
-            success: false,
-            message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
-          });
-        }
-        validatedRegNumber = lookup.member.member_id;
-      }
+    // Validate reg_number exists in members table
+    const lookup = await resolveMemberForRegNumber(reg_number);
+    if (lookup?.error) {
+      return res.status(400).json({ success: false, message: lookup.error });
     }
-
-    // Fallback member resolution by phone
-    if (!validatedRegNumber && normalizedContact) {
-      const cleanPhone = normalizedContact.replace(/[^0-9]/g, '');
-      if (cleanPhone.length >= 8) {
-        const phoneMatch = await pool.query(
-          `SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1`,
-          [cleanPhone.slice(-8)]
-        );
-        if (phoneMatch.rows.length > 0) {
-          validatedRegNumber = phoneMatch.rows[0].member_id;
-        }
-      }
+    const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
+    const targetJumuiyaSlug = toJumuiyaSlug(category);
+    if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
+      return res.status(409).json({
+        success: false,
+        message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
+      });
     }
-
-    // Fallback member resolution by name
-    if (!validatedRegNumber && name) {
-      const nameMatch = await pool.query(
-        `SELECT member_id FROM members 
-         WHERE (first_name || ' ' || last_name) ILIKE $1 
-            OR (last_name || ' ' || first_name) ILIKE $1 
-         LIMIT 1`,
-        [`%${name.trim()}%`]
-      );
-      if (nameMatch.rows.length > 0) {
-        validatedRegNumber = nameMatch.rows[0].member_id;
-      }
-    }
-
-    // If still no member record exists, create one for the official so roles and system access work
-    if (!validatedRegNumber && name) {
-      const nameParts = name.trim().split(/\s+/);
-      const firstName = nameParts[0] || name.trim();
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      let sgId = null;
-      if (category) {
-        const sgRes = await pool.query(
-          `SELECT group_id FROM sub_groups 
-           WHERE name = $1 
-              OR LOWER(TRIM(name)) = LOWER(TRIM($1))
-              OR LOWER(REPLACE(REPLACE(name, '.', ''), ' ', '-')) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
-              OR LOWER(slug) = LOWER(REPLACE(REPLACE($1, '.', ''), ' ', '-'))
-           LIMIT 1`,
-          [category.trim()]
-        );
-        if (sgRes.rows.length > 0) sgId = sgRes.rows[0].group_id;
-      }
-
-      const rawReg = (reg_number && reg_number.trim()) ? reg_number.trim() : null;
-      let finalMemberId = rawReg;
-      if (!finalMemberId) {
-        const phoneDigits = normalizedContact ? normalizedContact.replace(/[^0-9]/g, '').slice(-5) : Math.floor(10000 + Math.random() * 90000);
-        finalMemberId = `OFF/${phoneDigits}/${new Date().getFullYear().toString().slice(-2)}`;
-      }
-
-      const existingMember = await pool.query(`SELECT member_id FROM members WHERE member_id = $1`, [finalMemberId]);
-      if (existingMember.rows.length === 0) {
-        await pool.query(
-          `INSERT INTO members (member_id, first_name, last_name, phone, jumuiya_id, join_date, status)
-           VALUES ($1, $2, $3, $4, $5, NOW(), 'active')
-           ON CONFLICT (member_id) DO NOTHING`,
-          [finalMemberId, firstName, lastName, normalizedContact || null, sgId]
-        );
-      }
-      validatedRegNumber = finalMemberId;
-    }
+    const validatedRegNumber = lookup.member.member_id;
 
     // Build checking promises to run in parallel
     const promises = [

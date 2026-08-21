@@ -546,6 +546,10 @@ export const createOfficial = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Name and category are required' });
     }
 
+    if (!reg_number || !reg_number.trim()) {
+        return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
+    }
+
     const normalizedContact = normalizePhone(contact);
     if (contact && !isValidPhone(contact)) {
       return res.status(400).json({ success: false, message: 'Please provide a valid phone number' });
@@ -555,62 +559,20 @@ export const createOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
     }
 
-    // Validate reg_number if provided
-    let validatedRegNumber = null;
-    if (reg_number && reg_number.trim()) {
-      const memberResult = await pool.query(
-        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id ILIKE $2
-         LIMIT 1`,
-        [reg_number.trim(), reg_number.trim()]
-      );
-      if (memberResult.rows.length > 0) {
-        validatedRegNumber = memberResult.rows[0].member_id;
-      }
+    // Validate reg_number exists in members table
+    const memberResult = await pool.query(
+      `SELECT member_id FROM members WHERE member_id = $1 OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+       OR member_id LIKE '%/' || $2 || '/%' OR member_id ILIKE $3
+       LIMIT 2`,
+      [reg_number.trim(), reg_number.trim(), `%${reg_number.trim()}%`]
+    );
+    if (memberResult.rows.length === 0) {
+      return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}". The official must be a registered member.` });
     }
-
-    if (!validatedRegNumber && normalizedContact) {
-      const cleanPhone = normalizedContact.replace(/[^0-9]/g, '');
-      if (cleanPhone.length >= 8) {
-        const phoneMatch = await pool.query(
-          `SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1`,
-          [cleanPhone.slice(-8)]
-        );
-        if (phoneMatch.rows.length > 0) validatedRegNumber = phoneMatch.rows[0].member_id;
-      }
+    if (memberResult.rows.length > 1) {
+      return res.status(400).json({ success: false, message: 'Registration number matches multiple members. Please use the exact member ID.' });
     }
-
-    if (!validatedRegNumber && name) {
-      const nameMatch = await pool.query(
-        `SELECT member_id FROM members 
-         WHERE (first_name || ' ' || last_name) ILIKE $1 
-            OR (last_name || ' ' || first_name) ILIKE $1 
-         LIMIT 1`,
-        [`%${name.trim()}%`]
-      );
-      if (nameMatch.rows.length > 0) validatedRegNumber = nameMatch.rows[0].member_id;
-    }
-
-    if (!validatedRegNumber && name) {
-      const nameParts = name.trim().split(/\s+/);
-      const firstName = nameParts[0] || name.trim();
-      const lastName = nameParts.slice(1).join(' ') || '';
-      const rawReg = (reg_number && reg_number.trim()) ? reg_number.trim() : null;
-      let finalMemberId = rawReg;
-      if (!finalMemberId) {
-        const phoneDigits = normalizedContact ? normalizedContact.replace(/[^0-9]/g, '').slice(-5) : Math.floor(10000 + Math.random() * 90000);
-        finalMemberId = `OFF/${phoneDigits}/${new Date().getFullYear().toString().slice(-2)}`;
-      }
-      const existingMember = await pool.query(`SELECT member_id FROM members WHERE member_id = $1`, [finalMemberId]);
-      if (existingMember.rows.length === 0) {
-        await pool.query(
-          `INSERT INTO members (member_id, first_name, last_name, phone, join_date, status)
-           VALUES ($1, $2, $3, $4, NOW(), 'active')
-           ON CONFLICT (member_id) DO NOTHING`,
-          [finalMemberId, firstName, lastName, normalizedContact || null]
-        );
-      }
-      validatedRegNumber = finalMemberId;
-    }
+    const validatedRegNumber = memberResult.rows[0].member_id;
 
     // Build checking promises to run in parallel
     const promises = [

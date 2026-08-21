@@ -219,6 +219,10 @@ export const createGroupOfficial = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Name, Group, and Position are required' });
     }
 
+    if (!reg_number || !reg_number.trim()) {
+      return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
+    }
+
     const normalizedContact = normalizePhone(contact);
     if (contact && !isValidPhone(contact)) {
       logger.warn(`Invalid phone number: ${contact}`);
