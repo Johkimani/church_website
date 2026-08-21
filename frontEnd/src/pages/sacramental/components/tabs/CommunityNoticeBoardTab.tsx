@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CommunityModule } from '../../context/CommunityDataContext';
-import { FaBullhorn, FaExclamationCircle, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaPin } from 'react-icons/fa';
+import { FaBullhorn, FaExclamationCircle, FaInfoCircle, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 interface Props {
   module: CommunityModule;
@@ -89,7 +89,7 @@ const CommunityNoticeBoardTab: React.FC<Props> = ({ module, color }) => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-bold text-slate-800 text-[15px]">{n.title || n.announcement_title}</h4>
                       <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase px-2 py-0.5 rounded-md" style={{ background: config.bg, color: config.color }}>
-                        {isUrgent && <FaPin size={8} />} {config.label}
+                        {isUrgent && <FaExclamationTriangle size={8} />} {config.label}
                       </span>
                     </div>
                     <p className="text-slate-600 text-sm leading-relaxed mt-2">{n.content || n.announcement_content}</p>
