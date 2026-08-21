@@ -65,6 +65,14 @@ const TAB_LABELS: Record<TabType, string> = {
 
 const TAB_ORDER: TabType[] = ['about', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
 
+const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
+  choir: ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator'],
+  dancers: ['dance_chair'],
+  charismatic: ['charismatic_chair'],
+  'st-francis': ['st_francis_chair'],
+  mentorship: ['mentorship_chair'],
+};
+
 const CommunityDetail: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
@@ -94,7 +102,12 @@ const CommunityDetail: React.FC = () => {
   const moduleData: CommunityModule | undefined = serverModuleData || contextFallback;
 
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
-  const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
+
+  const isGlobalAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
+  const groupRoles = moduleIdClean ? (GROUP_ROLES_BY_MODULE[moduleIdClean] || []) : [];
+  const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+  const isGroupOfficial = groupRoles.length > 0 && userRoles.some(r => groupRoles.includes(r));
+  const isAdmin = isGlobalAdmin || isGroupOfficial;
 
   const setTabWithUrl = (tab: TabType) => {
     setActiveTab(tab);
@@ -107,7 +120,7 @@ const CommunityDetail: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab') as TabType;
-    if (tabParam && TAB_ORDER.includes(tabParam)) {
+    if (tabParam && (TAB_ORDER.includes(tabParam) || tabParam === 'settings' || tabParam === 'request')) {
       setActiveTab(tabParam);
     }
   }, [location.search]);
@@ -254,7 +267,6 @@ const CommunityDetail: React.FC = () => {
                   {TAB_ICONS[tabId]}
                 </span>
                 <span className="nav-label">{TAB_LABELS[tabId]}</span>
-                {/* Active indicator bar */}
                 {isActive && (
                   <span
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
@@ -264,6 +276,34 @@ const CommunityDetail: React.FC = () => {
               </button>
             );
           })}
+          {isAdmin && (
+            <button
+              className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => {
+                setTabWithUrl('settings');
+                setIsSidebarOpen(false);
+              }}
+              style={activeTab === 'settings' ? {
+                borderLeftColor: 'white',
+                color: 'white',
+                background: 'rgba(255, 255, 255, 0.1)',
+              } : {}}
+            >
+              <span
+                className="nav-icon"
+                style={{ color: activeTab === 'settings' ? 'white' : 'rgba(255,255,255,0.65)' }}
+              >
+                {TAB_ICONS.settings}
+              </span>
+              <span className="nav-label">{TAB_LABELS.settings}</span>
+              {activeTab === 'settings' && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
+                  style={{ background: 'white' }}
+                />
+              )}
+            </button>
+          )}
         </nav>
 
         <div className="sidebar-footer">
