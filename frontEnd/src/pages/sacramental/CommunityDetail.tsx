@@ -25,7 +25,7 @@ const MINISTRY_COLORS: Record<string, string> = {
   dancers: '#db2777',
   charismatic: '#7c3aed',
   'st-francis': '#047857',
-  youth: '#8e44ad',
+  youth: '#6d28d9',
   mentorship: '#6d28d9',
 };
 

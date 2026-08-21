@@ -18,7 +18,8 @@ export const GROUP_OPTIONS = [
   'Choir',
   'Dancers',
   'Charismatic',
-  'St. Francis'
+  'St. Francis',
+  'Mentorship'
 ];
 
 export const POSITIONS_BY_GROUP = {
@@ -45,6 +46,12 @@ export const POSITIONS_BY_GROUP = {
   'St. Francis': [
     'Chairperson',
     'Vice Chairperson'
+  ],
+  'Mentorship': [
+    'Chairperson',
+    'Vice Chairperson',
+    'Secretary',
+    'Treasurer'
   ]
 };
 
@@ -55,7 +62,8 @@ ORDER BY
     WHEN o.category = 'Dancers' THEN 2
     WHEN o.category = 'Charismatic' THEN 3
     WHEN o.category = 'St. Francis' THEN 4
-    ELSE 5
+    WHEN o.category = 'Mentorship' THEN 5
+    ELSE 6
   END,
   CASE
     WHEN o.position = 'Chairperson' THEN 1

@@ -74,14 +74,16 @@ export const GROUP_OPTIONS = [
   'Choir',
   'Dancers',
   'Charismatic',
-  'St. Francis'
+  'St. Francis',
+  'Mentorship'
 ];
 
 export const POSITIONS_BY_GROUP: Record<string, string[]> = {
   'Choir': ['Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager', 'Male Representative', 'Female Representative', 'Choir Master', 'Choir Mistress'],
   'Dancers': ['Chairperson', 'Vice Chairperson'],
   'Charismatic': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer'],
-  'St. Francis': ['Chairperson', 'Vice Chairperson']
+  'St. Francis': ['Chairperson', 'Vice Chairperson'],
+  'Mentorship': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer']
 };
 
 export const GROUP_POSITION_RANK: Record<string, Record<string, number>> = {};
@@ -96,5 +98,6 @@ export const GROUP_COLORS: Record<string, string> = {
   'Choir': 'from-red-600 to-red-700',
   'Dancers': 'from-cyan-600 to-cyan-700',
   'Charismatic': 'from-orange-600 to-orange-700',
-  'St. Francis': 'from-teal-600 to-teal-700'
+  'St. Francis': 'from-teal-600 to-teal-700',
+  'Mentorship': 'from-violet-600 to-violet-700'
 };

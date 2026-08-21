@@ -7,6 +7,7 @@ const GROUP_MODULE_MAP = {
   dancers: 'Dancers',
   charismatic: 'Charismatic',
   'st-francis': 'St. Francis',
+  youth: 'Mentorship',
 };
 
 // Choir leadership is split across CSA officials (Chairperson/Vice Chairperson)
