@@ -372,7 +372,7 @@ export default function PublicView() {
     if (cat === 'Executive') {
       return (
         <div>
-          {renderGrid(list, true)}
+          {renderGrid(list)}
           {renderDesktopFlex(list, true)}
         </div>
       );
