@@ -21,11 +21,11 @@ export const Home: React.FC = () => {
       <LiturgicalTicker />
       <main className="flex-grow">
         <ImageSlider />
-        <SuggestionBox />
         <AboutSection />
         <GalleryTeaser />
         <MarianTeaser />
         <CommunitySection />
+        <SuggestionBox />
         <SupportSection />
       </main>
     </div>
