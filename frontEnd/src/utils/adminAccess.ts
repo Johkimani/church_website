@@ -78,6 +78,31 @@ const CHAIR_FORBIDDEN_PATHS = [
 export const hasAnyAdminAccess = (roles: string[]): boolean =>
   roles.some((r) => KNOWN_ADMIN_ROLES.has(r));
 
+// Which community-management modules each group role may see/edit.
+// Module ids match hub_modules ids used by CommunityManager/CommunityDetailEditor.
+const COMMUNITY_MODULES_BY_ROLE: Record<string, string[]> = {
+  CHOIR_CHAIRPERSON: ["choir"],
+  CHOIR_SECRETARY: ["choir"],
+  CHOIR_PROJECT_COORDINATOR: ["choir"],
+  DANCE_CHAIR: ["dancers"],
+  CHARISMATIC_CHAIR: ["charismatic"],
+  ST_FRANCIS_CHAIR: ["st-francis"],
+  MENTORSHIP_CHAIR: ["mentorship", "youth"], // mentorship community historically lives under both ids
+};
+
+/**
+ * Returns the list of community module ids a user may access, or null when
+ * unrestricted (CSA chair / universal admin). Empty array = no community access.
+ */
+export const getAllowedCommunityModules = (roles: string[]): string[] | null => {
+  if (isChair(roles)) return null;
+  const modules = new Set<string>();
+  roles.forEach((role) => {
+    (COMMUNITY_MODULES_BY_ROLE[role] || []).forEach((m) => modules.add(m));
+  });
+  return Array.from(modules);
+};
+
 export const getAllowedPrefixes = (roles: string[]): Set<string> => {
   const prefixes = new Set<string>();
   if (isChair(roles)) return prefixes;
@@ -164,7 +189,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         break;
       case "DANCE_CHAIR":
         prefixes.add("/admin/community-management");
-        prefixes.add("/admin/community-management/dance");
+        prefixes.add("/admin/community-management/dancers");
         break;
       case "MENTORSHIP_CHAIR":
         prefixes.add("/admin/community-management");

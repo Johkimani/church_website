@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useCachedData } from '../../../hooks/useCachedData';
 import { apiClient } from '../../../api/axiosInstance';
+import { useAuth } from '../../../context/AuthContext';
+import { normalizeRoles, getAllowedCommunityModules } from '../../../utils/adminAccess';
 import {
   Users,
   Clock,
@@ -48,14 +50,22 @@ export default function CommunityManager() {
     []
   );
 
+  // Scope visible modules to the logged-in official's group roles.
+  const { user } = useAuth();
+  const scopedModules = (() => {
+    const allowed = getAllowedCommunityModules(normalizeRoles(user?.role));
+    if (allowed === null) return modules; // CSA chair / unrestricted
+    return modules.filter((m: any) => allowed.includes(m.id));
+  })();
+
   // Fetch real enrollment stats for each module
   useEffect(() => {
-    if (modules.length === 0) return;
+    if (scopedModules.length === 0) return;
     const fetchStats = async () => {
       setStatsLoading(true);
       const statsMap: Record<string, ModuleStats> = {};
       await Promise.all(
-        modules.map(async (mod: any) => {
+        scopedModules.map(async (mod: any) => {
           try {
             const res = await apiClient.get(`/community-enrollment/${mod.id}`, {
               params: { status: 'all' },
@@ -79,13 +89,13 @@ export default function CommunityManager() {
       setStatsLoading(false);
     };
     fetchStats();
-  }, [modules]);
+  }, [scopedModules]);
 
   const totalEnrollment = Object.values(moduleStats).reduce((sum, s) => sum + s.total, 0);
   const totalPending = Object.values(moduleStats).reduce((sum, s) => sum + s.pending, 0);
 
-  const filteredModules = modules.filter(m => 
-    m.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredModules = scopedModules.filter(m =>
+    m.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -126,7 +136,7 @@ export default function CommunityManager() {
             </div>
             <div>
               <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Active Modules</p>
-              <p className="text-2xl font-black text-slate-800">{modules.length}</p>
+              <p className="text-2xl font-black text-slate-800">{scopedModules.length}</p>
             </div>
           </div>
         </div>

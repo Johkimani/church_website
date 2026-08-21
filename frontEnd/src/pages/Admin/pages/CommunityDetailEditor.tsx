@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient, createTableRecord, updateTableRecord, deleteTableRecord, uploadFile } from '../../../api/axiosInstance';
+import { useAuth } from '../../../context/AuthContext';
+import { normalizeRoles, getAllowedCommunityModules } from '../../../utils/adminAccess';
+import { ArtDeco404 } from '../components/ArtDeco404';
 import {
   ArrowLeft,
   Calendar,
@@ -71,6 +74,7 @@ interface SuggestionItem {
 export default function CommunityDetailEditor() {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('about');
   const [moduleMeta, setModuleMeta] = useState<any>(null);
   const [data, setData] = useState<any[]>([]);
@@ -520,6 +524,12 @@ export default function CommunityDetailEditor() {
 
   if (loading && !moduleMeta) {
     return <PageLoader message={`Connecting to ${categoryId} dashboard`} fullScreen />;
+  }
+
+  // ── Role-based module guard: group officials may only open their own community ──
+  const allowedModules = getAllowedCommunityModules(normalizeRoles(user?.role));
+  if (allowedModules !== null && !allowedModules.includes(categoryId || '')) {
+    return <ArtDeco404 />;
   }
 
   // Community accent color (guaranteeing dark vibrant contrast, ignoring white/light overrides)
