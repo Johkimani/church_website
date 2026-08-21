@@ -642,13 +642,13 @@ export default function CommunityDetailEditor() {
       </div>
 
       {/* ══════════════════════════════════════════════════════
-          MAIN CONTENT: SIDEBAR TABS + CONTENT PANEL
+          MAIN CONTENT: SIDEBAR TABS + CONTENT PANEL (DARK THEME)
       ══════════════════════════════════════════════════════ */}
-      <div className="flex gap-0 min-h-[600px] bg-white border-x border-b border-slate-200 rounded-b-3xl overflow-hidden shadow-xl">
+      <div className="flex gap-0 min-h-[600px] bg-slate-900 border-x border-b border-slate-800 rounded-b-3xl overflow-hidden shadow-2xl">
 
         {/* ── Sidebar Tab Navigation ── */}
-        <div className="w-52 shrink-0 bg-slate-50 border-r border-slate-200/80 flex flex-col py-2">
-          {tabs.map((tab, idx) => {
+        <div className="w-52 shrink-0 bg-slate-950/90 border-r border-slate-800 flex flex-col py-2">
+          {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
@@ -656,18 +656,18 @@ export default function CommunityDetailEditor() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`group relative flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-xl text-left text-xs font-bold transition-all ${
                   isActive
-                    ? 'text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                    ? 'text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
                 }`}
                 style={isActive ? { background: accentColor } : {}}
               >
                 {isActive && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/50" />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/60" />
                 )}
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
-                  isActive ? 'bg-white/20' : 'bg-slate-200/60 group-hover:bg-slate-200'
+                  isActive ? 'bg-white/20' : 'bg-slate-800 group-hover:bg-slate-700'
                 }`}>
-                  <tab.icon size={14} className={isActive ? 'text-white' : 'text-slate-500'} />
+                  <tab.icon size={14} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'} />
                 </div>
                 <span className="leading-tight">{tab.label}</span>
               </button>
@@ -675,29 +675,29 @@ export default function CommunityDetailEditor() {
           })}
 
           {/* Sidebar footer */}
-          <div className="mt-auto px-4 py-4 border-t border-slate-200/60">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Admin Panel</p>
+          <div className="mt-auto px-4 py-4 border-t border-slate-800">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Admin Panel</p>
             <p className="text-[10px] text-slate-400 font-medium mt-0.5">{moduleMeta?.title || categoryId}</p>
           </div>
         </div>
 
         {/* ── Tab Content Area ── */}
-        <div className="flex-1 overflow-hidden flex flex-col min-w-0">
+        <div className="flex-1 overflow-hidden flex flex-col min-w-0 bg-slate-900">
 
           {/* ── Content Inner Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
             <div className="flex items-center gap-3">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: `${accentColor}15`, color: accentColor }}
+                style={{ background: `${accentColor}25`, color: '#38bdf8' }}
               >
                 {(() => { const tab = tabs.find(t => t.id === activeTab); return tab ? <tab.icon size={16} /> : null; })()}
               </div>
               <div>
-                <h2 className="text-sm font-black text-slate-800 leading-tight">
+                <h2 className="text-sm font-black text-white leading-tight">
                   {tabs.find(t => t.id === activeTab)?.label}
                 </h2>
-                <p className="text-[11px] text-slate-400 font-medium">{moduleMeta?.title || categoryId} · Administration</p>
+                <p className="text-[11px] text-slate-400 font-medium">{moduleMeta?.title || categoryId} · Administration Command Center</p>
               </div>
             </div>
 
@@ -710,7 +710,7 @@ export default function CommunityDetailEditor() {
                     placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 bg-slate-50 w-36 md:w-48"
+                    className="pl-8 pr-3 py-2 border border-slate-700 rounded-xl text-xs font-semibold text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-500 bg-slate-800 w-36 md:w-48"
                   />
                 </div>
               )}
@@ -759,7 +759,8 @@ export default function CommunityDetailEditor() {
           </div>
 
           {/* ── Tab Content ── */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-900 text-slate-100">
+
           {/* ABOUT TAB */}
           {activeTab === 'about' && (
             <div className="space-y-5 max-w-2xl">
@@ -775,12 +776,12 @@ export default function CommunityDetailEditor() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-800 bg-slate-800/60 p-6 space-y-6 shadow-md">
                 <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Biography / Description</label>
+                  <label className="text-xs font-black text-slate-300 block mb-1.5 uppercase tracking-wide">Biography / Description</label>
                   <textarea
                     rows={8}
-                    className="w-full border border-slate-300 bg-white px-4 py-3 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 resize-y"
+                    className="w-full border border-slate-700 bg-slate-900 px-4 py-3 rounded-xl text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 resize-y"
                     style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
                     placeholder="Enter a biography or description for this community..."
                     value={aboutForm.biography}
@@ -788,31 +789,31 @@ export default function CommunityDetailEditor() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image URL</label>
+                  <label className="text-xs font-black text-slate-300 block mb-1.5 uppercase tracking-wide">Saint / Community Image URL</label>
                   <input
                     type="url"
-                    className="w-full border border-slate-300 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2"
+                    className="w-full border border-slate-700 bg-slate-900 px-4 py-2.5 rounded-xl text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2"
                     style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
                     placeholder="https://... (direct image link)"
                     value={aboutForm.saint_image_url}
                     onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
                   />
                   {aboutForm.saint_image_url && (
-                    <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border-2 border-slate-200 shadow-md" />
+                    <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border-2 border-slate-700 shadow-md" />
                   )}
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">History PDF URL</label>
+                  <label className="text-xs font-black text-slate-300 block mb-1.5 uppercase tracking-wide">History PDF URL</label>
                   <input
                     type="url"
-                    className="w-full border border-slate-300 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2"
+                    className="w-full border border-slate-700 bg-slate-900 px-4 py-2.5 rounded-xl text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2"
                     style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
                     placeholder="https://... (link to PDF document)"
                     value={aboutForm.history_pdf_url}
                     onChange={(e) => setAboutForm(v => ({ ...v, history_pdf_url: e.target.value }))}
                   />
                   {aboutForm.history_pdf_url && (
-                    <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-600 font-bold hover:underline">
+                    <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-400 font-bold hover:underline">
                       <FilePdf size={16} /> Preview PDF
                     </a>
                   )}
@@ -838,17 +839,17 @@ export default function CommunityDetailEditor() {
             <div>
               {galleryImages.length === 0 ? (
                 <div className="text-center py-16">
-                  <ImageIcon size={40} className="mx-auto text-slate-300 mb-3" />
-                  <p className="font-bold text-slate-600">No community gallery photos yet</p>
-                  <p className="text-xs text-slate-400 mt-1">Upload pictures to showcase your events and activities.</p>
+                  <ImageIcon size={40} className="mx-auto text-slate-600 mb-3" />
+                  <p className="font-bold text-slate-300">No community gallery photos yet</p>
+                  <p className="text-xs text-slate-500 mt-1">Upload pictures to showcase your events and activities.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {galleryImages.map(img => (
-                    <div key={img.id} className="relative rounded-2xl overflow-hidden border border-slate-200 group bg-slate-50">
+                    <div key={img.id} className="relative rounded-2xl overflow-hidden border border-slate-800 group bg-slate-800/80">
                       <img src={img.image_url} alt={img.event_name} className="w-full h-44 object-cover" />
                       <div className="p-3">
-                        <p className="text-xs font-bold text-slate-800 truncate">{img.event_name}</p>
+                        <p className="text-xs font-bold text-white truncate">{img.event_name}</p>
                         <p className="text-[10px] text-slate-400 font-medium">{img.category || 'General'}</p>
                       </div>
                       <button
@@ -868,16 +869,16 @@ export default function CommunityDetailEditor() {
           {/* T-SHIRTS & ORDERS TAB */}
           {activeTab === 'tshirts' && (
             <div className="space-y-6">
-              <div className="flex gap-2 border-b pb-3">
+              <div className="flex gap-2 border-b border-slate-800 pb-3">
                 <button
                   onClick={() => setTshirtTab('products')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tshirtTab === 'products' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tshirtTab === 'products' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                 >
                   Merchandise Catalog ({products.length})
                 </button>
                 <button
                   onClick={() => setTshirtTab('orders')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tshirtTab === 'orders' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tshirtTab === 'orders' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                 >
                   Customer Orders ({orders.length})
                 </button>
@@ -886,18 +887,18 @@ export default function CommunityDetailEditor() {
               {tshirtTab === 'products' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map(prod => (
-                    <div key={prod.id} className="border border-slate-200 rounded-2xl p-4 bg-slate-50 flex flex-col justify-between">
+                    <div key={prod.id} className="border border-slate-800 rounded-2xl p-4 bg-slate-800/70 flex flex-col justify-between">
                       <div>
                         {prod.image_url ? (
                           <img src={prod.image_url} alt={prod.name} className="w-full h-40 object-cover rounded-xl mb-3" />
                         ) : (
-                          <div className="w-full h-40 bg-slate-200 rounded-xl flex items-center justify-center text-slate-400 mb-3">
+                          <div className="w-full h-40 bg-slate-700/60 rounded-xl flex items-center justify-center text-slate-400 mb-3">
                             <ShoppingBag size={32} />
                           </div>
                         )}
-                        <h4 className="font-black text-slate-800">{prod.name}</h4>
-                        <p className="text-xs text-slate-500 mt-1">{prod.description || 'Community attire'}</p>
-                        <p className="text-base font-black text-blue-600 mt-2">KES {prod.price.toLocaleString()}</p>
+                        <h4 className="font-black text-white">{prod.name}</h4>
+                        <p className="text-xs text-slate-400 mt-1">{prod.description || 'Community attire'}</p>
+                        <p className="text-base font-black text-sky-400 mt-2">KES {prod.price.toLocaleString()}</p>
                       </div>
                       <button
                         onClick={() => {
@@ -910,7 +911,7 @@ export default function CommunityDetailEditor() {
                           });
                           setProductModal(true);
                         }}
-                        className="mt-4 w-full py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+                        className="mt-4 w-full py-2 bg-slate-700/80 border border-slate-600 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-600 transition"
                       >
                         Edit Product Details
                       </button>
@@ -918,7 +919,7 @@ export default function CommunityDetailEditor() {
                   ))}
                   {products.length === 0 && (
                     <div className="col-span-full text-center py-12">
-                      <p className="text-slate-500 font-bold text-sm">No products listed for this community yet.</p>
+                      <p className="text-slate-400 font-bold text-sm">No products listed for this community yet.</p>
                       <button onClick={() => setProductModal(true)} className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">
                         Add First Product
                       </button>
@@ -929,7 +930,7 @@ export default function CommunityDetailEditor() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b text-[10px] font-black uppercase text-slate-400">
+                      <tr className="border-b border-slate-800 text-[10px] font-black uppercase text-slate-400">
                         <th className="py-3 px-3">Recipient</th>
                         <th className="py-3 px-3">Phone</th>
                         <th className="py-3 px-3">Size & Qty</th>
@@ -940,16 +941,16 @@ export default function CommunityDetailEditor() {
                     </thead>
                     <tbody>
                       {orders.map(order => (
-                        <tr key={order.id} className="border-b hover:bg-slate-50 text-xs">
-                          <td className="py-3 px-3 font-bold text-slate-800">{order.recipient_name}</td>
-                          <td className="py-3 px-3 text-slate-600">{order.phone}</td>
-                          <td className="py-3 px-3 text-slate-700 font-medium">Size {order.size} (Qty: {order.quantity})</td>
-                          <td className="py-3 px-3 font-bold text-emerald-600">KES {order.total_amount?.toLocaleString()}</td>
+                        <tr key={order.id} className="border-b border-slate-800 hover:bg-slate-800/50 text-xs text-slate-200">
+                          <td className="py-3 px-3 font-bold text-white">{order.recipient_name}</td>
+                          <td className="py-3 px-3 text-slate-400">{order.phone}</td>
+                          <td className="py-3 px-3 text-slate-300 font-medium">Size {order.size} (Qty: {order.quantity})</td>
+                          <td className="py-3 px-3 font-bold text-emerald-400">KES {order.total_amount?.toLocaleString()}</td>
                           <td className="py-3 px-3">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' :
-                              order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                              order.status === 'processing' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                              order.status === 'delivered' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+                              order.status === 'shipped' ? 'bg-blue-950 text-blue-300 border border-blue-800' :
+                              order.status === 'processing' ? 'bg-purple-950 text-purple-300 border border-purple-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
                             }`}>
                               {order.status}
                             </span>
@@ -958,7 +959,7 @@ export default function CommunityDetailEditor() {
                             <select
                               value={order.status}
                               onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                              className="text-[11px] p-1 border rounded-lg bg-white"
+                              className="text-[11px] p-1.5 border border-slate-700 rounded-lg bg-slate-800 text-white focus:outline-none"
                             >
                               <option value="pending">Pending</option>
                               <option value="processing">Processing</option>
@@ -971,7 +972,7 @@ export default function CommunityDetailEditor() {
                     </tbody>
                   </table>
                   {orders.length === 0 && (
-                    <p className="text-center py-10 text-slate-400 text-xs font-semibold">No orders recorded for this community.</p>
+                    <p className="text-center py-10 text-slate-500 text-xs font-semibold">No orders recorded for this community.</p>
                   )}
                 </div>
               )}
@@ -981,35 +982,35 @@ export default function CommunityDetailEditor() {
           {/* SUGGESTIONS TAB */}
           {activeTab === 'suggestions' && (
             <div className="space-y-4">
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-400 font-medium">
                 Review constructive ideas and feedback submitted by members for {moduleMeta?.title || categoryId}.
               </p>
               {suggestions.length === 0 ? (
                 <div className="text-center py-16">
-                  <MessageSquare size={36} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-slate-600 font-bold text-sm">No suggestions submitted yet</p>
-                  <p className="text-slate-400 text-xs mt-0.5">Suggestions from the community page will appear here.</p>
+                  <MessageSquare size={36} className="mx-auto text-slate-600 mb-2" />
+                  <p className="text-slate-300 font-bold text-sm">No suggestions submitted yet</p>
+                  <p className="text-slate-500 text-xs mt-0.5">Suggestions from the community page will appear here.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {suggestions.map(s => (
-                    <div key={s.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white transition">
+                    <div key={s.id} className="p-4 rounded-2xl border border-slate-800 bg-slate-800/70 hover:bg-slate-800 transition">
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${s.name ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'}`}>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${s.name ? 'bg-indigo-950 text-indigo-300 border border-indigo-800' : 'bg-slate-700 text-slate-300'}`}>
                             {s.name ? s.name : 'Anonymous Member'}
                           </span>
                           {s.category && (
-                            <span className="text-[11px] text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded">
+                            <span className="text-[11px] text-slate-400 font-medium bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
                               #{s.category}
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[10px] text-slate-500">
                           {s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}
                         </span>
                       </div>
-                      <p className="text-xs font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">{s.suggestion}</p>
+                      <p className="text-xs font-medium text-slate-200 leading-relaxed whitespace-pre-wrap">{s.suggestion}</p>
                     </div>
                   ))}
                 </div>
@@ -1024,12 +1025,12 @@ export default function CommunityDetailEditor() {
                 <PageLoader message="Synchronizing table data" />
               ) : data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
+                  <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-500">
                     {activeTab === 'activities' && <Calendar size={32} />}
                     {activeTab === 'announcements' && <Megaphone size={32} />}
                     {activeTab === 'members' && <Users size={32} />}
                   </div>
-                  <h4 className="text-slate-800 font-bold italic">No records found</h4>
+                  <h4 className="text-slate-300 font-bold italic">No records found</h4>
                   <p className="text-slate-500 text-sm mt-1">Click the "Add" button to populate this section.</p>
                 </div>
               ) : (
@@ -1038,12 +1039,12 @@ export default function CommunityDetailEditor() {
                     <>
                       {/* Choir specific filter bar in admin */}
                       {categoryId === 'choir' && (
-                        <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80 mb-4">
-                          <span className="text-xs font-black uppercase tracking-wider text-slate-500">Filter Choir:</span>
+                        <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 mb-4">
+                          <span className="text-xs font-black uppercase tracking-wider text-amber-300">Filter Choir:</span>
                           <select
                             value={choirVoiceFilter}
                             onChange={(e: any) => setChoirVoiceFilter(e.target.value)}
-                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700"
+                            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none"
                           >
                             <option value="all">All Voices (S-A-T-B)</option>
                             <option value="soprano">Soprano</option>
@@ -1055,7 +1056,7 @@ export default function CommunityDetailEditor() {
                           <select
                             value={choirGenderFilter}
                             onChange={(e: any) => setChoirGenderFilter(e.target.value)}
-                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700"
+                            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none"
                           >
                             <option value="all">All Members (Gents & Ladies)</option>
                             <option value="male">Gents (Male)</option>
@@ -1072,31 +1073,31 @@ export default function CommunityDetailEditor() {
                             { label: 'Pending', value: enrollmentStats.pending, color: 'amber' },
                             { label: 'Rejected', value: enrollmentStats.rejected, color: 'rose' },
                           ].map((stat) => (
-                            <div key={stat.label} className="rounded-xl p-3 text-center bg-slate-50 border border-slate-200">
-                              <p className="text-xl font-black text-slate-800">{stat.value}</p>
-                              <p className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">{stat.label}</p>
+                            <div key={stat.label} className="rounded-xl p-3 text-center bg-slate-800/80 border border-slate-700">
+                              <p className="text-xl font-black text-white">{stat.value}</p>
+                              <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">{stat.label}</p>
                             </div>
                           ))}
                         </div>
                       )}
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="border-b border-slate-100">
-                            <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name</th>
+                          <tr className="border-b border-slate-800 text-slate-400">
+                            <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Full Name</th>
                             {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
                               <>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone</th>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
                               </>
                             ) : (
                               <>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Section</th>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Gender</th>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Skill Level</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Gender</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Skill Level</th>
                               </>
                             )}
-                            <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
-                            <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
+                            <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest">Status</th>
+                            <th className="py-4 px-4 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1114,32 +1115,32 @@ export default function CommunityDetailEditor() {
                             }
                             return true;
                           }).map((member) => (
-                            <tr key={member.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                              <td className="py-4 px-4 font-bold text-slate-700">{member.fullName || member.full_name}</td>
+                            <tr key={member.id} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-slate-200">
+                              <td className="py-4 px-4 font-bold text-white">{member.fullName || member.full_name}</td>
                               {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
                                 <>
-                                  <td className="py-4 px-4 text-sm text-slate-600">{member.phoneNumber || member.phone || 'N/A'}</td>
-                                  <td className="py-4 px-4 text-sm text-slate-600">{member.email || 'N/A'}</td>
+                                  <td className="py-4 px-4 text-sm text-slate-400">{member.phoneNumber || member.phone || 'N/A'}</td>
+                                  <td className="py-4 px-4 text-sm text-slate-400">{member.email || 'N/A'}</td>
                                 </>
                               ) : (
                                 <>
-                                  <td className="py-4 px-4 text-sm text-slate-600 font-bold">
+                                  <td className="py-4 px-4 text-sm font-bold">
                                     <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${
-                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-700' :
-                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-700' :
-                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-700' :
-                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'
+                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-950 text-pink-300 border border-pink-800' :
+                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-950 text-amber-300 border border-amber-800' :
+                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-950 text-sky-300 border border-sky-800' :
+                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-950 text-indigo-300 border border-indigo-800' : 'bg-slate-800 text-slate-300'
                                     }`}>
                                       {member.voice_type || 'General'}
                                     </span>
                                   </td>
-                                  <td className="py-4 px-4 text-sm text-slate-600 capitalize">{member.gender || 'N/A'}</td>
-                                  <td className="py-4 px-4 text-sm text-slate-600 capitalize">{member.music_level || 'Beginner'}</td>
+                                  <td className="py-4 px-4 text-sm text-slate-300 capitalize">{member.gender || 'N/A'}</td>
+                                  <td className="py-4 px-4 text-sm text-slate-300 capitalize">{member.music_level || 'Beginner'}</td>
                                 </>
                               )}
                               <td className="py-4 px-4">
                                 <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
-                                  member.status === 'Pending' ? 'bg-amber-100 text-amber-700' : member.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                                  member.status === 'Pending' ? 'bg-amber-950 text-amber-300 border border-amber-800' : member.status === 'Approved' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'
                                 }`}>
                                   {member.status}
                                 </span>
@@ -1147,16 +1148,16 @@ export default function CommunityDetailEditor() {
                               <td className="py-4 px-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   {member.status !== 'Approved' && (
-                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch { alert('Approve failed'); } }} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg" title="Approve">
+                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Approved' }); showToast('Member approved'); await loadCategoryData(); } catch { alert('Approve failed'); } }} className="p-2 text-emerald-400 hover:bg-emerald-950 rounded-lg transition" title="Approve">
                                       <CheckCircle size={18} />
                                     </button>
                                   )}
                                   {member.status !== 'Rejected' && (
-                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Rejected' }); showToast('Member rejected'); await loadCategoryData(); } catch { alert('Reject failed'); } }} className="p-2 text-rose-400 hover:bg-rose-50 rounded-lg" title="Reject">
+                                    <button onClick={async (e) => { e.stopPropagation(); try { await updateTableRecord('enrollments', member.id, { status: 'Rejected' }); showToast('Member rejected'); await loadCategoryData(); } catch { alert('Reject failed'); } }} className="p-2 text-rose-400 hover:bg-rose-950 rounded-lg transition" title="Reject">
                                       <XCircle size={18} />
                                     </button>
                                   )}
-                                  <button onClick={(e) => { e.stopPropagation(); handleDelete(member.id); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg" title="Delete">
+                                  <button onClick={(e) => { e.stopPropagation(); handleDelete(member.id); }} className="p-2 text-rose-400 hover:bg-rose-950 rounded-lg transition" title="Delete">
                                     <Trash2 size={18} />
                                   </button>
                                 </div>
@@ -1169,26 +1170,26 @@ export default function CommunityDetailEditor() {
                   ) : activeTab === 'schedules' ? (
                     <div className="space-y-4">
                       {data.map((item) => (
-                        <div key={item.id} onClick={() => openEditModal(item)} className="p-5 border border-slate-100 rounded-2xl hover:border-purple-200 hover:bg-purple-50/10 transition-all flex items-start justify-between gap-4 group cursor-pointer">
+                        <div key={item.id} onClick={() => openEditModal(item)} className="p-5 border border-slate-800 bg-slate-800/60 rounded-2xl hover:border-purple-500 hover:bg-slate-800 transition-all flex items-start justify-between gap-4 group cursor-pointer text-white">
                           <div className="flex gap-4">
-                            <div className="p-3 rounded-xl shrink-0 bg-purple-100 text-purple-600">
+                            <div className="p-3 rounded-xl shrink-0 bg-purple-950 text-purple-300 border border-purple-800">
                               <Clock size={20} />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h4 className="font-bold text-slate-800 text-lg uppercase tracking-tight">{item.day}</h4>
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-700">
+                                <h4 className="font-bold text-white text-lg uppercase tracking-tight">{item.day}</h4>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-purple-950 text-purple-300 border border-purple-800">
                                   {item.start_time} – {item.end_time || item.start_time}
                                 </span>
                               </div>
-                              <p className="text-slate-600 text-sm mt-1 leading-relaxed font-medium">
-                                Venue: <strong>{item.location}</strong>
+                              <p className="text-slate-300 text-sm mt-1 leading-relaxed font-medium">
+                                Venue: <strong className="text-white">{item.location}</strong>
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
-                            <button onClick={(e) => { e.stopPropagation(); openEditModal(item); }} className="p-2 text-slate-400 hover:text-blue-600 rounded-lg"><Edit2 size={18} /></button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 text-slate-400 hover:text-rose-600 rounded-lg"><Trash2 size={18} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); openEditModal(item); }} className="p-2 text-slate-400 hover:text-blue-400 rounded-lg"><Edit2 size={18} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 text-slate-400 hover:text-rose-400 rounded-lg"><Trash2 size={18} /></button>
                           </div>
                         </div>
                       ))}
@@ -1196,27 +1197,27 @@ export default function CommunityDetailEditor() {
                   ) : (
                     <div className="space-y-4">
                       {data.map((item) => (
-                        <div key={item.id} onClick={() => openEditModal(item)} className="p-5 border border-slate-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50/10 transition-all flex items-start justify-between gap-4 group cursor-pointer">
+                        <div key={item.id} onClick={() => openEditModal(item)} className="p-5 border border-slate-800 bg-slate-800/60 rounded-2xl hover:border-blue-500 hover:bg-slate-800 transition-all flex items-start justify-between gap-4 group cursor-pointer text-white">
                           <div className="flex gap-4">
-                            <div className={`p-3 rounded-xl shrink-0 ${activeTab === 'activities' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                            <div className={`p-3 rounded-xl shrink-0 ${activeTab === 'activities' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-blue-950 text-blue-300 border border-blue-800'}`}>
                               {activeTab === 'activities' ? <Calendar size={20} /> : <Megaphone size={20} />}
                             </div>
                             <div>
-                              <h4 className="font-bold text-slate-800 text-lg uppercase tracking-tight">{item.title}</h4>
-                              <p className="text-slate-500 text-sm mt-1 leading-relaxed">{item.description || item.content}</p>
+                              <h4 className="font-bold text-white text-lg uppercase tracking-tight">{item.title}</h4>
+                              <p className="text-slate-300 text-sm mt-1 leading-relaxed">{item.description || item.content}</p>
                               <div className="flex items-center gap-4 mt-3">
                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
                                   <Clock size={14} /> {item.activity_date || item.announcement_date ? new Date(item.activity_date || item.announcement_date).toLocaleDateString() : 'N/A'}
                                 </div>
                                 {item.location && (
-                                  <div className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-widest">{item.location}</div>
+                                  <div className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded text-[9px] font-black uppercase tracking-widest">{item.location}</div>
                                 )}
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
-                            <button onClick={(e) => { e.stopPropagation(); openEditModal(item); }} className="p-2 text-slate-400 hover:text-blue-600 rounded-lg"><Edit2 size={18} /></button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 text-slate-400 hover:text-rose-600 rounded-lg"><Trash2 size={18} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); openEditModal(item); }} className="p-2 text-slate-400 hover:text-blue-400 rounded-lg"><Edit2 size={18} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 text-slate-400 hover:text-rose-400 rounded-lg"><Trash2 size={18} /></button>
                           </div>
                         </div>
                       ))}
@@ -1226,45 +1227,46 @@ export default function CommunityDetailEditor() {
               )}
             </>
           )}
+
         </div>
       </div>
 
       {/* Modal for Activities / Announcements / Members */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-white">
             <h3 className="text-xl font-bold mb-4">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : activeTab === 'schedules' ? 'Practice Schedule' : 'Member'}</h3>
             <div className="space-y-3">
               {activeTab === 'schedules' && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-bold">Day of Week *</label>
-                      <select value={formValues.day || (isStFrancisAdmin ? 'Sunday' : isDancersAdmin ? 'Saturday' : isCharismaticAdmin ? 'Thursday' : 'Tuesday')} onChange={(e) => setFormValues(v => ({ ...v, day: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                      <label className="text-sm font-bold text-slate-300">Day of Week *</label>
+                      <select value={formValues.day || (isStFrancisAdmin ? 'Sunday' : isDancersAdmin ? 'Saturday' : isCharismaticAdmin ? 'Thursday' : 'Tuesday')} onChange={(e) => setFormValues(v => ({ ...v, day: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
                           <option key={d} value={d}>{d}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-bold">{isStFrancisAdmin ? 'Venue / Meeting Point *' : 'Venue / Room *'}</label>
-                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. LH 21 / Neighborhood Block' : 'e.g. School Compound / Main Hall'} className="w-full border px-3 py-2 rounded mt-1" />
+                      <label className="text-sm font-bold text-slate-300">{isStFrancisAdmin ? 'Venue / Meeting Point *' : 'Venue / Room *'}</label>
+                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. LH 21 / Neighborhood Block' : 'e.g. School Compound / Main Hall'} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1 placeholder:text-slate-500" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-bold">Start Time *</label>
-                      <input type="text" value={formValues.start_time || ''} onChange={(e) => setFormValues(v => ({ ...v, start_time: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. 17:00 or 5:00 PM' : 'e.g. 16:00 or 4:00 PM'} className="w-full border px-3 py-2 rounded mt-1" />
+                      <label className="text-sm font-bold text-slate-300">Start Time *</label>
+                      <input type="text" value={formValues.start_time || ''} onChange={(e) => setFormValues(v => ({ ...v, start_time: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. 17:00 or 5:00 PM' : 'e.g. 16:00 or 4:00 PM'} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1 placeholder:text-slate-500" />
                     </div>
                     <div>
-                      <label className="text-sm font-bold">End Time</label>
-                      <input type="text" value={formValues.end_time || ''} onChange={(e) => setFormValues(v => ({ ...v, end_time: e.target.value }))} placeholder="e.g. 18:30 or 6:30 PM" className="w-full border px-3 py-2 rounded mt-1" />
+                      <label className="text-sm font-bold text-slate-300">End Time</label>
+                      <input type="text" value={formValues.end_time || ''} onChange={(e) => setFormValues(v => ({ ...v, end_time: e.target.value }))} placeholder="e.g. 18:30 or 6:30 PM" className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1 placeholder:text-slate-500" />
                     </div>
                   </div>
                   {isStFrancisAdmin && (
                     <div>
-                      <label className="text-sm font-bold">Session Type / Focus</label>
-                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                      <label className="text-sm font-bold text-slate-300">Session Type / Focus</label>
+                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
                         <option value="">Select session focus...</option>
                         <option value="Community Fellowship & SCC Prayer">Community Fellowship & SCC Prayer</option>
                         <option value="Laudato Si' Eco-Care & Tree Planting">Laudato Si' Eco-Care & Tree Planting</option>
@@ -1277,8 +1279,8 @@ export default function CommunityDetailEditor() {
                   )}
                   {isMentorshipAdmin && (
                     <div>
-                      <label className="text-sm font-bold">Mentorship Track / Focus</label>
-                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                      <label className="text-sm font-bold text-slate-300">Mentorship Track / Focus</label>
+                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
                         <option value="">Select mentorship track...</option>
                         <option value="Group Cohort Sessions & Life Skills">Group Cohort Sessions & Life Skills</option>
                         <option value="Career Workshops, Mock Interviews & Seminars">Career Workshops, Mock Interviews & Seminars</option>
@@ -1293,21 +1295,21 @@ export default function CommunityDetailEditor() {
               {(activeTab === 'activities' || activeTab === 'announcements') && (
                 <>
                   <div>
-                    <label className="text-sm font-bold">Title</label>
-                    <input value={formValues.title || ''} onChange={(e) => setFormValues(v => ({ ...v, title: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    <label className="text-sm font-bold text-slate-300">Title</label>
+                    <input value={formValues.title || ''} onChange={(e) => setFormValues(v => ({ ...v, title: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
                   </div>
                   <div>
-                    <label className="text-sm font-bold">Description / Content</label>
-                    <textarea value={formValues.description || formValues.content || ''} onChange={(e) => setFormValues(v => ({ ...v, description: e.target.value, content: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" rows={4} />
+                    <label className="text-sm font-bold text-slate-300">Description / Content</label>
+                    <textarea value={formValues.description || formValues.content || ''} onChange={(e) => setFormValues(v => ({ ...v, description: e.target.value, content: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" rows={4} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-bold">Venue / Location</label>
-                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                      <label className="text-sm font-bold text-slate-300">Venue / Location</label>
+                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
                     </div>
                     <div>
-                      <label className="text-sm font-bold">Date</label>
-                      <input type="date" value={formValues.activity_date?.slice?.(0, 10) || formValues.announcement_date?.slice?.(0, 10) || ''} onChange={(e) => setFormValues(v => ({ ...v, activity_date: e.target.value, announcement_date: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                      <label className="text-sm font-bold text-slate-300">Date</label>
+                      <input type="date" value={formValues.activity_date?.slice?.(0, 10) || formValues.announcement_date?.slice?.(0, 10) || ''} onChange={(e) => setFormValues(v => ({ ...v, activity_date: e.target.value, announcement_date: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
                     </div>
                   </div>
                 </>
@@ -1316,26 +1318,26 @@ export default function CommunityDetailEditor() {
               {activeTab === 'members' && (
                 <>
                   <div>
-                    <label className="text-sm font-bold">Full name</label>
-                    <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" />
+                    <label className="text-sm font-bold text-slate-300">Full name</label>
+                    <input value={formValues.full_name || formValues.fullName || ''} onChange={(e) => setFormValues(v => ({ ...v, full_name: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" />
                   </div>
                   {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
                     <>
                       <div>
-                        <label className="text-sm font-bold">Phone Number</label>
-                        <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. 0712345678" />
+                        <label className="text-sm font-bold text-slate-300">Phone Number</label>
+                        <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" placeholder="e.g. 0712345678" />
                       </div>
                       <div>
-                        <label className="text-sm font-bold">Email Address (optional)</label>
-                        <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. email@example.com" />
+                        <label className="text-sm font-bold text-slate-300">Email Address (optional)</label>
+                        <input type="email" value={formValues.email || ''} onChange={(e) => setFormValues(v => ({ ...v, email: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" placeholder="e.g. email@example.com" />
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-sm font-bold">Voice Section (SATB)</label>
-                          <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                          <label className="text-sm font-bold text-slate-300">Voice Section (SATB)</label>
+                          <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
                             <option value="">Select Voice...</option>
                             <option value="Soprano">Soprano (High Female)</option>
                             <option value="Alto">Alto (Low Female)</option>
@@ -1344,8 +1346,8 @@ export default function CommunityDetailEditor() {
                           </select>
                         </div>
                         <div>
-                          <label className="text-sm font-bold">Gender (Gent / Lady)</label>
-                          <select value={formValues.gender || ''} onChange={(e) => setFormValues(v => ({ ...v, gender: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                          <label className="text-sm font-bold text-slate-300">Gender (Gent / Lady)</label>
+                          <select value={formValues.gender || ''} onChange={(e) => setFormValues(v => ({ ...v, gender: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
                             <option value="">Select Gender...</option>
                             <option value="Male">Gent (Male)</option>
                             <option value="Female">Lady (Female)</option>
@@ -1354,12 +1356,12 @@ export default function CommunityDetailEditor() {
                       </div>
                       <div className="grid grid-cols-2 gap-3 mt-3">
                         <div>
-                          <label className="text-sm font-bold">Phone Number</label>
-                          <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. 0712345678" />
+                          <label className="text-sm font-bold text-slate-300">Phone Number</label>
+                          <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1" placeholder="e.g. 0712345678" />
                         </div>
                         <div>
-                          <label className="text-sm font-bold">Music Skill Level</label>
-                          <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                          <label className="text-sm font-bold text-slate-300">Music Skill Level</label>
+                          <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
                             <option value="Beginner">Beginner (Solfa Learner)</option>
                             <option value="Intermediate">Intermediate (Sight-reader)</option>
                             <option value="Advanced">Advanced (Soloist / Trainer)</option>
@@ -1369,8 +1371,8 @@ export default function CommunityDetailEditor() {
                     </>
                   )}
                   <div>
-                    <label className="text-sm font-bold">Status</label>
-                    <select value={formValues.status || 'Pending'} onChange={(e) => setFormValues(v => ({ ...v, status: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                    <label className="text-sm font-bold text-slate-300">Status</label>
+                    <select value={formValues.status || 'Pending'} onChange={(e) => setFormValues(v => ({ ...v, status: e.target.value }))} className="w-full border border-slate-700 bg-slate-800 text-white px-3 py-2 rounded-xl mt-1">
                       <option value="Pending">Pending</option>
                       <option value="Approved">Approved</option>
                       <option value="Rejected">Rejected</option>
@@ -1380,13 +1382,13 @@ export default function CommunityDetailEditor() {
               )}
 
               <div>
-                <label className="text-sm font-bold">Attachment / Image (optional)</label>
-                <input type="file" onChange={handleFileChange} className="w-full mt-1" />
-                {formValues.image_url && <img src={formValues.image_url} alt="preview" className="w-32 h-20 object-cover mt-2 rounded" />}
+                <label className="text-sm font-bold text-slate-300">Attachment / Image (optional)</label>
+                <input type="file" onChange={handleFileChange} className="w-full mt-1 text-slate-300" />
+                {formValues.image_url && <img src={formValues.image_url} alt="preview" className="w-32 h-20 object-cover mt-2 rounded-xl border border-slate-700" />}
               </div>
 
               <div className="flex justify-end gap-3 mt-4">
-                <button onClick={closeModal} className="px-4 py-2 rounded-xl bg-slate-100 font-bold text-xs text-slate-700 hover:bg-slate-200 transition">Cancel</button>
+                <button onClick={closeModal} className="px-4 py-2 rounded-xl bg-slate-800 font-bold text-xs text-slate-300 hover:bg-slate-700 transition">Cancel</button>
                 <button
                   disabled={uploading}
                   onClick={handleSave}
@@ -1403,51 +1405,51 @@ export default function CommunityDetailEditor() {
 
       {/* Modal for Gallery Add */}
       {galleryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-white">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-black text-slate-800">Add Photo to Gallery</h3>
+                <h3 className="text-lg font-black text-white">Add Photo to Gallery</h3>
                 <p className="text-xs text-slate-400 font-medium">{moduleMeta?.title || categoryId} • Community Gallery</p>
               </div>
-              <button onClick={() => setGalleryModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><X size={14} /></button>
+              <button onClick={() => setGalleryModal(false)} className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition text-slate-300"><X size={14} /></button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-700">Event / Caption Name</label>
+                <label className="text-xs font-bold text-slate-300">Event / Caption Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Easter Choir Rehearsal"
                   value={newImageForm.event_name}
                   onChange={(e) => setNewImageForm(v => ({ ...v, event_name: e.target.value }))}
-                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700">Category Tag (optional)</label>
+                <label className="text-xs font-bold text-slate-300">Category Tag (optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. Concerts, Sunday Mass"
                   value={newImageForm.category}
                   onChange={(e) => setNewImageForm(v => ({ ...v, category: e.target.value }))}
-                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700">Direct Image URL</label>
+                <label className="text-xs font-bold text-slate-300">Direct Image URL</label>
                 <input
                   type="url"
                   placeholder="https://..."
                   value={newImageForm.image_url}
                   onChange={(e) => setNewImageForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
                 />
               </div>
               {newImageForm.image_url && (
-                <img src={newImageForm.image_url} alt="preview" className="w-full h-36 object-cover rounded-xl border mt-2" />
+                <img src={newImageForm.image_url} alt="preview" className="w-full h-36 object-cover rounded-xl border border-slate-700 mt-2" />
               )}
               <div className="flex justify-end gap-2 pt-3">
-                <button onClick={() => setGalleryModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold hover:bg-slate-200 transition">Cancel</button>
+                <button onClick={() => setGalleryModal(false)} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition">Cancel</button>
                 <button onClick={handleAddGalleryImage} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition" style={{ background: accentColor }}>Upload Photo</button>
               </div>
             </div>
@@ -1457,73 +1459,74 @@ export default function CommunityDetailEditor() {
 
       {/* Modal for T-Shirt Product */}
       {productModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 text-white">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-black text-slate-800">Manage Merchandise</h3>
+                <h3 className="text-lg font-black text-white">Manage Merchandise</h3>
                 <p className="text-xs text-slate-400 font-medium">{moduleMeta?.title || categoryId} • Attire & Orders</p>
               </div>
-              <button onClick={() => setProductModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><X size={14} /></button>
+              <button onClick={() => setProductModal(false)} className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition text-slate-300"><X size={14} /></button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-700">Product Title</label>
+                <label className="text-xs font-bold text-slate-300">Product Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Official Choir Polo T-Shirt"
                   value={productForm.name}
                   onChange={(e) => setProductForm(v => ({ ...v, name: e.target.value }))}
-                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Price (KES)</label>
+                  <label className="text-xs font-bold text-slate-300">Price (KES)</label>
                   <input
                     type="number"
                     value={productForm.price}
                     onChange={(e) => setProductForm(v => ({ ...v, price: Number(e.target.value) }))}
-                    className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                    className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Sizes (comma separated)</label>
+                  <label className="text-xs font-bold text-slate-300">Sizes (comma separated)</label>
                   <input
                     type="text"
                     value={productForm.sizes}
                     onChange={(e) => setProductForm(v => ({ ...v, sizes: e.target.value }))}
-                    className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                    className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700">Image URL</label>
+                <label className="text-xs font-bold text-slate-300">Image URL</label>
                 <input
                   type="url"
                   placeholder="https://..."
                   value={productForm.image_url}
                   onChange={(e) => setProductForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700">Description</label>
+                <label className="text-xs font-bold text-slate-300">Description</label>
                 <textarea
                   rows={2}
                   value={productForm.description}
                   onChange={(e) => setProductForm(v => ({ ...v, description: e.target.value }))}
-                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
+                  className="w-full border border-slate-700 bg-slate-800 text-white p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-500"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-3">
-                <button onClick={() => setProductModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold hover:bg-slate-200 transition">Cancel</button>
+                <button onClick={() => setProductModal(false)} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition">Cancel</button>
                 <button onClick={handleSaveProduct} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition" style={{ background: accentColor }}>Save Product</button>
               </div>
             </div>
           </div>
         </div>
       )}
+
     </div>
   </div>
   );
