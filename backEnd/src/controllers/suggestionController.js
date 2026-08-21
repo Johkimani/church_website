@@ -43,30 +43,65 @@ const getUserRoles = (req) => {
     : req.user.role ? [req.user.role] : [];
 };
 
+// Community (hub module) official roles → the jumuiya_id value that member
+// suggestions from that community page are stored under (scope 'community').
+const COMMUNITY_ROLE_SCOPES = {
+  choir_chairperson: 'choir',
+  choir_secretary: 'choir',
+  choir_project_coordinator: 'choir',
+  dance_chair: 'dancers',
+  charismatic_chair: 'charismatic',
+  st_francis_chair: 'st-francis',
+  mentorship_chair: 'mentorship',
+};
+
+const GLOBAL_SUGGESTION_ROLES = ['admin', 'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'];
+
+const COMMUNITY_OFFICIAL_ROLES = Object.keys(COMMUNITY_ROLE_SCOPES);
+
+// Returns { isGlobal, scopedIds } — scopedIds are jumuiya_id values this
+// official may access (their own jumuiya plus any community module they lead).
+const getSuggestionAccess = (req) => {
+  const roles = getUserRoles(req);
+  const isGlobal = roles.some(r => GLOBAL_SUGGESTION_ROLES.includes(r));
+  const scopedIds = new Set();
+  if (!isGlobal) {
+    if (req.user?.jumuiya_id) scopedIds.add(String(req.user.jumuiya_id));
+    for (const r of roles) {
+      if (COMMUNITY_ROLE_SCOPES[r]) scopedIds.add(COMMUNITY_ROLE_SCOPES[r]);
+    }
+  }
+  return { isGlobal, scopedIds: [...scopedIds] };
+};
+
+// Builds "(s.jumuiya_id = $n OR s.jumuiya_id IN (...))" for each scoped id.
+const buildScopeClause = (scopedIds, startIndex) => {
+  const clauses = scopedIds.map((_, i) => {
+    const p = startIndex + i;
+    return `(s.jumuiya_id = $${p} OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $${p}))`;
+  });
+  return { clause: `(${clauses.join(' OR ')})`, params: scopedIds };
+};
+
 export const listSuggestions = async (req, res) => {
   try {
-    const roles = getUserRoles(req);
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
     const { jumuiya_id } = req.query;
 
     let whereClause = `WHERE s.deleted_at IS NULL`;
-    const params = [];
+    let params = [];
 
-    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
-    const isJumuiyaOfficer = roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r));
-
-    if (!isGlobal && !isJumuiyaOfficer) {
-      return res.json({ status: "success", data: [] });
-    }
-
-    if (!isGlobal && isJumuiyaOfficer) {
-      const userJumuiya = req.user.jumuiya_id;
-      if (userJumuiya) {
-        whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
-        params.push(userJumuiya);
+    if (!isGlobal) {
+      if (scopedIds.length === 0) {
+        return res.json({ status: "success", data: [] });
       }
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     } else if (jumuiya_id && jumuiya_id !== 'all' && jumuiya_id !== 'csa') {
-      whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
-      params.push(jumuiya_id);
+      const scope = buildScopeClause([jumuiya_id], params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     }
 
     const result = await pool.query(
@@ -82,23 +117,17 @@ export const listSuggestions = async (req, res) => {
 
 export const getBin = async (req, res) => {
   try {
-    const roles = getUserRoles(req);
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
     let whereClause = `WHERE s.deleted_at IS NOT NULL`;
-    const params = [];
+    let params = [];
 
-    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
-    const isJumuiyaOfficer = roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r));
-
-    if (!isGlobal && !isJumuiyaOfficer) {
-      return res.json({ status: "success", data: [] });
-    }
-
-    if (!isGlobal && isJumuiyaOfficer) {
-      const userJumuiya = req.user.jumuiya_id;
-      if (userJumuiya) {
-        whereClause += ` AND (s.jumuiya_id = $1 OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
-        params.push(userJumuiya);
+    if (!isGlobal) {
+      if (scopedIds.length === 0) {
+        return res.json({ status: "success", data: [] });
       }
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     }
 
     const result = await pool.query(
@@ -114,7 +143,7 @@ export const getBin = async (req, res) => {
 
 const requireVcRole = (req, res) => {
   const roles = getUserRoles(req);
-  if (!roles.some(r => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson', 'jumuiya_coordinator'].includes(r))) {
+  if (!roles.some(r => [...GLOBAL_SUGGESTION_ROLES, 'csa_vice_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson', ...COMMUNITY_OFFICIAL_ROLES].includes(r))) {
     res.status(404).json({ success: false, message: "Resource not found" });
     return false;
   }
@@ -126,18 +155,15 @@ export const softDelete = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedBy = req.body?.deleted_by || req.user?.member_id || "unknown";
-    const roles = getUserRoles(req);
-    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
 
     let query = `UPDATE suggestions SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $1 WHERE id = $2 AND deleted_at IS NULL`;
-    const params = [deletedBy, id];
+    let params = [deletedBy, id];
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
-      const userJumuiya = req.user.jumuiya_id;
-      if (userJumuiya) {
-        query += ` AND (jumuiya_id = $3 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $3))`;
-        params.push(userJumuiya);
-      }
+    if (!isGlobal && scopedIds.length > 0) {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     }
 
     query += ` RETURNING *`;
@@ -155,20 +181,18 @@ export const softDelete = async (req, res) => {
 };
 
 export const restoreFromBin = async (req, res) => {
+  if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
-    const roles = getUserRoles(req);
-    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
 
     let query = `UPDATE suggestions SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 AND deleted_at IS NOT NULL`;
-    const params = [id];
+    let params = [id];
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
-      const userJumuiya = req.user.jumuiya_id;
-      if (userJumuiya) {
-        query += ` AND (jumuiya_id = $2 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $2))`;
-        params.push(userJumuiya);
-      }
+    if (!isGlobal && scopedIds.length > 0) {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     }
 
     query += ` RETURNING *`;
@@ -186,20 +210,18 @@ export const restoreFromBin = async (req, res) => {
 };
 
 export const permanentDelete = async (req, res) => {
+  if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
-    const roles = getUserRoles(req);
-    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
 
     let query = `DELETE FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL`;
-    const params = [id];
+    let params = [id];
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
-      const userJumuiya = req.user.jumuiya_id;
-      if (userJumuiya) {
-        query += ` AND (jumuiya_id = $2 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $2))`;
-        params.push(userJumuiya);
-      }
+    if (!isGlobal && scopedIds.length > 0) {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     }
 
     query += ` RETURNING *`;
@@ -217,19 +239,17 @@ export const permanentDelete = async (req, res) => {
 };
 
 export const clearBin = async (req, res) => {
+  if (!requireVcRole(req, res)) return;
   try {
-    const roles = getUserRoles(req);
-    const isGlobal = roles.some(r => ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'].includes(r));
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
 
     let query = `DELETE FROM suggestions WHERE deleted_at IS NOT NULL`;
-    const params = [];
+    let params = [];
 
-    if (!isGlobal && roles.some(r => ['jumuiya_chairperson', 'jumuiya_vice_chairperson'].includes(r))) {
-      const userJumuiya = req.user.jumuiya_id;
-      if (userJumuiya) {
-        query += ` AND (jumuiya_id = $1 OR jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $1))`;
-        params.push(userJumuiya);
-      }
+    if (!isGlobal && scopedIds.length > 0) {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     }
 
     const result = await pool.query(query, params);
