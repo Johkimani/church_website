@@ -46,9 +46,10 @@ interface OfficialCardProps {
   off: any;
   cat: string;
   navigate: (path: string) => void;
+  threeCol?: boolean;
 }
 
-function OfficialCard({ off, cat, navigate }: OfficialCardProps) {
+function OfficialCard({ off, cat, navigate, threeCol }: OfficialCardProps) {
   const defaultAvatar = getAvatarForCategory(cat);
   const initialPhotoUrl = off.photo ? getSafeImageUrl(off.photo) : defaultAvatar;
   const [imgSrc, setImgSrc] = React.useState(initialPhotoUrl);
@@ -122,7 +123,7 @@ function OfficialCard({ off, cat, navigate }: OfficialCardProps) {
       <article
         onClick={() => navigate(`/officials/${off.id}`)}
         className="hidden sm:block group bg-white border border-slate-200 rounded-[1.75rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
-        style={{ width: 'calc(50% - 0.5rem)', maxWidth: '220px' }}
+        style={{ width: threeCol ? 'calc(33.333% - 1rem)' : 'calc(50% - 0.5rem)', maxWidth: threeCol ? '240px' : '220px' }}
         title={`View ${off.name}'s profile`}
       >
         <div className="relative h-44 md:h-52 bg-slate-100 overflow-hidden">
@@ -374,18 +375,18 @@ export default function PublicView() {
       );
     }
 
-    const renderGrid = (items: any[]) => (
-      <div className="grid grid-cols-2 gap-3.5 sm:hidden">
+    const renderGrid = (items: any[], threeCol?: boolean) => (
+      <div className={`grid ${threeCol ? 'grid-cols-3' : 'grid-cols-2'} gap-3.5 sm:hidden`}>
         {items.map((off) => (
           <OfficialCard key={off.id} off={off} cat={cat} navigate={navigate} />
         ))}
       </div>
     );
 
-    const renderDesktopFlex = (items: any[]) => (
+    const renderDesktopFlex = (items: any[], threeCol?: boolean) => (
       <div className="hidden sm:flex flex-wrap justify-center gap-4 sm:gap-6">
         {items.map((off) => (
-          <OfficialCard key={off.id} off={off} cat={cat} navigate={navigate} />
+          <OfficialCard key={off.id} off={off} cat={cat} navigate={navigate} threeCol={threeCol} />
         ))}
       </div>
     );
@@ -396,12 +397,12 @@ export default function PublicView() {
 
       return (
         <div className="space-y-6">
-          {renderGrid(topRow)}
-          {renderDesktopFlex(topRow)}
+          {renderGrid(topRow, true)}
+          {renderDesktopFlex(topRow, true)}
           {remaining.length > 0 && (
             <div className="pt-2">
-              {renderGrid(remaining)}
-              {renderDesktopFlex(remaining)}
+              {renderGrid(remaining, true)}
+              {renderDesktopFlex(remaining, true)}
             </div>
           )}
         </div>
