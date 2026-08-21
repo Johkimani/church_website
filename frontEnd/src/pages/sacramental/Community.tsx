@@ -46,11 +46,11 @@ const TAB_LABELS: Record<string, string> = {
 };
 
 const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
-  choir: ['choir_chairperson', 'choir_secretary', 'choir_project_coordinator'],
-  dancers: ['dance_chair'],
-  charismatic: ['charismatic_chair'],
-  'st-francis': ['st_francis_chair'],
-  mentorship: ['mentorship_chair'],
+  choir: ['CHOIR_CHAIRPERSON', 'CHOIR_SECRETARY', 'CHOIR_PROJECT_COORDINATOR'],
+  dancers: ['DANCE_CHAIR'],
+  charismatic: ['CHARISMATIC_CHAIR'],
+  'st-francis': ['ST_FRANCIS_CHAIR'],
+  mentorship: ['MENTORSHIP_CHAIR'],
 };
 
 const Community: React.FC = () => {
