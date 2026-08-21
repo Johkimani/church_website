@@ -14,27 +14,30 @@
     position: sticky;
     top: 72px;
     /* Clears the sticky header */
+    max-height: calc(100vh - 72px);
+    overflow: hidden;
     z-index: 40;
     transition: transform var(--t-base);
 }
 
 .sidebar-header {
-    padding: var(--space-xl);
+    padding: 16px;
     text-align: center;
-    border-bottom: 1px solid var(--border-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
 }
 
 .sidebar-icon {
-    width: 80px;
-    height: 80px;
+    width: 56px;
+    height: 56px;
     border-radius: var(--rl);
-    margin: 0 auto var(--space-md);
+    margin: 0 auto var(--space-sm);
     box-shadow: var(--shadow-lg);
     border: 3px solid rgba(255, 255, 255, 0.25);
 }
 
 .sidebar-title {
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     font-family: 'Outfit', sans-serif;
     color: white;
     font-weight: 800;
@@ -42,27 +45,44 @@
 
 .sidebar-nav {
     flex: 1;
-    padding: var(--space-lg) var(--space-md);
+    min-height: 0;
+    padding: 10px 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 3px;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 99px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    gap: var(--space-md);
-    padding: 0.75rem var(--space-lg);
+    gap: 10px;
+    padding: 0.45rem 0.9rem;
     background: transparent;
     border: none;
     border-radius: var(--rm);
     color: rgba(255, 255, 255, 0.65);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: var(--t-fast);
     text-align: left;
+    flex-shrink: 0;
 }
 
 .nav-item:hover {
@@ -77,14 +97,15 @@
 }
 
 .nav-icon {
-    font-size: 1.2rem;
+    font-size: 1rem;
     display: flex;
     color: currentColor;
 }
 
 .sidebar-footer {
-    padding: var(--space-xl) var(--space-lg);
+    padding: 12px 14px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 /* Main Content */
