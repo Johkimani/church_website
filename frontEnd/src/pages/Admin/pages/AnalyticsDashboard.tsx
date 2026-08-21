@@ -199,10 +199,10 @@ export default function AnalyticsDashboard() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Sub-tab Navigation */}
-      <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 w-fit overflow-x-auto">
+      <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 w-full lg:w-fit overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           onClick={() => setActiveSubTab("overview")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "overview"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -212,7 +212,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("cohort")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "cohort"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -222,7 +222,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("cross")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "cross"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -232,7 +232,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("jumuiya")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "jumuiya"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -242,7 +242,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("yearly")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "yearly"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -263,48 +263,48 @@ export default function AnalyticsDashboard() {
       ) : (
       <>
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Users size={18} className="text-blue-200" />
+            <Users size={18} className="text-blue-200 shrink-0" />
             <span className="text-[11px] text-blue-200 font-medium">Total Registered</span>
           </div>
-          <p className="text-3xl font-bold">{overview.totalRegistered}</p>
+          <p className="text-2xl sm:text-3xl font-bold tracking-tight">{overview.totalRegistered}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Church size={18} className="text-purple-500" />
+            <Church size={18} className="text-purple-500 shrink-0" />
             <span className="text-[11px] text-slate-500 font-medium">Total Members</span>
           </div>
-          <p className="text-3xl font-bold text-slate-800">{overview.totalMembers}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">{overview.totalMembers}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={18} className="text-emerald-500" />
+            <TrendingUp size={18} className="text-emerald-500 shrink-0" />
             <span className="text-[11px] text-slate-500 font-medium">Registration Rate</span>
           </div>
-          <p className="text-3xl font-bold text-emerald-600">{overview.registrationRate}%</p>
+          <p className="text-2xl sm:text-3xl font-bold text-emerald-600 tracking-tight">{overview.registrationRate}%</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Smartphone size={16} className="text-emerald-200" />
+            <Smartphone size={16} className="text-emerald-200 shrink-0" />
             <span className="text-[11px] text-emerald-200 font-medium">M-Pesa</span>
           </div>
-          <p className="text-2xl font-bold">KES {Number(paymentSummary.mpesa_success_amount || 0).toLocaleString()}</p>
+          <p className="text-lg sm:text-2xl font-bold tracking-tight">KES {Number(paymentSummary.mpesa_success_amount || 0).toLocaleString()}</p>
         </div>
         <div className="bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Wallet size={16} className="text-yellow-200" />
+            <Wallet size={16} className="text-yellow-200 shrink-0" />
             <span className="text-[11px] text-yellow-200 font-medium">Manual (Cash)</span>
           </div>
-          <p className="text-2xl font-bold">KES {Number(paymentSummary.manual_success_amount || 0).toLocaleString()}</p>
+          <p className="text-lg sm:text-2xl font-bold tracking-tight">KES {Number(paymentSummary.manual_success_amount || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CreditCard size={18} className="text-amber-500" />
+            <CreditCard size={18} className="text-amber-500 shrink-0" />
             <span className="text-[11px] text-slate-500 font-medium">Grand Total</span>
           </div>
-          <p className="text-3xl font-bold text-slate-800">KES {Number(paymentSummary.total_amount || 0).toLocaleString()}</p>
+          <p className="text-lg sm:text-3xl font-bold text-slate-800 tracking-tight">KES {Number(paymentSummary.total_amount || 0).toLocaleString()}</p>
           <p className="text-[10px] text-slate-400 mt-0.5">{paymentSummary.total_transactions || 0} transactions</p>
         </div>
       </div>
@@ -323,21 +323,21 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Payment Status Row — clickable */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {paymentCards.map(card => {
           const styles = STATUS_STYLES[card.key] || STATUS_STYLES.pending;
           return (
             <button
               key={card.key}
               onClick={() => openPayments(card.key)}
-              className={`${styles.bg} rounded-xl p-3 flex items-center gap-3 hover:ring-2 hover:ring-offset-1 hover:ring-blue-300 transition-all text-left group`}
+              className={`${styles.bg} rounded-xl p-2 sm:p-3 flex items-center gap-2 sm:gap-3 hover:ring-2 hover:ring-offset-1 hover:ring-blue-300 transition-all text-left group min-h-[52px]`}
             >
-              <card.icon size={20} className={styles.text} />
-              <div className="flex-1">
-                <p className={`text-lg font-bold ${styles.text}`}>{card.count}</p>
-                <p className={`text-[10px] ${styles.text} font-medium`}>{card.label}</p>
+              <card.icon size={18} className={`${styles.text} shrink-0 sm:!w-5 sm:!h-5`} />
+              <div className="flex-1 min-w-0">
+                <p className={`text-base sm:text-lg font-bold ${styles.text}`}>{card.count}</p>
+                <p className={`text-[10px] ${styles.text} font-medium truncate`}>{card.label}</p>
               </div>
-              <ExternalLink size={14} className={`${styles.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+              <ExternalLink size={14} className={`${styles.text} opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block`} />
             </button>
           );
         })}
@@ -501,8 +501,8 @@ export default function AnalyticsDashboard() {
       </div>
 
       {showPayments && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPayments(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-0" onClick={() => setShowPayments(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg sm:mx-4 max-h-[92vh] sm:max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div>
