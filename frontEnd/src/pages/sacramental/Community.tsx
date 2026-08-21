@@ -73,16 +73,12 @@ const Community: React.FC = () => {
       activeModules = modules || [];
     } else {
       // Filter modules based on user's group role
-      const userModule = userRoles.find((r) => GROUP_ROLES_BY_MODULE[r]);
-      if (userModule) {
-        const allowed = GROUP_ROLES_BY_MODULE[userModule];
-        activeModules = (modules || []).filter((mod) =>
-          allowed.some((role) => userRoles.includes(role))
-        );
-      } else {
-        // No matching group role; show no modules or fallback
-        activeModules = [];
-      }
+      // Check each module: if any of the user's roles match this module's allowed roles, include it
+      activeModules = (modules || []).filter((mod) => {
+        const allowedRoles = GROUP_ROLES_BY_MODULE[mod.id || mod];
+        if (!allowedRoles) return false;
+        return allowedRoles.some((role) => userRoleUpper.includes(role));
+      });
     }
   } else {
     // No user data; show all modules as default
