@@ -506,7 +506,7 @@ export default function UniversalAdmin() {
 
         {/* Dynamic Content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
+          <div className="p-3 sm:p-5 lg:p-8 w-full max-w-[1600px] mx-auto">
             {hasAccess ? <Outlet /> : <ArtDeco404 />}
           </div>
         </main>

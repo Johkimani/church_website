@@ -656,19 +656,19 @@ export default function CommunityDetailEditor() {
       </div>
 
       {/* ══════════════════════════════════════════════════════
-          MAIN CONTENT: SIDEBAR TABS + CONTENT PANEL (DARK THEME)
+          MAIN CONTENT: RESPONSIVE TABS + CONTENT PANEL (DARK THEME)
       ══════════════════════════════════════════════════════ */}
-      <div className="flex gap-0 min-h-[600px] bg-slate-900 border-x border-b border-slate-800 rounded-b-3xl overflow-hidden shadow-2xl">
+      <div className="flex flex-col lg:flex-row gap-0 min-h-[600px] bg-slate-900 border-x border-b border-slate-800 rounded-b-3xl overflow-hidden shadow-2xl">
 
-        {/* ── Sidebar Tab Navigation ── */}
-        <div className="w-52 shrink-0 bg-slate-950/90 border-r border-slate-800 flex flex-col py-2">
+        {/* ── Sidebar / Mobile Horizontal Tab Navigation ── */}
+        <div className="w-full lg:w-56 shrink-0 bg-slate-950/90 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible py-2 px-2 lg:px-0 no-scrollbar">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`group relative flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-xl text-left text-xs font-black transition-all ${
+                className={`group relative flex items-center gap-2.5 px-3.5 lg:px-4 py-2.5 lg:py-3 lg:mx-2 my-0.5 rounded-xl text-left text-xs font-black transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'text-white shadow-xl ring-1 ring-white/20'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
@@ -681,21 +681,20 @@ export default function CommunityDetailEditor() {
                 } : {}}
               >
                 {isActive && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white animate-pulse hidden lg:block" />
                 )}
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                <div className={`w-6 h-6 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
                   isActive ? 'bg-white/25 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-white group-hover:bg-slate-700'
                 }`}>
-                  <tab.icon size={14} className="text-current" />
+                  <tab.icon size={13} className="text-current" />
                 </div>
                 <span className="leading-tight tracking-wide">{tab.label}</span>
               </button>
-
             );
           })}
 
-          {/* Sidebar footer */}
-          <div className="mt-auto px-4 py-4 border-t border-slate-800">
+          {/* Sidebar footer (desktop only) */}
+          <div className="hidden lg:block mt-auto px-4 py-4 border-t border-slate-800">
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Admin Panel</p>
             <p className="text-[10px] text-slate-400 font-medium mt-0.5">{moduleMeta?.title || categoryId}</p>
           </div>
@@ -703,6 +702,7 @@ export default function CommunityDetailEditor() {
 
         {/* ── Tab Content Area ── */}
         <div className="flex-1 overflow-hidden flex flex-col min-w-0 bg-slate-900">
+
 
           {/* ── Content Inner Header ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
