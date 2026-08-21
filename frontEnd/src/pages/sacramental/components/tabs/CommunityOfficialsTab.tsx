@@ -61,6 +61,7 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<string>('all');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [lightboxOfficial, setLightboxOfficial] = useState<ArchivedOfficial | null>(null);
 
   const _c = (s: string) => color.length > 7 ? color.slice(0, 7) + s : color + s;
 
@@ -82,10 +83,7 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
       .finally(() => setLoadingHistory(false));
   }, [moduleId]);
 
-  const filteredHistory = formerOfficials.filter(f => {
-    if (historyFilter === 'all') return true;
-    return f.category === historyFilter;
-  });
+  const filteredHistory = formerOfficials;
 
   const historyTerms = [...new Set(filteredHistory.map(f => f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')))].sort().reverse();
 
@@ -212,8 +210,8 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
           </div>
         ) : (
           <>
-            {/* History filter */}
-            {formerOfficials.length > 0 && (
+            {/* History term filter */}
+            {historyTerms.length > 1 && (
               <div className="flex items-center gap-2 mb-6">
                 <FaFilter size={12} className="text-gray-400" />
                 <div className="flex flex-wrap gap-2">
@@ -225,19 +223,19 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
                         : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
                     }`}
                   >
-                    All Groups
+                    All Terms
                   </button>
-                  {[...new Set(formerOfficials.map(f => f.category))].map(cat => (
+                  {historyTerms.map(term => (
                     <button
-                      key={cat}
-                      onClick={() => setHistoryFilter(cat)}
+                      key={term}
+                      onClick={() => setHistoryFilter(term)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                        historyFilter === cat
+                        historyFilter === term
                           ? 'bg-[var(--jumuiya-color)] text-white border-[var(--jumuiya-color)]'
                           : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
                       }`}
                     >
-                      {cat}
+                      {term}
                     </button>
                   ))}
                 </div>
@@ -245,33 +243,70 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
             )}
 
             <div className="space-y-10">
-              {historyTerms.map(term => (
-                <div key={term} className="flex flex-col md:flex-row gap-6">
-                  <div className="md:w-32 flex-shrink-0">
-                    <span className="px-4 py-1.5 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] font-bold rounded-lg text-sm sticky top-24">
-                      {term}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-4 flex-1">
-                    {filteredHistory.filter(f => (f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')) === term).map(f => (
-                      <div key={f.id} className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow min-w-[200px]">
-                        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                          <Avatar name={f.name} image={f.photo || undefined} size="sm" />
+              {(historyFilter === 'all' ? historyTerms : [historyFilter]).filter(Boolean).map(term => {
+                const termOfficials = filteredHistory.filter(f => (f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')) === term);
+                if (termOfficials.length === 0) return null;
+                return (
+                  <div key={term} className="flex flex-col md:flex-row gap-6">
+                    <div className="md:w-32 flex-shrink-0">
+                      <span className="px-4 py-1.5 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] font-bold rounded-lg text-sm sticky top-24">
+                        {term}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 flex-1">
+                      {termOfficials.map(f => (
+                        <div
+                          key={f.id}
+                          onClick={() => f.photo && setLightboxOfficial(f)}
+                          className={`bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow ${f.photo ? 'cursor-pointer' : ''}`}
+                        >
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                            <Avatar name={f.name} image={f.photo || undefined} size="sm" />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-gray-900 truncate">{f.name}</h4>
+                            <p className="text-xs text-gray-500 truncate">{f.position}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-900">{f.name}</h4>
-                          <p className="text-xs text-gray-500">{f.position}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      {lightboxOfficial && lightboxOfficial.photo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setLightboxOfficial(null)}
+        >
+          <div
+            className="relative max-w-sm w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={lightboxOfficial.photo}
+              alt={lightboxOfficial.name}
+              className="w-full aspect-[3/4] object-cover"
+            />
+            <div className="p-4 text-center">
+              <h3 className="font-bold text-gray-900">{lightboxOfficial.name}</h3>
+              <p className="text-sm text-gray-500 mt-1">{lightboxOfficial.position}</p>
+            </div>
+            <button
+              onClick={() => setLightboxOfficial(null)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg font-bold"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
