@@ -393,37 +393,48 @@ const CommunityJoinPage: React.FC = () => {
                   {step === 2 && isChoir && (
                     <>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Voice Type *</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {VOICE_TYPES.map((v) => (
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Choir Voice Section (SATB) *</label>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {[
+                            { key: 'Soprano', label: 'Soprano', sub: 'High Female Voice' },
+                            { key: 'Alto', label: 'Alto', sub: 'Low Female Voice' },
+                            { key: 'Tenor', label: 'Tenor', sub: 'High Male Voice' },
+                            { key: 'Bass', label: 'Bass', sub: 'Deep Male Voice' },
+                          ].map((v) => (
                             <button
-                              key={v}
+                              key={v.key}
                               type="button"
-                              onClick={() => handleChange('voiceType', v)}
-                              className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                form.voiceType === v ? 'text-white shadow-md' : 'text-slate-500 bg-slate-50 border border-slate-200 hover:border-slate-300'
+                              onClick={() => handleChange('voiceType', v.key)}
+                              className={`p-3 rounded-2xl text-left transition-all cursor-pointer border ${
+                                form.voiceType === v.key ? 'text-white shadow-md border-transparent' : 'text-slate-700 bg-slate-50 border-slate-200 hover:border-slate-300'
                               }`}
-                              style={form.voiceType === v ? { background: color } : {}}
+                              style={form.voiceType === v.key ? { background: color } : {}}
                             >
-                              {v}
+                              <div className="font-black text-sm">{v.label}</div>
+                              <div className={`text-[10px] font-semibold mt-0.5 ${form.voiceType === v.key ? 'text-white/80' : 'text-slate-400'}`}>{v.sub}</div>
                             </button>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Music Level</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {MUSIC_LEVELS.map((l) => (
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Sight-Reading & Music Level</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { key: 'Beginner', label: 'Beginner', desc: 'Solfa Learner' },
+                            { key: 'Intermediate', label: 'Intermediate', desc: 'Sight-reader' },
+                            { key: 'Advanced', label: 'Advanced', desc: 'Soloist/Trainer' },
+                          ].map((l) => (
                             <button
-                              key={l}
+                              key={l.key}
                               type="button"
-                              onClick={() => handleChange('musicLevel', l)}
-                              className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                form.musicLevel === l ? 'text-white shadow-md' : 'text-slate-500 bg-slate-50 border border-slate-200 hover:border-slate-300'
+                              onClick={() => handleChange('musicLevel', l.key)}
+                              className={`p-2.5 rounded-xl text-center transition-all cursor-pointer border ${
+                                form.musicLevel === l.key ? 'text-white shadow-md border-transparent' : 'text-slate-600 bg-slate-50 border-slate-200 hover:border-slate-300'
                               }`}
-                              style={form.musicLevel === l ? { background: color } : {}}
+                              style={form.musicLevel === l.key ? { background: color } : {}}
                             >
-                              {l}
+                              <div className="font-bold text-xs">{l.label}</div>
+                              <div className={`text-[9px] mt-0.5 ${form.musicLevel === l.key ? 'text-white/80' : 'text-slate-400'}`}>{l.desc}</div>
                             </button>
                           ))}
                         </div>

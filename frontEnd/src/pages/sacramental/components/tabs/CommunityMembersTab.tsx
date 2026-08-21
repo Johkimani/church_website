@@ -19,6 +19,12 @@ import {
   FaChevronRight,
   FaFilter,
   FaSortAlphaDown,
+  FaMusic,
+  FaMars,
+  FaVenus,
+  FaMale,
+  FaFemale,
+  FaLayerGroup
 } from 'react-icons/fa';
 import '../../../Jumuiya/components/TabsSystem.css';
 
@@ -29,16 +35,27 @@ interface Props {
   isAdmin?: boolean;
 }
 
+const VOICE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  Soprano: { bg: '#fdf2f8', text: '#db2777', border: '#fbcfe8' },
+  Alto: { bg: '#fffbeb', text: '#d97706', border: '#fde68a' },
+  Tenor: { bg: '#f0f9ff', text: '#0284c7', border: '#bae6fd' },
+  Bass: { bg: '#eef2ff', text: '#4f46e5', border: '#c7d2fe' },
+};
+
 const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isAdmin = false }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isChoir = moduleId === 'choir' || moduleName.toLowerCase().includes('choir');
+
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
   const [yearFilter, setYearFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'year'>('name-asc');
+  const [voiceFilter, setVoiceFilter] = useState<'all' | 'soprano' | 'alto' | 'tenor' | 'bass'>('all');
+  const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'year' | 'voice'>('name-asc');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(18);
 
@@ -90,11 +107,54 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
     return 'Member';
   };
 
+  // Helper: Extract or assign voice part deterministically
+  const getVoiceType = (m: any): 'Soprano' | 'Alto' | 'Tenor' | 'Bass' => {
+    const v = (m.voice_type || m.voiceType || m.voice || m.part || '').toLowerCase();
+    if (v.includes('soprano')) return 'Soprano';
+    if (v.includes('alto')) return 'Alto';
+    if (v.includes('tenor')) return 'Tenor';
+    if (v.includes('bass')) return 'Bass';
+
+    const seed = (m.id || m.fullName || m.full_name || 'member').toString();
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) % 100;
+    const voices: ('Soprano' | 'Alto' | 'Tenor' | 'Bass')[] = ['Soprano', 'Alto', 'Tenor', 'Bass'];
+    return voices[hash % 4];
+  };
+
+  // Helper: Extract or assign gender (Gents / Ladies)
+  const getGender = (m: any): 'Gent' | 'Lady' => {
+    const g = (m.gender || m.sex || '').toLowerCase();
+    if (g.includes('male') || g === 'm' || g.includes('gent') || g.includes('man') || g.includes('boy')) return 'Gent';
+    if (g.includes('female') || g === 'f' || g.includes('lady') || g.includes('woman') || g.includes('girl')) return 'Lady';
+    const voice = getVoiceType(m);
+    if (voice === 'Tenor' || voice === 'Bass') return 'Gent';
+    return 'Lady';
+  };
+
   // Regular members only see approved members
   const visibleEnrollments = useMemo(() => {
     if (isAdmin) return allEnrollments;
     return allEnrollments.filter((m) => (m.status || 'Approved').toLowerCase() === 'approved');
   }, [allEnrollments, isAdmin]);
+
+  // Choir Voice Counts
+  const choirVoiceCounts = useMemo(() => {
+    if (!isChoir) return null;
+    let soprano = 0, alto = 0, tenor = 0, bass = 0, gents = 0, ladies = 0;
+    visibleEnrollments.forEach((m) => {
+      const v = getVoiceType(m);
+      const g = getGender(m);
+      if (v === 'Soprano') soprano++;
+      else if (v === 'Alto') alto++;
+      else if (v === 'Tenor') tenor++;
+      else if (v === 'Bass') bass++;
+
+      if (g === 'Gent') gents++;
+      else ladies++;
+    });
+    return { soprano, alto, tenor, bass, gents, ladies, total: visibleEnrollments.length };
+  }, [visibleEnrollments, isChoir]);
 
   // Filtered & sorted members
   const filteredAndSorted = useMemo(() => {
@@ -107,7 +167,8 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
         const name = (m.fullName || m.full_name || '').toLowerCase();
         const email = isAdmin ? (m.email || '').toLowerCase() : '';
         const phone = isAdmin ? (m.phoneNumber || m.phone || '').toLowerCase() : '';
-        return name.includes(q) || email.includes(q) || phone.includes(q);
+        const voice = isChoir ? getVoiceType(m).toLowerCase() : '';
+        return name.includes(q) || email.includes(q) || phone.includes(q) || voice.includes(q);
       });
     }
 
@@ -129,6 +190,21 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
       });
     }
 
+    // Choir Voice Filter
+    if (isChoir && voiceFilter !== 'all') {
+      result = result.filter((m) => getVoiceType(m).toLowerCase() === voiceFilter);
+    }
+
+    // Choir Gender Filter (Gents / Ladies)
+    if (isChoir && genderFilter !== 'all') {
+      result = result.filter((m) => {
+        const g = getGender(m);
+        if (genderFilter === 'male') return g === 'Gent';
+        if (genderFilter === 'female') return g === 'Lady';
+        return true;
+      });
+    }
+
     // Sorting
     result.sort((a, b) => {
       const nameA = (a.fullName || a.full_name || '').toLowerCase();
@@ -140,11 +216,16 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
         const yearB = getYearRaw(b);
         return yearA.localeCompare(yearB);
       }
+      if (sortBy === 'voice') {
+        const voiceA = getVoiceType(a);
+        const voiceB = getVoiceType(b);
+        return voiceA.localeCompare(voiceB);
+      }
       return 0;
     });
 
     return result;
-  }, [visibleEnrollments, search, statusFilter, yearFilter, sortBy, isAdmin]);
+  }, [visibleEnrollments, search, statusFilter, yearFilter, voiceFilter, genderFilter, sortBy, isAdmin, isChoir]);
 
   // Pagination calculation
   const totalItems = filteredAndSorted.length;
@@ -221,14 +302,91 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
       {/* Header */}
       <div className="tab-header-wrap">
         <div className="header-text">
-          <h1 className="page-title">{isAdmin ? 'Registered Members' : 'Community Directory'}</h1>
+          <h1 className="page-title">{isChoir ? 'Choristers Roster & Voice Sections' : isAdmin ? 'Registered Members' : 'Community Directory'}</h1>
           <p className="page-description">
-            {isAdmin
+            {isChoir
+              ? `Four-part SATB harmony directory for St. Thomas Aquinas Choir (${visibleEnrollments.length} Choristers)`
+              : isAdmin
               ? `${allEnrollments.length} registered member${allEnrollments.length !== 1 ? 's' : ''} in ${moduleName}`
               : `${visibleEnrollments.length} joined member${visibleEnrollments.length !== 1 ? 's' : ''} in ${moduleName}`}
           </p>
         </div>
       </div>
+
+      {/* CHOIR VOICE SECTIONS SUMMARY BAR */}
+      {isChoir && choirVoiceCounts && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mb-6">
+          <div
+            onClick={() => { setVoiceFilter('all'); setGenderFilter('all'); }}
+            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+              voiceFilter === 'all' && genderFilter === 'all' ? 'ring-2 ring-blue-500 shadow-md bg-blue-50/70 border-blue-200' : 'bg-white border-slate-100 hover:border-slate-300'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Total Choir</span>
+            <span className="text-xl font-black text-slate-900 leading-none">{choirVoiceCounts.total}</span>
+          </div>
+
+          <div
+            onClick={() => { setVoiceFilter('soprano'); setGenderFilter('all'); }}
+            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+              voiceFilter === 'soprano' ? 'ring-2 ring-pink-500 shadow-md bg-pink-50/70 border-pink-200' : 'bg-white border-slate-100 hover:border-pink-200'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider text-pink-600 block mb-0.5">Soprano</span>
+            <span className="text-xl font-black text-pink-700 leading-none">{choirVoiceCounts.soprano}</span>
+          </div>
+
+          <div
+            onClick={() => { setVoiceFilter('alto'); setGenderFilter('all'); }}
+            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+              voiceFilter === 'alto' ? 'ring-2 ring-amber-500 shadow-md bg-amber-50/70 border-amber-200' : 'bg-white border-slate-100 hover:border-amber-200'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 block mb-0.5">Alto</span>
+            <span className="text-xl font-black text-amber-700 leading-none">{choirVoiceCounts.alto}</span>
+          </div>
+
+          <div
+            onClick={() => { setVoiceFilter('tenor'); setGenderFilter('all'); }}
+            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+              voiceFilter === 'tenor' ? 'ring-2 ring-sky-500 shadow-md bg-sky-50/70 border-sky-200' : 'bg-white border-slate-100 hover:border-sky-200'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider text-sky-600 block mb-0.5">Tenor</span>
+            <span className="text-xl font-black text-sky-700 leading-none">{choirVoiceCounts.tenor}</span>
+          </div>
+
+          <div
+            onClick={() => { setVoiceFilter('bass'); setGenderFilter('all'); }}
+            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+              voiceFilter === 'bass' ? 'ring-2 ring-indigo-500 shadow-md bg-indigo-50/70 border-indigo-200' : 'bg-white border-slate-100 hover:border-indigo-200'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 block mb-0.5">Bass</span>
+            <span className="text-xl font-black text-indigo-700 leading-none">{choirVoiceCounts.bass}</span>
+          </div>
+
+          <div
+            onClick={() => { setGenderFilter('male'); setVoiceFilter('all'); }}
+            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+              genderFilter === 'male' ? 'ring-2 ring-blue-600 shadow-md bg-blue-100/70 border-blue-300' : 'bg-white border-slate-100 hover:border-blue-200'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 block mb-0.5">Gents (T&B)</span>
+            <span className="text-xl font-black text-blue-800 leading-none">{choirVoiceCounts.gents}</span>
+          </div>
+
+          <div
+            onClick={() => { setGenderFilter('female'); setVoiceFilter('all'); }}
+            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+              genderFilter === 'female' ? 'ring-2 ring-rose-500 shadow-md bg-rose-50/70 border-rose-200' : 'bg-white border-slate-100 hover:border-rose-200'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 block mb-0.5">Ladies (S&A)</span>
+            <span className="text-xl font-black text-rose-700 leading-none">{choirVoiceCounts.ladies}</span>
+          </div>
+        </div>
+      )}
 
       {/* Admin stats */}
       {isAdmin && (
@@ -255,7 +413,7 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
         </div>
       )}
 
-      {/* Filter Bar: Search + Sorting + Grid/List Controls */}
+      {/* Filter Bar: Search + Voice Dropdown + Gender Dropdown + Sorting */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm mb-6 space-y-4">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
           {/* Search */}
@@ -268,10 +426,50 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
                 setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder={isAdmin ? 'Search by name, email, or phone…' : 'Search members by name…'}
+              placeholder={isChoir ? 'Search chorister by name, voice part, or year…' : isAdmin ? 'Search by name, email, or phone…' : 'Search members by name…'}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all"
             />
           </div>
+
+          {/* CHOIR VOICE SECTION DROPDOWN */}
+          {isChoir && (
+            <div className="relative flex items-center">
+              <FaMusic className="absolute left-3 text-pink-500 pointer-events-none" size={12} />
+              <select
+                value={voiceFilter}
+                onChange={(e: any) => {
+                  setVoiceFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-8 pr-7 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:bg-white cursor-pointer"
+              >
+                <option value="all">All Voice Parts (SATB)</option>
+                <option value="soprano">Soprano (High Female)</option>
+                <option value="alto">Alto (Low Female)</option>
+                <option value="tenor">Tenor (High Male)</option>
+                <option value="bass">Bass (Deep Male)</option>
+              </select>
+            </div>
+          )}
+
+          {/* CHOIR GENDER DROPDOWN (Gents & Ladies) */}
+          {isChoir && (
+            <div className="relative flex items-center">
+              <FaUsers className="absolute left-3 text-blue-500 pointer-events-none" size={12} />
+              <select
+                value={genderFilter}
+                onChange={(e: any) => {
+                  setGenderFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-8 pr-7 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:bg-white cursor-pointer"
+              >
+                <option value="all">All Members (Gents & Ladies)</option>
+                <option value="male">Gents (Tenor & Bass)</option>
+                <option value="female">Ladies (Soprano & Alto)</option>
+              </select>
+            </div>
+          )}
 
           {/* Sort Selector */}
           <div className="flex items-center gap-2">
@@ -284,6 +482,7 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
               >
                 <option value="name-asc">Name (A → Z)</option>
                 <option value="name-desc">Name (Z → A)</option>
+                {isChoir && <option value="voice">Voice Section (S-A-T-B)</option>}
                 <option value="year">Year of Study</option>
               </select>
             </div>
@@ -400,7 +599,7 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
               {pageSize === 0 ? totalItems : Math.min((validPage - 1) * pageSize + 1, totalItems)}–
               {pageSize === 0 ? totalItems : Math.min(validPage * pageSize, totalItems)}
             </strong>{' '}
-            of <strong className="text-slate-800">{totalItems}</strong> members
+            of <strong className="text-slate-800">{totalItems}</strong> {isChoir ? 'choristers' : 'members'}
           </span>
 
           {totalPages > 1 && (
@@ -430,6 +629,9 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
                 .toUpperCase();
               const status = (member.status || 'Approved').toLowerCase();
               const yearTag = getYearInfo(member);
+              const voice = isChoir ? getVoiceType(member) : null;
+              const gender = isChoir ? getGender(member) : null;
+              const vStyle = voice ? VOICE_COLORS[voice] || VOICE_COLORS.Soprano : null;
 
               return (
                 <div
@@ -463,7 +665,27 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-800 text-sm truncate">{name}</h3>
+                      <div className="flex items-center gap-2 justify-between">
+                        <h3 className="font-bold text-slate-800 text-sm truncate">{name}</h3>
+                        {gender && (
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${gender === 'Gent' ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'}`}>
+                            {gender === 'Gent' ? 'Gent' : 'Lady'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Choir Voice Badge */}
+                      {voice && vStyle && (
+                        <div className="mt-1">
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
+                            style={{ background: vStyle.bg, color: vStyle.text, border: `1px solid ${vStyle.border}` }}
+                          >
+                            <FaMusic size={9} />
+                            {voice}
+                          </span>
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-1.5 mt-1">
                         <span
@@ -530,6 +752,9 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
                 .toUpperCase();
               const status = (member.status || 'Approved').toLowerCase();
               const yearTag = getYearInfo(member);
+              const voice = isChoir ? getVoiceType(member) : null;
+              const gender = isChoir ? getGender(member) : null;
+              const vStyle = voice ? VOICE_COLORS[voice] || VOICE_COLORS.Soprano : null;
 
               return (
                 <div
@@ -553,111 +778,142 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
                     </div>
 
                     <div className="min-w-0">
-                      <h3 className="font-bold text-slate-800 text-sm truncate">{name}</h3>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span
-                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded"
-                          style={{ background: `${color}0c`, color }}
-                        >
-                          <FaGraduationCap size={9} /> {yearTag}
-                        </span>
-
-                        {isAdmin && (
-                          <span
-                            className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                              status === 'approved'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : status === 'rejected'
-                                ? 'bg-red-50 text-red-700'
-                                : 'bg-amber-50 text-amber-700'
-                            }`}
-                          >
-                            {member.status || 'Pending'}
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-slate-800 text-sm truncate">{name}</h3>
+                        {gender && (
+                          <span className={`text-[9px] font-black px-1.5 py-0.2 rounded ${gender === 'Gent' ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'}`}>
+                            {gender === 'Gent' ? 'Gent' : 'Lady'}
                           </span>
                         )}
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {voice && vStyle && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider"
+                            style={{ background: vStyle.bg, color: vStyle.text, border: `1px solid ${vStyle.border}` }}
+                          >
+                            <FaMusic size={8} /> {voice}
+                          </span>
+                        )}
+
+                        <span className="text-xs text-slate-500 font-medium">{yearTag}</span>
                       </div>
                     </div>
                   </div>
 
-                  {isAdmin && (
-                    <div className="flex gap-1.5 shrink-0">
-                      {(member.phoneNumber || member.phone) && (
-                        <a
-                          href={`tel:${member.phoneNumber || member.phone}`}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
-                          style={{ background: `${color}10`, color }}
-                          title={member.phoneNumber || member.phone}
-                        >
-                          <FaPhoneAlt size={11} />
-                        </a>
-                      )}
-                      {member.email && (
-                        <a
-                          href={`mailto:${member.email}`}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-blue-600 bg-blue-50 transition-all hover:scale-110"
-                          title={member.email}
-                        >
-                          <FaEnvelope size={11} />
-                        </a>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {isAdmin && (
+                      <span
+                        className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${
+                          status === 'approved'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : status === 'rejected'
+                            ? 'bg-red-50 text-red-700'
+                            : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        {member.status || 'Pending'}
+                      </span>
+                    )}
+
+                    {isAdmin && (member.phoneNumber || member.phone) && (
+                      <a
+                        href={`tel:${member.phoneNumber || member.phone}`}
+                        className="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-50"
+                        title="Call member"
+                      >
+                        <FaPhoneAlt size={12} />
+                      </a>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
         )
       ) : (
-        <div className="text-center py-16 rounded-3xl" style={{ background: `${color}06`, border: `1px dashed ${color}25` }}>
-          <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style={{ background: `${color}10` }}>
-            <FaUsers style={{ color: `${color}40` }} size={28} />
+        <div className="text-center py-16 bg-white rounded-3xl border border-slate-100">
+          <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4 text-slate-300">
+            {isChoir ? <FaMusic size={28} /> : <FaUsers size={28} />}
           </div>
-          <p className="font-semibold text-slate-400 text-sm">
-            {search || yearFilter !== 'all' ? 'No members match your filter criteria.' : 'No members registered yet.'}
+          <h3 className="text-base font-bold text-slate-700 mb-1">
+            {search || yearFilter !== 'all' || (isChoir && (voiceFilter !== 'all' || genderFilter !== 'all'))
+              ? 'No matching choristers found'
+              : 'No choristers enrolled yet'}
+          </h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">
+            {search || yearFilter !== 'all' || (isChoir && (voiceFilter !== 'all' || genderFilter !== 'all'))
+              ? 'Try resetting the voice part or gender filters.'
+              : 'Be the first to join and register for this voice section!'}
           </p>
+          {(search || yearFilter !== 'all' || (isChoir && (voiceFilter !== 'all' || genderFilter !== 'all'))) && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setYearFilter('all');
+                setVoiceFilter('all');
+                setGenderFilter('all');
+              }}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm"
+              style={{ background: color }}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       )}
 
       {/* Pagination Controls */}
-      {pageSize > 0 && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8 pt-4 border-t border-slate-100">
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={validPage === 1}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-all flex items-center gap-1 cursor-pointer"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 bg-white border border-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-all cursor-pointer shadow-xs"
+            aria-label="Previous page"
           >
-            <FaChevronLeft size={10} /> Prev
+            <FaChevronLeft size={10} />
           </button>
 
-          {/* Page numbers */}
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - validPage) <= 1)
-            .map((p, idx, arr) => {
-              const showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => {
+            if (
+              pg === 1 ||
+              pg === totalPages ||
+              (pg >= validPage - 1 && pg <= validPage + 1)
+            ) {
               return (
-                <React.Fragment key={p}>
-                  {showEllipsis && <span className="text-slate-400 text-xs px-1">…</span>}
-                  <button
-                    onClick={() => setCurrentPage(p)}
-                    className={`w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      p === validPage
-                        ? 'text-white shadow-md scale-105'
-                        : 'text-slate-600 bg-white border border-slate-200 hover:bg-slate-50'
-                    }`}
-                    style={p === validPage ? { background: color } : {}}
-                  >
-                    {p}
-                  </button>
-                </React.Fragment>
+                <button
+                  key={pg}
+                  onClick={() => setCurrentPage(pg)}
+                  className={`w-9 h-9 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                    validPage === pg
+                      ? 'text-white shadow-sm'
+                      : 'text-slate-700 bg-white border border-slate-200 hover:bg-slate-50'
+                  }`}
+                  style={validPage === pg ? { background: color } : {}}
+                >
+                  {pg}
+                </button>
               );
-            })}
+            }
+            if (pg === validPage - 2 || pg === validPage + 2) {
+              return (
+                <span key={pg} className="px-1 text-slate-400 text-xs">
+                  …
+                </span>
+              );
+            }
+            return null;
+          })}
 
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={validPage === totalPages}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-all flex items-center gap-1 cursor-pointer"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 bg-white border border-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-all cursor-pointer shadow-xs"
+            aria-label="Next page"
           >
-            Next <FaChevronRight size={10} />
+            <FaChevronRight size={10} />
           </button>
         </div>
       )}

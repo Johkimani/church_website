@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
-type TabType = 'about' | 'activities' | 'announcements' | 'members' | 'gallery' | 'tshirts' | 'suggestions';
+type TabType = 'about' | 'activities' | 'announcements' | 'schedules' | 'members' | 'gallery' | 'tshirts' | 'suggestions';
 
 interface GalleryItem {
   id: number;
@@ -81,6 +81,8 @@ export default function CommunityDetailEditor() {
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [choirVoiceFilter, setChoirVoiceFilter] = useState<'all' | 'soprano' | 'alto' | 'tenor' | 'bass'>('all');
+  const [choirGenderFilter, setChoirGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [aboutSaving, setAboutSaving] = useState(false);
   const [aboutForm, setAboutForm] = useState({ biography: '', saint_image_url: '', history_pdf_url: '' });
   const [enrollmentStats, setEnrollmentStats] = useState<{ total: string; approved: string; pending: string; rejected: string } | null>(null);
@@ -192,6 +194,18 @@ export default function CommunityDetailEditor() {
         return;
       }
 
+      if (activeTab === 'schedules') {
+        try {
+          const res = await apiClient.get(`/practice-schedules/${categoryId}`);
+          setData(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+          console.error('Failed to load practice schedules', e);
+          setData([]);
+        }
+        setLoading(false);
+        return;
+      }
+
       let tableName = '';
       switch (activeTab) {
         case 'activities': tableName = 'hub_activities'; break;
@@ -257,6 +271,30 @@ export default function CommunityDetailEditor() {
         setUploading(false);
       }
 
+      if (activeTab === 'schedules') {
+        if (!formValues.day || !formValues.start_time || !formValues.location) {
+          return alert('Day, Start Time, and Location are required');
+        }
+        const payload = {
+          module_id: categoryId,
+          day: formValues.day || 'Saturday',
+          start_time: formValues.start_time,
+          end_time: formValues.end_time || formValues.start_time,
+          location: formValues.location,
+          sort_order: Number(formValues.sort_order || 0)
+        };
+        if (editingItem?.id) {
+          await apiClient.put(`/practice-schedules/${editingItem.id}`, payload);
+          showToast('Practice schedule updated');
+        } else {
+          await apiClient.post('/practice-schedules', payload);
+          showToast('Practice schedule created');
+        }
+        closeModal();
+        await loadCategoryData();
+        return;
+      }
+
       const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : 'enrollments';
       let payload: any = { module_id: categoryId };
 
@@ -314,6 +352,12 @@ export default function CommunityDetailEditor() {
   const handleDelete = async (id: number | string) => {
     if (!confirm('Are you sure? This action cannot be undone.')) return;
     try {
+      if (activeTab === 'schedules') {
+        await apiClient.delete(`/practice-schedules/${id}`);
+        showToast('Schedule deleted');
+        await loadCategoryData();
+        return;
+      }
       const tableName = activeTab === 'activities' ? 'hub_activities' : activeTab === 'announcements' ? 'hub_announcements' : 'enrollments';
       await deleteTableRecord(tableName, id as any);
       showToast('Deleted');
@@ -417,13 +461,60 @@ export default function CommunityDetailEditor() {
     }
   };
 
+  const isStFrancisAdmin = categoryId === 'st-francis';
+  const isDancersAdmin = categoryId === 'dancers';
+  const isChoirAdmin = categoryId === 'choir';
+  const isCharismaticAdmin = categoryId === 'charismatic';
+  const isMentorshipAdmin = categoryId === 'youth' || categoryId === 'mentorship';
+
   const tabs: { id: TabType; label: string; icon: any }[] = [
     { id: 'about', label: 'About Content', icon: Info },
-    { id: 'activities', label: 'Semester Activities', icon: Calendar },
-    { id: 'announcements', label: 'Announcements', icon: Megaphone },
-    { id: 'members', label: 'Registered Members', icon: Users },
+    {
+      id: 'activities',
+      label: isStFrancisAdmin
+        ? 'Feast Days & Outreaches'
+        : isDancersAdmin
+        ? 'Ministrations & Masses'
+        : isCharismaticAdmin
+        ? 'Prayer Vigils & Gatherings'
+        : isMentorshipAdmin
+        ? 'Workshops & Seminars'
+        : 'Activities & Masses',
+      icon: Calendar
+    },
+    {
+      id: 'announcements',
+      label: isStFrancisAdmin
+        ? 'Welfare & Eco Notices'
+        : isDancersAdmin
+        ? 'Costume & Stage Notices'
+        : isCharismaticAdmin
+        ? 'Intercession Bulletins'
+        : isMentorshipAdmin
+        ? 'Cohort & Resource Bulletins'
+        : 'Announcements & Costumes',
+      icon: Megaphone
+    },
+    {
+      id: 'schedules',
+      label: isStFrancisAdmin
+        ? 'Fellowship & SCC Schedule'
+        : isDancersAdmin
+        ? 'Rehearsal & Staging Schedule'
+        : isCharismaticAdmin
+        ? 'Prayer & Vigil Schedule'
+        : isMentorshipAdmin
+        ? 'Cohort & Coaching Sessions'
+        : 'Practice & Rehearsals',
+      icon: Clock
+    },
+    { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Registered Members', icon: Users },
     { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
-    { id: 'tshirts', label: 'T-Shirts & Orders', icon: ShoppingBag },
+    {
+      id: 'tshirts',
+      label: isStFrancisAdmin ? 'Polo Shirts & Uniform Orders' : 'T-Shirts & Orders',
+      icon: ShoppingBag
+    },
     { id: 'suggestions', label: 'Suggestion Box', icon: MessageSquare },
   ];
 
@@ -431,87 +522,244 @@ export default function CommunityDetailEditor() {
     return <PageLoader message={`Connecting to ${categoryId} dashboard`} fullScreen />;
   }
 
+  // Community accent color
+  const accentColor = moduleMeta?.theme_color ||
+    (isChoirAdmin ? '#1e3a5f' : isDancersAdmin ? '#db2777' : isCharismaticAdmin ? '#7c3aed' : isStFrancisAdmin ? '#047857' : isMentorshipAdmin ? '#8e44ad' : '#3b82f6');
+
+  const accentGradient = isChoirAdmin
+    ? 'from-[#1e3a5f] via-[#1e4080] to-[#0f2044]'
+    : isDancersAdmin
+    ? 'from-[#db2777] via-[#be185d] to-[#9d174d]'
+    : isCharismaticAdmin
+    ? 'from-[#7c3aed] via-[#6d28d9] to-[#4c1d95]'
+    : isStFrancisAdmin
+    ? 'from-[#047857] via-[#065f46] to-[#064e3b]'
+    : isMentorshipAdmin
+    ? 'from-[#8e44ad] via-[#7d3c98] to-[#6c3483]'
+    : 'from-[#2563eb] via-[#1d4ed8] to-[#1e40af]';
+
+  const adminDesc = isStFrancisAdmin
+    ? 'Charity outreach • Eco stewardship • SCC fellowship • Member welfare'
+    : isDancersAdmin
+    ? 'Ministrations • Costume notices • Choreography schedules • Gallery'
+    : isCharismaticAdmin
+    ? 'Vigils & gatherings • Intercession bulletins • Prayer schedules • Members'
+    : isMentorshipAdmin
+    ? 'Cohort sessions • Workshops • Mentor pairings • Resource toolkits'
+    : isChoirAdmin
+    ? 'Rehearsals • SATB section management • Anthem schedules • Gallery'
+    : `Resources • Gallery • Attire orders • Member roster`;
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Breadcrumbs & Header */}
-      <div>
-        <button
-          onClick={() => navigate('/admin/community-management')}
-          className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors font-bold text-sm mb-4"
-        >
-          <ArrowLeft size={16} /> Back to Community Management
-        </button>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl"
-              style={{ backgroundColor: moduleMeta?.theme_color || '#3b82f6' }}
-            >
-              <i className={`${moduleMeta?.icon_class} text-2xl`}></i>
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-slate-800 uppercase">{moduleMeta?.title || categoryId} COMMAND CENTER</h2>
-              <p className="text-slate-500 text-sm mt-0.5">Admin Level Access • Manage {categoryId} resources, gallery, attire & members.</p>
-            </div>
-          </div>
-          <a
-            href={`/community/${categoryId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <ExternalLink size={16} /> Public Preview
-          </a>
-        </div>
-      </div>
+    <div className="space-y-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-100/70 border border-slate-200 rounded-2xl w-fit max-w-full overflow-x-auto">
-        {tabs.map(tab => (
+      {/* ══════════════════════════════════════════════════════
+          HERO HEADER BANNER
+      ══════════════════════════════════════════════════════ */}
+      <div className={`relative bg-gradient-to-br ${accentGradient} overflow-hidden`}>
+        {/* Decorative circles */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-10 bg-white" />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full opacity-5 bg-white" />
+        <div className="absolute top-4 right-32 w-20 h-20 rounded-full opacity-10 bg-white" />
+
+        <div className="relative px-6 py-6">
+          {/* Back Navigation */}
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${activeTab === tab.id
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-              }`}
+            onClick={() => navigate('/admin/community-management')}
+            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors font-bold text-sm mb-5 group"
           >
-            <tab.icon size={16} />
-            {tab.label}
+            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition">
+              <ArrowLeft size={14} />
+            </div>
+            Back to Community Hub
           </button>
-        ))}
-      </div>
 
-      {/* Tab Content */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-        {/* Tab Header Controls */}
-        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/30">
-          <div>
-            <h3 className="font-black text-slate-800 uppercase tracking-tight">
-              Manage {tabs.find(t => t.id === activeTab)?.label}
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">Administration for {moduleMeta?.title || categoryId}</p>
-          </div>
-          {activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members' ? (
-            <div className="flex items-center gap-2">
-              <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-2 border rounded-md text-sm mr-2" />
-              <button onClick={openAddModal} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-                <Plus size={18} />
-                Add {activeTab === 'members' ? 'Member' : 'New ' + (activeTab.slice(0, -1))}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+            <div className="flex items-center gap-4">
+              {/* Community Avatar */}
+              <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border-2 border-white/25 flex items-center justify-center text-white shadow-xl shrink-0">
+                {moduleMeta?.icon_class
+                  ? <i className={`${moduleMeta.icon_class} text-2xl`}></i>
+                  : <Users size={26} />}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/50 bg-white/10 px-2 py-0.5 rounded-md">Admin Command Center</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md">● Active</span>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
+                  {moduleMeta?.title || categoryId}
+                </h1>
+                <p className="text-white/55 text-xs mt-1 font-medium">{adminDesc}</p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={`/community/${categoryId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 rounded-xl text-sm font-bold text-white transition-all"
+              >
+                <Eye size={14} /> Preview Live Page
+              </a>
+              <button
+                onClick={openAddModal}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-slate-800 rounded-xl text-sm font-bold hover:bg-white/90 transition-all shadow-lg"
+                style={{ color: accentColor }}
+              >
+                <Plus size={16} /> Add New Record
               </button>
             </div>
-          ) : activeTab === 'gallery' ? (
-            <button onClick={() => setGalleryModal(true)} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-              <Plus size={18} /> Add Community Photo
-            </button>
-          ) : activeTab === 'tshirts' ? (
-            <button onClick={() => setProductModal(true)} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-              <Plus size={18} /> Manage Merchandise / Price
-            </button>
-          ) : null}
+          </div>
+
+          {/* Quick Stats Bar */}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            {[
+              { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' },
+              { label: 'Gallery Photos', value: galleryImages.length, show: activeTab === 'gallery' },
+              { label: 'Products', value: products.length, show: activeTab === 'tshirts' },
+              { label: 'Suggestions', value: suggestions.length, show: activeTab === 'suggestions' },
+            ].filter(s => s.show).map((s, i) => (
+              <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/15">
+                <span className="text-white font-black text-base leading-none">{s.value}</span>
+                <span className="text-white/60 text-[11px] font-semibold">{s.label}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/15">
+              <span className="text-white font-black text-base leading-none">
+                {tabs.findIndex(t => t.id === activeTab) + 1}/{tabs.length}
+              </span>
+              <span className="text-white/60 text-[11px] font-semibold">Active Tab</span>
+            </div>
+          </div>
         </div>
 
-        <div className="p-6">
+        {/* Bottom fade border */}
+        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${accentColor}88, ${accentColor}22, ${accentColor}88)` }} />
+      </div>
+
+      {/* ══════════════════════════════════════════════════════
+          MAIN CONTENT: SIDEBAR TABS + CONTENT PANEL
+      ══════════════════════════════════════════════════════ */}
+      <div className="flex gap-0 min-h-[600px] bg-white border-x border-b border-slate-200 rounded-b-3xl overflow-hidden shadow-xl">
+
+        {/* ── Sidebar Tab Navigation ── */}
+        <div className="w-52 shrink-0 bg-slate-50 border-r border-slate-200/80 flex flex-col py-2">
+          {tabs.map((tab, idx) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`group relative flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-xl text-left text-xs font-bold transition-all ${
+                  isActive
+                    ? 'text-white shadow-md'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+                style={isActive ? { background: accentColor } : {}}
+              >
+                {isActive && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/50" />
+                )}
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                  isActive ? 'bg-white/20' : 'bg-slate-200/60 group-hover:bg-slate-200'
+                }`}>
+                  <tab.icon size={14} className={isActive ? 'text-white' : 'text-slate-500'} />
+                </div>
+                <span className="leading-tight">{tab.label}</span>
+              </button>
+            );
+          })}
+
+          {/* Sidebar footer */}
+          <div className="mt-auto px-4 py-4 border-t border-slate-200/60">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Admin Panel</p>
+            <p className="text-[10px] text-slate-400 font-medium mt-0.5">{moduleMeta?.title || categoryId}</p>
+          </div>
+        </div>
+
+        {/* ── Tab Content Area ── */}
+        <div className="flex-1 overflow-hidden flex flex-col min-w-0">
+
+          {/* ── Content Inner Header ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm"
+                style={{ background: `${accentColor}15`, color: accentColor }}
+              >
+                {(() => { const tab = tabs.find(t => t.id === activeTab); return tab ? <tab.icon size={16} /> : null; })()}
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-slate-800 leading-tight">
+                  {tabs.find(t => t.id === activeTab)?.label}
+                </h2>
+                <p className="text-[11px] text-slate-400 font-medium">{moduleMeta?.title || categoryId} · Administration</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members') && (
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 bg-slate-50 w-36 md:w-48"
+                  />
+                </div>
+              )}
+              {activeTab === 'activities' || activeTab === 'announcements' ? (
+                <button
+                  onClick={openAddModal}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  style={{ background: accentColor }}
+                >
+                  <Plus size={14} /> Add {activeTab === 'activities' ? 'Activity' : 'Announcement'}
+                </button>
+              ) : activeTab === 'members' ? (
+                <button
+                  onClick={openAddModal}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  style={{ background: accentColor }}
+                >
+                  <Plus size={14} /> Add Member
+                </button>
+              ) : activeTab === 'schedules' ? (
+                <button
+                  onClick={openAddModal}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  style={{ background: accentColor }}
+                >
+                  <Plus size={14} /> Add Session
+                </button>
+              ) : activeTab === 'gallery' ? (
+                <button
+                  onClick={() => setGalleryModal(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  style={{ background: accentColor }}
+                >
+                  <Plus size={14} /> Add Photo
+                </button>
+              ) : activeTab === 'tshirts' ? (
+                <button
+                  onClick={() => setProductModal(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md"
+                  style={{ background: accentColor }}
+                >
+                  <Plus size={14} /> Manage Product
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {/* ── Tab Content ── */}
+          <div className="flex-1 overflow-y-auto p-6">
           {/* ABOUT TAB */}
           {activeTab === 'about' && (
             <div className="space-y-6 max-w-2xl">
@@ -772,6 +1020,34 @@ export default function CommunityDetailEditor() {
                 <div className="overflow-x-auto">
                   {activeTab === 'members' ? (
                     <>
+                      {/* Choir specific filter bar in admin */}
+                      {categoryId === 'choir' && (
+                        <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80 mb-4">
+                          <span className="text-xs font-black uppercase tracking-wider text-slate-500">Filter Choir:</span>
+                          <select
+                            value={choirVoiceFilter}
+                            onChange={(e: any) => setChoirVoiceFilter(e.target.value)}
+                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700"
+                          >
+                            <option value="all">All Voices (S-A-T-B)</option>
+                            <option value="soprano">Soprano</option>
+                            <option value="alto">Alto</option>
+                            <option value="tenor">Tenor</option>
+                            <option value="bass">Bass</option>
+                          </select>
+
+                          <select
+                            value={choirGenderFilter}
+                            onChange={(e: any) => setChoirGenderFilter(e.target.value)}
+                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700"
+                          >
+                            <option value="all">All Members (Gents & Ladies)</option>
+                            <option value="male">Gents (Male)</option>
+                            <option value="female">Ladies (Female)</option>
+                          </select>
+                        </div>
+                      )}
+
                       {enrollmentStats && (
                         <div className="grid grid-cols-4 gap-4 mb-6">
                           {[
@@ -791,15 +1067,16 @@ export default function CommunityDetailEditor() {
                         <thead>
                           <tr className="border-b border-slate-100">
                             <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Name</th>
-                            {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+                            {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
                               <>
                                 <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone</th>
                                 <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Email</th>
                               </>
                             ) : (
                               <>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice</th>
-                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Level</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Voice Section</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Gender</th>
+                                <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Skill Level</th>
                               </>
                             )}
                             <th className="py-4 px-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
@@ -808,20 +1085,40 @@ export default function CommunityDetailEditor() {
                         </thead>
                         <tbody>
                           {data.filter(m => {
-                            const name = m.fullName || m.full_name || '';
-                            return name.toLowerCase().includes(searchTerm.toLowerCase());
+                            const name = (m.fullName || m.full_name || '').toLowerCase();
+                            const matchesSearch = name.includes(searchTerm.toLowerCase());
+                            if (!matchesSearch) return false;
+
+                            if (categoryId === 'choir') {
+                              const v = (m.voice_type || m.voiceType || m.voice || '').toLowerCase();
+                              if (choirVoiceFilter !== 'all' && !v.includes(choirVoiceFilter)) return false;
+                              const g = (m.gender || '').toLowerCase();
+                              if (choirGenderFilter === 'male' && !(g.includes('male') || g.includes('gent') || v.includes('tenor') || v.includes('bass'))) return false;
+                              if (choirGenderFilter === 'female' && !(g.includes('female') || g.includes('lady') || v.includes('soprano') || v.includes('alto'))) return false;
+                            }
+                            return true;
                           }).map((member) => (
                             <tr key={member.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                               <td className="py-4 px-4 font-bold text-slate-700">{member.fullName || member.full_name}</td>
-                              {['charismatic', 'dancers', 'youth'].includes(categoryId || '') ? (
+                              {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
                                 <>
                                   <td className="py-4 px-4 text-sm text-slate-600">{member.phoneNumber || member.phone || 'N/A'}</td>
                                   <td className="py-4 px-4 text-sm text-slate-600">{member.email || 'N/A'}</td>
                                 </>
                               ) : (
                                 <>
-                                  <td className="py-4 px-4 text-sm text-slate-600 capitalize">{member.voice_type || 'N/A'}</td>
-                                  <td className="py-4 px-4 text-sm text-slate-600 capitalize">{member.music_level || 'N/A'}</td>
+                                  <td className="py-4 px-4 text-sm text-slate-600 font-bold">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-black uppercase ${
+                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-700' :
+                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-700' :
+                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-700' :
+                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'
+                                    }`}>
+                                      {member.voice_type || 'General'}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 px-4 text-sm text-slate-600 capitalize">{member.gender || 'N/A'}</td>
+                                  <td className="py-4 px-4 text-sm text-slate-600 capitalize">{member.music_level || 'Beginner'}</td>
                                 </>
                               )}
                               <td className="py-4 px-4">
@@ -853,6 +1150,33 @@ export default function CommunityDetailEditor() {
                         </tbody>
                       </table>
                     </>
+                  ) : activeTab === 'schedules' ? (
+                    <div className="space-y-4">
+                      {data.map((item) => (
+                        <div key={item.id} onClick={() => openEditModal(item)} className="p-5 border border-slate-100 rounded-2xl hover:border-purple-200 hover:bg-purple-50/10 transition-all flex items-start justify-between gap-4 group cursor-pointer">
+                          <div className="flex gap-4">
+                            <div className="p-3 rounded-xl shrink-0 bg-purple-100 text-purple-600">
+                              <Clock size={20} />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-slate-800 text-lg uppercase tracking-tight">{item.day}</h4>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-700">
+                                  {item.start_time} – {item.end_time || item.start_time}
+                                </span>
+                              </div>
+                              <p className="text-slate-600 text-sm mt-1 leading-relaxed font-medium">
+                                Venue: <strong>{item.location}</strong>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button onClick={(e) => { e.stopPropagation(); openEditModal(item); }} className="p-2 text-slate-400 hover:text-blue-600 rounded-lg"><Edit2 size={18} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 text-slate-400 hover:text-rose-600 rounded-lg"><Trash2 size={18} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="space-y-4">
                       {data.map((item) => (
@@ -893,8 +1217,63 @@ export default function CommunityDetailEditor() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-xl font-bold mb-4">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : 'Member'}</h3>
+            <h3 className="text-xl font-bold mb-4">{editingItem ? 'Edit' : 'Add'} {activeTab === 'activities' ? 'Activity' : activeTab === 'announcements' ? 'Announcement' : activeTab === 'schedules' ? 'Practice Schedule' : 'Member'}</h3>
             <div className="space-y-3">
+              {activeTab === 'schedules' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-bold">Day of Week *</label>
+                      <select value={formValues.day || (isStFrancisAdmin ? 'Sunday' : isDancersAdmin ? 'Saturday' : isCharismaticAdmin ? 'Thursday' : 'Tuesday')} onChange={(e) => setFormValues(v => ({ ...v, day: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold">{isStFrancisAdmin ? 'Venue / Meeting Point *' : 'Venue / Room *'}</label>
+                      <input value={formValues.location || ''} onChange={(e) => setFormValues(v => ({ ...v, location: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. LH 21 / Neighborhood Block' : 'e.g. School Compound / Main Hall'} className="w-full border px-3 py-2 rounded mt-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-bold">Start Time *</label>
+                      <input type="text" value={formValues.start_time || ''} onChange={(e) => setFormValues(v => ({ ...v, start_time: e.target.value }))} placeholder={isStFrancisAdmin ? 'e.g. 17:00 or 5:00 PM' : 'e.g. 16:00 or 4:00 PM'} className="w-full border px-3 py-2 rounded mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold">End Time</label>
+                      <input type="text" value={formValues.end_time || ''} onChange={(e) => setFormValues(v => ({ ...v, end_time: e.target.value }))} placeholder="e.g. 18:30 or 6:30 PM" className="w-full border px-3 py-2 rounded mt-1" />
+                    </div>
+                  </div>
+                  {isStFrancisAdmin && (
+                    <div>
+                      <label className="text-sm font-bold">Session Type / Focus</label>
+                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                        <option value="">Select session focus...</option>
+                        <option value="Community Fellowship & SCC Prayer">Community Fellowship & SCC Prayer</option>
+                        <option value="Laudato Si' Eco-Care & Tree Planting">Laudato Si' Eco-Care & Tree Planting</option>
+                        <option value="Charity Drive & Food Basket Distribution">Charity Drive & Food Basket Distribution</option>
+                        <option value="Hospital & Elderly Visitation Ministry">Hospital & Elderly Visitation Ministry</option>
+                        <option value="Member Welfare & Emergency Fund Meeting">Member Welfare & Emergency Fund Meeting</option>
+                        <option value="Neighborhood Jumuiya Block Prayer">Neighborhood Jumuiya Block Prayer</option>
+                      </select>
+                    </div>
+                  )}
+                  {isMentorshipAdmin && (
+                    <div>
+                      <label className="text-sm font-bold">Mentorship Track / Focus</label>
+                      <select value={formValues.targetSection || ''} onChange={(e) => setFormValues(v => ({ ...v, targetSection: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                        <option value="">Select mentorship track...</option>
+                        <option value="Group Cohort Sessions & Life Skills">Group Cohort Sessions & Life Skills</option>
+                        <option value="Career Workshops, Mock Interviews & Seminars">Career Workshops, Mock Interviews & Seminars</option>
+                        <option value="One-on-One Mentor Check-ins & Academic Coaching">One-on-One Mentor Check-ins & Academic Coaching</option>
+                        <option value="Spiritual Formation & Vocation Discernment">Spiritual Formation & Vocation Discernment</option>
+                        <option value="Personal Finance & Leadership Masterclass">Personal Finance & Leadership Masterclass</option>
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
               {(activeTab === 'activities' || activeTab === 'announcements') && (
                 <>
                   <div>
@@ -936,26 +1315,42 @@ export default function CommunityDetailEditor() {
                       </div>
                     </>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-sm font-bold">Voice Type (optional)</label>
-                        <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
-                          <option value="">Select...</option>
-                          <option value="Soprano">Soprano</option>
-                          <option value="Alto">Alto</option>
-                          <option value="Tenor">Tenor</option>
-                          <option value="Bass">Bass</option>
-                        </select>
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-sm font-bold">Voice Section (SATB)</label>
+                          <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                            <option value="">Select Voice...</option>
+                            <option value="Soprano">Soprano (High Female)</option>
+                            <option value="Alto">Alto (Low Female)</option>
+                            <option value="Tenor">Tenor (High Male)</option>
+                            <option value="Bass">Bass (Deep Male)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-bold">Gender (Gent / Lady)</label>
+                          <select value={formValues.gender || ''} onChange={(e) => setFormValues(v => ({ ...v, gender: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                            <option value="">Select Gender...</option>
+                            <option value="Male">Gent (Male)</option>
+                            <option value="Female">Lady (Female)</option>
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-sm font-bold">Music Level</label>
-                        <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
-                          <option value="Beginner">Beginner</option>
-                          <option value="Intermediate">Intermediate</option>
-                          <option value="Advanced">Advanced</option>
-                        </select>
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <label className="text-sm font-bold">Phone Number</label>
+                          <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1" placeholder="e.g. 0712345678" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-bold">Music Skill Level</label>
+                          <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border px-3 py-2 rounded mt-1">
+                            <option value="Beginner">Beginner (Solfa Learner)</option>
+                            <option value="Intermediate">Intermediate (Sight-reader)</option>
+                            <option value="Advanced">Advanced (Soloist / Trainer)</option>
+                          </select>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
                   <div>
                     <label className="text-sm font-bold">Status</label>
@@ -975,8 +1370,15 @@ export default function CommunityDetailEditor() {
               </div>
 
               <div className="flex justify-end gap-3 mt-4">
-                <button onClick={closeModal} className="px-4 py-2 rounded bg-slate-100 font-bold text-xs">Cancel</button>
-                <button disabled={uploading} onClick={handleSave} className="px-4 py-2 rounded bg-blue-600 text-white font-bold text-xs">{uploading ? 'Uploading...' : (editingItem ? 'Save Changes' : 'Create')}</button>
+                <button onClick={closeModal} className="px-4 py-2 rounded-xl bg-slate-100 font-bold text-xs text-slate-700 hover:bg-slate-200 transition">Cancel</button>
+                <button
+                  disabled={uploading}
+                  onClick={handleSave}
+                  className="px-5 py-2 rounded-xl text-white font-bold text-xs transition-all shadow-md disabled:opacity-60"
+                  style={{ background: accentColor }}
+                >
+                  {uploading ? 'Uploading...' : (editingItem ? 'Save Changes' : 'Create')}
+                </button>
               </div>
             </div>
           </div>
@@ -987,7 +1389,13 @@ export default function CommunityDetailEditor() {
       {galleryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-xl font-bold mb-4">Add Photo to {moduleMeta?.title || categoryId} Gallery</h3>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-black text-slate-800">Add Photo to Gallery</h3>
+                <p className="text-xs text-slate-400 font-medium">{moduleMeta?.title || categoryId} • Community Gallery</p>
+              </div>
+              <button onClick={() => setGalleryModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><X size={14} /></button>
+            </div>
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-bold text-slate-700">Event / Caption Name</label>
@@ -996,7 +1404,7 @@ export default function CommunityDetailEditor() {
                   placeholder="e.g. Easter Choir Rehearsal"
                   value={newImageForm.event_name}
                   onChange={(e) => setNewImageForm(v => ({ ...v, event_name: e.target.value }))}
-                  className="w-full border p-2 rounded-xl text-xs mt-1"
+                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                 />
               </div>
               <div>
@@ -1006,7 +1414,7 @@ export default function CommunityDetailEditor() {
                   placeholder="e.g. Concerts, Sunday Mass"
                   value={newImageForm.category}
                   onChange={(e) => setNewImageForm(v => ({ ...v, category: e.target.value }))}
-                  className="w-full border p-2 rounded-xl text-xs mt-1"
+                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                 />
               </div>
               <div>
@@ -1016,15 +1424,15 @@ export default function CommunityDetailEditor() {
                   placeholder="https://..."
                   value={newImageForm.image_url}
                   onChange={(e) => setNewImageForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border p-2 rounded-xl text-xs mt-1"
+                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                 />
               </div>
               {newImageForm.image_url && (
                 <img src={newImageForm.image_url} alt="preview" className="w-full h-36 object-cover rounded-xl border mt-2" />
               )}
               <div className="flex justify-end gap-2 pt-3">
-                <button onClick={() => setGalleryModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Cancel</button>
-                <button onClick={handleAddGalleryImage} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">Upload Photo</button>
+                <button onClick={() => setGalleryModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold hover:bg-slate-200 transition">Cancel</button>
+                <button onClick={handleAddGalleryImage} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition" style={{ background: accentColor }}>Upload Photo</button>
               </div>
             </div>
           </div>
@@ -1035,7 +1443,13 @@ export default function CommunityDetailEditor() {
       {productModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-xl font-bold mb-4">Manage {moduleMeta?.title || categoryId} T-Shirt Product</h3>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-black text-slate-800">Manage Merchandise</h3>
+                <p className="text-xs text-slate-400 font-medium">{moduleMeta?.title || categoryId} • Attire & Orders</p>
+              </div>
+              <button onClick={() => setProductModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><X size={14} /></button>
+            </div>
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-bold text-slate-700">Product Title</label>
@@ -1044,7 +1458,7 @@ export default function CommunityDetailEditor() {
                   placeholder="e.g. Official Choir Polo T-Shirt"
                   value={productForm.name}
                   onChange={(e) => setProductForm(v => ({ ...v, name: e.target.value }))}
-                  className="w-full border p-2 rounded-xl text-xs mt-1"
+                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -1054,16 +1468,16 @@ export default function CommunityDetailEditor() {
                     type="number"
                     value={productForm.price}
                     onChange={(e) => setProductForm(v => ({ ...v, price: Number(e.target.value) }))}
-                    className="w-full border p-2 rounded-xl text-xs mt-1"
+                    className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Available Sizes (comma separated)</label>
+                  <label className="text-xs font-bold text-slate-700">Sizes (comma separated)</label>
                   <input
                     type="text"
                     value={productForm.sizes}
                     onChange={(e) => setProductForm(v => ({ ...v, sizes: e.target.value }))}
-                    className="w-full border p-2 rounded-xl text-xs mt-1"
+                    className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                   />
                 </div>
               </div>
@@ -1074,7 +1488,7 @@ export default function CommunityDetailEditor() {
                   placeholder="https://..."
                   value={productForm.image_url}
                   onChange={(e) => setProductForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border p-2 rounded-xl text-xs mt-1"
+                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                 />
               </div>
               <div>
@@ -1083,17 +1497,18 @@ export default function CommunityDetailEditor() {
                   rows={2}
                   value={productForm.description}
                   onChange={(e) => setProductForm(v => ({ ...v, description: e.target.value }))}
-                  className="w-full border p-2 rounded-xl text-xs mt-1"
+                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-slate-400"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-3">
-                <button onClick={() => setProductModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Cancel</button>
-                <button onClick={handleSaveProduct} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">Save Product</button>
+                <button onClick={() => setProductModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold hover:bg-slate-200 transition">Cancel</button>
+                <button onClick={handleSaveProduct} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition" style={{ background: accentColor }}>Save Product</button>
               </div>
             </div>
           </div>
         </div>
       )}
     </div>
+  </div>
   );
 }
