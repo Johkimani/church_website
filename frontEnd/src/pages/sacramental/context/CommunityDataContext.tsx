@@ -119,7 +119,7 @@ const initialModules: CommunityModule[] = [
         title: 'St. Thomas Aquinas Choir',
         description: 'Lead the congregation in sacred liturgy and elevate worship through four-part harmony and choral excellence.',
         path: '/community/choir',
-        color: '#1e3a5f',
+        color: '#1e40af',
         icon: 'fas fa-music',
         scheduleLabel: 'Practice Schedule',
         registrationEndpoint: '/enrollments',

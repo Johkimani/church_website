@@ -10,7 +10,7 @@ import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots 
 import { FaBars } from 'react-icons/fa';
 
 const MINISTRY_COLORS: Record<string, string> = {
-  choir: '#1e3a5f',
+  choir: '#1e40af',
   dancers: '#db2777',
   charismatic: '#7c3aed',
   'st-francis': '#047857',

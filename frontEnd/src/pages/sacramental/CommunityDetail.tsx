@@ -23,13 +23,14 @@ import '../Jumuiya/JumuiyaDetail.css';
 type TabType = 'about' | 'noticeboard' | 'schedule' | 'officials' | 'activities' | 'members' | 'channels' | 'tshirts' | 'suggestions' | 'settings' | 'request';
 
 const MINISTRY_COLORS: Record<string, string> = {
-  choir: '#1e3a5f',
+  choir: '#1e40af',
   dancers: '#db2777',
   charismatic: '#7c3aed',
   'st-francis': '#047857',
   youth: '#6d28d9',
   mentorship: '#6d28d9',
 };
+
 
 const COMMUNITY_IMAGES: Record<string, string> = {
   choir: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=800',
@@ -346,20 +347,6 @@ const CommunityDetail: React.FC = () => {
         </div>
       </main>
 
-      {/* Notification FAB */}
-      {!isNotifOpen && (
-        <div className="notif-fab-container">
-          <button
-            className="notif-fab"
-            onClick={() => setIsNotifOpen(true)}
-            style={{ backgroundColor: detailColor }}
-            aria-label="Notifications"
-          >
-            <FaBell />
-          </button>
-        </div>
-      )}
-
       {isNotifOpen && (
         <div className="notif-panel-floating animate-slide-up">
           <div className="notif-panel-header" style={{ borderBottomColor: detailColor }}>
@@ -373,6 +360,7 @@ const CommunityDetail: React.FC = () => {
           </div>
         </div>
       )}
+
 
       {/* Overlay for mobile */}
       {(isSidebarOpen || (isNotifOpen && window.innerWidth < 768)) && (

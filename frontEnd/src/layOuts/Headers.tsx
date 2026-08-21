@@ -152,23 +152,7 @@ const Headers = () => {
 
         {/* Right side */}
         <div className="flex items-center gap-2 lg:gap-3">
-          {/* Notifications */}
-          <button
-            onClick={() => navigate("/Notification")}
-            className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
-            title="Notifications"
-          >
-            <FaBell className="text-lg" />
-            {unreadCount > 0 && (
-              <span
-                className={`absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-white min-w-[18px] h-[18px] flex items-center justify-center ${
-                  animateBadge ? "animate-bounce" : ""
-                }`}
-              >
-                {unreadCount}
-              </span>
-            )}
-          </button>
+
 
           {/* Cart */}
           <button
@@ -344,23 +328,7 @@ const Headers = () => {
 
             {/* Bottom section */}
             <div className="px-4 pt-4 border-t border-slate-100 mx-4 space-y-3">
-              <button
-                onClick={() => {
-                  navigate("/Notification");
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <FaBell className="text-sm text-slate-500" />
-                  <span className="font-semibold text-sm text-slate-700">Notifications</span>
-                </div>
-                {unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
+
 
               {user ? (
                 <div className="space-y-2">
