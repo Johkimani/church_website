@@ -98,13 +98,13 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
       </div>
 
       {officials.length > 0 ? (
-        <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-5 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
           {officials.map((official: any) => {
             const initials = (official.name || '').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
             return (
               <article
                 key={official.id}
-                className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px] border border-gray-100"
+                className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
               >
                 {/* Photo Container */}
                 <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
@@ -183,12 +183,12 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
             </div>
           </div>
         ) : formerOfficials.length === 0 ? (
-          <div className="text-center py-12 rounded-2xl" style={{ background: `${color}04`, border: `1px dashed ${color}15` }}>
-            <div className="w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3" style={{ background: `${color}08` }}>
-              <FaHistory style={{ color: `${color}30` }} size={20} />
+          <div className="text-center py-16 rounded-2xl border-2 border-dashed" style={{ background: `${color}08`, borderColor: `${color}20` }}>
+            <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style={{ background: `${color}12` }}>
+              <FaHistory style={{ color: `${color}50` }} size={28} />
             </div>
-            <p className="text-gray-400 text-sm font-medium">No past leadership records yet.</p>
-            <p className="text-gray-300 text-xs mt-1">When a leadership term ends, past officials will appear here.</p>
+            <h3 className="text-base font-bold text-gray-500 mb-1">No Past Leadership Records</h3>
+            <p className="text-gray-400 text-sm max-w-xs mx-auto">When a leadership term ends and officials are archived, their records will appear here for future reference.</p>
           </div>
         ) : (
           <>

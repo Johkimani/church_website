@@ -83,7 +83,7 @@ export const POSITIONS_BY_GROUP: Record<string, string[]> = {
   'Dancers': ['Chairperson', 'Vice Chairperson'],
   'Charismatic': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer'],
   'St. Francis': ['Chairperson', 'Vice Chairperson'],
-  'Mentorship': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer']
+  'Mentorship': ['Coordinator', 'Vice Coordinator']
 };
 
 export const GROUP_POSITION_RANK: Record<string, Record<string, number>> = {};

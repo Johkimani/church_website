@@ -48,10 +48,8 @@ export const POSITIONS_BY_GROUP = {
     'Vice Chairperson'
   ],
   'Mentorship': [
-    'Chairperson',
-    'Vice Chairperson',
-    'Secretary',
-    'Treasurer'
+    'Coordinator',
+    'Vice Coordinator'
   ]
 };
 
