@@ -338,28 +338,6 @@ export default function PublicView() {
     }
   };
 
-  const EXECUTIVE_TOP_ROW_TITLES = ['chairperson', 'vice chairperson', 'organizing secretary', 'organising secretary', 'treasurer'];
-
-  const getExecutiveTopRow = (officials: any[]) => {
-    const selectedIds = new Set<any>();
-    const topRow: any[] = [];
-
-    EXECUTIVE_TOP_ROW_TITLES.forEach((title) => {
-      const match = officials.find(
-        (off: any) =>
-          !selectedIds.has(off.id) &&
-          (off.position || '').toLowerCase().includes(title)
-      );
-
-      if (match) {
-        selectedIds.add(match.id);
-        topRow.push(match);
-      }
-    });
-
-    return topRow;
-  };
-
   const renderOfficialsSection = (cat: string, list: any[]) => {
     if (list.length === 0) {
       return (
@@ -392,19 +370,10 @@ export default function PublicView() {
     );
 
     if (cat === 'Executive') {
-      const topRow = getExecutiveTopRow(list);
-      const remaining = list.filter((off) => !topRow.some((top) => top.id === off.id));
-
       return (
-        <div className="space-y-6">
-          {renderGrid(topRow, true)}
-          {renderDesktopFlex(topRow, true)}
-          {remaining.length > 0 && (
-            <div className="pt-2">
-              {renderGrid(remaining, true)}
-              {renderDesktopFlex(remaining, true)}
-            </div>
-          )}
+        <div>
+          {renderGrid(list, true)}
+          {renderDesktopFlex(list, true)}
         </div>
       );
     }
