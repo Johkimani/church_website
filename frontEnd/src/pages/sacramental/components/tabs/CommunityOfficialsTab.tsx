@@ -268,13 +268,22 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
                 const termOfficials = filteredHistory.filter(f => (f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')) === term);
                 if (termOfficials.length === 0) return null;
                 return (
-                  <div key={term} className="flex flex-col md:flex-row gap-6">
-                    <div className="md:w-32 flex-shrink-0">
-                      <span className="px-4 py-1.5 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] font-bold rounded-lg text-sm sticky top-24">
+                  <div key={term}>
+                    {/* Mobile: inline badge */}
+                    <div className="md:hidden mb-4">
+                      <span className="px-4 py-1.5 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] font-bold rounded-lg text-sm">
                         {term}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-0 sm:flex sm:flex-wrap sm:gap-4 flex-1">
+                    {/* Desktop: section header */}
+                    <div className="hidden md:flex items-center gap-4 mb-6">
+                      <span className="px-5 py-2 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] font-bold rounded-xl text-sm whitespace-nowrap">
+                        {term}
+                      </span>
+                      <div className="flex-1 h-px" style={{ background: `linear-gradient(to right, ${color}30, transparent)` }} />
+                      <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{termOfficials.length} official{termOfficials.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-0 sm:flex sm:flex-wrap sm:gap-4">
                       {termOfficials.map(f => (
                         <div
                           key={f.id}
