@@ -200,9 +200,8 @@ const JumuiyaDetail: React.FC = () => {
                 return <OfficialsTab
                     officials={displayedOfficials}
                     termOfOffice={dynamicTerm}
-                    formerOfficials={jumuiya.formerOfficials}
                     jumuiyaColor={detailColor}
-                    isAdmin={isAdmin} jumuiyaName={''}                />;
+                    isAdmin={isAdmin} jumuiyaName={jumuiya.name}                />;
             case 'members':
                 return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} officials={jumuiya.officials || []} />
             case 'registration':
