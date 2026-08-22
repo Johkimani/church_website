@@ -239,27 +239,30 @@ import { memberService } from '../../../api/jumuiyaMemberService';
 
   const availableJumuiyaRoles = React.useMemo(() => {
   if (mode !== 'jumuiya' || !category) return JUMUIYA_ROLES;
+  if (isHistorical) return JUMUIYA_ROLES;
   const occupiedRoles = allOfficials
   .filter(o => o.category === category)
   .map(o => o.position);
   return JUMUIYA_ROLES.filter(role => !occupiedRoles.includes(role));
-  }, [mode, category, allOfficials]);
+  }, [mode, category, allOfficials, isHistorical]);
 
   const availableGroupRoles = React.useMemo(() => {
   if (mode !== 'groups' || !category) return POSITIONS_BY_GROUP[category] || [];
+  if (isHistorical) return POSITIONS_BY_GROUP[category] || [];
   const occupiedRoles = allOfficials
   .filter(o => o.category === category)
   .map(o => o.position);
   return (POSITIONS_BY_GROUP[category] || []).filter(role => !occupiedRoles.includes(role));
-  }, [mode, category, allOfficials]);
+  }, [mode, category, allOfficials, isHistorical]);
 
   const availableCSARoles = React.useMemo(() => {
   if (mode !== 'csa' || !category) return POSITION_BY_CATEGORY[category] || [];
+  if (isHistorical) return POSITION_BY_CATEGORY[category] || [];
   const occupiedRoles = allOfficials
   .filter(o => o.category === category)
   .map(o => o.position);
   return (POSITION_BY_CATEGORY[category] || []).filter(role => !occupiedRoles.includes(role));
-  }, [mode, category, allOfficials]);
+  }, [mode, category, allOfficials, isHistorical]);
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
