@@ -215,7 +215,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                     <span className="text-xs font-black uppercase tracking-widest">Leadership History</span>
                     <div className="flex-1 h-px bg-gray-200"></div>
                     <div className={`flex items-center gap-1.5 text-xs font-semibold text-gray-400 group-hover:text-gray-600 transition-colors ${historyOpen ? 'text-gray-600' : ''}`}>
-                        {loadingHistory ? 'Loading...' : formerOfficials.length > 0 ? `${formerOfficials.length} past official${formerOfficials.length !== 1 ? 's' : ''}` : 'No records'}
+                        {loadingHistory ? 'Loading...' : filteredHistory.length > 0 ? `${filteredHistory.length} past official${filteredHistory.length !== 1 ? 's' : ''}` : 'No records'}
                         <FaChevronDown
                             size={10}
                             className="transition-transform duration-300"
