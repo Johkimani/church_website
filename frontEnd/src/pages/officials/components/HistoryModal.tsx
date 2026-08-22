@@ -22,7 +22,7 @@ interface HistoryModalProps {
 export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mode = 'csa', onEdit }: HistoryModalProps) {
  const [termFilter, setTermFilter] = useState('all');
  const [categoryFilter, setCategoryFilter] = useState('all');
- const limit = 500;
+ const limit = 60;
 
  const getPhotoUrl = (photo: string | null | undefined) => {
  if (!photo) return DEFAULT_AVATAR;
@@ -318,9 +318,11 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  </div>
  ) : (
  <div className="grid grid-cols-1 gap-4">
-  {history.filter(o => mode === 'csa' || categoryFilter === 'all' || o.category === categoryFilter).map((o) => (
+  {history.filter(o => mode === 'csa' || categoryFilter === 'all' || o.category === categoryFilter).map((o, idx) => (
  <div key={o.id} className={`bg-white rounded-xl border p-4 transition-all hover:shadow-md flex items-center gap-4 group ${selectedIds.includes(o.id) ? 'border-indigo-300 ring-2 ring-indigo-50 bg-indigo-50/10 ' : 'border-gray-200 '}`}>
- <div className="relative flex items-center shrink-0">
+ <div className="flex flex-col items-center gap-1 shrink-0">
+ <div className="text-xs font-bold text-gray-400">{idx + 1}</div>
+ <div className="relative flex items-center">
  <input 
  type="checkbox" 
  checked={selectedIds.includes(o.id)}
@@ -329,6 +331,7 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  />
  <div className={`w-5 h-5 border-2 rounded-lg bg-white transition-all flex items-center justify-center ${selectedIds.includes(o.id) ? 'border-indigo-600' : 'border-gray-300'}`}>
    <Check className={`w-4 h-4 text-indigo-600 transition-all duration-200 stroke-[3] ${selectedIds.includes(o.id) ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
+ </div>
  </div>
  </div>
  
