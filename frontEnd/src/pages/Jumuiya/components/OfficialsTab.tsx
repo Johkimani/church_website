@@ -76,7 +76,9 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
             .finally(() => setLoadingHistory(false));
     }, [jumuiyaName]);
 
-    const filteredHistory = formerOfficials;
+    const filteredHistory = jumuiyaName
+        ? formerOfficials.filter(f => !f.category || f.category === jumuiyaName)
+        : formerOfficials;
 
     const historyTerms = [...new Set(filteredHistory.map(f => f.term_of_service || f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')))].sort().reverse();
 
@@ -96,9 +98,15 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
 
     const navigateLightbox = (dir: number) => {
         if (lightboxIndex < 0) return;
-        const next = (lightboxIndex + dir + allFilteredOfficials.length) % allFilteredOfficials.length;
-        const nextOff = allFilteredOfficials[next];
-        if (nextOff.photo) setLightboxOfficial(nextOff);
+        const len = allFilteredOfficials.length;
+        for (let i = 1; i <= len; i++) {
+            const next = (lightboxIndex + dir * i + len) % len;
+            const nextOff = allFilteredOfficials[next];
+            if (nextOff.photo) {
+                setLightboxOfficial(nextOff);
+                return;
+            }
+        }
     };
 
     return (
