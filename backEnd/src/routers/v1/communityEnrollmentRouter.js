@@ -1,6 +1,7 @@
 import { Router } from "express";
 import verifyToken, { optionalAuth } from "../../middlewares/Tokens.js";
 import { requireRole } from "../../middlewares/requireRole.js";
+import verifyCaptcha from "../../middlewares/captcha.js";
 import {
   createEnrollment,
   checkDuplicate,
@@ -24,7 +25,7 @@ const COMMUNITY_ADMIN_ROLES = [
 router.get("/my-communities", verifyToken, getMyCommunities);
 
 // Public routes (optionalAuth: captures user info if logged in, but doesn't require it)
-router.post("/:moduleId", optionalAuth, createEnrollment);
+router.post("/:moduleId", optionalAuth, verifyCaptcha, createEnrollment);
 router.get("/:moduleId/check-duplicate", checkDuplicate);
 
 // Admin routes

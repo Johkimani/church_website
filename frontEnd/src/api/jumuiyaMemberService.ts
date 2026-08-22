@@ -254,6 +254,7 @@ export const memberService = {
     phone: string;
     course: string;
     jumuiya_slug: string;
+    captchaToken?: string | null;
   }) => apiClient.post(`/jumuiya/self-register`, data).then(r => r.data),
 
   checkDuplicate: (params: { regNumber?: string; email?: string }) =>

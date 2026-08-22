@@ -29,6 +29,7 @@ import {
 import { validate } from "../../middlewares/validateRequestBody.js";
 import { payAndWait } from "../../controllers/stkPush/stkHelper.js";
 import { requireRole } from "../../middlewares/requireRole.js";
+import verifyCaptcha from "../../middlewares/captcha.js";
 
 // Executive leadership — only these may manage roles or run destructive ops.
 const EXECUTIVE_ROLES = ["csa_chair", "csa_vice_chair", "csa_secretary"];
@@ -55,7 +56,7 @@ route.post("/resend-otp/:regNo", ResendOTP);
 route.post("/log-out", logout);
 route.post("/refresh", refreshAccessToken);
 route.post("/stk-push", verifyToken, stkCalls);
-route.post("/stk-push-guest", stkGuestCalls);
+route.post("/stk-push-guest", verifyCaptcha, stkGuestCalls);
 route.get("/stk-push-status/:checkoutId", checkStatus);
 route.post("/mpesa/callback", callback);
 route.get("/mpesa/callback", callback);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import { apiClient } from '../../../../api/axiosInstance';
+import Turnstile, { isCaptchaEnabled } from '../../../../components/Turnstile';
 import type { CommunityModule } from '../../context/CommunityDataContext';
 import { 
   FaLightbulb, 
@@ -43,10 +44,17 @@ const CommunitySuggestionsTab: React.FC<Props> = ({ moduleId, moduleName, color 
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.suggestion.trim()) return;
+    if (isCaptchaEnabled() && !captchaToken) {
+      setStatus('error');
+      setErrorMessage('Please complete the human verification before submitting.');
+      return;
+    }
 
     setStatus('submitting');
     setErrorMessage('');
@@ -56,6 +64,7 @@ const CommunitySuggestionsTab: React.FC<Props> = ({ moduleId, moduleName, color 
       category: `${moduleName} - ${formData.category}`,
       scope: 'community',
       jumuiya_id: moduleId,
+      captchaToken,
     };
 
     if (!isAnonymous) {
@@ -77,10 +86,13 @@ const CommunitySuggestionsTab: React.FC<Props> = ({ moduleId, moduleName, color 
         suggestion: '',
       });
       setIsAnonymous(false);
+      setCaptchaToken(null);
+      setCaptchaResetSignal((s) => s + 1);
     } catch (err: any) {
       console.error('Error submitting community suggestion:', err);
       setStatus('error');
       setErrorMessage(err.response?.data?.error || 'Failed to submit suggestion. Please try again.');
+      setCaptchaResetSignal((s) => s + 1);
     }
   };
 
@@ -239,6 +251,11 @@ const CommunitySuggestionsTab: React.FC<Props> = ({ moduleId, moduleName, color 
                     className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 resize-none"
                   />
                 </div>
+
+                {/* Human verification */}
+                {isCaptchaEnabled() && (
+                  <Turnstile onToken={setCaptchaToken} resetSignal={captchaResetSignal} />
+                )}
 
                 {/* Submit button */}
                 <button

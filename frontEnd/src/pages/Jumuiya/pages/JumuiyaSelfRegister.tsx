@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import Turnstile, { isCaptchaEnabled } from "../../../components/Turnstile";
 import { jumuiyaList } from "../data/jumuiyaData";
 
 const JUMUIYA_FALLBACKS: Record<
@@ -153,6 +154,8 @@ export default function JumuiyaSelfRegister() {
     date: string;
   } | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
   // Check localStorage session lock on load
   const sessionKey = `csa_self_reg_${slug}`;
@@ -281,6 +284,10 @@ export default function JumuiyaSelfRegister() {
       setSubmitError(duplicateStatus.email.message);
       return;
     }
+    if (isCaptchaEnabled() && !captchaToken) {
+      setSubmitError("Please complete the human verification before submitting.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -292,6 +299,7 @@ export default function JumuiyaSelfRegister() {
         phone: formData.phone.trim(),
         course: formData.course.trim(),
         jumuiya_slug: slug,
+        captchaToken,
       });
 
       const sessionData = {
@@ -316,6 +324,7 @@ export default function JumuiyaSelfRegister() {
         err?.message ||
         "Failed to complete registration. Please try again.";
       setSubmitError(errorMsg);
+      setCaptchaResetSignal((s) => s + 1);
     } finally {
       setSubmitting(false);
     }
@@ -669,7 +678,12 @@ export default function JumuiyaSelfRegister() {
               {fieldErrors.course && <p className="text-[11px] text-red-500 mt-1">{fieldErrors.course}</p>}
             </div>
 
-            {/* Submit Button */}
+            {/* Human verification */}
+          {isCaptchaEnabled() && (
+            <Turnstile onToken={setCaptchaToken} resetSignal={captchaResetSignal} />
+          )}
+
+          {/* Submit Button */}
             <button
               type="submit"
               disabled={submitting}

@@ -9,6 +9,7 @@ import {
 import logger from "../../logger/winston.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import optionalVerifyToken from "../../middlewares/optionalVerifyToken.js";
+import verifyCaptcha from "../../middlewares/captcha.js";
 import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 
 export const api = Router();
@@ -113,9 +114,9 @@ const authorizeTableAccess = (req, res, next) => {
     // Public writes: for suggestions, still attach the caller identity when a
     // (valid) token is present so user_id is trusted server-side.
     if (table === "suggestions") {
-      return optionalVerifyToken(req, res, () => next());
+      return optionalVerifyToken(req, res, () => verifyCaptcha(req, res, next));
     }
-    return next();
+    return verifyCaptcha(req, res, next);
   }
   return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
 };

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { db as pool } from "../../Configs/dbConfig.js";
 import logger from "../../logger/winston.js";
+import verifyCaptcha from "../../middlewares/captcha.js";
 
 const router = Router();
 
-router.post("/submit", async (req, res) => {
+router.post("/submit", verifyCaptcha, async (req, res) => {
   const { items, customer_name, phone_number, email, event_date, pickup_date, return_date, hire_mode, hours, pickup_time, notes } = req.body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
