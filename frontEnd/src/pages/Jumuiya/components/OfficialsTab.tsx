@@ -65,7 +65,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
     useEffect(() => {
         if (!jumuiyaName) return;
         setLoadingHistory(true);
-        apiClient.get('/jumuiya-officials/list', {
+        apiClient.get('/jumuiya-officials/term', {
             params: { only_archived: 'true', category: jumuiyaName, limit: 100 }
         })
             .then((res) => {
