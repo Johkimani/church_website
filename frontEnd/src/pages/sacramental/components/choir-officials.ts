@@ -75,20 +75,23 @@ export class ChoirOfficials {
         const container = DOMHelpers.createElement('div', 'csa-choir-official-card__contact');
 
         if (official.email) {
+            // Sanitize: officials data is DB-sourced; never interpolate raw
+            const safeEmail = official.email.replace(/[<>&"'`]/g, '');
             const emailLink = DOMHelpers.createElement('a', 'csa-choir-btn csa-choir-btn--email', {
-                href: `mailto:${official.email}`,
+                href: `mailto:${encodeURIComponent(safeEmail)}`,
                 title: `Email ${official.name}`
             });
-            emailLink.innerHTML = `<span>${official.email}</span>`;
+            emailLink.textContent = safeEmail;
             container.appendChild(emailLink);
         }
 
         if (official.phoneNumber) {
+            const safePhone = official.phoneNumber.replace(/[^0-9+()\s-]/g, '');
             const callLink = DOMHelpers.createElement('a', 'csa-choir-btn csa-choir-btn--call', {
-                href: `tel:${official.phoneNumber}`,
+                href: `tel:${safePhone.replace(/\s/g, '')}`,
                 title: `Call ${official.name}`
             });
-            callLink.innerHTML = `<span>${official.phoneNumber}</span>`;
+            callLink.textContent = safePhone;
             container.appendChild(callLink);
         }
 

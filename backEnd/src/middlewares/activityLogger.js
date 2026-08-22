@@ -76,6 +76,10 @@ const SPECIAL_ACTIONS = [
   { match: /\/jumuiya-tshirts/, label: "Updated Jumuiya T-shirts", type: "jumuiya t-shirt" },
   { match: /\/gallery/, label: "Managed gallery", type: "gallery item" },
   { match: /\/announcements/, label: "Managed announcement", type: "announcement" },
+  // Financial audit trail — every write to treasury records must be logged
+  // with who/when so internal fraud or accidental loss is traceable.
+  { match: /^\/table\/finance_ledger\/?\d*/, label: "Managed treasury ledger record", type: "treasury ledger record" },
+  { match: /^\/table\/finance_budgets\/?\d*/, label: "Managed treasury budget tracker", type: "treasury budget" },
 ];
 
 const isIdSegment = (seg) => /^\d+$/.test(seg) || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(seg);

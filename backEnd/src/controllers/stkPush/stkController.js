@@ -64,6 +64,30 @@ export const handleCallback = async (req, res) => {
       const amount = getMeta("Amount");
       const phoneNumber = getMeta("PhoneNumber");
 
+      // AMOUNT RECONCILIATION — Safaricom reports what was actually paid.
+      // Compare it against the amount this server demanded when initiating
+      // the push. Anything less is an underpayment: record it for audit but
+      // NEVER fulfil orders/hires/bookings for it.
+      const pendingRes = await db.query(
+        `SELECT amount FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+        [CheckoutRequestID],
+      );
+      const expected = Number(pendingRes.rows[0]?.amount ?? 0);
+      const paidAmount = Number(amount ?? 0);
+      if (expected > 0 && paidAmount + 0.99 < expected) {
+        logger.warn(
+          `STK callback UNDERPAID: CheckoutID=${CheckoutRequestID} expected=${expected} paid=${paidAmount} — fulfilment blocked`,
+        );
+        await db.query(
+          `UPDATE mpesa_request
+              SET status = 'underpaid', result_code = $1, result_desc = $2,
+                  amount = $3, mpesa_receipt = $4, updated_at = CURRENT_TIMESTAMP
+            WHERE checkout_id = $5`,
+          [ResultCode, `Underpaid: expected ${expected}, paid ${paidAmount}`, amount, mpesaReceipt, CheckoutRequestID],
+        );
+        return;
+      }
+
       // 1. Update or insert mpesa_request row
       await db.query(
         `INSERT INTO mpesa_request

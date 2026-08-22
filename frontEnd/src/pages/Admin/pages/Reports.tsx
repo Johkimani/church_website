@@ -91,7 +91,7 @@ export default function Reports({ typeFilter }: Props) {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-black text-slate-800 flex items-center gap-1.5">
             <BarChart3 size={18} className={isSale ? "text-blue-600" : "text-purple-600"} />
@@ -101,18 +101,18 @@ export default function Reports({ typeFilter }: Props) {
             {isSale ? "Sacramentals & T-Shirts sales performance" : "Chairs & Instruments hire performance"}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm">
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm min-h-[36px]">
             <Download size={12} /> Export CSV
           </button>
-          <button onClick={loadData} disabled={loading} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 hover:bg-slate-50 transition-all">
+          <button onClick={loadData} disabled={loading} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 hover:bg-slate-50 transition-all min-h-[36px]">
             <RefreshCcw size={12} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
       </div>
 
       {/* Period Selector */}
-      <div className="flex gap-1.5">
+      <div className="flex gap-1.5 flex-wrap">
         {(["today", "week", "month", "year"] as const).map((p) => (
           <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${period === p ? "bg-blue-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-800 hover:border-blue-300"}`}>
             {p === "today" ? "Today" : p === "week" ? "This Week" : p === "month" ? "This Month" : "This Year"}

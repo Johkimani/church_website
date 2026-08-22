@@ -24,7 +24,15 @@ const pool = new Pool({
   database: process.env.DB_NAME || "csa_db",
   ssl:
     // Explicit control: set DB_SSL=true when your Postgres requires SSL.
-    process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+    // Certificate validation is ON by default (rejectUnauthorized: true) —
+    // managed providers like Render use publicly-trusted certificates, so
+    // the TLS session is verified against the Node CA store and MitM is
+    // rejected. Only set DB_SSL_ALLOW_SELF_SIGNED=true for a database whose
+    // certificate cannot be validated (e.g. a self-signed local dev server),
+    // and never in production.
+    process.env.DB_SSL === "true"
+      ? { rejectUnauthorized: process.env.DB_SSL_ALLOW_SELF_SIGNED !== "true" }
+      : false,
 });
 
 
