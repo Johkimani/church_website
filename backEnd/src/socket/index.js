@@ -15,24 +15,11 @@ const HandleOnSpecificJumuiJoin = (socket, user) => {
   });
 };
 
-// Handle CSA notifications
-const handleNotifyCSA = (socket, io) => {
-  socket.on(ChatEventEnum.NOTIFY_CSA_ON_NEW_NOTIFICATION_EVENT, (message) => {
-    io.to("CSA_NOTIFICATIONS").emit(ChatEventEnum.NOTIFY_CSA_ON_NEW_NOTIFICATION_EVENT, message);
-    console.log(`CSA notification sent to room CSA_NOTIFICATIONS event: ${ChatEventEnum.NOTIFY_CSA_ON_NEW_NOTIFICATION_EVENT}`);
-  });
-};
-
-// Handle Jumuia notifications
-const handleNotifyJumuia = (socket, io) => {
-  socket.on(
-    ChatEventEnum.NOTIFY_SPECIFIC_JUMUIA_ON_NEW_NOTIFICATION_EVENT,
-    ({ jumuiaName, message }) => {
-      io.to(jumuiaName).emit(ChatEventEnum.NOTIFY_SPECIFIC_JUMUIA_ON_NEW_NOTIFICATION_EVENT, message);
-      console.log(`Jumuia notification sent to room ${jumuiaName} event: ${ChatEventEnum.NOTIFY_SPECIFIC_JUMUIA_ON_NEW_NOTIFICATION_EVENT}`);
-    },
-  );
-};
+// SECURITY: clients must never broadcast notifications directly. Any
+// authenticated socket could previously emit NOTIFY_CSA / NOTIFY_JUMUIA and
+// impersonate officials or spam every member room with arbitrary content.
+// All legitimate broadcasts originate server-side via emitSocketEvent() after
+// an authorized HTTP action, so these client-facing handlers were removed.
 
 const initializeSocketIO = (io) => {
   return io.on(ChatEventEnum.CONNECTED_EVENT, async (socket) => {
@@ -70,10 +57,6 @@ const initializeSocketIO = (io) => {
 
       // function to handle specific jumia notifications
       HandleOnSpecificJumuiJoin(socket, socket.user);
-
-      // Attach notification handlers
-      handleNotifyCSA(socket, io);
-      handleNotifyJumuia(socket, io);
 
       // Handle quiz attempts exclusively via the HTTP API (server-scored,
       // identity from JWT). The socket "attempt" handler was removed because
