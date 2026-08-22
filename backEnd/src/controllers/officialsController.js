@@ -540,14 +540,11 @@ export const getOfficialById = async (req, res) => {
 
 export const createOfficial = async (req, res) => {
   try {
-    const { name, category, position, contact, term_of_service, reg_number } = req.body;
+    const { name, category, position, contact, term_of_service, reg_number, historical } = req.body;
+    const isHistorical = historical === 'true' || historical === true;
 
     if (!name || !category) {
         return res.status(400).json({ success: false, message: 'Name and category are required' });
-    }
-
-    if (!reg_number || !reg_number.trim()) {
-        return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
     }
 
     const normalizedContact = normalizePhone(contact);
@@ -557,6 +554,60 @@ export const createOfficial = async (req, res) => {
 
     if (!VALID_CATEGORIES.includes(category)) {
       return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+
+    let validatedRegNumber = null;
+
+    if (isHistorical) {
+      // Historical mode: reg_number optional, skip all active-official checks
+      if (reg_number && reg_number.trim()) {
+        const memberResult = await pool.query(
+          `SELECT member_id FROM members WHERE member_id = $1 OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+           OR member_id LIKE '%/' || $2 || '/%' OR member_id ILIKE $3
+           LIMIT 2`,
+          [reg_number.trim(), reg_number.trim(), `%${reg_number.trim()}%`]
+        );
+        if (memberResult.rows.length === 1) {
+          validatedRegNumber = memberResult.rows[0].member_id;
+        } else if (memberResult.rows.length > 1) {
+          return res.status(400).json({ success: false, message: 'Registration number matches multiple members. Please use the exact member ID.' });
+        }
+        // If 0 results, just skip — historical mode allows no reg_number
+      }
+
+      // Resolve or create election_term for this historical term_of_service
+      let termId = null;
+      if (term_of_service && term_of_service.trim()) {
+        let termResult = await pool.query(
+          'SELECT id FROM election_terms WHERE name = $1 LIMIT 1',
+          [term_of_service.trim()]
+        );
+        if (termResult.rows.length === 0) {
+          termResult = await pool.query(
+            `INSERT INTO election_terms (name, year, start_date, is_current)
+             VALUES ($1, $1, CURRENT_DATE, FALSE) RETURNING id`,
+            [term_of_service.trim()]
+          );
+        }
+        termId = termResult.rows[0].id;
+      }
+
+      let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
+
+      const result = await pool.query(
+        `INSERT INTO officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number)
+         VALUES ($1, $2, $3, $4, $5, $6, 'archived', $7, $8) RETURNING *`,
+        [name, category, position || null, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      );
+
+      emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create", data: result.rows[0] });
+      return res.status(201).json({ success: true, data: result.rows[0] });
+    }
+
+    // ── Normal (non-historical) path ──
+
+    if (!reg_number || !reg_number.trim()) {
+        return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
     }
 
     // Validate reg_number exists in members table
@@ -572,7 +623,7 @@ export const createOfficial = async (req, res) => {
     if (memberResult.rows.length > 1) {
       return res.status(400).json({ success: false, message: 'Registration number matches multiple members. Please use the exact member ID.' });
     }
-    const validatedRegNumber = memberResult.rows[0].member_id;
+    validatedRegNumber = memberResult.rows[0].member_id;
 
     // Build checking promises to run in parallel
     const promises = [

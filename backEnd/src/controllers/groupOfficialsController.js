@@ -211,16 +211,13 @@ export const getGroupOfficialById = async (req, res) => {
 
 export const createGroupOfficial = async (req, res) => {
   try {
-    const { name, category, position, contact, term_of_service, reg_number } = req.body;
-    logger.info(`Creating group official: ${name}, ${category}, ${position}`);
+    const { name, category, position, contact, term_of_service, reg_number, historical } = req.body;
+    const isHistorical = historical === 'true' || historical === true;
+    logger.info(`Creating group official: ${name}, ${category}, ${position}${isHistorical ? ' (historical)' : ''}`);
 
     if (!name || !category || !position) {
         logger.warn('Missing required fields for group official');
         return res.status(400).json({ success: false, message: 'Name, Group, and Position are required' });
-    }
-
-    if (!reg_number || !reg_number.trim()) {
-      return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
     }
 
     const normalizedContact = normalizePhone(contact);
@@ -240,8 +237,53 @@ export const createGroupOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid Position for ${category}. Must be one of: ${validPositions.join(', ')}` });
     }
 
-    // Validate reg_number if provided (link to member, no jumuiya constraint for groups)
     let validatedRegNumber = null;
+
+    if (isHistorical) {
+      // Historical mode: reg_number optional, skip all active-official checks
+      if (reg_number && reg_number.trim()) {
+        const lookup = await resolveMemberForRegNumber(reg_number);
+        if (!lookup?.error) {
+          validatedRegNumber = lookup.member.member_id;
+        }
+      }
+
+      // Resolve or create election_term for this historical term_of_service
+      let termId = null;
+      if (term_of_service && term_of_service.trim()) {
+        let termResult = await pool.query(
+          'SELECT id FROM election_terms WHERE name = $1 LIMIT 1',
+          [term_of_service.trim()]
+        );
+        if (termResult.rows.length === 0) {
+          termResult = await pool.query(
+            `INSERT INTO election_terms (name, year, start_date, is_current)
+             VALUES ($1, $1, CURRENT_DATE, FALSE) RETURNING id`,
+            [term_of_service.trim()]
+          );
+        }
+        termId = termResult.rows[0].id;
+      }
+
+      let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
+
+      const result = await pool.query(
+        `INSERT INTO group_officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number)
+         VALUES ($1, $2, $3, $4, $5, $6, 'archived', $7, $8) RETURNING *`,
+        [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      );
+
+      emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_group", data: result.rows[0] });
+      return res.status(201).json({ success: true, data: result.rows[0] });
+    }
+
+    // ── Normal (non-historical) path ──
+
+    if (!reg_number || !reg_number.trim()) {
+      return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
+    }
+
+    // Validate reg_number if provided (link to member, no jumuiya constraint for groups)
     if (reg_number && reg_number.trim()) {
       const lookup = await resolveMemberForRegNumber(reg_number);
       if (lookup?.error) {

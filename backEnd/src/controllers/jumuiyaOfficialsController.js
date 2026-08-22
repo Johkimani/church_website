@@ -218,16 +218,13 @@ export const getJumuiyaOfficialById = async (req, res) => {
 
 export const createJumuiyaOfficial = async (req, res) => {
   try {
-    const { name, category, position, contact, term_of_service, reg_number } = req.body;
-    logger.info(`Creating Jumuiya official: ${name}, ${category}, ${position}`);
+    const { name, category, position, contact, term_of_service, reg_number, historical } = req.body;
+    const isHistorical = historical === 'true' || historical === true;
+    logger.info(`Creating Jumuiya official: ${name}, ${category}, ${position}${isHistorical ? ' (historical)' : ''}`);
 
     if (!name || !category || !position) {
         logger.warn('Missing required fields for Jumuiya official');
         return res.status(400).json({ success: false, message: 'Name, Jumuiya, and Position are required' });
-    }
-
-    if (!reg_number || !reg_number.trim()) {
-      return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
     }
 
     const normalizedContact = normalizePhone(contact);
@@ -246,6 +243,60 @@ export const createJumuiyaOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid Role. Must be one of: ${VALID_ROLES.join(', ')}` });
     }
 
+    let validatedRegNumber = null;
+
+    if (isHistorical) {
+      // Historical mode: reg_number optional, skip all active-official checks
+      if (reg_number && reg_number.trim()) {
+        const lookup = await resolveMemberForRegNumber(reg_number);
+        if (!lookup?.error) {
+          const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
+          const targetJumuiyaSlug = toJumuiyaSlug(category);
+          if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
+            return res.status(409).json({
+              success: false,
+              message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
+            });
+          }
+          validatedRegNumber = lookup.member.member_id;
+        }
+      }
+
+      // Resolve or create election_term for this historical term_of_service
+      let termId = null;
+      if (term_of_service && term_of_service.trim()) {
+        let termResult = await pool.query(
+          'SELECT id FROM election_terms WHERE name = $1 LIMIT 1',
+          [term_of_service.trim()]
+        );
+        if (termResult.rows.length === 0) {
+          termResult = await pool.query(
+            `INSERT INTO election_terms (name, year, start_date, is_current)
+             VALUES ($1, $1, CURRENT_DATE, FALSE) RETURNING id`,
+            [term_of_service.trim()]
+          );
+        }
+        termId = termResult.rows[0].id;
+      }
+
+      let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
+
+      const result = await pool.query(
+        `INSERT INTO jumuiya_officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number)
+         VALUES ($1, $2, $3, $4, $5, $6, 'archived', $7, $8) RETURNING *`,
+        [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      );
+
+      emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_jumuiya", data: result.rows[0] });
+      return res.status(201).json({ success: true, data: result.rows[0] });
+    }
+
+    // ── Normal (non-historical) path ──
+
+    if (!reg_number || !reg_number.trim()) {
+      return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
+    }
+
     // Validate reg_number exists in members table
     const lookup = await resolveMemberForRegNumber(reg_number);
     if (lookup?.error) {
@@ -259,7 +310,7 @@ export const createJumuiyaOfficial = async (req, res) => {
         message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
       });
     }
-    const validatedRegNumber = lookup.member.member_id;
+    const validatedRegNumberNormal = lookup.member.member_id;
 
     // Build checking promises to run in parallel
     const promises = [
@@ -301,12 +352,12 @@ export const createJumuiyaOfficial = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO jumuiya_officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number) 
        VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8) RETURNING *`,
-      [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumberNormal]
     );
 
-    if (validatedRegNumber && position) {
+    if (validatedRegNumberNormal && position) {
       const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, true, category, req.user?.member_id || null
+        validatedRegNumberNormal, position, true, category, req.user?.member_id || null
       );
       if (roleResult) {
         logger.info(`Auto-assigned role for jumuiya official ${name}: ${JSON.stringify(roleResult)}`);

@@ -120,8 +120,8 @@ export function EditOfficialModal({
  onClose();
  };
 
- const termMismatch = officialsExist && termOfService && termOfService !== displayTerm;
- const isInvalid = !name || !category || !position || !!contactError || isUpdating || !!termMismatch;
+  const termMismatch = officialsExist && displayTerm && official?.status !== 'archived' && termOfService && termOfService !== displayTerm;
+  const isInvalid = !name || !category || !position || !!contactError || isUpdating || !!termMismatch;
 
  return (
  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
@@ -189,7 +189,7 @@ export function EditOfficialModal({
     })
   }
   </select>
-  {category && categoryStats[category] && (
+  {category && categoryStats[category] && official?.status !== 'archived' && (
     <div className="mt-1 flex items-center justify-between px-1">
       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status:</span>
       <span className={`text-[10px] font-bold flex items-center gap-1 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
@@ -240,13 +240,13 @@ export function EditOfficialModal({
  </div>
 
  <div className="space-y-1">
- <label className="text-xs font-bold text-gray-500 uppercase px-1">Term of Service</label>
+ <label className="text-xs font-bold text-gray-500 uppercase px-1">Term of Service {official?.status === 'archived' ? '(any year)' : ''}</label>
  <input 
  value={termOfService} 
  onChange={e => setTermOfService(e.target.value)} 
  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${termMismatch ? 'border-red-500 bg-red-50 ' : 'border-gray-300 '}`} 
  />
- {officialsExist && displayTerm && (
+ {officialsExist && displayTerm && official?.status !== 'archived' && (
  <div className="flex items-center justify-between gap-1 mt-1">
  <p className={`text-[10px] font-bold italic flex items-center gap-1 ${termMismatch ? 'text-red-600' : 'text-blue-600 '}`}>
  {termMismatch 

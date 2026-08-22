@@ -1,11 +1,11 @@
  import React, { useState, useEffect, useCallback, useRef } from 'react';
- import PhoneInput from 'react-phone-number-input/input';
- import { isValidPhoneNumber } from 'react-phone-number-input';
- import 'react-phone-number-input/style.css';
- import { Upload, X, Check, BarChart2, Search, UserCheck } from 'lucide-react';
- import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
- import { resizeImage } from '../../../utils/imageOptimization';
- import { memberService } from '../../../api/jumuiyaMemberService';
+import PhoneInput from 'react-phone-number-input/input';
+import { isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { Upload, X, Check, BarChart2, Search, UserCheck, Clock } from 'lucide-react';
+import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
+import { resizeImage } from '../../../utils/imageOptimization';
+import { memberService } from '../../../api/jumuiyaMemberService';
 
  interface OfficialFormSectionProps {
   onSubmit: (formData: FormData) => Promise<void>;
@@ -44,6 +44,9 @@
   const [nameMemberFound, setNameMemberFound] = useState(false);
   const nameLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Historical mode state
+  const [isHistorical, setIsHistorical] = useState(false);
+
   const categoryStats = React.useMemo(() => {
     const stats: Record<string, { count: number; limit: number; isFull: boolean }> = {};
     if (mode === 'csa') {
@@ -69,10 +72,10 @@
   }, [allOfficials, mode]);
 
  useEffect(() => {
- if (displayTerm) {
+ if (displayTerm && !isHistorical) {
  setTermOfService(displayTerm);
  }
- }, [displayTerm]);
+ }, [displayTerm, isHistorical]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -268,6 +271,7 @@
  if (contact) fd.append('contact', contact);
  if (termOfService) fd.append('term_of_service', termOfService);
  if (regNumber.trim()) fd.append('reg_number', regNumber.trim());
+ if (isHistorical) fd.append('historical', 'true');
 
  if (photo) {
  const optimizedPhotoBlob = await resizeImage(photo);
@@ -295,16 +299,36 @@
  }
  };
 
- const termMismatch = officialsExist && termOfService && termOfService !== displayTerm;
+ const termMismatch = !isHistorical && officialsExist && termOfService && termOfService !== displayTerm;
  const isInvalid = !name || !category || !position || !!contactError || isSubmitting || !!termMismatch;
 
  return (
  <div className="mb-12 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transition-colors">
- <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white text-center">
+ <div className={`p-6 text-white text-center transition-colors ${isHistorical ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-blue-600 to-blue-700'}`}>
  <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
- <Upload className="w-6 h-6" />
- Add New Official
+ {isHistorical ? <Clock className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+ {isHistorical ? 'Add Past Official' : 'Add New Official'}
  </h2>
+ </div>
+
+ {isHistorical && (
+ <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-center">
+ <p className="text-sm font-semibold text-amber-700 flex items-center justify-center gap-2">
+ <Clock className="w-4 h-4" />
+ Historical mode — saved directly as archived with no active roles
+ </p>
+ </div>
+ )}
+
+ <div className="px-6 pt-4 flex justify-end">
+ <button
+ type="button"
+ onClick={() => setIsHistorical(!isHistorical)}
+ className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${isHistorical ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+ >
+ <Clock className="w-3.5 h-3.5" />
+ {isHistorical ? 'Historical Mode ON' : 'Past Officials'}
+ </button>
  </div>
  
  <form onSubmit={handleSubmit} className="p-8">
@@ -447,7 +471,7 @@
     })
   }
   </select>
-  {category && categoryStats[category] && (
+  {category && categoryStats[category] && !isHistorical && (
     <div className="mt-1.5 flex items-center justify-between px-1">
       <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status:</span>
       <span className={`text-[11px] font-bold flex items-center gap-1.5 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
@@ -498,14 +522,14 @@
  </div>
 
  <div className="space-y-2">
- <label className="block text-sm font-semibold text-gray-700 ">Term of Service</label>
+ <label className="block text-sm font-semibold text-gray-700 ">Term of Service {isHistorical ? '(any year, e.g. 2023-2024)' : ''}</label>
  <input 
  value={termOfService} 
  onChange={e => setTermOfService(e.target.value)} 
  placeholder="e.g. 2024-2025" 
  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none" 
  />
- {officialsExist && displayTerm && (
+ {officialsExist && displayTerm && !isHistorical && (
  <>
  <div className="flex items-center justify-between gap-1 mt-1">
  <p className={`text-[11px] font-medium italic flex items-center gap-1 ${termMismatch ? 'text-red-500' : 'text-blue-600 '}`}>
