@@ -14,6 +14,21 @@ interface GalleryPhoto {
 
 const GALLERY_API_URL = `${import.meta.env.VITE_SERVER_URI || ''}/choir/gallery`;
 
+// Escape user/DB-sourced strings before they touch innerHTML (stored XSS).
+const escapeHtml = (value: unknown): string =>
+    String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+// Allow only http(s)/data-image URLs for src attributes.
+const safeUrl = (value: unknown): string => {
+    const url = String(value ?? '');
+    return /^(https:\/\/|http:\/\/|\/|data:image\/)/i.test(url) ? escapeHtml(url) : '';
+};
+
 export class Gallery {
     private containerId: string;
     private photos: GalleryPhoto[] = [];
@@ -63,10 +78,10 @@ export class Gallery {
                     <div class="gallery-grid">
                         ${this.photos.map((photo, index) => `
                             <div class="gallery-item" data-index="${index}">
-                                <img src="${photo.imageUrl}" alt="${photo.eventName}" loading="lazy">
+                                <img src="${safeUrl(photo.imageUrl)}" alt="${escapeHtml(photo.eventName)}" loading="lazy">
                                 <div class="gallery-item-overlay">
-                                    <h3 class="gallery-item-title">${photo.eventName}</h3>
-                                    ${photo.description ? `<p class="gallery-item-desc">${photo.description}</p>` : ''}
+                                    <h3 class="gallery-item-title">${escapeHtml(photo.eventName)}</h3>
+                                    ${photo.description ? `<p class="gallery-item-desc">${escapeHtml(photo.description)}</p>` : ''}
                                 </div>
                             </div>
                         `).join('')}

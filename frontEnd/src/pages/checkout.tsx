@@ -33,7 +33,8 @@ export default function Checkout() {
       try {
           const res = await apiClient.post('/stkPush/initiate/guest', {
               amount: total,
-              phoneNumber: phone
+              phoneNumber: phone,
+              items: cart
           });
 
           const cid = res.data.checkoutId || res.data.CheckoutRequestID;

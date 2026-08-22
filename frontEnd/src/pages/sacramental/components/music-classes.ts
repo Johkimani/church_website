@@ -60,13 +60,16 @@ export class MusicClasses {
         description.textContent = musicClass.description;
 
         const schedule = DOMHelpers.createElement('div', 'csa-choir-music-classes__schedule');
+        // textContent — never interpolate DB data via innerHTML (stored XSS)
+        const scheduleText = DOMHelpers.createElement('span');
+        scheduleText.textContent = musicClass.schedule;
         schedule.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
-      ${musicClass.schedule}
     `;
+        schedule.appendChild(scheduleText);
 
         const enrollBtn = DOMHelpers.createElement('button', 'csa-choir-btn csa-choir-btn--primary csa-choir-btn--full-width', {
             'data-class-id': musicClass.id
@@ -85,7 +88,7 @@ export class MusicClasses {
 
         modal.innerHTML = `
             <div class="csa-choir-modal__header">
-                <h3>Enroll: ${musicClass.title}</h3>
+                <h3></h3>
                 <button class="csa-choir-modal__close">&times;</button>
             </div>
             <form class="csa-choir-modal__form">
@@ -109,6 +112,10 @@ export class MusicClasses {
 
         modalOverlay.appendChild(modal);
         document.body.appendChild(modalOverlay);
+
+        // Fill the title safely after the static template
+        const modalTitle = modal.querySelector('.csa-choir-modal__header h3');
+        if (modalTitle) modalTitle.textContent = `Enroll: ${musicClass.title}`;
 
         const closeBtn = modal.querySelector('.csa-choir-modal__close');
         closeBtn?.addEventListener('click', () => modalOverlay.remove());

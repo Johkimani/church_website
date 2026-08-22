@@ -2,6 +2,7 @@ import { MpesaService } from "../services/mpesa.js";
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { sendOrderPaymentConfirmation } from "../services/notificationService.js";
+import { allowPhonePush, recordPhonePush } from "../middlewares/phoneThrottle.js";
 
 /**
  * SEND STK PUSH
@@ -17,12 +18,32 @@ export const stkPush = async (req, res) => {
       });
     }
 
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > 1_000_000) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment amount"
+      });
+    }
+
+    if (!allowPhonePush(phoneNumber)) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many payment requests to this phone number. Please wait before trying again."
+      });
+    }
+
     const response = await MpesaService.stkPush(
   phoneNumber,
-  amount,
+  Math.round(parsedAmount),
   process.env.CALLBACK_URL
 );
 
+    if (!response?.CheckoutRequestID) {
+      throw new Error(response?.errorMessage || "M-Pesa did not return a checkout ID");
+    }
+
+recordPhonePush(phoneNumber);
 const checkoutId = response.CheckoutRequestID;
     return res.status(200).json({
       success: true,
@@ -83,6 +104,28 @@ export const mpesaCallback = async (req, res) => {
       const mpesaReceipt = getMeta("MpesaReceiptNumber");
       const amount       = getMeta("Amount");
       const phoneNumber  = getMeta("PhoneNumber");
+
+      // AMOUNT RECONCILIATION — block fulfilment when Safaricom reports the
+      // payer paid less than what this server demanded at initiation.
+      const pendingRes = await db.query(
+        `SELECT amount FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+        [CheckoutRequestID],
+      );
+      const expected = Number(pendingRes.rows[0]?.amount ?? 0);
+      const paidAmount = Number(amount ?? 0);
+      if (expected > 0 && paidAmount + 0.99 < expected) {
+        logger.warn(
+          `Payment callback UNDERPAID: CheckoutID=${CheckoutRequestID} expected=${expected} paid=${paidAmount} — fulfilment blocked`,
+        );
+        await db.query(
+          `UPDATE mpesa_request
+              SET status = 'underpaid', result_code = $1, result_desc = $2,
+                  amount = $3, mpesa_receipt = $4, updated_at = CURRENT_TIMESTAMP
+            WHERE checkout_id = $5`,
+          [ResultCode, `Underpaid: expected ${expected}, paid ${paidAmount}`, amount, mpesaReceipt, CheckoutRequestID],
+        );
+        return;
+      }
 
       await db.query(
         `INSERT INTO mpesa_request

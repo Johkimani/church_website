@@ -14,6 +14,7 @@ export const createOrder = async (req, res) => {
     // A client must never be able to mark an order 'paid' on its own word.
     // Only the Safaricom callback (or the server-side confirm flow) sets
     // mpesa_request.status = 'paid'; require that proof before accepting it.
+    let verifiedAmount = null;
     if (status === "paid") {
       if (!checkout_id) {
         return res.status(400).json({
@@ -21,7 +22,7 @@ export const createOrder = async (req, res) => {
         });
       }
       const payResult = await db.query(
-        `SELECT status, mpesa_receipt FROM mpesa_request WHERE checkout_id = $1`,
+        `SELECT status, mpesa_receipt, amount FROM mpesa_request WHERE checkout_id = $1`,
         [checkout_id],
       );
       const payRow = payResult.rows[0];
@@ -35,6 +36,9 @@ export const createOrder = async (req, res) => {
           error: "Receipt number does not match the verified payment.",
         });
       }
+      // The amount on record is what the server charged — never the client's
+      // word. Underpaid pushes are stored as 'underpaid' and rejected above.
+      verifiedAmount = Number(payRow.amount ?? 0) || null;
     }
 
     // Generate reference: CSA-000001 format
@@ -50,7 +54,7 @@ export const createOrder = async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
-        user_id || null, amount, phone || null, checkout_id || null,
+        user_id || null, verifiedAmount ?? amount, phone || null, checkout_id || null,
         mpesa_receipt || null, status || "pending", itemsJson,
         reference, customer_name || null, customer_email || null,
         payment_method || "mpesa", collection_method || "pickup",
