@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
  X, Filter, Trash2, RotateCcw, ChevronLeft, ChevronRight, 
- Download, Image as ImageIcon, Phone, Calendar, Award as AwardIcon, Check
+ Download, Image as ImageIcon, Phone, Calendar, Award as AwardIcon, Check, Pencil
 } from 'lucide-react';
 import { showErrorToast } from '../../../utils/customToast';
 import { useHistory } from '../../../hooks/useHistory';
@@ -16,9 +16,10 @@ interface HistoryModalProps {
  activeOfficials: any[];
  activeTerm?: string;
  mode?: 'csa' | 'jumuiya' | 'groups';
+ onEdit?: (official: any) => void;
 }
 
-export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mode = 'csa' }: HistoryModalProps) {
+export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mode = 'csa', onEdit }: HistoryModalProps) {
  const [termFilter, setTermFilter] = useState('all');
  const [categoryFilter, setCategoryFilter] = useState('all');
  const [page, setPage] = useState(1);
@@ -368,6 +369,15 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  </div>
 
  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+ {onEdit && (
+ <button 
+ onClick={() => onEdit(o)}
+ className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+ title="Edit"
+ >
+ <Pencil className="w-4 h-4" />
+ </button>
+ )}
  <button 
  onClick={() => handleRestore([o.id])}
  className="p-2 text-indigo-600 hover:bg-indigo-50 :bg-indigo-900/50 rounded-lg transition-all"

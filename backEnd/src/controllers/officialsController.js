@@ -747,8 +747,10 @@ export const updateOfficial = async (req, res) => {
       validatedRegNumber = memberResult.rows[0].member_id;
     }
 
-    // New Requirement: Check for position uniqueness (if changed or newly provided)
-    if (position && position.trim() !== '') {
+    // Position uniqueness check — skip for archived officials (historical data)
+    const isArchivedUpdate = existing.rows[0].status === 'archived';
+
+    if (!isArchivedUpdate && position && position.trim() !== '') {
       const posDup = await pool.query(
         "SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND id != $2 AND (status = 'active' OR status IS NULL)",
         [position.trim(), id]
@@ -785,34 +787,37 @@ export const updateOfficial = async (req, res) => {
       [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
-    const oldPosition = existing.rows[0].position;
-    const oldRegNumber = existing.rows[0].reg_number;
-    const newPosition = position || oldPosition;
-    const newRegNumber = validatedRegNumber || oldRegNumber;
+    // Role assignment — skip for archived officials
+    if (!isArchivedUpdate) {
+      const oldPosition = existing.rows[0].position;
+      const oldRegNumber = existing.rows[0].reg_number;
+      const newPosition = position || oldPosition;
+      const newRegNumber = validatedRegNumber || oldRegNumber;
 
-    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
-      if (oldPosition && oldRegNumber) {
-        await removeRoleForOfficial(oldRegNumber, oldPosition, false);
-      }
-      if (newRegNumber && newPosition) {
+      if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
+        if (oldPosition && oldRegNumber) {
+          await removeRoleForOfficial(oldRegNumber, oldPosition, false);
+        }
+        if (newRegNumber && newPosition) {
+          const roleResult = await autoAssignRoleForOfficial(
+            newRegNumber, newPosition, false, result.rows[0].category, req.user?.member_id || null
+          );
+          if (roleResult) {
+            logger.info(`Auto-assigned role for updated official: ${JSON.stringify(roleResult)}`);
+          }
+        }
+      } else if (validatedRegNumber && position && oldPosition === position) {
         const roleResult = await autoAssignRoleForOfficial(
-          newRegNumber, newPosition, false, result.rows[0].category, req.user?.member_id || null
+          validatedRegNumber, position, false, result.rows[0].category, req.user?.member_id || null
         );
         if (roleResult) {
-          logger.info(`Auto-assigned role for updated official: ${JSON.stringify(roleResult)}`);
+          logger.info(`Re-assigned role for official: ${JSON.stringify(roleResult)}`);
         }
       }
-    } else if (validatedRegNumber && position && oldPosition === position) {
-      const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, false, result.rows[0].category, req.user?.member_id || null
-      );
-      if (roleResult) {
-        logger.info(`Re-assigned role for official: ${JSON.stringify(roleResult)}`);
-      }
-    }
 
-    if (term_of_service) {
-      await syncCurrentTerm(term_of_service);
+      if (term_of_service) {
+        await syncCurrentTerm(term_of_service);
+      }
     }
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update", id, data: result.rows[0] });

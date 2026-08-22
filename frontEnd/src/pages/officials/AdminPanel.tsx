@@ -369,6 +369,7 @@ export default function AdminPanel() {
         activeOfficials={activeOfficialsList}
         activeTerm={displayTerm}
         mode={adminMode}
+        onEdit={(official) => { setIsHistoryOpen(false); setEditingOfficial(official); }}
       />
 
       <ShareModal 

@@ -453,8 +453,10 @@ export const updateJumuiyaOfficial = async (req, res) => {
       if (nameMatch.rows.length > 0) validatedRegNumber = nameMatch.rows[0].member_id;
     }
 
-    // Limit check for category+position combo during an update
-    if (category || position) {
+    // Position uniqueness — skip for archived officials
+    const isArchivedUpdate = existing.rows[0].status === 'archived';
+
+    if (!isArchivedUpdate && (category || position)) {
       const posDup = await pool.query(
         "SELECT name FROM jumuiya_officials WHERE category = $1 AND position = $2 AND id != $3 AND (status = 'active' OR status IS NULL)",
         [currentCategory, currentPosition, id]
@@ -491,34 +493,37 @@ export const updateJumuiyaOfficial = async (req, res) => {
       [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
-    const oldPosition = existing.rows[0].position;
-    const oldRegNumber = existing.rows[0].reg_number;
-    const newPosition = position || oldPosition;
-    const newRegNumber = validatedRegNumber || oldRegNumber;
+    // Role assignment — skip for archived officials
+    if (!isArchivedUpdate) {
+      const oldPosition = existing.rows[0].position;
+      const oldRegNumber = existing.rows[0].reg_number;
+      const newPosition = position || oldPosition;
+      const newRegNumber = validatedRegNumber || oldRegNumber;
 
-    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
-      if (oldPosition && oldRegNumber) {
-        await removeRoleForOfficial(oldRegNumber, oldPosition, true);
-      }
-      if (newRegNumber && newPosition) {
+      if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
+        if (oldPosition && oldRegNumber) {
+          await removeRoleForOfficial(oldRegNumber, oldPosition, true);
+        }
+        if (newRegNumber && newPosition) {
+          const roleResult = await autoAssignRoleForOfficial(
+            newRegNumber, newPosition, true, result.rows[0].category, req.user?.member_id || null
+          );
+          if (roleResult) {
+            logger.info(`Auto-assigned role for updated jumuiya official: ${JSON.stringify(roleResult)}`);
+          }
+        }
+      } else if (validatedRegNumber && position && oldPosition === position) {
         const roleResult = await autoAssignRoleForOfficial(
-          newRegNumber, newPosition, true, result.rows[0].category, req.user?.member_id || null
+          validatedRegNumber, position, true, result.rows[0].category, req.user?.member_id || null
         );
         if (roleResult) {
-          logger.info(`Auto-assigned role for updated jumuiya official: ${JSON.stringify(roleResult)}`);
+          logger.info(`Re-assigned role for jumuiya official: ${JSON.stringify(roleResult)}`);
         }
       }
-    } else if (validatedRegNumber && position && oldPosition === position) {
-      const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, true, result.rows[0].category, req.user?.member_id || null
-      );
-      if (roleResult) {
-        logger.info(`Re-assigned role for jumuiya official: ${JSON.stringify(roleResult)}`);
-      }
-    }
 
-    if (term_of_service) {
-      await syncCurrentTerm(term_of_service);
+      if (term_of_service) {
+        await syncCurrentTerm(term_of_service);
+      }
     }
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_jumuiya", id, data: result.rows[0] });

@@ -403,8 +403,10 @@ export const updateGroupOfficial = async (req, res) => {
       validatedRegNumber = lookup.member.member_id;
     }
 
-    // Limit check for category+position combo during an update
-    if (category || position) {
+    // Position uniqueness — skip for archived officials
+    const isArchivedUpdate = existing.rows[0].status === 'archived';
+
+    if (!isArchivedUpdate && (category || position)) {
       const posDup = await pool.query(
         "SELECT name FROM group_officials WHERE category = $1 AND position = $2 AND id != $3 AND (status = 'active' OR status IS NULL)",
         [currentCategory, currentPosition, id]
@@ -440,29 +442,32 @@ export const updateGroupOfficial = async (req, res) => {
       [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
-    const oldPosition = existing.rows[0].position;
-    const oldRegNumber = existing.rows[0].reg_number;
-    const oldCategory = existing.rows[0].category;
-    const newPosition = result.rows[0].position;
-    const newRegNumber = result.rows[0].reg_number;
-    const newCategory = result.rows[0].category;
+    // Role assignment — skip for archived officials
+    if (!isArchivedUpdate) {
+      const oldPosition = existing.rows[0].position;
+      const oldRegNumber = existing.rows[0].reg_number;
+      const oldCategory = existing.rows[0].category;
+      const newPosition = result.rows[0].position;
+      const newRegNumber = result.rows[0].reg_number;
+      const newCategory = result.rows[0].category;
 
-    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber || oldCategory !== newCategory) {
-      if (oldRegNumber && oldPosition) {
-        await removeRoleForOfficial(oldRegNumber, oldPosition, false, oldCategory);
-      }
-      if (newRegNumber && newPosition) {
-        const roleResult = await autoAssignRoleForOfficial(
-          newRegNumber, newPosition, false, newCategory, req.user?.member_id || null, newCategory
-        );
-        if (roleResult) {
-          logger.info(`Auto-assigned role for updated group official: ${JSON.stringify(roleResult)}`);
+      if (oldPosition !== newPosition || oldRegNumber !== newRegNumber || oldCategory !== newCategory) {
+        if (oldRegNumber && oldPosition) {
+          await removeRoleForOfficial(oldRegNumber, oldPosition, false, oldCategory);
+        }
+        if (newRegNumber && newPosition) {
+          const roleResult = await autoAssignRoleForOfficial(
+            newRegNumber, newPosition, false, newCategory, req.user?.member_id || null, newCategory
+          );
+          if (roleResult) {
+            logger.info(`Auto-assigned role for updated group official: ${JSON.stringify(roleResult)}`);
+          }
         }
       }
-    }
 
-    if (term_of_service) {
-      await syncCurrentTerm(term_of_service);
+      if (term_of_service) {
+        await syncCurrentTerm(term_of_service);
+      }
     }
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_group", id, data: result.rows[0] });
