@@ -1059,3 +1059,101 @@ export const bulkDeleteArchivedOfficials = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to perform bulk delete' });
   }
 };
+
+/**
+ * Handover — archive ALL active officials across CSA, Jumuiya & Group tables
+ * in a single transaction, then create / promote the next election term.
+ *
+ * Body: { name, year, start_date, end_date?, description? }
+ */
+export const handoverOfficials = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { election_term_id, name, year, start_date, end_date, description } = req.body;
+
+    await client.query('BEGIN');
+
+    // ── 1. Resolve or create the new term ──────────────────────────
+    let termId = election_term_id;
+
+    if (!termId) {
+      if (!name || !year || !start_date) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          message: 'Term name, year and start_date are required'
+        });
+      }
+
+      // Demote every existing term
+      await client.query('UPDATE election_terms SET is_current = FALSE');
+
+      const termResult = await client.query(
+        `INSERT INTO election_terms (name, year, start_date, end_date, description, is_current)
+         VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING *`,
+        [name, year, start_date, end_date || null, description || null]
+      );
+      termId = termResult.rows[0].id;
+    } else {
+      const termCheck = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
+      if (termCheck.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ success: false, message: 'Election term not found' });
+      }
+      await client.query('UPDATE election_terms SET is_current = FALSE');
+      await client.query('UPDATE election_terms SET is_current = TRUE WHERE id = $1', [termId]);
+    }
+
+    // ── 2. Archive CSA officials ──────────────────────────────────
+    const csaCount = await client.query(
+      `UPDATE officials
+       SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE status = 'active' OR status IS NULL`,
+      [termId]
+    );
+
+    // ── 3. Archive Jumuiya officials ──────────────────────────────
+    const jumuiyaCount = await client.query(
+      `UPDATE jumuiya_officials
+       SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE status = 'active' OR status IS NULL`,
+      [termId]
+    );
+
+    // ── 4. Archive Group officials ────────────────────────────────
+    const groupCount = await client.query(
+      `UPDATE group_officials
+       SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE status = 'active' OR status IS NULL`,
+      [termId]
+    );
+
+    const termInfo = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
+
+    await client.query('COMMIT');
+
+    const totalArchived = csaCount.rowCount + jumuiyaCount.rowCount + groupCount.rowCount;
+
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "handover" });
+
+    res.json({
+      success: true,
+      message: `Handover complete — archived ${csaCount.rowCount} CSA, ${jumuiyaCount.rowCount} Jumuiya and ${groupCount.rowCount} Group officials to "${termInfo.rows[0].name}"`,
+      data: {
+        archived: {
+          csa: csaCount.rowCount,
+          jumuiya: jumuiyaCount.rowCount,
+          groups: groupCount.rowCount,
+          total: totalArchived
+        },
+        election_term: termInfo.rows[0]
+      }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Error during handover: ' + error.message);
+    res.status(500).json({ success: false, message: `Handover failed: ${error.message}` });
+  } finally {
+    client.release();
+  }
+};

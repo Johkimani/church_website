@@ -11,6 +11,7 @@ import {
   updateElectionTerm,
   deleteElectionTerm,
   archiveCurrentOfficials,
+  handoverOfficials,
   getOfficialsByTerm,
   restoreArchivedOfficials,
   exportOfficials,
@@ -36,6 +37,7 @@ router.delete('/terms/:id', verifyToken, requireRole(...OFFICIAL_ROLES), deleteE
 
 // Archive & Restore routes
 router.post('/archive', verifyToken, requireRole(...OFFICIAL_ROLES), archiveCurrentOfficials);
+router.post('/handover', verifyToken, requireRole(...OFFICIAL_ROLES), handoverOfficials);
 router.post('/restore', verifyToken, requireRole(...OFFICIAL_ROLES), restoreArchivedOfficials);
 router.get('/term', optionalAuth, getOfficialsByTerm);
 router.get('/term/:termId', optionalAuth, getOfficialsByTerm);
