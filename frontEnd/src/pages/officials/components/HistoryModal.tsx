@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { 
- X, Filter, Trash2, RotateCcw, ChevronLeft, ChevronRight, 
+ X, Filter, Trash2, RotateCcw,
  Download, Image as ImageIcon, Phone, Calendar, Award as AwardIcon, Check, Pencil
 } from 'lucide-react';
 import { showErrorToast } from '../../../utils/customToast';
@@ -22,8 +22,7 @@ interface HistoryModalProps {
 export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mode = 'csa', onEdit }: HistoryModalProps) {
  const [termFilter, setTermFilter] = useState('all');
  const [categoryFilter, setCategoryFilter] = useState('all');
- const [page, setPage] = useState(1);
- const limit = 10;
+ const limit = 500;
 
  const getPhotoUrl = (photo: string | null | undefined) => {
  if (!photo) return DEFAULT_AVATAR;
@@ -35,12 +34,12 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  const { 
  history, meta, isLoading, restoreOfficials, deleteArchived, 
  bulkDelete, isRestoring, isBulkDeleting, isDeleting 
- } = useHistory({ 
- termId: termFilter === 'all' ? undefined : termFilter,
- onlyArchived: true,
- page,
- limit,
- mode
+  } = useHistory({ 
+  termId: termFilter === 'all' ? undefined : termFilter,
+  onlyArchived: true,
+  page: 1,
+  limit,
+  mode
  });
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -216,7 +215,7 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 " />
  <select 
  value={termFilter} 
- onChange={e => { setTermFilter(e.target.value); setPage(1); }}
+ onChange={e => setTermFilter(e.target.value)}
  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none appearance-none bg-gray-50 hover:bg-white :bg-gray-900 transition-colors text-sm font-medium text-gray-900 "
  >
  <option value="all">All Terms</option>
@@ -233,7 +232,7 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
   <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 " />
   <select 
   value={categoryFilter} 
-  onChange={e => { setCategoryFilter(e.target.value); setPage(1); }}
+  onChange={e => setCategoryFilter(e.target.value)}
   className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none appearance-none bg-gray-50 hover:bg-white :bg-gray-900 transition-colors text-sm font-medium text-gray-900 "
   >
   <option value="all">{mode === 'groups' ? 'All Groups' : 'All Jumuiyas'}</option>
@@ -399,41 +398,6 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  )}
  </div>
 
- {/* Pagination */}
- {meta && meta.totalPages > 1 && (
- <div className="p-4 border-t border-gray-100 bg-white flex items-center justify-between">
- <p className="text-sm text-gray-500 font-medium">
- Showing <span className="text-gray-900 font-bold">{history.length}</span> of <span className="text-gray-900 font-bold">{meta.total}</span> records
- </p>
- <div className="flex items-center gap-2">
- <button 
- onClick={() => setPage(p => Math.max(1, p - 1))}
- disabled={page === 1}
- className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 :bg-gray-700 disabled:opacity-30 disabled:hover:bg-transparent transition-all "
- >
- <ChevronLeft className="w-5 h-5" />
- </button>
- <div className="flex items-center gap-1">
- {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map(p => (
- <button
- key={p}
- onClick={() => setPage(p)}
- className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${page === p ? 'bg-indigo-600 text-white shadow-lg' : 'hover:bg-gray-100 :bg-gray-700 text-gray-600 '}`}
- >
- {p}
- </button>
- ))}
- </div>
- <button 
- onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
- disabled={page === meta.totalPages}
- className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 :bg-gray-700 disabled:opacity-30 disabled:hover:bg-transparent transition-all "
- >
- <ChevronRight className="w-5 h-5" />
- </button>
- </div>
- </div>
- )}
   <ConfirmDialog
     isOpen={confirmConfig !== null}
     title={confirmConfig?.title || ''}
