@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useCart } from "../context/cartcontext";
 import { apiClient } from "../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
+import Turnstile, { isCaptchaEnabled } from "../components/Turnstile";
 
 export default function Checkout() {
   const { cart, clearCart } = useCart();
@@ -9,6 +10,8 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
   const navigate = useNavigate();
 
@@ -29,12 +32,18 @@ export default function Checkout() {
           setLoading(false);
           return;
       }
+      if (isCaptchaEnabled() && !captchaToken) {
+          setError('Please complete the human verification first');
+          setLoading(false);
+          return;
+      }
 
       try {
           const res = await apiClient.post('/stkPush/initiate/guest', {
               amount: total,
               phoneNumber: phone,
-              items: cart
+              items: cart,
+              captchaToken
           });
 
           const cid = res.data.checkoutId || res.data.CheckoutRequestID;
@@ -47,6 +56,7 @@ export default function Checkout() {
 
       } catch (err: any) {
           setError(err.response?.data?.message || 'Failed to initiate STK Push. Try again.');
+          setCaptchaResetSignal((s) => s + 1);
           setLoading(false);
       }
   };
@@ -127,6 +137,12 @@ export default function Checkout() {
       ))}
 
       <h2>Total: KES {total}</h2>
+
+      {isCaptchaEnabled() && (
+        <div style={{ margin: "12px 0" }}>
+          <Turnstile onToken={setCaptchaToken} resetSignal={captchaResetSignal} />
+        </div>
+      )}
 
       <button
         onClick={handleSTKPush}

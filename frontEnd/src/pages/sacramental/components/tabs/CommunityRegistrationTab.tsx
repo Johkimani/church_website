@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
+import Turnstile, { isCaptchaEnabled } from '../../../../components/Turnstile';
 import { FaUserPlus, FaCheck } from 'react-icons/fa';
 import type { CommunityModule } from '../../context/CommunityDataContext';
 import '../../../Jumuiya/components/TabsSystem.css';
@@ -17,11 +18,16 @@ const CommunityRegistrationTab: React.FC<Props> = ({ moduleId, moduleName, color
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', voiceType: '', musicLevel: 'Beginner', notes: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
   const isChoir = moduleId === 'choir';
 
   const enrollMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      if (isCaptchaEnabled() && !captchaToken) {
+        throw new Error('Please complete the human verification before submitting.');
+      }
       const payload = {
         full_name: data.name,
         class_id: moduleId,
@@ -31,6 +37,7 @@ const CommunityRegistrationTab: React.FC<Props> = ({ moduleId, moduleName, color
         phone: data.phone || '',
         email: data.email || '',
         status: 'Pending',
+        captchaToken,
       };
       return await apiClient.post(module.registrationEndpoint || '/enrollments', payload);
     },
@@ -41,6 +48,7 @@ const CommunityRegistrationTab: React.FC<Props> = ({ moduleId, moduleName, color
     },
     onError: () => {
       toast.error('Failed to submit. Please try again.');
+      setCaptchaResetSignal((s) => s + 1);
     },
   });
 
@@ -144,6 +152,12 @@ const CommunityRegistrationTab: React.FC<Props> = ({ moduleId, moduleName, color
             placeholder="Why do you want to join?"
           />
         </div>
+
+        {isCaptchaEnabled() && (
+          <div className="form-group">
+            <Turnstile onToken={setCaptchaToken} resetSignal={captchaResetSignal} />
+          </div>
+        )}
 
         <button type="submit" className="btn-premium primary full-width">
           <FaUserPlus /> Submit Registration
