@@ -1410,12 +1410,57 @@ export const csaValidateMembers = async (req, res) => {
 };
 
 /**
+ * Per-jumuiya baseline counts used by the distribution algorithm.
+ *
+ *  - default ("jumuiya-balanced"): ALL active members count, so new members
+ *    are spread to level total membership.
+ *  - "equal-split": only already-placed CSA first-years count (source='csa').
+ *    Existing / WhatsApp-registered members are ignored so an incomplete
+ *    senior registration cannot skew the intake split. Multiple runs during
+ *    the same admission week stay consistent because earlier CSA placements
+ *    remain part of the baseline.
+ */
+const fetchDistributionBaselines = async (strategy, yearFilter) => {
+  const isEqualSplit = strategy === "equal-split";
+  const cohortWhere = isEqualSplit ? `AND m.source = 'csa'` : "";
+  const cohortYearFilter = isEqualSplit ? yearFilter : "";
+
+  const rows = [];
+  for (const name of JUMUIYA_NAMES) {
+    const totalResult = await pool.query(
+      `SELECT COUNT(*)::int as total,
+              SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
+              SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
+       FROM members m
+       LEFT JOIN sub_groups sg ON sg.name = $1
+       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+       WHERE m.jumuiya_id = sg.group_id
+         AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+         ${cohortWhere}
+         ${cohortYearFilter}`,
+      [name]
+    );
+    rows.push({
+      slug: JUMUIYA_SLUG_MAP[name],
+      name,
+      existing: {
+        total: totalResult.rows[0]?.total || 0,
+        male_count: totalResult.rows[0]?.male_count || 0,
+        female_count: totalResult.rows[0]?.female_count || 0,
+      },
+      imported: { total: 0 },
+    });
+  }
+  return rows;
+};
+
+/**
  * POST /api/v1/jumuiya-members/csa/distribute-preview
  * Run the distribution algorithm and return preview (no DB writes).
  */
 export const csaDistributePreview = async (req, res) => {
   try {
-    const { academic_year } = req.body || {};
+    const { academic_year, strategy } = req.body || {};
     const yearFilter = academic_year ? `AND mi.academic_year = '${academic_year.replace(/'/g, "''")}'` : "";
 
     const pendingResult = await pool.query(
@@ -1432,26 +1477,7 @@ export const csaDistributePreview = async (req, res) => {
       return res.status(400).json({ error: "No pending members to distribute" });
     }
 
-    const jumuiyaRows = [];
-    for (const name of JUMUIYA_NAMES) {
-      const totalResult = await pool.query(
-        `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
-        [name]
-      );
-      jumuiyaRows.push({
-        slug: JUMUIYA_SLUG_MAP[name],
-        name,
-        existing: {
-          total: totalResult.rows[0]?.total || 0,
-          male_count: totalResult.rows[0]?.male_count || 0,
-          female_count: totalResult.rows[0]?.female_count || 0,
-        },
-      });
-    }
+    const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
     const members = pendingResult.rows;
     const assignments = [];
@@ -1507,7 +1533,7 @@ export const csaDistributePreview = async (req, res) => {
       })),
     };
 
-    res.json({ status: "success", data: { assignments, summary } });
+    res.json({ status: "success", data: { assignments, summary, strategy: strategy === "equal-split" ? "equal-split" : "jumuiya-balanced" } });
   } catch (error) {
     logger.error("csaDistributePreview error:", error.message);
     res.status(500).json({ error: error.message });
@@ -1537,23 +1563,7 @@ export const csaDistributeMembers = async (req, res) => {
       return res.status(400).json({ error: "No pending members to distribute" });
     }
 
-    const jumuiyaRows = [];
-    for (const name of JUMUIYA_NAMES) {
-      const totalResult = await pool.query(
-        `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
-        [name]
-      );
-      jumuiyaRows.push({
-        slug: JUMUIYA_SLUG_MAP[name],
-        name,
-        existing: totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-        imported: { total: 0 },
-      });
-    }
+    const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
     const members = pendingResult.rows;
     const jumuiyaSlots = jumuiyaRows.map(j => ({
@@ -1647,7 +1657,7 @@ export const csaDistributeMembers = async (req, res) => {
  * Compute a balanced distribution for pending CSA members.
  * (Reuses the same algorithm as csaDistributePreview.)
  */
-const computeDistributionPlan = async (academicYear) => {
+const computeDistributionPlan = async (academicYear, strategy) => {
   const yearFilter = academicYear ? `AND mi.academic_year = '${academicYear.replace(/'/g, "''")}'` : "";
 
   const pendingResult = await pool.query(
@@ -1662,21 +1672,7 @@ const computeDistributionPlan = async (academicYear) => {
 
   if (!pendingResult.rows.length) return null;
 
-  const jumuiyaRows = [];
-  for (const name of JUMUIYA_NAMES) {
-    const totalResult = await pool.query(
-      `SELECT COUNT(*)::int as total,
-              SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-              SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-       FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id`,
-      [name]
-    );
-    jumuiyaRows.push({
-      slug: JUMUIYA_SLUG_MAP[name], name,
-      existing: totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-      imported: { total: 0 },
-    });
-  }
+  const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
   const members = pendingResult.rows;
   const slots = jumuiyaRows.map(j => ({
@@ -1732,8 +1728,8 @@ const computeDistributionPlan = async (academicYear) => {
  */
 export const csaSubmitForApproval = async (req, res) => {
   try {
-    const { academic_year } = req.body || {};
-    const plan = await computeDistributionPlan(academic_year);
+    const { academic_year, strategy } = req.body || {};
+    const plan = await computeDistributionPlan(academic_year, strategy);
     if (!plan) return res.status(400).json({ error: "No pending members to distribute" });
 
     const batchResult = await pool.query(

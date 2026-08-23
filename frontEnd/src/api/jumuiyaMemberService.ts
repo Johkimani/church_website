@@ -122,7 +122,7 @@ export const memberService = {
   csaDistributeMembers: (data?: { strategy?: string; academic_year?: string }) =>
     apiClient.post(`/jumuiya-members/csa/distribute`, data || {}).then(r => r.data),
 
-  csaSubmitForApproval: (data?: { academic_year?: string }) =>
+  csaSubmitForApproval: (data?: { strategy?: string; academic_year?: string }) =>
     apiClient.post(`/jumuiya-members/csa/submit-for-approval`, data || {}).then(r => r.data),
 
   csaGetApprovals: (jumuiyaId: string) =>

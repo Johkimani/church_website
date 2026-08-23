@@ -119,6 +119,11 @@ export default function CSADistributionCenter() {
   const [distributing, setDistributing] = useState(false);
   const [distributionDone, setDistributionDone] = useState(false);
 
+  // Balance mode: "membership" levels against the full jumuiya membership,
+  // "equal" (equal-split) spreads the new intake evenly ignoring seniors.
+  const [strategy, setStrategy] = useState<"membership" | "equal">("membership");
+  const strategyParam = strategy === "equal" ? "equal-split" : undefined;
+
   // Approval workflow state
   const [activeBatches, setActiveBatches] = useState<any[]>([]);
   const [approvalStatuses, setApprovalStatuses] = useState<Record<number, any>>({});
@@ -361,6 +366,7 @@ export default function CSADistributionCenter() {
     try {
       const payload: any = {};
       if (filterYear) payload.academic_year = filterYear;
+      if (strategyParam) payload.strategy = strategyParam;
       const res = await memberService.csaDistributePreview(payload);
       setPreview(res.data);
     } catch (err: any) {
@@ -374,6 +380,7 @@ export default function CSADistributionCenter() {
     try {
       const payload: any = {};
       if (filterYear) payload.academic_year = filterYear;
+      if (strategyParam) payload.strategy = strategyParam;
       const res = await memberService.csaSubmitForApproval(payload);
       setPreview(null);
       setDistributionDone(false);
@@ -511,6 +518,27 @@ export default function CSADistributionCenter() {
           <button onClick={downloadTemplate} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">
             <FileSpreadsheet size={14} /> Template
           </button>
+
+          <div className="h-5 w-px bg-slate-200 mx-1" />
+
+          {/* Balance mode toggle */}
+          <div className="flex items-center gap-1.5" title={
+            strategy === "membership"
+              ? "New members are placed to level total membership across Jumuiyas (uses current member counts)."
+              : "Equal Split: new members are spread evenly across all 7 Jumuiyas, balancing gender — existing member counts are ignored. Best while senior registrations are still incomplete."
+          }>
+            <span className="text-xs font-medium text-slate-500">Balance:</span>
+            <div className="flex bg-slate-100 rounded-lg p-0.5">
+              <button onClick={() => setStrategy("membership")}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${strategy === "membership" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                Full Membership
+              </button>
+              <button onClick={() => setStrategy("equal")}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${strategy === "equal" ? "bg-violet-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                Equal Split
+              </button>
+            </div>
+          </div>
 
           <div className="h-5 w-px bg-slate-200 mx-1" />
 
@@ -731,7 +759,12 @@ export default function CSADistributionCenter() {
             </div>
             <div>
               <h4 className="font-semibold text-slate-800">Distribution Preview</h4>
-              <p className="text-xs text-slate-400">{preview.summary.totalMembers} members (M {preview.summary.maleCount}, W {preview.summary.femaleCount}) to be distributed</p>
+              <p className="text-xs text-slate-400">
+                {preview.summary.totalMembers} members (M {preview.summary.maleCount}, W {preview.summary.femaleCount}) to be distributed
+                <span className={`ml-2 px-1.5 py-0.5 rounded font-semibold ${preview.data?.strategy === "equal-split" ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-500"}`}>
+                  {preview.data?.strategy === "equal-split" ? "Equal Split (new members only)" : "Full Membership balance"}
+                </span>
+              </p>
             </div>
           </div>
 
