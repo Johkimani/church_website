@@ -1,6 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import { getRoleNameForPosition, CSA_EXECUTIVE_ROLES, getGroupRoleName, checkExecutiveExclusivity } from "../utils/positionToRole.js";
+import { getRoleNameForPosition, getGroupRoleName, checkExecutiveExclusivity } from "../utils/positionToRole.js";
 
 const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
 

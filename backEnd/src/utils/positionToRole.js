@@ -1,14 +1,14 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
-// CSA executive roles — a member can hold ONLY ONE role on the entire system
-// at a time (the executive exclusivity rule). jumuiya_coordinator counts as a
-// CSA executive because it maps to a CSA-table position ("Jumuiya Coordinator").
+// CSA executive positions (6): Chairperson, Vice Chairperson, Organizing
+// Secretary, Treasurer, Secretary, Vice/Assistant Secretary. The last two both
+// map to the single `csa_secretary` system role, giving these 5 system roles.
+// A member may hold ONLY ONE executive role, and an executive holds no other
+// system role at all (see checkExecutiveExclusivity).
 export const CSA_EXECUTIVE_ROLES = [
-  "csa_chair", "csa_vice_chair", "csa_secretary",
-  "project_manager", "instrument_manager", "os",
-  "treasurer", "liturgist",
-  "jumuiya_coordinator",
+  "csa_chair", "csa_vice_chair", "os",
+  "treasurer", "csa_secretary",
 ];
 
 export const GROUP_CATEGORY_POSITION_TO_ROLE = {
@@ -129,9 +129,18 @@ const ROLE_IS_JUMUIYA_SCOPED = [
 ];
 
 // Every system admin role that participates in executive exclusivity.
-// Non-executive officials may combine these freely; CSA executives may hold none of them besides their single executive role.
+// Non-executive officials may combine these freely; CSA executives may hold
+// none of them besides their single executive role.
+const OTHER_ADMIN_ROLES = [
+  'project_manager',
+  'instrument_manager',
+  'liturgist',
+  'jumuiya_coordinator',
+];
+
 export const EXCLUSIVITY_ROLE_SET = [
   ...CSA_EXECUTIVE_ROLES,
+  ...OTHER_ADMIN_ROLES,
   ...ROLE_IS_JUMUIYA_SCOPED,
   ...GROUP_ROLES,
 ];
