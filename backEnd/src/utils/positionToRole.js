@@ -1,11 +1,14 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
-// CSA executive roles — a member can only hold ONE of these at a time
+// CSA executive roles — a member can hold ONLY ONE role on the entire system
+// at a time (the executive exclusivity rule). jumuiya_coordinator counts as a
+// CSA executive because it maps to a CSA-table position ("Jumuiya Coordinator").
 export const CSA_EXECUTIVE_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary",
   "project_manager", "instrument_manager", "os",
   "treasurer", "liturgist",
+  "jumuiya_coordinator",
 ];
 
 export const GROUP_CATEGORY_POSITION_TO_ROLE = {
@@ -124,6 +127,54 @@ const ROLE_IS_JUMUIYA_SCOPED = [
   'jumuiya_os',
   'jumuiya_secretary',
 ];
+
+// Every system admin role that participates in executive exclusivity.
+// Non-executive officials may combine these freely; CSA executives may hold none of them besides their single executive role.
+export const EXCLUSIVITY_ROLE_SET = [
+  ...CSA_EXECUTIVE_ROLES,
+  ...ROLE_IS_JUMUIYA_SCOPED,
+  ...GROUP_ROLES,
+];
+
+/**
+ * One-role rule for CSA executives. Returns { conflict: true, message } when
+ * assigning `roleName` to `memberId` must be refused, or null when allowed.
+ *
+ *  - Assigning ANY system admin role → refused if the member already holds an
+ *    approved/pending CSA executive role (an executive holds nothing else).
+ *  - Assigning a CSA executive role → additionally refused if the member holds
+ *    any other approved/pending system admin role.
+ */
+export const checkExecutiveExclusivity = async (memberId, roleName) => {
+  if (!memberId || !roleName) return null;
+  const cleanRole = String(roleName).toLowerCase().trim();
+  const isExec = CSA_EXECUTIVE_ROLES.includes(cleanRole);
+  if (!isExec && !EXCLUSIVITY_ROLE_SET.includes(cleanRole)) return null;
+
+  const compareAgainst = isExec ? EXCLUSIVITY_ROLE_SET : CSA_EXECUTIVE_ROLES;
+  const existing = await pool.query(
+    `SELECT r.role_name FROM member_roles mr
+     JOIN roles r ON mr.role_id = r.role_id
+     WHERE mr.member_id = $1 AND mr.status IN ('approved', 'pending')
+       AND r.role_name = ANY($2) AND r.role_name != $3
+     ORDER BY CASE WHEN mr.status = 'approved' THEN 0 ELSE 1 END
+     LIMIT 1`,
+    [memberId, compareAgainst, cleanRole]
+  );
+  if (existing.rows.length === 0) return null;
+
+  const held = existing.rows[0].role_name;
+  if (isExec) {
+    return {
+      conflict: true,
+      message: `"${held}" holder cannot also take "${cleanRole}" — a CSA executive holds only one role on the system.`
+    };
+  }
+  return {
+    conflict: true,
+    message: `Cannot assign "${cleanRole}" — member already holds the CSA executive role "${held}". A CSA executive cannot hold additional roles.`
+  };
+};
 
 export const getRoleNameForPosition = (position, isJumuiya) => {
   if (!position) return null;
@@ -255,18 +306,10 @@ export const autoAssignRoleForOfficial = async (regNumber, position, isJumuiya, 
       }
     }
 
-    // Enforce one CSA executive role per member
-    if (CSA_EXECUTIVE_ROLES.includes(roleName)) {
-      const existing = await pool.query(
-        `SELECT r.role_name FROM member_roles mr
-         JOIN roles r ON mr.role_id = r.role_id
-         WHERE mr.member_id = $1 AND mr.status IN ('approved', 'pending')
-           AND r.role_name = ANY($2) AND r.role_name != $3`,
-        [member.member_id, CSA_EXECUTIVE_ROLES, roleName]
-      );
-      if (existing.rows.length > 0) {
-        return { status: 'conflict', message: `Member already holds the "${existing.rows[0].role_name}" CSA executive role. Cannot assign "${roleName}".` };
-      }
+    // One-role rule: a CSA executive holds exactly one system role
+    const exclusivity = await checkExecutiveExclusivity(member.member_id, roleName);
+    if (exclusivity) {
+      return { status: 'conflict', message: exclusivity.message };
     }
 
     // csa_chair is auto-approved for immediate access

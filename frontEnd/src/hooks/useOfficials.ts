@@ -82,14 +82,18 @@ export function useOfficials() {
       }
       showErrorToast('Failed to Add Official', error.message);
     },
-    onSuccess: (_data, _formData, context) => {
+    onSuccess: (data: any, _formData, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
       apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
+      if (data?.warning) {
+        showErrorToast('Official Added — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
@@ -156,7 +160,7 @@ export function useOfficials() {
       }
       showErrorToast('Failed to Update Official', error.message);
     },
-    onSuccess: (_data, _variables, context) => {
+    onSuccess: (data: any, _variables, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -164,7 +168,11 @@ export function useOfficials() {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      showSuccessToast('Official Updated Successfully', 'The official details have been updated.');
+      if (data?.warning) {
+        showErrorToast('Official Updated — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Official Updated Successfully', 'The official details have been updated.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['officials'] });

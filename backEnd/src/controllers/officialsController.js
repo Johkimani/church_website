@@ -697,11 +697,15 @@ export const createOfficial = async (req, res) => {
       [name, category, position || null, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
     );
 
+    let roleWarning = null;
     if (validatedRegNumber && position) {
       const roleResult = await autoAssignRoleForOfficial(
         validatedRegNumber, position, false, category, req.user?.member_id || null
       );
-      if (roleResult) {
+      if (roleResult?.status === 'conflict') {
+        roleWarning = roleResult.message;
+        logger.warn(`Role not assigned for official ${name}: ${roleResult.message}`);
+      } else if (roleResult) {
         logger.info(`Auto-assigned role for official ${name}: ${JSON.stringify(roleResult)}`);
       }
     }
@@ -710,7 +714,7 @@ export const createOfficial = async (req, res) => {
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create", data: result.rows[0] });
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    res.status(201).json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error creating official: ' + error.message);
     if (error && error.code === '23505') {
@@ -801,6 +805,7 @@ export const updateOfficial = async (req, res) => {
     );
 
     // Role assignment — skip for archived officials
+    let roleWarning = null;
     if (!isArchivedUpdate) {
       const oldPosition = existing.rows[0].position;
       const oldRegNumber = existing.rows[0].reg_number;
@@ -815,7 +820,10 @@ export const updateOfficial = async (req, res) => {
           const roleResult = await autoAssignRoleForOfficial(
             newRegNumber, newPosition, false, result.rows[0].category, req.user?.member_id || null
           );
-          if (roleResult) {
+          if (roleResult?.status === 'conflict') {
+            roleWarning = roleResult.message;
+            logger.warn(`Role not assigned on update: ${roleResult.message}`);
+          } else if (roleResult) {
             logger.info(`Auto-assigned role for updated official: ${JSON.stringify(roleResult)}`);
           }
         }
@@ -823,7 +831,10 @@ export const updateOfficial = async (req, res) => {
         const roleResult = await autoAssignRoleForOfficial(
           validatedRegNumber, position, false, result.rows[0].category, req.user?.member_id || null
         );
-        if (roleResult) {
+        if (roleResult?.status === 'conflict') {
+          roleWarning = roleResult.message;
+          logger.warn(`Role not assigned on update: ${roleResult.message}`);
+        } else if (roleResult) {
           logger.info(`Re-assigned role for official: ${JSON.stringify(roleResult)}`);
         }
       }
@@ -835,7 +846,7 @@ export const updateOfficial = async (req, res) => {
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update", id, data: result.rows[0] });
 
-    res.json({ success: true, data: result.rows[0] });
+    res.json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error updating official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to update official' });

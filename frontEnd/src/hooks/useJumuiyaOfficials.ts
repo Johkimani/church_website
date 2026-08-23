@@ -99,7 +99,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       showErrorToast('Failed to Add Jumuiya Official', error.message);
     },
-    onSuccess: (_data, _formData, context) => {
+    onSuccess: (data: any, _formData, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -107,7 +107,11 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      showSuccessToast('Jumuiya Official Added Successfully', 'The Jumuiya official has been registered.');
+      if (data?.warning) {
+        showErrorToast('Jumuiya Official Added — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Jumuiya Official Added Successfully', 'The Jumuiya official has been registered.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
@@ -187,7 +191,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       showErrorToast('Failed to Update Jumuiya Official', error.message);
     },
-    onSuccess: (_data, _variables, context) => {
+    onSuccess: (data: any, _variables, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -195,7 +199,11 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      showSuccessToast('Jumuiya Official Updated Successfully', 'The Jumuiya official details have been updated.');
+      if (data?.warning) {
+        showErrorToast('Jumuiya Official Updated — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Jumuiya Official Updated Successfully', 'The Jumuiya official details have been updated.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });

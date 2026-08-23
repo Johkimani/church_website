@@ -355,11 +355,15 @@ export const createJumuiyaOfficial = async (req, res) => {
       [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumberNormal]
     );
 
+    let roleWarning = null;
     if (validatedRegNumberNormal && position) {
       const roleResult = await autoAssignRoleForOfficial(
         validatedRegNumberNormal, position, true, category, req.user?.member_id || null
       );
-      if (roleResult) {
+      if (roleResult?.status === 'conflict') {
+        roleWarning = roleResult.message;
+        logger.warn(`Role not assigned for jumuiya official ${name}: ${roleResult.message}`);
+      } else if (roleResult) {
         logger.info(`Auto-assigned role for jumuiya official ${name}: ${JSON.stringify(roleResult)}`);
       }
     }
@@ -368,7 +372,7 @@ export const createJumuiyaOfficial = async (req, res) => {
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_jumuiya", data: result.rows[0] });
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    res.status(201).json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error creating jumuiya official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to create official' });
@@ -494,6 +498,7 @@ export const updateJumuiyaOfficial = async (req, res) => {
     );
 
     // Role assignment — skip for archived officials
+    let roleWarning = null;
     if (!isArchivedUpdate) {
       const oldPosition = existing.rows[0].position;
       const oldRegNumber = existing.rows[0].reg_number;
@@ -508,7 +513,10 @@ export const updateJumuiyaOfficial = async (req, res) => {
           const roleResult = await autoAssignRoleForOfficial(
             newRegNumber, newPosition, true, result.rows[0].category, req.user?.member_id || null
           );
-          if (roleResult) {
+          if (roleResult?.status === 'conflict') {
+            roleWarning = roleResult.message;
+            logger.warn(`Role not assigned on update: ${roleResult.message}`);
+          } else if (roleResult) {
             logger.info(`Auto-assigned role for updated jumuiya official: ${JSON.stringify(roleResult)}`);
           }
         }
@@ -516,7 +524,10 @@ export const updateJumuiyaOfficial = async (req, res) => {
         const roleResult = await autoAssignRoleForOfficial(
           validatedRegNumber, position, true, result.rows[0].category, req.user?.member_id || null
         );
-        if (roleResult) {
+        if (roleResult?.status === 'conflict') {
+          roleWarning = roleResult.message;
+          logger.warn(`Role not assigned on update: ${roleResult.message}`);
+        } else if (roleResult) {
           logger.info(`Re-assigned role for jumuiya official: ${JSON.stringify(roleResult)}`);
         }
       }
@@ -528,7 +539,7 @@ export const updateJumuiyaOfficial = async (req, res) => {
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_jumuiya", id, data: result.rows[0] });
 
-    res.json({ success: true, data: result.rows[0] });
+    res.json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error updating jumuiya official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to update official' });

@@ -1,6 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import { getRoleNameForPosition, CSA_EXECUTIVE_ROLES, getGroupRoleName } from "../utils/positionToRole.js";
+import { getRoleNameForPosition, CSA_EXECUTIVE_ROLES, getGroupRoleName, checkExecutiveExclusivity } from "../utils/positionToRole.js";
 
 const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
 
@@ -109,6 +109,12 @@ export const syncPendingOfficialsToRoles = async () => {
       );
 
       if (existing.rows.length === 0) {
+        // Respect executive exclusivity — never create a pending that can't be approved
+        const exclusivity = await checkExecutiveExclusivity(memberId, roleName);
+        if (exclusivity) {
+          logger.warn(`syncPendingOfficialsToRoles: skipped ${roleName} for ${off.name} — ${exclusivity.message}`);
+          continue;
+        }
         await pool.query(
           `INSERT INTO member_roles (member_id, role_id, jumuiya_id, status, created_at)
            VALUES ($1, $2, $3, 'pending', NOW())`,
@@ -182,6 +188,12 @@ export const syncPendingOfficialsToRoles = async () => {
       );
 
       if (existing.rows.length === 0) {
+        // Respect executive exclusivity — never create a pending that can't be approved
+        const exclusivity = await checkExecutiveExclusivity(memberId, roleName);
+        if (exclusivity) {
+          logger.warn(`syncPendingOfficialsToRoles: skipped ${roleName} for group official ${off.name} — ${exclusivity.message}`);
+          continue;
+        }
         await pool.query(
           `INSERT INTO member_roles (member_id, role_id, status, created_at)
            VALUES ($1, $2, 'pending', NOW())`,
@@ -280,21 +292,10 @@ export const assignRole = async (req, res) => {
 
     const roleName = role.rows[0].role_name;
 
-    // Enforce one CSA executive role per member
-    if (CSA_EXECUTIVE_ROLES.includes(roleName)) {
-      const existing = await pool.query(
-        `SELECT r.role_name FROM member_roles mr
-         JOIN roles r ON mr.role_id = r.role_id
-         WHERE mr.member_id = $1 AND mr.status IN ('approved', 'pending')
-           AND r.role_name = ANY($2)`,
-        [member_id, CSA_EXECUTIVE_ROLES]
-      );
-      if (existing.rows.length > 0 && existing.rows[0].role_name !== roleName) {
-        return res.status(409).json({
-          success: false,
-          message: `Member already holds the "${existing.rows[0].role_name}" CSA executive role. A member can only hold one CSA executive role at a time.`
-        });
-      }
+    // One-role rule: a CSA executive holds exactly one system role
+    const exclusivity = await checkExecutiveExclusivity(member_id, roleName);
+    if (exclusivity) {
+      return res.status(409).json({ success: false, message: exclusivity.message });
     }
 
     // If jumuiya-scoped role and no jumuiya_id provided, derive from member
@@ -374,26 +375,19 @@ export const approveAssignment = async (req, res) => {
       return res.status(400).json({ success: false, message: `Assignment is already ${assignment.rows[0].status}` });
     }
 
-    // Enforce one CSA executive role per member on approval
+    // One-role rule for CSA executives, enforced on approval
     const roleRow = await pool.query(
       `SELECT mr.member_id, r.role_name FROM member_roles mr
        JOIN roles r ON mr.role_id = r.role_id
        WHERE mr.id = $1`,
       [id]
     );
-    if (roleRow.rows.length > 0 && CSA_EXECUTIVE_ROLES.includes(roleRow.rows[0].role_name)) {
-      const { member_id, role_name } = roleRow.rows[0];
-      const conflict = await pool.query(
-        `SELECT r.role_name FROM member_roles mr
-         JOIN roles r ON mr.role_id = r.role_id
-         WHERE mr.member_id = $1 AND mr.status = 'approved'
-           AND r.role_name = ANY($2) AND r.role_name != $3`,
-        [member_id, CSA_EXECUTIVE_ROLES, role_name]
-      );
-      if (conflict.rows.length > 0) {
+    if (roleRow.rows.length > 0) {
+      const exclusivity = await checkExecutiveExclusivity(roleRow.rows[0].member_id, roleRow.rows[0].role_name);
+      if (exclusivity) {
         return res.status(409).json({
           success: false,
-          message: `Cannot approve — member already holds the "${conflict.rows[0].role_name}" CSA executive role. A member can only hold one CSA executive role at a time.`
+          message: `Cannot approve — ${exclusivity.message}`
         });
       }
     }
@@ -483,26 +477,19 @@ export const activateAssignment = async (req, res) => {
       return res.status(400).json({ success: false, message: `Cannot activate — assignment is ${assignment.rows[0].status}` });
     }
 
-    // Enforce one CSA executive role per member on reactivation
+    // One-role rule for CSA executives, enforced on reactivation
     const roleRow = await pool.query(
       `SELECT mr.member_id, r.role_name FROM member_roles mr
        JOIN roles r ON mr.role_id = r.role_id
        WHERE mr.id = $1`,
       [id]
     );
-    if (roleRow.rows.length > 0 && CSA_EXECUTIVE_ROLES.includes(roleRow.rows[0].role_name)) {
-      const { member_id, role_name } = roleRow.rows[0];
-      const conflict = await pool.query(
-        `SELECT r.role_name FROM member_roles mr
-         JOIN roles r ON mr.role_id = r.role_id
-         WHERE mr.member_id = $1 AND mr.status = 'approved'
-           AND r.role_name = ANY($2) AND r.role_name != $3`,
-        [member_id, CSA_EXECUTIVE_ROLES, role_name]
-      );
-      if (conflict.rows.length > 0) {
+    if (roleRow.rows.length > 0) {
+      const exclusivity = await checkExecutiveExclusivity(roleRow.rows[0].member_id, roleRow.rows[0].role_name);
+      if (exclusivity) {
         return res.status(409).json({
           success: false,
-          message: `Cannot reactivate — member already holds the "${conflict.rows[0].role_name}" CSA executive role. A member can only hold one CSA executive role at a time.`
+          message: `Cannot reactivate — ${exclusivity.message}`
         });
       }
     }

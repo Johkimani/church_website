@@ -336,18 +336,22 @@ export const createGroupOfficial = async (req, res) => {
 
     await syncCurrentTerm(term_of_service);
 
+    let roleWarning = null;
     if (validatedRegNumber && position) {
       const roleResult = await autoAssignRoleForOfficial(
         validatedRegNumber, position, false, category, req.user?.member_id || null, category
       );
-      if (roleResult) {
+      if (roleResult?.status === 'conflict') {
+        roleWarning = roleResult.message;
+        logger.warn(`Role not assigned for group official ${name}: ${roleResult.message}`);
+      } else if (roleResult) {
         logger.info(`Auto-assigned role for group official ${name}: ${JSON.stringify(roleResult)}`);
       }
     }
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_group", data: result.rows[0] });
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    res.status(201).json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error creating group official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to create official' });
@@ -443,6 +447,7 @@ export const updateGroupOfficial = async (req, res) => {
     );
 
     // Role assignment — skip for archived officials
+    let roleWarning = null;
     if (!isArchivedUpdate) {
       const oldPosition = existing.rows[0].position;
       const oldRegNumber = existing.rows[0].reg_number;
@@ -459,7 +464,10 @@ export const updateGroupOfficial = async (req, res) => {
           const roleResult = await autoAssignRoleForOfficial(
             newRegNumber, newPosition, false, newCategory, req.user?.member_id || null, newCategory
           );
-          if (roleResult) {
+          if (roleResult?.status === 'conflict') {
+            roleWarning = roleResult.message;
+            logger.warn(`Role not assigned on update: ${roleResult.message}`);
+          } else if (roleResult) {
             logger.info(`Auto-assigned role for updated group official: ${JSON.stringify(roleResult)}`);
           }
         }
@@ -472,7 +480,7 @@ export const updateGroupOfficial = async (req, res) => {
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_group", id, data: result.rows[0] });
 
-    res.json({ success: true, data: result.rows[0] });
+    res.json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error updating group official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to update official' });
