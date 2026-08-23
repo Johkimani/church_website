@@ -28,14 +28,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function PublicHistoryView() {
   const navigate = useNavigate();
   const [termFilter, setTermFilter] = useState('all');
-  const [page, setPage] = useState(1);
-  const limit = 20;
+  // Single-page view: fetch every record for the selected term at once
+  const limit = 500;
 
   const { terms } = useTerms();
   const { history, meta, isLoading } = useHistory({ 
     termId: termFilter === 'all' ? undefined : termFilter,
     onlyArchived: true,
-    page,
     limit,
     mode: 'csa'
   });
@@ -84,7 +83,7 @@ export default function PublicHistoryView() {
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <select 
                 value={termFilter} 
-                onChange={e => { setTermFilter(e.target.value); setPage(1); }}
+                onChange={e => setTermFilter(e.target.value)}
                 className="pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none hover:bg-white transition-all text-sm font-bold text-gray-800 min-w-[200px]"
               >
                 <option value="all">All Election Terms</option>
@@ -168,45 +167,6 @@ export default function PublicHistoryView() {
                 </div>
               </article>
             ))}
-          </div>
-        )}
-
-        {/* Pagination Toolbar */}
-        {meta && meta.totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <div className="text-sm font-bold text-gray-500">
-              Showing <span className="text-gray-900">{history.length}</span> of <span className="text-gray-900">{meta.total}</span> records
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                disabled={page === 1}
-                className="w-12 h-12 flex items-center justify-center border border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-20 transition-all shadow-sm bg-white"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              
-              <div className="flex items-center gap-2">
-                {[...Array(meta.totalPages)].map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => { setPage(i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className={`w-12 h-12 rounded-xl text-sm font-black transition-all ${page === i + 1 ? 'bg-indigo-600 text-white shadow-lg scale-110' : 'bg-white text-gray-400 hover:text-gray-900 hover:bg-gray-50 border border-gray-100 shadow-sm'}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-              
-              <button 
-                onClick={() => { setPage(p => Math.min(meta.totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                disabled={page === meta.totalPages}
-                className="w-12 h-12 flex items-center justify-center border border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-20 transition-all shadow-sm bg-white"
-              >
-                <ChevronLeft className="w-6 h-6 rotate-180" />
-              </button>
-            </div>
           </div>
         )}
 
