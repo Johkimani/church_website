@@ -29,7 +29,7 @@ export default function PublicHistoryView() {
   const navigate = useNavigate();
   const [termFilter, setTermFilter] = useState('all');
   // Single-page view: fetch every record for the selected term at once
-  const limit = 500;
+  const limit = 60;
 
   const { terms } = useTerms();
   const { history, meta, isLoading } = useHistory({ 
@@ -141,9 +141,6 @@ export default function PublicHistoryView() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
-                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-700 to-gray-800'} shadow-lg backdrop-blur-sm`}>
-                    {off.category}
-                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                      <span className="text-white text-xs font-bold flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" />
@@ -154,6 +151,9 @@ export default function PublicHistoryView() {
 
                 {/* Content */}
                 <div className="p-5 text-center">
+                  <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-700 to-gray-800'} shadow-sm mb-2`}>
+                    {off.category}
+                  </span>
                   <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{off.name}</h3>
                   <div className="flex flex-col gap-1 mt-2">
                     <span className="text-xs font-black uppercase tracking-tighter text-indigo-500/80">
