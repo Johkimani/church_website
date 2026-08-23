@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLoader from '../../assets/Layouts/PageLoader';
 import { 
-  ChevronLeft, Calendar, Award as AwardIcon, Image as ImageIcon, 
+  ChevronLeft, Image as ImageIcon, 
   Filter, GraduationCap, Heart
 } from 'lucide-react';
 import { DEFAULT_CLOSING_TRIBUTE } from './constants/adminConstants';
@@ -134,20 +134,14 @@ export default function PublicHistoryView() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
             {history.map((off) => (
               <article key={off.id} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
-                {/* Photo Container */}
-                <div className="relative h-48 sm:h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                {/* Photo Container — anchored to top so faces are never cropped */}
+                <div className="relative h-52 sm:h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                   <img
                     src={getPhotoUrl(off.photo)}
                     alt={off.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                     <span className="text-white text-xs font-bold flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {off.term_year || off.term_of_service}
-                     </span>
-                  </div>
                 </div>
 
                 {/* Content */}
@@ -160,10 +154,6 @@ export default function PublicHistoryView() {
                     <span className="text-xs font-black uppercase tracking-tighter text-indigo-500/80">
                       {off.position}
                     </span>
-                    <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-gray-400 mt-1">
-                       <AwardIcon className="w-3 h-3" />
-                       {off.term_year || off.term_of_service}
-                    </div>
                   </div>
                 </div>
               </article>
