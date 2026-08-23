@@ -341,7 +341,7 @@ export const getOfficialsByTerm = async (req, res) => {
     const total = parseInt(totalResult.rows[0].count);
 
     const dataQuery = `
-      SELECT o.*, et.name as term_name, et.year as term_year 
+      SELECT o.*, et.name as term_name, et.year as term_year, et.closing_message
       ${queryBase} 
       ORDER BY ${termId || req.query.only_archived === 'true' ? 'et.year DESC, ' : ''}${CSA_SORT_SQL} 
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -352,9 +352,17 @@ export const getOfficialsByTerm = async (req, res) => {
       result.rows.forEach(r => delete r.reg_number);
     }
 
+    // Per-term tribute message shown under the cards on the public history page
+    let closingMessage = null;
+    if (termId) {
+      const tRes = await pool.query('SELECT closing_message FROM election_terms WHERE id = $1', [termId]);
+      closingMessage = tRes.rows[0]?.closing_message || null;
+    }
+
     res.json({ 
       success: true, 
       data: result.rows,
+      closing_message: closingMessage,
       meta: {
         total,
         page,
@@ -365,6 +373,32 @@ export const getOfficialsByTerm = async (req, res) => {
   } catch (error) {
     logger.error('Error fetching officials by term: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch officials' });
+  }
+};
+
+export const updateTermClosingMessage = async (req, res) => {
+  try {
+    const { termId } = req.params;
+    const { message } = req.body || {};
+
+    if (typeof message !== 'string' || message.trim().length > 1000) {
+      return res.status(400).json({ success: false, message: 'Message must be text of at most 1000 characters' });
+    }
+
+    const check = await pool.query('SELECT id FROM election_terms WHERE id = $1', [termId]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Election term not found' });
+    }
+
+    await pool.query(
+      'UPDATE election_terms SET closing_message = $1 WHERE id = $2',
+      [message.trim() || null, termId]
+    );
+
+    res.json({ success: true, message: 'Closing message saved', data: { closing_message: message.trim() || null } });
+  } catch (error) {
+    logger.error('Error updating term closing message: ' + error.message);
+    res.status(500).json({ success: false, message: 'Failed to save closing message' });
   }
 };
 

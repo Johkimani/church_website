@@ -45,6 +45,7 @@ import splitNoAndSerialNoMigration from "./migrations/splitNoAndSerialNo.js";
 import jumuiyaTshirtsMigration from "./migrations/jumuiyaTshirtsMigration.js";
 import backfillJumuiyaViceChairRole from "./migrations/backfillJumuiyaViceChairRole.js";
 import relaxOfficialContactUniqueness from "./migrations/relaxOfficialContactUniqueness.js";
+import electionTermClosingMessage from "./migrations/electionTermClosingMessage.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -207,6 +208,7 @@ const initServer = async () => {
     await jumuiyaTshirtsMigration();
     await backfillJumuiyaViceChairRole();
     await relaxOfficialContactUniqueness();
+    await electionTermClosingMessage();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

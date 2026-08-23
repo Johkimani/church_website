@@ -171,16 +171,19 @@ export default function PublicHistoryView() {
         )}
 
         {/* Closing Note */}
-        {!isLoading && history.length > 0 && (
-          <div className="text-center pb-6">
-            <div className="w-16 h-1 bg-indigo-200 mx-auto rounded-full mb-5"></div>
-            <p className="text-sm sm:text-base text-gray-500 max-w-xl mx-auto font-medium italic leading-relaxed flex flex-col items-center gap-2">
-              <Heart className="w-4 h-4 text-indigo-400 fill-indigo-100" />
-              We gratefully honor these men and women for their devoted service.
-              Their legacy continues to guide and inspire our community today.
-            </p>
-          </div>
-        )}
+        {!isLoading && history.length > 0 && (() => {
+          const DEFAULT_TRIBUTE = 'We gratefully honor these gents and ladies for their devoted service. Their legacy continues to guide and inspire our community today.';
+          const tribute = (termFilter !== 'all' && (history[0] as any)?.closing_message) || DEFAULT_TRIBUTE;
+          return (
+            <div className="text-center pb-6">
+              <div className="w-16 h-1 bg-indigo-200 mx-auto rounded-full mb-5"></div>
+              <p className="text-sm sm:text-base text-gray-500 max-w-xl mx-auto font-medium italic leading-relaxed flex flex-col items-center gap-2">
+                <Heart className="w-4 h-4 text-indigo-400 fill-indigo-100" />
+                {tribute}
+              </p>
+            </div>
+          );
+        })()}
 
 
       </div>

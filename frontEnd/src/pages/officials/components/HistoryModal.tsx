@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
  X, Filter, Trash2, RotateCcw,
- Download, Image as ImageIcon, Phone, Calendar, Award as AwardIcon, Check, Pencil
+ Download, Image as ImageIcon, Phone, Calendar, Award as AwardIcon, Check, Pencil, MessageSquareHeart
 } from 'lucide-react';
-import { showErrorToast } from '../../../utils/customToast';
+import { showErrorToast, showSuccessToast } from '../../../utils/customToast';
+import { apiClient } from '../../../api/axiosInstance';
 import { useHistory } from '../../../hooks/useHistory';
 import { useTerms } from '../../../hooks/useTerms';
 import { CATEGORY_COLORS, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS, GROUP_OPTIONS, GROUP_COLORS } from '../constants/adminConstants';
@@ -23,6 +25,30 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  const [termFilter, setTermFilter] = useState('all');
  const [categoryFilter, setCategoryFilter] = useState('all');
  const limit = 60;
+ const queryClient = useQueryClient();
+
+ // Per-term closing tribute (CSA only) — edited here, shown on the public history page
+ const [closingDraft, setClosingDraft] = useState('');
+ const [savingClosing, setSavingClosing] = useState(false);
+
+ useEffect(() => {
+   if (!isOpen || mode !== 'csa') return;
+   setClosingDraft(termFilter !== 'all' ? ((history[0] as any)?.closing_message || '') : '');
+ }, [isOpen, mode, termFilter, history]);
+
+ const handleSaveClosing = async () => {
+   if (!termFilter || termFilter === 'all') return;
+   setSavingClosing(true);
+   try {
+     await apiClient.put(`${API_HISTORY}/${termFilter}/closing-message`, { message: closingDraft });
+     showSuccessToast('Tribute Saved', 'This closing message will appear under the term on the public history page.');
+     queryClient.invalidateQueries({ queryKey: ['history'] });
+   } catch (e: any) {
+     showErrorToast('Save Failed', e.response?.data?.message || e.message || 'Could not save the message.');
+   } finally {
+     setSavingClosing(false);
+   }
+ };
 
  const getPhotoUrl = (photo: string | null | undefined) => {
  if (!photo) return DEFAULT_AVATAR;
@@ -302,6 +328,33 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  )}
  </div>
  </div>
+
+ {/* Closing Tribute Editor (CSA only) */}
+ {mode === 'csa' && termFilter !== 'all' && !isLoading && history.length > 0 && (
+ <div className="px-4 py-3 border-b border-gray-100 bg-indigo-50/40">
+   <label className="text-[10px] font-black uppercase tracking-widest text-indigo-500 flex items-center gap-1.5">
+     <MessageSquareHeart className="w-3.5 h-3.5" />
+     Closing Tribute — appears under this term's cards on the public history page
+   </label>
+   <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 mt-1.5">
+     <textarea
+       value={closingDraft}
+       onChange={(e) => setClosingDraft(e.target.value)}
+       rows={2}
+       maxLength={1000}
+       placeholder="Write a short tribute for this term (leave empty to show the default message)..."
+       className="flex-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none resize-none bg-white"
+     />
+     <button
+       onClick={handleSaveClosing}
+       disabled={savingClosing}
+       className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm w-full sm:w-auto"
+     >
+       {savingClosing ? 'Saving...' : 'Save Tribute'}
+     </button>
+   </div>
+ </div>
+ )}
 
  {/* Content */}
  <div className="flex-1 overflow-auto bg-gray-50/30 p-6">

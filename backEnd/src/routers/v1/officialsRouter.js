@@ -13,6 +13,7 @@ import {
   archiveCurrentOfficials,
   handoverOfficials,
   getOfficialsByTerm,
+  updateTermClosingMessage,
   restoreArchivedOfficials,
   exportOfficials,
   exportArchivedOfficials,
@@ -41,6 +42,7 @@ router.post('/handover', verifyToken, requireRole(...OFFICIAL_ROLES), handoverOf
 router.post('/restore', verifyToken, requireRole(...OFFICIAL_ROLES), restoreArchivedOfficials);
 router.get('/term', optionalAuth, getOfficialsByTerm);
 router.get('/term/:termId', optionalAuth, getOfficialsByTerm);
+router.put('/term/:termId/closing-message', verifyToken, requireRole(...OFFICIAL_ROLES), updateTermClosingMessage);
 router.get('/term/:termId/export', verifyToken, requireRole(...OFFICIAL_ROLES), exportArchivedOfficials);
 router.delete('/term', verifyToken, requireRole(...OFFICIAL_ROLES), bulkDeleteArchivedOfficials);
 router.delete('/term/:officialId', verifyToken, requireRole(...OFFICIAL_ROLES), deleteArchivedOfficial);
