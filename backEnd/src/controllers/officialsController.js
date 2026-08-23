@@ -1064,12 +1064,69 @@ export const bulkDeleteArchivedOfficials = async (req, res) => {
  * Handover — archive ALL active officials across CSA, Jumuiya & Group tables
  * in a single transaction, then create / promote the next election term.
  *
- * Body: { name, year, start_date, end_date?, description? }
+ * Also performs the leadership transition:
+ *  - Revokes every term-scoped system role (CSA exec, jumuiya & group roles)
+ *  - Grants `csa_chair` (auto-approved) to the nominated successor, who must
+ *    be a registered member. They gain admin access on their next login.
+ *
+ * Body: { successor_reg_number, name, year, start_date, end_date?, description? }
  */
+
+const HANDOVER_REVOCABLE_ROLES = [
+  // CSA executive + coordinator
+  'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator',
+  'project_manager', 'instrument_manager', 'os', 'treasurer', 'liturgist',
+  // Jumuiya
+  'jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary',
+  // Groups
+  'choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
+  'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
+  'dance_chair', 'dance_vice_chair',
+  'charismatic_chair', 'charismatic_vice_chair', 'charismatic_secretary', 'charismatic_treasurer',
+  'st_francis_chair', 'st_francis_vice_chair',
+  'mentorship_chair', 'mentorship_vice_chair'
+];
+
 export const handoverOfficials = async (req, res) => {
   const client = await pool.connect();
   try {
     const { election_term_id, name, year, start_date, end_date, description } = req.body;
+    const successorReg = req.body.successor_reg_number?.toString().trim() || '';
+    const actorMemberId = req.user?.member_id || null;
+
+    if (!successorReg) {
+      return res.status(400).json({
+        success: false,
+        message: 'successor_reg_number is required — the outgoing Chairperson must nominate the incoming CSA Chairperson before handing over.'
+      });
+    }
+
+    // ── 0. Resolve the successor — must be a registered member ────
+    let successor = null;
+    const sExact = await pool.query(
+      'SELECT member_id, first_name, last_name FROM members WHERE member_id = $1 LIMIT 1',
+      [successorReg]
+    );
+    if (sExact.rows.length > 0) {
+      successor = sExact.rows[0];
+    } else {
+      const sLoose = await pool.query(
+        `SELECT member_id, first_name, last_name FROM members
+         WHERE LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+            OR member_id ILIKE $2
+         ORDER BY CASE WHEN LOWER(TRIM(member_id)) = LOWER(TRIM($1)) THEN 1 ELSE 2 END
+         LIMIT 1`,
+        [successorReg, `%${successorReg}%`]
+      );
+      if (sLoose.rows.length > 0) successor = sLoose.rows[0];
+    }
+
+    if (!successor) {
+      return res.status(404).json({
+        success: false,
+        message: `No registered member found with reg number "${successorReg}". The new CSA Chairperson must be a registered member.`
+      });
+    }
 
     await client.query('BEGIN');
 
@@ -1128,6 +1185,51 @@ export const handoverOfficials = async (req, res) => {
       [termId]
     );
 
+    // ── 5. Revoke all term-scoped system roles ────────────────────
+    // Outgoing executive loses dashboard access; pending auto-assignments
+    // tied to now-archived officials are cleared too. Fresh roles are
+    // requested after the new officials are added.
+    const revokedRoles = await client.query(
+      `UPDATE member_roles mr
+       SET status = 'revoked', updated_at = NOW()
+       FROM roles r
+       WHERE mr.role_id = r.role_id
+         AND r.role_name = ANY($1)
+         AND mr.status IN ('approved', 'pending')`,
+      [HANDOVER_REVOCABLE_ROLES]
+    );
+
+    // ── 6. Grant csa_chair to the successor (auto-approved) ───────
+    let roleRes = await client.query("SELECT role_id FROM roles WHERE role_name = 'csa_chair'");
+    if (roleRes.rows.length === 0) {
+      roleRes = await client.query(
+        `INSERT INTO roles (role_name, description, status)
+         VALUES ('csa_chair', 'CSA Chairperson', 'active') RETURNING role_id`
+      );
+    }
+    const chairRoleId = roleRes.rows[0].role_id;
+
+    const existingRow = await client.query(
+      `SELECT id FROM member_roles WHERE member_id = $1 AND role_id = $2 ORDER BY id DESC LIMIT 1`,
+      [successor.member_id, chairRoleId]
+    );
+
+    if (existingRow.rows.length > 0) {
+      await client.query(
+        `UPDATE member_roles
+         SET status = 'approved', assigned_by = $3, approved_by = $3,
+             approved_at = NOW(), updated_at = NOW()
+         WHERE id = $4`,
+        [successor.member_id, chairRoleId, actorMemberId, existingRow.rows[0].id]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO member_roles (member_id, role_id, assigned_by, approved_by, approved_at, status)
+         VALUES ($1, $2, $3, $3, NOW(), 'approved')`,
+        [successor.member_id, chairRoleId, actorMemberId]
+      );
+    }
+
     const termInfo = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
 
     await client.query('COMMIT');
@@ -1138,7 +1240,7 @@ export const handoverOfficials = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Handover complete — archived ${csaCount.rowCount} CSA, ${jumuiyaCount.rowCount} Jumuiya and ${groupCount.rowCount} Group officials to "${termInfo.rows[0].name}"`,
+      message: `Handover complete — archived ${csaCount.rowCount} CSA, ${jumuiyaCount.rowCount} Jumuiya and ${groupCount.rowCount} Group officials under "${termInfo.rows[0].name}". ${successor.first_name} ${successor.last_name} is now the CSA Chairperson.`,
       data: {
         archived: {
           csa: csaCount.rowCount,
@@ -1146,11 +1248,17 @@ export const handoverOfficials = async (req, res) => {
           groups: groupCount.rowCount,
           total: totalArchived
         },
+        revoked_roles: revokedRoles.rowCount,
+        successor: {
+          member_id: successor.member_id,
+          name: `${successor.first_name} ${successor.last_name}`.trim(),
+          role: 'csa_chair'
+        },
         election_term: termInfo.rows[0]
       }
     });
   } catch (error) {
-    await client.query('ROLLBACK');
+    try { await client.query('ROLLBACK'); } catch (_) { /* tx may not be open */ }
     logger.error('Error during handover: ' + error.message);
     res.status(500).json({ success: false, message: `Handover failed: ${error.message}` });
   } finally {

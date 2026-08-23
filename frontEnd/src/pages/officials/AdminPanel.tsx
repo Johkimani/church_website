@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, Share2, History, LayoutDashboard, Archive, Check, ArrowRightLeft } from 'lucide-react';
+import { Download, Share2, History, LayoutDashboard, Archive, Check } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '../../context/SocketContext';
 
@@ -19,7 +19,6 @@ import { EditOfficialModal } from './components/EditOfficialModal';
 import { ArchiveModal } from './components/ArchiveModal';
 import { HistoryModal } from './components/HistoryModal';
 import { ShareModal } from './components/ShareModal';
-import { HandoverModal } from './components/HandoverModal';
 
 export default function AdminPanel() {
   const queryClient = useQueryClient();
@@ -79,7 +78,6 @@ export default function AdminPanel() {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [isHandoverOpen, setIsHandoverOpen] = useState(false);
 
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string;
@@ -210,13 +208,6 @@ export default function AdminPanel() {
             >
               <History className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
               <span>History</span>
-            </button>
-            <button 
-              onClick={() => setIsHandoverOpen(true)}
-              className="flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 bg-white text-gray-700 font-bold rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 hover:shadow-md transition-all active:scale-95 text-xs sm:text-base"
-            >
-              <ArrowRightLeft className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
-              <span>Handover</span>
             </button>
             <button 
               onClick={() => setIsArchiveOpen(true)}
@@ -386,24 +377,6 @@ export default function AdminPanel() {
         onClose={() => setIsShareOpen(false)}
         officials={activeOfficialsList}
         mode={adminMode}
-      />
-
-      <HandoverModal
-        isOpen={isHandoverOpen}
-        onClose={() => setIsHandoverOpen(false)}
-        onComplete={() => {
-          queryClient.invalidateQueries({ queryKey: ['officials'] });
-          queryClient.invalidateQueries({ queryKey: ['jumuiya_officials'] });
-          queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
-          queryClient.invalidateQueries({ queryKey: ['group_officials'] });
-          queryClient.invalidateQueries({ queryKey: ['group-officials'] });
-          queryClient.invalidateQueries({ queryKey: ['terms'] });
-          queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-        }}
-        currentTerm={currentTerm}
-        csaCount={officials.length}
-        jumuiyaCount={(jumuiyaApi.officials as Official[]).length}
-        groupCount={(groupApi.officials as Official[]).length}
       />
 
       <ConfirmDialog

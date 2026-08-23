@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sliders,
   Loader2,
@@ -14,11 +15,15 @@ import {
   Lock,
   Save,
   RefreshCw,
+  ArrowRightLeft,
+  LogOut,
+  UserCheck,
 } from 'lucide-react';
 import apiService from '../../../services/api';
 import { apiClient } from '../../../api/axiosInstance';
 import { semesterServices, SemesterConfig } from '../../../api/semesterServices';
 import { useAuth } from '../../../context/AuthContext';
+import { API_HANDOVER } from '../../../utils/officialsApi';
 import { toast } from 'react-hot-toast';
 
 interface Assignment {
@@ -146,6 +151,7 @@ export default function Settings() {
       </div>
 
       {(activeTab === 'csa' || activeTab === 'all') && <SemesterConfigPanel />}
+      {activeTab === 'csa' && <TermHandoverPanel />}
       <ApprovalsPanel activeTab={activeTab} />
       <ActiveRolesPanel activeTab={activeTab} />
       <RevokedRolesPanel activeTab={activeTab} />
@@ -288,6 +294,275 @@ function SemesterConfigPanel() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function TermHandoverPanel() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const isChair = (Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [])
+    .some((r) => String(r).toLowerCase().trim() === 'csa_chair');
+
+  const [successorRegNumber, setSuccessorRegNumber] = useState('');
+  const [termName, setTermName] = useState('');
+  const [termYear, setTermYear] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [description, setDescription] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [result, setResult] = useState<{
+    successor_name: string;
+    archived: { csa: number; jumuiya: number; groups: number; total: number };
+    revoked_roles: number;
+    term_name: string;
+  } | null>(null);
+
+  if (!isChair) return null;
+
+  const isValid = successorRegNumber.trim() && termName.trim() && termYear.trim() && startDate;
+
+  const executeHandover = async () => {
+    setExecuting(true);
+    try {
+      const res = await apiClient.post(API_HANDOVER, {
+        successor_reg_number: successorRegNumber.trim(),
+        name: termName.trim(),
+        year: termYear.trim(),
+        start_date: startDate,
+        end_date: endDate || undefined,
+        description: description.trim() || undefined,
+      });
+      const d = res.data?.data;
+      setResult({
+        successor_name: d?.successor?.name || successorRegNumber.trim(),
+        archived: d?.archived || { csa: 0, jumuiya: 0, groups: 0, total: 0 },
+        revoked_roles: d?.revoked_roles || 0,
+        term_name: d?.election_term?.name || termName.trim(),
+      });
+      toast.success('Handover complete');
+      setTimeout(() => { logout(); navigate('/'); }, 6000);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Handover failed');
+      setConfirming(false);
+      setExecuting(false);
+    }
+  };
+
+  if (result) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-6 border-b border-slate-100 bg-emerald-50/50">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-emerald-500" />
+            Handover Complete
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Leadership transferred to <span className="font-bold text-slate-700">{result.successor_name}</span> — term “{result.term_name}”.
+          </p>
+        </div>
+        <div className="p-6 space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
+              <p className="text-xl font-black text-blue-700">{result.archived.csa}</p>
+              <p className="text-[10px] font-bold text-blue-500 uppercase">CSA Archived</p>
+            </div>
+            <div className="bg-violet-50 rounded-xl p-3 border border-violet-100">
+              <p className="text-xl font-black text-violet-700">{result.archived.jumuiya}</p>
+              <p className="text-[10px] font-bold text-violet-500 uppercase">Jumuiya Archived</p>
+            </div>
+            <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+              <p className="text-xl font-black text-emerald-700">{result.archived.groups}</p>
+              <p className="text-[10px] font-bold text-emerald-500 uppercase">Groups Archived</p>
+            </div>
+            <div className="bg-rose-50 rounded-xl p-3 border border-rose-100">
+              <p className="text-xl font-black text-rose-700">{result.revoked_roles}</p>
+              <p className="text-[10px] font-bold text-rose-500 uppercase">Roles Revoked</p>
+            </div>
+          </div>
+
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start gap-3">
+            <UserCheck className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
+            <div className="text-xs text-indigo-800">
+              <p className="font-bold">Next steps for {result.successor_name}:</p>
+              <p className="mt-1">Log in with your usual credentials → Admin panel → Officials page → add the new officials. Positions with system roles will appear in this Approval Queue.</p>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+            <LogOut className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-800 font-medium">You will be logged out automatically in a few seconds.</p>
+          </div>
+
+          <button
+            onClick={() => { logout(); navigate('/'); }}
+            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all"
+          >
+            Log Out Now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <ArrowRightLeft className="w-5 h-5 text-violet-500" />
+          Term Handover
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          Nominate the incoming CSA Chairperson and close the current term.
+        </p>
+      </div>
+      <TermHandoverForm
+        successorRegNumber={successorRegNumber} setSuccessorRegNumber={setSuccessorRegNumber}
+        termName={termName} setTermName={setTermName}
+        termYear={termYear} setTermYear={setTermYear}
+        startDate={startDate} setStartDate={setStartDate}
+        endDate={endDate} setEndDate={setEndDate}
+        description={description} setDescription={setDescription}
+        confirming={confirming} setConfirming={setConfirming}
+        executing={executing}
+        isValid={!!isValid}
+        onExecute={executeHandover}
+      />
+    </div>
+  );
+}
+
+interface TermHandoverFormProps {
+  successorRegNumber: string; setSuccessorRegNumber: (v: string) => void;
+  termName: string; setTermName: (v: string) => void;
+  termYear: string; setTermYear: (v: string) => void;
+  startDate: string; setStartDate: (v: string) => void;
+  endDate: string; setEndDate: (v: string) => void;
+  description: string; setDescription: (v: string) => void;
+  confirming: boolean; setConfirming: (v: boolean) => void;
+  executing: boolean;
+  isValid: boolean;
+  onExecute: () => void;
+}
+
+function TermHandoverForm(p: TermHandoverFormProps) {
+  return (
+    <div className="p-6 space-y-5">
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+        <ul className="text-xs text-amber-800 space-y-1 list-disc list-inside font-medium">
+          <li>Archives ALL active officials — CSA, Jumuiya and Groups</li>
+          <li>Revokes every old system role from the previous term</li>
+          <li>Grants the <strong>CSA Chairperson</strong> role to your successor (must be a registered member)</li>
+          <li>Logs you out immediately after completion</li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">New Chairperson Reg Number *</label>
+          <input
+            type="text"
+            value={p.successorRegNumber}
+            onChange={(e) => p.setSuccessorRegNumber(e.target.value)}
+            placeholder="e.g. CS/0012/2022"
+            disabled={p.executing || p.confirming}
+            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+          />
+          <p className="text-[11px] text-slate-400 mt-1">They log in with their usual reg number &amp; password and take over from there.</p>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">New Term Name *</label>
+          <input
+            type="text"
+            value={p.termName}
+            onChange={(e) => p.setTermName(e.target.value)}
+            placeholder="e.g. 2026/2027 Executive"
+            disabled={p.executing || p.confirming}
+            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Year *</label>
+            <input
+              type="text"
+              value={p.termYear}
+              onChange={(e) => p.setTermYear(e.target.value)}
+              placeholder="e.g. 2026-2027"
+              disabled={p.executing || p.confirming}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date *</label>
+            <input
+              type="date"
+              value={p.startDate}
+              onChange={(e) => p.setStartDate(e.target.value)}
+              disabled={p.executing || p.confirming}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
+            <input
+              type="date"
+              value={p.endDate}
+              onChange={(e) => p.setEndDate(e.target.value)}
+              disabled={p.executing || p.confirming}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
+          <input
+            type="text"
+            value={p.description}
+            onChange={(e) => p.setDescription(e.target.value)}
+            placeholder="Optional note about this term"
+            disabled={p.executing || p.confirming}
+            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+          />
+        </div>
+      </div>
+
+      {p.confirming ? (
+        <div className="bg-rose-50 border border-rose-300 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-bold text-rose-800">
+            Final confirmation — this cannot be undone. Hand over to “{p.successorRegNumber.trim()}”?
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={p.onExecute}
+              disabled={p.executing || !p.isValid}
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-bold rounded-xl text-xs transition-all shadow-sm"
+            >
+              {p.executing ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
+              {p.executing ? 'Executing...' : 'Yes, Execute Handover'}
+            </button>
+            <button
+              onClick={() => p.setConfirming(false)}
+              disabled={p.executing}
+              className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold rounded-xl text-xs transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => p.setConfirming(true)}
+          disabled={!p.isValid}
+          className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-100"
+        >
+          <ArrowRightLeft className="w-4 h-4" />
+          Execute Handover
+        </button>
+      )}
     </div>
   );
 }
