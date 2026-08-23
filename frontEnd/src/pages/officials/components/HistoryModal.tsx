@@ -31,11 +31,6 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  const [closingDraft, setClosingDraft] = useState('');
  const [savingClosing, setSavingClosing] = useState(false);
 
- useEffect(() => {
-   if (!isOpen || mode !== 'csa') return;
-   setClosingDraft(termFilter !== 'all' ? ((history[0] as any)?.closing_message || '') : '');
- }, [isOpen, mode, termFilter, history]);
-
  const handleSaveClosing = async () => {
    if (!termFilter || termFilter === 'all') return;
    setSavingClosing(true);
@@ -61,12 +56,17 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  history, meta, isLoading, restoreOfficials, deleteArchived, 
  bulkDelete, isRestoring, isBulkDeleting, isDeleting 
   } = useHistory({ 
-  termId: termFilter === 'all' ? undefined : termFilter,
-  onlyArchived: true,
-  page: 1,
-  limit,
-  mode
+ termId: termFilter === 'all' ? undefined : termFilter,
+ onlyArchived: true,
+ page: 1,
+ limit,
+ mode
  });
+
+ useEffect(() => {
+   if (!isOpen || mode !== 'csa') return;
+   setClosingDraft(termFilter !== 'all' ? ((history[0] as any)?.closing_message || '') : '');
+ }, [isOpen, mode, termFilter, history]);
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [confirmConfig, setConfirmConfig] = useState<{
