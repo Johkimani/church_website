@@ -8,7 +8,7 @@ import { showErrorToast, showSuccessToast } from '../../../utils/customToast';
 import { apiClient } from '../../../api/axiosInstance';
 import { useHistory } from '../../../hooks/useHistory';
 import { useTerms } from '../../../hooks/useTerms';
-import { CATEGORY_COLORS, DEFAULT_AVATAR, JUMUIYA_OPTIONS, JUMUIYA_COLORS, GROUP_OPTIONS, GROUP_COLORS } from '../constants/adminConstants';
+import { CATEGORY_COLORS, DEFAULT_AVATAR, DEFAULT_CLOSING_TRIBUTE, JUMUIYA_OPTIONS, JUMUIYA_COLORS, GROUP_OPTIONS, GROUP_COLORS } from '../constants/adminConstants';
 import { UPLOAD_BASE, API_HISTORY, API_JUMUIYA_HISTORY, API_GROUP_HISTORY } from '../../../utils/officialsApi';
 import { ConfirmDialog, type AffectedOfficial } from './ConfirmDialog';
 
@@ -342,8 +342,8 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
        onChange={(e) => setClosingDraft(e.target.value)}
        rows={2}
        maxLength={1000}
-       placeholder="Write a short tribute for this term (leave empty to show the default message)..."
-       className="flex-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none resize-none bg-white"
+       placeholder={DEFAULT_CLOSING_TRIBUTE}
+       className="flex-1 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none resize-none bg-white placeholder:italic placeholder:text-gray-400"
      />
      <button
        onClick={handleSaveClosing}

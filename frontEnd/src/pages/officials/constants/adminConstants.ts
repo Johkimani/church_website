@@ -2,6 +2,9 @@ export const CATEGORY_ORDER = [
   'Executive', 'Jumuiya Coordinators', 'Bible Coordinators', 'Rosary', 'Pamphlet Managers', 'Project Managers', 'Liturgist', 'Choir Officials', 'Instrument Managers', 'Liturgical Dancers', 'Catechist'
 ];
 
+// Default closing tribute on the public history page when a term has no custom message
+export const DEFAULT_CLOSING_TRIBUTE = 'We gratefully honor these gents and ladies for their devoted service. Their legacy continues to guide and inspire our community today.';
+
 export const CATEGORY_COLORS: Record<string, string> = {
   'Executive': 'from-purple-600 to-purple-700',
   'Jumuiya Coordinators': 'from-blue-600 to-blue-700',

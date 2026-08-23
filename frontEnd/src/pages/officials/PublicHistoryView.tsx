@@ -5,6 +5,7 @@ import {
   ChevronLeft, Calendar, Award as AwardIcon, Image as ImageIcon, 
   Filter, GraduationCap, Heart
 } from 'lucide-react';
+import { DEFAULT_CLOSING_TRIBUTE } from './constants/adminConstants';
 import { useHistory } from '../../hooks/useHistory';
 import { useTerms } from '../../hooks/useTerms';
 
@@ -172,8 +173,7 @@ export default function PublicHistoryView() {
 
         {/* Closing Note */}
         {!isLoading && history.length > 0 && (() => {
-          const DEFAULT_TRIBUTE = 'We gratefully honor these gents and ladies for their devoted service. Their legacy continues to guide and inspire our community today.';
-          const tribute = (termFilter !== 'all' && (history[0] as any)?.closing_message) || DEFAULT_TRIBUTE;
+          const tribute = (termFilter !== 'all' && (history[0] as any)?.closing_message) || DEFAULT_CLOSING_TRIBUTE;
           return (
             <div className="text-center pb-6">
               <div className="w-16 h-1 bg-indigo-200 mx-auto rounded-full mb-5"></div>
