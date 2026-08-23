@@ -384,11 +384,18 @@ export const restoreArchivedOfficials = async (req, res) => {
       [officialIds]
     );
 
-    // 2. Check for contact conflicts
+    // 2. Check for contact conflicts — same registered member is allowed
     if (contacts.rows.length > 0) {
       const dup = await pool.query(
-        `SELECT id FROM officials WHERE contact = ANY($1) AND status = 'active' AND NOT (id = ANY($2))`,
-        [contacts.rows.map(c => c.contact), officialIds]
+        `SELECT dup.id FROM officials target
+         JOIN officials dup ON dup.contact = target.contact
+           AND (dup.status = 'active' OR dup.status IS NULL)
+           AND dup.id <> ALL($2)
+           AND (dup.reg_number IS NULL OR dup.reg_number IS DISTINCT FROM target.reg_number)
+         WHERE target.id = ANY($1)
+           AND target.contact IS NOT NULL AND target.contact != ''
+         LIMIT 1`,
+        [officialIds, officialIds]
       );
       if (dup.rows.length > 0) {
         return res.status(409).json({
@@ -633,8 +640,13 @@ export const createOfficial = async (req, res) => {
 
     let contactQueryIndex = -1;
     if (normalizedContact) {
+      // Same registered member may hold multiple records (e.g. current chairperson
+      // also added under a previous position) — only block DIFFERENT people sharing a phone.
       promises.push(
-        pool.query("SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)", [normalizedContact])
+        pool.query(
+          "SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL) AND (reg_number IS NULL OR reg_number != $2)",
+          [normalizedContact, validatedRegNumber || '']
+        )
       );
       contactQueryIndex = promises.length - 1;
     }
@@ -724,9 +736,10 @@ export const updateOfficial = async (req, res) => {
     }
 
     if (normalizedContact) {
+      const effectiveReg = validatedRegNumber || existing.rows[0].reg_number || '';
       const dup = await pool.query(
-        "SELECT id FROM officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL)",
-        [normalizedContact, id]
+        "SELECT id FROM officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL) AND (reg_number IS NULL OR reg_number != $3)",
+        [normalizedContact, id, effectiveReg]
       );
       if (dup.rows.length > 0) {
         return res.status(409).json({ success: false, message: 'Contact already in use' });
