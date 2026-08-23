@@ -32,7 +32,7 @@ const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md'
     if (image) {
         return (
             <div className="w-full h-full">
-                <img src={image} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <img src={image} alt={name} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
             </div>
         );
     }
