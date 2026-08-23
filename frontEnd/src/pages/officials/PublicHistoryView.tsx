@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PageLoader from '../../assets/Layouts/PageLoader';
 import { 
   ChevronLeft, Calendar, Award as AwardIcon, Image as ImageIcon, 
-  Filter, GraduationCap
+  Filter, GraduationCap, Heart
 } from 'lucide-react';
 import { useHistory } from '../../hooks/useHistory';
 import { useTerms } from '../../hooks/useTerms';
@@ -167,6 +167,18 @@ export default function PublicHistoryView() {
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {/* Closing Note */}
+        {!isLoading && history.length > 0 && (
+          <div className="text-center pb-6">
+            <div className="w-16 h-1 bg-indigo-200 mx-auto rounded-full mb-5"></div>
+            <p className="text-sm sm:text-base text-gray-500 max-w-xl mx-auto font-medium italic leading-relaxed flex flex-col items-center gap-2">
+              <Heart className="w-4 h-4 text-indigo-400 fill-indigo-100" />
+              We gratefully honor these men and women for their devoted service.
+              Their legacy continues to guide and inspire our community today.
+            </p>
           </div>
         )}
 
