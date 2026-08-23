@@ -25,7 +25,7 @@ const SUGGESTION_WITH_MEMBER = `
   SELECT
     s.id, s.suggestion, s.category, s.scope, s.jumuiya_id, s.status,
     s.name, s.email, s.reply, s.replied_by, s.replied_at,
-    s.created_at, s.updated_at, s.deleted_at, s.deleted_by, s.unmask_requested_at,
+    s.created_at, s.deleted_at, s.deleted_by, s.unmask_requested_at,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN s.user_id END AS user_id,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.first_name END AS member_first_name,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.last_name END AS member_last_name,
