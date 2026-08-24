@@ -131,34 +131,63 @@ export default function PublicHistoryView() {
              </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
-            {history.map((off) => (
-              <article key={off.id} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
-                {/* Photo Container — anchored to top so faces are never cropped */}
-                <div className="relative h-52 sm:h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                  <img
-                    src={getPhotoUrl(off.photo)}
-                    alt={off.name}
-                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                </div>
-
-                {/* Content */}
-                <div className="p-5 text-center">
-                  <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-700 to-gray-800'} shadow-sm mb-2`}>
-                    {off.category}
-                  </span>
-                  <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{off.name}</h3>
-                  <div className="flex flex-col gap-1 mt-2">
-                    <span className="text-xs font-black uppercase tracking-tighter text-indigo-500/80">
-                      {off.position}
+          <>
+            {/* Mobile: compact 2-col grid with overlaid badges */}
+            <div className="grid grid-cols-2 gap-3.5 sm:hidden mb-12">
+              {history.map((off) => (
+                <article key={`m-${off.id}`} className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
+                  <div className={`h-1.5 w-full bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-600 to-gray-700'}`} />
+                  <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
+                    <img
+                      src={getPhotoUrl(off.photo)}
+                      alt={off.name}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+                    <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
+                      <span className="truncate max-w-[85%] text-[0.68rem] font-bold text-white/95 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm">
+                        {off.position || off.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3 text-center bg-white">
+                    <h3 className="font-bold text-slate-950 text-sm line-clamp-1">{off.name}</h3>
+                    <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-600 to-gray-700'}`}>
+                      {off.category}
                     </span>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+
+            {/* Desktop: larger cards with progressive columns */}
+            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
+              {history.map((off) => (
+                <article key={`d-${off.id}`} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+                  <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                    <img
+                      src={getPhotoUrl(off.photo)}
+                      alt={off.name}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-5 text-center">
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-700 to-gray-800'} shadow-sm mb-2`}>
+                      {off.category}
+                    </span>
+                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{off.name}</h3>
+                    <div className="flex flex-col gap-1 mt-2">
+                      <span className="text-xs font-black uppercase tracking-tighter text-indigo-500/80">
+                        {off.position}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Closing Note */}
