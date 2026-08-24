@@ -1192,21 +1192,22 @@ export const handoverOfficials = async (req, res) => {
     let termId = election_term_id;
 
     if (!termId) {
-      if (!name || !year || !start_date) {
+      if (!name || !year) {
         await client.query('ROLLBACK');
         return res.status(400).json({
           success: false,
-          message: 'Term name, year and start_date are required'
+          message: 'Term name and year are required'
         });
       }
 
       // Demote every existing term
       await client.query('UPDATE election_terms SET is_current = FALSE');
 
+      const termStartDate = start_date || new Date().toISOString().split('T')[0];
       const termResult = await client.query(
         `INSERT INTO election_terms (name, year, start_date, end_date, description, is_current)
          VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING *`,
-        [name, year, start_date, end_date || null, description || null]
+        [name, year, termStartDate, end_date || null, description || null]
       );
       termId = termResult.rows[0].id;
     } else {

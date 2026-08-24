@@ -310,9 +310,6 @@ function TermHandoverPanel() {
   const [successorRegNumber, setSuccessorRegNumber] = useState('');
   const [termName, setTermName] = useState('');
   const [termYear, setTermYear] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [description, setDescription] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<{
@@ -324,7 +321,7 @@ function TermHandoverPanel() {
 
   if (!isChair) return null;
 
-  const isValid = successorRegNumber.trim() && termName.trim() && termYear.trim() && startDate;
+  const isValid = successorRegNumber.trim() && termName.trim() && termYear.trim();
 
   const executeHandover = async () => {
     setExecuting(true);
@@ -333,9 +330,6 @@ function TermHandoverPanel() {
         successor_reg_number: successorRegNumber.trim(),
         name: termName.trim(),
         year: termYear.trim(),
-        start_date: startDate,
-        end_date: endDate || undefined,
-        description: description.trim() || undefined,
       });
       const d = res.data?.data;
       setResult({
@@ -465,46 +459,13 @@ function TermHandoverPanel() {
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Year *</label>
-                <input
-                  type="text"
-                  value={termYear}
-                  onChange={(e) => setTermYear(e.target.value)}
-                  placeholder="e.g. 2026-2027"
-                  disabled={executing || confirming}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date *</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  disabled={executing || confirming}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  disabled={executing || confirming}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-                />
-              </div>
-            </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Year *</label>
               <input
                 type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional note about this term"
+                value={termYear}
+                onChange={(e) => setTermYear(e.target.value)}
+                placeholder="e.g. 2026-2027"
                 disabled={executing || confirming}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
               />
@@ -538,9 +499,9 @@ function TermHandoverPanel() {
             <button
               onClick={() => setConfirming(true)}
               disabled={!isValid}
-              className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-100"
+              className="w-full py-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-violet-100"
             >
-              <ArrowRightLeft className="w-4 h-4" />
+              <ArrowRightLeft className="w-3.5 h-3.5" />
               Execute Handover
             </button>
           )}
