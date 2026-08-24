@@ -38,6 +38,8 @@ services:
         sync: false
       - key: DB_SSL
         value: "true"
+      - key: DB_SSL_ALLOW_SELF_SIGNED
+        value: "true"
 
       # MongoDB Atlas
       - key: MONGODB_URI
