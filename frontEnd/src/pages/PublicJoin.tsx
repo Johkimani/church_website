@@ -12,6 +12,10 @@ import {
   ShieldCheck,
   Music,
   Footprints,
+  Cross,
+  Flame,
+  ArrowLeft,
+  Users,
 } from "lucide-react";
 import { apiClient } from "../api/axiosInstance";
 import Turnstile, { isCaptchaEnabled } from "../components/Turnstile";
@@ -33,15 +37,31 @@ const submitJoin = (data: {
 const COMMUNITY_OPTIONS = [
   {
     value: "choir",
-    label: "Join Choir",
-    icon: <Music size={18} />,
+    label: "Choir",
+    tagline: "Sing with the CSA Choir",
+    icon: <Music size={22} />,
     color: "#1e3a5f",
   },
   {
     value: "dancers",
-    label: "Join Dancers",
-    icon: <Footprints size={18} />,
+    label: "Dancers",
+    tagline: "Liturgical sacred dance",
+    icon: <Footprints size={22} />,
     color: "#db2777",
+  },
+  {
+    value: "st-francis",
+    label: "St. Francis",
+    tagline: "Service & stewardship",
+    icon: <Cross size={22} />,
+    color: "#047857",
+  },
+  {
+    value: "charismatic",
+    label: "Charismatic",
+    tagline: "Prayer & worship fellowship",
+    icon: <Flame size={22} />,
+    color: "#7c3aed",
   },
 ] as const;
 
@@ -54,6 +74,7 @@ export default function PublicJoin() {
     phone: "",
     course: "",
   });
+  const [step, setStep] = useState<"form" | "community">("form");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
@@ -163,7 +184,9 @@ export default function PublicJoin() {
     return Object.keys(errors).length === 0;
   };
 
-  const doSubmit = async (communityChoice: string) => {
+  // Step 1: validate details, then reveal the community picker
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSubmitError(null);
     if (!validateForm()) return;
 
@@ -180,6 +203,11 @@ export default function PublicJoin() {
       return;
     }
 
+    setStep("community");
+  };
+
+  // Step 2: send everything in one request (member + optional community)
+  const doSubmit = async (communityChoice: string) => {
     setSubmitting(true);
     try {
       const res = await submitJoin({
@@ -209,12 +237,6 @@ export default function PublicJoin() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  // Plain registration (no community interest)
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await doSubmit("");
   };
 
   // ── Confirmation Screen ──
@@ -290,6 +312,102 @@ export default function PublicJoin() {
 
           <p className="text-center text-[11px] text-slate-400 mt-6">
             Catholic Students Association &middot; Kirinyaga Chapter
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 2: Community Picker ──
+  if (step === "community") {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-indigo-50/30 py-8 px-4 sm:px-6 flex flex-col justify-center items-center">
+        <div className="w-full max-w-lg">
+          {/* Header Card */}
+          <div className="relative overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-200/60 border border-slate-200/80 mb-5">
+            <div className="h-24 sm:h-28 relative flex items-end p-5 text-white overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900">
+              <div className="relative z-10 w-full flex items-center justify-between">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                    <CheckCircle2 size={12} /> Details Verified
+                  </span>
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white drop-shadow-sm">
+                    One Last Step
+                  </h1>
+                </div>
+                <Users size={36} className="text-white/30 shrink-0" />
+              </div>
+            </div>
+          </div>
+
+          {submitError && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-red-700 mb-5">
+              <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+              <p className="flex-1 font-semibold leading-relaxed">{submitError}</p>
+            </div>
+          )}
+
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl shadow-slate-200/60">
+            <h2 className="text-lg font-bold text-slate-800">
+              Would you like to join a community?
+            </h2>
+            <p className="text-xs text-slate-500 mt-1 mb-6">
+              Tap one and your details will be sent to that community's leadership too — they'll contact you about practices.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {COMMUNITY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => doSubmit(opt.value)}
+                  aria-label={`Submit registration and join ${opt.label}`}
+                  className="group flex items-center gap-3.5 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ borderColor: `${opt.color}40`, background: `${opt.color}08` }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = opt.color)}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = `${opt.color}40`)}
+                >
+                  <span
+                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition-transform"
+                    style={{ background: opt.color }}
+                  >
+                    {opt.icon}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-black text-slate-800 tracking-tight">
+                      {opt.label}
+                    </span>
+                    <span className="block text-[11px] text-slate-500 truncate">
+                      {opt.tagline}
+                    </span>
+                  </span>
+                  <ArrowRight size={16} className="ml-auto text-slate-300 shrink-0" />
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => doSubmit("")}
+              className="w-full mt-6 py-3 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
+            >
+              No thanks, just finish my registration →
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStep("form")}
+              disabled={submitting}
+              className="w-full mt-3 py-2 text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1"
+            >
+              <ArrowLeft size={12} /> Edit my details
+            </button>
+          </div>
+
+          <p className="text-center text-[11px] text-slate-400 mt-6">
+            Catholic Students Association &middot; Kirinyaga Chapter &middot; Secured &amp; Verified
           </p>
         </div>
       </div>
@@ -541,32 +659,6 @@ export default function PublicJoin() {
             )}
           </div>
 
-          {/* Community Interest — tap to register straight into that community */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Want to join a community? <span className="text-slate-400 font-normal">(Optional)</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {COMMUNITY_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => doSubmit(opt.value)}
-                  disabled={submitting}
-                  aria-label={`Submit registration and join ${opt.value}`}
-                  className="py-3.5 px-4 rounded-xl border text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                  style={{ background: opt.color, borderColor: opt.color }}
-                >
-                  {submitting ? <RefreshCw size={16} className="animate-spin" /> : opt.icon}
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1.5">
-              Tapping sends your details above to that community's leadership too.
-            </p>
-          </div>
-
           {/* Human verification */}
           {isCaptchaEnabled() && (
             <Turnstile onToken={setCaptchaToken} resetSignal={captchaResetSignal} />
@@ -584,7 +676,7 @@ export default function PublicJoin() {
               </>
             ) : (
               <>
-                Submit Registration <ArrowRight size={18} />
+                Submit Details <ArrowRight size={18} />
               </>
             )}
           </button>
