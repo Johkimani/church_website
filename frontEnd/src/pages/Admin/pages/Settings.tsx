@@ -424,7 +424,7 @@ function TermHandoverPanel() {
         className="overflow-hidden transition-all duration-500 ease-in-out"
         style={{ maxHeight: open ? '800px' : '0px', opacity: open ? 1 : 0 }}
       >
-        <div className="px-6 pb-6 space-y-4 border-t border-slate-100 pt-4">
+        <div className="px-6 pb-6 space-y-4 border-t border-slate-100 pt-4 max-w-md">
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
             <ul className="text-[11px] text-amber-800 space-y-0.5 list-disc list-inside font-medium">
@@ -473,7 +473,7 @@ function TermHandoverPanel() {
           </div>
 
           {confirming ? (
-            <div className="bg-rose-50 border border-rose-300 rounded-xl p-4 space-y-2.5">
+            <div className="bg-rose-50 border border-rose-300 rounded-xl p-3 space-y-2">
               <p className="text-xs font-bold text-rose-800">
                 Final confirmation — this cannot be undone. Hand over to "{successorRegNumber.trim()}"?
               </p>
