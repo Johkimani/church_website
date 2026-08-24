@@ -116,9 +116,6 @@ export const JUMUIYA_POSITION_TO_ROLE = {
   'Ass Secretary': 'jumuiya_secretary',
   'Ass. Secretary': 'jumuiya_secretary',
   'Assistant Secretary': 'jumuiya_secretary',
-  'Liturgist': 'liturgist',
-  'Ass Liturgist': 'liturgist',
-  'Treasurer': 'treasurer',
 };
 
 const ROLE_IS_JUMUIYA_SCOPED = [
@@ -198,8 +195,6 @@ export const getRoleNameForPosition = (position, isJumuiya) => {
     if (lower.includes('chair')) return 'jumuiya_chairperson';
     if (lower.includes('organizing') || lower === 'os' || lower.includes(' os')) return 'jumuiya_os';
     if (lower.includes('sec')) return 'jumuiya_secretary';
-    if (lower.includes('liturg')) return 'liturgist';
-    if (lower.includes('treasur')) return 'treasurer';
     return null;
   }
   
