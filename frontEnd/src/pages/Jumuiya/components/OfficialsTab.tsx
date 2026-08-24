@@ -365,42 +365,42 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                         <Avatar name={official.name} image={official.image} size="lg" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                     </div>
-                                    <div className="p-5 text-center">
-                                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
+                                    <div className="px-3 pt-2.5 pb-3 text-center">
+                                        <h3 className="font-bold text-sm text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
                                             {official.name}
                                         </h3>
-                                        <p className="text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block" style={{ background: `${_c('18')}`, color: _c('cc') }}>
+                                        <p className="text-xs font-semibold mt-1 px-2.5 py-0.5 rounded-full inline-block" style={{ background: `${_c('18')}`, color: _c('cc') }}>
                                             {official.position}
                                         </p>
-                                        <div className="mt-5 pt-4 border-t border-gray-50 flex justify-center gap-3">
+                                        <div className="mt-2 pt-2 border-t border-gray-50 flex justify-center gap-2">
                                             {official.phone && (
                                                 <>
                                                     <a
                                                         href={`tel:${official.phone.replace(/[^+0-9]/g, '')}`}
-                                                        className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                                                        className="w-8 h-8 rounded-lg bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
                                                         title="Call Official"
                                                     >
                                                         <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
-                                                        <FaPhoneAlt size={14} className="z-10 relative" />
+                                                        <FaPhoneAlt size={12} className="z-10 relative" />
                                                     </a>
                                                     <a
                                                         href={`https://wa.me/${formatPhone(official.phone)}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                                        className="w-8 h-8 rounded-lg bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
                                                         title="WhatsApp"
                                                     >
-                                                        <FaWhatsapp size={18} />
+                                                        <FaWhatsapp size={15} />
                                                     </a>
                                                 </>
                                             )}
                                             {official.email && (
                                                 <a
                                                     href={`mailto:${official.email}`}
-                                                    className="w-10 h-10 rounded-xl bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                                    className="w-8 h-8 rounded-lg bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
                                                     title="Email Official"
                                                 >
-                                                    <FaEnvelope size={14} />
+                                                    <FaEnvelope size={12} />
                                                 </a>
                                             )}
                                         </div>
