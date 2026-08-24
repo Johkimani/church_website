@@ -243,7 +243,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
             )}
 
             {/* Main list content — hidden when viewing an official detail */}
-            {!isViewing && (
+            {!isViewing && (<>
             <div className="mt-8">
                 {officials.length === 0 ? (
                     <div className="w-full text-center py-20 bg-white/50 rounded-2xl border border-dashed border-gray-300">
@@ -476,7 +476,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                     )}
                 </div>
             </div>
-            )}
+            </>)}
 
         </div>
     );
