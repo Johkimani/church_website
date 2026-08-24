@@ -136,7 +136,6 @@ export default function PublicHistoryView() {
             <div className="grid grid-cols-2 gap-3.5 sm:hidden mb-12">
               {history.map((off) => (
                 <article key={`m-${off.id}`} className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
-                  <div className={`h-1.5 w-full bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-600 to-gray-700'}`} />
                   <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
                     <img
                       src={getPhotoUrl(off.photo)}

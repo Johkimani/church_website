@@ -160,7 +160,6 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                     key={`m-${official.id}`}
                                     className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
                                 >
-                                    <div className="h-1.5 w-full" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
                                     <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
                                         <Avatar name={official.name} image={official.image} size="lg" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
