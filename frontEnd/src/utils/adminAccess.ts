@@ -176,6 +176,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
       case "CSA_SECRETARY":
         prefixes.add("/admin/registered-members");
         prefixes.add("/admin/whatsapp-links");
+        prefixes.add("/admin/treasury");
         break;
       case "JUMUIYA_CHAIRPERSON":
         prefixes.add("/admin/suggestions");

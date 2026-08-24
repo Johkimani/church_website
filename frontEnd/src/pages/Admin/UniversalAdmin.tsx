@@ -81,7 +81,7 @@ const menuSections: NavSection[] = [
       { id: 'jumuiya-suggestions', name: 'Jumuiya Suggestions', icon: MessageSquare, path: '/admin/jumuiya-suggestions' },
       { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
       { id: 'donations', name: 'Donations', icon: HandCoins, path: '/admin/donations' },
-      { id: 'treasury', name: 'Treasury Hub', icon: Wallet, path: '/admin/treasury' },
+      { id: 'treasury', name: 'Treasury', icon: Wallet, path: '/admin/treasury' },
       { id: 'bookings', name: 'Activity Bookings', icon: CalendarCheck2, path: '/admin/bookings' },
     ],
   },
