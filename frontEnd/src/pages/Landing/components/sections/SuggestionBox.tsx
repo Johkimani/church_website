@@ -1,7 +1,26 @@
-import React, { useState } from 'react';
-import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, EyeOff, Clock3, Reply, RefreshCw } from 'lucide-react';
 import apiService from '../../../../services/api';
+import { apiClient } from '../../../../api/axiosInstance';
 import { useAuth } from '../../../../context/AuthContext';
+
+interface MySuggestion {
+  id: number;
+  suggestion: string;
+  category: string | null;
+  status: string | null;
+  reply: string | null;
+  replied_at: string | null;
+  created_at: string;
+}
+
+const STATUS_META: Record<string, { label: string; cls: string }> = {
+  pending: { label: 'Pending', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+  replied: { label: 'Replied', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  approved: { label: 'Identity Approved', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+  unmask_requested: { label: 'Reviewing Identity', cls: 'bg-slate-100 text-slate-500 border-slate-200' },
+  rejected: { label: 'Closed', cls: 'bg-slate-100 text-slate-400 border-slate-200' },
+};
 
 const SuggestionBox: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -16,6 +35,25 @@ const SuggestionBox: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const [targetScope, setTargetScope] = useState<'csa' | 'jumuiya'>('csa');
+
+  const [mySuggestions, setMySuggestions] = useState<MySuggestion[]>([]);
+  const [loadingMine, setLoadingMine] = useState(false);
+
+  const fetchMySuggestions = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoadingMine(true);
+    try {
+      const res = await apiClient.get('/suggestions/mine');
+      setMySuggestions(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch {
+      setMySuggestions([]);
+    }
+    setLoadingMine(false);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isOpen && mySuggestions.length === 0) fetchMySuggestions();
+  }, [isOpen, mySuggestions.length, fetchMySuggestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +83,8 @@ const SuggestionBox: React.FC = () => {
       await apiService.createRecord('suggestions', submissionData);
       setStatus('success');
       setFormData({ name: user?.name || '', email: user?.email || '', suggestion: '' });
-      
+      fetchMySuggestions();
+
       setTimeout(() => {
         setStatus('idle');
         setIsOpen(false);
@@ -258,6 +297,68 @@ const SuggestionBox: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* My Suggestions + Replies */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between px-1 mb-3">
+              <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase flex items-center gap-2">
+                <Reply size={12} className="text-primary" />
+                My Suggestions &amp; Replies
+              </h3>
+              <button
+                type="button"
+                onClick={fetchMySuggestions}
+                disabled={loadingMine}
+                className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={11} className={loadingMine ? 'animate-spin' : ''} /> Refresh
+              </button>
+            </div>
+
+            {loadingMine && mySuggestions.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-xs font-bold text-slate-400">Loading your suggestions...</div>
+            ) : mySuggestions.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
+                <MessageSquare size={20} className="text-slate-200 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-slate-400">No suggestions yet — yours will appear here with official replies.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {mySuggestions.map(item => {
+                  const meta = STATUS_META[item.status || 'pending'] || STATUS_META.pending;
+                  return (
+                    <div key={item.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <p className="text-sm font-semibold text-slate-800 leading-snug flex-1">{item.suggestion}</p>
+                        <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border ${meta.cls}`}>
+                          {item.status === 'replied' && <CheckCircle2 size={10} />}
+                          {(item.status || 'pending') === 'pending' && <Clock3 size={10} />}
+                          {meta.label}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        Sent {new Date(item.created_at).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        {item.category ? ` · ${item.category}` : ''}
+                      </p>
+                      {item.reply && (
+                        <div className="mt-3 pt-3 border-t border-emerald-100 bg-emerald-50/50 rounded-xl p-3">
+                          <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 mb-1">
+                            <Reply size={11} /> Official Reply
+                            {item.replied_at && (
+                              <span className="font-medium normal-case text-slate-400">
+                                · {new Date(item.replied_at).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' })}
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{item.reply}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

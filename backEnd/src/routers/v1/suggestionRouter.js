@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   listSuggestions,
+  getMySuggestions,
   getBin,
   softDelete,
   restoreFromBin,
@@ -27,6 +28,7 @@ const SUGGESTION_ADMIN_ROLES = [
 const suggestionAdminGate = requireRole(...SUGGESTION_ADMIN_ROLES);
 const suggestionBinGate = requireRole("csa_chair", "jumuiya_chairperson");
 
+router.get("/mine", verifyToken, getMySuggestions);
 router.get("/", verifyToken, suggestionAdminGate, listSuggestions);
 
 router.get("/bin", verifyToken, suggestionBinGate, getBin);

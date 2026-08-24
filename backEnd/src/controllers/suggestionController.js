@@ -509,8 +509,29 @@ export const respondRoleUnmask = async (req, res) => {
   }
 };
 
-export const replyToSuggestion = async (req, res) => {
-  if (!requireVcRole(req, res)) return;
+// Member-facing: the caller's own suggestions with official replies.
+// Scoped strictly to user_id from the verified token — a member can never
+// read anyone else's suggestions through this endpoint.
+export const getMySuggestions = async (req, res) => {
+  try {
+    const userId = req.user?.member_id;
+    if (!userId) {
+      return res.json({ status: "success", data: [] });
+    }
+
+    const result = await pool.query(
+      `${SUGGESTION_WITH_MEMBER} WHERE s.deleted_at IS NULL AND s.user_id = $1 ORDER BY s.created_at DESC LIMIT 50`,
+      [userId]
+    );
+
+    res.json({ status: "success", data: result.rows.map(sanitizeSuggestion) });
+  } catch (error) {
+    logger.error("getMySuggestions error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const replyToSuggestion = async (req, res) => {  if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
     const { reply } = req.body;
