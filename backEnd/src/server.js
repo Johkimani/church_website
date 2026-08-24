@@ -46,6 +46,7 @@ import jumuiyaTshirtsMigration from "./migrations/jumuiyaTshirtsMigration.js";
 import backfillJumuiyaViceChairRole from "./migrations/backfillJumuiyaViceChairRole.js";
 import relaxOfficialContactUniqueness from "./migrations/relaxOfficialContactUniqueness.js";
 import electionTermClosingMessage from "./migrations/electionTermClosingMessage.js";
+import { fixPendingPaymentsCascade } from "./migrations/fixPendingPaymentsCascade.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -193,6 +194,7 @@ const initServer = async () => {
     await weeklyChallengeMigration();
     await activityBookingMigration();
     await pendingPaymentsMigration();
+    await fixPendingPaymentsCascade();
     await attendanceMigration();
     await jumuiyaAttendanceMigration();
     await activityLogMigration();
