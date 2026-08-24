@@ -25,6 +25,7 @@ import {
   MessageCircle,
   Shirt,
   Wallet,
+  CalendarCheck2,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -81,6 +82,7 @@ const menuSections: NavSection[] = [
       { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
       { id: 'donations', name: 'Donations', icon: HandCoins, path: '/admin/donations' },
       { id: 'treasury', name: 'Treasury Hub', icon: Wallet, path: '/admin/treasury' },
+      { id: 'bookings', name: 'Activity Bookings', icon: CalendarCheck2, path: '/admin/bookings' },
     ],
   },
   {

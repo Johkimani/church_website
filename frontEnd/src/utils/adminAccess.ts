@@ -65,6 +65,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
   "/admin/jumuiya-suggestions",
+  "/admin/bookings",
 ];
 
 export const normalizeRoles = (role: unknown): string[] => {
@@ -135,12 +136,14 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");
         prefixes.add("/admin/activity-log");
+        prefixes.add("/admin/bookings");
         break;
       case "OS":
         prefixes.add("/admin/announcements");
         prefixes.add("/admin/weekly-activities");
         prefixes.add("/admin/semester-activities");
         prefixes.add("/admin/gallery");
+        prefixes.add("/admin/bookings");
         break;
       case "JUMUIYA_OS":
         prefixes.add("/admin/secretary-dashboard");
