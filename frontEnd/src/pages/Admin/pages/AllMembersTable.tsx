@@ -23,7 +23,7 @@ function formatJumuiyaName(slugOrUuid: string): string {
   return slugOrUuid.length > 20 ? slugOrUuid.slice(0, 8) + "…" : slugOrUuid;
 }
 
-import { getYearOfStudy, isGraduated } from "../../../utils/memberYear";
+import { getYearOfStudy, isGraduated, getIntakeYearLabel } from "../../../utils/memberYear";
 
 const styles = `
   .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -48,10 +48,27 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     Phone: true, Year: true, Jumuiya: true, Source: true,
   });
   const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Male: true, Female: true });
-  const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({ "1st": true, "2nd": true, "3rd": true, "4th+": true });
+  const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({});
   const [pendingGraduates, setPendingGraduates] = useState<string[]>([]);
   const [migrating, setMigrating] = useState(false);
   const itemsPerPage = 25;
+
+  const intakeYears = useMemo(() => {
+    const set = new Set<string>();
+    members.forEach((m: any) => {
+      const label = getIntakeYearLabel(m.member_id || m.id || "");
+      if (label) set.add(label);
+    });
+    return Array.from(set).sort().reverse();
+  }, [members]);
+
+  useEffect(() => {
+    setYearFilter(prev => {
+      const next: Record<string, boolean> = {};
+      intakeYears.forEach(y => { next[y] = prev[y] ?? true; });
+      return next;
+    });
+  }, [intakeYears]);
 
   const jumuiyaOrder: Record<string, number> = {
     "St. Anthony": 0,
@@ -72,8 +89,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
         if (!((g === "male" && activeGenders.includes("Male")) ||
               (g === "female" && activeGenders.includes("Female")) ||
               (!g && activeGenders.length > 0))) return false;
-        const yr = getYearOfStudy(row.member_id || row.id || "");
-        const label = yr >= 4 ? "4th+" : yr === 3 ? "3rd" : yr === 2 ? "2nd" : yr === 1 ? "1st" : null;
+        const label = getIntakeYearLabel(row.member_id || row.id || "");
         return label ? activeYears.includes(label) : activeYears.length > 0;
       });
       const selected = Object.entries(exportColumns).filter(([, v]) => v).map(([k]) => k);
@@ -85,7 +101,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           else if (k === "Gender") out.Gender = row.gender === "male" || row.gender === "Male" ? "Male" : row.gender === "female" || row.gender === "Female" ? "Female" : row.gender || "";
           else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
-          else if (k === "Year") out.Year = getYearOfStudy(row.member_id || row.id || "") || "";
+          else if (k === "Year") out.Year = getIntakeYearLabel(row.member_id || row.id || "");
           else if (k === "Jumuiya") out.Jumuiya = row.jumuiya_name || formatJumuiyaName(row.jumuiya_id);
           else if (k === "Source") out.Source = row.source === "csa" ? "CSA" : row.source === "jum" ? "Jum" : row.source || "";
         });
@@ -460,7 +476,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                           <input value={editForm.year_of_study} onChange={e => setEditForm((p: any) => ({ ...p, year_of_study: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16" />
                         ) : (
-                          <span className="text-slate-500 text-xs">{getYearOfStudy(memberId) || "—"}</span>
+                          <span className="text-slate-500 text-xs">{getIntakeYearLabel(memberId) || "—"}</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">
