@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   Hash,
@@ -101,20 +101,31 @@ export default function PublicJoin() {
     );
   };
 
-  // Welcome WhatsApp groups — fetched once the registration succeeds so the
-  // new member can join right from the confirmation screen.
+  // Welcome WhatsApp groups — fetched once the registration succeeds. The
+  // first group opens AUTOMATICALLY (new tab); if the browser blocks the
+  // popup, the green buttons below remain as fallback.
   const [waGroups, setWaGroups] = useState<{ label: string; url: string }[]>([]);
+  const waAutoOpenedRef = useRef(false);
   useEffect(() => {
     if (!submitted) return;
     apiClient
       .get("/whatsapp-links/qr-welcome")
-      .then((r) =>
-        setWaGroups(
-          Array.isArray(r.data?.groups)
-            ? r.data.groups.filter((g: any) => g?.url)
-            : []
+      .then((r) => {
+        const groups: { label: string; url: string }[] = Array.isArray(
+          r.data?.groups
         )
-      )
+          ? r.data.groups.filter((g: any) => g?.url)
+          : [];
+        setWaGroups(groups);
+        if (groups.length > 0 && !waAutoOpenedRef.current) {
+          waAutoOpenedRef.current = true;
+          try {
+            window.open(groups[0].url, "_blank", "noopener,noreferrer");
+          } catch {
+            /* popup blocked — buttons remain visible */
+          }
+        }
+      })
       .catch(() => setWaGroups([]));
   }, [submitted]);
 
