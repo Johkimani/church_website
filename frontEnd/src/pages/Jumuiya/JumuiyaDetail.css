@@ -352,7 +352,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--space-md);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 25%) 0%, color-mix(in srgb, var(--jumuiya-color), black 35%) 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 45%) 0%, color-mix(in srgb, var(--jumuiya-color), black 55%) 100%);
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -393,6 +393,9 @@
 
 .notif-panel-content .tab-system-content {
     padding-bottom: 0px;
+    --text-secondary: rgba(255, 255, 255, 0.85);
+    --text-muted: rgba(255, 255, 255, 0.55);
+    --border-light: rgba(255, 255, 255, 0.12);
 }
 
 .notif-panel-content .tab-grid {
@@ -427,7 +430,7 @@
         height: auto;
         max-height: calc(62vh - 64px);
         overflow-y: auto;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 25%) 0%, color-mix(in srgb, var(--jumuiya-color), black 35%) 100%) !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 45%) 0%, color-mix(in srgb, var(--jumuiya-color), black 55%) 100%) !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         filter: none !important;
