@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Users, Search, X, Edit2, Save, ChevronLeft, ChevronRight, RefreshCw, Flag, Ban } from "lucide-react";
 import { SkeletonTable } from "../../../components/Skeleton";
+import { getYearOfStudy } from "../../../utils/memberYear";
 
 
 interface Props {
@@ -260,7 +261,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
                           <input value={editForm.year_of_study} onChange={e => setEditForm((p: any) => ({ ...p, year_of_study: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16" />
                         ) : (
-                          <span className="text-slate-500">{m.year_of_study || "—"}</span>
+                          <span className="text-slate-500">{getYearOfStudy(m.member_id || "") || m.year_of_study || "—"}</span>
                         )}
                       </td>
                       <td className="py-3 px-4">

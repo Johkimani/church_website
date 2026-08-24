@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Calendar, Users, CheckCircle, AlertTriangle, GitMerge, RefreshCw, GraduationCap } from "lucide-react";
 import { SkeletonSummaryBar, SkeletonTable } from "../../../components/Skeleton";
+import { getYearOfStudy } from "../../../utils/memberYear";
 
 
 interface Props {
@@ -291,7 +292,7 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
                     </td>
                     <td className="py-2 px-3 text-slate-500">{m.phone || "—"}</td>
                     <td className="py-2 px-3 text-slate-500">{m.email || "—"}</td>
-                    <td className="py-2 px-3 text-slate-500">{m.academic_year || "—"}</td>
+                    <td className="py-2 px-3 text-slate-500">{getYearOfStudy(m.reg_number || "") || "—"}</td>
                   </tr>
                 ))}
               </tbody>

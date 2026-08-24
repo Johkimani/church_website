@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { RefreshCw, Users, Search, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { SkeletonTable } from "../../../components/Skeleton";
+import { getYearOfStudy, getIntakeYearLabel } from "../../../utils/memberYear";
 
 
 interface Props {
@@ -34,7 +35,7 @@ const MemberRow = memo(({ m }: { m: any }) => (
     </td>
     <td className="py-3 px-4 text-slate-500">{m.email || "—"}</td>
     <td className="py-3 px-4 text-slate-500">{m.phone || "—"}</td>
-    <td className="py-3 px-4 text-slate-500">{m.year_of_study || "—"}</td>
+    <td className="py-3 px-4 text-slate-500">{getYearOfStudy(m.member_id || "") || "—"}</td>
     <td className="py-3 px-4 text-slate-400 text-xs">{m.join_date ? m.join_date.slice(0, 10) : "—"}</td>
   </tr>
 ));
@@ -83,9 +84,9 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
   }, [jumuiyaId, fetchMembers]);
 
   const yearOptions = useMemo(() => {
-    const years = new Set<string>();
-    members.forEach(m => { if (m.year_of_study) years.add(m.year_of_study); });
-    return [...years].sort();
+    const labels = new Set<string>();
+    members.forEach(m => { const lbl = getIntakeYearLabel(m.member_id || ""); if (lbl) labels.add(lbl); });
+    return [...labels].sort();
   }, [members]);
 
   // Memoized filtered results
@@ -101,7 +102,7 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     }
 
     if (yearFilter) {
-      result = result.filter(m => m.year_of_study === yearFilter);
+      result = result.filter(m => getIntakeYearLabel(m.member_id || "") === yearFilter);
     }
 
     if (debouncedSearch) {
