@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User,
   Hash,
@@ -101,11 +101,11 @@ export default function PublicJoin() {
     );
   };
 
-  // Welcome WhatsApp groups — fetched once the registration succeeds. The
-  // first group opens AUTOMATICALLY (new tab); if the browser blocks the
-  // popup, the green buttons below remain as fallback.
+  // Welcome WhatsApp groups — fetched once the registration succeeds. Shown
+  // as a full-screen guided flow: one GIANT join button per group, one at a
+  // time, so a member (or the official registering them) can't miss it.
   const [waGroups, setWaGroups] = useState<{ label: string; url: string }[]>([]);
-  const waAutoOpenedRef = useRef(false);
+  const [waStep, setWaStep] = useState<number | null>(null);
   useEffect(() => {
     if (!submitted) return;
     apiClient
@@ -117,14 +117,7 @@ export default function PublicJoin() {
           ? r.data.groups.filter((g: any) => g?.url)
           : [];
         setWaGroups(groups);
-        if (groups.length > 0 && !waAutoOpenedRef.current) {
-          waAutoOpenedRef.current = true;
-          try {
-            window.open(groups[0].url, "_blank", "noopener,noreferrer");
-          } catch {
-            /* popup blocked — buttons remain visible */
-          }
-        }
+        setWaStep(groups.length > 0 ? 0 : null);
       })
       .catch(() => setWaGroups([]));
   }, [submitted]);
@@ -274,6 +267,69 @@ export default function PublicJoin() {
     }
   };
 
+  // ── WhatsApp Guided Join (full-screen, one giant button per group) ──
+  if (submitted && waStep !== null && waGroups[waStep]) {
+    const g = waGroups[waStep];
+    const total = waGroups.length;
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-slate-50 to-emerald-100/40 px-4 flex flex-col justify-center items-center">
+        <div className="w-full max-w-md text-center">
+          {/* progress */}
+          <div className="flex items-center justify-center gap-1.5 mb-6">
+            {waGroups.map((_, i) => (
+              <span
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i < waStep ? "w-8 bg-emerald-500" : i === waStep ? "w-12 bg-emerald-600" : "w-8 bg-slate-300"
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="bg-white rounded-3xl p-7 border border-slate-200 shadow-xl shadow-emerald-100/60">
+            <div className="w-16 h-16 rounded-2xl bg-[#25D366] mx-auto mb-4 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="#fff">
+                <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.83 14.12c-.24.68-1.4 1.3-1.93 1.35-.52.06-1.01.24-2.86-.6-2.24-1-3.65-3.33-3.76-3.49-.11-.16-.89-1.22-.85-2.31.04-1.09.62-1.61.84-1.84.22-.23.48-.28.64-.28h.46c.15 0 .35-.06.54.41.2.51.69 1.79.75 1.92.06.13.1.28.01.45-.08.17-.17.32-.29.47-.12.15-.26.33-.37.44-.12.12-.25.26-.11.5.14.23.62 1.03 1.34 1.66.92.82 1.7 1.08 1.94 1.2.24.12.39.1.53-.06.16-.16.63-.73.8-.98.17-.25.34-.2.57-.11.24.08 1.5.71 1.76.84.26.13.43.19.5.3.06.11.06.64-.18 1.32z" />
+              </svg>
+            </div>
+
+            <p className="text-xs font-black uppercase tracking-widest text-emerald-600 mb-1">
+              Step {waStep + 1} of {total}
+            </p>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+              Add to "{g.label}"
+            </h2>
+            <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+              One last tap — open WhatsApp and press{" "}
+              <span className="font-bold text-[#128C7E]">Join Group</span> so you don't miss any updates.
+            </p>
+
+            <a
+              href={g.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWaStep((s) => (s === null ? null : s + 1))}
+              className="mt-6 w-full inline-flex items-center justify-center gap-2 px-6 py-5 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-lg font-black shadow-lg shadow-[#25D366]/30 transition-all active:scale-[0.98]"
+            >
+              Open WhatsApp &amp; Join
+            </a>
+
+            <button
+              onClick={() => setWaStep((s) => (s === null ? null : s + 1))}
+              className="mt-4 text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-2"
+            >
+              Skip this group
+            </button>
+          </div>
+
+          <p className="text-center text-[11px] text-slate-400 mt-5">
+            Your registration is already saved — this just adds you to the updates group.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Confirmation Screen ──
   if (submitted) {
     return (
@@ -330,33 +386,6 @@ export default function PublicJoin() {
                   </div>
                 );
               })()
-            )}
-
-            {/* WhatsApp welcome groups */}
-            {waGroups.length > 0 && (
-              <div className="mt-5 mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-left">
-                <p className="text-sm font-black text-slate-800 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-[#25D366] text-white flex items-center justify-center text-[11px] font-black">WA</span>
-                  Join our WhatsApp groups
-                </p>
-                <p className="text-xs text-slate-500 mt-1 mb-3 leading-relaxed">
-                  While you wait for approval, stay in the loop — announcements and updates are posted here first.
-                </p>
-                <div className="space-y-2">
-                  {waGroups.map((g) => (
-                    <a
-                      key={g.url}
-                      href={g.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-2 w-full px-4 py-3 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-sm font-bold transition-colors active:scale-[0.99]"
-                    >
-                      <span className="truncate">{g.label}</span>
-                      <ArrowRight size={15} className="shrink-0" />
-                    </a>
-                  ))}
-                </div>
-              </div>
             )}
 
             <div className="bg-slate-50 rounded-2xl p-4 my-6 border border-slate-200/80 text-left space-y-2 text-xs text-slate-700">
