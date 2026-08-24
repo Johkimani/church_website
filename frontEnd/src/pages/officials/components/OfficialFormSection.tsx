@@ -184,16 +184,18 @@ import { memberService } from '../../../api/jumuiyaMemberService';
      const res = await memberService.lookupMemberByRegNumber(value.trim());
      const data = res.data || [];
      setNameLookupResults(data);
-     if (data.length === 1) {
-       const m = data[0];
-       setRegNumber(m.member_id || '');
-       if (m.phone) setContact(m.phone);
-       if (mode === 'jumuiya' && m.jumuiya_name) {
-         const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
-         if (matched) { setCategory(matched); setPosition(''); }
-       }
-       setNameMemberFound(true);
-       setShowNameLookupDropdown(false);
+      if (data.length === 1) {
+        const m = data[0];
+        const fullName = `${m.first_name || ''} ${m.last_name || ''}`.trim();
+        setName(fullName);
+        setRegNumber(m.member_id || '');
+        if (m.phone) setContact(m.phone);
+        if (mode === 'jumuiya' && m.jumuiya_name) {
+          const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+          if (matched) { setCategory(matched); setPosition(''); }
+        }
+        setNameMemberFound(true);
+        setShowNameLookupDropdown(false);
      } else if (data.length > 1) {
        setShowNameLookupDropdown(true);
        setNameMemberFound(false);
