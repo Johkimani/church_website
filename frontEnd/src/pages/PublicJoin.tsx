@@ -10,8 +10,11 @@ import {
   ArrowRight,
   RefreshCw,
   ShieldCheck,
+  Music,
+  Footprints,
 } from "lucide-react";
 import { apiClient } from "../api/axiosInstance";
+import Turnstile, { isCaptchaEnabled } from "../components/Turnstile";
 
 const checkDuplicate = (params: { regNumber?: string; email?: string }) =>
   apiClient.get("/jumuiya/join/check-duplicate", { params }).then((r) => r.data);
@@ -23,7 +26,26 @@ const submitJoin = (data: {
   email?: string;
   phone: string;
   course: string;
+  community?: string | null;
+  captchaToken?: string | null;
 }) => apiClient.post("/jumuiya/join/submit", data).then((r) => r.data);
+
+const COMMUNITY_OPTIONS = [
+  {
+    value: "choir",
+    label: "Join Choir",
+    icon: <Music size={18} />,
+    color: "#1e3a5f",
+    tint: "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-100 shadow-sm",
+  },
+  {
+    value: "dancers",
+    label: "Join Dancers",
+    icon: <Footprints size={18} />,
+    color: "#db2777",
+    tint: "bg-pink-50 border-pink-500 text-pink-700 ring-2 ring-pink-100 shadow-sm",
+  },
+] as const;
 
 export default function PublicJoin() {
   const [formData, setFormData] = useState({
@@ -34,6 +56,9 @@ export default function PublicJoin() {
     phone: "",
     course: "",
   });
+  const [community, setCommunity] = useState<string>("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [duplicateStatus, setDuplicateStatus] = useState<{
@@ -48,6 +73,7 @@ export default function PublicJoin() {
     name: string;
     regNumber: string;
     date: string;
+    community?: string;
   } | null>(null);
 
   // Live duplicate check debounced
@@ -153,6 +179,10 @@ export default function PublicJoin() {
       setSubmitError(duplicateStatus.email.message);
       return;
     }
+    if (isCaptchaEnabled() && !captchaToken) {
+      setSubmitError("Please complete the human verification before submitting.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -163,11 +193,14 @@ export default function PublicJoin() {
         email: formData.email.trim() || undefined,
         phone: formData.phone.trim(),
         course: formData.course.trim(),
+        community: community || null,
+        captchaToken,
       });
       setSubmitted({
         name: res.data.name,
         regNumber: res.data.regNumber,
         date: res.data.date,
+        community: res.data.community || community || "",
       });
     } catch (err: any) {
       const errorMsg =
@@ -176,6 +209,7 @@ export default function PublicJoin() {
         err?.message ||
         "Failed to submit. Please try again.";
       setSubmitError(errorMsg);
+      setCaptchaResetSignal((s) => s + 1);
     } finally {
       setSubmitting(false);
     }
@@ -207,11 +241,32 @@ export default function PublicJoin() {
                 <span className="text-slate-500">Reg Number:</span>
                 <span className="font-bold text-slate-900">{submitted.regNumber}</span>
               </div>
+              {submitted.community && (
+                <div className="flex justify-between border-b border-slate-200/60 pb-2">
+                  <span className="text-slate-500">Community Interest:</span>
+                  <span
+                    className="font-bold capitalize"
+                    style={{ color: submitted.community === "choir" ? "#1e3a5f" : "#db2777" }}
+                  >
+                    {submitted.community === "choir" ? "Choir" : "Dancers"}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-500">Submission Date:</span>
                 <span className="font-medium text-slate-700">{submitted.date}</span>
               </div>
             </div>
+
+            {submitted.community && (
+              <p className="text-xs text-slate-600 mb-4">
+                You also requested to join the{" "}
+                <span className="font-bold">
+                  {submitted.community === "choir" ? "CSA Choir" : "Liturgical Dancers"}
+                </span>{" "}
+                — their leadership will contact you about practices.
+              </p>
+            )}
 
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 leading-relaxed">
               <p className="font-bold mb-1">What happens next?</p>
@@ -475,6 +530,45 @@ export default function PublicJoin() {
               <p className="text-[11px] text-red-500 mt-1">{fieldErrors.course}</p>
             )}
           </div>
+
+          {/* Community Interest Tabs (optional) */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Want to join a community? <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {COMMUNITY_OPTIONS.map((opt) => {
+                const selected = community === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setCommunity(selected ? "" : opt.value)}
+                    className={`py-3.5 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                      selected
+                        ? opt.tint
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
+                    }`}
+                    style={
+                      selected
+                        ? { borderColor: opt.color }
+                        : undefined
+                    }
+                  >
+                    {opt.icon} {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Pick one and the community leadership will follow up with you.
+            </p>
+          </div>
+
+          {/* Human verification */}
+          {isCaptchaEnabled() && (
+            <Turnstile onToken={setCaptchaToken} resetSignal={captchaResetSignal} />
+          )}
 
           {/* Submit */}
           <button
