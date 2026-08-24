@@ -36,14 +36,12 @@ const COMMUNITY_OPTIONS = [
     label: "Join Choir",
     icon: <Music size={18} />,
     color: "#1e3a5f",
-    tint: "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-100 shadow-sm",
   },
   {
     value: "dancers",
     label: "Join Dancers",
     icon: <Footprints size={18} />,
     color: "#db2777",
-    tint: "bg-pink-50 border-pink-500 text-pink-700 ring-2 ring-pink-100 shadow-sm",
   },
 ] as const;
 
@@ -56,7 +54,6 @@ export default function PublicJoin() {
     phone: "",
     course: "",
   });
-  const [community, setCommunity] = useState<string>("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
@@ -166,8 +163,7 @@ export default function PublicJoin() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSubmit = async (communityChoice: string) => {
     setSubmitError(null);
     if (!validateForm()) return;
 
@@ -193,14 +189,14 @@ export default function PublicJoin() {
         email: formData.email.trim() || undefined,
         phone: formData.phone.trim(),
         course: formData.course.trim(),
-        community: community || null,
+        community: communityChoice || null,
         captchaToken,
       });
       setSubmitted({
         name: res.data.name,
         regNumber: res.data.regNumber,
         date: res.data.date,
-        community: res.data.community || community || "",
+        community: res.data.community || communityChoice || "",
       });
     } catch (err: any) {
       const errorMsg =
@@ -213,6 +209,12 @@ export default function PublicJoin() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Plain registration (no community interest)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await doSubmit("");
   };
 
   // ── Confirmation Screen ──
@@ -531,37 +533,29 @@ export default function PublicJoin() {
             )}
           </div>
 
-          {/* Community Interest Tabs (optional) */}
+          {/* Community Interest — tap to register straight into that community */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Want to join a community? <span className="text-slate-400 font-normal">(Optional)</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {COMMUNITY_OPTIONS.map((opt) => {
-                const selected = community === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setCommunity(selected ? "" : opt.value)}
-                    className={`py-3.5 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                      selected
-                        ? opt.tint
-                        : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
-                    }`}
-                    style={
-                      selected
-                        ? { borderColor: opt.color }
-                        : undefined
-                    }
-                  >
-                    {opt.icon} {opt.label}
-                  </button>
-                );
-              })}
+              {COMMUNITY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => doSubmit(opt.value)}
+                  disabled={submitting}
+                  aria-label={`Submit registration and join ${opt.value}`}
+                  className="py-3.5 px-4 rounded-xl border text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.97] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  style={{ background: opt.color, borderColor: opt.color }}
+                >
+                  {submitting ? <RefreshCw size={16} className="animate-spin" /> : opt.icon}
+                  {opt.label}
+                </button>
+              ))}
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5">
-              Pick one and the community leadership will follow up with you.
+              Tapping sends your details above to that community's leadership too.
             </p>
           </div>
 
