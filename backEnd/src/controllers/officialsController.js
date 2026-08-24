@@ -773,18 +773,7 @@ export const updateOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid phone number' });
     }
 
-    if (normalizedContact) {
-      const effectiveReg = validatedRegNumber || existing.rows[0].reg_number || '';
-      const dup = await pool.query(
-        "SELECT id FROM officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL) AND (reg_number IS NULL OR reg_number != $3)",
-        [normalizedContact, id, effectiveReg]
-      );
-      if (dup.rows.length > 0) {
-        return res.status(409).json({ success: false, message: 'Contact already in use' });
-      }
-    }
-
-    // Validate reg_number if provided
+    // Validate reg_number if provided (must run before contact dup check below)
     let validatedRegNumber = existing.rows[0].reg_number;
     if (reg_number && reg_number.trim()) {
       const memberResult = await pool.query(
@@ -796,6 +785,17 @@ export const updateOfficial = async (req, res) => {
         return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}"` });
       }
       validatedRegNumber = memberResult.rows[0].member_id;
+    }
+
+    if (normalizedContact) {
+      const effectiveReg = validatedRegNumber || existing.rows[0].reg_number || '';
+      const dup = await pool.query(
+        "SELECT id FROM officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL) AND (reg_number IS NULL OR reg_number != $3)",
+        [normalizedContact, id, effectiveReg]
+      );
+      if (dup.rows.length > 0) {
+        return res.status(409).json({ success: false, message: 'Contact already in use' });
+      }
     }
 
     // Position uniqueness check — skip for archived officials (historical data)
