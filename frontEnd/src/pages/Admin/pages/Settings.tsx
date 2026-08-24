@@ -18,6 +18,7 @@ import {
   ArrowRightLeft,
   LogOut,
   UserCheck,
+  ChevronDown,
 } from 'lucide-react';
 import apiService from '../../../services/api';
 import { apiClient } from '../../../api/axiosInstance';
@@ -301,6 +302,7 @@ function SemesterConfigPanel() {
 function TermHandoverPanel() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
 
   const isChair = (Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [])
     .some((r) => String(r).toLowerCase().trim() === 'csa_chair');
@@ -360,7 +362,7 @@ function TermHandoverPanel() {
             Handover Complete
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Leadership transferred to <span className="font-bold text-slate-700">{result.successor_name}</span> — term “{result.term_name}”.
+            Leadership transferred to <span className="font-bold text-slate-700">{result.successor_name}</span> — term "{result.term_name}".
           </p>
         </div>
         <div className="p-6 space-y-5">
@@ -382,7 +384,6 @@ function TermHandoverPanel() {
               <p className="text-[10px] font-bold text-rose-500 uppercase">Roles Revoked</p>
             </div>
           </div>
-
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start gap-3">
             <UserCheck className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
             <div className="text-xs text-indigo-800">
@@ -390,12 +391,10 @@ function TermHandoverPanel() {
               <p className="mt-1">Log in with your usual credentials → Admin panel → Officials page → add the new officials. Positions with system roles will appear in this Approval Queue.</p>
             </div>
           </div>
-
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
             <LogOut className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
             <p className="text-xs text-amber-800 font-medium">You will be logged out automatically in a few seconds.</p>
           </div>
-
           <button
             onClick={() => { logout(); navigate('/'); }}
             className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all"
@@ -409,160 +408,144 @@ function TermHandoverPanel() {
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <ArrowRightLeft className="w-5 h-5 text-violet-500" />
-          Term Handover
-        </h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Nominate the incoming CSA Chairperson and close the current term.
-        </p>
-      </div>
-      <TermHandoverForm
-        successorRegNumber={successorRegNumber} setSuccessorRegNumber={setSuccessorRegNumber}
-        termName={termName} setTermName={setTermName}
-        termYear={termYear} setTermYear={setTermYear}
-        startDate={startDate} setStartDate={setStartDate}
-        endDate={endDate} setEndDate={setEndDate}
-        description={description} setDescription={setDescription}
-        confirming={confirming} setConfirming={setConfirming}
-        executing={executing}
-        isValid={!!isValid}
-        onExecute={executeHandover}
-      />
-    </div>
-  );
-}
-
-interface TermHandoverFormProps {
-  successorRegNumber: string; setSuccessorRegNumber: (v: string) => void;
-  termName: string; setTermName: (v: string) => void;
-  termYear: string; setTermYear: (v: string) => void;
-  startDate: string; setStartDate: (v: string) => void;
-  endDate: string; setEndDate: (v: string) => void;
-  description: string; setDescription: (v: string) => void;
-  confirming: boolean; setConfirming: (v: boolean) => void;
-  executing: boolean;
-  isValid: boolean;
-  onExecute: () => void;
-}
-
-function TermHandoverForm(p: TermHandoverFormProps) {
-  return (
-    <div className="p-6 space-y-5">
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
-        <ul className="text-xs text-amber-800 space-y-1 list-disc list-inside font-medium">
-          <li>Archives ALL active officials — CSA, Jumuiya and Groups</li>
-          <li>Revokes every old system role from the previous term</li>
-          <li>Grants the <strong>CSA Chairperson</strong> role to your successor (must be a registered member)</li>
-          <li>Logs you out immediately after completion</li>
-        </ul>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">New Chairperson Reg Number *</label>
-          <input
-            type="text"
-            value={p.successorRegNumber}
-            onChange={(e) => p.setSuccessorRegNumber(e.target.value)}
-            placeholder="e.g. CS/0012/2022"
-            disabled={p.executing || p.confirming}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
-          />
-          <p className="text-[11px] text-slate-400 mt-1">They log in with their usual reg number &amp; password and take over from there.</p>
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">New Term Name *</label>
-          <input
-            type="text"
-            value={p.termName}
-            onChange={(e) => p.setTermName(e.target.value)}
-            placeholder="e.g. 2026/2027 Executive"
-            disabled={p.executing || p.confirming}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Year *</label>
-            <input
-              type="text"
-              value={p.termYear}
-              onChange={(e) => p.setTermYear(e.target.value)}
-              placeholder="e.g. 2026-2027"
-              disabled={p.executing || p.confirming}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
-            />
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full p-6 flex items-center justify-between text-left hover:bg-slate-50/50 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-violet-500/20 shrink-0">
+            <ArrowRightLeft className="w-5 h-5 text-white" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date *</label>
-            <input
-              type="date"
-              value={p.startDate}
-              onChange={(e) => p.setStartDate(e.target.value)}
-              disabled={p.executing || p.confirming}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
-            <input
-              type="date"
-              value={p.endDate}
-              onChange={(e) => p.setEndDate(e.target.value)}
-              disabled={p.executing || p.confirming}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
-            />
+            <h2 className="text-base font-bold text-slate-900">Term Handover</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Close the current term and hand leadership to a successor.</p>
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
-          <input
-            type="text"
-            value={p.description}
-            onChange={(e) => p.setDescription(e.target.value)}
-            placeholder="Optional note about this term"
-            disabled={p.executing || p.confirming}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
-          />
-        </div>
-      </div>
+        <ChevronDown
+          className={`w-5 h-5 text-slate-400 transition-transform duration-300 shrink-0 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
 
-      {p.confirming ? (
-        <div className="bg-rose-50 border border-rose-300 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-bold text-rose-800">
-            Final confirmation — this cannot be undone. Hand over to “{p.successorRegNumber.trim()}”?
-          </p>
-          <div className="flex items-center gap-2">
+      <div
+        className="overflow-hidden transition-all duration-500 ease-in-out"
+        style={{ maxHeight: open ? '800px' : '0px', opacity: open ? 1 : 0 }}
+      >
+        <div className="px-6 pb-6 space-y-5 border-t border-slate-100 pt-5">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+            <ul className="text-xs text-amber-800 space-y-1 list-disc list-inside font-medium">
+              <li>Archives ALL active officials — CSA, Jumuiya and Groups</li>
+              <li>Revokes every old system role from the previous term</li>
+              <li>Grants the <strong>CSA Chairperson</strong> role to your successor (must be a registered member)</li>
+              <li>Logs you out immediately after completion</li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Chairperson Reg Number *</label>
+              <input
+                type="text"
+                value={successorRegNumber}
+                onChange={(e) => setSuccessorRegNumber(e.target.value)}
+                placeholder="e.g. CS/0012/2022"
+                disabled={executing || confirming}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
+              />
+              <p className="text-[11px] text-slate-400 mt-1.5">They log in with their usual reg number &amp; password and take over from there.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Term Name *</label>
+              <input
+                type="text"
+                value={termName}
+                onChange={(e) => setTermName(e.target.value)}
+                placeholder="e.g. 2026/2027 Executive"
+                disabled={executing || confirming}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Year *</label>
+                <input
+                  type="text"
+                  value={termYear}
+                  onChange={(e) => setTermYear(e.target.value)}
+                  placeholder="e.g. 2026-2027"
+                  disabled={executing || confirming}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Start Date *</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  disabled={executing || confirming}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  disabled={executing || confirming}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional note about this term"
+                disabled={executing || confirming}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
+              />
+            </div>
+          </div>
+
+          {confirming ? (
+            <div className="bg-rose-50 border border-rose-300 rounded-2xl p-5 space-y-3">
+              <p className="text-sm font-bold text-rose-800">
+                Final confirmation — this cannot be undone. Hand over to "{successorRegNumber.trim()}"?
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={executeHandover}
+                  disabled={executing || !isValid}
+                  className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-bold rounded-xl text-xs transition-all shadow-sm"
+                >
+                  {executing ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
+                  {executing ? 'Executing...' : 'Yes, Execute Handover'}
+                </button>
+                <button
+                  onClick={() => setConfirming(false)}
+                  disabled={executing}
+                  className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold rounded-xl text-xs transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
             <button
-              onClick={p.onExecute}
-              disabled={p.executing || !p.isValid}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-bold rounded-xl text-xs transition-all shadow-sm"
+              onClick={() => setConfirming(true)}
+              disabled={!isValid}
+              className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-100"
             >
-              {p.executing ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
-              {p.executing ? 'Executing...' : 'Yes, Execute Handover'}
+              <ArrowRightLeft className="w-4 h-4" />
+              Execute Handover
             </button>
-            <button
-              onClick={() => p.setConfirming(false)}
-              disabled={p.executing}
-              className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold rounded-xl text-xs transition-all"
-            >
-              Cancel
-            </button>
-          </div>
+          )}
         </div>
-      ) : (
-        <button
-          onClick={() => p.setConfirming(true)}
-          disabled={!p.isValid}
-          className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-100"
-        >
-          <ArrowRightLeft className="w-4 h-4" />
-          Execute Handover
-        </button>
-      )}
+      </div>
     </div>
   );
 }
