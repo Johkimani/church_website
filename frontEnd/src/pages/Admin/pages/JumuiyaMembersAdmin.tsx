@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Users, ArrowLeft, Church, RefreshCw, UserPlus, Upload, Search, ThumbsDown, Edit2, Save, Trash2, GraduationCap, UserCheck, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { getYearOfStudy } from "../../../utils/memberYear";
 import { useAuth } from "../../../context/AuthContext";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
@@ -605,7 +606,7 @@ export default function JumuiyaMembersAdmin() {
                               <span className="text-slate-600">{m.phone || "—"}</span>
                             )}
                           </td>
-                          <td className="py-2 px-3 text-slate-600">{m.academic_year || "—"}</td>
+                          <td className="py-2 px-3 text-slate-600">{getYearOfStudy(m.reg_number || m.member_id || "") || "—"}</td>
                           <td className="py-2 px-3">
                             <span className="text-xs text-red-500">{m.rejection_reason || "Rejected"}</span>
                           </td>

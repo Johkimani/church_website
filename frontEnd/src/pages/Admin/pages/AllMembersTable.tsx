@@ -23,28 +23,7 @@ function formatJumuiyaName(slugOrUuid: string): string {
   return slugOrUuid.length > 20 ? slugOrUuid.slice(0, 8) + "…" : slugOrUuid;
 }
 
-function getYearOfStudy(reg: string): number {
-  const match = (reg || "").match(/(\d{2})\s*$/);
-  if (!match) return 0;
-  const admissionYear = 2000 + parseInt(match[1]);
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const cy = now.getFullYear();
-  const acaStart = month >= 9 ? cy : cy - 1;
-  const year = acaStart - admissionYear + 1;
-  return year > 4 ? 4 : year;
-}
-
-function isGraduated(reg: string): boolean {
-  const match = (reg || "").match(/(\d{2})\s*$/);
-  if (!match) return false;
-  const admissionYear = 2000 + parseInt(match[1]);
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const cy = now.getFullYear();
-  const acaStart = month >= 9 ? cy : cy - 1;
-  return acaStart - admissionYear + 1 > 4;
-}
+import { getYearOfStudy, isGraduated } from "../../../utils/memberYear";
 
 const styles = `
   .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -106,7 +85,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           else if (k === "Gender") out.Gender = row.gender === "male" || row.gender === "Male" ? "Male" : row.gender === "female" || row.gender === "Female" ? "Female" : row.gender || "";
           else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
-          else if (k === "Year") out.Year = row.year || row.year_of_study || "";
+          else if (k === "Year") out.Year = getYearOfStudy(row.member_id || row.id || "") || "";
           else if (k === "Jumuiya") out.Jumuiya = row.jumuiya_name || formatJumuiyaName(row.jumuiya_id);
           else if (k === "Source") out.Source = row.source === "csa" ? "CSA" : row.source === "jum" ? "Jum" : row.source || "";
         });
@@ -185,7 +164,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       course: m.course || "",
       phone: m.phone || "",
       gender: m.gender || "",
-      year_of_study: m.year || "",
+      year_of_study: String(getYearOfStudy(m.member_id || m.id || "")) || "",
       jumuiya_id: m.jumuiya_id || "",
     });
   };
@@ -481,7 +460,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                           <input value={editForm.year_of_study} onChange={e => setEditForm((p: any) => ({ ...p, year_of_study: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16" />
                         ) : (
-                          <span className="text-slate-500 text-xs">{m.year || "—"}</span>
+                          <span className="text-slate-500 text-xs">{getYearOfStudy(memberId) || "—"}</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">

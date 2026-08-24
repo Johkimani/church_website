@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { getYearOfStudy } from "../../../utils/memberYear";
 import {
   Upload, Plus, Trash2, FileSpreadsheet, CheckCircle,
   AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Edit2, Save, QrCode,
@@ -980,7 +981,7 @@ export default function CSADistributionCenter() {
                           <span className="text-slate-600">{m.phone || "—"}</span>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-slate-600">{m.academic_year || "—"}</td>
+                      <td className="py-2 px-3 text-slate-600">{getYearOfStudy(m.reg_number || m.member_id || "") || "—"}</td>
                       <td className="py-2 px-3">
                         <span className="text-xs text-red-500">{m.rejection_reason || "Rejected"}</span>
                       </td>

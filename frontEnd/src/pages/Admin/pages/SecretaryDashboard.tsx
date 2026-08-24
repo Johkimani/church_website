@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { getYearOfStudy } from "../../../utils/memberYear";
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, Upload, GitMerge, CheckCircle,
@@ -399,7 +400,7 @@ export default function SecretaryDashboard() {
                                 {m.gender === "Male" ? "M" : m.gender === "Female" ? "W" : "—"}
                               </span>
                             </td>
-                            <td className="py-2 px-3 text-slate-500 text-xs">{m.academic_year || "—"}</td>
+                            <td className="py-2 px-3 text-slate-500 text-xs">{getYearOfStudy(m.reg_number || m.member_id || "") || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
