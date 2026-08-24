@@ -1151,14 +1151,45 @@ export default function CommunityDetailEditor() {
                               ) : (
                                 <>
                                   <td className="py-3.5 px-4 text-sm font-bold">
-                                    <span className={`px-2.5 py-0.5 rounded-md text-xs font-black uppercase ${
-                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800 border border-pink-200' :
-                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800 border border-sky-200' :
-                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                    }`}>
-                                      {member.voice_type || 'General'}
-                                    </span>
+                                    {categoryId === 'choir' ? (
+                                      <select
+                                        value={member.voice_type || ''}
+                                        onChange={async (e) => {
+                                          const v = e.target.value;
+                                          if (!v) return;
+                                          try {
+                                            await updateTableRecord('enrollments', member.id, { voice_type: v });
+                                            showToast(`Voice section saved: ${v}`);
+                                            await loadCategoryData();
+                                          } catch {
+                                            alert('Could not save voice section');
+                                          }
+                                        }}
+                                        className={`px-2 py-1 rounded-md border text-xs font-black uppercase cursor-pointer ${
+                                          (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800 border-pink-200' :
+                                          (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                          (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800 border-sky-200' :
+                                          (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
+                                          'bg-white text-slate-500 border-slate-300'
+                                        }`}
+                                        title="Set this member's voice section"
+                                      >
+                                        <option value="">Set voice…</option>
+                                        <option value="Soprano">Soprano</option>
+                                        <option value="Alto">Alto</option>
+                                        <option value="Tenor">Tenor</option>
+                                        <option value="Bass">Bass</option>
+                                      </select>
+                                    ) : (
+                                      <span className={`px-2.5 py-0.5 rounded-md text-xs font-black uppercase ${
+                                        (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800 border border-pink-200' :
+                                        (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                        (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800 border border-sky-200' :
+                                        (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                      }`}>
+                                        {member.voice_type || 'General'}
+                                      </span>
+                                    )}
                                   </td>
                                   <td className="py-3.5 px-4 text-sm text-slate-700 font-semibold capitalize">{member.gender || 'N/A'}</td>
                                   <td className="py-3.5 px-4 text-sm text-slate-700 font-semibold capitalize">{member.music_level || 'Beginner'}</td>
