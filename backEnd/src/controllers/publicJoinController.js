@@ -120,10 +120,9 @@ export const publicJoinSubmit = async (req, res) => {
   try {
     const { name, regNumber, gender, email, phone, course } = req.body;
 
-    // Optional community interest expressed on the same QR form ("Join
-    // Choir" / "Join Dancers" tabs). Strictly whitelisted — anything else
-    // is ignored rather than trusted.
-    const ALLOWED_COMMUNITIES = ["choir", "dancers"];
+    // Optional community interest chosen on step 2 of the QR form. Strictly
+    // whitelisted — anything else is ignored rather than trusted.
+    const ALLOWED_COMMUNITIES = ["choir", "dancers", "st-francis", "charismatic"];
     const rawCommunity = String(req.body?.community || "").trim().toLowerCase();
     const community = ALLOWED_COMMUNITIES.includes(rawCommunity) ? rawCommunity : null;
 
