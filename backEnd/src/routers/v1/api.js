@@ -11,6 +11,12 @@ import verifyToken from "../../middlewares/Tokens.js";
 import optionalVerifyToken from "../../middlewares/optionalVerifyToken.js";
 import verifyCaptcha from "../../middlewares/captcha.js";
 import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
+import {
+  getCallerModuleScopes,
+  canAccessCommunityModule,
+  normalizeModuleId,
+  getEnrollmentModuleById,
+} from "../../middlewares/communityScopes.js";
 
 export const api = Router();
 
@@ -103,6 +109,10 @@ const authorizeTableAccess = (req, res, next) => {
   const method = req.method.toUpperCase();
 
   if (method === "GET" || method === "HEAD") {
+    // Enrollments carry applicant PII (names/phones) and per-community pending
+    // queues — never public. Any logged-in user may call it (members see the
+    // approved roster), but the handler filters rows to the caller's scope.
+    if (table === "enrollments") return verifyToken(req, res, next);
     if (SENSITIVE_ROLE_READ_TABLES.has(table)) {
       return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
     }
@@ -145,7 +155,27 @@ api.get("/:table", validateTable, authorizeTableAccess, async (req, res) => {
     const data = payload && !Array.isArray(payload) ? payload.data : payload;
 
     if (table === 'enrollments') {
-      const mapped = data.map(item => {
+      // Scope rows to the caller: global roles see everything; a community
+      // official sees only their own community; plain members see just the
+      // approved roster (community membership is public to members, pending
+      // applicants are not).
+      const scopes = getCallerModuleScopes(req);
+      let scoped = data;
+      if (!scopes.all) {
+        scoped =
+          scopes.modules.length === 0
+            ? data.filter(
+                (item) =>
+                  String(item.status || "").toLowerCase() === "approved"
+              )
+            : data.filter((item) =>
+                scopes.modules.includes(
+                  normalizeModuleId(item.module_id || item.class_id)
+                )
+              );
+      }
+
+      const mapped = scoped.map(item => {
         if (['charismatic', 'dancers', 'youth'].includes(item.module_id) || ['charismatic', 'dancers', 'youth'].includes(item.class_id)) {
           return {
             id: item.id,
@@ -243,6 +273,13 @@ api.post("/:table", validateTable, authorizeTableAccess, async (req, res) => {
 api.patch("/:table/:id", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table, id } = req.params;
+    // Community officials may only update enrollments of their own community.
+    if (table === "enrollments") {
+      const row = await getEnrollmentModuleById(id);
+      if (!row || !canAccessCommunityModule(req, row.module_id || row.class_id)) {
+        return res.status(404).json({ error: "Record not found" });
+      }
+    }
     const updated = await updateRecord(table, id, req.body);
     if (!updated) {
       return res.status(404).json({ error: "Record not found" });
@@ -259,6 +296,13 @@ api.patch("/:table/:id", validateTable, authorizeTableAccess, async (req, res) =
 api.delete("/:table/:id", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table, id } = req.params;
+    // Community officials may only delete enrollments of their own community.
+    if (table === "enrollments") {
+      const row = await getEnrollmentModuleById(id);
+      if (!row || !canAccessCommunityModule(req, row.module_id || row.class_id)) {
+        return res.status(404).json({ error: "Record not found" });
+      }
+    }
     const deleted = await deleteRecord(table, id);
     if (!deleted) {
       logger.warn(

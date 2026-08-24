@@ -3,6 +3,10 @@ import verifyToken, { optionalAuth } from "../../middlewares/Tokens.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import verifyCaptcha from "../../middlewares/captcha.js";
 import {
+  ALL_COMMUNITY_ADMIN_ROLES,
+  requireCommunityModuleScope,
+} from "../../middlewares/communityScopes.js";
+import {
   createEnrollment,
   checkDuplicate,
   getModuleEnrollments,
@@ -13,14 +17,6 @@ import {
 
 const router = Router();
 
-const COMMUNITY_ADMIN_ROLES = [
-  'admin', 'os',
-  'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator',
-  'choir_chairperson', 'choir_secretary',
-  'dance_chair', 'charismatic_chair', 'st_francis_chair',
-  'mentorship_chair', 'youth_chair',
-];
-
 // Authenticated: my communities (MUST be before /:moduleId to avoid route capture)
 router.get("/my-communities", verifyToken, getMyCommunities);
 
@@ -28,9 +24,29 @@ router.get("/my-communities", verifyToken, getMyCommunities);
 router.post("/:moduleId", optionalAuth, verifyCaptcha, createEnrollment);
 router.get("/:moduleId/check-duplicate", checkDuplicate);
 
-// Admin routes
-router.get("/:moduleId", verifyToken, requireRole(...COMMUNITY_ADMIN_ROLES), getModuleEnrollments);
-router.patch("/:moduleId/:id", verifyToken, requireRole(...COMMUNITY_ADMIN_ROLES), updateEnrollmentStatus);
-router.delete("/:moduleId/:id", verifyToken, requireRole(...COMMUNITY_ADMIN_ROLES), deleteEnrollment);
+// Admin routes — role gate (any community official) PLUS module scope check so
+// e.g. dance_chair can only ever read/mutate dancers' enrollments, never
+// choir's. Global CSA roles bypass the module restriction.
+router.get(
+  "/:moduleId",
+  verifyToken,
+  requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
+  requireCommunityModuleScope,
+  getModuleEnrollments
+);
+router.patch(
+  "/:moduleId/:id",
+  verifyToken,
+  requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
+  requireCommunityModuleScope,
+  updateEnrollmentStatus
+);
+router.delete(
+  "/:moduleId/:id",
+  verifyToken,
+  requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
+  requireCommunityModuleScope,
+  deleteEnrollment
+);
 
 export default router;
