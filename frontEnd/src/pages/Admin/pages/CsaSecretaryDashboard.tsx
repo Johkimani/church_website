@@ -3,7 +3,7 @@ import { memberService } from "../../../api/jumuiyaMemberService";
 import { semesterServices } from "../../../api/semesterServices";
 import { serialConfigService, SerialConfig } from "../../../api/serialConfigService";
 import { semNumFromConfig, semColForYearSem } from "../../../utils/semester";
-import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign, Hash, Settings2 } from "lucide-react";
+import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign, Hash, Settings2, History } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import AnalyticsDashboard from "./AnalyticsDashboard";
@@ -71,7 +71,9 @@ export default function CsaSecretaryDashboard() {
   const [regSerialNo, setRegSerialNo] = useState("");
   const [regAmount, setRegAmount] = useState("");
   const [regSubmitting, setRegSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"members" | "analytics" | "pending">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "analytics" | "pending" | "history">("members");
+
+  const [histSearch, setHistSearch] = useState("");
 
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
@@ -314,6 +316,56 @@ export default function CsaSecretaryDashboard() {
 
   const shouldGroup = filterSemester !== "all";
 
+  const histFiltered = useMemo(() => {
+    if (!histSearch.trim()) return members;
+    const q = histSearch.toLowerCase();
+    return members.filter(m =>
+      `${m.first_name || ""} ${m.last_name || ""}`.toLowerCase().includes(q) ||
+      (m.reg_number || "").toLowerCase().includes(q) ||
+      (m.course || "").toLowerCase().includes(q) ||
+      (m.jumuiya_name || "").toLowerCase().includes(q)
+    );
+  }, [members, histSearch]);
+
+  const renderHistRow = (m: any, i: number) => (
+    <tr key={m.registration_id || `h${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+      <td className="px-3 py-2.5 text-xs font-mono text-slate-400">{m.row_no ?? "—"}</td>
+      <td className="px-3 py-2.5 text-xs font-mono text-slate-500">{m.serial_no ?? "—"}</td>
+      <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">{`${m.first_name || ""} ${m.last_name || ""}`.trim()}</td>
+      <td className="px-3 py-2.5">
+        <span
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
+          style={{
+            backgroundColor: getJumuiyaColor(m.jumuiya_slug || m.jumuiya_id) + "18",
+            color: getJumuiyaColor(m.jumuiya_slug || m.jumuiya_id),
+          }}
+        >
+          {m.jumuiya_name || "—"}
+        </span>
+      </td>
+      <td className="px-3 py-2.5">
+        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+          {getYearSemLabel(m)}
+        </span>
+      </td>
+      <td className="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">{formatDate(m.registration_date)}</td>
+      {SEMESTERS.map(s => {
+        const regd = m[s.dbCol] === true || m[s.dbCol] === "true" || m[s.dbCol] === 1 || m[s.dbCol] === "1";
+        return (
+          <td key={s.dbCol} className="px-1.5 py-2.5 text-center">
+            {regd ? (
+              <span className="inline-flex w-6 h-6 rounded-md bg-emerald-50 border border-emerald-200 items-center justify-center" title={`Registered ${s.label}`}>
+                <Check size={14} className="text-emerald-600" strokeWidth={3} />
+              </span>
+            ) : (
+              <span className="inline-block w-6 h-6 rounded-md bg-slate-50 border border-slate-100"></span>
+            )}
+          </td>
+        );
+      })}
+    </tr>
+  );
+
   const currentYear = new Date().getFullYear();
 
   const groupedData = useMemo(() => {
@@ -364,20 +416,6 @@ export default function CsaSecretaryDashboard() {
           {formatDate(m.registration_date)}
         </div>
       </td>
-      {SEMESTERS.map(s => {
-        const regd = m[s.dbCol] === true || m[s.dbCol] === "true" || m[s.dbCol] === 1 || m[s.dbCol] === "1";
-        return (
-          <td key={s.dbCol} className="px-2 py-3 text-center">
-            {regd ? (
-              <span className="inline-flex w-6 h-6 rounded-md bg-emerald-50 border border-emerald-200 items-center justify-center" title={`Registered ${s.label}`}>
-                <Check size={14} className="text-emerald-600" strokeWidth={3} />
-              </span>
-            ) : (
-              <span className="inline-block w-6 h-6 rounded-md bg-slate-50 border border-slate-100" title={`Not registered ${s.label}`}></span>
-            )}
-          </td>
-        );
-      })}
     </tr>
   );
 
@@ -402,6 +440,16 @@ export default function CsaSecretaryDashboard() {
           }`}
         >
           <List size={16} /> Members
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "history"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <History size={16} /> Registration History
         </button>
         <button
           onClick={() => setActiveTab("analytics")}
@@ -430,6 +478,68 @@ export default function CsaSecretaryDashboard() {
 
       {activeTab === "analytics" ? (
         <AnalyticsDashboard />
+      ) : activeTab === "history" ? (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Registration History</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Semester-by-semester registration record for every CSA member.</p>
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search member..."
+                value={histSearch}
+                onChange={e => setHistSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+              />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    {["No", "Serial No", "Name", "Jumuiya", "Year.Sem", "Registered"].map(label => (
+                      <th key={label} className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{label}</th>
+                    ))}
+                    <th colSpan={8} className="px-2 py-2 text-center text-xs font-semibold text-indigo-500 uppercase tracking-wider border-l border-slate-200">
+                      Semesters
+                    </th>
+                  </tr>
+                  <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px]">
+                    <th className="px-3"></th>
+                    <th className="px-3"></th>
+                    <th className="px-3"></th>
+                    <th className="px-3"></th>
+                    <th className="px-3"></th>
+                    <th className="px-3"></th>
+                    {SEMESTERS.map(s => (
+                      <th key={s.dbCol} className="px-1.5 py-1.5 text-center font-bold text-slate-400 border-l border-slate-100 first:border-l-0">{s.label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {histFiltered.length === 0 ? (
+                    <tr>
+                      <td colSpan={14} className="px-4 py-12 text-center text-slate-400">
+                        <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        No members found
+                      </td>
+                    </tr>
+                  ) : (
+                    histFiltered.map((m, i) => renderHistRow(m, i))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
+              Showing {histFiltered.length} of {members.length} CSA members
+            </div>
+          </div>
+        </>
       ) : activeTab === "pending" ? (
         <>
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -727,36 +837,12 @@ export default function CsaSecretaryDashboard() {
                     </div>
                   </th>
                 ))}
-                <th colSpan={8} className="px-2 py-2 text-center text-xs font-semibold text-indigo-500 uppercase tracking-wider border-l border-slate-200">
-                  Registration History
-                </th>
-              </tr>
-              <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px]">
-                <th className="px-4 py-1.5"></th>
-                <th className="px-4 py-1.5"></th>
-                <th className="px-4 py-1.5"></th>
-                <th className="px-4 py-1.5"></th>
-                <th className="px-4 py-1.5"></th>
-                <th className="px-4 py-1.5"></th>
-                <th className="px-4 py-1.5"></th>
-                {SEMESTERS.map(s => (
-                  <th
-                    key={s.dbCol}
-                    onClick={() => setFilterSemester(filterSemester === s.label ? "all" : s.label)}
-                    title={`Filter by semester ${s.label}`}
-                    className={`px-2 py-1.5 text-center font-bold cursor-pointer transition-colors border-l border-slate-100 first:border-l-0 ${
-                      filterSemester === s.label ? "text-indigo-600 bg-indigo-50" : "text-slate-400 hover:text-slate-700"
-                    }`}
-                  >
-                    {s.label}
-                  </th>
-                ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     No registered members found
                   </td>
@@ -765,7 +851,7 @@ export default function CsaSecretaryDashboard() {
                 groupedData.map(group => (
                   <Fragment key={group.yearLevel}>
                     <tr className="bg-indigo-50/60 border-b border-indigo-100">
-                      <td colSpan={15} className="px-4 py-2.5">
+                      <td colSpan={6} className="px-4 py-2.5">
                         <span className="inline-flex items-center gap-2">
                           <GraduationCap size={15} className="text-indigo-500" />
                           <span className="font-semibold text-sm text-slate-700">Year {group.yearLevel}</span>
