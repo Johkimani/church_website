@@ -30,7 +30,7 @@ const submitJoin = (data: {
   email?: string;
   phone: string;
   course: string;
-  community?: string | null;
+  communities?: string[];
   captchaToken?: string | null;
 }) => apiClient.post("/jumuiya/join/submit", data).then((r) => r.data);
 
@@ -75,6 +75,7 @@ export default function PublicJoin() {
     course: "",
   });
   const [step, setStep] = useState<"form" | "community">("form");
+  const [selectedCommunities, setSelectedCommunities] = useState<string[]>([]);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
@@ -91,8 +92,14 @@ export default function PublicJoin() {
     name: string;
     regNumber: string;
     date: string;
-    community?: string;
+    communities?: string[];
   } | null>(null);
+
+  const toggleCommunity = (value: string) => {
+    setSelectedCommunities((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
 
   // Live duplicate check debounced
   useEffect(() => {
@@ -206,8 +213,8 @@ export default function PublicJoin() {
     setStep("community");
   };
 
-  // Step 2: send everything in one request (member + optional community)
-  const doSubmit = async (communityChoice: string) => {
+  // Step 2: send everything in one request (member + chosen communities)
+  const doSubmit = async (communities: string[]) => {
     setSubmitting(true);
     try {
       const res = await submitJoin({
@@ -217,14 +224,14 @@ export default function PublicJoin() {
         email: formData.email.trim() || undefined,
         phone: formData.phone.trim(),
         course: formData.course.trim(),
-        community: communityChoice || null,
+        communities,
         captchaToken,
       });
       setSubmitted({
         name: res.data.name,
         regNumber: res.data.regNumber,
         date: res.data.date,
-        community: res.data.community || communityChoice || "",
+        communities: res.data.communities || communities,
       });
     } catch (err: any) {
       const errorMsg =
@@ -250,7 +257,7 @@ export default function PublicJoin() {
             </div>
 
             <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 mb-2">
-              {submitted.community ? "Request Sent" : "Registration Received"}
+              {submitted.communities?.length ? "Request Sent" : "Registration Received"}
             </span>
             <h2 className="text-2xl font-black text-slate-800 tracking-tight">
               Thank you, {submitted.name}!
@@ -261,21 +268,40 @@ export default function PublicJoin() {
             </p>
 
             {/* Community request confirmation banner */}
-            {submitted.community && (
-              <div
-                className="rounded-2xl p-5 mt-5 mb-4 text-white shadow-lg text-left"
-                style={{ background: submitted.community === "choir" ? "#1e3a5f" : "#db2777" }}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  {submitted.community === "choir" ? <Music size={18} /> : <Footprints size={18} />}
-                  <p className="font-black text-sm tracking-tight">
-                    Your {submitted.community === "choir" ? "Choir" : "Dancers"} request has been sent successfully!
-                  </p>
-                </div>
-                <p className="text-xs leading-relaxed opacity-90">
-                  The {submitted.community === "choir" ? "Choir" : "Dancers"} chairperson has received your details and will reach out to you soon about practices and next steps. Keep your phone close!
-                </p>
-              </div>
+            {submitted.communities && submitted.communities.length > 0 && (
+              (() => {
+                const picks = submitted.communities
+                  .map((v) => COMMUNITY_OPTIONS.find((o) => o.value === v))
+                  .filter(Boolean) as typeof COMMUNITY_OPTIONS[number][];
+                const multi = picks.length > 1;
+                return (
+                  <div
+                    className="rounded-2xl p-5 mt-5 mb-4 text-white shadow-lg text-left"
+                    style={{
+                      background:
+                        picks.length === 1
+                          ? picks[0].color
+                          : "linear-gradient(135deg, #1e3a5f 0%, #7c3aed 100%)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {picks.map((p) => (
+                        <span key={p.value}>{p.icon}</span>
+                      ))}
+                      <p className="font-black text-sm tracking-tight">
+                        {multi
+                          ? `Your ${picks.length} community requests have been sent successfully!`
+                          : `Your ${picks[0].label} request has been sent successfully!`}
+                      </p>
+                    </div>
+                    <p className="text-xs leading-relaxed opacity-90">
+                      {multi ? "The leaders of" : `The ${picks[0].label}`}{" "}
+                      {multi ? picks.map((p) => p.label).join(", ") : "chairperson"}{" "}
+                      {multi ? "have received" : "has received"} your details and will reach out to you soon about practices and next steps. Keep your phone close!
+                    </p>
+                  </div>
+                );
+              })()
             )}
 
             <div className="bg-slate-50 rounded-2xl p-4 my-6 border border-slate-200/80 text-left space-y-2 text-xs text-slate-700">
@@ -283,14 +309,21 @@ export default function PublicJoin() {
                 <span className="text-slate-500">Reg Number:</span>
                 <span className="font-bold text-slate-900">{submitted.regNumber}</span>
               </div>
-              {submitted.community && (
+              {submitted.communities && submitted.communities.length > 0 && (
                 <div className="flex justify-between border-b border-slate-200/60 pb-2">
                   <span className="text-slate-500">Community Interest:</span>
-                  <span
-                    className="font-bold capitalize"
-                    style={{ color: submitted.community === "choir" ? "#1e3a5f" : "#db2777" }}
-                  >
-                    {submitted.community === "choir" ? "Choir" : "Dancers"}
+                  <span className="font-bold text-right">
+                    {submitted.communities.map((v, i) => {
+                      const opt = COMMUNITY_OPTIONS.find((o) => o.value === v);
+                      return (
+                        <span key={v}>
+                          <span style={{ color: opt?.color || "#334155" }}>
+                            {opt?.label || v}
+                          </span>
+                          {i < submitted.communities!.length - 1 ? ", " : ""}
+                        </span>
+                      );
+                    })}
                   </span>
                 </div>
               )}
@@ -350,50 +383,84 @@ export default function PublicJoin() {
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl shadow-slate-200/60">
             <h2 className="text-lg font-bold text-slate-800">
               Would you like to join a community?
+              <span className="text-xs font-semibold text-slate-400 ml-2">Optional — pick one, some, or all</span>
             </h2>
             <p className="text-xs text-slate-500 mt-1 mb-6">
-              Tap one and your details will be sent to that community's leadership too — they'll contact you about practices.
+              Tap to select any communities you'd like — your details will be sent to each of their leaders too.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {COMMUNITY_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => doSubmit(opt.value)}
-                  aria-label={`Submit registration and join ${opt.label}`}
-                  className="group flex items-center gap-3.5 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ borderColor: `${opt.color}40`, background: `${opt.color}08` }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = opt.color)}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = `${opt.color}40`)}
-                >
-                  <span
-                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition-transform"
-                    style={{ background: opt.color }}
+              {COMMUNITY_OPTIONS.map((opt) => {
+                const selected = selectedCommunities.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => toggleCommunity(opt.value)}
+                    aria-pressed={selected}
+                    aria-label={`Select ${opt.label}`}
+                    className={`group flex items-center gap-3.5 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                      selected ? "shadow-md" : ""
+                    }`}
+                    style={{
+                      borderColor: selected ? opt.color : `${opt.color}40`,
+                      background: selected ? `${opt.color}14` : `${opt.color}08`,
+                    }}
                   >
-                    {opt.icon}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-black text-slate-800 tracking-tight">
-                      {opt.label}
+                    <span
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-md shrink-0 transition-transform"
+                      style={{
+                        background: opt.color,
+                        transform: selected ? "scale(1.08)" : undefined,
+                      }}
+                    >
+                      {opt.icon}
                     </span>
-                    <span className="block text-[11px] text-slate-500 truncate">
-                      {opt.tagline}
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className="block text-sm font-black tracking-tight"
+                        style={{ color: selected ? opt.color : "#1e293b" }}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="block text-[11px] text-slate-500 truncate">
+                        {opt.tagline}
+                      </span>
                     </span>
-                  </span>
-                  <ArrowRight size={16} className="ml-auto text-slate-300 shrink-0" />
-                </button>
-              ))}
+                    {selected && (
+                      <CheckCircle2
+                        size={20}
+                        className="shrink-0"
+                        style={{ color: opt.color }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             <button
               type="button"
               disabled={submitting}
-              onClick={() => doSubmit("")}
-              className="w-full mt-6 py-3 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
+              onClick={() => doSubmit(selectedCommunities)}
+              className="w-full mt-6 py-4 rounded-xl text-sm font-black text-white shadow-lg transition-all active:scale-[0.99] hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: selectedCommunities.length
+                  ? "linear-gradient(135deg, #1e3a5f 0%, #7c3aed 100%)"
+                  : "#0f172a",
+              }}
             >
-              No thanks, just finish my registration →
+              {submitting ? (
+                <RefreshCw size={16} className="animate-spin inline mr-2" />
+              ) : (
+                <CheckCircle2 size={16} className="inline mr-2" />
+              )}
+              {selectedCommunities.length
+                ? `Submit & Join ${selectedCommunities.length} ${
+                    selectedCommunities.length === 1 ? "Community" : "Communities"
+                  }`
+                : "Submit Details"}
             </button>
 
             <button
