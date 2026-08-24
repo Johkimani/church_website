@@ -358,7 +358,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                                     <div
                                                         key={f.id}
                                                         onClick={() => f.photo && setLightboxOfficial(f)}
-                                                        className={`bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow ${f.photo ? 'cursor-pointer' : ''}`}
+                                                        className={`bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 ${f.photo ? 'cursor-pointer' : ''}`}
                                                     >
                                                         <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                                                             <Avatar name={f.name} image={f.photo || undefined} size="sm" />
@@ -383,6 +383,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
             {lightboxOfficial && lightboxOfficial.photo && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                    style={{ animation: 'lbFadeIn 0.25s ease-out' }}
                     onClick={() => setLightboxOfficial(null)}
                     onKeyDown={(e) => {
                         if (e.key === 'ArrowRight') navigateLightbox(1);
@@ -390,10 +391,15 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                         else if (e.key === 'Escape') setLightboxOfficial(null);
                     }}
                     tabIndex={0}
-                    ref={(el) => el?.focus()}
+                    ref={(el) => {
+                        if (el) {
+                            el.focus({ preventScroll: true });
+                        }
+                    }}
                 >
                     <div
                         className="relative max-w-sm w-full mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                        style={{ animation: 'lbSlideUp 0.3s cubic-bezier(0.16,1,0.3,1)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="relative flex-shrink-0">
@@ -404,7 +410,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                             />
                             <button
                                 onClick={() => setLightboxOfficial(null)}
-                                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg font-bold"
+                                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 hover:scale-110 active:scale-95 transition-all duration-150 text-lg font-bold"
                             >
                                 ×
                             </button>
@@ -412,13 +418,13 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                 <>
                                     <button
                                         onClick={() => navigateLightbox(-1)}
-                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg"
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 hover:scale-110 active:scale-95 transition-all duration-150 text-lg"
                                     >
                                         ‹
                                     </button>
                                     <button
                                         onClick={() => navigateLightbox(1)}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors text-lg"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 hover:scale-110 active:scale-95 transition-all duration-150 text-lg"
                                     >
                                         ›
                                     </button>
