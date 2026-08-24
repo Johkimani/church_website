@@ -120,11 +120,22 @@ export const publicJoinSubmit = async (req, res) => {
   try {
     const { name, regNumber, gender, email, phone, course } = req.body;
 
-    // Optional community interest chosen on step 2 of the QR form. Strictly
-    // whitelisted — anything else is ignored rather than trusted.
+    // Optional community interests chosen on step 2 of the QR form — a member
+    // may pick one, several, or all. Accepts both the new `communities` array
+    // and the legacy single `community` value. Strictly whitelisted.
     const ALLOWED_COMMUNITIES = ["choir", "dancers", "st-francis", "charismatic"];
-    const rawCommunity = String(req.body?.community || "").trim().toLowerCase();
-    const community = ALLOWED_COMMUNITIES.includes(rawCommunity) ? rawCommunity : null;
+    const requestedRaw = Array.isArray(req.body?.communities)
+      ? req.body.communities
+      : req.body?.community
+        ? [req.body.community]
+        : [];
+    const communities = [
+      ...new Set(
+        requestedRaw
+          .map((c) => String(c).trim().toLowerCase())
+          .filter((c) => ALLOWED_COMMUNITIES.includes(c))
+      ),
+    ];
 
     const rawName = (name || "").trim();
     const rawRegNumber = (regNumber || "").trim();
@@ -316,9 +327,9 @@ export const publicJoinSubmit = async (req, res) => {
       logger.warn(`publicJoinSubmit: syncNewImportRecords failed (non-fatal): ${syncErr.message}`);
     }
 
-    // 8. Record the community interest as a pending enrollment. Non-fatal:
-    // membership registration must never fail because of the optional tab.
-    if (community) {
+    // 8. Record each chosen community as a pending enrollment. Non-fatal:
+    // membership registration must never fail because of optional extras.
+    for (const community of communities) {
       try {
         await pool.query(
           `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, status)
@@ -331,7 +342,9 @@ export const publicJoinSubmit = async (req, res) => {
       }
     }
 
-    logger.info(`Public join registration submitted: ${cleanReg} (batch ${importBatchId})`);
+    logger.info(
+      `Public join registration submitted: ${cleanReg} (batch ${importBatchId}, communities: ${communities.join(", ") || "none"})`
+    );
 
     res.status(201).json({
       success: true,
@@ -340,7 +353,7 @@ export const publicJoinSubmit = async (req, res) => {
         name: cleanName,
         regNumber: cleanReg,
         date: new Date().toLocaleDateString(),
-        community,
+        communities,
       },
     });
   } catch (error) {
