@@ -69,6 +69,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
     const [historyFilter, setHistoryFilter] = useState<string>('all');
     const [historyOpen, setHistoryOpen] = useState(false);
     const [viewedOfficial, setViewedOfficial] = useState<ViewableOfficial | null>(null);
+    const [viewedSource, setViewedSource] = useState<ViewableOfficial[]>([]);
 
     const formatPhone = (phone: string) => phone.replace(/\D/g, '').replace(/^0/, '254');
 
@@ -110,30 +111,25 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
         return result;
     }, [filteredHistory, historyFilter, historyTerms]);
 
-    const viewableOfficials: ViewableOfficial[] = React.useMemo(() => {
-        const current: ViewableOfficial[] = officials.map(o => ({
+    const currentViewable: ViewableOfficial[] = React.useMemo(() =>
+        officials.map(o => ({
             id: o.id, name: o.name, position: o.position || o.role || '',
             photo: o.image || null, phone: o.phone || null, email: o.email || null,
             term_of_service: null,
-        }));
-        const past: ViewableOfficial[] = allFilteredOfficials.map(f => ({
-            id: f.id, name: f.name, position: f.position,
-            photo: f.photo || null, phone: f.contact || null, email: null,
-            term_of_service: f.term_of_service || null,
-        }));
-        return [...current, ...past];
-    }, [officials, allFilteredOfficials]);
+        })), [officials]);
 
-    const viewedIndex = viewedOfficial ? viewableOfficials.findIndex(f => f.id === viewedOfficial.id) : -1;
+    const openDetail = (official: ViewableOfficial, source: ViewableOfficial[]) => {
+        setViewedSource(source);
+        setViewedOfficial(official);
+    };
+
+    const viewedIndex = viewedOfficial ? viewedSource.findIndex(f => f.id === viewedOfficial.id) : -1;
 
     const navigateViewed = (dir: number) => {
-        if (viewedIndex < 0) return;
-        const len = viewableOfficials.length;
-        for (let i = 1; i <= len; i++) {
-            const next = (viewedIndex + dir * i + len) % len;
-            setViewedOfficial(viewableOfficials[next]);
-            return;
-        }
+        if (viewedIndex < 0 || viewedSource.length === 0) return;
+        const len = viewedSource.length;
+        const next = (viewedIndex + dir + len) % len;
+        setViewedOfficial(viewedSource[next]);
     };
 
     const isViewing = viewedOfficial !== null;
@@ -287,7 +283,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                     </div>
 
                     {/* Counter */}
-                    {viewableOfficials.length > 1 && (
+                    {viewedSource.length > 1 && (
                         <p className="text-center text-xs text-gray-400 mt-4 font-medium">
                             {viewedIndex + 1} / {allFilteredOfficials.length}
                         </p>
@@ -309,7 +305,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                             {officials.map(official => (
                                 <article
                                     key={`m-${official.id}`}
-                                    onClick={() => setViewedOfficial({ id: official.id, name: official.name, position: official.position || official.role || '', photo: official.image || null, phone: official.phone || null, email: official.email || null, term_of_service: null })}
+                                    onClick={() => openDetail({ id: official.id, name: official.name, position: official.position || official.role || '', photo: official.image || null, phone: official.phone || null, email: official.email || null, term_of_service: null }, currentViewable)}
                                     className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer active:scale-[0.97]"
                                 >
                                     <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
@@ -357,7 +353,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                             {officials.map(official => (
                                 <article
                                     key={`d-${official.id}`}
-                                    onClick={() => setViewedOfficial({ id: official.id, name: official.name, position: official.position || official.role || '', photo: official.image || null, phone: official.phone || null, email: official.email || null, term_of_service: null })}
+                                    onClick={() => openDetail({ id: official.id, name: official.name, position: official.position || official.role || '', photo: official.image || null, phone: official.phone || null, email: official.email || null, term_of_service: null }, currentViewable)}
                                     className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px] cursor-pointer active:scale-[0.98]"
                                 >
                                     <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
@@ -510,7 +506,10 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                                 {termOfficials.map(f => (
                                                     <div
                                                         key={f.id}
-                                                        onClick={() => setViewedOfficial(f)}
+                                                        onClick={() => openDetail(
+                                                            { id: f.id, name: f.name, position: f.position, photo: f.photo || null, phone: f.contact || null, email: null, term_of_service: f.term_of_service || null },
+                                                            termOfficials.map(t => ({ id: t.id, name: t.name, position: t.position, photo: t.photo || null, phone: t.contact || null, email: null, term_of_service: t.term_of_service || null }))
+                                                        )}
                                                         className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 cursor-pointer"
                                                     >
                                                         <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
