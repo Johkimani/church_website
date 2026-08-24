@@ -25,6 +25,16 @@ interface ArchivedOfficial {
     term_of_service: string | null;
 }
 
+interface ViewableOfficial {
+    id: string;
+    name: string;
+    position: string;
+    photo: string | null;
+    phone: string | null;
+    email: string | null;
+    term_of_service: string | null;
+}
+
 const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md' | 'lg' }> = ({ name, image, size = 'md' }) => {
     const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const fontSize = size === 'xs' ? '0.65rem' : size === 'sm' ? '0.85rem' : '1.2rem';
@@ -58,7 +68,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [historyFilter, setHistoryFilter] = useState<string>('all');
     const [historyOpen, setHistoryOpen] = useState(false);
-    const [viewedOfficial, setViewedOfficial] = useState<ArchivedOfficial | null>(null);
+    const [viewedOfficial, setViewedOfficial] = useState<ViewableOfficial | null>(null);
 
     const formatPhone = (phone: string) => phone.replace(/\D/g, '').replace(/^0/, '254');
 
@@ -100,14 +110,28 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
         return result;
     }, [filteredHistory, historyFilter, historyTerms]);
 
-    const viewedIndex = viewedOfficial ? allFilteredOfficials.findIndex(f => f.id === viewedOfficial.id) : -1;
+    const viewableOfficials: ViewableOfficial[] = React.useMemo(() => {
+        const current: ViewableOfficial[] = officials.map(o => ({
+            id: o.id, name: o.name, position: o.position || o.role || '',
+            photo: o.image || null, phone: o.phone || null, email: o.email || null,
+            term_of_service: null,
+        }));
+        const past: ViewableOfficial[] = allFilteredOfficials.map(f => ({
+            id: f.id, name: f.name, position: f.position,
+            photo: f.photo || null, phone: f.contact || null, email: null,
+            term_of_service: f.term_of_service || null,
+        }));
+        return [...current, ...past];
+    }, [officials, allFilteredOfficials]);
+
+    const viewedIndex = viewedOfficial ? viewableOfficials.findIndex(f => f.id === viewedOfficial.id) : -1;
 
     const navigateViewed = (dir: number) => {
         if (viewedIndex < 0) return;
-        const len = allFilteredOfficials.length;
+        const len = viewableOfficials.length;
         for (let i = 1; i <= len; i++) {
             const next = (viewedIndex + dir * i + len) % len;
-            setViewedOfficial(allFilteredOfficials[next]);
+            setViewedOfficial(viewableOfficials[next]);
             return;
         }
     };
@@ -226,31 +250,44 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                             {viewedOfficial.term_of_service && (
                                 <p className="text-xs text-gray-400 mt-2">{viewedOfficial.term_of_service}</p>
                             )}
-                            {viewedOfficial.contact && (
+                            {(viewedOfficial.phone || viewedOfficial.email) && (
                                 <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-gray-100">
-                                    <a
-                                        href={`tel:${viewedOfficial.contact.replace(/[^+0-9]/g, '')}`}
-                                        className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
-                                        title="Call"
-                                    >
-                                        <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
-                                        <FaPhoneAlt size={14} className="z-10 relative" />
-                                    </a>
-                                    <a
-                                        href={`https://wa.me/${viewedOfficial.contact.replace(/\D/g, '').replace(/^0/, '254')}`}
-                                        target="_blank" rel="noopener noreferrer"
-                                        className="w-10 h-10 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
-                                        title="WhatsApp"
-                                    >
-                                        <FaWhatsapp size={17} />
-                                    </a>
+                                    {viewedOfficial.phone && (
+                                        <>
+                                            <a
+                                                href={`tel:${viewedOfficial.phone.replace(/[^+0-9]/g, '')}`}
+                                                className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                                                title="Call"
+                                            >
+                                                <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
+                                                <FaPhoneAlt size={14} className="z-10 relative" />
+                                            </a>
+                                            <a
+                                                href={`https://wa.me/${viewedOfficial.phone.replace(/\D/g, '').replace(/^0/, '254')}`}
+                                                target="_blank" rel="noopener noreferrer"
+                                                className="w-10 h-10 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                                title="WhatsApp"
+                                            >
+                                                <FaWhatsapp size={17} />
+                                            </a>
+                                        </>
+                                    )}
+                                    {viewedOfficial.email && (
+                                        <a
+                                            href={`mailto:${viewedOfficial.email}`}
+                                            className="w-10 h-10 rounded-xl bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                            title="Email"
+                                        >
+                                            <FaEnvelope size={14} />
+                                        </a>
+                                    )}
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {/* Counter */}
-                    {allFilteredOfficials.length > 1 && (
+                    {viewableOfficials.length > 1 && (
                         <p className="text-center text-xs text-gray-400 mt-4 font-medium">
                             {viewedIndex + 1} / {allFilteredOfficials.length}
                         </p>
@@ -272,7 +309,8 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                             {officials.map(official => (
                                 <article
                                     key={`m-${official.id}`}
-                                    className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
+                                    onClick={() => setViewedOfficial({ id: official.id, name: official.name, position: official.position || official.role || '', photo: official.image || null, phone: official.phone || null, email: official.email || null, term_of_service: null })}
+                                    className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer active:scale-[0.97]"
                                 >
                                     <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
                                         <Avatar name={official.name} image={official.image} size="lg" />
@@ -319,7 +357,8 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                             {officials.map(official => (
                                 <article
                                     key={`d-${official.id}`}
-                                    className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px]"
+                                    onClick={() => setViewedOfficial({ id: official.id, name: official.name, position: official.position || official.role || '', photo: official.image || null, phone: official.phone || null, email: official.email || null, term_of_service: null })}
+                                    className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px] cursor-pointer active:scale-[0.98]"
                                 >
                                     <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
                                         <Avatar name={official.name} image={official.image} size="lg" />
