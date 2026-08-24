@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Users, ArrowLeft, Church, RefreshCw, UserPlus, Upload, Search, ThumbsDown, Edit2, Save, Trash2, GraduationCap, UserCheck, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { useAuth } from "../../../context/AuthContext";
@@ -220,6 +220,7 @@ const JumuiyaCardMemo = memo(JumuiyaCard);
 
 export default function JumuiyaMembersAdmin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const userRoles = useMemo(() => (
@@ -233,7 +234,8 @@ export default function JumuiyaMembersAdmin() {
   ), [normalizedRoles]);
   const userJumuiyaId = user?.jumuiya_id || "";
   const [userJumuiyaSlug, setUserJumuiyaSlug] = useState("");
-  const [globalTab, setGlobalTab] = useState<Tab>("admissions");
+  const backTab = (location.state as any)?.tab as Tab | undefined;
+  const [globalTab, setGlobalTab] = useState<Tab>(isJumuiyaOfficial ? "jumuiyas" : (backTab || "admissions"));
 
   useEffect(() => {
     if (user && isJumuiyaOfficial) setGlobalTab("jumuiyas");
@@ -369,7 +371,7 @@ export default function JumuiyaMembersAdmin() {
       return (
         <div className="text-center py-20">
           <p className="text-red-500 font-semibold">Jumuiya not found</p>
-          <button onClick={() => navigate("/admin/jumuiya-members")} className="mt-4 text-sm text-indigo-600 hover:underline">
+          <button onClick={() => navigate("/admin/jumuiya-members", { state: { tab: "jumuiyas" } })} className="mt-4 text-sm text-indigo-600 hover:underline">
             Back to all Jumuiyas
           </button>
         </div>
@@ -380,7 +382,7 @@ export default function JumuiyaMembersAdmin() {
         <div className="text-center py-20">
           <p className="text-red-500 font-semibold">Access denied</p>
           <p className="text-sm text-slate-500 mt-1 mb-4">You can only manage your own Jumuiya.</p>
-          <button onClick={() => navigate("/admin/jumuiya-members")} className="mt-4 text-sm text-indigo-600 hover:underline">
+          <button onClick={() => navigate("/admin/jumuiya-members", { state: { tab: "jumuiyas" } })} className="mt-4 text-sm text-indigo-600 hover:underline">
             Back to all Jumuiyas
           </button>
         </div>
@@ -388,12 +390,12 @@ export default function JumuiyaMembersAdmin() {
     }
     return (
       <div>
-        <button
-          onClick={() => navigate("/admin/jumuiya-members")}
-          className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium mb-5 transition-colors"
-        >
-          <ArrowLeft size={16} /> Back to all Jumuiyas
-        </button>
+          <button
+            onClick={() => navigate("/admin/jumuiya-members", { state: { tab: "jumuiyas" } })}
+            className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium mb-5 transition-colors"
+          >
+            <ArrowLeft size={16} /> Back to all Jumuiyas
+          </button>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div className="flex items-center gap-4">
