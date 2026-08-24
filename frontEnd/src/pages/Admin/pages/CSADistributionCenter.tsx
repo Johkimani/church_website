@@ -333,7 +333,11 @@ export default function CSADistributionCenter() {
       fetchData(filterYear, filterGender);
       window.dispatchEvent(new CustomEvent("csa_members_updated"));
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || "Import failed");
+      const raw = err?.response?.data?.error || err?.message || "Import failed";
+      const friendly = raw.includes("check constraint")
+        ? "Import failed due to a data issue. Please refresh the page and try again."
+        : raw;
+      setError(friendly);
     } finally {
       setImporting(false);
     }
@@ -673,9 +677,14 @@ export default function CSADistributionCenter() {
               {importResult.summary.errors > 0 ? "Import completed with errors" : "Import Complete"}
             </div>
             <p className={`text-sm ${importResult.summary.errors > 0 ? "text-amber-700" : "text-emerald-700"}`}>
-              Total: <strong>{importResult.summary.total}</strong> | Valid: <strong>{importResult.summary.valid}</strong> | Errors: <strong>{importResult.summary.errors}</strong>
+              {importResult.summary.valid > 0 && (
+                <>{importResult.summary.valid} member{importResult.summary.valid !== 1 ? "s" : ""} added to All Members and ready to log in. </>
+              )}
+              {importResult.summary.errors > 0 && (
+                <>· {importResult.summary.errors} row{importResult.summary.errors !== 1 ? "s" : ""} had errors.</>
+              )}
               {Object.keys(memberErrors).length > 0 && (
-                <span className="ml-2">— Fix the highlighted rows below and click <strong>Validate</strong> then <strong>Import</strong> again</span>
+                <span className="ml-1">Fix the highlighted rows below and click <strong>Validate</strong> then <strong>Import</strong> again.</span>
               )}
             </p>
           </div>

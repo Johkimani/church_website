@@ -47,6 +47,7 @@ import backfillJumuiyaViceChairRole from "./migrations/backfillJumuiyaViceChairR
 import relaxOfficialContactUniqueness from "./migrations/relaxOfficialContactUniqueness.js";
 import electionTermClosingMessage from "./migrations/electionTermClosingMessage.js";
 import { fixPendingPaymentsCascade } from "./migrations/fixPendingPaymentsCascade.js";
+import { fixImportRecordsStatusConstraint } from "./migrations/fixImportRecordsStatusConstraint.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -211,6 +212,7 @@ const initServer = async () => {
     await backfillJumuiyaViceChairRole();
     await relaxOfficialContactUniqueness();
     await electionTermClosingMessage();
+    await fixImportRecordsStatusConstraint();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

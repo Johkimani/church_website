@@ -229,7 +229,11 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
       window.dispatchEvent(new CustomEvent("csa_members_updated"));
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || "Import failed");
+      const raw = err?.response?.data?.error || err?.message || "Import failed";
+      const friendly = raw.includes("check constraint")
+        ? "Import failed due to a data issue. Please refresh the page and try again."
+        : raw;
+      setError(friendly);
     } finally {
       setImporting(false);
     }
@@ -430,7 +434,12 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
             <CheckCircle size={18} /> Import Complete
           </div>
           <div className="text-sm text-emerald-700 space-y-1">
-            <p>Total: <strong>{importResult.summary.total}</strong> | Valid: <strong>{importResult.summary.valid}</strong> | Errors: <strong>{importResult.summary.errors}</strong></p>
+            {importResult.summary?.valid > 0 && (
+              <p>{importResult.summary.valid} member{importResult.summary.valid !== 1 ? "s" : ""} have been added to All Members and are ready to log in.</p>
+            )}
+            {importResult.summary?.errors > 0 && (
+              <p>{importResult.summary.errors} row{importResult.summary.errors !== 1 ? "s" : ""} had errors and were not imported.</p>
+            )}
             {importResult.import?.id && <p className="text-xs opacity-75">Import ID: #{importResult.import.id}</p>}
           </div>
         </div>
