@@ -228,7 +228,7 @@ export default function PublicJoin() {
             </div>
 
             <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 mb-2">
-              Registration Received
+              {submitted.community ? "Request Sent" : "Registration Received"}
             </span>
             <h2 className="text-2xl font-black text-slate-800 tracking-tight">
               Thank you, {submitted.name}!
@@ -237,6 +237,24 @@ export default function PublicJoin() {
               Your details have been submitted successfully. The Jumuiya coordinator
               will review your registration and assign you to a community shortly.
             </p>
+
+            {/* Community request confirmation banner */}
+            {submitted.community && (
+              <div
+                className="rounded-2xl p-5 mt-5 mb-4 text-white shadow-lg text-left"
+                style={{ background: submitted.community === "choir" ? "#1e3a5f" : "#db2777" }}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  {submitted.community === "choir" ? <Music size={18} /> : <Footprints size={18} />}
+                  <p className="font-black text-sm tracking-tight">
+                    Your {submitted.community === "choir" ? "Choir" : "Dancers"} request has been sent successfully!
+                  </p>
+                </div>
+                <p className="text-xs leading-relaxed opacity-90">
+                  The {submitted.community === "choir" ? "Choir" : "Dancers"} chairperson has received your details and will reach out to you soon about practices and next steps. Keep your phone close!
+                </p>
+              </div>
+            )}
 
             <div className="bg-slate-50 rounded-2xl p-4 my-6 border border-slate-200/80 text-left space-y-2 text-xs text-slate-700">
               <div className="flex justify-between border-b border-slate-200/60 pb-2">
@@ -259,16 +277,6 @@ export default function PublicJoin() {
                 <span className="font-medium text-slate-700">{submitted.date}</span>
               </div>
             </div>
-
-            {submitted.community && (
-              <p className="text-xs text-slate-600 mb-4">
-                You also requested to join the{" "}
-                <span className="font-bold">
-                  {submitted.community === "choir" ? "CSA Choir" : "Liturgical Dancers"}
-                </span>{" "}
-                — their leadership will contact you about practices.
-              </p>
-            )}
 
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 leading-relaxed">
               <p className="font-bold mb-1">What happens next?</p>
