@@ -356,18 +356,18 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                     onClick={() => openDetail({ id: official.id, name: official.name, position: official.position || official.role || '', photo: official.image || null, phone: official.phone || null, email: official.email || null, term_of_service: null }, currentViewable)}
                                     className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px] cursor-pointer active:scale-[0.98]"
                                 >
-                                    <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
+                                    <div className="relative h-36 sm:h-44 bg-gray-100 overflow-hidden">
                                         <Avatar name={official.name} image={official.image} size="lg" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                     </div>
-                                    <div className="p-5 text-center">
-                                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
+                                    <div className="p-4 text-center">
+                                        <h3 className="font-bold text-base text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
                                             {official.name}
                                         </h3>
-                                        <p className="text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block" style={{ background: `${_c('18')}`, color: _c('cc') }}>
+                                        <p className="text-xs font-semibold mt-1.5 px-3 py-1 rounded-full inline-block" style={{ background: `${_c('18')}`, color: _c('cc') }}>
                                             {official.position}
                                         </p>
-                                        <div className="mt-5 pt-4 border-t border-gray-50 flex justify-center gap-3">
+                                        <div className="mt-3 pt-3 border-t border-gray-50 flex justify-center gap-3">
                                             {official.phone && (
                                                 <>
                                                     <a
