@@ -215,7 +215,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                         </div>
 
                         {/* Info */}
-                        <div className="p-5 text-center">
+                        <div className="p-5 text-center min-h-[140px] flex flex-col items-center justify-center">
                             <h3 className="font-bold text-xl text-gray-900">{viewedOfficial.name}</h3>
                             <p className="text-sm font-semibold mt-1.5 px-3 py-1 rounded-full inline-block"
                                style={{ background: `${_c('15')}`, color: _c('cc') }}>
