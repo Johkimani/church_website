@@ -50,6 +50,7 @@ export default function AdminSuggestions() {
   const [_error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -139,11 +140,15 @@ export default function AdminSuggestions() {
       s.member_jumuiya?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       String(s.member_year_of_study || '').includes(searchTerm);
     const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCategory = categoryFilter === 'all' || (s.category || 'general') === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
   const countByStatus = (status: string) =>
     status === 'all' ? suggestions.length : suggestions.filter(s => s.status === status).length;
+
+  const countByCategory = (category: string) =>
+    category === 'all' ? suggestions.length : suggestions.filter(s => (s.category || 'general') === category).length;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -195,6 +200,33 @@ export default function AdminSuggestions() {
                 active ? 'bg-white/20' : 'bg-slate-100 text-slate-500'
               }`}>
                 {countByStatus(s)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Category filter — label first, then click a category to see all of them */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-1">Categories</span>
+        {(['all', ...CATEGORIES] as const).map(c => {
+          const active = categoryFilter === c;
+          const colorCls = c === 'all'
+            ? (active ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50')
+            : CATEGORY_COLORS[c];
+          return (
+            <button
+              key={c}
+              onClick={() => setCategoryFilter(c)}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                active ? `${colorCls} shadow-md ring-2 ring-offset-1 ring-slate-300` : `bg-white ${colorCls.split(' ').slice(1).join(' ')} hover:opacity-80 opacity-90`
+              }`}
+            >
+              {c === 'all' ? 'All' : c.charAt(0).toUpperCase() + c.slice(1)}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                active ? 'bg-white/20' : 'bg-white/70 text-slate-500'
+              }`}>
+                {countByCategory(c)}
               </span>
             </button>
           );
@@ -367,7 +399,11 @@ export default function AdminSuggestions() {
           </div>
           <h3 className="text-xl font-bold text-slate-800">No suggestions found</h3>
           <p className="text-slate-500 mt-2">
-            {statusFilter !== 'all' ? `No suggestions with status "${statusFilter.replace(/_/g, ' ')}".` : 'When users share ideas, they\'ll appear here.'}
+            {categoryFilter !== 'all'
+              ? `No suggestions categorized as "${categoryFilter}".`
+              : statusFilter !== 'all'
+                ? `No suggestions with status "${statusFilter.replace(/_/g, ' ')}".`
+                : 'When users share ideas, they\'ll appear here.'}
           </p>
         </div>
       )}
