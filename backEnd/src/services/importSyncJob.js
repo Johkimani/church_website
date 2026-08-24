@@ -16,6 +16,24 @@ export const syncNewImportRecords = async () => {
         AND cleaned_name IS NOT NULL AND cleaned_name != ''
     `);
 
+    // 0b. Heal QR self-registrations stuck in 'pending'. Early versions of the
+    // public /join endpoint stored validated rows as 'pending', which no sync
+    // or queue ever consumed (queues read members; promotion only accepts
+    // valid/warning) — so those submissions were invisible everywhere. Rows in
+    // a CSA public-self-registration batch with clean reg + name are safe to
+    // promote.
+    await pool.query(`
+      UPDATE import_records ir
+      SET status = 'valid'
+      FROM member_imports mi
+      WHERE mi.id = ir.import_id
+        AND mi.jumuiya_id = 'csa'
+        AND mi.file_name = 'public-self-registration'
+        AND ir.status = 'pending'
+        AND ir.cleaned_reg_number IS NOT NULL AND ir.cleaned_reg_number != ''
+        AND ir.cleaned_name IS NOT NULL AND ir.cleaned_name != ''
+    `);
+
     const csaResult = await pool.query(`
       INSERT INTO members (
         member_id, first_name, last_name, phone, gender, course,
