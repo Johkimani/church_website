@@ -442,17 +442,17 @@ export default function PublicJoin() {
         <div className="w-full max-w-lg">
           {/* Header Card */}
           <div className="relative overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-200/60 border border-slate-200/80 mb-5">
-            <div className="h-24 sm:h-28 relative flex items-end p-5 text-white overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900">
-              <div className="relative z-10 w-full flex items-center justify-between">
+            <div className="h-32 sm:h-36 relative flex items-end p-5 text-white overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-950 to-indigo-900">
+              <div className="relative z-10 w-full flex items-center justify-between gap-3">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                    <CheckCircle2 size={12} /> Details Verified
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black tracking-wider uppercase bg-emerald-400 text-emerald-950 shadow-md">
+                    <CheckCircle2 size={14} /> Details Verified
                   </span>
-                  <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1 text-white drop-shadow-sm">
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2 text-white">
                     One Last Step
                   </h1>
                 </div>
-                <Users size={36} className="text-white/30 shrink-0" />
+                <Users size={44} className="text-white/40 shrink-0" />
               </div>
             </div>
           </div>
@@ -465,13 +465,19 @@ export default function PublicJoin() {
           )}
 
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl shadow-slate-200/60">
-            <h2 className="text-lg font-bold text-slate-800">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
               Would you like to join a community?
-              <span className="text-xs font-semibold text-slate-400 ml-2">Optional — pick one, some, or all</span>
             </h2>
-            <p className="text-xs text-slate-500 mt-1 mb-6">
-              Tap to select any communities you'd like — your details will be sent to each of their leaders too.
-            </p>
+
+            {/* Clear, high-contrast instructions */}
+            <div className="mt-4 mb-6 rounded-2xl bg-indigo-50 border border-indigo-200 p-4 flex items-start gap-3">
+              <Users size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+              <p className="text-sm font-semibold text-indigo-950 leading-relaxed">
+                Tap any communities below to select them — your details will be
+                sent to each leader you pick. This part is optional: pick one,
+                some, or none at all.
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {COMMUNITY_OPTIONS.map((opt) => {
