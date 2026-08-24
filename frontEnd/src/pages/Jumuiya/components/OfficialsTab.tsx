@@ -210,6 +210,14 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                 </div>
                             )}
 
+                            {/* Name + position overlay (like mobile cards) */}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-10 pb-3 px-4 text-center pointer-events-none">
+                                <h3 className="font-bold text-lg text-white drop-shadow-sm">{viewedOfficial.name}</h3>
+                                <span className="inline-block mt-1.5 text-xs font-bold text-white/95 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                                    {viewedOfficial.position}
+                                </span>
+                            </div>
+
                             {/* Close button */}
                             <button
                                 onClick={() => setViewedOfficial(null)}
@@ -238,17 +246,12 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                         </div>
 
                         {/* Info */}
-                        <div className="p-5 text-center min-h-[140px] flex flex-col items-center justify-center">
-                            <h3 className="font-bold text-xl text-gray-900">{viewedOfficial.name}</h3>
-                            <p className="text-sm font-semibold mt-1.5 px-3 py-1 rounded-full inline-block"
-                               style={{ background: `${_c('15')}`, color: _c('cc') }}>
-                                {viewedOfficial.position}
-                            </p>
+                        <div className="px-5 py-3.5 text-center min-h-[92px] flex flex-col items-center justify-center">
                             {viewedOfficial.term_of_service && (
-                                <p className="text-xs text-gray-400 mt-2">{viewedOfficial.term_of_service}</p>
+                                <p className="text-xs font-semibold text-gray-400">{viewedOfficial.term_of_service}</p>
                             )}
-                            {(viewedOfficial.phone || viewedOfficial.email) && (
-                                <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                            {(viewedOfficial.phone || viewedOfficial.email) ? (
+                                <div className={`flex justify-center gap-3 ${viewedOfficial.term_of_service ? 'mt-3 pt-3 border-t border-gray-100' : ''}`}>
                                     {viewedOfficial.phone && (
                                         <>
                                             <a
@@ -279,7 +282,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                         </a>
                                     )}
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     </div>
 
