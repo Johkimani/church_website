@@ -116,7 +116,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
 
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
-            <div className="tab-header-wrap">
+            <div className="tab-header-wrap" style={isViewing ? { display: 'none' } : undefined}>
                 <div className="header-text">
                     <h1 className="page-title">Leadership Team</h1>
                     <p className="page-description">Meet the dedicated leaders who guide and serve the {jumuiyaName} community.</p>
@@ -153,7 +153,6 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
             {/* Inline detail view — replaces list when an official is selected */}
             {isViewing && viewedOfficial && (
                 <div
-                    className="mt-8"
                     style={{ animation: 'detailFadeIn 0.3s ease-out' }}
                     onKeyDown={(e) => {
                         if (e.key === 'ArrowRight') navigateViewed(1);
@@ -163,13 +162,16 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                     tabIndex={0}
                     ref={(el) => { if (el) el.focus({ preventScroll: true }); }}
                 >
-                    <button
-                        onClick={() => setViewedOfficial(null)}
-                        className="flex items-center gap-2 text-sm font-semibold mb-6 transition-colors duration-150 hover:opacity-70 active:opacity-50"
-                        style={{ color: jumuiyaColor }}
-                    >
-                        <FaArrowLeft size={14} /> Back to all officials
-                    </button>
+                    {/* Sticky back button */}
+                    <div className="sticky top-0 z-10 py-3" style={{ background: 'var(--bg, #f8fafc)' }}>
+                        <button
+                            onClick={() => setViewedOfficial(null)}
+                            className="flex items-center gap-2 text-sm font-semibold transition-colors duration-150 hover:opacity-70 active:opacity-50"
+                            style={{ color: jumuiyaColor }}
+                        >
+                            <FaArrowLeft size={14} /> Back to all officials
+                        </button>
+                    </div>
 
                     <div className="mx-auto max-w-md bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100"
                          style={{ animation: 'detailCardIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
