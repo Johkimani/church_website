@@ -101,7 +101,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           else if (k === "Gender") out.Gender = row.gender === "male" || row.gender === "Male" ? "Male" : row.gender === "female" || row.gender === "Female" ? "Female" : row.gender || "";
           else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
-          else if (k === "Year") out.Year = getIntakeYearLabel(row.member_id || row.id || "");
+          else if (k === "Year") out.Year = getYearOfStudy(row.member_id || row.id || "") || "";
           else if (k === "Jumuiya") out.Jumuiya = row.jumuiya_name || formatJumuiyaName(row.jumuiya_id);
           else if (k === "Source") out.Source = row.source === "csa" ? "CSA" : row.source === "jum" ? "Jum" : row.source || "";
         });
@@ -476,7 +476,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                           <input value={editForm.year_of_study} onChange={e => setEditForm((p: any) => ({ ...p, year_of_study: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16" />
                         ) : (
-                          <span className="text-slate-500 text-xs">{getIntakeYearLabel(memberId) || "—"}</span>
+                          <span className="text-slate-500 text-xs">{getYearOfStudy(memberId) || "—"}</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">
