@@ -145,63 +145,117 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                 </div>
             </div>
 
-            {/* Premium Officials Grid */}
-            <div className="flex flex-wrap justify-center gap-6 sm:gap-8 mt-8">
+            {/* Officials Grid — dual-render: compact mobile, polished desktop */}
+            <div className="mt-8">
                 {officials.length === 0 ? (
                     <div className="w-full text-center py-20 bg-white/50 rounded-2xl border border-dashed border-gray-300">
                         <p className="text-gray-500 text-lg italic">No members listed in the current leadership team.</p>
                     </div>
                 ) : (
-                    officials.map(official => (
-                        <article
-                            key={official.id}
-                            className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px] border border-gray-100"
-                        >
-                            <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
-                                <Avatar name={official.name} image={official.image} size="lg" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            </div>
-                            <div className="p-5 text-center">
-                                <h3 className="font-bold text-lg text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
-                                    {official.name}
-                                </h3>
-                                <p className="text-sm font-semibold mt-2 px-3 py-1 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] rounded-full inline-block">
-                                    {official.position}
-                                </p>
-                                <div className="mt-5 pt-4 border-t border-gray-50 flex justify-center gap-3">
-                                    {official.phone && (
-                                        <>
-                                            <a
-                                                href={`tel:${official.phone.replace(/[^+0-9]/g, '')}`}
-                                                className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:bg-[var(--jumuiya-color)] hover:text-white flex items-center justify-center transition-all shadow-sm"
-                                                title="Call Official"
-                                            >
-                                                <FaPhoneAlt size={14} />
-                                            </a>
-                                            <a
-                                                href={`https://wa.me/${formatPhone(official.phone)}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
-                                                title="WhatsApp"
-                                            >
-                                                <FaWhatsapp size={18} />
-                                            </a>
-                                        </>
-                                    )}
-                                    {official.email && (
-                                        <a
-                                            href={`mailto:${official.email}`}
-                                            className="w-10 h-10 rounded-xl bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
-                                            title="Email Official"
-                                        >
-                                            <FaEnvelope size={14} />
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-                        </article>
-                    ))
+                    <>
+                        {/* Mobile: compact 2-col grid with overlaid badges */}
+                        <div className="grid grid-cols-2 gap-3.5 sm:hidden">
+                            {officials.map(official => (
+                                <article
+                                    key={`m-${official.id}`}
+                                    className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
+                                >
+                                    <div className="h-1.5 w-full" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
+                                    <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
+                                        <Avatar name={official.name} image={official.image} size="lg" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+                                        <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
+                                            <span className="truncate max-w-[85%] text-[0.68rem] font-bold text-white/95 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm">
+                                                {official.position}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 text-center flex flex-col gap-2 bg-white">
+                                        <h3 className="font-bold text-slate-950 text-sm line-clamp-1">{official.name}</h3>
+                                        {official.phone ? (
+                                            <div className="pt-1.5 border-t border-slate-100 flex justify-center gap-2">
+                                                <a
+                                                    href={`tel:${official.phone.replace(/[^+0-9]/g, '')}`}
+                                                    className="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                                                    title="Call"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
+                                                    <FaPhoneAlt size={13} className="z-10 relative" />
+                                                </a>
+                                                <a
+                                                    href={`https://wa.me/${formatPhone(official.phone)}`}
+                                                    target="_blank" rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="w-9 h-9 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                                    title="WhatsApp"
+                                                >
+                                                    <FaWhatsapp size={17} />
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <div className="text-[0.7rem] text-slate-400 font-medium">No contact</div>
+                                        )}
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+
+                        {/* Desktop: larger cards with flex-wrap */}
+                        <div className="hidden sm:flex flex-wrap justify-center gap-6 sm:gap-8">
+                            {officials.map(official => (
+                                <article
+                                    key={`d-${official.id}`}
+                                    className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px]"
+                                >
+                                    <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
+                                        <Avatar name={official.name} image={official.image} size="lg" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                    </div>
+                                    <div className="p-5 text-center">
+                                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
+                                            {official.name}
+                                        </h3>
+                                        <p className="text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block" style={{ background: `${_c('18')}`, color: _c('cc') }}>
+                                            {official.position}
+                                        </p>
+                                        <div className="mt-5 pt-4 border-t border-gray-50 flex justify-center gap-3">
+                                            {official.phone && (
+                                                <>
+                                                    <a
+                                                        href={`tel:${official.phone.replace(/[^+0-9]/g, '')}`}
+                                                        className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                                                        title="Call Official"
+                                                    >
+                                                        <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
+                                                        <FaPhoneAlt size={14} className="z-10 relative" />
+                                                    </a>
+                                                    <a
+                                                        href={`https://wa.me/${formatPhone(official.phone)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                                        title="WhatsApp"
+                                                    >
+                                                        <FaWhatsapp size={18} />
+                                                    </a>
+                                                </>
+                                            )}
+                                            {official.email && (
+                                                <a
+                                                    href={`mailto:${official.email}`}
+                                                    className="w-10 h-10 rounded-xl bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                                    title="Email Official"
+                                                >
+                                                    <FaEnvelope size={14} />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
 
