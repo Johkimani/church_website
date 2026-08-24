@@ -74,6 +74,7 @@ export default function CsaSecretaryDashboard() {
   const [activeTab, setActiveTab] = useState<"members" | "analytics" | "pending" | "history">("members");
 
   const [histSearch, setHistSearch] = useState("");
+  const [histJumuiya, setHistJumuiya] = useState("all");
 
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
@@ -317,15 +318,19 @@ export default function CsaSecretaryDashboard() {
   const shouldGroup = filterSemester !== "all";
 
   const histFiltered = useMemo(() => {
-    if (!histSearch.trim()) return members;
+    let result = members;
+    if (histJumuiya !== "all") {
+      result = result.filter(m => (m.jumuiya_slug || m.jumuiya_id) === histJumuiya);
+    }
+    if (!histSearch.trim()) return result;
     const q = histSearch.toLowerCase();
-    return members.filter(m =>
+    return result.filter(m =>
       `${m.first_name || ""} ${m.last_name || ""}`.toLowerCase().includes(q) ||
       (m.reg_number || "").toLowerCase().includes(q) ||
       (m.course || "").toLowerCase().includes(q) ||
       (m.jumuiya_name || "").toLowerCase().includes(q)
     );
-  }, [members, histSearch]);
+  }, [members, histSearch, histJumuiya]);
 
   const renderHistRow = (m: any, i: number) => (
     <tr key={m.registration_id || `h${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
@@ -485,15 +490,27 @@ export default function CsaSecretaryDashboard() {
               <h2 className="text-lg font-bold text-slate-800">Registration History</h2>
               <p className="text-xs text-slate-400 mt-0.5">Semester-by-semester registration record for every CSA member.</p>
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search member..."
-                value={histSearch}
-                onChange={e => setHistSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={histJumuiya}
+                onChange={e => setHistJumuiya(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="all">All Jumuiyas</option>
+                {JUMUIYAS.map(j => (
+                  <option key={j.id} value={j.id}>{j.name}</option>
+                ))}
+              </select>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search member..."
+                  value={histSearch}
+                  onChange={e => setHistSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                />
+              </div>
             </div>
           </div>
 
