@@ -120,6 +120,13 @@ export const publicJoinSubmit = async (req, res) => {
   try {
     const { name, regNumber, gender, email, phone, course } = req.body;
 
+    // Optional community interest expressed on the same QR form ("Join
+    // Choir" / "Join Dancers" tabs). Strictly whitelisted — anything else
+    // is ignored rather than trusted.
+    const ALLOWED_COMMUNITIES = ["choir", "dancers"];
+    const rawCommunity = String(req.body?.community || "").trim().toLowerCase();
+    const community = ALLOWED_COMMUNITIES.includes(rawCommunity) ? rawCommunity : null;
+
     const rawName = (name || "").trim();
     const rawRegNumber = (regNumber || "").trim();
     const rawGender = (gender || "").trim();
@@ -310,6 +317,21 @@ export const publicJoinSubmit = async (req, res) => {
       logger.warn(`publicJoinSubmit: syncNewImportRecords failed (non-fatal): ${syncErr.message}`);
     }
 
+    // 8. Record the community interest as a pending enrollment. Non-fatal:
+    // membership registration must never fail because of the optional tab.
+    if (community) {
+      try {
+        await pool.query(
+          `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, status)
+           VALUES ($1, $2, $3, $4, $5, $6, 'Pending')`,
+          [community, cleanName, cleanPhone, cleanEmail || "", cleanGender, rawCourse]
+        );
+        logger.info(`Public join: ${cleanReg} also requested to join '${community}'`);
+      } catch (enrollErr) {
+        logger.warn(`publicJoinSubmit: enrollment insert failed for ${cleanReg} (${community}): ${enrollErr.message}`);
+      }
+    }
+
     logger.info(`Public join registration submitted: ${cleanReg} (batch ${importBatchId})`);
 
     res.status(201).json({
@@ -319,6 +341,7 @@ export const publicJoinSubmit = async (req, res) => {
         name: cleanName,
         regNumber: cleanReg,
         date: new Date().toLocaleDateString(),
+        community,
       },
     });
   } catch (error) {
