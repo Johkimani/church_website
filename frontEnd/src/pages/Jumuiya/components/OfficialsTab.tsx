@@ -202,10 +202,10 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                 <img
                                     src={viewedOfficial.photo}
                                     alt={viewedOfficial.name}
-                                    className="w-full aspect-[3/4] sm:aspect-[4/3] object-cover object-top"
+                                    className="w-full aspect-[3/4] object-cover object-top"
                                 />
                             ) : (
-                                <div className="w-full aspect-[3/4] sm:aspect-[4/3] flex items-center justify-center">
+                                <div className="w-full aspect-[3/4] flex items-center justify-center">
                                     <Avatar name={viewedOfficial.name} size="lg" />
                                 </div>
                             )}
