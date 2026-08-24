@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, EyeOff, Clock3, Reply, RefreshCw } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, EyeOff, Clock3, Reply } from 'lucide-react';
 import apiService from '../../../../services/api';
 import { apiClient } from '../../../../api/axiosInstance';
 import { useAuth } from '../../../../context/AuthContext';
@@ -52,8 +52,8 @@ const SuggestionBox: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (isOpen && mySuggestions.length === 0) fetchMySuggestions();
-  }, [isOpen, mySuggestions.length, fetchMySuggestions]);
+    if (isOpen) fetchMySuggestions();
+  }, [isOpen, fetchMySuggestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -301,20 +301,10 @@ const SuggestionBox: React.FC = () => {
 
           {/* My Suggestions + Replies */}
           <div className="mt-6">
-            <div className="flex items-center justify-between px-1 mb-3">
-              <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase flex items-center gap-2">
-                <Reply size={12} className="text-primary" />
-                My Suggestions &amp; Replies
-              </h3>
-              <button
-                type="button"
-                onClick={fetchMySuggestions}
-                disabled={loadingMine}
-                className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
-              >
-                <RefreshCw size={11} className={loadingMine ? 'animate-spin' : ''} /> Refresh
-              </button>
-            </div>
+            <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase flex items-center gap-2 px-1 mb-3">
+              <Reply size={12} className="text-primary" />
+              My Suggestions &amp; Replies
+            </h3>
 
             {loadingMine && mySuggestions.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-xs font-bold text-slate-400">Loading your suggestions...</div>
