@@ -243,6 +243,14 @@ export default function CsaSecretaryDashboard() {
     });
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(data);
+    ws["!cols"] = colMeta.map(c => ({
+      wch: c.key === "name" || c.key === "jumuiya_name" || c.key === "course" ? 30
+        : c.key === "reg_number" || c.key === "serial_no" ? 18
+        : c.key === "row_no" ? 8
+        : c.key === "year_sem" ? 12
+        : c.key === "registration_date" ? 16
+        : 10,
+    }));
     XLSX.utils.book_append_sheet(wb, ws, "Registered Members");
     XLSX.writeFile(wb, "csa-registered-members.xlsx");
     setShowExport(false);

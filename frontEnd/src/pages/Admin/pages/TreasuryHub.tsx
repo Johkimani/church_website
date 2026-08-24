@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import {
   Wallet, TrendingUp, TrendingDown, Receipt, Download, FileSpreadsheet, Plus,
   Pencil, Trash2, RefreshCw, Search, X, Loader2, Landmark, ArrowUpRight,
-  ArrowDownRight, Upload, FileText, ShoppingCart, Music4, AlertCircle, CheckCircle2
+  ArrowDownRight, Upload, FileText, ShoppingCart, Music4, AlertCircle, CheckCircle2, Check
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
@@ -106,6 +106,22 @@ export default function TreasuryHub() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+
+  const LEDGER_EXPORT_COLUMNS = [
+    { key: 'Date', label: 'Date' },
+    { key: 'Type', label: 'Type' },
+    { key: 'Title', label: 'Title' },
+    { key: 'Category', label: 'Category' },
+    { key: 'Method', label: 'Method' },
+    { key: 'Amount', label: 'Amount' },
+    { key: 'Receipt', label: 'Receipt' },
+    { key: 'Notes', label: 'Notes' },
+  ];
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportColumns, setExportColumns] = useState<Record<string, boolean>>({
+    Date: true, Type: true, Title: true, Category: true,
+    Method: true, Amount: true, Receipt: false, Notes: false,
+  });
 
   const loadAll = useCallback(async (silent = false) => {
     if (!silent) setRefreshing(true);
@@ -310,20 +326,35 @@ export default function TreasuryHub() {
 
   // ── Exports ───────────────────────────────────────────────
   const exportExcel = () => {
-    const rows = filteredLedger.map(e => ({
-      Date: (e.entry_date || '').slice(0, 10),
-      Type: e.entry_type, Title: e.title, Category: e.category,
-      Method: e.payment_method, Amount: Number(e.amount),
-      Receipt: e.receipt_url || '', Notes: e.notes || '',
-    }));
+    const selected = Object.entries(exportColumns).filter(([, v]) => v).map(([k]) => k);
+    const rows = filteredLedger.map(e => {
+      const full: Record<string, any> = {
+        Date: (e.entry_date || '').slice(0, 10),
+        Type: e.entry_type, Title: e.title, Category: e.category,
+        Method: e.payment_method, Amount: Number(e.amount),
+        Receipt: e.receipt_url || '', Notes: e.notes || '',
+      };
+      const out: Record<string, any> = {};
+      selected.forEach(k => { out[k] = full[k]; });
+      return out;
+    });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
       { A: `CSA KYU — Treasury Statement (${kpis.semesterLabel})` }, { A: `Generated: ${new Date().toLocaleString()}` },
       { A: `Total Balance: ${fmt(kpis.balance)}` }, { A: '' },
     ]), 'Summary');
-    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Date: '', Type: 'No records', Title: '', Category: '', Method: '', Amount: 0, Receipt: '', Notes: '' }]);
+    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Date: '', Type: 'No records' }]);
+    ws['!cols'] = selected.map(k => ({
+      wch: k === 'Title' || k === 'Notes' ? 35
+        : k === 'Category' || k === 'Method' ? 18
+        : k === 'Date' ? 14
+        : k === 'Amount' ? 16
+        : k === 'Receipt' ? 40
+        : 12,
+    }));
     XLSX.utils.book_append_sheet(wb, ws, 'Ledger');
     XLSX.writeFile(wb, `csa-treasury-statement-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    setShowExportModal(false);
     toast.success('Excel statement downloaded');
   };
 
@@ -389,7 +420,7 @@ export default function TreasuryHub() {
           <button onClick={() => loadAll()} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50">
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} /> Refresh
           </button>
-          <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-bold text-white transition-all shadow-lg">
+          <button onClick={() => setShowExportModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-bold text-white transition-all shadow-lg">
             <FileSpreadsheet size={15} /> Excel
           </button>
           <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold text-white transition-all shadow-lg">
@@ -736,6 +767,33 @@ export default function TreasuryHub() {
                 {savingBudget ? <><Loader2 size={16} className="animate-spin" /> Creating…</> : 'Create Tracker'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── Export Column Selection Modal ── */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowExportModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-slate-800">Export to Excel</h3>
+              <button onClick={() => setShowExportModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={16} /></button>
+            </div>
+            <p className="text-xs text-slate-500">Choose which columns to include:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {LEDGER_EXPORT_COLUMNS.map(c => (
+                <button key={c.key} onClick={() => setExportColumns(prev => ({ ...prev, [c.key]: !prev[c.key] }))}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${exportColumns[c.key] ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-slate-200 text-slate-400'}`}>
+                  <div className={`w-4 h-4 rounded flex items-center justify-center border ${exportColumns[c.key] ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'}`}>
+                    {exportColumns[c.key] && <Check size={12} className="text-white" />}
+                  </div>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <button onClick={exportExcel} disabled={Object.values(exportColumns).every(v => !v)}
+              className="w-full px-4 py-2.5 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              Export ({filteredLedger.length} rows)
+            </button>
           </div>
         </div>
       )}
