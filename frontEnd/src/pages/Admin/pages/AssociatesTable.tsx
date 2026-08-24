@@ -6,7 +6,7 @@ import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton"
 
 
 
-export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: number }) {
+export default function AssociatesTable({ refreshKey = 0, jumuiyaId }: { refreshKey?: number; jumuiyaId?: string }) {
   const [associates, setAssociates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,9 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
     setLoading(true);
     setError(null);
     try {
-      const res = await memberService.getAssociatesList();
+      const params: any = {};
+      if (jumuiyaId) params.jumuiya_id = jumuiyaId;
+      const res = await memberService.getAssociatesList(params);
       setAssociates(res.data || []);
       const years: Record<string, boolean> = {};
       (res.data || []).forEach((a: any) => {
@@ -44,7 +46,7 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [jumuiyaId]);
 
   useEffect(() => { fetchAssociates(); }, [refreshKey]);
 

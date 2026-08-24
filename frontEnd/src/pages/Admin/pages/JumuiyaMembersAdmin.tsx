@@ -37,7 +37,7 @@ const JUMUIYAS = [
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";
 
-type SubTab = "dashboard" | "review" | "results" | "allocations" | "import";
+type SubTab = "dashboard" | "review" | "results" | "allocations" | "import" | "associates";
 
 const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; description: string }> = {
   dashboard: { label: "Dashboard", icon: <PieChart size={16} />, description: "Overview and registration statistics" },
@@ -45,6 +45,7 @@ const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; descrip
   results: { label: "All Members", icon: <Users size={16} />, description: "View and manage all registered members" },
   allocations: { label: "Allocations", icon: <UserCheck size={16} />, description: "Approve CSA member allocations" },
   import: { label: "Manual Admission", icon: <Upload size={16} />, description: "Import and add new members manually" },
+  associates: { label: "Associates", icon: <GraduationCap size={16} />, description: "View graduated associates from this Jumuiya" },
 };
 
 function SummaryBar({ stats }: { stats: Record<string, any> }) {
@@ -135,6 +136,7 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
       {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
       {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
+      {activeTab === "associates" && <AssociatesTable refreshKey={0} jumuiyaId={jumuiyaId} />}
     </div>
   );
 };
