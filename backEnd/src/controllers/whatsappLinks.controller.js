@@ -157,13 +157,58 @@ export const getWhatsAppLinks = async (req, res) => {
   }
 };
 
+// GET /whatsapp-links/qr-welcome — PUBLIC. The two welcome groups offered to
+// new members right after they submit the QR registration form.
+export const getQrWelcomeLinks = async (req, res) => {
+  try {
+    const settingsRes = await db.query(
+      `SELECT key, value FROM system_settings WHERE key IN ($1, $2, $3, $4)`,
+      [
+        "whatsapp_qr_welcome_1_link",
+        "whatsapp_qr_welcome_1_label",
+        "whatsapp_qr_welcome_2_link",
+        "whatsapp_qr_welcome_2_label",
+      ]
+    );
+    const map = Object.fromEntries(settingsRes.rows.map((r) => [r.key, (r.value || "").trim()]));
+
+    const groups = [];
+    for (const i of [1, 2]) {
+      const url = map[`whatsapp_qr_welcome_${i}_link`];
+      if (!url) continue;
+      if (!url.startsWith(VALID_URL_PREFIX)) continue; // never emit malformed links
+      groups.push({
+        label: map[`whatsapp_qr_welcome_${i}_label`] || `WhatsApp Group ${i}`,
+        url,
+      });
+    }
+
+    res.json({ groups });
+  } catch (error) {
+    logger.error("Error fetching QR welcome links:", error.message);
+    res.status(500).json({ error: "Failed to load welcome links" });
+  }
+};
+
 // PUT /whatsapp-links — admin-only bulk update
 // Scoped: jumuiya officials can only update their own jumuiya's links
 export const updateWhatsAppLinks = async (req, res) => {
   try {
-    const { general, years, jumuiyas, jumuiyaYears } = req.body;
+    const { general, years, jumuiyas, jumuiyaYears, qrWelcome } = req.body;
 
     const updates = [];
+
+    // QR Registration Welcome Groups — global admins only. Each entry:
+    // { label: string, url: string }. Stored as separate label/link keys.
+    if (isGlobalAdmin(req) && Array.isArray(qrWelcome)) {
+      for (let i = 0; i < Math.min(qrWelcome.length, 2); i++) {
+        const entry = qrWelcome[i] || {};
+        const url = String(entry.url || "").trim();
+        const label = String(entry.label || "").trim().slice(0, 80);
+        updates.push({ key: `whatsapp_qr_welcome_${i + 1}_link`, value: url });
+        updates.push({ key: `whatsapp_qr_welcome_${i + 1}_label`, value: label });
+      }
+    }
 
     // Determine scope
     const scoped = !isGlobalAdmin(req);
@@ -222,8 +267,9 @@ export const updateWhatsAppLinks = async (req, res) => {
       }
     }
 
-    // Validate URLs
+    // Validate URLs (label settings are plain text — skip them)
     for (const { key, value } of updates) {
+      if (!key.endsWith("_link")) continue;
       if (value && !value.startsWith(VALID_URL_PREFIX)) {
         return res.status(400).json({
           error: `Invalid link for "${key}". Must start with ${VALID_URL_PREFIX}`,
@@ -257,7 +303,21 @@ export const getAllWhatsAppLinks = async (req, res) => {
       `SELECT key, value FROM system_settings WHERE key LIKE 'whatsapp_%_link' ORDER BY key`
     );
 
-    const data = { general: "", years: {}, jumuiyas: {}, jumuiyaYears: {}, scope: "global" };
+    const data = { general: "", years: {}, jumuiyas: {}, jumuiyaYears: {}, qrWelcome: [{ label: "", url: "" }, { label: "", url: "" }], scope: "global" };
+
+    // QR welcome groups (global admins only)
+    if (isGlobalAdmin(req)) {
+      const qrRes = await db.query(
+        `SELECT key, value FROM system_settings WHERE key LIKE 'whatsapp_qr_welcome_%' ORDER BY key`
+      );
+      const qrMap = Object.fromEntries(qrRes.rows.map((r) => [r.key, r.value || ""]));
+      for (const i of [1, 2]) {
+        data.qrWelcome[i - 1] = {
+          label: qrMap[`whatsapp_qr_welcome_${i}_label`] || "",
+          url: qrMap[`whatsapp_qr_welcome_${i}_link`] || "",
+        };
+      }
+    }
 
     // If user is a jumuiya official (not global), resolve their jumuiya slug
     let scopedSlug = null;

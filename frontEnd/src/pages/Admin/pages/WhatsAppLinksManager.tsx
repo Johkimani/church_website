@@ -28,17 +28,23 @@ const JUMUIYAS = [
 
 const YEARS = [1, 2, 3, 4];
 
+interface QrWelcomeEntry {
+  label: string;
+  url: string;
+}
+
 interface LinkData {
   general: string;
   years: Record<string, string>;
   jumuiyas: Record<string, string>;
   jumuiyaYears: Record<string, Record<string, string>>;
+  qrWelcome?: QrWelcomeEntry[];
   scope?: string;
 }
 
 export default function WhatsAppLinksManager() {
   const { user } = useAuth();
-  const [data, setData] = useState<LinkData>({ general: "", years: {}, jumuiyas: {}, jumuiyaYears: {} });
+  const [data, setData] = useState<LinkData>({ general: "", years: {}, jumuiyas: {}, jumuiyaYears: {}, qrWelcome: [{ label: "", url: "" }, { label: "", url: "" }] });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedJumuiya, setExpandedJumuiya] = useState<string | null>(null);
@@ -72,6 +78,7 @@ export default function WhatsAppLinksManager() {
         years: data.years,
         jumuiyas: data.jumuiyas,
         jumuiyaYears: data.jumuiyaYears,
+        qrWelcome: data.qrWelcome,
       });
       toast.success("WhatsApp links saved successfully");
     } catch (err: any) {
@@ -82,6 +89,12 @@ export default function WhatsAppLinksManager() {
   };
 
   const updateGeneral = (val: string) => setData((p) => ({ ...p, general: val }));
+  const updateQrWelcome = (idx: number, field: "label" | "url", val: string) =>
+    setData((p) => {
+      const arr = [...(p.qrWelcome || [{ label: "", url: "" }, { label: "", url: "" }])];
+      arr[idx] = { ...(arr[idx] || { label: "", url: "" }), [field]: val };
+      return { ...p, qrWelcome: arr };
+    });
   const updateYear = (y: string, val: string) => setData((p) => ({ ...p, years: { ...p.years, [y]: val } }));
   const updateJumuiya = (slug: string, val: string) => setData((p) => ({ ...p, jumuiyas: { ...p.jumuiyas, [slug]: val } }));
   const updateJumuiyaYear = (slug: string, year: string, val: string) =>
@@ -171,6 +184,49 @@ export default function WhatsAppLinksManager() {
             placeholder="https://chat.whatsapp.com/..."
             label="CSA General Link"
           />
+        </Card>
+      )}
+
+      {/* ── Section 1b: QR Registration Welcome Groups — global admins only ──── */}
+      {!isScoped && (
+        <Card
+          icon={<Users size={20} className="text-[#128C7E]" />}
+          title="QR Registration Welcome Groups"
+          description="Shown to new members immediately after they submit the QR registration form"
+          accent="#128C7E"
+        >
+          <div className="space-y-5">
+            {[0, 1].map((idx) => (
+              <div key={idx} className="rounded-xl border border-slate-200 p-4 bg-slate-50/60">
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-3">
+                  Group {idx + 1}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Group name</label>
+                    <input
+                      value={data.qrWelcome?.[idx]?.label || ""}
+                      onChange={(e) => updateQrWelcome(idx, "label", e.target.value)}
+                      placeholder="e.g. CSA Announcements"
+                      className="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#25D366]/40 focus:border-[#25D366]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Invite link</label>
+                    <LinkInput
+                      value={data.qrWelcome?.[idx]?.url || ""}
+                      onChange={(val) => updateQrWelcome(idx, "url", val)}
+                      placeholder="https://chat.whatsapp.com/..."
+                      label=""
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-slate-500">
+              These two groups appear as green join buttons on the success screen right after someone registers via the QR code.
+            </p>
+          </div>
         </Card>
       )}
 
