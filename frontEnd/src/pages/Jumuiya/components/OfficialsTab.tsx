@@ -242,18 +242,9 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                 </div>
             )}
 
-            {/* Main list content — fades out when viewing an official */}
-            <div
-                className="mt-8"
-                style={{
-                    opacity: isViewing ? 0 : 1,
-                    transform: isViewing ? 'translateY(8px)' : 'translateY(0)',
-                    transition: 'opacity 0.25s ease, transform 0.25s ease',
-                    pointerEvents: isViewing ? 'none' : 'auto',
-                    maxHeight: isViewing ? '0px' : 'none',
-                    overflow: isViewing ? 'hidden' : 'visible',
-                }}
-            >
+            {/* Main list content — hidden when viewing an official detail */}
+            {!isViewing && (
+            <div className="mt-8">
                 {officials.length === 0 ? (
                     <div className="w-full text-center py-20 bg-white/50 rounded-2xl border border-dashed border-gray-300">
                         <p className="text-gray-500 text-lg italic">No members listed in the current leadership team.</p>
@@ -485,6 +476,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                     )}
                 </div>
             </div>
+            )}
 
         </div>
     );
