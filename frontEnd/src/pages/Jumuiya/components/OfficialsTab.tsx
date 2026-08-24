@@ -193,7 +193,8 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                         </button>
                     </div>
 
-                    <div className="mx-auto max-w-md bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100"
+                    <div className="mx-auto w-full px-4 sm:px-0">
+                    <div className="mx-auto max-w-sm bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100"
                          style={{ animation: 'detailCardIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
                         {/* Photo */}
                         <div className="relative bg-gray-100 overflow-hidden">
@@ -285,9 +286,10 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                     {/* Counter */}
                     {viewedSource.length > 1 && (
                         <p className="text-center text-xs text-gray-400 mt-4 font-medium">
-                            {viewedIndex + 1} / {allFilteredOfficials.length}
+                            {viewedIndex + 1} / {viewedSource.length}
                         </p>
                     )}
+                    </div>
                 </div>
             )}
 
