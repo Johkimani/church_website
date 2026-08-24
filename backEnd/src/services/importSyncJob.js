@@ -18,7 +18,7 @@ export const syncNewImportRecords = async () => {
 
     const csaResult = await pool.query(`
       INSERT INTO members (
-        member_id, first_name, last_name, phone, gender,
+        member_id, first_name, last_name, phone, gender, course,
         source, status, import_batch_id, join_date, migrated_to_associates,
         jumuiya_id
       )
@@ -28,6 +28,7 @@ export const syncNewImportRecords = async () => {
         substr(ir.cleaned_name, strpos(ir.cleaned_name || ' ', ' ') + 1),
         ir.cleaned_phone,
         CASE WHEN LOWER(ir.cleaned_gender) IN ('male', 'female') THEN LOWER(ir.cleaned_gender) ELSE NULL END,
+        NULLIF(TRIM(ir.cleaned_course), ''),
         'csa',
         ir.status,
         mi.id,
@@ -46,7 +47,7 @@ export const syncNewImportRecords = async () => {
 
     const directResult = await pool.query(`
       INSERT INTO members (
-        member_id, first_name, last_name, phone, gender,
+        member_id, first_name, last_name, phone, gender, course,
         source, status, import_batch_id, join_date, migrated_to_associates,
         jumuiya_id
       )
@@ -56,6 +57,7 @@ export const syncNewImportRecords = async () => {
         substr(ir.cleaned_name, strpos(ir.cleaned_name || ' ', ' ') + 1),
         NULLIF(ir.cleaned_phone, ''),
         CASE WHEN LOWER(ir.cleaned_gender) IN ('male', 'female') THEN LOWER(ir.cleaned_gender) ELSE NULL END,
+        NULLIF(TRIM(ir.cleaned_course), ''),
         'jum',
         ir.status,
         mi.id,
@@ -105,6 +107,20 @@ export const syncNewImportRecords = async () => {
     if (total > 0) {
       logger.info(`Sync: inserted ${total} new members from import_records`);
     }
+
+    // Backfill course from import_records for members with NULL course
+    await pool.query(`
+      UPDATE members m
+      SET course = ir.cleaned_course
+      FROM (
+        SELECT DISTINCT ON (ir.cleaned_reg_number) ir.cleaned_reg_number, ir.cleaned_course
+        FROM import_records ir
+        WHERE ir.cleaned_course IS NOT NULL AND ir.cleaned_course != ''
+      ) ir
+      WHERE m.member_id = ir.cleaned_reg_number
+        AND (m.course IS NULL OR m.course = '')
+        AND ir.cleaned_course IS NOT NULL
+    `);
 
     // Heal existing members that were previously synced with jumuiya_id = NULL
     // (caused by cleaned_jumuiya not matching sub_groups.name at the time of import).
