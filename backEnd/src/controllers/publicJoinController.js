@@ -334,15 +334,21 @@ export const publicJoinSubmit = async (req, res) => {
 
     // 8. Record each chosen community as a pending enrollment. Non-fatal:
     // membership registration must never fail because of optional extras.
+    // class_id mirrors module_id — the table's original NOT NULL column —
+    // otherwise every QR insert is rejected and the request silently vanishes
+    // from the community Members tab.
+    const enrollResults = [];
     for (const community of communities) {
       try {
         await pool.query(
-          `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, status, joined_at)
-           VALUES ($1, $2, $3, $4, $5, $6, 'Pending', NOW())`,
+          `INSERT INTO enrollments (module_id, class_id, full_name, phone, email, gender, course, status, joined_at)
+           VALUES ($1, $1, $2, $3, $4, $5, $6, 'Pending', NOW())`,
           [community, cleanName, cleanPhone, cleanEmail || "", cleanGender, rawCourse]
         );
+        enrollResults.push({ community, ok: true });
         logger.info(`Public join: ${cleanReg} also requested to join '${community}'`);
       } catch (enrollErr) {
+        enrollResults.push({ community, ok: false });
         logger.warn(`publicJoinSubmit: enrollment insert failed for ${cleanReg} (${community}): ${enrollErr.message}`);
       }
     }
@@ -359,6 +365,7 @@ export const publicJoinSubmit = async (req, res) => {
         regNumber: cleanReg,
         date: new Date().toLocaleDateString(),
         communities,
+        enrollResults,
       },
     });
   } catch (error) {
