@@ -63,6 +63,12 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
     const formatPhone = (phone: string) => phone.replace(/\D/g, '').replace(/^0/, '254');
 
     useEffect(() => {
+        if (viewedOfficial) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [viewedOfficial]);
+
+    useEffect(() => {
         if (!jumuiyaName) return;
         setLoadingHistory(true);
         apiClient.get('/jumuiya-officials/term', {
@@ -180,6 +186,14 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                     <Avatar name={viewedOfficial.name} size="lg" />
                                 </div>
                             )}
+
+                            {/* Close button */}
+                            <button
+                                onClick={() => setViewedOfficial(null)}
+                                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 hover:scale-110 active:scale-95 transition-all duration-150 text-lg font-bold backdrop-blur-sm"
+                            >
+                                ×
+                            </button>
 
                             {/* Nav arrows */}
                             {allFilteredOfficials.length > 1 && (
