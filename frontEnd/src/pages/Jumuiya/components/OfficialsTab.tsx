@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Official, TermOfOffice } from '../data/jumuiyaData';
 import { apiClient } from '../../../api/axiosInstance';
-import { FaCalendarCheck, FaHistory, FaArrowRight, FaPhoneAlt, FaWhatsapp, FaEnvelope, FaFilter, FaChevronDown } from 'react-icons/fa';
+import { FaCalendarCheck, FaHistory, FaArrowRight, FaPhoneAlt, FaWhatsapp, FaEnvelope, FaFilter, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './TabsSystem.css';
 
@@ -58,7 +58,7 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [historyFilter, setHistoryFilter] = useState<string>('all');
     const [historyOpen, setHistoryOpen] = useState(false);
-    const [lightboxOfficial, setLightboxOfficial] = useState<ArchivedOfficial | null>(null);
+    const [viewedOfficial, setViewedOfficial] = useState<ArchivedOfficial | null>(null);
 
     const formatPhone = (phone: string) => phone.replace(/\D/g, '').replace(/^0/, '254');
 
@@ -94,20 +94,19 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
         return result;
     }, [filteredHistory, historyFilter, historyTerms]);
 
-    const lightboxIndex = lightboxOfficial ? allFilteredOfficials.findIndex(f => f.id === lightboxOfficial.id) : -1;
+    const viewedIndex = viewedOfficial ? allFilteredOfficials.findIndex(f => f.id === viewedOfficial.id) : -1;
 
-    const navigateLightbox = (dir: number) => {
-        if (lightboxIndex < 0) return;
+    const navigateViewed = (dir: number) => {
+        if (viewedIndex < 0) return;
         const len = allFilteredOfficials.length;
         for (let i = 1; i <= len; i++) {
-            const next = (lightboxIndex + dir * i + len) % len;
-            const nextOff = allFilteredOfficials[next];
-            if (nextOff.photo) {
-                setLightboxOfficial(nextOff);
-                return;
-            }
+            const next = (viewedIndex + dir * i + len) % len;
+            setViewedOfficial(allFilteredOfficials[next]);
+            return;
         }
     };
+
+    const isViewing = viewedOfficial !== null;
 
     return (
         <div className="tab-system-content" style={{ '--jumuiya-color': jumuiyaColor } as React.CSSProperties}>
@@ -145,8 +144,116 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                 </div>
             </div>
 
-            {/* Officials Grid — dual-render: compact mobile, polished desktop */}
-            <div className="mt-8">
+            {/* Inline detail view — replaces list when an official is selected */}
+            {isViewing && viewedOfficial && (
+                <div
+                    className="mt-8"
+                    style={{ animation: 'detailFadeIn 0.3s ease-out' }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'ArrowRight') navigateViewed(1);
+                        else if (e.key === 'ArrowLeft') navigateViewed(-1);
+                        else if (e.key === 'Escape') setViewedOfficial(null);
+                    }}
+                    tabIndex={0}
+                    ref={(el) => { if (el) el.focus({ preventScroll: true }); }}
+                >
+                    <button
+                        onClick={() => setViewedOfficial(null)}
+                        className="flex items-center gap-2 text-sm font-semibold mb-6 transition-colors duration-150 hover:opacity-70 active:opacity-50"
+                        style={{ color: jumuiyaColor }}
+                    >
+                        <FaArrowLeft size={14} /> Back to all officials
+                    </button>
+
+                    <div className="mx-auto max-w-md bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100"
+                         style={{ animation: 'detailCardIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
+                        {/* Photo */}
+                        <div className="relative bg-gray-100 overflow-hidden">
+                            {viewedOfficial.photo ? (
+                                <img
+                                    src={viewedOfficial.photo}
+                                    alt={viewedOfficial.name}
+                                    className="w-full aspect-[3/4] object-cover"
+                                />
+                            ) : (
+                                <div className="w-full aspect-[3/4] flex items-center justify-center">
+                                    <Avatar name={viewedOfficial.name} size="lg" />
+                                </div>
+                            )}
+
+                            {/* Nav arrows */}
+                            {allFilteredOfficials.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); navigateViewed(-1); }}
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 hover:scale-110 active:scale-95 transition-all duration-150 text-xl backdrop-blur-sm"
+                                    >
+                                        ‹
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); navigateViewed(1); }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 hover:scale-110 active:scale-95 transition-all duration-150 text-xl backdrop-blur-sm"
+                                    >
+                                        ›
+                                    </button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="p-5 text-center">
+                            <h3 className="font-bold text-xl text-gray-900">{viewedOfficial.name}</h3>
+                            <p className="text-sm font-semibold mt-1.5 px-3 py-1 rounded-full inline-block"
+                               style={{ background: `${_c('15')}`, color: _c('cc') }}>
+                                {viewedOfficial.position}
+                            </p>
+                            {viewedOfficial.term_of_service && (
+                                <p className="text-xs text-gray-400 mt-2">{viewedOfficial.term_of_service}</p>
+                            )}
+                            {viewedOfficial.contact && (
+                                <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                                    <a
+                                        href={`tel:${viewedOfficial.contact.replace(/[^+0-9]/g, '')}`}
+                                        className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                                        title="Call"
+                                    >
+                                        <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
+                                        <FaPhoneAlt size={14} className="z-10 relative" />
+                                    </a>
+                                    <a
+                                        href={`https://wa.me/${viewedOfficial.contact.replace(/\D/g, '').replace(/^0/, '254')}`}
+                                        target="_blank" rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                                        title="WhatsApp"
+                                    >
+                                        <FaWhatsapp size={17} />
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Counter */}
+                    {allFilteredOfficials.length > 1 && (
+                        <p className="text-center text-xs text-gray-400 mt-4 font-medium">
+                            {viewedIndex + 1} / {allFilteredOfficials.length}
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* Main list content — fades out when viewing an official */}
+            <div
+                className="mt-8"
+                style={{
+                    opacity: isViewing ? 0 : 1,
+                    transform: isViewing ? 'translateY(8px)' : 'translateY(0)',
+                    transition: 'opacity 0.25s ease, transform 0.25s ease',
+                    pointerEvents: isViewing ? 'none' : 'auto',
+                    maxHeight: isViewing ? '0px' : 'none',
+                    overflow: isViewing ? 'hidden' : 'visible',
+                }}
+            >
                 {officials.length === 0 ? (
                     <div className="w-full text-center py-20 bg-white/50 rounded-2xl border border-dashed border-gray-300">
                         <p className="text-gray-500 text-lg italic">No members listed in the current leadership team.</p>
@@ -357,8 +464,8 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                                                 {termOfficials.map(f => (
                                                     <div
                                                         key={f.id}
-                                                        onClick={() => f.photo && setLightboxOfficial(f)}
-                                                        className={`bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 ${f.photo ? 'cursor-pointer' : ''}`}
+                                                        onClick={() => setViewedOfficial(f)}
+                                                        className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 cursor-pointer"
                                                     >
                                                         <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                                                             <Avatar name={f.name} image={f.photo || undefined} size="sm" />
@@ -379,65 +486,6 @@ const OfficialsTab: React.FC<OfficialsTabProps> = ({ officials, termOfOffice, ju
                 </div>
             </div>
 
-            {/* Image Lightbox */}
-            {lightboxOfficial && lightboxOfficial.photo && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-                    style={{ animation: 'lbFadeIn 0.25s ease-out' }}
-                    onClick={() => setLightboxOfficial(null)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'ArrowRight') navigateLightbox(1);
-                        else if (e.key === 'ArrowLeft') navigateLightbox(-1);
-                        else if (e.key === 'Escape') setLightboxOfficial(null);
-                    }}
-                    tabIndex={0}
-                    ref={(el) => {
-                        if (el) {
-                            el.focus({ preventScroll: true });
-                        }
-                    }}
-                >
-                    <div
-                        className="relative max-w-sm w-full mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
-                        style={{ animation: 'lbSlideUp 0.3s cubic-bezier(0.16,1,0.3,1)' }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="relative flex-shrink-0">
-                            <img
-                                src={lightboxOfficial.photo}
-                                alt={lightboxOfficial.name}
-                                className="w-full aspect-[3/4] object-cover"
-                            />
-                            <button
-                                onClick={() => setLightboxOfficial(null)}
-                                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 hover:scale-110 active:scale-95 transition-all duration-150 text-lg font-bold"
-                            >
-                                ×
-                            </button>
-                            {allFilteredOfficials.length > 1 && (
-                                <>
-                                    <button
-                                        onClick={() => navigateLightbox(-1)}
-                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 hover:scale-110 active:scale-95 transition-all duration-150 text-lg"
-                                    >
-                                        ‹
-                                    </button>
-                                    <button
-                                        onClick={() => navigateLightbox(1)}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 hover:scale-110 active:scale-95 transition-all duration-150 text-lg"
-                                    >
-                                        ›
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                        <div className="p-4 text-center overflow-y-auto">
-                            <h3 className="font-bold text-gray-900">{lightboxOfficial.name}</h3>
-                            <p className="text-sm text-gray-500 mt-1">{lightboxOfficial.position}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
