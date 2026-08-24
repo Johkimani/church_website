@@ -512,7 +512,7 @@ export default function CommunityDetailEditor() {
         : 'Practice & Rehearsals',
       icon: Clock
     },
-    { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Registered Members', icon: Users },
+      { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
     { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
     {
       id: 'tshirts',
@@ -689,6 +689,11 @@ export default function CommunityDetailEditor() {
                   <tab.icon size={13} className="text-current" />
                 </div>
                 <span className="leading-tight tracking-wide">{tab.label}</span>
+                {tab.id === 'members' && Number(enrollmentStats?.pending || 0) > 0 && (
+                  <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black">
+                    {enrollmentStats.pending}
+                  </span>
+                )}
               </button>
             );
           })}
