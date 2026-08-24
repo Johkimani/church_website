@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { AxiosError } from "axios";
-import { Eye, EyeOff, ChevronLeft, Shield, Mail, KeyRound, Loader2, CheckCircle, ShieldCheck, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, ChevronLeft, Shield, Mail, KeyRound, Loader2, CheckCircle, ShieldCheck, RefreshCw, Circle, CheckCircle2 } from "lucide-react";
 import { apiClient } from "../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast";
 import OTPInput from "./OTPInput";
-import { validatePassword } from "../../utils/passwordPolicy";
+import { validatePassword, PASSWORD_RULES } from "../../utils/passwordPolicy";
 
 type ApiError = AxiosError<{ message?: string; error?: string }>;
 
@@ -43,6 +43,13 @@ export default function FirstLoginSetup() {
     const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [resendCountdown]);
+
+  const ruleResults = useMemo(
+    () => PASSWORD_RULES.map((r) => ({ ...r, met: r.test(newPassword, member_id) })),
+    [newPassword, member_id]
+  );
+  const allRulesMet = ruleResults.every((r) => r.met);
+  const hasTyped = newPassword.length > 0;
 
   const finishSetup = () => {
     login(loginResponse);
@@ -261,6 +268,32 @@ export default function FirstLoginSetup() {
                     </button>
                   </div>
                 </div>
+
+                {hasTyped && !allRulesMet && (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 -mt-2 space-y-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Password must meet all</p>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {ruleResults.map((r) => (
+                        <div key={r.key} className="flex items-center gap-2.5">
+                          {r.met ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-slate-300 shrink-0" />
+                          )}
+                          <span className={`text-xs font-semibold ${r.met ? "text-emerald-600" : "text-slate-400"}`}>
+                            {r.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {hasTyped && allRulesMet && (
+                  <div className="flex items-center gap-2 -mt-2 pl-1">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-bold text-emerald-600">All requirements met</span>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-2 pl-1">
