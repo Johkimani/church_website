@@ -364,6 +364,20 @@ export default function CsaSecretaryDashboard() {
           {formatDate(m.registration_date)}
         </div>
       </td>
+      {SEMESTERS.map(s => {
+        const regd = m[s.dbCol] === true || m[s.dbCol] === "true" || m[s.dbCol] === 1 || m[s.dbCol] === "1";
+        return (
+          <td key={s.dbCol} className="px-2 py-3 text-center">
+            {regd ? (
+              <span className="inline-flex w-6 h-6 rounded-md bg-emerald-50 border border-emerald-200 items-center justify-center" title={`Registered ${s.label}`}>
+                <Check size={14} className="text-emerald-600" strokeWidth={3} />
+              </span>
+            ) : (
+              <span className="inline-block w-6 h-6 rounded-md bg-slate-50 border border-slate-100" title={`Not registered ${s.label}`}></span>
+            )}
+          </td>
+        );
+      })}
     </tr>
   );
 
@@ -713,12 +727,36 @@ export default function CsaSecretaryDashboard() {
                     </div>
                   </th>
                 ))}
+                <th colSpan={8} className="px-2 py-2 text-center text-xs font-semibold text-indigo-500 uppercase tracking-wider border-l border-slate-200">
+                  Registration History
+                </th>
+              </tr>
+              <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px]">
+                <th className="px-4 py-1.5"></th>
+                <th className="px-4 py-1.5"></th>
+                <th className="px-4 py-1.5"></th>
+                <th className="px-4 py-1.5"></th>
+                <th className="px-4 py-1.5"></th>
+                <th className="px-4 py-1.5"></th>
+                <th className="px-4 py-1.5"></th>
+                {SEMESTERS.map(s => (
+                  <th
+                    key={s.dbCol}
+                    onClick={() => setFilterSemester(filterSemester === s.label ? "all" : s.label)}
+                    title={`Filter by semester ${s.label}`}
+                    className={`px-2 py-1.5 text-center font-bold cursor-pointer transition-colors border-l border-slate-100 first:border-l-0 ${
+                      filterSemester === s.label ? "text-indigo-600 bg-indigo-50" : "text-slate-400 hover:text-slate-700"
+                    }`}
+                  >
+                    {s.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={15} className="px-4 py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     No registered members found
                   </td>
@@ -727,7 +765,7 @@ export default function CsaSecretaryDashboard() {
                 groupedData.map(group => (
                   <Fragment key={group.yearLevel}>
                     <tr className="bg-indigo-50/60 border-b border-indigo-100">
-                      <td colSpan={6} className="px-4 py-2.5">
+                      <td colSpan={15} className="px-4 py-2.5">
                         <span className="inline-flex items-center gap-2">
                           <GraduationCap size={15} className="text-indigo-500" />
                           <span className="font-semibold text-sm text-slate-700">Year {group.yearLevel}</span>
