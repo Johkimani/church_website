@@ -5,6 +5,7 @@ import {
   AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Edit2, Save, QrCode,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import QRCode from "qrcode";
 
 const JUMUIYAS = [
   { id: "st-anthony", name: "St. Anthony", color: "#8b5cf6" },
