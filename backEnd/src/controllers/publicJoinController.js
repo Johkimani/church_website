@@ -282,7 +282,12 @@ export const publicJoinSubmit = async (req, res) => {
     }
 
     // 5. Insert into import_records (cleaned_jumuiya intentionally NULL — coordinator assigns)
-    const recordStatus = validated.status === "error" ? "error" : "pending";
+    // Store the validator's own status ('valid'/'warning'): the New Admissions
+    // pipeline only promotes valid/warning rows into `members`, so anything
+    // else (e.g. a literal 'pending') would sit invisible forever.
+    const recordStatus = ["valid", "warning", "error"].includes(validated.status)
+      ? validated.status
+      : "warning";
     const insertRes = await pool.query(
       `INSERT INTO import_records
          (import_id, raw_name, raw_reg_number, raw_gender, raw_course, raw_jumuiya, raw_phone, raw_email,
@@ -332,8 +337,8 @@ export const publicJoinSubmit = async (req, res) => {
     for (const community of communities) {
       try {
         await pool.query(
-          `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, status)
-           VALUES ($1, $2, $3, $4, $5, $6, 'Pending')`,
+          `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, status, joined_at)
+           VALUES ($1, $2, $3, $4, $5, $6, 'Pending', NOW())`,
           [community, cleanName, cleanPhone, cleanEmail || "", cleanGender, rawCourse]
         );
         logger.info(`Public join: ${cleanReg} also requested to join '${community}'`);
