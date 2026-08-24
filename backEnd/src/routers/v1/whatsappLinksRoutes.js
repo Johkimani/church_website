@@ -3,11 +3,15 @@ import {
   getWhatsAppLinks,
   updateWhatsAppLinks,
   getAllWhatsAppLinks,
+  getQrWelcomeLinks,
 } from "../../controllers/whatsappLinks.controller.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 
 const router = Router();
+
+// PUBLIC: the two welcome groups shown right after QR registration
+router.get("/qr-welcome", getQrWelcomeLinks);
 
 // Authenticated user: get their relevant WhatsApp links (general + year + jumuiya)
 router.get("/", verifyToken, getWhatsAppLinks);

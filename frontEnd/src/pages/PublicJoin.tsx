@@ -101,6 +101,23 @@ export default function PublicJoin() {
     );
   };
 
+  // Welcome WhatsApp groups — fetched once the registration succeeds so the
+  // new member can join right from the confirmation screen.
+  const [waGroups, setWaGroups] = useState<{ label: string; url: string }[]>([]);
+  useEffect(() => {
+    if (!submitted) return;
+    apiClient
+      .get("/whatsapp-links/qr-welcome")
+      .then((r) =>
+        setWaGroups(
+          Array.isArray(r.data?.groups)
+            ? r.data.groups.filter((g: any) => g?.url)
+            : []
+        )
+      )
+      .catch(() => setWaGroups([]));
+  }, [submitted]);
+
   // Live duplicate check debounced
   useEffect(() => {
     const reg = formData.regNumber.trim();
@@ -302,6 +319,33 @@ export default function PublicJoin() {
                   </div>
                 );
               })()
+            )}
+
+            {/* WhatsApp welcome groups */}
+            {waGroups.length > 0 && (
+              <div className="mt-5 mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-left">
+                <p className="text-sm font-black text-slate-800 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-[#25D366] text-white flex items-center justify-center text-[11px] font-black">WA</span>
+                  Join our WhatsApp groups
+                </p>
+                <p className="text-xs text-slate-500 mt-1 mb-3 leading-relaxed">
+                  While you wait for approval, stay in the loop — announcements and updates are posted here first.
+                </p>
+                <div className="space-y-2">
+                  {waGroups.map((g) => (
+                    <a
+                      key={g.url}
+                      href={g.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-2 w-full px-4 py-3 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-sm font-bold transition-colors active:scale-[0.99]"
+                    >
+                      <span className="truncate">{g.label}</span>
+                      <ArrowRight size={15} className="shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              </div>
             )}
 
             <div className="bg-slate-50 rounded-2xl p-4 my-6 border border-slate-200/80 text-left space-y-2 text-xs text-slate-700">
