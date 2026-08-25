@@ -1,5 +1,4 @@
 import axios from "axios";
-import { clearSession } from "../db/db";
 
 const rawBase = (import.meta.env.VITE_SERVER_URI as string) || "http://localhost:3001/api/v1";
 export const BASE_URL = rawBase.replace(/\/$/, "");
@@ -18,9 +17,10 @@ apiClient.interceptors.request.use((config) => {
 
 /**
  * Session-expiry guard. The access token is short-lived (15 min) and the app
- * has no refresh flow, so when the API says 401 the session is stale: clear the
- * token and bounce back to the login screen. Saved attendance records live in
- * IndexedDB and are untouched by this.
+ * has no refresh flow, so when the API says 401 the session is stale: clear
+ * the local token and bounce back to the login screen. The IndexedDB session
+ * (profile + offline credential) is deliberately preserved so the user can
+ * unlock again without internet via the local verifier.
  */
 apiClient.interceptors.response.use(
   (res) => res,
@@ -28,12 +28,17 @@ apiClient.interceptors.response.use(
     const status = err?.response?.status;
     if (status === 401 && localStorage.getItem("csa_attendance_token")) {
       localStorage.removeItem("csa_attendance_token");
-      await clearSession().catch(() => {});
       window.dispatchEvent(new Event("csa:auth-expired"));
     }
     return Promise.reject(err);
   }
 );
+
+/** True when a request failed without any server response (offline/timeout). */
+export function isNetworkError(err: unknown): boolean {
+  const anyErr = err as { response?: unknown };
+  return !anyErr?.response;
+}
 
 export interface LoginResult {
   member_id: string;

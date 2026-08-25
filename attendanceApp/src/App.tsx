@@ -15,6 +15,7 @@ type Splash = "show" | "fade" | "gone";
 export default function App() {
   const network = useNetworkStatus();
   const [token, setToken] = useState<string | null>(null);
+  const [offlineMode, setOfflineMode] = useState(false);
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<Tab>("record");
   const [pending, setPending] = useState(0);
@@ -33,6 +34,11 @@ export default function App() {
   const loadAuth = async () => {
     const t = await getSession("token");
     setToken(t);
+    if (!t) {
+      // Offline-unlocked session from a previous local sign-in
+      const mode = await getSession("mode");
+      if (mode === "offline") setOfflineMode(true);
+    }
     setReady(true);
   };
 
@@ -46,9 +52,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onAuthExpired = () => {
+    const onAuthExpired = async () => {
+      const mode = await getSession("mode");
       setToken(null);
       setSyncMsg(null);
+      // If this device was offline-unlocked, stay in the app instead of
+      // dead-ending on a login screen that needs internet.
+      if (mode === "offline") setOfflineMode(true);
     };
     window.addEventListener("csa:auth-expired", onAuthExpired);
     return () => window.removeEventListener("csa:auth-expired", onAuthExpired);
@@ -96,10 +106,15 @@ export default function App() {
         <div className="app-shell">
           <main className="app-main">Loading…</main>
         </div>
-      ) : !token ? (
+      ) : !token && !offlineMode ? (
         <LoginPage
           onLogin={(newToken) => {
-            setToken(newToken);
+            if (newToken) {
+              setToken(newToken);
+              setOfflineMode(false);
+            } else {
+              setOfflineMode(true);
+            }
             setTab("record");
             refreshPendingCount();
           }}
@@ -110,7 +125,9 @@ export default function App() {
         <div className={`banner ${network}`}>
           {network === "online" ? <Wifi size={16} /> : <WifiOff size={16} />}
           {network === "online"
-            ? "Online — new records sync automatically"
+            ? offlineMode
+              ? "Offline session — sign in again to re-sync with the server"
+              : "Online — new records sync automatically"
             : "Offline — records are saved on this device and will sync later"}
         </div>
         {syncMsg && (
@@ -120,10 +137,10 @@ export default function App() {
         <InstallButton />
 
         {tab === "record" ? (
-          <RecordPage token={token} onSaved={refreshPendingCount} />
+          <RecordPage token={token || ""} onSaved={refreshPendingCount} />
         ) : (
           <PendingPage
-            token={token}
+            token={token || ""}
             pending={pending}
             onSynced={(n) => {
               if (n > 0) setSyncMsg({ ok: true, text: `Synced ${n} records` });

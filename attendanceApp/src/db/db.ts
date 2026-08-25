@@ -75,3 +75,30 @@ export async function getMeta<T>(key: string): Promise<T | null> {
 export async function setMeta(key: string, data: unknown): Promise<void> {
   await db.meta.put({ key, data, fetchedAt: Date.now() });
 }
+
+export interface OfflineCredential {
+  regNumber: string;
+  salt: string;
+  verifier: string;
+  profile?: {
+    member_id?: string;
+    name?: string;
+    role?: string[];
+    jumuiya_id?: string;
+  };
+  savedAt: number;
+}
+
+const OFFLINE_CRED_KEY = "offline_credential";
+
+export async function getOfflineCredential(): Promise<OfflineCredential | null> {
+  return getMeta<OfflineCredential>(OFFLINE_CRED_KEY);
+}
+
+export async function setOfflineCredential(cred: OfflineCredential): Promise<void> {
+  await setMeta(OFFLINE_CRED_KEY, cred);
+}
+
+export async function clearOfflineCredential(): Promise<void> {
+  await db.meta.delete(OFFLINE_CRED_KEY);
+}
