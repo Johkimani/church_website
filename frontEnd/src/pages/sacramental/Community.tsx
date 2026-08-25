@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../api/axiosInstance';
 import CommunityDetail from './CommunityDetail';
 import CommunityAboutTab from './components/tabs/CommunityAboutTab';
-import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots } from 'react-icons/fa';
+import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots, FaChurch } from 'react-icons/fa';
 import { FaBars } from 'react-icons/fa';
 
 const MINISTRY_COLORS: Record<string, string> = {
@@ -53,13 +53,18 @@ const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
   mentorship: ['MENTORSHIP_CHAIR', 'MENTORSHIP_VICE_CHAIR'],
 };
 
+// The community hub shows exactly these five groups. Anything else in
+// hub_modules (e.g. a "General Parish" entry) is not a ministry group and is
+// hidden from the grid — jumuiyas get their own dedicated card below.
+const GROUP_MODULE_IDS = new Set(['choir', 'dancers', 'charismatic', 'st-francis', 'youth']);
+
 const Community: React.FC = () => {
   const navigate = useNavigate();
   const { modules } = useCommunityData();
   const { user } = useAuth();
 
   // Determine which modules the user can access based on their role
-  let activeModules = modules || [];
+  let activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
 
   if (user?.role) {
     const userRoles = Array.isArray(user.role) ? user.role : [user.role];
@@ -69,8 +74,8 @@ const Community: React.FC = () => {
     const isGlobalAdmin = userRoleUpper.includes('CSA_CHAIR') || userRoleUpper.includes('OS') || userRoleUpper.includes('JUMUIYA_COORDINATOR');
 
     if (isGlobalAdmin) {
-      // Show all modules
-      activeModules = modules || [];
+      // Show all group modules
+      activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
     } else {
       // Filter modules based on user's group role
       // Check each module: if any of the user's roles match this module's allowed roles, include it
@@ -82,7 +87,7 @@ const Community: React.FC = () => {
     }
   } else {
     // No user data; show all modules as default
-    activeModules = modules || [];
+    activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
   }
 
   const handleCardClick = (moduleId: string) => {
@@ -140,6 +145,33 @@ const Community: React.FC = () => {
               </button>
             );
           })}
+
+          {/* Our Jumuiyas — dedicated link card (not a ministry group) */}
+          <button
+            type="button"
+            aria-label="View Our Jumuiyas"
+            className="jumuiya-card card card-clickable animate-fade-in"
+            style={{ ['--jumuiya-color' as any]: '#1d4ed8' }}
+            onClick={() => navigate('/jumuiya')}
+          >
+            <div
+              className="card-background"
+              style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800)' }}
+            >
+              <div className="card-overlay" />
+            </div>
+            <div className="card-content">
+              <div className="card-header">
+                <h2 className="card-title">Our Jumuiyas</h2>
+              </div>
+              <p className="card-description">
+                The seven Small Christian Communities of St. Thomas Aquinas — find your jumuiya, its leaders, and meeting schedules.
+              </p>
+              <div className="card-footer">
+                <span className="card-link">Visit the Jumuiyas →</span>
+              </div>
+            </div>
+          </button>
         </div>
 
         {/* Footer Info */}
