@@ -15,6 +15,7 @@ export const GROUP_CATEGORY_POSITION_TO_ROLE = {
   'Choir': {
     'Choir Master': 'choir_chairperson',
     'Choir Mistress': 'choir_chairperson',
+    'Vice Chairperson': 'choir_vice_chair',
     'Secretary': 'choir_secretary',
     'Vice Secretary': 'choir_vice_secretary',
     'Treasurer': 'choir_treasurer',
@@ -43,7 +44,7 @@ export const GROUP_CATEGORY_POSITION_TO_ROLE = {
 };
 
 export const GROUP_ROLES = [
-  'choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
+  'choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
   'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
   'dance_chair', 'dance_vice_chair',
   'charismatic_chair', 'charismatic_vice_chair',
@@ -59,6 +60,7 @@ export const getGroupRoleName = (category, position) => {
   if (groupMap[cleanPos]) return groupMap[cleanPos];
   const lower = cleanPos.toLowerCase();
   if (category === 'Choir' && (lower.includes('master') || lower.includes('mistress'))) return 'choir_chairperson';
+  if (category === 'Choir' && lower.includes('vice') && lower.includes('chair')) return 'choir_vice_chair';
   if (category === 'Mentorship' && lower.includes('coordinator')) {
     return lower.includes('vice') ? 'mentorship_vice_chair' : 'mentorship_chair';
   }

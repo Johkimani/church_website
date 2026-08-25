@@ -20,6 +20,7 @@ const KNOWN_ADMIN_ROLES = new Set([
   "JUMUIYA_VICE_CHAIRPERSON",
   "JUMUIYA_SECRETARY",
   "CHOIR_CHAIRPERSON",
+  "CHOIR_VICE_CHAIR",
   "CHOIR_VICE_SECRETARY",
   "CHOIR_SECRETARY",
   "CHOIR_TREASURER",
@@ -94,6 +95,7 @@ export const hasAnyAdminAccess = (roles: string[]): boolean =>
 // Module ids match hub_modules ids used by CommunityManager/CommunityDetailEditor.
 const COMMUNITY_MODULES_BY_ROLE: Record<string, string[]> = {
   CHOIR_CHAIRPERSON: ["choir"],
+  CHOIR_VICE_CHAIR: ["choir"],
   CHOIR_VICE_SECRETARY: ["choir"],
   CHOIR_SECRETARY: ["choir"],
   CHOIR_TREASURER: ["choir"],
@@ -200,6 +202,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/community-updates");
         break;
       case "CHOIR_CHAIRPERSON":
+      case "CHOIR_VICE_CHAIR":
       case "CHOIR_VICE_SECRETARY":
       case "CHOIR_SECRETARY":
       case "CHOIR_TREASURER":

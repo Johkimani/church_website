@@ -25,6 +25,7 @@ const GLOBAL_COMMUNITY_ADMIN_ROLES = [
 const MODULE_ROLE_MAP = {
   choir: [
     "choir_chairperson",
+    "choir_vice_chair",
     "choir_vice_secretary",
     "choir_secretary",
     "choir_treasurer",

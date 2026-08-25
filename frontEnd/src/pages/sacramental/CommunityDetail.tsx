@@ -73,7 +73,7 @@ const TAB_LABELS: Record<TabType, string> = {
 const TAB_ORDER: TabType[] = ['about', 'noticeboard', 'schedule', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
 
 const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
-  choir: ['choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer', 'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative'],
+  choir: ['choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer', 'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative'],
   dancers: ['dance_chair', 'dance_vice_chair'],
   charismatic: ['charismatic_chair', 'charismatic_vice_chair'],
   'st-francis': ['st_francis_chair', 'st_francis_vice_chair', 'st_francis_secretary', 'st_francis_treasurer'],

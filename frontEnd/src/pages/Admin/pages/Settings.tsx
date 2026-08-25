@@ -61,6 +61,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   jumuiya_os: ['Gallery (scoped to their Jumuiya)'],
   jumuiya_secretary: ['Members (scoped to their Jumuiya)'],
   choir_chairperson: ['Community Management (Choir)'],
+  choir_vice_chair: ['Community Management (Choir)'],
   choir_vice_secretary: ['Community Management (Choir)'],
   choir_secretary: ['Community Management (Choir)'],
   choir_treasurer: ['Community Management (Choir)'],
@@ -84,7 +85,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
 const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist'];
 const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary'];
 const SUBGROUP_ROLES = [
-  'choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
+  'choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
   'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
   'st_francis_chair', 'st_francis_vice_chair', 'st_francis_secretary', 'st_francis_treasurer',
   'charismatic_chair', 'charismatic_vice_chair',
