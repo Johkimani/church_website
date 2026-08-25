@@ -98,6 +98,7 @@ export const CSA_POSITION_TO_ROLE = {
   'Assistant Liturgist': 'liturgist',
   'Treasurer': 'treasurer',
   'Choir Chairperson': 'choir_chairperson',
+  'Choir Vice Chairperson': 'choir_vice_chair',
 };
 
 export const JUMUIYA_POSITION_TO_ROLE = {
@@ -202,6 +203,10 @@ export const getRoleNameForPosition = (position, isJumuiya) => {
   
   if (CSA_POSITION_TO_ROLE[clean]) return CSA_POSITION_TO_ROLE[clean];
   const lower = clean.toLowerCase();
+  // Choir liaison posts live in the CSA officials table — never executive roles
+  if (lower.includes('choir') && lower.includes('chair')) {
+    return (lower.includes('vice') || lower.includes('ass')) ? 'choir_vice_chair' : 'choir_chairperson';
+  }
   if (lower.includes('jumuiya') && lower.includes('coord')) return 'jumuiya_coordinator';
   if (lower.includes('chair') && (lower.includes('vice') || lower.includes('ass') || lower.includes('vc') || lower.includes('deputy'))) {
     return 'csa_vice_chair';
