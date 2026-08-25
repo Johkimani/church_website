@@ -1140,8 +1140,8 @@ const HANDOVER_REVOCABLE_ROLES = [
   'choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
   'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
   'dance_chair', 'dance_vice_chair',
-  'charismatic_chair', 'charismatic_vice_chair', 'charismatic_secretary', 'charismatic_treasurer',
-  'st_francis_chair', 'st_francis_vice_chair',
+  'charismatic_chair', 'charismatic_vice_chair',
+  'st_francis_chair', 'st_francis_vice_chair', 'st_francis_secretary', 'st_francis_treasurer',
   'mentorship_chair', 'mentorship_vice_chair'
 ];
 

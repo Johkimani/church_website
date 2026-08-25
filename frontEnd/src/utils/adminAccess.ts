@@ -28,10 +28,10 @@ const KNOWN_ADMIN_ROLES = new Set([
   "CHOIR_FEMALE_REPRESENTATIVE",
   "ST_FRANCIS_CHAIR",
   "ST_FRANCIS_VICE_CHAIR",
+  "ST_FRANCIS_SECRETARY",
+  "ST_FRANCIS_TREASURER",
   "CHARISMATIC_CHAIR",
   "CHARISMATIC_VICE_CHAIR",
-  "CHARISMATIC_SECRETARY",
-  "CHARISMATIC_TREASURER",
   "DANCE_CHAIR",
   "DANCE_VICE_CHAIR",
   "MENTORSHIP_CHAIR",
@@ -104,10 +104,10 @@ const COMMUNITY_MODULES_BY_ROLE: Record<string, string[]> = {
   DANCE_VICE_CHAIR: ["dancers"],
   CHARISMATIC_CHAIR: ["charismatic"],
   CHARISMATIC_VICE_CHAIR: ["charismatic"],
-  CHARISMATIC_SECRETARY: ["charismatic"],
-  CHARISMATIC_TREASURER: ["charismatic"],
   ST_FRANCIS_CHAIR: ["st-francis"],
   ST_FRANCIS_VICE_CHAIR: ["st-francis"],
+  ST_FRANCIS_SECRETARY: ["st-francis"],
+  ST_FRANCIS_TREASURER: ["st-francis"],
   MENTORSHIP_CHAIR: ["mentorship", "youth"], // mentorship community historically lives under both ids
   MENTORSHIP_VICE_CHAIR: ["mentorship", "youth"],
 };
@@ -211,13 +211,13 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         break;
       case "ST_FRANCIS_CHAIR":
       case "ST_FRANCIS_VICE_CHAIR":
+      case "ST_FRANCIS_SECRETARY":
+      case "ST_FRANCIS_TREASURER":
         prefixes.add("/admin/community-management");
         prefixes.add("/admin/community-management/st-francis");
         break;
       case "CHARISMATIC_CHAIR":
       case "CHARISMATIC_VICE_CHAIR":
-      case "CHARISMATIC_SECRETARY":
-      case "CHARISMATIC_TREASURER":
         prefixes.add("/admin/community-management");
         prefixes.add("/admin/community-management/charismatic");
         break;

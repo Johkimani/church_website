@@ -29,12 +29,12 @@ export const GROUP_CATEGORY_POSITION_TO_ROLE = {
   'Charismatic': {
     'Chairperson': 'charismatic_chair',
     'Vice Chairperson': 'charismatic_vice_chair',
-    'Secretary': 'charismatic_secretary',
-    'Treasurer': 'charismatic_treasurer',
   },
   'St. Francis': {
     'Chairperson': 'st_francis_chair',
     'Vice Chairperson': 'st_francis_vice_chair',
+    'Secretary': 'st_francis_secretary',
+    'Treasurer': 'st_francis_treasurer',
   },
   'Mentorship': {
     'Coordinator': 'mentorship_chair',
@@ -46,8 +46,8 @@ export const GROUP_ROLES = [
   'choir_chairperson', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
   'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
   'dance_chair', 'dance_vice_chair',
-  'charismatic_chair', 'charismatic_vice_chair', 'charismatic_secretary', 'charismatic_treasurer',
-  'st_francis_chair', 'st_francis_vice_chair',
+  'charismatic_chair', 'charismatic_vice_chair',
+  'st_francis_chair', 'st_francis_vice_chair', 'st_francis_secretary', 'st_francis_treasurer',
   'mentorship_chair', 'mentorship_vice_chair',
 ];
 
@@ -74,8 +74,8 @@ export const getGroupRoleName = (category, position) => {
   if (category === 'Choir' && lower.includes('treasurer')) return 'choir_treasurer';
   if (category === 'Choir' && lower.includes('male') && lower.includes('representative')) return 'choir_male_representative';
   if (category === 'Choir' && lower.includes('female') && lower.includes('representative')) return 'choir_female_representative';
-  if (category === 'Charismatic' && lower.includes('secretary')) return 'charismatic_secretary';
-  if (category === 'Charismatic' && lower.includes('treasurer')) return 'charismatic_treasurer';
+  if (category === 'St. Francis' && lower.includes('secretary')) return 'st_francis_secretary';
+  if (category === 'St. Francis' && lower.includes('treasurer')) return 'st_francis_treasurer';
   return null;
 };
 
