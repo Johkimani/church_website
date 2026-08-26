@@ -14,6 +14,7 @@ import {
   deleteEnrollment,
   getMyCommunities,
   getMusicClassSignups,
+  withdrawEnrollment,
 } from "../../controllers/communityEnrollmentController.js";
 
 const router = Router();
@@ -33,6 +34,9 @@ router.get(
 // Public routes (optionalAuth: captures user info if logged in, but doesn't require it)
 router.post("/:moduleId", optionalAuth, verifyCaptcha, createEnrollment);
 router.get("/:moduleId/check-duplicate", checkDuplicate);
+
+// Authenticated: withdraw your own rejected enrollment (for re-application)
+router.delete("/:moduleId/:id/withdraw", verifyToken, withdrawEnrollment);
 
 // Admin routes — role gate (any community official) PLUS module scope check so
 // e.g. dance_chair can only ever read/mutate dancers' enrollments, never

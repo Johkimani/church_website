@@ -203,6 +203,39 @@ export const deleteEnrollment = async (req, res) => {
   }
 };
 
+// Auth: withdraw (delete) your own rejected enrollment so you can re-apply
+export const withdrawEnrollment = async (req, res) => {
+  try {
+    const { moduleId, id } = req.params;
+    const userId = req.user?.id || req.user?.member_id;
+    if (!userId) return res.status(401).json({ error: "Authentication required" });
+
+    // Look up phone from members table
+    const memberRes = await db.query(
+      `SELECT phone FROM members WHERE member_id = $1`,
+      [userId]
+    );
+    const phone = memberRes.rows[0]?.phone;
+    if (!phone) return res.status(400).json({ error: "No phone on file" });
+
+    const phoneClean = phone.replace(/\s+/g, '').trim();
+    const result = await db.query(
+      `DELETE FROM enrollments WHERE id = $1 AND module_id = $2 AND phone = $3 AND LOWER(status) = 'rejected' RETURNING id`,
+      [id, moduleId, phoneClean]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No rejected enrollment found to withdraw" });
+    }
+
+    logger.info(`Enrollment withdrawn: id=${id} module=${moduleId} phone=${phoneClean}`);
+    return res.json({ success: true, id: result.rows[0].id });
+  } catch (error) {
+    logger.error(`withdrawEnrollment error: ${error.message}`);
+    return res.status(500).json({ error: "Failed to withdraw enrollment" });
+  }
+};
+
 // Auth: get communities the logged-in user has joined
 // Matches by member_id first, then falls back to phone lookup from members table
 export const getMyCommunities = async (req, res) => {
