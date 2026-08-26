@@ -24,7 +24,7 @@ const INITIAL_FORM: FormState = {
 };
 
 const VOICE_TYPES = ['Soprano', 'Alto', 'Tenor', 'Bass', 'None'];
-const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', 'Graduate'];
+const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 const COURSE_OPTIONS = ['Computer Science', 'Engineering', 'Business', 'Education', 'Medicine', 'Arts', 'Science', 'Law', 'Nursing', 'Agriculture', 'Other'];
 const GENDER_OPTIONS = ['Male', 'Female'];
 

@@ -1181,7 +1181,6 @@ export default function CommunityDetailEditor() {
                               <>
                                 <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
                                 <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Gender</th>
-                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Skill Level</th>
                               </>
                             )}
                             <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Status</th>
@@ -1254,7 +1253,6 @@ export default function CommunityDetailEditor() {
                                     )}
                                   </td>
                                   <td className="py-3.5 px-4 text-sm text-slate-700 font-semibold capitalize">{member.gender || 'N/A'}</td>
-                                  <td className="py-3.5 px-4 text-sm text-slate-700 font-semibold capitalize">{member.music_level || 'Beginner'}</td>
                                 </>
                               )}
                               <td className="py-3.5 px-4">
@@ -1446,19 +1444,9 @@ export default function CommunityDetailEditor() {
                           </select>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <label className="text-xs font-bold text-slate-700">Phone Number</label>
-                          <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" placeholder="e.g. 0712345678" />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-slate-700">Music Skill Level</label>
-                          <select value={formValues.music_level || 'Beginner'} onChange={(e) => setFormValues(v => ({ ...v, music_level: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
-                            <option value="Beginner">Beginner (Solfa Learner)</option>
-                            <option value="Intermediate">Intermediate (Sight-reader)</option>
-                            <option value="Advanced">Advanced (Soloist / Trainer)</option>
-                          </select>
-                        </div>
+                      <div className="mt-3">
+                        <label className="text-xs font-bold text-slate-700">Phone Number</label>
+                        <input value={formValues.phone || formValues.phoneNumber || ''} onChange={(e) => setFormValues(v => ({ ...v, phone: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500" placeholder="e.g. 0712345678" />
                       </div>
                     </>
                   )}
