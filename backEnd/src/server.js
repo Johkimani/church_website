@@ -51,6 +51,7 @@ import { fixImportRecordsStatusConstraint } from "./migrations/fixImportRecordsS
 import removeGeneralParishModule from "./migrations/removeGeneralParishModule.js";
 import choirMusicClassMigration from "./migrations/choirMusicClassMigration.js";
 import { refreshTokenGraceWindow } from "./migrations/refreshTokenGraceWindow.js";
+import relaxEnrollmentClassId from "./migrations/relaxEnrollmentClassId.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -219,6 +220,7 @@ const initServer = async () => {
     await removeGeneralParishModule();
     await choirMusicClassMigration();
     await refreshTokenGraceWindow();
+    await relaxEnrollmentClassId();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
