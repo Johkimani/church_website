@@ -74,15 +74,17 @@ export const createEnrollment = async (req, res) => {
     logger.info(`New enrollment: ${displayName} -> ${moduleId} (member_id: ${memberId || 'none'})`);
     return res.status(201).json(result.rows[0]);
   } catch (error) {
-    // Log everything — empty error.message has made this impossible to debug
-    logger.error("createEnrollment error:", JSON.stringify({
+    // Winston printf only prints info.message — second arg is silently dropped
+    const detail = {
       message: error?.message,
       code: error?.code,
       detail: error?.detail,
       hint: error?.hint,
-      stack: error?.stack ? String(error.stack).split("\n").slice(0, 3) : undefined,
-    }));
-    return res.status(500).json({ error: "Failed to submit enrollment" });
+      stack: error?.stack ? String(error.stack).split("\n").slice(0, 5) : undefined,
+    };
+    logger.error(`createEnrollment error: ${JSON.stringify(detail)}`);
+    // Also return the detail in dev so frontend can surface it
+    return res.status(500).json({ error: "Failed to submit enrollment", detail: process.env.NODE_ENV !== "production" ? detail : undefined });
   }
 };
 
