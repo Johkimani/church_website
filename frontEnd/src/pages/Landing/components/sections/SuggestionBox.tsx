@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, EyeOff, Clock3, Reply } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle2, User, Mail, Sparkles, EyeOff, Clock3, Reply, ChevronDown } from 'lucide-react';
 import apiService from '../../../../services/api';
 import { apiClient } from '../../../../api/axiosInstance';
 import { useAuth } from '../../../../context/AuthContext';
@@ -38,6 +38,15 @@ const SuggestionBox: React.FC = () => {
 
   const [mySuggestions, setMySuggestions] = useState<MySuggestion[]>([]);
   const [loadingMine, setLoadingMine] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+  const toggleExpanded = (id: number) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const fetchMySuggestions = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -315,8 +324,14 @@ const SuggestionBox: React.FC = () => {
                     <div className="space-y-3">
                       {mySuggestions.map(item => {
                         const meta = STATUS_META[item.status || 'pending'] || STATUS_META.pending;
+                        const hasReply = !!item.reply;
+                        const isOpen = expandedIds.has(item.id);
                         return (
-                          <div key={item.id} className="bg-slate-50 rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                          <div
+                            key={item.id}
+                            className={`bg-slate-50 rounded-2xl border border-slate-100 p-4 shadow-sm transition-shadow ${hasReply ? 'cursor-pointer hover:shadow-md' : ''}`}
+                            onClick={hasReply ? () => toggleExpanded(item.id) : undefined}
+                          >
                             <div className="flex items-start justify-between gap-3 mb-2">
                               <p className="text-sm font-semibold text-slate-800 leading-snug flex-1">{item.suggestion}</p>
                               <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border ${meta.cls}`}>
@@ -325,12 +340,20 @@ const SuggestionBox: React.FC = () => {
                                 {meta.label}
                               </span>
                             </div>
-                            <p className="text-[10px] text-slate-400 font-medium">
-                              Sent {new Date(item.created_at).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' })}
-                              {item.category ? ` · ${item.category}` : ''}
-                            </p>
-                            {item.reply && (
-                              <div className="mt-3 pt-3 border-t border-emerald-100 bg-emerald-50/50 rounded-xl p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-[10px] text-slate-400 font-medium">
+                                Sent {new Date(item.created_at).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                {item.category ? ` · ${item.category}` : ''}
+                              </p>
+                              {hasReply && (
+                                <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-600">
+                                  View Reply
+                                  <ChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                                </span>
+                              )}
+                            </div>
+                            {hasReply && isOpen && (
+                              <div className="mt-3 pt-3 border-t border-emerald-100 bg-emerald-50/50 rounded-xl p-3 animate-in fade-in slide-in-from-top-1 duration-200">
                                 <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 mb-1">
                                   <Reply size={11} /> Official Reply
                                   {item.replied_at && (
