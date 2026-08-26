@@ -48,6 +48,7 @@ import relaxOfficialContactUniqueness from "./migrations/relaxOfficialContactUni
 import electionTermClosingMessage from "./migrations/electionTermClosingMessage.js";
 import { fixPendingPaymentsCascade } from "./migrations/fixPendingPaymentsCascade.js";
 import { fixImportRecordsStatusConstraint } from "./migrations/fixImportRecordsStatusConstraint.js";
+import removeGeneralParishModule from "./migrations/removeGeneralParishModule.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -213,6 +214,7 @@ const initServer = async () => {
     await relaxOfficialContactUniqueness();
     await electionTermClosingMessage();
     await fixImportRecordsStatusConstraint();
+    await removeGeneralParishModule();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
