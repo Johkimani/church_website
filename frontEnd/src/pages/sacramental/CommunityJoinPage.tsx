@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/axiosInstance';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUser, FaPhone, FaEnvelope, FaGraduationCap, FaMusic, FaCheck, FaArrowLeft, FaSpinner, FaExclamationCircle, FaHeart, FaClock, FaTimes, FaRedo, FaUsers } from 'react-icons/fa';
@@ -40,6 +40,7 @@ const MINISTRY_COLORS: Record<string, string> = {
 const CommunityJoinPage: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { getModuleById } = useCommunityData();
   const { user } = useAuth();
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
@@ -49,6 +50,7 @@ const CommunityJoinPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [checking, setChecking] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
+  const [forceNewApplication, setForceNewApplication] = useState(false);
 
   const moduleIdClean = moduleId ? moduleId.toLowerCase().replace(/[^a-z0-9-]/g, '-') : '';
 
@@ -186,6 +188,13 @@ const CommunityJoinPage: React.FC = () => {
     setSubmitting(true);
     setResult(null);
     try {
+      // If re-applying after rejection, delete the old enrollment first
+      if (forceNewApplication && existingEnrollment?.id) {
+        await apiClient.delete(`/community-enrollment/${moduleIdClean}/${existingEnrollment.id}/withdraw`);
+        // Invalidate so the stale query refetches
+        await queryClient.invalidateQueries({ queryKey: ['existing-enrollment', moduleIdClean] });
+      }
+
       await apiClient.post(`/community-enrollment/${moduleIdClean}`, {
         fullName: form.fullName.trim(),
         phone: form.phone.trim(),
@@ -196,6 +205,7 @@ const CommunityJoinPage: React.FC = () => {
         voiceType: form.voiceType || undefined,
         wantsMusicClass: form.wantsMusicClass,
       });
+      setForceNewApplication(false);
       setResult('success');
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Failed to submit';
@@ -251,7 +261,7 @@ const CommunityJoinPage: React.FC = () => {
       <div className="max-w-lg mx-auto px-6 -mt-6 relative z-20">
         <AnimatePresence mode="wait">
           {/* Existing enrollment status card — shown instead of form */}
-          {existingEnrollment && !result ? (
+          {existingEnrollment && !result && !forceNewApplication ? (
             <motion.div
               key="status-card"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -357,7 +367,7 @@ const CommunityJoinPage: React.FC = () => {
                       You may submit a new application if you'd like to try again.
                     </p>
                     <button
-                      onClick={() => setResult(null)}
+                      onClick={() => setForceNewApplication(true)}
                       className="w-full py-3.5 rounded-2xl text-sm font-black text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer flex items-center justify-center gap-2"
                       style={{ background: color }}
                     >
