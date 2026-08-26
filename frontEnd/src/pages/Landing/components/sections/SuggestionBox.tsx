@@ -39,6 +39,7 @@ const SuggestionBox: React.FC = () => {
   const [mySuggestions, setMySuggestions] = useState<MySuggestion[]>([]);
   const [loadingMine, setLoadingMine] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [listOpen, setListOpen] = useState(false);
 
   const toggleExpanded = (id: number) => {
     setExpandedIds(prev => {
@@ -61,8 +62,8 @@ const SuggestionBox: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (isOpen) fetchMySuggestions();
-  }, [isOpen, fetchMySuggestions]);
+    if (listOpen) fetchMySuggestions();
+  }, [listOpen, fetchMySuggestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,14 +307,28 @@ const SuggestionBox: React.FC = () => {
                 )}
 
                 {/* My Suggestions + Replies — inside the collapsed panel so
-                    passers-by can't read them over your shoulder */}
+                    passers-by can't read them over your shoulder. Two-level
+                    privacy: the section header is itself collapsed by default. */}
                 <div className="mt-8 pt-6 border-t border-slate-100">
-                  <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase flex items-center gap-2 px-1 mb-3">
-                    <Reply size={12} className="text-primary" />
-                    My Suggestions &amp; Replies
-                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setListOpen(!listOpen)}
+                    className="w-full flex items-center justify-between px-1 mb-3 group"
+                    aria-expanded={listOpen}
+                  >
+                    <span className="flex items-center gap-2 text-[10px] font-black text-slate-500 tracking-widest uppercase group-hover:text-primary transition-colors">
+                      <Reply size={12} className={listOpen ? 'text-primary' : 'text-slate-400'} />
+                      My Suggestions &amp; Replies
+                      {mySuggestions.length > 0 && (
+                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${listOpen ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400'}`}>
+                          {mySuggestions.length}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${listOpen ? 'rotate-180' : ''}`} />
+                  </button>
 
-                  {loadingMine && mySuggestions.length === 0 ? (
+                  {listOpen && (loadingMine && mySuggestions.length === 0 ? (
                     <div className="bg-slate-50 rounded-2xl border border-slate-100 p-6 text-center text-xs font-bold text-slate-400">Loading your suggestions...</div>
                   ) : mySuggestions.length === 0 ? (
                     <div className="bg-slate-50 rounded-2xl border border-slate-100 p-6 text-center">
@@ -321,7 +336,7 @@ const SuggestionBox: React.FC = () => {
                       <p className="text-xs font-semibold text-slate-400">No suggestions yet — yours will appear here with official replies.</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                       {mySuggestions.map(item => {
                         const meta = STATUS_META[item.status || 'pending'] || STATUS_META.pending;
                         const hasReply = !!item.reply;
