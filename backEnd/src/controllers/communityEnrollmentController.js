@@ -46,17 +46,42 @@ export const createEnrollment = async (req, res) => {
       });
     }
 
-    const result = await db.query(
-      `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, year_of_study, voice_type, wants_music_class, member_id, status, joined_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'Pending', NOW())
-       RETURNING *`,
-      [moduleId, displayName.trim(), userPhone, email || '', gender || null, course || null, yearOfStudy || null, voiceType || null, wantsMusicClass === true, memberId]
-    );
+    const baseParams = [moduleId, displayName.trim(), userPhone, email || '', gender || null, course || null, yearOfStudy || null, voiceType || null];
+    let result;
+    try {
+      result = await db.query(
+        `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, year_of_study, voice_type, wants_music_class, member_id, status, joined_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'Pending', NOW())
+         RETURNING *`,
+        [...baseParams, wantsMusicClass === true, memberId]
+      );
+    } catch (insertErr) {
+      // Self-heal: if the wants_music_class column is missing (migration not
+      // applied yet), fall back to the legacy insert so members aren't blocked.
+      if (insertErr?.code === '42703') {
+        logger.warn("createEnrollment: wants_music_class column missing — falling back to legacy insert");
+        result = await db.query(
+          `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, year_of_study, voice_type, member_id, status, joined_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pending', NOW())
+           RETURNING *`,
+          [...baseParams, memberId]
+        );
+      } else {
+        throw insertErr;
+      }
+    }
 
     logger.info(`New enrollment: ${displayName} -> ${moduleId} (member_id: ${memberId || 'none'})`);
     return res.status(201).json(result.rows[0]);
   } catch (error) {
-    logger.error("createEnrollment error:", error.message);
+    // Log everything — empty error.message has made this impossible to debug
+    logger.error("createEnrollment error:", JSON.stringify({
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      hint: error?.hint,
+      stack: error?.stack ? String(error.stack).split("\n").slice(0, 3) : undefined,
+    }));
     return res.status(500).json({ error: "Failed to submit enrollment" });
   }
 };
