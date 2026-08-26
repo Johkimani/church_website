@@ -65,7 +65,14 @@ export const jumuiyaTshirtsMigration = async () => {
       CREATE INDEX IF NOT EXISTS idx_jumuiya_tshirt_orders_status ON jumuiya_tshirt_orders(status);
     `);
 
-    // 5. Seed default settings for all known Jumuiyas if not existing
+    // 5. Add new settings columns (collection date & T-shirt image) if missing
+    await db.query(`
+      ALTER TABLE jumuiya_tshirt_settings
+        ADD COLUMN IF NOT EXISTS collection_date DATE,
+        ADD COLUMN IF NOT EXISTS tshirt_image_url TEXT;
+    `);
+
+    // 6. Seed default settings for all known Jumuiyas if not existing
     for (const jId of DEFAULT_JUMUIYAS) {
       await db.query(
         `INSERT INTO jumuiya_tshirt_settings (jumuiya_id, unit_price, payment_instructions)

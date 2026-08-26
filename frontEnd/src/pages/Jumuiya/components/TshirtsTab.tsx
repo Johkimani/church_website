@@ -43,6 +43,8 @@ interface PaymentSettings {
   payment_instructions: string;
   unit_price: number;
   is_active: boolean;
+  collection_date?: string;
+  tshirt_image_url?: string;
 }
 
 const TshirtsTab: React.FC<TshirtsTabProps> = ({
@@ -63,6 +65,8 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({
     payment_instructions: 'Send payment via M-Pesa to the designated Vice-Chairperson mobile money number and enter your transaction code below.',
     unit_price: 1200,
     is_active: true,
+    collection_date: '',
+    tshirt_image_url: '',
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
 
@@ -100,6 +104,8 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({
           payment_instructions: res.data.data.payment_instructions || '',
           unit_price: Number(res.data.data.unit_price) || 1200,
           is_active: res.data.data.is_active !== undefined ? res.data.data.is_active : true,
+          collection_date: res.data.data.collection_date ? res.data.data.collection_date.split('T')[0] : '',
+          tshirt_image_url: res.data.data.tshirt_image_url || '',
         });
       }
     } catch (err) {
@@ -315,13 +321,58 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({
           <div className="tshirt-order-grid">
             {/* Left: Product Showcase & Payment Instructions */}
             <div className="space-y-6">
+              {/* Expected Collection Date Announcement Banner */}
+              {settings.collection_date && (
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
+                    border: '1px solid #fde68a',
+                    borderRadius: '20px',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    boxShadow: '0 4px 12px rgba(217, 119, 6, 0.08)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '12px',
+                      background: '#fef3c7',
+                      border: '1px solid #fcd34d',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                      flexShrink: 0,
+                    }}
+                  >
+                    📦
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#b45309', fontWeight: 800 }}>
+                      Order Arrival &amp; Collection
+                    </div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#78350f', marginTop: '2px' }}>
+                      Ready for collection on {new Date(settings.collection_date).toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Product Showcase Card */}
               <div className="tab-card glass-card tshirt-showcase-card" style={{ padding: '0', overflow: 'hidden' }}>
                 <div className="tshirt-showcase-media" style={{ position: 'relative' }}>
                   <img
-                    src={tshirtMockup}
-                    alt="T-shirt closeup"
+                    src={settings.tshirt_image_url || tshirtMockup}
+                    alt={`${jumuiyaName} T-shirt`}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      // Fallback to local default mockup if remote image fails
+                      (e.currentTarget as HTMLImageElement).src = tshirtMockup;
+                    }}
                   />
                   <div
                     style={{
@@ -355,8 +406,12 @@ const TshirtsTab: React.FC<TshirtsTabProps> = ({
                     <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>SIZES AVAILABLE</div>
                   </div>
                   <div style={{ textAlign: 'center', padding: '14px', background: 'var(--bg-soft)', borderRadius: '16px' }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.25rem', color: jumuiyaColor }}>3-5 Days</div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>EST. DELIVERY</div>
+                    <div style={{ fontWeight: 800, fontSize: '1.25rem', color: jumuiyaColor }}>
+                      {settings.collection_date ? new Date(settings.collection_date).toLocaleDateString('en-KE', { month: 'short', day: 'numeric' }) : '3-5 Days'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>
+                      {settings.collection_date ? 'COLLECTION' : 'EST. DELIVERY'}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -48,7 +48,9 @@ export const getPaymentSettings = async (req, res) => {
       account_name: "",
       payment_instructions: "Send payment via M-Pesa to the designated Vice-Chairperson mobile money number and enter your transaction code below.",
       unit_price: "1200.00",
-      is_active: true
+      is_active: true,
+      collection_date: null,
+      tshirt_image_url: null
     };
 
     return res.json({ success: true, data: defaultData });
@@ -66,23 +68,28 @@ export const updatePaymentSettings = async (req, res) => {
   try {
     const rawId = req.params.jumuiyaId;
     const slug = await resolveJumuiyaKey(rawId);
-    const { payment_phone, account_name, payment_instructions, unit_price, is_active } = req.body;
+    const { payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url } = req.body;
 
     const price = !isNaN(parseFloat(unit_price)) ? parseFloat(unit_price) : 1200.0;
     const active = is_active !== undefined ? Boolean(is_active) : true;
+    const collDate = collection_date || null;
+    const imageUrl = tshirt_image_url || null;
 
     const result = await db.query(
-      `INSERT INTO jumuiya_tshirt_settings (jumuiya_id, payment_phone, account_name, payment_instructions, unit_price, is_active, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `INSERT INTO jumuiya_tshirt_settings
+         (jumuiya_id, payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        ON CONFLICT (jumuiya_id) DO UPDATE SET
          payment_phone = EXCLUDED.payment_phone,
          account_name = EXCLUDED.account_name,
          payment_instructions = EXCLUDED.payment_instructions,
          unit_price = EXCLUDED.unit_price,
          is_active = EXCLUDED.is_active,
+         collection_date = EXCLUDED.collection_date,
+         tshirt_image_url = EXCLUDED.tshirt_image_url,
          updated_at = NOW()
        RETURNING *`,
-      [slug || rawId, payment_phone || "", account_name || "", payment_instructions || "", price, active]
+      [slug || rawId, payment_phone || "", account_name || "", payment_instructions || "", price, active, collDate, imageUrl]
     );
 
     logger.info(`Updated T-shirt payment settings for Jumuiya ${slug} by user ${req.user?.member_id || req.user?.id}`);

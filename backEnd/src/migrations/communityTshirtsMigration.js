@@ -43,6 +43,23 @@ export const communityTshirtsMigration = async () => {
       ON community_tshirt_orders(member_id);
     `);
 
+    // Add newer columns if missing (idempotent upgrades)
+    await db.query(`
+      ALTER TABLE community_tshirt_products
+        ADD COLUMN IF NOT EXISTS collection_date DATE;
+    `);
+    await db.query(`
+      ALTER TABLE community_tshirt_orders
+        ADD COLUMN IF NOT EXISTS mpesa_code VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS rejection_reason TEXT,
+        ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS confirmed_by VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS completed_by VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS cancelled_by VARCHAR(100);
+    `);
+
     logger.info("community_tshirt_products and community_tshirt_orders tables ensured");
   } catch (error) {
     logger.error("Community tshirts migration failed:", error.message);

@@ -14,6 +14,7 @@ import {
   Trash2,
   Loader2,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   Clock,
   ExternalLink,
@@ -28,7 +29,14 @@ import {
   Eye,
   Check,
   X,
-  Music
+  Music,
+  Shirt,
+  PackageCheck,
+  DollarSign,
+  Copy,
+  Printer,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
@@ -43,21 +51,37 @@ interface GalleryItem {
 
 interface ProductItem {
   id: number;
+  module_id?: string;
   name: string;
   price: number;
   sizes?: string[] | string;
   image_url?: string;
   description?: string;
+  collection_date?: string;
+  is_active?: boolean;
 }
 
 interface OrderItem {
   id: number;
+  module_id?: string;
+  product_id?: number;
+  product_name?: string;
+  member_id?: string;
   recipient_name: string;
   phone: string;
   size: string;
   quantity: number;
   total_amount: number;
   status: string;
+  payment_ref?: string;
+  mpesa_code?: string;
+  rejection_reason?: string;
+  confirmed_at?: string;
+  confirmed_by?: string;
+  completed_at?: string;
+  completed_by?: string;
+  cancelled_at?: string;
+  cancelled_by?: string;
   created_at: string;
 }
 
@@ -101,8 +125,22 @@ export default function CommunityDetailEditor() {
   const [tshirtTab, setTshirtTab] = useState<'products' | 'orders'>('products');
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [orderStats, setOrderStats] = useState({ total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0, totalRevenue: 0 });
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [orderSearch, setOrderSearch] = useState('');
   const [productModal, setProductModal] = useState(false);
-  const [productForm, setProductForm] = useState({ name: '', price: 1200, sizes: 'S, M, L, XL, XXL', description: '', image_url: '' });
+  const [productForm, setProductForm] = useState<{ id?: number; name: string; price: number | string; sizes: string; description: string; image_url: string; collection_date: string }>({
+    name: '',
+    price: 1200,
+    sizes: 'S, M, L, XL, XXL',
+    description: '',
+    image_url: '',
+    collection_date: ''
+  });
+  const [cancelOrderModal, setCancelOrderModal] = useState<OrderItem | null>(null);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState<OrderItem | null>(null);
+  const [orderRejectionReason, setOrderRejectionReason] = useState('');
+  const [orderActionLoading, setOrderActionLoading] = useState<number | null>(null);
 
   // Community-specific Suggestions state
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
@@ -158,8 +196,30 @@ export default function CommunityDetailEditor() {
         try {
           const prodRes = await apiClient.get(`/community-tshirts/${categoryId}/products`);
           setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
-          const ordRes = await apiClient.get(`/community-tshirts/${categoryId}/orders`);
-          setOrders(Array.isArray(ordRes.data) ? ordRes.data : []);
+          
+          const params: Record<string, string> = {};
+          if (orderStatusFilter && orderStatusFilter !== 'all') params.status = orderStatusFilter;
+          if (orderSearch?.trim()) params.search = orderSearch.trim();
+
+          const ordRes = await apiClient.get(`/community-tshirts/${categoryId}/admin/orders`, { params }).catch(() => {
+            return apiClient.get(`/community-tshirts/${categoryId}/orders`);
+          });
+
+          if (ordRes.data?.data && Array.isArray(ordRes.data.data)) {
+            setOrders(ordRes.data.data);
+            if (ordRes.data.stats) setOrderStats(ordRes.data.stats);
+          } else {
+            const rawOrders = Array.isArray(ordRes.data) ? ordRes.data : [];
+            setOrders(rawOrders);
+            setOrderStats({
+              total: rawOrders.length,
+              pending: rawOrders.filter((o: any) => o.status === 'pending' || o.status === 'pending_confirmation').length,
+              confirmed: rawOrders.filter((o: any) => o.status === 'confirmed').length,
+              completed: rawOrders.filter((o: any) => o.status === 'completed' || o.status === 'delivered').length,
+              cancelled: rawOrders.filter((o: any) => o.status === 'cancelled').length,
+              totalRevenue: rawOrders.reduce((sum: number, o: any) => (['confirmed', 'completed', 'delivered'].includes(o.status) ? sum + (Number(o.total_amount) || 0) : sum), 0)
+            });
+          }
         } catch (e) {
           console.error('Failed to load tshirts for community', e);
         }
@@ -457,18 +517,83 @@ export default function CommunityDetailEditor() {
         ? productForm.sizes.split(',').map(s => s.trim()).filter(Boolean)
         : productForm.sizes;
 
-      await apiClient.post(`/community-tshirts/${categoryId}/products`, {
+      const payload = {
         name: productForm.name,
         price: Number(productForm.price),
         sizes: sizesArray,
         description: productForm.description,
         image_url: productForm.image_url,
-      });
-      showToast('Product updated successfully!');
+        collection_date: productForm.collection_date || null
+      };
+
+      if (productForm.id) {
+        await apiClient.put(`/community-tshirts/${categoryId}/products/${productForm.id}`, payload);
+        showToast('Product updated successfully!');
+      } else {
+        await apiClient.post(`/community-tshirts/${categoryId}/products`, payload);
+        showToast('Product created successfully!');
+      }
+
       setProductModal(false);
+      setProductForm({ name: '', price: 1200, sizes: 'S, M, L, XL, XXL', description: '', image_url: '', collection_date: '' });
       await loadCategoryData();
     } catch (e) {
       alert('Failed to save product');
+    }
+  };
+
+  const handleDeleteProduct = async (id: number) => {
+    if (!confirm('Are you sure you want to remove this product from the catalog?')) return;
+    try {
+      await apiClient.delete(`/community-tshirts/${categoryId}/products/${id}`);
+      showToast('Product removed');
+      await loadCategoryData();
+    } catch (e) {
+      alert('Failed to delete product');
+    }
+  };
+
+  const handleConfirmCommunityOrder = async (orderId: number) => {
+    setOrderActionLoading(orderId);
+    try {
+      await apiClient.patch(`/community-tshirts/orders/${orderId}/confirm`);
+      showToast(`Order #${orderId} confirmed!`);
+      await loadCategoryData();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to confirm order');
+    } finally {
+      setOrderActionLoading(null);
+    }
+  };
+
+  const handleCompleteCommunityOrder = async (orderId: number) => {
+    setOrderActionLoading(orderId);
+    try {
+      await apiClient.patch(`/community-tshirts/orders/${orderId}/complete`);
+      showToast(`Order #${orderId} marked as delivered!`);
+      await loadCategoryData();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to complete order');
+    } finally {
+      setOrderActionLoading(null);
+    }
+  };
+
+  const handleCancelCommunityOrder = async () => {
+    if (!cancelOrderModal) return;
+    setOrderActionLoading(cancelOrderModal.id);
+    try {
+      await apiClient.patch(`/community-tshirts/orders/${cancelOrderModal.id}/cancel`, {
+        reason: orderRejectionReason
+      });
+      showToast(`Order #${cancelOrderModal.id} cancelled`);
+      setCancelOrderModal(null);
+      setOrderRejectionReason('');
+      await loadCategoryData();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to cancel order');
+    } finally {
+      setOrderActionLoading(null);
     }
   };
 
@@ -913,111 +1038,319 @@ export default function CommunityDetailEditor() {
           {/* T-SHIRTS & ORDERS TAB */}
           {activeTab === 'tshirts' && (
             <div className="space-y-6">
-              <div className="flex gap-2 border-b border-slate-800 pb-3">
-                <button
-                  onClick={() => setTshirtTab('products')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tshirtTab === 'products' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-                >
-                  Merchandise Catalog ({products.length})
-                </button>
-                <button
-                  onClick={() => setTshirtTab('orders')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${tshirtTab === 'orders' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-                >
-                  Customer Orders ({orders.length})
-                </button>
+              {/* Sub-nav Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setTshirtTab('products')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+                      tshirtTab === 'products'
+                        ? 'bg-slate-900 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Shirt size={14} /> Merchandise Catalog ({products.length})
+                  </button>
+                  <button
+                    onClick={() => setTshirtTab('orders')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+                      tshirtTab === 'orders'
+                        ? 'bg-slate-900 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <ShoppingBag size={14} /> Member Orders ({orders.length})
+                  </button>
+                </div>
+
+                {tshirtTab === 'products' && (
+                  <button
+                    onClick={() => {
+                      setProductForm({
+                        name: '',
+                        price: 1200,
+                        sizes: 'S, M, L, XL, XXL',
+                        description: '',
+                        image_url: '',
+                        collection_date: ''
+                      });
+                      setProductModal(true);
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
+                    style={{ background: accentColor }}
+                  >
+                    <Plus size={14} /> Add Product
+                  </button>
+                )}
               </div>
 
               {tshirtTab === 'products' ? (
+                /* ── Product Catalog ── */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map(prod => (
-                    <div key={prod.id} className="border border-slate-800 rounded-2xl p-4 bg-slate-800/70 flex flex-col justify-between">
+                    <div key={prod.id} className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
                       <div>
                         {prod.image_url ? (
-                          <img src={prod.image_url} alt={prod.name} className="w-full h-40 object-cover rounded-xl mb-3" />
+                          <div className="relative rounded-2xl overflow-hidden mb-4 border border-slate-100 bg-slate-50">
+                            <img src={prod.image_url} alt={prod.name} className="w-full h-48 object-cover group-hover:scale-102 transition-transform duration-300" />
+                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-indigo-700 shadow-xs">
+                              Sample
+                            </div>
+                          </div>
                         ) : (
-                          <div className="w-full h-40 bg-slate-700/60 rounded-xl flex items-center justify-center text-slate-400 mb-3">
-                            <ShoppingBag size={32} />
+                          <div className="w-full h-48 bg-gradient-to-br from-indigo-50/60 to-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 mb-4 border border-slate-100">
+                            <Shirt size={36} className="text-slate-300 mb-2" />
+                            <span className="text-[11px] font-bold text-slate-400">No Image Preview Set</span>
                           </div>
                         )}
-                        <h4 className="font-black text-white">{prod.name}</h4>
-                        <p className="text-xs text-slate-400 mt-1">{prod.description || 'Community attire'}</p>
-                        <p className="text-base font-black text-sky-400 mt-2">KES {prod.price.toLocaleString()}</p>
+
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-black text-slate-900 text-base">{prod.name}</h4>
+                          <span className="text-sm font-black text-indigo-700 px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-100 whitespace-nowrap">
+                            KES {prod.price.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
+                          {prod.description || 'Official community uniform / ministry attire.'}
+                        </p>
+
+                        {/* Sizes */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase mr-1">Sizes:</span>
+                          {(Array.isArray(prod.sizes) ? prod.sizes : (prod.sizes || 'S, M, L, XL, XXL').split(',')).map((s: string, idx: number) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-black uppercase border border-slate-200/60">
+                              {s.trim()}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Collection Date */}
+                        {prod.collection_date && (
+                          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-amber-800 text-xs font-bold">
+                            <Calendar size={13} className="text-amber-600 shrink-0" />
+                            <span>Collection: {new Date(prod.collection_date).toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                        )}
                       </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 mt-5 pt-4 border-t border-slate-100">
+                        <button
+                          onClick={() => {
+                            setProductForm({
+                              id: prod.id,
+                              name: prod.name,
+                              price: prod.price,
+                              sizes: Array.isArray(prod.sizes) ? prod.sizes.join(', ') : (prod.sizes || 'S, M, L, XL, XXL'),
+                              description: prod.description || '',
+                              image_url: prod.image_url || '',
+                              collection_date: prod.collection_date ? prod.collection_date.split('T')[0] : ''
+                            });
+                            setProductModal(true);
+                          }}
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Edit2 size={13} /> Edit Details
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(prod.id)}
+                          className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                          title="Delete Product"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {products.length === 0 && (
+                    <div className="col-span-full text-center py-16 bg-slate-50/70 rounded-3xl border border-slate-200">
+                      <Shirt size={40} className="mx-auto text-slate-300 mb-3" />
+                      <p className="text-slate-700 font-bold text-sm">No merchandise products configured yet.</p>
+                      <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto">Add your community's official T-shirt or polo so members can order it from their dashboard.</p>
                       <button
                         onClick={() => {
                           setProductForm({
-                            name: prod.name,
-                            price: prod.price,
-                            sizes: Array.isArray(prod.sizes) ? prod.sizes.join(', ') : (prod.sizes || 'S, M, L, XL, XXL'),
-                            description: prod.description || '',
-                            image_url: prod.image_url || '',
+                            name: `${moduleMeta?.title || 'Community'} Official T-Shirt`,
+                            price: 1200,
+                            sizes: 'S, M, L, XL, XXL',
+                            description: '',
+                            image_url: '',
+                            collection_date: ''
                           });
                           setProductModal(true);
                         }}
-                        className="mt-4 w-full py-2 bg-slate-700/80 border border-slate-600 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-600 transition"
+                        className="mt-4 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition shadow-md cursor-pointer"
                       >
-                        Edit Product Details
-                      </button>
-                    </div>
-                  ))}
-                  {products.length === 0 && (
-                    <div className="col-span-full text-center py-12">
-                      <p className="text-slate-400 font-bold text-sm">No products listed for this community yet.</p>
-                      <button onClick={() => setProductModal(true)} className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">
                         Add First Product
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-[10px] font-black uppercase text-slate-400">
-                        <th className="py-3 px-3">Recipient</th>
-                        <th className="py-3 px-3">Phone</th>
-                        <th className="py-3 px-3">Size & Qty</th>
-                        <th className="py-3 px-3">Amount</th>
-                        <th className="py-3 px-3">Status</th>
-                        <th className="py-3 px-3 text-right">Update</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map(order => (
-                        <tr key={order.id} className="border-b border-slate-800 hover:bg-slate-800/50 text-xs text-slate-200">
-                          <td className="py-3 px-3 font-bold text-white">{order.recipient_name}</td>
-                          <td className="py-3 px-3 text-slate-400">{order.phone}</td>
-                          <td className="py-3 px-3 text-slate-300 font-medium">Size {order.size} (Qty: {order.quantity})</td>
-                          <td className="py-3 px-3 font-bold text-emerald-400">KES {order.total_amount?.toLocaleString()}</td>
-                          <td className="py-3 px-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              order.status === 'delivered' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
-                              order.status === 'shipped' ? 'bg-blue-950 text-blue-300 border border-blue-800' :
-                              order.status === 'processing' ? 'bg-purple-950 text-purple-300 border border-purple-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
-                            }`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <select
-                              value={order.status}
-                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                              className="text-[11px] p-1.5 border border-slate-700 rounded-lg bg-slate-800 text-white focus:outline-none"
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="processing">Processing</option>
-                              <option value="shipped">Shipped</option>
-                              <option value="delivered">Delivered</option>
-                            </select>
-                          </td>
-                        </tr>
+                /* ── Orders Board ── */
+                <div className="space-y-4">
+                  {/* Order KPIs */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                      <span className="text-[10px] font-black uppercase text-slate-400">Total Orders</span>
+                      <p className="text-xl font-black text-slate-900 mt-1">{orderStats.total}</p>
+                    </div>
+                    <div className="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-200">
+                      <span className="text-[10px] font-black uppercase text-amber-700">Pending Review</span>
+                      <p className="text-xl font-black text-amber-700 mt-1">{orderStats.pending}</p>
+                    </div>
+                    <div className="bg-blue-50/60 p-3.5 rounded-2xl border border-blue-200">
+                      <span className="text-[10px] font-black uppercase text-blue-700">Confirmed</span>
+                      <p className="text-xl font-black text-blue-700 mt-1">{orderStats.confirmed}</p>
+                    </div>
+                    <div className="bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-200">
+                      <span className="text-[10px] font-black uppercase text-emerald-700">Delivered</span>
+                      <p className="text-xl font-black text-emerald-700 mt-1">{orderStats.completed}</p>
+                    </div>
+                  </div>
+
+                  {/* Filter tabs & Search */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar">
+                      {[
+                        { id: 'all', label: 'All' },
+                        { id: 'pending', label: 'Pending' },
+                        { id: 'confirmed', label: 'Confirmed' },
+                        { id: 'completed', label: 'Delivered' },
+                        { id: 'cancelled', label: 'Cancelled' },
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setOrderStatusFilter(tab.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                            orderStatusFilter === tab.id
+                              ? 'bg-slate-900 text-white shadow-xs'
+                              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
                       ))}
-                    </tbody>
-                  </table>
-                  {orders.length === 0 && (
-                    <p className="text-center py-10 text-slate-500 text-xs font-semibold">No orders recorded for this community.</p>
-                  )}
+                    </div>
+
+                    <div className="relative w-full sm:w-56">
+                      <input
+                        type="text"
+                        placeholder="Search orders..."
+                        value={orderSearch}
+                        onChange={(e) => setOrderSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 bg-white focus:outline-none focus:border-blue-500"
+                      />
+                      <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    </div>
+                  </div>
+
+                  {/* Orders Table */}
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                        <tr className="text-[10px] font-black uppercase tracking-wider">
+                          <th className="py-3 px-4">Ref / Date</th>
+                          <th className="py-3 px-4">Recipient</th>
+                          <th className="py-3 px-4">Phone / M-Pesa</th>
+                          <th className="py-3 px-4">Size &amp; Qty</th>
+                          <th className="py-3 px-4">Amount</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                        {orders.map(order => {
+                          const isPending = order.status === 'pending' || order.status === 'pending_confirmation';
+                          const isConfirmed = order.status === 'confirmed';
+                          const isDelivered = order.status === 'completed' || order.status === 'delivered';
+                          const isCancelled = order.status === 'cancelled';
+
+                          return (
+                            <tr key={order.id} className="hover:bg-slate-50/70 transition-colors font-medium">
+                              <td className="py-3 px-4">
+                                <div className="font-mono font-bold text-slate-900">#{order.id}</div>
+                                <div className="text-[10px] text-slate-400">
+                                  {order.created_at ? new Date(order.created_at).toLocaleDateString('en-KE', { month: 'short', day: 'numeric' }) : '—'}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 font-bold text-slate-900">{order.recipient_name}</td>
+                              <td className="py-3 px-4">
+                                <div className="font-mono text-slate-800">{order.phone}</div>
+                                {order.mpesa_code && (
+                                  <span className="font-mono text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 inline-block mt-0.5">
+                                    {order.mpesa_code}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="font-black px-2 py-0.5 bg-slate-100 text-slate-800 rounded-md text-[11px]">{order.size}</span>
+                                <span className="ml-1 text-slate-500 font-semibold">&times; {order.quantity}</span>
+                              </td>
+                              <td className="py-3 px-4 font-black text-slate-900">
+                                KES {Number(order.total_amount || 0).toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4">
+                                {isPending && <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1"><Clock size={10} /> Pending</span>}
+                                {isConfirmed && <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1"><CheckCircle2 size={10} /> Confirmed</span>}
+                                {isDelivered && <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1"><PackageCheck size={10} /> Delivered</span>}
+                                {isCancelled && <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1"><XCircle size={10} /> Cancelled</span>}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {isPending && (
+                                    <button
+                                      onClick={() => handleConfirmCommunityOrder(order.id)}
+                                      disabled={orderActionLoading === order.id}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold shadow-xs transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                      title="Confirm Payment"
+                                    >
+                                      <Check size={11} /> Confirm
+                                    </button>
+                                  )}
+                                  {isConfirmed && (
+                                    <button
+                                      onClick={() => handleCompleteCommunityOrder(order.id)}
+                                      disabled={orderActionLoading === order.id}
+                                      className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold shadow-xs transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                      title="Mark as Delivered"
+                                    >
+                                      <PackageCheck size={11} /> Done
+                                    </button>
+                                  )}
+                                  {(isPending || isConfirmed) && (
+                                    <button
+                                      onClick={() => setCancelOrderModal(order)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                      title="Cancel Order"
+                                    >
+                                      <XCircle size={14} />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => setSelectedOrderDetail(order)}
+                                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                                    title="View Details / Receipt"
+                                  >
+                                    <Eye size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    {orders.length === 0 && (
+                      <div className="text-center py-12 text-slate-400">
+                        <ShoppingBag size={32} className="mx-auto text-slate-300 mb-2" />
+                        <p className="text-xs font-bold text-slate-500">No orders recorded for this community.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1537,71 +1870,196 @@ export default function CommunityDetailEditor() {
         </div>
       )}
 
-      {/* Modal for T-Shirt Product */}
+      {/* Modal for T-Shirt Product Add/Edit */}
       {productModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 text-slate-900 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 text-slate-900 animate-scale-up">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-lg font-black text-slate-900">Manage Merchandise</h3>
-                <p className="text-xs text-slate-500 font-medium">{moduleMeta?.title || categoryId} • Attire & Orders</p>
+                <h3 className="text-lg font-black text-slate-900">{productForm.id ? 'Edit Merchandise Product' : 'Add New Merchandise'}</h3>
+                <p className="text-xs text-slate-500 font-medium">{moduleMeta?.title || categoryId} • Community Uniform &amp; Attire</p>
               </div>
               <button onClick={() => setProductModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition text-slate-600 cursor-pointer"><X size={14} /></button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div>
-                <label className="text-xs font-bold text-slate-700">Product Title</label>
+                <label className="text-xs font-bold text-slate-700">Product Title *</label>
                 <input
                   type="text"
                   placeholder="e.g. Official Choir Polo T-Shirt"
                   value={productForm.name}
                   onChange={(e) => setProductForm(v => ({ ...v, name: e.target.value }))}
-                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-semibold"
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Price (KES)</label>
+                  <label className="text-xs font-bold text-slate-700">Price (KES) *</label>
                   <input
                     type="number"
                     value={productForm.price}
                     onChange={(e) => setProductForm(v => ({ ...v, price: Number(e.target.value) }))}
-                    className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-medium"
+                    className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-bold"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700">Sizes (comma separated)</label>
+                  <label className="text-xs font-bold text-slate-700">Expected Collection Date</label>
                   <input
-                    type="text"
-                    value={productForm.sizes}
-                    onChange={(e) => setProductForm(v => ({ ...v, sizes: e.target.value }))}
-                    className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-medium"
+                    type="date"
+                    value={productForm.collection_date}
+                    onChange={(e) => setProductForm(v => ({ ...v, collection_date: e.target.value }))}
+                    className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-medium"
                   />
                 </div>
               </div>
+
               <div>
-                <label className="text-xs font-bold text-slate-700">Image URL</label>
+                <label className="text-xs font-bold text-slate-700">Sizes Available (comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="S, M, L, XL, XXL"
+                  value={productForm.sizes}
+                  onChange={(e) => setProductForm(v => ({ ...v, sizes: e.target.value }))}
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700">T-Shirt Sample Image URL</label>
                 <input
                   type="url"
-                  placeholder="https://..."
+                  placeholder="https://... (direct link to sample photo)"
                   value={productForm.image_url}
                   onChange={(e) => setProductForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
                 />
+                {productForm.image_url && (
+                  <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 h-28 bg-slate-50">
+                    <img src={productForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
+
               <div>
-                <label className="text-xs font-bold text-slate-700">Description</label>
+                <label className="text-xs font-bold text-slate-700">Description / Fabric Info</label>
                 <textarea
                   rows={2}
+                  placeholder="e.g. 100% combed cotton, embroidered crest, unisex sizing."
                   value={productForm.description}
                   onChange={(e) => setProductForm(v => ({ ...v, description: e.target.value }))}
-                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium resize-none"
                 />
               </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button onClick={() => setProductModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer">Cancel</button>
-                <button onClick={handleSaveProduct} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer" style={{ background: accentColor }}>Save Product</button>
+                <button onClick={handleSaveProduct} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer" style={{ background: accentColor }}>
+                  {productForm.id ? 'Update Product' : 'Create Product'}
+                </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Cancel Order */}
+      {cancelOrderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 text-slate-900 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-center gap-2 text-rose-600">
+                <XCircle size={18} />
+                <h3 className="font-black text-slate-900">Cancel Order #{cancelOrderModal.id}</h3>
+              </div>
+              <button onClick={() => setCancelOrderModal(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"><X size={14} /></button>
+            </div>
+            <p className="text-xs text-slate-600 mb-3">
+              Cancel the order for <strong>{cancelOrderModal.recipient_name}</strong>? Their order status will change to <em>Cancelled</em>.
+            </p>
+            <div>
+              <label className="text-[10px] font-black uppercase text-slate-700 block mb-1">Reason for Cancellation</label>
+              <textarea
+                rows={3}
+                placeholder="e.g. M-Pesa transaction code not verified, out of stock, or member requested cancellation."
+                value={orderRejectionReason}
+                onChange={(e) => setOrderRejectionReason(e.target.value)}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-rose-500 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-100">
+              <button onClick={() => setCancelOrderModal(null)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200">Go Back</button>
+              <button
+                onClick={handleCancelCommunityOrder}
+                disabled={orderActionLoading === cancelOrderModal.id}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition disabled:opacity-50 cursor-pointer"
+              >
+                {orderActionLoading === cancelOrderModal.id ? 'Processing...' : 'Confirm Cancellation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Order Detail / Receipt */}
+      {selectedOrderDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 text-slate-900 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                  <Shirt size={16} />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-sm">Order #{selectedOrderDetail.id} Details</h3>
+                  <p className="text-[10px] text-slate-500">{moduleMeta?.title || categoryId} Attire</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedOrderDetail(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"><X size={14} /></button>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-slate-50">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Recipient</span>
+                <span className="font-black text-slate-900">{selectedOrderDetail.recipient_name}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-50">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Phone</span>
+                <span className="font-mono font-bold text-slate-900">{selectedOrderDetail.phone}</span>
+              </div>
+              {selectedOrderDetail.mpesa_code && (
+                <div className="flex justify-between py-1 border-b border-slate-50">
+                  <span className="text-slate-400 font-bold uppercase text-[10px]">M-Pesa Ref</span>
+                  <span className="font-mono font-black text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{selectedOrderDetail.mpesa_code}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-1 border-b border-slate-50">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Specification</span>
+                <span className="font-bold text-slate-900">Size {selectedOrderDetail.size} &times; {selectedOrderDetail.quantity}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-50">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Status</span>
+                <span className="font-black uppercase text-indigo-600 text-[10px]">{selectedOrderDetail.status}</span>
+              </div>
+              {selectedOrderDetail.rejection_reason && (
+                <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-700 text-xs mt-2">
+                  <span className="font-bold block text-[10px] uppercase text-rose-800 mb-0.5">Cancellation Reason</span>
+                  {selectedOrderDetail.rejection_reason}
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-3 border-t border-slate-200 mt-2">
+                <span className="font-black text-slate-500 uppercase text-[10px]">Total Amount</span>
+                <span className="text-lg font-black text-slate-900">KES {Number(selectedOrderDetail.total_amount || 0).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5 pt-3 border-t border-slate-100">
+              <button onClick={() => window.print()} className="flex-1 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <Printer size={13} /> Print
+              </button>
+              <button onClick={() => setSelectedOrderDetail(null)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer">
+                Close
+              </button>
             </div>
           </div>
         </div>
