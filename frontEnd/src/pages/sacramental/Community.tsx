@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useCommunityData } from './context/CommunityDataContext';
+import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../api/axiosInstance';
 import CommunityDetail from './CommunityDetail';
 import CommunityAboutTab from './components/tabs/CommunityAboutTab';
-import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots, FaChurch } from 'react-icons/fa';
+import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots, FaChurch, FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
 import { FaBars } from 'react-icons/fa';
 
 const MINISTRY_COLORS: Record<string, string> = {
@@ -51,7 +52,27 @@ const GROUP_MODULE_IDS = new Set(['choir', 'dancers', 'charismatic', 'st-francis
 
 const Community: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { modules } = useCommunityData();
+
+  // Fetch logged-in user's community enrollments
+  const { data: myCommunitiesData } = useQuery({
+    queryKey: ['my-communities'],
+    queryFn: async () => {
+      const res = await apiClient.get('/community-enrollment/my-communities');
+      return res.data?.communities || [];
+    },
+    enabled: !!user,
+    staleTime: 60000,
+  });
+
+  const myCommunities: Array<{
+    module_id: string;
+    status: string;
+    joined_at: string;
+    module_title?: string;
+    full_name?: string;
+  }> = myCommunitiesData || [];
 
   // The hub is public — every visitor sees all five groups plus the
   // Jumuiyas card. Role restrictions live on the ADMIN side only
@@ -141,6 +162,90 @@ const Community: React.FC = () => {
             </div>
           </button>
         </div>
+
+        {/* My Communities — logged-in members see their enrollment status */}
+        {user && myCommunities.length > 0 && (
+          <div className="my-communities-section animate-fade-in" style={{ marginTop: '2.5rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>
+              My Communities
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {myCommunities.map((c) => {
+                const color = MINISTRY_COLORS[c.module_id] || '#1e3a5f';
+                const statusConfig: Record<string, { icon: React.ReactNode; bg: string; text: string; label: string }> = {
+                  Approved: { icon: <FaCheckCircle size={12} />, bg: '#dcfce7', text: '#166534', label: 'Approved' },
+                  Pending: { icon: <FaClock size={12} />, bg: '#fef9c3', text: '#854d0e', label: 'Pending' },
+                  Rejected: { icon: <FaTimesCircle size={12} />, bg: '#fee2e2', text: '#991b1b', label: 'Rejected' },
+                };
+                const s = statusConfig[c.status] || statusConfig.Pending;
+                return (
+                  <button
+                    key={c.module_id}
+                    type="button"
+                    onClick={() => navigate(`/community/${c.module_id}`)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.875rem 1rem',
+                      borderRadius: '14px',
+                      border: `1px solid ${color}22`,
+                      background: '#fff',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 10,
+                          background: `${color}18`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color,
+                          fontSize: '0.9rem',
+                          fontWeight: 800,
+                        }}
+                      >
+                        {c.module_id?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>
+                          {c.module_title || c.module_id}
+                        </div>
+                        {c.joined_at && (
+                          <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                            Joined {new Date(c.joined_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        background: s.bg,
+                        color: s.text,
+                      }}
+                    >
+                      {s.icon}
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Footer Info */}
         <div className="landing-footer">
