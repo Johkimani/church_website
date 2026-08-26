@@ -122,6 +122,10 @@ const CommunityJoinPage: React.FC = () => {
 
   const checkDuplicatePhone = useCallback(async (phone: string) => {
     if (!phone || phone.length < 10) return;
+    // If we already know the enrollment status from the dedicated query,
+    // skip this duplicate check — it would just cause a flicker fight.
+    // Also skip while the query is still loading for logged-in users.
+    if (existingEnrollment !== undefined || (isLoggedIn && checkingExisting)) return;
     setChecking(true);
     try {
       const res = await apiClient.get(`/community-enrollment/${moduleIdClean}/check-duplicate`, { params: { phone } });
@@ -131,7 +135,7 @@ const CommunityJoinPage: React.FC = () => {
       }
     } catch { /* silent */ }
     setChecking(false);
-  }, [moduleIdClean]);
+  }, [moduleIdClean, existingEnrollment, isLoggedIn, checkingExisting]);
 
   useEffect(() => {
     if (form.phone.length >= 10) {
@@ -139,6 +143,13 @@ const CommunityJoinPage: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [form.phone, checkDuplicatePhone]);
+
+  // Clear the "duplicate" banner if the dedicated query finds the enrollment
+  useEffect(() => {
+    if (existingEnrollment && result === 'duplicate') {
+      setResult(null);
+    }
+  }, [existingEnrollment, result]);
 
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
