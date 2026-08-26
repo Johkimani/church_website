@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/axiosInstance';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaUser, FaPhone, FaEnvelope, FaGraduationCap, FaMusic, FaCheck, FaArrowLeft, FaSpinner, FaExclamationCircle, FaHeart } from 'react-icons/fa';
+import { FaUser, FaPhone, FaEnvelope, FaGraduationCap, FaMusic, FaCheck, FaArrowLeft, FaSpinner, FaExclamationCircle, FaHeart, FaClock, FaTimes, FaRedo, FaUsers } from 'react-icons/fa';
 import { useCommunityData } from './context/CommunityDataContext';
 import { useAuth } from '../../context/AuthContext';
 import type { CommunityModule } from './context/CommunityDataContext';
@@ -64,6 +64,23 @@ const CommunityJoinPage: React.FC = () => {
   });
 
   const isLoggedIn = !!user && !!profile;
+
+  // Check if logged-in user already has an enrollment for this community
+  const { data: existingEnrollment, isLoading: checkingExisting } = useQuery({
+    queryKey: ['existing-enrollment', moduleIdClean, profile?.phone],
+    queryFn: async () => {
+      if (!profile?.phone) return null;
+      const res = await apiClient.get(`/community-enrollment/${moduleIdClean}/check-duplicate`, {
+        params: { phone: profile.phone },
+      });
+      return res.data?.enrollment || null;
+    },
+    enabled: isLoggedIn && !!profile?.phone && !!moduleIdClean,
+    staleTime: 30000,
+  });
+
+  // If user already enrolled, show status card instead of form
+  const existingStatus = existingEnrollment?.status as string | undefined;
 
   // Pre-fill form with profile data
   useEffect(() => {
@@ -221,9 +238,143 @@ const CommunityJoinPage: React.FC = () => {
       </div>
 
       <div className="max-w-lg mx-auto px-6 -mt-6 relative z-20">
-        {/* Success State */}
         <AnimatePresence mode="wait">
-          {result === 'success' ? (
+          {/* Existing enrollment status card — shown instead of form */}
+          {existingEnrollment && !result ? (
+            <motion.div
+              key="status-card"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="rounded-3xl bg-white shadow-xl overflow-hidden"
+            >
+              {/* Status-specific hero area */}
+              <div
+                className="px-8 pt-10 pb-8 text-center"
+                style={{
+                  background: existingStatus === 'Approved'
+                    ? 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)'
+                    : existingStatus === 'Rejected'
+                      ? 'linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #f87171 100%)'
+                      : `linear-gradient(135deg, ${color} 0%, ${color}cc 50%, ${color}99 100%)`,
+                }}
+              >
+                <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-white/20 backdrop-blur-sm ring-2 ring-white/30">
+                  {existingStatus === 'Approved' ? (
+                    <FaCheck size={32} className="text-white" />
+                  ) : existingStatus === 'Rejected' ? (
+                    <FaTimes size={32} className="text-white" />
+                  ) : (
+                    <FaClock size={32} className="text-white" />
+                  )}
+                </div>
+                <h2 className="text-2xl font-black text-white mb-1">
+                  {existingStatus === 'Approved'
+                    ? 'Welcome Aboard!'
+                    : existingStatus === 'Rejected'
+                      ? 'Application Not Approved'
+                      : 'Application Under Review'}
+                </h2>
+                <p className="text-white/80 text-sm">
+                  {moduleData?.title || 'Community'}
+                </p>
+              </div>
+
+              {/* Status-specific body */}
+              <div className="px-8 py-8">
+                {existingStatus === 'Pending' && (
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 text-amber-700 text-xs font-bold mb-5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                      Review in Progress
+                    </div>
+                    <p className="text-slate-600 text-sm leading-relaxed mb-2">
+                      Hi <span className="font-black">{existingEnrollment.full_name || 'there'}</span>, your application to join the{' '}
+                      <span className="font-black">{moduleData?.title || 'community'}</span> has been received and is being reviewed by the admin team.
+                    </p>
+                    <p className="text-slate-400 text-xs leading-relaxed mb-6">
+                      You'll be able to access full community features once your application is approved. Check back anytime — your status will update here.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-xs text-slate-400 mb-6">
+                      <FaClock size={11} />
+                      <span>Applied {existingEnrollment.joined_at
+                        ? new Date(existingEnrollment.joined_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                        : 'recently'}</span>
+                    </div>
+                  </div>
+                )}
+
+                {existingStatus === 'Approved' && (
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-5">
+                      <FaCheck size={10} />
+                      Active Member
+                    </div>
+                    <p className="text-slate-600 text-sm leading-relaxed mb-2">
+                      Congratulations <span className="font-black">{existingEnrollment.full_name || ''}</span>! You are now an active member of the{' '}
+                      <span className="font-black">{moduleData?.title || 'community'}</span>.
+                    </p>
+                    <p className="text-slate-400 text-xs leading-relaxed mb-6">
+                      Explore schedules, connect with fellow members, and stay updated with community activities.
+                    </p>
+                    <button
+                      onClick={() => navigate(`/community/${moduleIdClean}`)}
+                      className="w-full py-3.5 rounded-2xl text-sm font-black text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer"
+                      style={{ background: '#059669' }}
+                    >
+                      <FaUsers className="inline mr-2" size={14} />
+                      Go to Community
+                    </button>
+                  </div>
+                )}
+
+                {existingStatus === 'Rejected' && (
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 text-red-700 text-xs font-bold mb-5">
+                      <FaTimes size={10} />
+                      Not Approved
+                    </div>
+                    <p className="text-slate-600 text-sm leading-relaxed mb-2">
+                      Unfortunately, your application to join the{' '}
+                      <span className="font-black">{moduleData?.title || 'community'}</span> was not approved at this time.
+                    </p>
+                    {existingEnrollment.rejection_reason && (
+                      <p className="text-slate-500 text-xs bg-slate-50 rounded-xl p-3 mb-4">
+                        <span className="font-bold text-slate-600">Reason:</span> {existingEnrollment.rejection_reason}
+                      </p>
+                    )}
+                    <p className="text-slate-400 text-xs leading-relaxed mb-6">
+                      You may submit a new application if you'd like to try again.
+                    </p>
+                    <button
+                      onClick={() => setResult(null)}
+                      className="w-full py-3.5 rounded-2xl text-sm font-black text-white transition-all hover:scale-[1.02] shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                      style={{ background: color }}
+                    >
+                      <FaRedo size={13} />
+                      Apply Again
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer nav */}
+              <div className="px-8 pb-8 flex gap-3">
+                <button
+                  onClick={() => navigate(`/community/${moduleIdClean}`)}
+                  className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
+                >
+                  View Community
+                </button>
+                <button
+                  onClick={() => navigate('/community')}
+                  className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
+                >
+                  All Ministries
+                </button>
+              </div>
+            </motion.div>
+
+          ) : result === 'success' ? (
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.9 }}
