@@ -233,7 +233,9 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     let validToken = null;
+    let isGraceMatch = false;
 
+    // 1) Match against current tokens (normal path)
     for (const row of result.rows) {
       const isMatch = await bcrypt.compare(refreshToken, row.token);
 
@@ -242,6 +244,25 @@ export const refreshAccessToken = async (req, res) => {
         break;
       }
     }
+
+    // 2) Grace window: the token was just rotated away by a concurrent tab —
+    // accept it briefly so parallel racers re-sync instead of being logged out.
+    if (!validToken) {
+      const now = new Date();
+      for (const row of result.rows) {
+        if (
+          row.previous_token &&
+          row.previous_valid_until &&
+          new Date(row.previous_valid_until) > now &&
+          (await bcrypt.compare(refreshToken, row.previous_token))
+        ) {
+          validToken = row;
+          isGraceMatch = true;
+          break;
+        }
+      }
+    }
+
     if (!validToken) {
       return res.status(403).json({ error: "Invalid refresh token" });
     }
@@ -272,12 +293,30 @@ export const refreshAccessToken = async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 20);
 
-    // Rotate only the matched refresh token record, without invalidating other active sessions for the same user.
-    await pool.query(`DELETE FROM refresh_tokens WHERE id = $1`, [validToken.id]);
-    await pool.query(
-      `INSERT INTO refresh_tokens (member_id, token, expires_at) VALUES ($1, $2, $3)`,
-      [user.member_id, hashedToken, expiresAt]
-    );
+    // Rotate the matched refresh token record without invalidating other
+    // active sessions for the same user. The replaced token is kept in a
+    // short grace window (previous_token) so a concurrent tab presenting it
+    // rotates cleanly instead of being force-logged-out.
+    const GRACE_MS = 90 * 1000;
+    const previousValidUntil = new Date(Date.now() + GRACE_MS);
+
+    if (isGraceMatch) {
+      // The row was already rotated moments ago by a racer; refresh it in place
+      await pool.query(
+        `UPDATE refresh_tokens SET token = $1, expires_at = $2,
+                previous_token = NULL, previous_valid_until = NULL
+         WHERE id = $3`,
+        [hashedToken, expiresAt, validToken.id]
+      );
+    } else {
+      // Move the just-used token into the grace slot of the NEW row
+      await pool.query(`DELETE FROM refresh_tokens WHERE id = $1`, [validToken.id]);
+      await pool.query(
+        `INSERT INTO refresh_tokens (member_id, token, expires_at, previous_token, previous_valid_until)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [user.member_id, hashedToken, expiresAt, validToken.token, previousValidUntil]
+      );
+    }
 
     setRefreshTokenCookie(res, req, newRefreshToken);
     res.status(200).json({ accessToken: accessTokenNew });

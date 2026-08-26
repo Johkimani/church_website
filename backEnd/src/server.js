@@ -49,6 +49,7 @@ import electionTermClosingMessage from "./migrations/electionTermClosingMessage.
 import { fixPendingPaymentsCascade } from "./migrations/fixPendingPaymentsCascade.js";
 import { fixImportRecordsStatusConstraint } from "./migrations/fixImportRecordsStatusConstraint.js";
 import removeGeneralParishModule from "./migrations/removeGeneralParishModule.js";
+import { refreshTokenGraceWindow } from "./migrations/refreshTokenGraceWindow.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -215,6 +216,7 @@ const initServer = async () => {
     await electionTermClosingMessage();
     await fixImportRecordsStatusConstraint();
     await removeGeneralParishModule();
+    await refreshTokenGraceWindow();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
