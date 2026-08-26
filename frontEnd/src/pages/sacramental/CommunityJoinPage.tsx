@@ -160,7 +160,7 @@ const CommunityJoinPage: React.FC = () => {
 
   const steps = isChoir
     ? (isLoggedIn
-        ? [{ title: 'Voice & Music', fields: ['voiceType'] }]
+        ? [{ title: 'Voice & Music', fields: ['voiceType', 'yearOfStudy'] }]
         : [
             { title: 'Personal Details', fields: ['fullName', 'phone', 'gender'] },
             { title: 'Academic Info', fields: ['course', 'yearOfStudy', 'email'] },
@@ -176,6 +176,7 @@ const CommunityJoinPage: React.FC = () => {
     if (currentFields.includes('fullName') && !form.fullName.trim()) return false;
     if (currentFields.includes('phone') && form.phone.length < 10) return false;
     if (currentFields.includes('voiceType') && !form.voiceType) return false;
+    if (currentFields.includes('yearOfStudy') && !form.yearOfStudy) return false;
     return true;
   };
 
@@ -602,6 +603,28 @@ const CommunityJoinPage: React.FC = () => {
                           ))}
                         </div>
                       </div>
+
+                      {/* Year of Study (logged-in choir only — pre-filled from profile) */}
+                      {isLoggedIn && (
+                        <div>
+                          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Year of Study *</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {YEAR_OPTIONS.map((y) => (
+                              <button
+                                key={y}
+                                type="button"
+                                onClick={() => handleChange('yearOfStudy', y)}
+                                className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs ${
+                                  form.yearOfStudy === y ? 'text-white shadow-md' : 'text-slate-700 bg-slate-100 border border-slate-300 hover:bg-slate-200'
+                                }`}
+                                style={form.yearOfStudy === y ? { background: color } : {}}
+                              >
+                                {y}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Optional music classes */}
                       <label
