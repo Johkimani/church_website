@@ -15,12 +15,11 @@ import CommunityNotificationsTab from './components/tabs/CommunityNotificationsT
 import CommunityRequestTab from './components/tabs/CommunityRequestTab';
 import CommunitySuggestionsTab from './components/tabs/CommunitySuggestionsTab';
 import CommunityNoticeBoardTab from './components/tabs/CommunityNoticeBoardTab';
-import CommunityScheduleTab from './components/tabs/CommunityScheduleTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn, FaClock } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
-type TabType = 'about' | 'noticeboard' | 'schedule' | 'officials' | 'activities' | 'members' | 'channels' | 'tshirts' | 'suggestions' | 'settings' | 'request';
+type TabType = 'about' | 'noticeboard' | 'officials' | 'activities' | 'members' | 'channels' | 'tshirts' | 'suggestions' | 'settings' | 'request';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e40af',
@@ -45,7 +44,6 @@ const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396
 const TAB_ICONS: Record<TabType, React.ReactNode> = {
   about: <FaInfoCircle />,
   noticeboard: <FaBullhorn />,
-  schedule: <FaClock />,
   officials: <FaUserTie />,
   activities: <FaCalendarAlt />,
   members: <FaUsers />,
@@ -59,7 +57,6 @@ const TAB_ICONS: Record<TabType, React.ReactNode> = {
 const TAB_LABELS: Record<TabType, string> = {
   about: 'About',
   noticeboard: 'Notice Board',
-  schedule: 'Schedule',
   officials: 'Officials',
   activities: 'Activities',
   members: 'Members',
@@ -70,7 +67,7 @@ const TAB_LABELS: Record<TabType, string> = {
   request: 'Request',
 };
 
-const TAB_ORDER: TabType[] = ['about', 'noticeboard', 'schedule', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
+const TAB_ORDER: TabType[] = ['about', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
 
 const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
   choir: ['choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer', 'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative'],
@@ -149,8 +146,6 @@ const CommunityDetail: React.FC = () => {
         return <CommunityAboutTab module={moduleData} color={detailColor} onNavigateBack={() => navigate('/community')} onQuickLink={(tab) => setTabWithUrl(tab)} />;
       case 'noticeboard':
         return <CommunityNoticeBoardTab module={moduleData} color={detailColor} />;
-      case 'schedule':
-        return <CommunityScheduleTab module={moduleData} color={detailColor} />;
       case 'officials':
         return <CommunityOfficialsTab module={moduleData} color={detailColor} isAdmin={isAdmin} />;
       case 'members':
