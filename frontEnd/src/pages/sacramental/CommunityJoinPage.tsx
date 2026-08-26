@@ -51,7 +51,6 @@ const CommunityJoinPage: React.FC = () => {
   const [prefilled, setPrefilled] = useState(false);
 
   const moduleIdClean = moduleId ? moduleId.toLowerCase().replace(/[^a-z0-9-]/g, '-') : '';
-  const isLoggedIn = !!user && !!profile;
 
   // Fetch user profile to pre-fill form
   const { data: profile } = useQuery({
@@ -63,6 +62,8 @@ const CommunityJoinPage: React.FC = () => {
     enabled: !!user,
     staleTime: 300000,
   });
+
+  const isLoggedIn = !!user && !!profile;
 
   // Pre-fill form with profile data
   useEffect(() => {
