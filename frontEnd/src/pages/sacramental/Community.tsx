@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useCommunityData } from './context/CommunityDataContext';
-import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../api/axiosInstance';
 import CommunityDetail from './CommunityDetail';
 import CommunityAboutTab from './components/tabs/CommunityAboutTab';
@@ -45,14 +44,6 @@ const TAB_LABELS: Record<string, string> = {
   mentorship: 'Mentorship',
 };
 
-const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
-  choir: ['CHOIR_CHAIRPERSON', 'CHOIR_VICE_CHAIR', 'CHOIR_VICE_SECRETARY', 'CHOIR_SECRETARY', 'CHOIR_TREASURER', 'CHOIR_PROJECT_COORDINATOR', 'CHOIR_MALE_REPRESENTATIVE', 'CHOIR_FEMALE_REPRESENTATIVE'],
-  dancers: ['DANCE_CHAIR', 'DANCE_VICE_CHAIR'],
-  charismatic: ['CHARISMATIC_CHAIR', 'CHARISMATIC_VICE_CHAIR'],
-  'st-francis': ['ST_FRANCIS_CHAIR', 'ST_FRANCIS_VICE_CHAIR', 'ST_FRANCIS_SECRETARY', 'ST_FRANCIS_TREASURER'],
-  mentorship: ['MENTORSHIP_CHAIR', 'MENTORSHIP_VICE_CHAIR'],
-};
-
 // The community hub shows exactly these five groups. Anything else in
 // hub_modules (e.g. a "General Parish" entry) is not a ministry group and is
 // hidden from the grid — jumuiyas get their own dedicated card below.
@@ -61,34 +52,11 @@ const GROUP_MODULE_IDS = new Set(['choir', 'dancers', 'charismatic', 'st-francis
 const Community: React.FC = () => {
   const navigate = useNavigate();
   const { modules } = useCommunityData();
-  const { user } = useAuth();
 
-  // Determine which modules the user can access based on their role
-  let activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
-
-  if (user?.role) {
-    const userRoles = Array.isArray(user.role) ? user.role : [user.role];
-    const userRoleUpper = userRoles.map((r) => String(r).toUpperCase().trim());
-
-    // If user is global admin (CSA chair), show all modules
-    const isGlobalAdmin = userRoleUpper.includes('CSA_CHAIR') || userRoleUpper.includes('OS') || userRoleUpper.includes('JUMUIYA_COORDINATOR');
-
-    if (isGlobalAdmin) {
-      // Show all group modules
-      activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
-    } else {
-      // Filter modules based on user's group role
-      // Check each module: if any of the user's roles match this module's allowed roles, include it
-      activeModules = (modules || []).filter((mod) => {
-        const allowedRoles = GROUP_ROLES_BY_MODULE[mod.id || mod];
-        if (!allowedRoles) return false;
-        return allowedRoles.some((role) => userRoleUpper.includes(role));
-      });
-    }
-  } else {
-    // No user data; show all modules as default
-    activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
-  }
+  // The hub is public — every visitor sees all five groups plus the
+  // Jumuiyas card. Role restrictions live on the ADMIN side only
+  // (/admin/community-management via utils/adminAccess.ts).
+  const activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
 
   const handleCardClick = (moduleId: string) => {
     navigate(`/community/${moduleId}`);
