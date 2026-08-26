@@ -13,12 +13,22 @@ import {
   updateEnrollmentStatus,
   deleteEnrollment,
   getMyCommunities,
+  getMusicClassSignups,
 } from "../../controllers/communityEnrollmentController.js";
 
 const router = Router();
 
 // Authenticated: my communities (MUST be before /:moduleId to avoid route capture)
 router.get("/my-communities", verifyToken, getMyCommunities);
+
+// Admin: choir officials view music-class opt-ins (MUST be before /:moduleId)
+router.get(
+  "/:moduleId/music-class",
+  verifyToken,
+  requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
+  requireCommunityModuleScope,
+  getMusicClassSignups
+);
 
 // Public routes (optionalAuth: captures user info if logged in, but doesn't require it)
 router.post("/:moduleId", optionalAuth, verifyCaptcha, createEnrollment);

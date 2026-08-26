@@ -49,6 +49,7 @@ import electionTermClosingMessage from "./migrations/electionTermClosingMessage.
 import { fixPendingPaymentsCascade } from "./migrations/fixPendingPaymentsCascade.js";
 import { fixImportRecordsStatusConstraint } from "./migrations/fixImportRecordsStatusConstraint.js";
 import removeGeneralParishModule from "./migrations/removeGeneralParishModule.js";
+import choirMusicClassMigration from "./migrations/choirMusicClassMigration.js";
 import { refreshTokenGraceWindow } from "./migrations/refreshTokenGraceWindow.js";
 
 process.on("uncaughtException", (err) => {
@@ -216,6 +217,7 @@ const initServer = async () => {
     await electionTermClosingMessage();
     await fixImportRecordsStatusConstraint();
     await removeGeneralParishModule();
+    await choirMusicClassMigration();
     await refreshTokenGraceWindow();
 
     httpServer.on("error", (err) => {

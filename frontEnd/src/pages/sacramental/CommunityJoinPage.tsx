@@ -16,15 +16,14 @@ interface FormState {
   course: string;
   yearOfStudy: string;
   voiceType: string;
-  musicLevel: string;
+  wantsMusicClass: boolean;
 }
 
 const INITIAL_FORM: FormState = {
-  fullName: '', phone: '', email: '', gender: '', course: '', yearOfStudy: '', voiceType: '', musicLevel: '',
+  fullName: '', phone: '', email: '', gender: '', course: '', yearOfStudy: '', voiceType: '', wantsMusicClass: false,
 };
 
 const VOICE_TYPES = ['Soprano', 'Alto', 'Tenor', 'Bass', 'None'];
-const MUSIC_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'None'];
 const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', 'Graduate'];
 const COURSE_OPTIONS = ['Computer Science', 'Engineering', 'Business', 'Education', 'Medicine', 'Arts', 'Science', 'Law', 'Nursing', 'Agriculture', 'Other'];
 const GENDER_OPTIONS = ['Male', 'Female'];
@@ -52,6 +51,7 @@ const CommunityJoinPage: React.FC = () => {
   const [prefilled, setPrefilled] = useState(false);
 
   const moduleIdClean = moduleId ? moduleId.toLowerCase().replace(/[^a-z0-9-]/g, '-') : '';
+  const isLoggedIn = !!user && !!profile;
 
   // Fetch user profile to pre-fill form
   const { data: profile } = useQuery({
@@ -124,11 +124,13 @@ const CommunityJoinPage: React.FC = () => {
   };
 
   const steps = isChoir
-    ? [
-        { title: 'Personal Details', fields: ['fullName', 'phone', 'gender'] },
-        { title: 'Academic Info', fields: ['course', 'yearOfStudy', 'email'] },
-        { title: 'Voice & Music', fields: ['voiceType', 'musicLevel'] },
-      ]
+    ? (isLoggedIn
+        ? [{ title: 'Voice & Music', fields: ['voiceType'] }]
+        : [
+            { title: 'Personal Details', fields: ['fullName', 'phone', 'gender'] },
+            { title: 'Academic Info', fields: ['course', 'yearOfStudy', 'email'] },
+            { title: 'Voice & Music', fields: ['voiceType'] },
+          ])
     : [
         { title: 'Personal Details', fields: ['fullName', 'phone', 'gender'] },
         { title: 'Academic Info', fields: ['course', 'yearOfStudy', 'email'] },
@@ -159,7 +161,7 @@ const CommunityJoinPage: React.FC = () => {
         course: form.course,
         yearOfStudy: form.yearOfStudy,
         voiceType: form.voiceType || undefined,
-        musicLevel: form.musicLevel || undefined,
+        wantsMusicClass: form.wantsMusicClass,
       });
       setResult('success');
     } catch (err: any) {
@@ -229,9 +231,15 @@ const CommunityJoinPage: React.FC = () => {
               >
                 <FaCheck style={{ color }} size={32} />
               </div>
-              <h2 className="text-xl font-black text-slate-800 mb-2">Application Submitted!</h2>
+              <h2 className="text-xl font-black text-slate-800 mb-2">
+                {isLoggedIn && (profile?.firstName || profile?.first_name)
+                  ? `Welcome, ${profile.firstName || profile.first_name}!`
+                  : 'Application Submitted!'}
+              </h2>
               <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                Your enrollment request has been received. You will be notified once your application is reviewed by the {moduleData?.title} admin.
+                {isLoggedIn && (profile?.firstName || profile?.first_name)
+                  ? `Your place in the ${moduleData?.title || 'community'} is reserved${form.wantsMusicClass ? ', and we\u2019ve noted your interest in music classes' : ''}. Our team will reach out to you soon.`
+                  : 'Your enrollment request has been received. You will be notified once your application is reviewed by the ' + (moduleData?.title || 'community') + ' admin.'}
               </p>
               <div className="flex gap-3">
                 <button
@@ -389,17 +397,18 @@ const CommunityJoinPage: React.FC = () => {
                     </>
                   )}
 
-                  {/* Step 2: Voice & Music (Choir only) */}
-                  {step === 2 && isChoir && (
+                  {/* Voice & Music (Choir only — final or only step) */}
+                  {isChoir && steps[step].fields.includes('voiceType') && (
                     <>
                       <div>
-                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Choir Voice Section (SATB) *</label>
+                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Choir Voice Section *</label>
                         <div className="grid grid-cols-2 gap-2.5">
                           {[
                             { key: 'Soprano', label: 'Soprano', sub: 'High Female Voice' },
                             { key: 'Alto', label: 'Alto', sub: 'Low Female Voice' },
                             { key: 'Tenor', label: 'Tenor', sub: 'High Male Voice' },
                             { key: 'Bass', label: 'Bass', sub: 'Deep Male Voice' },
+                            { key: 'Not sure yet', label: 'Not sure yet', sub: "We'll help you find it" },
                           ].map((v) => (
                             <button
                               key={v.key}
@@ -416,29 +425,29 @@ const CommunityJoinPage: React.FC = () => {
                           ))}
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Sight-Reading & Music Level</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[
-                            { key: 'Beginner', label: 'Beginner', desc: 'Solfa Learner' },
-                            { key: 'Intermediate', label: 'Intermediate', desc: 'Sight-reader' },
-                            { key: 'Advanced', label: 'Advanced', desc: 'Soloist/Trainer' },
-                          ].map((l) => (
-                            <button
-                              key={l.key}
-                              type="button"
-                              onClick={() => handleChange('musicLevel', l.key)}
-                              className={`p-2.5 rounded-xl text-center transition-all cursor-pointer border shadow-xs ${
-                                form.musicLevel === l.key ? 'text-white shadow-md border-transparent' : 'text-slate-700 bg-slate-50 border-slate-300 hover:bg-slate-100'
-                              }`}
-                              style={form.musicLevel === l.key ? { background: color } : {}}
-                            >
-                              <div className="font-bold text-xs">{l.label}</div>
-                              <div className={`text-[9px] font-semibold mt-0.5 ${form.musicLevel === l.key ? 'text-white/80' : 'text-slate-500'}`}>{l.desc}</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+
+                      {/* Optional music classes */}
+                      <label
+                        className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                          form.wantsMusicClass ? 'shadow-md border-transparent text-white' : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
+                        }`}
+                        style={form.wantsMusicClass ? { background: color } : {}}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.wantsMusicClass}
+                          onChange={(e) => handleChange('wantsMusicClass', e.target.checked as any)}
+                          className="mt-0.5 w-4 h-4 accent-white cursor-pointer"
+                        />
+                        <span>
+                          <span className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wide">
+                            <FaMusic size={11} /> Join Music Classes
+                          </span>
+                          <span className={`block text-[11px] font-semibold mt-0.5 leading-snug ${form.wantsMusicClass ? 'text-white/80' : 'text-slate-500'}`}>
+                            Optional — tick if you'd like to learn solfa, sight-reading and vocal technique with our trainers.
+                          </span>
+                        </span>
+                      </label>
                     </>
                   )}
                 </div>

@@ -27,11 +27,12 @@ import {
   Box,
   Eye,
   Check,
-  X
+  X,
+  Music
 } from 'lucide-react';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
-type TabType = 'about' | 'activities' | 'announcements' | 'schedules' | 'members' | 'gallery' | 'tshirts' | 'suggestions';
+type TabType = 'about' | 'activities' | 'announcements' | 'schedules' | 'members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions';
 
 interface GalleryItem {
   id: number;
@@ -105,6 +106,9 @@ export default function CommunityDetailEditor() {
 
   // Community-specific Suggestions state
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
+
+  // Choir music-class opt-ins (name + phone only)
+  const [musicSignups, setMusicSignups] = useState<{ full_name: string; phone: string }[]>([]);
 
   useEffect(() => {
     loadCategoryData();
@@ -193,6 +197,19 @@ export default function CommunityDetailEditor() {
           const response = await apiClient.get('/enrollments');
           const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
           setData(items.filter((item: any) => (item.module_id === categoryId) || (item.class_id === categoryId)));
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Choir music-class opt-ins (name + phone only)
+      if (activeTab === 'music-class') {
+        try {
+          const res = await apiClient.get(`/community-enrollment/${categoryId}/music-class`);
+          setMusicSignups(Array.isArray(res.data?.data) ? res.data.data : []);
+        } catch (e) {
+          console.error('Failed to load music class signups', e);
+          setMusicSignups([]);
         }
         setLoading(false);
         return;
@@ -513,6 +530,7 @@ export default function CommunityDetailEditor() {
       icon: Clock
     },
       { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
+      ...(isChoirAdmin ? [{ id: 'music-class' as TabType, label: 'Music Class', icon: Music }] : []),
     { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
     {
       id: 'tshirts',
@@ -1037,6 +1055,50 @@ export default function CommunityDetailEditor() {
                         </span>
                       </div>
                       <p className="text-xs font-medium text-slate-200 leading-relaxed whitespace-pre-wrap">{s.suggestion}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MUSIC CLASS (choir only) — members who opted in on the join form */}
+          {activeTab === 'music-class' && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-400 font-medium">
+                Members who asked to join music classes on the choir join form. Reach out directly to arrange sessions.
+              </p>
+              {loading ? (
+                <PageLoader message="Loading sign-ups" />
+              ) : musicSignups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-500">
+                    <Music size={28} />
+                  </div>
+                  <h4 className="text-slate-300 font-bold italic">No music class sign-ups yet</h4>
+                  <p className="text-slate-500 text-sm mt-1">Members who tick "Join Music Classes" on the form will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <p className="text-xs text-slate-400 font-bold">{musicSignups.length} member{musicSignups.length !== 1 ? 's' : ''} interested</p>
+                  {musicSignups.map((s, i) => (
+                    <div
+                      key={`${s.phone}-${i}`}
+                      className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-800 bg-slate-800/70 hover:bg-slate-800 transition"
+                    >
+                      <span className="flex items-center gap-2.5 text-sm font-bold text-slate-200 min-w-0">
+                        <span className="w-8 h-8 rounded-lg bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 font-black">
+                          {(s.full_name || '?').charAt(0).toUpperCase()}
+                        </span>
+                        <span className="truncate">{s.full_name}</span>
+                      </span>
+                      <a
+                        href={`tel:${String(s.phone).replace(/[^+0-9]/g, '')}`}
+                        className="flex items-center gap-1.5 text-xs font-bold text-indigo-300 bg-indigo-950 px-2.5 py-1.5 rounded-lg hover:bg-indigo-900 transition-colors shrink-0"
+                        title={`Call ${s.full_name}`}
+                      >
+                        {s.phone}
+                      </a>
                     </div>
                   ))}
                 </div>

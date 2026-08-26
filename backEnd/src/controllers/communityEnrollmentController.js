@@ -5,7 +5,7 @@ import logger from "../logger/winston.js";
 export const createEnrollment = async (req, res) => {
   try {
     const { moduleId } = req.params;
-    const { fullName, name, phone, email, gender, course, yearOfStudy, voiceType, musicLevel } = req.body;
+    const { fullName, name, phone, email, gender, course, yearOfStudy, voiceType, wantsMusicClass } = req.body;
 
     const displayName = fullName || name;
     if (!displayName || !phone) {
@@ -47,10 +47,10 @@ export const createEnrollment = async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, year_of_study, voice_type, music_level, member_id, status, joined_at)
+      `INSERT INTO enrollments (module_id, full_name, phone, email, gender, course, year_of_study, voice_type, wants_music_class, member_id, status, joined_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'Pending', NOW())
        RETURNING *`,
-      [moduleId, displayName.trim(), userPhone, email || '', gender || null, course || null, yearOfStudy || null, voiceType || null, musicLevel || null, memberId]
+      [moduleId, displayName.trim(), userPhone, email || '', gender || null, course || null, yearOfStudy || null, voiceType || null, wantsMusicClass === true, memberId]
     );
 
     logger.info(`New enrollment: ${displayName} -> ${moduleId} (member_id: ${memberId || 'none'})`);
@@ -231,5 +231,26 @@ export const getMyCommunities = async (req, res) => {
   } catch (error) {
     logger.error("getMyCommunities error:", error.message);
     return res.status(500).json({ error: "Failed to fetch communities" });
+  }
+};
+
+/**
+ * Admin: members who opted into music classes on the choir join form.
+ * Returns only name + phone (nothing more), any enrollment status.
+ */
+export const getMusicClassSignups = async (req, res) => {
+  try {
+    const { moduleId } = req.params;
+    const result = await db.query(
+      `SELECT full_name, phone
+       FROM enrollments
+       WHERE module_id = $1 AND wants_music_class = TRUE
+       ORDER BY joined_at DESC`,
+      [moduleId]
+    );
+    return res.json({ status: "success", data: result.rows });
+  } catch (error) {
+    logger.error("getMusicClassSignups error:", error.message);
+    return res.status(500).json({ error: "Failed to fetch music class signups" });
   }
 };
