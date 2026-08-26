@@ -68,7 +68,11 @@ const CommunityJoinPage: React.FC = () => {
   // Pre-fill form with profile data
   useEffect(() => {
     if (profile && !prefilled) {
-      const name = [profile.firstName || profile.first_name, profile.lastName || profile.last_name].filter(Boolean).join(' ');
+      // /profile/me returns combined `name`; fall back to split fields for safety
+      const name = profile.name
+        || [profile.firstName || profile.first_name, profile.lastName || profile.last_name].filter(Boolean).join(' ')
+        || user?.name
+        || '';
       setForm(prev => ({
         ...prev,
         fullName: name || prev.fullName,
