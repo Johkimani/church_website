@@ -2,15 +2,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { apiClient } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
 import {
-  Wallet, TrendingUp, TrendingDown, Receipt, Download, FileSpreadsheet, Plus,
-  Pencil, Trash2, RefreshCw, Search, X, Loader2, Landmark, ArrowUpRight,
-  ArrowDownRight, Upload, FileText, ShoppingCart, Music4, AlertCircle, CheckCircle2, Check
+  Wallet, TrendingUp, TrendingDown, Receipt, Plus,
+  Trash2, RefreshCw, X, Loader2, Landmark, Upload, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
 import TreasuryScanner from './TreasuryScanner';
 import TreasuryAsOfReport from './TreasuryAsOfReport';
+import TreasuryInOut from './TreasuryInOut';
 
 interface LedgerEntry {
   id: number | string;
@@ -105,25 +103,6 @@ export default function TreasuryHub() {
   const [budgetForm, setBudgetForm] = useState({ event_name: '', target_amount: '', collected_amount: '', spent_amount: '', notes: '' });
   const [budgetError, setBudgetError] = useState('');
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
-
-  const LEDGER_EXPORT_COLUMNS = [
-    { key: 'Date', label: 'Date' },
-    { key: 'Type', label: 'Type' },
-    { key: 'Title', label: 'Title' },
-    { key: 'Category', label: 'Category' },
-    { key: 'Method', label: 'Method' },
-    { key: 'Amount', label: 'Amount' },
-    { key: 'Receipt', label: 'Receipt' },
-    { key: 'Notes', label: 'Notes' },
-  ];
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportColumns, setExportColumns] = useState<Record<string, boolean>>({
-    Date: true, Type: true, Title: true, Category: true,
-    Method: true, Amount: true, Receipt: false, Notes: false,
-  });
 
   const loadAll = useCallback(async (silent = false) => {
     if (!silent) setRefreshing(true);
@@ -196,22 +175,11 @@ export default function TreasuryHub() {
     };
   }, [ledger, siteTxns]);
 
-  const filteredLedger = useMemo(() => {
-    return ledger
-      .filter(e => typeFilter === 'all' || e.entry_type === typeFilter)
-      .filter(e => categoryFilter === 'all' || e.category === categoryFilter)
-      .filter(e => {
-        if (!searchTerm.trim()) return true;
-        const q = searchTerm.toLowerCase();
-        return e.title?.toLowerCase().includes(q) || e.category?.toLowerCase().includes(q) || String(e.amount).includes(q);
-      })
-      .sort((a, b) => new Date(b.entry_date || b.created_at || 0).getTime() - new Date(a.entry_date || a.created_at || 0).getTime());
-  }, [ledger, searchTerm, categoryFilter, typeFilter]);
 
   // ── Ledger CRUD ───────────────────────────────────────────
-  const openAdd = () => {
+  const openAdd = (side: 'income' | 'expense' = 'income') => {
     setEditingId(null);
-    setForm({ entry_type: 'income', title: '', amount: '', category: 'Dues', payment_method: 'cash', receipt_url: '', notes: '', entry_date: new Date().toISOString().slice(0, 10) });
+    setForm({ entry_type: side, title: '', amount: '', category: 'Dues', payment_method: 'cash', receipt_url: '', notes: '', entry_date: new Date().toISOString().slice(0, 10) });
     setFormError('');
     setShowLedgerModal(true);
   };
@@ -326,69 +294,6 @@ export default function TreasuryHub() {
     } catch { toast.error('Failed to remove budget'); }
   };
 
-  // ── Exports ───────────────────────────────────────────────
-  const exportExcel = () => {
-    const selected = Object.entries(exportColumns).filter(([, v]) => v).map(([k]) => k);
-    const rows = filteredLedger.map(e => {
-      const full: Record<string, any> = {
-        Date: (e.entry_date || '').slice(0, 10),
-        Type: e.entry_type, Title: e.title, Category: e.category,
-        Method: e.payment_method, Amount: Number(e.amount),
-        Receipt: e.receipt_url || '', Notes: e.notes || '',
-      };
-      const out: Record<string, any> = {};
-      selected.forEach(k => { out[k] = full[k]; });
-      return out;
-    });
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
-      { A: `CSA KYU — Treasury Statement (${kpis.semesterLabel})` }, { A: `Generated: ${new Date().toLocaleString()}` },
-      { A: `Total Balance: ${fmt(kpis.balance)}` }, { A: '' },
-    ]), 'Summary');
-    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Date: '', Type: 'No records' }]);
-    ws['!cols'] = selected.map(k => ({
-      wch: k === 'Title' || k === 'Notes' ? 35
-        : k === 'Category' || k === 'Method' ? 18
-        : k === 'Date' ? 14
-        : k === 'Amount' ? 16
-        : k === 'Receipt' ? 40
-        : 12,
-    }));
-    XLSX.utils.book_append_sheet(wb, ws, 'Ledger');
-    XLSX.writeFile(wb, `csa-treasury-statement-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    setShowExportModal(false);
-    toast.success('Excel statement downloaded');
-  };
-
-  const exportPDF = () => {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-    const W = doc.internal.pageSize.getWidth();
-    let y = 50;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
-    doc.text('CSA Kirinyaga University — Treasury Report', 40, y); y += 18;
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    doc.text(`Semester: ${kpis.semesterLabel}   |   Generated: ${new Date().toLocaleString()}`, 40, y); y += 24;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-    doc.text(`Total Balance: ${fmt(kpis.balance)}`, 40, y); y += 14;
-    doc.text(`Inflows (semester): ${fmt(kpis.semIncome)}   |   Outflows (semester): ${fmt(kpis.semExpense)}`, 40, y); y += 22;
-    doc.setFontSize(9);
-    doc.text('Date', 40, y); doc.text('Type', 110, y); doc.text('Category', 160, y); doc.text('Title', 260, y); doc.text('Amount (KES)', 480, y);
-    y += 6; doc.line(40, y, W - 40, y); y += 12;
-    doc.setFont('helvetica', 'normal');
-    const rows = filteredLedger.slice(0, 42);
-    if (rows.length === 0) { doc.text('No financial records found.', 40, y); y += 14; }
-    for (const e of rows) {
-      if (y > 780) { doc.addPage(); y = 50; }
-      doc.text((e.entry_date || '').slice(0, 10), 40, y);
-      doc.text(e.entry_type === 'income' ? 'IN' : 'OUT', 110, y);
-      doc.text((e.category || '').slice(0, 15), 160, y);
-      doc.text((e.title || '').slice(0, 34), 260, y);
-      doc.text(Number(e.amount || 0).toLocaleString(), 480, y);
-      y += 14;
-    }
-    doc.save(`csa-treasury-report-${new Date().toISOString().slice(0, 10)}.pdf`);
-    toast.success('PDF report downloaded');
-  };
 
   if (loading) {
     return (
@@ -422,12 +327,6 @@ export default function TreasuryHub() {
           <button onClick={() => loadAll()} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50">
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} /> Refresh
           </button>
-          <button onClick={() => setShowExportModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-bold text-white transition-all shadow-lg">
-            <FileSpreadsheet size={15} /> Excel
-          </button>
-          <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold text-white transition-all shadow-lg">
-            <Download size={15} /> PDF Report
-          </button>
         </div>
       </div>
 
@@ -453,154 +352,14 @@ export default function TreasuryHub() {
       {/* Statement as at a date */}
       <TreasuryAsOfReport ledger={ledger} />
 
-      {/* Site Transaction Monitor */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><Landmark size={17} /></div>
-            <div>
-              <h2 className="text-sm font-black text-slate-800">Automated Site Transaction Monitor</h2>
-              <p className="text-[11px] text-slate-400 font-medium">Digital money through the website — auto-registered</p>
-            </div>
-          </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live
-          </span>
-        </div>
-        {siteTxns.length === 0 ? (
-          <div className="text-center py-14 px-4">
-            <ShoppingCart size={36} className="mx-auto text-slate-300 mb-3" />
-            <p className="font-bold text-slate-600 text-sm">No financial records found yet</p>
-            <p className="text-xs text-slate-400 mt-1">T-shirt orders and equipment hire payments will appear here automatically.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[720px]">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 bg-slate-50/60">
-                  <th className="py-3 px-5">Code</th><th className="py-3 px-3">Source</th><th className="py-3 px-3">User</th>
-                  <th className="py-3 px-3">Detail</th><th className="py-3 px-3">Amount</th><th className="py-3 px-3">Status</th><th className="py-3 px-5">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {siteTxns.slice(0, 25).map(t => (
-                  <tr key={t.id} className="border-b border-slate-50 hover:bg-slate-50/60 text-xs transition-colors">
-                    <td className="py-3 px-5 font-mono font-bold text-slate-700">{t.code}</td>
-                    <td className="py-3 px-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${t.source === 'T-Shirt Order' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200'}`}>
-                        {t.source === 'T-Shirt Order' ? <ShoppingCart size={10} /> : <Music4 size={10} />} {t.source}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 font-semibold text-slate-700">{t.user}</td>
-                    <td className="py-3 px-3 text-slate-500 max-w-[180px] truncate">{t.detail}</td>
-                    <td className="py-3 px-3 font-black text-emerald-600">{fmt(t.amount)}</td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${['paid','success','delivered','completed'].includes(t.status.toLowerCase()) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : t.status.toLowerCase() === 'cancelled' ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-5 text-slate-400 whitespace-nowrap">{t.date ? new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Ledger & Expense Manager */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><FileText size={17} /></div>
-            <div>
-              <h2 className="text-sm font-black text-slate-800">Comprehensive Ledger & Expense Manager</h2>
-              <p className="text-[11px] text-slate-400 font-medium">Manual cash & bank records with receipt proof</p>
-            </div>
-          </div>
-          <button onClick={openAdd} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-700 transition-all shadow-md min-h-[40px]">
-            <Plus size={14} /> Add Transaction
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search title / amount…"
-              className="pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white w-44 focus:outline-none focus:border-slate-400" />
-          </div>
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value as any)}
-            className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white cursor-pointer">
-            <option value="all">All Types</option><option value="income">Income Only</option><option value="expense">Expense Only</option>
-          </select>
-          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white cursor-pointer">
-            <option value="all">All Categories</option>
-            {LEDGER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          {(searchTerm || categoryFilter !== 'all' || typeFilter !== 'all') && (
-            <button onClick={() => { setSearchTerm(''); setCategoryFilter('all'); setTypeFilter('all'); }}
-              className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-500 hover:text-slate-800">
-              <X size={13} /> Clear
-            </button>
-          )}
-        </div>
-
-        {filteredLedger.length === 0 ? (
-          <div className="text-center py-14 px-4">
-            <FileText size={36} className="mx-auto text-slate-300 mb-3" />
-            <p className="font-bold text-slate-600 text-sm">
-              {ledger.length === 0 ? 'No financial records found yet' : 'No records match your filters'}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">{ledger.length === 0 ? 'Log your first income or expense to get started.' : 'Try clearing the search or filters.'}</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[780px]">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 bg-slate-50/60">
-                  <th className="py-3 px-5">Date</th><th className="py-3 px-3">Type</th><th className="py-3 px-3">Title</th>
-                  <th className="py-3 px-3">Category</th><th className="py-3 px-3">Method</th><th className="py-3 px-3">Amount</th>
-                  <th className="py-3 px-3">Receipt</th><th className="py-3 px-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLedger.map(e => (
-                  <tr key={e.id} className="border-b border-slate-50 hover:bg-slate-50/60 text-xs transition-colors">
-                    <td className="py-3 px-5 text-slate-500 whitespace-nowrap">{(e.entry_date || '').slice(0, 10)}</td>
-                    <td className="py-3 px-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${e.entry_type === 'income' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                        {e.entry_type === 'income' ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />} {e.entry_type}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 font-bold text-slate-800 max-w-[200px] truncate">{e.title}</td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${CATEGORY_COLORS[e.category] || CATEGORY_COLORS.Other}`}>{e.category}</span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-500 capitalize">{e.payment_method || '—'}</td>
-                    <td className={`py-3 px-3 font-black ${e.entry_type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {e.entry_type === 'income' ? '+' : '−'}{fmt(Number(e.amount))}
-                    </td>
-                    <td className="py-3 px-3">
-                      {e.receipt_url ? (
-                        <a href={e.receipt_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 font-bold hover:underline">
-                          <CheckCircle2 size={13} /> View
-                        </a>
-                      ) : <span className="text-amber-500 font-bold text-[10px] uppercase">Missing</span>}
-                    </td>
-                    <td className="py-3 px-5 text-right whitespace-nowrap">
-                      <button onClick={() => openEdit(e)} className="p-2 border border-slate-200 rounded-lg hover:bg-slate-100 mr-1" title="Edit"><Pencil size={13} /></button>
-                      <button onClick={() => deleteLedger(e.id)} className="p-2 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50" title="Delete"><Trash2 size={13} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
+      {/* Inflows & Outflows - every record (website + manual) */}
+      <TreasuryInOut
+        ledger={ledger}
+        siteTxns={siteTxns}
+        onAdd={(side) => openAdd(side === "in" ? "income" : "expense")}
+        onEdit={openEdit}
+        onDelete={deleteLedger}
+      />
       {/* Budget Tracker */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
@@ -775,33 +534,6 @@ export default function TreasuryHub() {
                 {savingBudget ? <><Loader2 size={16} className="animate-spin" /> Creating…</> : 'Create Tracker'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-      {/* ── Export Column Selection Modal ── */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowExportModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="font-black text-slate-800">Export to Excel</h3>
-              <button onClick={() => setShowExportModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={16} /></button>
-            </div>
-            <p className="text-xs text-slate-500">Choose which columns to include:</p>
-            <div className="grid grid-cols-2 gap-2">
-              {LEDGER_EXPORT_COLUMNS.map(c => (
-                <button key={c.key} onClick={() => setExportColumns(prev => ({ ...prev, [c.key]: !prev[c.key] }))}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${exportColumns[c.key] ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-slate-200 text-slate-400'}`}>
-                  <div className={`w-4 h-4 rounded flex items-center justify-center border ${exportColumns[c.key] ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'}`}>
-                    {exportColumns[c.key] && <Check size={12} className="text-white" />}
-                  </div>
-                  {c.label}
-                </button>
-              ))}
-            </div>
-            <button onClick={exportExcel} disabled={Object.values(exportColumns).every(v => !v)}
-              className="w-full px-4 py-2.5 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-              Export ({filteredLedger.length} rows)
-            </button>
           </div>
         </div>
       )}
