@@ -23,9 +23,9 @@ type TabType = 'about' | 'noticeboard' | 'officials' | 'activities' | 'members' 
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e40af',
-  dancers: '#db2777',
+  dancers: '#f97316',
   charismatic: '#7c3aed',
-  'st-francis': '#047857',
+  'st-francis': '#1d4ed8',
   youth: '#6d28d9',
   mentorship: '#6d28d9',
 };

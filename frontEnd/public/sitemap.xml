@@ -1,67 +1,183 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://csakyu.com/</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://csakyu.com/devotions</loc>
+    <loc>https://csakyu.com/community</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/community/choir</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://csakyu.com/community/dancers</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/community/charismatic</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/community/st-francis</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/community/youth</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/community/mentorship</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/join</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/devotions</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://csakyu.com/devotions/readings</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/devotions/daily-liturgy</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://csakyu.com/devotions/bible</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://csakyu.com/devotions/rosary</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://csakyu.com/devotions/liturgy</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://csakyu.com/gallery</loc>
+    <loc>https://csakyu.com/devotions/all-prayers</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/devotions/prayers-of-the-mass</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/devotions/liturgical-seasons</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/officials</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://csakyu.com/officials</loc>
+    <loc>https://csakyu.com/gallery</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://csakyu.com/jumuiya</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://csakyu.com/projects</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://csakyu.com/community</loc>
+    <loc>https://csakyu.com/activities</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://csakyu.com/projects</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/sacramentals</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/t-shirts</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/chairs</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/instruments</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://csakyu.com/other-projects</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://csakyu.com/privacy</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://csakyu.com/terms</loc>
+    <lastmod>2026-08-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
