@@ -24,3 +24,6 @@ cleanup_db.js
 localFileUploads/
 galleryImages/
 tmp/
+
+eng.traineddata
+*.traineddata

@@ -52,6 +52,7 @@ import communityEnrollmentRouter from "./communityEnrollmentRouter.js";
 import jumuiyaNotificationsRouter from "./jumuiyaNotificationsRouter.js";
 import serialConfigRouter from "./serialConfigRouter.js";
 import jumuiyaTshirtsRouter from "./jumuiyaTshirtsRouter.js";
+import treasuryRouter from "./treasuryRoutes.js";
 
 // Audit trail: records every authenticated admin mutation (who/what/when).
 // Mounted first so it wraps every request in this router; it only writes on
@@ -159,7 +160,8 @@ router.use("/purchase-receipts", purchaseReceiptsRouter);
 
 // WhatsApp group links (user-scoped fetch + admin management)
 router.use("/whatsapp-links", whatsappLinksRouter);
-
+// Treasury: OCR scan of written/printed records pages (officials)
+router.use("/treasury", treasuryRouter);
 // User profile (self-service get + update)
 router.use("/profile", profileRoutes);
 

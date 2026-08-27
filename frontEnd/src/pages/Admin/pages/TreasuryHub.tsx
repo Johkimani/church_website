@@ -9,6 +9,8 @@ import {
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import TreasuryScanner from './TreasuryScanner';
+import TreasuryAsOfReport from './TreasuryAsOfReport';
 
 interface LedgerEntry {
   id: number | string;
@@ -444,6 +446,12 @@ export default function TreasuryHub() {
           </div>
         ))}
       </div>
+
+      {/* OCR Scan: written/printed records page → ledger */}
+      <TreasuryScanner onSaved={() => loadAll(true)} recordedBy={user?.name || user?.email || 'treasurer'} />
+
+      {/* Statement as at a date */}
+      <TreasuryAsOfReport ledger={ledger} />
 
       {/* Site Transaction Monitor */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
