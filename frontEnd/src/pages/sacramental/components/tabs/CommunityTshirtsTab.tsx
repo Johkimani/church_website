@@ -164,22 +164,26 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
               />
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-6 relative z-10">
-              {[
-                { value: `KES ${price.toLocaleString()}`, label: 'Price' },
-                { value: sizes.join(' – '), label: 'Sizes' },
-                { value: '3–5 Days', label: 'Delivery' },
-              ].map((stat, i) => (
-                <div key={i} className="text-center p-4 rounded-2xl bg-white" style={{ border: `1px solid ${color}15` }}>
-                  <div className="font-extrabold text-lg" style={{ color }}>{stat.value}</div>
-                  <div className="text-xs text-slate-400 font-semibold mt-1">{stat.label}</div>
+            {/* Product name + price (ecommerce style) */}
+            <div className="relative z-10 mb-4">
+              {product?.name && (
+                <h2 className="text-xl font-black text-slate-900 leading-tight">{product.name}</h2>
+              )}
+              <div className="flex items-end justify-between mt-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black" style={{ color }}>KES {price.toLocaleString()}</span>
                 </div>
-              ))}
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                  <FaCheck size={10} /> In Stock
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                <FaTruck size={11} /> Delivery in 3–5 days · Available sizes: {sizes.join(', ')}
+              </p>
             </div>
 
             {/* Size chart link */}
-            <div className="text-center mb-6 relative z-10">
+            <div className="relative z-10 mb-5">
               <button
                 onClick={() => setShowSizeChart(true)}
                 className="inline-flex items-center gap-2 text-xs font-bold underline decoration-dotted underline-offset-4 cursor-pointer transition-colors hover:opacity-80"
@@ -190,7 +194,7 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
             </div>
 
             {product?.description && (
-              <p className="text-slate-600 text-sm font-medium mb-4 relative z-10">{product.description}</p>
+              <p className="text-slate-600 text-sm font-medium mb-5 relative z-10 leading-relaxed">{product.description}</p>
             )}
 
             {!showOrderForm && !orderSuccess ? (
