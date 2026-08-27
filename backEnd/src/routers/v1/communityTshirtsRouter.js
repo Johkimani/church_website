@@ -1,5 +1,6 @@
 import { Router } from "express";
 import verifyToken from "../../middlewares/Tokens.js";
+import { uploadTshirtMiddleware } from "../../middlewares/uploadMiddleware.js";
 import {
   getProducts,
   createProduct,
@@ -18,8 +19,8 @@ const router = Router();
 
 // ── Products ──────────────────────────────────────────────
 router.get("/:moduleId/products", getProducts);
-router.post("/:moduleId/products", verifyToken, createProduct);
-router.put("/:moduleId/products/:id", verifyToken, updateProduct);
+router.post("/:moduleId/products", verifyToken, uploadTshirtMiddleware, createProduct);
+router.put("/:moduleId/products/:id", verifyToken, uploadTshirtMiddleware, updateProduct);
 router.delete("/:moduleId/products/:id", verifyToken, deleteProduct);
 
 // ── Orders (member) ───────────────────────────────────────

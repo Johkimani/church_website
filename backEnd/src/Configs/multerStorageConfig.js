@@ -6,13 +6,12 @@ import { UploadError } from "../utils/ApiError.js";
 import cloudinary from "./cloudinaryConfigs.js";
 
 /**
- * Custom multer storage engine that uploads files directly to Cloudinary v2.
- * Each uploaded file will have `file.path` set to the Cloudinary secure_url
- * and `file.filename` set to the Cloudinary public_id.
+ * Builds a multer storage engine that uploads files directly to Cloudinary v2
+ * under the given folder. Each uploaded file will have `file.path` set to the
+ * Cloudinary secure_url and `file.filename` set to the Cloudinary public_id.
  */
-const cloudinaryStorage = {
+const buildCloudinaryStorage = (folder = "church_officials") => ({
   _handleFile(req, file, cb) {
-    const folder = "church_officials";
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const publicId = `${folder}/${file.fieldname}-${uniqueSuffix}`;
 
@@ -57,7 +56,10 @@ const cloudinaryStorage = {
       cb(null);
     }
   },
-};
+});
+
+// Default storage — church officials photos
+const cloudinaryStorage = buildCloudinaryStorage("church_officials");
 
 // File type validation (checks both the declared mimetype and the extension)
 function fileFilter(req, file, cb) {
@@ -81,4 +83,12 @@ const upload = multer({
   fileFilter,
 });
 
+// T-shirt product images → dedicated Cloudinary folder
+const uploadTshirt = multer({
+  storage: buildCloudinaryStorage("community_tshirts"),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+  fileFilter,
+});
+
 export default upload;
+export { uploadTshirt };

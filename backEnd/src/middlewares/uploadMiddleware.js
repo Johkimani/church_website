@@ -1,5 +1,5 @@
 
-import upload from "../Configs/multerStorageConfig.js"
+import upload, { uploadTshirt } from "../Configs/multerStorageConfig.js"
 import logger from "../logger/winston.js";
 import { ApiError } from "../utils/ApiError.js";
 
@@ -10,7 +10,7 @@ export function uploadMiddleware(req, res, next) {
     { name: "files", maxCount: 10 },
     { name: "photo", maxCount: 1 }
   ])(req, res, (err) => {
- 
+  
     if (err) {
       logger.error("Unexpected upload error", err);
       return next(new ApiError(500, "Internal upload error"));
@@ -28,6 +28,17 @@ export function uploadMiddleware(req, res, next) {
       req.file = req.files[0];
     }
 
+    next();
+  });
+}
+
+// T-shirt product image upload — single `tshirt_image` field, Cloudinary "community_tshirts"
+export function uploadTshirtMiddleware(req, res, next) {
+  uploadTshirt.single("tshirt_image")(req, res, (err) => {
+    if (err) {
+      logger.error("Unexpected tshirt upload error", err);
+      return next(new ApiError(500, "Internal upload error"));
+    }
     next();
   });
 }

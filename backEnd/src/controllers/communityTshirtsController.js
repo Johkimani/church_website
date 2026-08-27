@@ -1,5 +1,6 @@
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { formatPhotoUrl, deleteFromCloudinary } from "../utils/helpers.js";
 
 /** GET /:moduleId/products — Public: fetch active products */
 export const getProducts = async (req, res) => {
@@ -23,15 +24,17 @@ export const getProducts = async (req, res) => {
 export const createProduct = async (req, res) => {
   try {
     const { moduleId } = req.params;
-    const { name, price, sizes, description, image_url, collection_date } = req.body;
+    const { name, price, sizes, description, collection_date } = req.body;
     if (!name || !price) {
       return res.status(400).json({ error: "name and price are required" });
     }
+    // Prefer uploaded file (Cloudinary); fall back to raw image_url if provided
+    const imageUrl = req.file ? formatPhotoUrl(req.file) : (req.body.image_url || null);
     const sizesVal = Array.isArray(sizes) ? sizes : (sizes || "S,M,L,XL,XXL").split(",").map(s => s.trim()).filter(Boolean);
     const result = await db.query(
       `INSERT INTO community_tshirt_products (module_id, name, price, sizes, description, image_url, collection_date, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
-      [moduleId, name.trim(), Number(price), sizesVal, description || null, image_url || null, collection_date || null]
+      [moduleId, name.trim(), Number(price), sizesVal, description || null, imageUrl, collection_date || null]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -44,7 +47,26 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { moduleId, id } = req.params;
-    const { name, price, sizes, description, image_url, collection_date, is_active } = req.body;
+    const { name, price, sizes, description, collection_date, is_active } = req.body;
+
+    // Look up existing image to delete old Cloudinary asset on replace
+    const existing = await db.query(
+      `SELECT image_url FROM community_tshirt_products WHERE id = $1 AND module_id = $2`,
+      [id, moduleId]
+    );
+    if (existing.rows.length === 0) return res.status(404).json({ error: "Product not found" });
+
+    let imageUrl = existing.rows[0].image_url;
+    // If a new file was uploaded, replace; otherwise keep existing unless a new url was given
+    if (req.file) {
+      if (imageUrl && imageUrl.includes("cloudinary.com")) {
+        await deleteFromCloudinary(imageUrl);
+      }
+      imageUrl = formatPhotoUrl(req.file);
+    } else if (req.body.image_url !== undefined) {
+      imageUrl = req.body.image_url || null;
+    }
+
     const sizesVal = Array.isArray(sizes) ? sizes : (sizes || "").split(",").map(s => s.trim()).filter(Boolean);
     const result = await db.query(
       `UPDATE community_tshirt_products
@@ -52,10 +74,9 @@ export const updateProduct = async (req, res) => {
            is_active = COALESCE($7, is_active)
        WHERE id = $8 AND module_id = $9
        RETURNING *`,
-      [name, Number(price), sizesVal, description || null, image_url || null, collection_date || null,
+      [name, Number(price), sizesVal, description || null, imageUrl, collection_date || null,
        is_active !== undefined ? Boolean(is_active) : null, id, moduleId]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: "Product not found" });
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     logger.error("Error updating tshirt product: " + error.message);
