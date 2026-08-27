@@ -137,6 +137,8 @@ export default function CommunityDetailEditor() {
     image_url: '',
     collection_date: ''
   });
+  const [productImageFile, setProductImageFile] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState<string>('');
   const [cancelOrderModal, setCancelOrderModal] = useState<OrderItem | null>(null);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<OrderItem | null>(null);
   const [orderRejectionReason, setOrderRejectionReason] = useState('');
@@ -513,29 +515,51 @@ export default function CommunityDetailEditor() {
   const handleSaveProduct = async () => {
     if (!productForm.name || !productForm.price) return alert('Name and Price required');
     try {
-      const sizesArray = typeof productForm.sizes === 'string' 
+      const sizesArray = typeof productForm.sizes === 'string'
         ? productForm.sizes.split(',').map(s => s.trim()).filter(Boolean)
         : productForm.sizes;
 
-      const payload = {
-        name: productForm.name,
-        price: Number(productForm.price),
-        sizes: sizesArray,
-        description: productForm.description,
-        image_url: productForm.image_url,
-        collection_date: productForm.collection_date || null
-      };
+      if (productImageFile) {
+        // File upload via multipart/form-data → Cloudinary
+        const formData = new FormData();
+        formData.append('tshirt_image', productImageFile);
+        formData.append('name', productForm.name);
+        formData.append('price', String(Number(productForm.price)));
+        formData.append('sizes', JSON.stringify(sizesArray));
+        formData.append('description', productForm.description);
+        if (productForm.collection_date) formData.append('collection_date', productForm.collection_date);
 
-      if (productForm.id) {
-        await apiClient.put(`/community-tshirts/${categoryId}/products/${productForm.id}`, payload);
-        showToast('Product updated successfully!');
+        if (productForm.id) {
+          await apiClient.put(`/community-tshirts/${categoryId}/products/${productForm.id}`, formData);
+          showToast('Product updated successfully!');
+        } else {
+          await apiClient.post(`/community-tshirts/${categoryId}/products`, formData);
+          showToast('Product created successfully!');
+        }
       } else {
-        await apiClient.post(`/community-tshirts/${categoryId}/products`, payload);
-        showToast('Product created successfully!');
+        // No new file — send JSON (keeps existing image_url)
+        const payload = {
+          name: productForm.name,
+          price: Number(productForm.price),
+          sizes: sizesArray,
+          description: productForm.description,
+          image_url: productForm.image_url,
+          collection_date: productForm.collection_date || null
+        };
+
+        if (productForm.id) {
+          await apiClient.put(`/community-tshirts/${categoryId}/products/${productForm.id}`, payload);
+          showToast('Product updated successfully!');
+        } else {
+          await apiClient.post(`/community-tshirts/${categoryId}/products`, payload);
+          showToast('Product created successfully!');
+        }
       }
 
       setProductModal(false);
       setProductForm({ name: '', price: 1200, sizes: 'S, M, L, XL, XXL', description: '', image_url: '', collection_date: '' });
+      setProductImageFile(null);
+      setProductImagePreview('');
       await loadCategoryData();
     } catch (e) {
       alert('Failed to save product');
@@ -1926,18 +1950,43 @@ export default function CommunityDetailEditor() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700">T-Shirt Sample Image URL</label>
+                <label className="text-xs font-bold text-slate-700">T-Shirt Sample Image</label>
                 <input
-                  type="url"
-                  placeholder="https://... (direct link to sample photo)"
-                  value={productForm.image_url}
-                  onChange={(e) => setProductForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    setProductImageFile(f);
+                    if (f) {
+                      setProductImagePreview(URL.createObjectURL(f));
+                    } else {
+                      setProductImagePreview('');
+                    }
+                  }}
+                  className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 font-medium file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-slate-200 file:text-slate-700 file:text-xs file:font-bold"
                 />
-                {productForm.image_url && (
+                {productImagePreview && (
                   <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 h-28 bg-slate-50">
-                    <img src={productForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={productImagePreview} alt="Preview" className="w-full h-full object-cover" />
                   </div>
+                )}
+                {!productImagePreview && productForm.image_url && (
+                  <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 h-28 bg-slate-50">
+                    <img src={productForm.image_url} alt="Current" className="w-full h-full object-cover" />
+                    <span className="absolute top-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Current</span>
+                  </div>
+                )}
+                {!productImageFile && !productForm.image_url && (
+                  <p className="text-[10px] text-slate-400 mt-1">Select an image to upload (stored on Cloudinary).</p>
+                )}
+                {productImageFile && (
+                  <button
+                    type="button"
+                    onClick={() => { setProductImageFile(null); setProductImagePreview(''); }}
+                    className="text-[10px] text-red-500 font-bold mt-1 hover:underline"
+                  >
+                    Remove selected image
+                  </button>
                 )}
               </div>
 
