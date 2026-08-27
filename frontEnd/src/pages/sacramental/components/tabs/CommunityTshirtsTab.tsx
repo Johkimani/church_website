@@ -153,8 +153,8 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
 
             <div className="relative z-10 flex flex-col md:flex-row gap-6">
               {/* Product Image — left */}
-              <div className="md:w-5/12 shrink-0">
-                <div className="rounded-2xl overflow-hidden border border-slate-100 bg-slate-50" style={{ aspectRatio: '4 / 3' }}>
+              <div className="md:w-1/2 shrink-0">
+                <div className="rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm" style={{ aspectRatio: '1 / 1' }}>
                   <img
                     src={product?.image_url || tshirtMockup}
                     alt={product?.name || 'Community T-Shirt'}
@@ -165,7 +165,7 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
               </div>
 
               {/* Details — right */}
-              <div className="md:w-7/12 flex flex-col">
+              <div className="md:w-1/2 flex flex-col">
                 {/* Product name + price (ecommerce style) */}
                 <div className="mb-4">
                   {product?.name && (
