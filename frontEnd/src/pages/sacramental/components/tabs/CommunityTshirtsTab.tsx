@@ -4,6 +4,7 @@ import { apiClient } from '../../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { FaTshirt, FaShoppingCart, FaCheck, FaRuler, FaTimes, FaTruck, FaBoxOpen, FaClipboardCheck } from 'react-icons/fa';
 import '../../../Jumuiya/components/TabsSystem.css';
+import tshirtMockup from '../../../../assets/Images/jumuiya_tshirt.png';
 
 interface Props {
   moduleId: string;
@@ -140,7 +141,7 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
 
       {/* Shop Tab */}
       {activeSubTab === 'shop' && (
-        <div>
+        <div className="max-w-md mx-auto">
           <div
             className="rounded-3xl p-6 mb-6 overflow-hidden relative"
             style={{
@@ -149,6 +150,19 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
             }}
           >
             <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl pointer-events-none" style={{ background: `${color}10` }} />
+
+            {/* Product Image */}
+            {product?.name && (
+              <h2 className="relative z-10 text-lg font-black text-slate-800 mb-3">{product.name}</h2>
+            )}
+            <div className="relative z-10 mb-5 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50" style={{ aspectRatio: '4 / 3' }}>
+              <img
+                src={product?.image_url || tshirtMockup}
+                alt={product?.name || 'Community T-Shirt'}
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = tshirtMockup; }}
+              />
+            </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6 relative z-10">
