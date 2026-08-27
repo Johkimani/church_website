@@ -141,7 +141,7 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
 
       {/* Shop Tab */}
       {activeSubTab === 'shop' && (
-        <div className="max-w-md mx-auto">
+        <div className="max-w-2xl mx-auto">
           <div
             className="rounded-3xl p-6 mb-6 overflow-hidden relative"
             style={{
@@ -151,109 +151,113 @@ const CommunityTshirtsTab: React.FC<Props> = ({ moduleId, moduleName, color }) =
           >
             <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl pointer-events-none" style={{ background: `${color}10` }} />
 
-            {/* Product Image */}
-            {product?.name && (
-              <h2 className="relative z-10 text-lg font-black text-slate-800 mb-3">{product.name}</h2>
-            )}
-            <div className="relative z-10 mb-5 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50" style={{ aspectRatio: '4 / 3' }}>
-              <img
-                src={product?.image_url || tshirtMockup}
-                alt={product?.name || 'Community T-Shirt'}
-                className="w-full h-full object-cover"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = tshirtMockup; }}
-              />
-            </div>
-
-            {/* Product name + price (ecommerce style) */}
-            <div className="relative z-10 mb-4">
-              {product?.name && (
-                <h2 className="text-xl font-black text-slate-900 leading-tight">{product.name}</h2>
-              )}
-              <div className="flex items-end justify-between mt-2">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black" style={{ color }}>KES {price.toLocaleString()}</span>
+            <div className="relative z-10 flex flex-col md:flex-row gap-6">
+              {/* Product Image — left */}
+              <div className="md:w-5/12 shrink-0">
+                <div className="rounded-2xl overflow-hidden border border-slate-100 bg-slate-50" style={{ aspectRatio: '4 / 3' }}>
+                  <img
+                    src={product?.image_url || tshirtMockup}
+                    alt={product?.name || 'Community T-Shirt'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = tshirtMockup; }}
+                  />
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                  <FaCheck size={10} /> In Stock
-                </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-                <FaTruck size={11} /> Delivery in 3–5 days · Available sizes: {sizes.join(', ')}
-              </p>
-            </div>
 
-            {/* Size chart link */}
-            <div className="relative z-10 mb-5">
-              <button
-                onClick={() => setShowSizeChart(true)}
-                className="inline-flex items-center gap-2 text-xs font-bold underline decoration-dotted underline-offset-4 cursor-pointer transition-colors hover:opacity-80"
-                style={{ color }}
-              >
-                <FaRuler size={12} /> View Size Chart
-              </button>
-            </div>
-
-            {product?.description && (
-              <p className="text-slate-600 text-sm font-medium mb-5 relative z-10 leading-relaxed">{product.description}</p>
-            )}
-
-            {!showOrderForm && !orderSuccess ? (
-              <button
-                className="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:scale-[1.02] shadow-lg relative z-10 cursor-pointer"
-                style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, boxShadow: `0 6px 20px ${color}30` }}
-                onClick={() => setShowOrderForm(true)}
-              >
-                <FaTshirt className="inline mr-2" /> Order Now
-              </button>
-            ) : orderSuccess ? (
-              <div className="text-center py-6 relative z-10">
-                <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: `${color}15` }}>
-                  <FaCheck style={{ color }} size={28} />
-                </div>
-                <h3 className="font-bold text-slate-800 mb-1 text-lg">Order Placed!</h3>
-                <p className="text-slate-500 text-sm mb-4">You will be contacted for M-Pesa payment.</p>
-                <button className="text-sm font-bold underline cursor-pointer" style={{ color }} onClick={() => { setOrderSuccess(false); setOrderForm({ name: '', phone: '', size: 'M', quantity: 1 }); }}>
-                  Place Another Order
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleOrderSubmit} className="space-y-4 p-5 rounded-2xl bg-white border border-slate-100 relative z-10">
-                {orderMutation.isPending && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-2xl z-10">
-                    <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+              {/* Details — right */}
+              <div className="md:w-7/12 flex flex-col">
+                {/* Product name + price (ecommerce style) */}
+                <div className="mb-4">
+                  {product?.name && (
+                    <h2 className="text-xl font-black text-slate-900 leading-tight">{product.name}</h2>
+                  )}
+                  <div className="flex items-end justify-between mt-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black" style={{ color }}>KES {price.toLocaleString()}</span>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                      <FaCheck size={10} /> In Stock
+                    </span>
                   </div>
+                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                    <FaTruck size={11} /> Delivery in 3–5 days · Available sizes: {sizes.join(', ')}
+                  </p>
+                </div>
+
+                {/* Size chart link */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => setShowSizeChart(true)}
+                    className="inline-flex items-center gap-2 text-xs font-bold underline decoration-dotted underline-offset-4 cursor-pointer transition-colors hover:opacity-80"
+                    style={{ color }}
+                  >
+                    <FaRuler size={12} /> View Size Chart
+                  </button>
+                </div>
+
+                {product?.description && (
+                  <p className="text-slate-600 text-sm font-medium mb-5 leading-relaxed">{product.description}</p>
                 )}
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Recipient Name</label>
-                  <input required value={orderForm.name} onChange={e => setOrderForm({ ...orderForm, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none" placeholder="Full name" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Phone Number</label>
-                  <input required type="tel" value={orderForm.phone} onChange={e => setOrderForm({ ...orderForm, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none" placeholder="0712 345 678" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Size</label>
-                    <select value={orderForm.size} onChange={e => setOrderForm({ ...orderForm, size: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none">
-                      {sizes.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+
+                {!showOrderForm && !orderSuccess ? (
+                  <button
+                    className="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:scale-[1.02] shadow-lg cursor-pointer mt-auto"
+                    style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, boxShadow: `0 6px 20px ${color}30` }}
+                    onClick={() => setShowOrderForm(true)}
+                  >
+                    <FaTshirt className="inline mr-2" /> Order Now
+                  </button>
+                ) : orderSuccess ? (
+                  <div className="text-center py-6">
+                    <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: `${color}15` }}>
+                      <FaCheck style={{ color }} size={28} />
+                    </div>
+                    <h3 className="font-bold text-slate-800 mb-1 text-lg">Order Placed!</h3>
+                    <p className="text-slate-500 text-sm mb-4">You will be contacted for M-Pesa payment.</p>
+                    <button className="text-sm font-bold underline cursor-pointer" style={{ color }} onClick={() => { setOrderSuccess(false); setOrderForm({ name: '', phone: '', size: 'M', quantity: 1 }); }}>
+                      Place Another Order
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Quantity</label>
-                    <input type="number" min={1} max={10} value={orderForm.quantity} onChange={e => setOrderForm({ ...orderForm, quantity: Number(e.target.value) })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none" />
-                  </div>
-                </div>
-                <div className="text-center py-2 rounded-xl" style={{ background: `${color}10` }}>
-                  Total: <strong className="text-lg" style={{ color }}>KES {(price * orderForm.quantity).toLocaleString()}</strong>
-                </div>
-                <button type="submit" className="w-full py-3 rounded-xl text-white font-bold text-sm cursor-pointer" style={{ background: color }}>
-                  Confirm & Pay via M-Pesa
-                </button>
-                <button type="button" className="w-full py-2.5 rounded-xl text-slate-500 font-semibold text-sm hover:bg-slate-50 cursor-pointer" onClick={() => setShowOrderForm(false)}>
-                  Cancel
-                </button>
-              </form>
-            )}
+                ) : (
+                  <form onSubmit={handleOrderSubmit} className="space-y-4 p-5 rounded-2xl bg-white border border-slate-100 relative">
+                    {orderMutation.isPending && (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-2xl z-10">
+                        <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Recipient Name</label>
+                      <input required value={orderForm.name} onChange={e => setOrderForm({ ...orderForm, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none" placeholder="Full name" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Phone Number</label>
+                      <input required type="tel" value={orderForm.phone} onChange={e => setOrderForm({ ...orderForm, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none" placeholder="0712 345 678" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Size</label>
+                        <select value={orderForm.size} onChange={e => setOrderForm({ ...orderForm, size: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none">
+                          {sizes.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Quantity</label>
+                        <input type="number" min={1} max={10} value={orderForm.quantity} onChange={e => setOrderForm({ ...orderForm, quantity: Number(e.target.value) })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:border-blue-500 outline-none" />
+                      </div>
+                    </div>
+                    <div className="text-center py-2 rounded-xl" style={{ background: `${color}10` }}>
+                      Total: <strong className="text-lg" style={{ color }}>KES {(price * orderForm.quantity).toLocaleString()}</strong>
+                    </div>
+                    <button type="submit" className="w-full py-3 rounded-xl text-white font-bold text-sm cursor-pointer" style={{ background: color }}>
+                      Confirm & Pay via M-Pesa
+                    </button>
+                    <button type="button" className="w-full py-2.5 rounded-xl text-slate-500 font-semibold text-sm hover:bg-slate-50 cursor-pointer" onClick={() => setShowOrderForm(false)}>
+                      Cancel
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
