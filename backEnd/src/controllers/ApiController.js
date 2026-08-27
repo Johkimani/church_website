@@ -78,7 +78,7 @@ const READ_ONLY_TABLES = new Set([
 // column except the BLOCKED_WRITE_COLUMNS.
 const WRITE_COLUMN_ALLOWLISTS = {
   enrollments: ["module_id", "class_id", "full_name", "name", "email", "phone", "voice_type", "music_level", "status", "source"],
-  hub_modules: ["name", "description", "module_id", "status", "category", "order", "image", "about", "title", "saint_image_url", "history_pdf_url"],
+  hub_modules: ["name", "description", "module_id", "status", "category", "order", "image", "about", "story", "title", "saint_image_url", "history_pdf_url", "training_time", "location", "schedule_label"],
   hub_activities: ["module_id", "title", "description", "activity_date", "location", "status"],
   hub_announcements: ["module_id", "title", "content", "announcement_date", "status"],
   hub_gallery: ["module_id", "image_url", "title", "caption", "category", "status"],

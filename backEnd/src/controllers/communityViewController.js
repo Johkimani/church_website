@@ -81,9 +81,12 @@ const buildModule = (mod, officials, activities, gallery, announcements, practic
   color: mod.theme_color || '#2c3e50',
   icon: mod.icon_class || 'fas fa-users',
   scheduleLabel: mod.schedule_label,
+  schedule_label: mod.schedule_label,
   meetingSchedule: mod.training_time
     ? `${mod.training_time}${mod.location ? ' — ' + mod.location : ''}`
     : null,
+  training_time: mod.training_time,
+  location: mod.location,
   story: mod.story,
   saint_image_url: mod.saint_image_url,
   history_pdf_url: mod.history_pdf_url,

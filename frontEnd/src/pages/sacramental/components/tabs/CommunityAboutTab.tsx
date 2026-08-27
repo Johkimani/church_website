@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CommunityModule } from "../../context/CommunityDataContext";
 import {
@@ -7,6 +7,14 @@ import {
   FaMapMarkerAlt,
   FaArrowRight,
   FaUserFriends,
+  FaChevronLeft,
+  FaChevronRight,
+  FaUsers,
+  FaMusic,
+  FaHeart,
+  FaImages,
+  FaCalendarAlt,
+  FaVideo,
 } from "react-icons/fa";
 
 const COMMUNITY_IMAGES: Record<string, string> = {
@@ -25,18 +33,45 @@ interface Props {
   onQuickLink?: (tab: 'officials' | 'activities' | 'channels' | 'tshirts' | 'members' | 'suggestions') => void;
 }
 
+const STATUS_STYLE: Record<string, { bg: string; dot: string }> = {
+  Upcoming: { bg: '#eef2ff', dot: '#4f46e5' },
+  Ongoing: { bg: '#ecfdf5', dot: '#059669' },
+  Completed: { bg: '#f1f5f9', dot: '#64748b' },
+};
+
 export default function CommunityAboutTab({ module, color, onNavigateBack, onQuickLink }: Props) {
   const navigate = useNavigate();
 
-  const image = module.image_url || COMMUNITY_IMAGES[module.id] || COMMUNITY_IMAGES.choir;
+  const image = module.saint_image_url || module.image_url || COMMUNITY_IMAGES[module.id] || COMMUNITY_IMAGES.choir;
 
-  // Keep the intro short — two sentences is plenty on a phone.
-  const intro = (module.about || module.description || "").trim();
-
+  const story = (module.story || module.about || "").trim();
+  const tagline = (module.description || "").trim();
   const schedules = (module.practiceSchedules || []).slice(0, 4);
+  const leaders = (module.officials || []).slice(0, 6);
+  const gallery = (module.gallery || []).slice(0, 8);
 
-  // A couple of leaders is enough here; the Officials tab has the full list.
-  const leaders = (module.officials || []).slice(0, 3);
+  // ——— Activities swap / carousel ———
+  const activities = useMemo(() => (module.activities || []).slice(0, 10), [module.activities]);
+  const [actIndex, setActIndex] = useState(0);
+  useEffect(() => {
+    if (activities.length <= 1) return;
+    const id = setInterval(() => setActIndex((i) => (i + 1) % activities.length), 6000);
+    return () => clearInterval(id);
+  }, [activities.length]);
+  useEffect(() => setActIndex(0), [activities.length]);
+  const act = activities[actIndex % Math.max(activities.length, 1)];
+
+  const fmtDate = (d?: string) => {
+    if (!d) return "";
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return d;
+    return dt.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  };
+
+  const shortName = module.title.replace(/^(St\.?\s+)+/i, "").trim() || module.title;
+  const joinLabel = `Join ${shortName}`;
+
+  const statusStyle = act ? STATUS_STYLE[act.status!] || STATUS_STYLE.Upcoming : undefined;
 
   return (
     <div className="max-w-3xl mx-auto px-4 pb-16">
@@ -48,32 +83,140 @@ export default function CommunityAboutTab({ module, color, onNavigateBack, onQui
         <FaArrowRight className="rotate-180" size={11} /> All communities
       </button>
 
-      {/* Hero */}
-      <div className="relative rounded-2xl overflow-hidden shadow-md">
-        <img src={image} alt={module.title} className="w-full h-36 sm:h-48 object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug">{module.title}</h1>
-          <p className="text-xs sm:text-sm text-white/85 mt-1 line-clamp-2">{module.description}</p>
+      {/* ——— Hero ——— */}
+      <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-slate-900/10">
+        <img src={image} alt={module.title} className="w-full h-52 sm:h-72 object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/45 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white"
+            style={{ background: color }}
+          >
+            <FaHeart size={10} /> Our Community
+          </span>
+          <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-white leading-tight drop-shadow-sm">
+            {module.title}
+          </h1>
+          {tagline && <p className="mt-1.5 text-sm sm:text-base text-white/85 max-w-xl line-clamp-2 leading-relaxed">{tagline}</p>}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {leaders.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1.5 text-xs font-semibold text-white">
+                <FaUsers size={11} /> {leaders.length} Official{leaders.length > 1 ? "s" : ""}
+              </span>
+            )}
+            {schedules.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1.5 text-xs font-semibold text-white">
+                <FaClock size={11} /> {schedules.length} Practice{module.scheduleLabel ? ` · ${module.scheduleLabel}` : ""}
+              </span>
+            )}
+            <button
+              onClick={() => navigate(`/community/${module.id}/join`)}
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-bold shadow hover:shadow-lg transition-shadow"
+              style={{ color }}
+            >
+              <FaUserFriends size={12} /> {joinLabel}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Who we are */}
-      {intro && (
-        <section className="mt-5">
-          <h2 className="text-base font-bold text-slate-800 mb-1.5">Who we are</h2>
-          <p className="text-sm text-slate-600 leading-relaxed">{intro}</p>
+      {/* ——— Our Story ——— */}
+      {story && (
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+            <span className="h-4 w-1 rounded-full" style={{ background: color }} />
+            Our story
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{story}</p>
         </section>
       )}
 
-      {/* When we meet */}
+      {/* ——— Activities swap card ——— */}
+      {activities.length > 0 && (
+        <section className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+              <span className="h-4 w-1 rounded-full" style={{ background: color }} />
+              Activities
+            </h2>
+            <button
+              onClick={() => onQuickLink?.("activities")}
+              className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
+              style={{ color }}
+            >
+              See all <FaArrowRight size={10} />
+            </button>
+          </div>
+
+          <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+            {act ? (
+              <div key={act.id} className="p-5 animate-fade">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
+                    style={{ background: statusStyle!.bg, color: statusStyle!.dot }}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusStyle!.dot }} />
+                    {act.status || "Upcoming"}
+                  </span>
+                  {act.date && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                      <FaCalendarAlt size={11} /> {fmtDate(act.date)}
+                    </span>
+                  )}
+                </div>
+                <h3 className="mt-2.5 text-lg font-bold text-slate-800 leading-snug">{act.title}</h3>
+                {act.description && <p className="mt-1 text-sm text-slate-600 leading-relaxed line-clamp-3">{act.description}</p>}
+              </div>
+            ) : (
+              <p className="p-5 text-sm text-slate-500">No activities listed yet.</p>
+            )}
+
+            {activities.length > 1 && (
+              <>
+                <button
+                  onClick={() => setActIndex((i) => (i - 1 + activities.length) % activities.length)}
+                  className="absolute top-1/2 -translate-y-1/2 left-2 grid place-items-center h-8 w-8 rounded-full bg-white/90 shadow ring-1 ring-slate-200 text-slate-700 hover:bg-white"
+                  aria-label="Previous activity"
+                >
+                  <FaChevronLeft size={12} />
+                </button>
+                <button
+                  onClick={() => setActIndex((i) => (i + 1) % activities.length)}
+                  className="absolute top-1/2 -translate-y-1/2 right-2 grid place-items-center h-8 w-8 rounded-full bg-white/90 shadow ring-1 ring-slate-200 text-slate-700 hover:bg-white"
+                  aria-label="Next activity"
+                >
+                  <FaChevronRight size={12} />
+                </button>
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                  {activities.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActIndex(i)}
+                      className="h-1.5 rounded-full transition-all"
+                      style={{ width: i === actIndex ? 16 : 6, background: i === actIndex ? color : "#cbd5e1" }}
+                      aria-label={`Activity ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ——— When we meet ——— */}
       {schedules.length > 0 && (
-        <section className="mt-5">
-          <h2 className="text-base font-bold text-slate-800 mb-2">When we meet</h2>
-          <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white overflow-hidden">
+        <section className="mt-6">
+          <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-2">
+            <span className="h-4 w-1 rounded-full" style={{ background: color }} />
+            {module.scheduleLabel || "When we meet"}
+          </h2>
+          <div className="rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white overflow-hidden shadow-sm">
             {schedules.map((s) => (
-              <div key={s.id} className="px-3.5 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm">
-                <span className="font-semibold text-slate-800 min-w-[84px] inline-flex items-center gap-1.5">
+              <div key={s.id} className="px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm">
+                <span className="font-bold text-slate-800 min-w-[84px] inline-flex items-center gap-1.5">
                   <FaCalendarDay size={12} style={{ color }} />
                   {s.day}
                 </span>
@@ -90,54 +233,109 @@ export default function CommunityAboutTab({ module, color, onNavigateBack, onQui
               </div>
             ))}
           </div>
-          {!schedules.length && module.meetingSchedule && (
-            <p className="text-sm text-slate-600">{module.meetingSchedule}</p>
+          {module.meetingSchedule && schedules.length === 0 && (
+            <p className="mt-2 text-sm text-slate-600">{module.meetingSchedule}</p>
           )}
         </section>
       )}
 
-      {/* Leaders */}
+      {/* ——— Our leaders ——— */}
       {leaders.length > 0 && (
-        <section className="mt-5">
+        <section className="mt-6">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-bold text-slate-800">Our leaders</h2>
+            <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+              <span className="h-4 w-1 rounded-full" style={{ background: color }} />
+              Our leaders
+            </h2>
             <button
               onClick={() => onQuickLink?.("officials")}
-              className="text-xs font-semibold hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
               style={{ color }}
             >
-              See all
+              See all <FaArrowRight size={10} />
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {leaders.map((o) => (
-              <div key={o.id} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-                <p className="text-sm font-semibold text-slate-800 truncate">{o.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5" style={{ color }}>{o.role}</p>
+              <div key={o.id} className="rounded-2xl border border-slate-200 bg-white px-3 py-3 flex items-center gap-2.5 shadow-sm">
+                {o.photoUrl ? (
+                  <img src={o.photoUrl} alt={o.name} className="h-9 w-9 rounded-full object-cover ring-2 ring-slate-100" />
+                ) : (
+                  <span
+                    className="grid place-items-center h-9 w-9 rounded-full text-white text-xs font-bold"
+                    style={{ background: color }}
+                  >
+                    {(o.name || "?").charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-800 truncate">{o.name}</p>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color }}>{o.role}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* Join */}
-      <section className="mt-6 rounded-2xl p-5 text-white" style={{ background: color }}>
-        <h2 className="text-base font-bold">Want to join us?</h2>
-        <p className="text-sm text-white/90 mt-1 leading-relaxed">
-          New members are always welcome — no experience needed, just come as you are.
-        </p>
-        <button
-          onClick={() => navigate(`/community/${module.id}/join`)}
-          className="mt-3 inline-flex items-center gap-2 bg-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-transform active:scale-[0.98]"
-          style={{ color }}
-        >
-          <FaUserFriends size={14} /> Join {module.title.replace(/^St\.?\s*/i, "")}
-          <FaArrowRight size={12} />
-        </button>
+      {/* ——— Gallery strip ——— */}
+      {gallery.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-2">
+            <span className="h-4 w-1 rounded-full" style={{ background: color }} />
+            <FaImages size={14} style={{ color }} /> Moments
+          </h2>
+          <div className="flex gap-2.5 overflow-x-auto pb-1">
+            {gallery.map((g, i) => (
+              <div key={i} className="relative shrink-0 h-28 w-36 rounded-xl overflow-hidden shadow-sm group">
+                <img src={g.url} alt={g.caption || ""} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                {g.caption && (
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/80 to-transparent px-2 pb-1 pt-5">
+                    <p className="text-[10px] font-semibold text-white line-clamp-1">{g.caption}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ——— Join CTA ——— */}
+      <section
+        className="mt-6 rounded-3xl p-6 text-white relative overflow-hidden shadow-lg"
+        style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
+      >
+        <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10" />
+        <div className="absolute right-16 bottom-0 h-16 w-16 rounded-full bg-white/10" />
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <FaMusic size={16} />
+            <FaHeart size={16} className="text-white/80" />
+          </div>
+          <h2 className="mt-2 text-lg font-extrabold">Become part of {shortName}</h2>
+          <p className="mt-1 text-sm text-white/90 leading-relaxed">
+            New members are always welcome — no experience needed, just come as you are.
+          </p>
+          <button
+            onClick={() => navigate(`/community/${module.id}/join`)}
+            className="mt-4 inline-flex items-center gap-2 bg-white text-sm font-bold px-5 py-3 rounded-xl shadow-lg transition-transform active:scale-[0.98] hover:-translate-y-0.5"
+            style={{ color }}
+          >
+            <FaUserFriends size={15} /> {joinLabel}
+            <FaArrowRight size={12} />
+          </button>
+        </div>
       </section>
 
       <p className="text-center text-xs text-slate-400 mt-8">
-        Questions? Talk to any of our members after Sunday Mass.
+        Questions? Talk to any of our members after Sunday Mass. ·{" "}
+        <button
+          onClick={() => onQuickLink?.("suggestions")}
+          className="inline-flex items-center gap-1 font-semibold hover:underline"
+          style={{ color }}
+        >
+          <FaVideo size={10} /> Share a suggestion
+        </button>
       </p>
     </div>
   );
