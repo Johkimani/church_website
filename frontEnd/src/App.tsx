@@ -10,6 +10,7 @@ import { DataProvider } from "./pages/Jumuiya/context/DataContext";
 import Pageoulet from "./assets/Layouts/Pageoulet";
 import RafikiWidget from "./components/assistant/RafikiWidget";
 import WhatsAppWidget from "./components/WhatsAppWidget";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import Authorisation from "./assets/Layouts/Authorisation";
 import Login from "./pages/Authorization/Login";
 import GalleryPage from "./pages/Landing/components/page/GalleryPage";
@@ -138,6 +139,7 @@ const App: React.FC = () => {
       <Toaster position="top-right" reverseOrder={false} />
       {!hideRafiki && <RafikiWidget />}
       {!hideRafiki && <WhatsAppWidget />}
+      {!hideRafiki && <PWAInstallPrompt />}
       <Routes>
         {/* Authentication Routes */}
         <Route
