@@ -326,7 +326,7 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
 
       {/* Main list content — hidden when viewing an official detail */}
       {!isViewing && (<>
-      {officials.length > 0 ? (
+      {officials.length > 0 ? (<>
         {/* Mobile: compact 2-col grid matching the Jumuiya official cards */}
         <div className="grid grid-cols-2 gap-3.5 sm:hidden">
           {officials.map((official: any) => (
@@ -434,7 +434,7 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
             </article>
           ))}
         </div>
-      ) : (
+      </>) : (
         <div className="text-center py-16 rounded-3xl" style={{ background: `${color}06`, border: `1px dashed ${color}25` }}>
           <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style={{ background: `${color}10` }}>
             <FaHistory style={{ color: `${color}40` }} size={28} />
