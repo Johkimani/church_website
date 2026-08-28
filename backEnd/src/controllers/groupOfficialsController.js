@@ -436,14 +436,49 @@ export const updateGroupOfficial = async (req, res) => {
       photoUrl = formatPhotoUrl(req.file);
     }
 
+    // Keep election_term_id (the source of truth for term grouping) in sync with
+    // the edited term_of_service label. Resolve or create the matching
+    // election_terms row, mirroring the historical-create path.
+    let resolvedTermId = undefined; // undefined => leave election_term_id untouched
+    if (term_of_service !== undefined) {
+      const trimmedTerm = (term_of_service || '').trim();
+      if (trimmedTerm) {
+        let termResult = await pool.query(
+          'SELECT id FROM election_terms WHERE name = $1 LIMIT 1',
+          [trimmedTerm]
+        );
+        if (termResult.rows.length === 0) {
+          termResult = await pool.query(
+            `INSERT INTO election_terms (name, year, start_date, is_current)
+             VALUES ($1, $1, CURRENT_DATE, FALSE) RETURNING id`,
+            [trimmedTerm]
+          );
+        }
+        resolvedTermId = termResult.rows[0].id;
+      } else {
+        resolvedTermId = null; // term cleared
+      }
+    }
+
+    const setParts = [
+      'name = COALESCE($1, name)',
+      'category = COALESCE($2, category)',
+      'position = COALESCE($3, position)',
+      'contact = COALESCE($4, contact)',
+      'photo = COALESCE($5, photo)',
+      'term_of_service = COALESCE($6, term_of_service)',
+      'reg_number = COALESCE($7, reg_number)',
+    ];
+    const values = [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber];
+    if (resolvedTermId !== undefined) {
+      setParts.push(`election_term_id = $${values.length + 1}`);
+      values.push(resolvedTermId);
+    }
+    setParts.push('updated_at = CURRENT_TIMESTAMP');
+
     const result = await pool.query(
-      `UPDATE group_officials SET name = COALESCE($1, name), category = COALESCE($2, category),
-       position = COALESCE($3, position), contact = COALESCE($4, contact),
-       photo = COALESCE($5, photo), term_of_service = COALESCE($6, term_of_service),
-       reg_number = COALESCE($7, reg_number),
-       updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8 RETURNING *`,
-      [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
+      `UPDATE group_officials SET ${setParts.join(', ')} WHERE id = $${values.length + 1} RETURNING *`,
+      [...values, id]
     );
 
     // Role assignment — skip for archived officials

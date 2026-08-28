@@ -96,14 +96,19 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
 
   const filteredHistory = formerOfficials;
 
-  const historyTerms = [...new Set(filteredHistory.map(f => f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')))].sort().reverse();
+  // Prefer the editable term_of_service label; fall back to the derived
+  // term_name/term_year (from election_term_id) or "Previous Term".
+  const termKey = (f: any) =>
+    f.term_of_service || f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term');
+
+  const historyTerms = [...new Set(filteredHistory.map(termKey))].sort().reverse();
 
   const allFilteredOfficials = React.useMemo(() => {
     const result: ArchivedOfficial[] = [];
     const terms = historyFilter === 'all' ? historyTerms : [historyFilter];
     for (const term of terms) {
       for (const f of filteredHistory) {
-        const t = f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term');
+        const t = termKey(f);
         if (t === term) result.push(f);
       }
     }
@@ -451,8 +456,8 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
                         <div
                           key={f.id}
                           onClick={() => openDetail(
-                            { id: f.id, name: f.name, position: f.position, photo: f.photo || null, phone: f.contact || null, email: null, term_of_service: f.term_name || (f.term_year ? `${f.term_year}` : null) },
-                            termOfficials.map(t => ({ id: t.id, name: t.name, position: t.position, photo: t.photo || null, phone: t.contact || null, email: null, term_of_service: t.term_name || (t.term_year ? `${t.term_year}` : null) }))
+                            { id: f.id, name: f.name, position: f.position, photo: f.photo || null, phone: f.contact || null, email: null, term_of_service: f.term_of_service || f.term_name || (f.term_year ? `${f.term_year}` : null) },
+                            termOfficials.map(t => ({ id: t.id, name: t.name, position: t.position, photo: t.photo || null, phone: t.contact || null, email: null, term_of_service: t.term_of_service || t.term_name || (t.term_year ? `${t.term_year}` : null) }))
                           )}
                           className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 cursor-pointer"
                         >
