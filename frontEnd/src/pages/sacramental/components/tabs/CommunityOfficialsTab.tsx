@@ -327,69 +327,112 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
       {/* Main list content — hidden when viewing an official detail */}
       {!isViewing && (<>
       {officials.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-5 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
-          {officials.map((official: any) => {
-            const initials = (official.name || '').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-            return (
-              <article
-                key={official.id}
-                onClick={() => openDetail({ id: official.id, name: official.name, position: official.role || official.position || '', photo: official.photoUrl || official.photo_url || null, phone: official.phoneNumber || official.phone || null, email: official.email || null, term_of_service: null }, currentViewable)}
-                className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 cursor-pointer active:scale-[0.98]"
-              >
-                {/* Photo Container */}
-                <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
-                  <Avatar name={official.name} image={official.photoUrl || official.photo_url} size="lg" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        {/* Mobile: compact 2-col grid matching the Jumuiya official cards */}
+        <div className="grid grid-cols-2 gap-3.5 sm:hidden">
+          {officials.map((official: any) => (
+            <article
+              key={`m-${official.id}`}
+              onClick={() => openDetail({ id: official.id, name: official.name, position: official.role || official.position || '', photo: official.photoUrl || official.photo_url || null, phone: official.phoneNumber || official.phone || null, email: official.email || null, term_of_service: null }, currentViewable)}
+              className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer active:scale-[0.97]"
+            >
+              <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
+                <Avatar name={official.name} image={official.photoUrl || official.photo_url} size="lg" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+                <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
+                  <span className="truncate max-w-[85%] text-[0.68rem] font-bold text-white/95 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm">
+                    {official.role || official.position || ''}
+                  </span>
                 </div>
-
-                {/* Content */}
-                <div className="p-5 text-center">
-                  <h3 className="font-bold text-lg text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
-                    {official.name}
-                  </h3>
-                  <p className="text-sm font-semibold mt-2 px-3 py-1 bg-[var(--jumuiya-color)]/10 text-[var(--jumuiya-color)] rounded-full inline-block">
-                    {official.role || official.position}
-                  </p>
-
-                  {/* Contact Actions */}
-                  <div className="mt-5 pt-4 border-t border-gray-50 flex justify-center gap-3">
-                    {(official.phoneNumber || official.phone) && (
-                      <>
-                        <a
-                          href={`tel:${(official.phoneNumber || official.phone).replace(/[^+0-9]/g, '')}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-10 h-10 rounded-xl bg-gray-50 text-gray-600 hover:bg-[var(--jumuiya-color)] hover:text-white flex items-center justify-center transition-all shadow-sm"
-                          title="Call Official"
-                        >
-                          <FaPhoneAlt size={14} />
-                        </a>
-                        <a
-                          href={`https://wa.me/${formatPhone(official.phoneNumber || official.phone)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-10 h-10 rounded-xl bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
-                          title="WhatsApp"
-                        >
-                          <FaWhatsapp size={18} />
-                        </a>
-                      </>
-                    )}
-                    {official.email && (
-                      <a
-                        href={`mailto:${official.email}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-10 h-10 rounded-xl bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
-                        title="Email Official"
-                      >
-                        <FaEnvelope size={14} />
-                      </a>
-                    )}
+              </div>
+              <div className="p-3 text-center flex flex-col gap-2 bg-white">
+                <h3 className="font-bold text-slate-950 text-sm line-clamp-1">{official.name}</h3>
+                {(official.phoneNumber || official.phone) ? (
+                  <div className="pt-1.5 border-t border-slate-100 flex justify-center gap-2">
+                    <a
+                      href={`tel:${(official.phoneNumber || official.phone).replace(/[^+0-9]/g, '')}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                      title="Call"
+                    >
+                      <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
+                      <FaPhoneAlt size={13} className="z-10 relative" />
+                    </a>
+                    <a
+                      href={`https://wa.me/${formatPhone(official.phoneNumber || official.phone)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-9 h-9 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                      title="WhatsApp"
+                    >
+                      <FaWhatsapp size={17} />
+                    </a>
                   </div>
+                ) : (
+                  <div className="text-[0.7rem] text-slate-400 font-medium">No contact</div>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {/* Desktop: larger cards with flex-wrap (matching Jumuiya) */}
+        <div className="hidden sm:flex flex-wrap justify-center gap-6 sm:gap-8">
+          {officials.map((official: any) => (
+            <article
+              key={`d-${official.id}`}
+              onClick={() => openDetail({ id: official.id, name: official.name, position: official.role || official.position || '', photo: official.photoUrl || official.photo_url || null, phone: official.phoneNumber || official.phone || null, email: official.email || null, term_of_service: null }, currentViewable)}
+              className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.35rem)] xl:w-[calc(25%-1.5rem)] max-w-[320px] cursor-pointer active:scale-[0.98]"
+            >
+              <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
+                <Avatar name={official.name} image={official.photoUrl || official.photo_url} size="lg" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <div className="px-3 pt-2.5 pb-3 text-center">
+                <h3 className="font-bold text-sm text-gray-900 group-hover:text-[var(--jumuiya-color)] transition-colors truncate">
+                  {official.name}
+                </h3>
+                <p className="text-xs font-semibold mt-1 px-2.5 py-0.5 rounded-full inline-block" style={{ background: `${_c('18')}`, color: _c('cc') }}>
+                  {official.role || official.position}
+                </p>
+                <div className="mt-2 pt-2 border-t border-gray-50 flex justify-center gap-2">
+                  {(official.phoneNumber || official.phone) && (
+                    <>
+                      <a
+                        href={`tel:${(official.phoneNumber || official.phone).replace(/[^+0-9]/g, '')}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-8 h-8 rounded-lg bg-gray-50 text-gray-600 hover:text-white relative overflow-hidden group/btn flex items-center justify-center transition-all shadow-sm"
+                        title="Call Official"
+                      >
+                        <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity z-0" style={{ background: `linear-gradient(to right, ${_c('cc')}, ${_c('aa')})` }} />
+                        <FaPhoneAlt size={12} className="z-10 relative" />
+                      </a>
+                      <a
+                        href={`https://wa.me/${formatPhone(official.phoneNumber || official.phone)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-8 h-8 rounded-lg bg-gray-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                        title="WhatsApp"
+                      >
+                        <FaWhatsapp size={15} />
+                      </a>
+                    </>
+                  )}
+                  {official.email && (
+                    <a
+                      href={`mailto:${official.email}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-8 h-8 rounded-lg bg-gray-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                      title="Email Official"
+                    >
+                      <FaEnvelope size={12} />
+                    </a>
+                  )}
                 </div>
-              </article>
-            );
-          })}
+              </div>
+            </article>
+          ))}
         </div>
       ) : (
         <div className="text-center py-16 rounded-3xl" style={{ background: `${color}06`, border: `1px dashed ${color}25` }}>
