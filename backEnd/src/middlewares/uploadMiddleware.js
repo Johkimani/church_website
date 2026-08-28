@@ -42,3 +42,14 @@ export function uploadTshirtMiddleware(req, res, next) {
     next();
   });
 }
+
+// Jumuiya t-shirt sample image upload — single `tshirt_image` field, Cloudinary "jumuiya_tshirts"
+export function uploadJumuiyaTshirtMiddleware(req, res, next) {
+  uploadJumuiyaTshirt.single("tshirt_image")(req, res, (err) => {
+    if (err) {
+      logger.error("Unexpected jumuiya tshirt upload error", err);
+      return next(new ApiError(500, "Internal upload error"));
+    }
+    next();
+  });
+}

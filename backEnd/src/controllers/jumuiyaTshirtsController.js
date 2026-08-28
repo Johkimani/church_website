@@ -1,5 +1,6 @@
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { formatPhotoUrl, deleteFromCloudinary } from "../utils/helpers.js";
 
 /**
  * Helper to resolve jumuiya identifier (slug or UUID) to standard slug/id.
@@ -70,25 +71,44 @@ export const updatePaymentSettings = async (req, res) => {
     const slug = await resolveJumuiyaKey(rawId);
     const { payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url } = req.body;
 
+    // Accept any numeric price (no step/parity restriction)
     const price = !isNaN(parseFloat(unit_price)) ? parseFloat(unit_price) : 1200.0;
-    const active = is_active !== undefined ? Boolean(is_active) : true;
+    const active = is_active === undefined ? true
+      : (is_active === true || is_active === "true" || is_active === "1" || is_active === 1);
     const collDate = collection_date || null;
-    const imageUrl = tshirt_image_url || null;
+
+    let imageUrl = tshirt_image_url || null;
+
+    if (req.file) {
+      // Clean up the previously stored Cloudinary asset (if any)
+      try {
+        const existing = await db.query(
+          `SELECT tshirt_image_url FROM jumuiya_tshirt_settings WHERE jumuiya_id = $1 OR jumuiya_id = $2 LIMIT 1`,
+          [slug, rawId]
+        );
+        if (existing.rows.length > 0 && existing.rows[0].tshirt_image_url) {
+          await deleteFromCloudinary(existing.rows[0].tshirt_image_url);
+        }
+      } catch (cleanupErr) {
+        logger.warn("Could not remove old jumuiya t-shirt image: " + cleanupErr.message);
+      }
+      imageUrl = formatPhotoUrl(req.file);
+    }
 
     const result = await db.query(
       `INSERT INTO jumuiya_tshirt_settings
-         (jumuiya_id, payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-       ON CONFLICT (jumuiya_id) DO UPDATE SET
-         payment_phone = EXCLUDED.payment_phone,
-         account_name = EXCLUDED.account_name,
-         payment_instructions = EXCLUDED.payment_instructions,
-         unit_price = EXCLUDED.unit_price,
-         is_active = EXCLUDED.is_active,
-         collection_date = EXCLUDED.collection_date,
-         tshirt_image_url = EXCLUDED.tshirt_image_url,
-         updated_at = NOW()
-       RETURNING *`,
+        (jumuiya_id, payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      ON CONFLICT (jumuiya_id) DO UPDATE SET
+        payment_phone = EXCLUDED.payment_phone,
+        account_name = EXCLUDED.account_name,
+        payment_instructions = EXCLUDED.payment_instructions,
+        unit_price = EXCLUDED.unit_price,
+        is_active = EXCLUDED.is_active,
+        collection_date = EXCLUDED.collection_date,
+        tshirt_image_url = EXCLUDED.tshirt_image_url,
+        updated_at = NOW()
+      RETURNING *`,
       [slug || rawId, payment_phone || "", account_name || "", payment_instructions || "", price, active, collDate, imageUrl]
     );
 

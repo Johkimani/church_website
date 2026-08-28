@@ -117,6 +117,8 @@ export default function JumuiyaTshirtsAdmin() {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [imagePreviewError, setImagePreviewError] = useState(false);
+  const [tshirtImageFile, setTshirtImageFile] = useState<File | null>(null);
+  const [tshirtImagePreview, setTshirtImagePreview] = useState<string>('');
 
   const [orders, setOrders] = useState<TshirtOrder[]>([]);
   const [stats, setStats] = useState<OrderStats>({ total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0, totalRevenue: 0 });
@@ -165,6 +167,8 @@ export default function JumuiyaTshirtsAdmin() {
           tshirt_image_url: d.tshirt_image_url || '',
         });
         setImagePreviewError(false);
+        setTshirtImageFile(null);
+        setTshirtImagePreview('');
       }
     } catch {
       toast.error('Failed to load payment settings');
@@ -202,15 +206,30 @@ export default function JumuiyaTshirtsAdmin() {
     e.preventDefault();
     setSavingSettings(true);
     try {
-      const res = await apiClient.put(`/jumuiya-tshirts/${selectedJumuiya}/settings`, {
-        payment_phone: settings.payment_phone,
-        account_name: settings.account_name,
-        payment_instructions: settings.payment_instructions,
-        unit_price: Number(settings.unit_price) || 1200,
-        is_active: settings.is_active,
-        collection_date: settings.collection_date || null,
-        tshirt_image_url: settings.tshirt_image_url || null,
-      });
+      let res;
+      if (tshirtImageFile) {
+        // File upload via multipart/form-data → Cloudinary
+        const formData = new FormData();
+        formData.append('tshirt_image', tshirtImageFile);
+        formData.append('payment_phone', settings.payment_phone);
+        formData.append('account_name', settings.account_name);
+        formData.append('payment_instructions', settings.payment_instructions);
+        formData.append('unit_price', String(Number(settings.unit_price) || 1200));
+        formData.append('is_active', String(settings.is_active));
+        formData.append('collection_date', settings.collection_date || '');
+        res = await apiClient.put(`/jumuiya-tshirts/${selectedJumuiya}/settings`, formData);
+      } else {
+        // No new file — send JSON (keeps the existing image_url)
+        res = await apiClient.put(`/jumuiya-tshirts/${selectedJumuiya}/settings`, {
+          payment_phone: settings.payment_phone,
+          account_name: settings.account_name,
+          payment_instructions: settings.payment_instructions,
+          unit_price: Number(settings.unit_price) || 1200,
+          is_active: settings.is_active,
+          collection_date: settings.collection_date || null,
+          tshirt_image_url: settings.tshirt_image_url || null,
+        });
+      }
       if (res.data?.success) {
         toast.success('Settings updated successfully!');
         const d = res.data.data;
@@ -221,6 +240,8 @@ export default function JumuiyaTshirtsAdmin() {
           tshirt_image_url: d.tshirt_image_url || '',
         }));
         setImagePreviewError(false);
+        setTshirtImageFile(null);
+        setTshirtImagePreview('');
       }
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to update settings');
@@ -405,7 +426,7 @@ export default function JumuiyaTshirtsAdmin() {
                 <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">Price Per Shirt (KES) <span className="text-rose-500">*</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><DollarSign className="w-4 h-4" /></div>
-                  <input type="number" required min="1" step="50" value={settings.unit_price}
+                  <input type="number" required min="0" step="any" value={settings.unit_price}
                     onChange={e => setSettings(s => ({ ...s, unit_price: e.target.value }))}
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition" />
                 </div>
@@ -421,16 +442,49 @@ export default function JumuiyaTshirtsAdmin() {
               </div>
             </div>
 
-            {/* T-shirt image URL */}
+            {/* T-shirt image upload (Cloudinary) */}
             <div>
               <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2">
-                <span className="inline-flex items-center gap-1.5"><ImageIcon className="w-3 h-3" />T-Shirt Sample Image URL</span>
+                <span className="inline-flex items-center gap-1.5"><ImageIcon className="w-3 h-3" />T-Shirt Sample Image</span>
               </label>
-              <input type="url" value={settings.tshirt_image_url || ''}
-                onChange={e => { setSettings(s => ({ ...s, tshirt_image_url: e.target.value })); setImagePreviewError(false); }}
-                placeholder="https://... (direct link to shirt photo)"
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition" />
-              <p className="text-[10px] text-slate-400 mt-1">Members will see this photo when ordering. Use Cloudinary or any public image URL.</p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setTshirtImageFile(f);
+                  if (f) {
+                    setTshirtImagePreview(URL.createObjectURL(f));
+                    setImagePreviewError(false);
+                  } else {
+                    setTshirtImagePreview('');
+                  }
+                }}
+                className="w-full border border-slate-200 bg-slate-50 text-slate-900 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-indigo-500 font-medium file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-100 file:text-indigo-700 file:text-xs file:font-bold"
+              />
+              {tshirtImagePreview && (
+                <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 h-28 bg-slate-50">
+                  <img src={tshirtImagePreview} alt="Selected preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+              {!tshirtImagePreview && settings.tshirt_image_url && (
+                <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 h-28 bg-slate-50">
+                  <img src={settings.tshirt_image_url} alt="Current" className="w-full h-full object-cover" />
+                  <span className="absolute top-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Current</span>
+                </div>
+              )}
+              {!tshirtImageFile && !settings.tshirt_image_url && (
+                <p className="text-[10px] text-slate-400 mt-1">Select a photo to upload (stored on Cloudinary). Members will see this when ordering.</p>
+              )}
+              {tshirtImageFile && (
+                <button
+                  type="button"
+                  onClick={() => { setTshirtImageFile(null); setTshirtImagePreview(''); }}
+                  className="text-[10px] text-red-500 font-bold mt-1 hover:underline"
+                >
+                  Remove selected image
+                </button>
+              )}
             </div>
 
             {/* Payment Instructions */}

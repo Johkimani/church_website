@@ -90,5 +90,12 @@ const uploadTshirt = multer({
   fileFilter,
 });
 
+// Jumuiya t-shirt sample images → dedicated Cloudinary folder
+const uploadJumuiyaTshirt = multer({
+  storage: buildCloudinaryStorage("jumuiya_tshirts"),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+  fileFilter,
+});
+
 export default upload;
-export { uploadTshirt };
+export { uploadTshirt, uploadJumuiyaTshirt };
