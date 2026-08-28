@@ -239,45 +239,6 @@ export default function CommunityAboutTab({ module, color, onNavigateBack, onQui
         </section>
       )}
 
-      {/* ——— Our leaders ——— */}
-      {leaders.length > 0 && (
-        <section className="mt-6">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-              <span className="h-4 w-1 rounded-full" style={{ background: color }} />
-              Our leaders
-            </h2>
-            <button
-              onClick={() => onQuickLink?.("officials")}
-              className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
-              style={{ color }}
-            >
-              See all <FaArrowRight size={10} />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {leaders.map((o) => (
-              <div key={o.id} className="rounded-2xl border border-slate-200 bg-white px-3 py-3 flex items-center gap-2.5 shadow-sm">
-                {o.photoUrl ? (
-                  <img src={o.photoUrl} alt={o.name} className="h-9 w-9 rounded-full object-cover ring-2 ring-slate-100" />
-                ) : (
-                  <span
-                    className="grid place-items-center h-9 w-9 rounded-full text-white text-xs font-bold"
-                    style={{ background: color }}
-                  >
-                    {(o.name || "?").charAt(0).toUpperCase()}
-                  </span>
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{o.name}</p>
-                  <p className="text-xs font-semibold mt-0.5" style={{ color }}>{o.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* ——— Gallery strip ——— */}
       {gallery.length > 0 && (
         <section className="mt-6">
