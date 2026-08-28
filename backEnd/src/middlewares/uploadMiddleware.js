@@ -1,5 +1,5 @@
 
-import upload, { uploadTshirt } from "../Configs/multerStorageConfig.js"
+import upload, { uploadTshirt, uploadJumuiyaTshirt } from "../Configs/multerStorageConfig.js"
 import logger from "../logger/winston.js";
 import { ApiError } from "../utils/ApiError.js";
 
