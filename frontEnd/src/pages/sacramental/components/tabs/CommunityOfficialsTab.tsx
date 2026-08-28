@@ -42,10 +42,11 @@ const MODULE_TO_CATEGORY: Record<string, string> = {
 // Some community chair/vice-chair roles are stored at the CSA level (the
 // `officials` table) rather than in `group_officials`. Their archived history
 // must be merged in separately, since /group-officials/term only scans group_officials.
+// Note: Instrument Managers / Executive / etc. are standalone CSA categories and are
+// NOT community chairs, so they are intentionally excluded here.
 const MODULE_TO_CSA_CATEGORY: Record<string, string> = {
   choir: 'Choir Officials',
   dancers: 'Liturgical Dancers',
-  charismatic: 'Instrument Managers',
 };
 
 const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md' | 'lg' }> = ({ name, image, size = 'md' }) => {

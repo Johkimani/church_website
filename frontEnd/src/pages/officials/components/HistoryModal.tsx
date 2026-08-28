@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
  X, Filter, Trash2, RotateCcw,
@@ -11,6 +11,15 @@ import { useTerms } from '../../../hooks/useTerms';
 import { CATEGORY_COLORS, DEFAULT_AVATAR, DEFAULT_CLOSING_TRIBUTE, JUMUIYA_OPTIONS, JUMUIYA_COLORS, GROUP_OPTIONS, GROUP_COLORS } from '../constants/adminConstants';
 import { UPLOAD_BASE, API_HISTORY, API_JUMUIYA_HISTORY, API_GROUP_HISTORY } from '../../../utils/officialsApi';
 import { ConfirmDialog, type AffectedOfficial } from './ConfirmDialog';
+
+// Community chair/vice-chair roles stored at the CSA level (the `officials`
+// table) keyed by the group category used in the groups archive. These are
+// merged into the groups history view for display only — restore/delete here
+// operate on group_officials, so CSA rows must stay read-only.
+const GROUP_TO_CSA_CATEGORY: Record<string, string> = {
+  'Choir': 'Choir Officials',
+  'Dancers': 'Liturgical Dancers',
+};
 
 interface HistoryModalProps {
  isOpen: boolean;
@@ -51,17 +60,57 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  return `${UPLOAD_BASE}${photo.startsWith('/') ? '' : '/'}${photo}`;
  };
 
- const { terms } = useTerms();
- const { 
- history, meta, isLoading, restoreOfficials, deleteArchived, 
- bulkDelete, isRestoring, isBulkDeleting, isDeleting 
-  } = useHistory({ 
- termId: termFilter === 'all' ? undefined : termFilter,
- onlyArchived: true,
- page: 1,
- limit,
- mode
- });
+  const { terms } = useTerms();
+  const { 
+    history, meta, isLoading, restoreOfficials, deleteArchived, 
+    bulkDelete, isRestoring, isBulkDeleting, isDeleting 
+   } = useHistory({ 
+    termId: termFilter === 'all' ? undefined : termFilter,
+    onlyArchived: true,
+    page: 1,
+    limit,
+    mode
+  });
+
+  // Merge CSA-level community chairs into the groups archive (display only).
+  const [csaMerged, setCsaMerged] = useState<any[]>([]);
+  useEffect(() => {
+    if (!isOpen || mode !== 'groups') {
+      setCsaMerged([]);
+      return;
+    }
+    let cancelled = false;
+    const validCsaCats = Object.values(GROUP_TO_CSA_CATEGORY);
+    apiClient
+      .get('/officials/term', { params: { only_archived: 'true', limit: 300 } })
+      .then((res) => {
+        if (cancelled) return;
+        const rows = (Array.isArray(res.data?.data) ? res.data.data : []) as any[];
+        setCsaMerged(
+          rows
+            .filter((o) => validCsaCats.includes(o.category))
+            .map((o) => ({ ...o, id: `csa-${o.id}`, isCsa: true }))
+        );
+      })
+      .catch(() => { if (!cancelled) setCsaMerged([]); });
+    return () => { cancelled = true; };
+  }, [isOpen, mode]);
+
+  const displayedHistory = useMemo(() => {
+    if (mode !== 'groups') return history;
+    const matchesCategory = (o: any) => {
+      if (categoryFilter === 'all') return true;
+      if (o.category === categoryFilter) return true;
+      if (o.isCsa && GROUP_TO_CSA_CATEGORY[categoryFilter] === o.category) return true;
+      return false;
+    };
+    const matchesTerm = (o: any) => {
+      if (termFilter === 'all') return true;
+      if (o.isCsa) return String(o.election_term_id) === String(termFilter);
+      return true; // group_officials rows are already term-filtered server-side
+    };
+    return [...history, ...csaMerged].filter((o) => matchesCategory(o) && matchesTerm(o));
+  }, [history, csaMerged, categoryFilter, termFilter, mode]);
 
  useEffect(() => {
    if (!isOpen || mode !== 'csa') return;
@@ -358,35 +407,41 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
 
  {/* Content */}
  <div className="flex-1 overflow-auto bg-gray-50/30 p-6">
- {isLoading ? (
- <div className="flex flex-col items-center justify-center h-64 gap-4 text-gray-400">
- <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
- <p className="font-medium animate-pulse ">Loading archive data...</p>
- </div>
- ) : history.length === 0 ? (
+  {isLoading ? (
+  <div className="flex flex-col items-center justify-center h-64 gap-4 text-gray-400">
+  <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+  <p className="font-medium animate-pulse ">Loading archive data...</p>
+  </div>
+  ) : displayedHistory.length === 0 ? (
  <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-white rounded-2xl border-2 border-dashed border-gray-200 ">
  <ImageIcon className="w-12 h-12 mb-2 opacity-20" />
  <p className="font-medium">No archived records found</p>
  <p className="text-sm">Try changing the term filter or check back later</p>
  </div>
  ) : (
- <div className="grid grid-cols-1 gap-4">
-  {history.filter(o => mode === 'csa' || categoryFilter === 'all' || o.category === categoryFilter).map((o, idx) => (
- <div key={o.id} className={`bg-white rounded-xl border p-4 transition-all hover:shadow-md flex items-center gap-4 group ${selectedIds.includes(o.id) ? 'border-indigo-300 ring-2 ring-indigo-50 bg-indigo-50/10 ' : 'border-gray-200 '}`}>
- <div className="flex flex-col items-center gap-1 shrink-0">
- <div className="text-xs font-bold text-gray-400">{idx + 1}</div>
- <div className="relative flex items-center">
- <input 
- type="checkbox" 
- checked={selectedIds.includes(o.id)}
- onChange={() => toggleSelect(o.id)}
- className="peer w-5 h-5 opacity-0 absolute cursor-pointer"
- />
- <div className={`w-5 h-5 border-2 rounded-lg bg-white transition-all flex items-center justify-center ${selectedIds.includes(o.id) ? 'border-indigo-600' : 'border-gray-300'}`}>
-   <Check className={`w-4 h-4 text-indigo-600 transition-all duration-200 stroke-[3] ${selectedIds.includes(o.id) ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
- </div>
- </div>
- </div>
+  <div className="grid grid-cols-1 gap-4">
+   {displayedHistory.map((o, idx) => (
+  <div key={o.id} className={`bg-white rounded-xl border p-4 transition-all hover:shadow-md flex items-center gap-4 group ${!o.isCsa && selectedIds.includes(o.id) ? 'border-indigo-300 ring-2 ring-indigo-50 bg-indigo-50/10 ' : 'border-gray-200 '}`}>
+  <div className="flex flex-col items-center gap-1 shrink-0">
+  <div className="text-xs font-bold text-gray-400">{idx + 1}</div>
+  <div className="relative flex items-center">
+  {o.isCsa ? (
+  <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100">CSA</span>
+  ) : (
+  <input 
+  type="checkbox" 
+  checked={selectedIds.includes(o.id)}
+  onChange={() => toggleSelect(o.id)}
+  className="peer w-5 h-5 opacity-0 absolute cursor-pointer"
+  />
+  )}
+  {!o.isCsa && (
+  <div className={`w-5 h-5 border-2 rounded-lg bg-white transition-all flex items-center justify-center ${selectedIds.includes(o.id) ? 'border-indigo-600' : 'border-gray-300'}`}>
+    <Check className={`w-4 h-4 text-indigo-600 transition-all duration-200 stroke-[3] ${selectedIds.includes(o.id) ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
+  </div>
+  )}
+  </div>
+  </div>
  
  <div className="relative shrink-0">
  <img 
@@ -423,31 +478,35 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
  )}
  </div>
 
- <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
- {onEdit && (
- <button 
- onClick={() => onEdit(o)}
- className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
- title="Edit"
- >
- <Pencil className="w-4 h-4" />
- </button>
- )}
- <button 
- onClick={() => handleRestore([o.id])}
- className="p-2 text-indigo-600 hover:bg-indigo-50 :bg-indigo-900/50 rounded-lg transition-all"
- title="Restore"
- >
- <RotateCcw className="w-4 h-4" />
- </button>
- <button 
- onClick={() => handleDelete(o.id)}
- className="p-2 text-red-600 hover:bg-red-50 :bg-red-900/30 rounded-lg transition-all"
- title="Delete Permanently"
- >
- <Trash2 className="w-4 h-4" />
- </button>
- </div>
+  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+  {!o.isCsa && onEdit && (
+  <button 
+  onClick={() => onEdit(o)}
+  className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+  title="Edit"
+  >
+  <Pencil className="w-4 h-4" />
+  </button>
+  )}
+  {!o.isCsa && (
+  <button 
+  onClick={() => handleRestore([o.id])}
+  className="p-2 text-indigo-600 hover:bg-indigo-50 :bg-indigo-900/50 rounded-lg transition-all"
+  title="Restore"
+  >
+  <RotateCcw className="w-4 h-4" />
+  </button>
+  )}
+  {!o.isCsa && (
+  <button 
+  onClick={() => handleDelete(o.id)}
+  className="p-2 text-red-600 hover:bg-red-50 :bg-red-900/30 rounded-lg transition-all"
+  title="Delete Permanently"
+  >
+  <Trash2 className="w-4 h-4" />
+  </button>
+  )}
+  </div>
  </div>
  ))}
  </div>
