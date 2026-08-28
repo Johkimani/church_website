@@ -22,10 +22,9 @@ export default function OrderConfirmation() {
   const [searchParams] = useSearchParams();
   const orderIdParam = searchParams.get("order_id");
   const mParam = searchParams.get("method");
-  const phoneParam = searchParams.get("phone");
   const [orderId] = useState(orderIdParam);
   const [method] = useState<"mpesa" | "cash">(mParam === "cash" ? "cash" : "mpesa");
-  const [contactPhone, setContactPhone] = useState(phoneParam || "");
+  const [contactPhone, setContactPhone] = useState(sessionStorage.getItem('csa_order_phone') || "");
   const [showRating, setShowRating] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 

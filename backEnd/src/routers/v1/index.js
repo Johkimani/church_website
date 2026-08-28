@@ -122,8 +122,13 @@ router.use("/jumuiya-data", jumuiyaDataRouter);
 // Role management
 router.use("/", roleManagementRouter);
 
-// Setup
-router.post("/setup/admin", async (req, res) => {
+// Setup — locked behind SETUP_ADMIN_ENABLED env flag to prevent unauthorized admin creation
+router.post("/setup/admin", (req, res, next) => {
+  if (process.env.SETUP_ADMIN_ENABLED !== 'true') {
+    return res.status(403).json({ error: 'Admin setup is not enabled' });
+  }
+  next();
+}, async (req, res) => {
   const { setupAdmin } = await import("../../controllers/setupController.js");
   return setupAdmin(req, res);
 });

@@ -7,6 +7,14 @@ import { DOMHelpers } from '../../backend/utils/dom-helpers';
 import { ChoirApiService } from '../services/choir-api';
 import { MusicClass } from '../../types';
 
+const escapeHtml = (value: unknown): string =>
+    String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
 export class MusicClasses {
     private container: HTMLElement;
     private classes: MusicClass[];
@@ -148,7 +156,7 @@ export class MusicClasses {
                     <div class="csa-choir-modal__success">
                         <div class="csa-choir-success-icon">✓</div>
                         <h3>Successfully Enrolled!</h3>
-                        <p>You have joined <strong>${musicClass.title}</strong>.</p>
+                        <p>You have joined <strong>${escapeHtml(musicClass.title)}</strong>.</p>
                         <button class="csa-choir-btn csa-choir-btn--secondary csa-choir-btn--full-width">Close</button>
                     </div>
                 `;

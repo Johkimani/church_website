@@ -314,7 +314,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setCustomerPhone('');
                 setCustomerEmail('');
                 setDeliveryAddress('');
-                navigate(`/order-confirmation?order_id=${checkoutId}&cid=${checkoutId}&method=mpesa&phone=${encodeURIComponent(phone)}`);
+                sessionStorage.setItem('csa_order_phone', phone);
+                navigate(`/order-confirmation?order_id=${checkoutId}&cid=${checkoutId}&method=mpesa`);
                 return;
             }
 
@@ -358,7 +359,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         setCustomerPhone('');
                         setCustomerEmail('');
                         setDeliveryAddress('');
-                        navigate(`/order-confirmation?order_id=${orderId}&cid=${checkoutId}&method=mpesa&phone=${encodeURIComponent(phone)}`);
+                        sessionStorage.setItem('csa_order_phone', phone);
+                        navigate(`/order-confirmation?order_id=${orderId}&cid=${checkoutId}&method=mpesa`);
                     } else if (statusRes.status === 'failed') {
                         clearInterval(pollInterval);
                         showToast(`Payment failed: ${statusRes.result_desc || 'Cancelled'}`, 'error');
@@ -399,7 +401,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setCustomerEmail('');
                 setDeliveryAddress('');
                 showToast("Payment confirmed! Order placed successfully.", 'success');
-                navigate(`/order-confirmation?order_id=${receipt}&cid=${pendingCheckoutId}&method=mpesa&phone=${encodeURIComponent(pendingPhone)}`);
+                sessionStorage.setItem('csa_order_phone', pendingPhone);
+                navigate(`/order-confirmation?order_id=${receipt}&cid=${pendingCheckoutId}&method=mpesa`);
             } else {
                 showToast("Could not confirm payment. Check the receipt number and try again.", 'error');
             }
@@ -447,7 +450,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCustomerEmail('');
             setDeliveryAddress('');
             setCollectionMethod('pickup');
-            navigate(`/order-confirmation?order_id=${orderRef}&method=cash&phone=${encodeURIComponent(cashPhone)}`);
+            sessionStorage.setItem('csa_order_phone', cashPhone);
+            navigate(`/order-confirmation?order_id=${orderRef}&method=cash`);
         } catch (err: any) {
             console.error("Cash checkout error:", err);
             showToast(err?.response?.data?.message || err?.response?.data?.error || "Failed to place order. Try again.", 'error');

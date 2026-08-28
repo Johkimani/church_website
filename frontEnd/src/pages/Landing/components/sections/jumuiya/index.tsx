@@ -29,9 +29,7 @@ const JumuiyaSection: React.FC = () => {
 
   const loadJumuiyas = async () => {
     try {
-      console.log('Fetching jumuiya...');
       const data = await apiService.getJumuiya();
-      console.log('Jumuiya data:', data);
       setJumuiyas(data);
     } catch (err) {
       console.error('Error loading jumuiyas:', err);

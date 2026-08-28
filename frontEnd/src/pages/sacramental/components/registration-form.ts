@@ -8,6 +8,14 @@ import { Validators } from '../../backend/utils/validators';
 import { ChoirApiService } from '../services/choir-api';
 import { ChoirRegistration, VoiceType, SkillLevel, RegistrationFormState } from '../../types';
 
+const escapeHtml = (value: unknown): string =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 export class RegistrationForm {
   private container: HTMLElement;
   private formState: RegistrationFormState;
@@ -239,7 +247,6 @@ export class RegistrationForm {
     }
 
     this.checkoutID = paymentResponse.data.checkoutID;
-    console.log(paymentResponse.data);
     this.setSubmitButtonText('<span class="csa-choir-loading"></span> Waiting for PIN...');
 
     // --- STEP 2: Poll for Payment Status ---
@@ -370,7 +377,7 @@ export class RegistrationForm {
     const alert = DOMHelpers.createElement('div', 'csa-choir-alert csa-choir-alert--success');
     alert.innerHTML = `
       <strong>Registration Successful!</strong><br>
-      Your registration ID is: <strong>${registrationId}</strong><br>
+      Your registration ID is: <strong>${escapeHtml(registrationId)}</strong><br>
       You will receive a confirmation email shortly.
     `;
 
@@ -383,7 +390,7 @@ export class RegistrationForm {
 
   private showError(message: string): void {
     const alert = DOMHelpers.createElement('div', 'csa-choir-alert csa-choir-alert--error');
-    alert.innerHTML = `<strong>Error:</strong> ${message}`;
+    alert.innerHTML = `<strong>Error:</strong> ${escapeHtml(message)}`;
 
     const form = this.container.querySelector('form');
     if (form) {

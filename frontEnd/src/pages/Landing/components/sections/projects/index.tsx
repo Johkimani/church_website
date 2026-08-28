@@ -32,9 +32,7 @@ const ProjectsSection: React.FC = () => {
 
   const loadProjects = async () => {
     try {
-      console.log('Fetching projects...');
       const data = await apiService.getProjects();
-      console.log('Projects data:', data);
       setProjects(data);
     } catch (err) {
       console.error('Error loading projects:', err);

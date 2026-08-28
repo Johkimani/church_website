@@ -29,9 +29,7 @@ const OfficialsSection: React.FC = () => {
 
   const loadOfficials = async () => {
     try {
-      console.log('Fetching officials...');
       const data = await apiService.getOfficials();
-      console.log('Officials data:', data);
       setOfficials(data);
     } catch (err) {
       console.error('Error loading officials:', err);

@@ -1335,11 +1335,20 @@ export const registerWithPayment = async (req, res) => {
       }
 
       // Update members table — also normalize year_of_study if needed
-      const yosUpdate = normalizedYos ? `, year_of_study = '${normalizedYos}'` : '';
-      await client.query(
-        `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL${yosUpdate}${semCol ? `, ${semCol} = true` : ''} WHERE member_id = $2`,
-        [jumuiya_id, member_id]
-      );
+      let yosParam = null;
+      let updateQuery = `UPDATE members SET jumuiya_id = $1, migrated_to_associates = NULL`;
+      const params = [jumuiya_id, member_id];
+      if (normalizedYos) {
+        yosParam = normalizedYos;
+        params.push(yosParam);
+        updateQuery += `, year_of_study = $${params.length}`;
+      }
+      if (semCol) {
+        params.push(true);
+        updateQuery += `, ${semCol} = $${params.length}`;
+      }
+      updateQuery += ` WHERE member_id = $2`;
+      await client.query(updateQuery, params);
 
       // Fetch updated member with jumuiya name via JOIN
       const updateResult = await client.query(
