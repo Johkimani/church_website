@@ -49,6 +49,25 @@ const MODULE_TO_CSA_CATEGORY: Record<string, string> = {
   dancers: 'Liturgical Dancers',
 };
 
+// Order past officials within a term by superiority (chair first … female
+// representative last). Positions not listed fall back to the end so other
+// communities keep their existing order.
+const OFFICIAL_SUPERIORITY_RANK: Record<string, number> = {
+  'choir chairperson': 1,
+  'choir vice chairperson': 2,
+  'choir master': 3,
+  'choir mistress': 4,
+  'secretary': 5,
+  'vice secretary': 6,
+  'treasurer': 7,
+  'project manager': 8,
+  'male representative': 9,
+  'female representative': 10,
+};
+
+const rankOfficial = (f: any): number =>
+  OFFICIAL_SUPERIORITY_RANK[(f.position || '').toString().toLowerCase().trim()] ?? 99;
+
 const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md' | 'lg' }> = ({ name, image, size = 'md' }) => {
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const fontSize = size === 'xs' ? '0.65rem' : size === 'sm' ? '0.85rem' : '1.2rem';
@@ -459,7 +478,9 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
 
             <div className="space-y-10">
               {(historyFilter === 'all' ? historyTerms : [historyFilter]).filter(Boolean).map(term => {
-                const termOfficials = filteredHistory.filter(f => (f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')) === term);
+                const termOfficials = filteredHistory
+                  .filter(f => (f.term_name || (f.term_year ? `${f.term_year}` : 'Previous Term')) === term)
+                  .sort((a, b) => rankOfficial(a) - rankOfficial(b));
                 if (termOfficials.length === 0) return null;
                 return (
                   <div key={term}>
