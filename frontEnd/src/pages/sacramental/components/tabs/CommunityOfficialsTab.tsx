@@ -39,6 +39,15 @@ const MODULE_TO_CATEGORY: Record<string, string> = {
   youth: 'Mentorship',
 };
 
+// Some community chair/vice-chair roles are stored at the CSA level (the
+// `officials` table) rather than in `group_officials`. Their archived history
+// must be merged in separately, since /group-officials/term only scans group_officials.
+const MODULE_TO_CSA_CATEGORY: Record<string, string> = {
+  choir: 'Choir Officials',
+  dancers: 'Liturgical Dancers',
+  charismatic: 'Instrument Managers',
+};
+
 const Avatar: React.FC<{ name: string; image?: string; size?: 'xs' | 'sm' | 'md' | 'lg' }> = ({ name, image, size = 'md' }) => {
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const fontSize = size === 'xs' ? '0.65rem' : size === 'sm' ? '0.85rem' : '1.2rem';
@@ -83,12 +92,28 @@ const CommunityOfficialsTab: React.FC<Props> = ({ module, color }) => {
     if (!category) return;
 
     setLoadingHistory(true);
-    apiClient.get('/group-officials/term', {
-      params: { only_archived: 'true', category, limit: 100 }
-    })
-      .then((res) => {
-        const data = Array.isArray(res.data?.data) ? res.data.data : [];
-        setFormerOfficials(data);
+    const csaCategory = MODULE_TO_CSA_CATEGORY[moduleId];
+
+    const groupReq = apiClient
+      .get('/group-officials/term', { params: { only_archived: 'true', category, limit: 100 } })
+      .then((res) => (Array.isArray(res.data?.data) ? res.data.data : []) as any[])
+      .catch(() => [] as any[]);
+
+    const csaReq = csaCategory
+      ? apiClient
+          .get('/officials/term', { params: { only_archived: 'true', limit: 200 } })
+          .then((res) => {
+            const rows = (Array.isArray(res.data?.data) ? res.data.data : []) as any[];
+            return rows
+              .filter((o) => o.category === csaCategory)
+              .map((o) => ({ ...o, id: `csa-${o.id}` }));
+          })
+          .catch(() => [] as any[])
+      : Promise.resolve([] as any[]);
+
+    Promise.all([groupReq, csaReq])
+      .then(([groupRows, csaRows]) => {
+        setFormerOfficials([...groupRows, ...csaRows]);
       })
       .catch(() => setFormerOfficials([]))
       .finally(() => setLoadingHistory(false));
