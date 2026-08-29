@@ -62,6 +62,17 @@ export default function AdminPanel() {
   const jumuiyaApi = useJumuiyaOfficials({ termId: currentTerm?.id });
   const groupApi = useGroupOfficials({ termId: currentTerm?.id });
 
+  // Total archived records for the chosen category across ALL terms (not just
+  // the current term), so the dashboard count reflects every archived official.
+  const totalArchived = useMemo(() => {
+    if (!terms || terms.length === 0) return 0;
+    const key =
+      adminMode === 'csa' ? 'archived_csa_count'
+      : adminMode === 'jumuiya' ? 'archived_jumuiya_count'
+      : 'archived_group_count';
+    return terms.reduce((sum, t) => sum + Number((t as any)[key] || 0), 0);
+  }, [terms, adminMode]);
+
 
   // Local UI State
   const [adminMode, setAdminMode] = useState<'csa' | 'jumuiya' | 'groups'>(() => {
@@ -223,12 +234,7 @@ export default function AdminPanel() {
         {/* Stats Overview */}
         <DashboardStats 
           officialsCount={activeOfficialsList.length} 
-          archivedCount={adminMode === 'csa' 
-            ? Number(currentTerm?.archived_csa_count || 0) 
-            : adminMode === 'jumuiya'
-              ? Number(currentTerm?.archived_jumuiya_count || 0)
-              : Number(currentTerm?.archived_group_count || 0)
-          } 
+          archivedCount={totalArchived} 
           currentTerm={currentTerm} 
           displayTerm={displayTerm}
         />

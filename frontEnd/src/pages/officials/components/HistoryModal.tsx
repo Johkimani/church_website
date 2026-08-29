@@ -69,7 +69,8 @@ export function HistoryModal({ isOpen, onClose, activeOfficials, activeTerm, mod
     onlyArchived: true,
     page: 1,
     limit,
-    mode
+    mode,
+    category: (mode === 'jumuiya' || mode === 'groups') && categoryFilter !== 'all' ? categoryFilter : undefined,
   });
 
   // Merge CSA-level community chairs into the groups archive (display only).

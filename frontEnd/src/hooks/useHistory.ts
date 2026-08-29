@@ -16,10 +16,10 @@ export interface HistoryResponse {
   };
 }
 
-export function useHistory(filters: { termId?: string; onlyArchived?: boolean; page?: number; limit?: number; mode?: 'csa' | 'jumuiya' | 'groups' }) {
+export function useHistory(filters: { termId?: string; onlyArchived?: boolean; page?: number; limit?: number; mode?: 'csa' | 'jumuiya' | 'groups'; category?: string }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { termId, onlyArchived, page = 1, limit = 20, mode = 'csa' } = filters;
+  const { termId, onlyArchived, page = 1, limit = 20, mode = 'csa', category } = filters;
 
   const getBaseUrl = () => mode === 'jumuiya' ? API_JUMUIYA_HISTORY : mode === 'groups' ? API_GROUP_HISTORY : API_HISTORY;
   const getRestoreUrl = () => mode === 'jumuiya' ? API_JUMUIYA_RESTORE : mode === 'groups' ? API_GROUP_RESTORE : API_RESTORE;
@@ -35,6 +35,7 @@ export function useHistory(filters: { termId?: string; onlyArchived?: boolean; p
       
       const queryParams = new URLSearchParams();
       if (onlyArchived) queryParams.append('only_archived', 'true');
+      if (category) queryParams.append('category', category);
       queryParams.append('page', page.toString());
       queryParams.append('limit', limit.toString());
       
