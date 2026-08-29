@@ -509,13 +509,13 @@ export const deleteJumuiyaMember = async (req, res) => {
       // DELETE from members with a constraint violation for members that are
       // referenced elsewhere.
       const fkRes = await client.query(`
-        SELECT tc.table_name AS table_name, kcu.column_name AS column_name
-        FROM information_schema.table_constraints tc
+        SELECT kcu.table_name AS table_name, kcu.column_name AS column_name
+        FROM information_schema.referential_constraints rc
         JOIN information_schema.key_column_usage kcu
-          ON tc.constraint_name = kcu.constraint_name
-             AND tc.table_schema = kcu.table_schema
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-          AND tc.confrelid = 'members'::regclass
+          ON rc.constraint_name = kcu.constraint_name
+             AND rc.constraint_schema = kcu.constraint_schema
+        WHERE rc.unique_constraint_table_name = 'members'
+          AND kcu.table_name <> 'members'
       `);
 
       for (const row of fkRes.rows) {

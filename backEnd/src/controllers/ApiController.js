@@ -255,33 +255,70 @@ export const deleteRecord = async (tableName, id) => {
     // referencing table first so the delete always succeeds.
     if (dbTableName === 'members') {
       await withTransaction(async (client) => {
+        // Pre-clear every table that directly references members.member_id.
+        // Some of these FKs (pending_payments, member_roles, notifications, ...)
+        // are defined WITHOUT ON DELETE CASCADE, which would otherwise block the
+        // delete. Discover them from the schema rather than hard-coding.
         const fkRes = await client.query(`
-          SELECT tc.table_name AS table_name, kcu.column_name AS column_name
-          FROM information_schema.table_constraints tc
+          SELECT kcu.table_name AS table_name, kcu.column_name AS column_name
+          FROM information_schema.referential_constraints rc
           JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-               AND tc.table_schema = kcu.table_schema
-          WHERE tc.constraint_type = 'FOREIGN KEY'
-            AND tc.confrelid = 'members'::regclass
+            ON rc.constraint_name = kcu.constraint_name
+           AND rc.constraint_schema = kcu.constraint_schema
+          WHERE rc.unique_constraint_table_name = 'members'
+            AND kcu.table_name <> 'members'
         `);
         for (const row of fkRes.rows) {
-          if (row.table_name === 'members') continue;
-          await client.query(
-            `DELETE FROM "${row.table_name}" WHERE "${row.column_name}" = $1`,
-            [id]
-          );
+          try {
+            await client.query(
+              `DELETE FROM "${row.table_name}" WHERE "${row.column_name}" = $1`,
+              [id]
+            );
+          } catch (childErr) {
+            logger.error(`Pre-cleanup failed for ${row.table_name}: ${childErr.message}`);
+          }
         }
-        const result = await client.query(
-          `DELETE FROM members WHERE "member_id" = $1 RETURNING *`,
-          [id]
-        );
-        if (result.rows.length === 0) {
-          const err = new Error('Record not found');
-          err.status = 404;
-          throw err;
+
+        // Safety net: if a reference still remains (e.g. a deeper chain),
+        // retry and clear the exact table Postgres reports, up to 20 times.
+        for (let attempt = 0; attempt < 20; attempt++) {
+          try {
+            const result = await client.query(
+              `DELETE FROM members WHERE "member_id" = $1 RETURNING *`,
+              [id]
+            );
+            if (result.rows.length === 0) {
+              const err = new Error('Record not found');
+              err.status = 404;
+              throw err;
+            }
+            return;
+          } catch (e) {
+            if (e.code !== '23503' || !e.detail) throw e;
+            const m = /still referenced from table "([^"]+)"/.exec(e.detail);
+            if (!m) throw e;
+            const childTable = m[1];
+            const colRes = await client.query(`
+              SELECT kcu.column_name
+              FROM information_schema.referential_constraints rc
+              JOIN information_schema.key_column_usage kcu
+                ON rc.constraint_name = kcu.constraint_name
+               AND rc.constraint_schema = kcu.constraint_schema
+              WHERE rc.unique_constraint_table_name = 'members'
+                AND kcu.table_name = $1
+              LIMIT 1
+            `, [childTable]);
+            const col = colRes.rows[0]?.column_name || 'member_id';
+            try {
+              await client.query(`DELETE FROM "${childTable}" WHERE "${col}" = $1`, [id]);
+            } catch (childErr) {
+              logger.error(`Child cleanup failed for ${childTable}: ${childErr.message}`);
+            }
+          }
         }
+        throw new Error('Unable to delete member: unresolved references');
       });
-      return null;
+      return { id, deleted: true };
     }
 
     const query = `DELETE FROM "${dbTableName}" WHERE "${pkName}" = $1 RETURNING *`;
