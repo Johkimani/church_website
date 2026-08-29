@@ -62,8 +62,15 @@ export default function AdminPanel() {
   const jumuiyaApi = useJumuiyaOfficials({ termId: currentTerm?.id });
   const groupApi = useGroupOfficials({ termId: currentTerm?.id });
 
+
+  // Local UI State
+  const [adminMode, setAdminMode] = useState<'csa' | 'jumuiya' | 'groups'>(() => {
+    return (localStorage.getItem('admin_mode') as 'csa' | 'jumuiya' | 'groups') || 'csa';
+  });
+
   // Total archived records for the chosen category across ALL terms (not just
   // the current term), so the dashboard count reflects every archived official.
+  // NOTE: must be declared after `adminMode` (above) to avoid a TDZ error.
   const totalArchived = useMemo(() => {
     if (!terms || terms.length === 0) return 0;
     const key =
@@ -72,12 +79,6 @@ export default function AdminPanel() {
       : 'archived_group_count';
     return terms.reduce((sum, t) => sum + Number((t as any)[key] || 0), 0);
   }, [terms, adminMode]);
-
-
-  // Local UI State
-  const [adminMode, setAdminMode] = useState<'csa' | 'jumuiya' | 'groups'>(() => {
-    return (localStorage.getItem('admin_mode') as 'csa' | 'jumuiya' | 'groups') || 'csa';
-  });
 
   const handleModeChange = (mode: 'csa' | 'jumuiya' | 'groups') => {
     setAdminMode(mode);
