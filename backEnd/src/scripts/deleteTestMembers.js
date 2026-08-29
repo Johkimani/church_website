@@ -8,8 +8,20 @@
  * It only touches the six registration numbers listed below and is safe to
  * re-run (already-deleted members are skipped).
  */
-import { db as pool } from "../Configs/dbConfig.js";
+import pg from "pg";
 import { cascadeDeleteRow } from "../utils/cascadeDelete.js";
+
+// Prefer a full DATABASE_URL (e.g. Render Postgres "Connect" external URL).
+// Otherwise fall back to the app's dbConfig (which reads DB_HOST/DB_USER/...).
+let pool;
+if (process.env.DATABASE_URL) {
+  pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
+} else {
+  ({ db: pool } = await import("../Configs/dbConfig.js"));
+}
 
 const MEMBER_IDS = [
   "OFF/39762/26",
