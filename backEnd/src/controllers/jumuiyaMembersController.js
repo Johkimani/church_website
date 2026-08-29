@@ -1,4 +1,5 @@
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
+import { cascadeDeleteRow } from "../utils/cascadeDelete.js";
 import logger from "../logger/winston.js";
 import bcrypt from "bcrypt";
 import { getCurrentSemester } from "../utils/semesterConfig.js";
@@ -503,28 +504,10 @@ export const deleteJumuiyaMember = async (req, res) => {
     const { id } = req.params; // member_id
 
     await withTransaction(async (client) => {
-      // Clean up every table that references members.member_id. This covers
-      // tables whose foreign key lacks ON DELETE CASCADE (e.g. pending_payments,
-      // member_roles, notifications) which would otherwise block the final
-      // DELETE from members with a constraint violation for members that are
-      // referenced elsewhere.
-      const fkRes = await client.query(`
-        SELECT kcu.table_name AS table_name, kcu.column_name AS column_name
-        FROM information_schema.referential_constraints rc
-        JOIN information_schema.key_column_usage kcu
-          ON rc.constraint_name = kcu.constraint_name
-             AND rc.constraint_schema = kcu.constraint_schema
-        WHERE rc.unique_constraint_table_name = 'members'
-          AND kcu.table_name <> 'members'
-      `);
-
-      for (const row of fkRes.rows) {
-        if (row.table_name === 'members') continue;
-        await client.query(
-          `DELETE FROM "${row.table_name}" WHERE "${row.column_name}" = $1`,
-          [id]
-        );
-      }
+      // Clear the entire FK dependency tree for this member (recursively, to
+      // any depth) so the final DELETE FROM members never hits a constraint
+      // violation from a non-cascade foreign key.
+      await cascadeDeleteRow(client, 'members', 'member_id', id);
 
       // Also clear historical import rows keyed by registration number rather
       // than member_id.
