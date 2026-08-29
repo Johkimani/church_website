@@ -244,6 +244,59 @@ export const createRecord = async (tableName, data) => {
   }
 };
 
+/**
+ * Recursively delete a row and everything that references it, following
+ * foreign-key chains to any depth. Needed because several tables reference
+ * `members` (and each other) without ON DELETE CASCADE, so a plain DELETE
+ * would be blocked by a constraint violation.
+ */
+const cascadeDeleteRow = async (client, table, pkCol, value, depth = 0) => {
+  if (depth > 25) {
+    throw new Error(`Cascade delete exceeded depth for ${table}`);
+  }
+
+  // Tables that reference `table` via a foreign key.
+  const childRes = await client.query(
+    `SELECT kcu.table_name AS ctable, kcu.column_name AS fkcol
+     FROM information_schema.referential_constraints rc
+     JOIN information_schema.key_column_usage kcu
+       ON rc.constraint_name = kcu.constraint_name
+      AND rc.constraint_schema = kcu.constraint_schema
+     WHERE rc.unique_constraint_table_name = $1
+       AND kcu.table_name <> $1`,
+    [table]
+  );
+
+  for (const c of childRes.rows) {
+    // Find the child table's primary key column so we can recurse per row.
+    const pkRes = await client.query(
+      `SELECT kcu.column_name AS pk
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu
+         ON tc.constraint_name = kcu.constraint_name
+      WHERE tc.constraint_type = 'PRIMARY KEY'
+        AND tc.table_schema = 'public'
+        AND tc.table_name = $1
+      LIMIT 1`,
+      [c.ctable]
+    );
+    const childPk = pkRes.rows[0]?.pk || 'id';
+
+    const childRows = await client.query(
+      `SELECT "${childPk}" FROM "${c.ctable}" WHERE "${c.fkcol}" = $1`,
+      [value]
+    );
+    for (const r of childRows.rows) {
+      const childVal = r[childPk];
+      if (childVal !== undefined && childVal !== null) {
+        await cascadeDeleteRow(client, c.ctable, childPk, childVal, depth + 1);
+      }
+    }
+  }
+
+  await client.query(`DELETE FROM "${table}" WHERE "${pkCol}" = $1`, [value]);
+};
+
 export const deleteRecord = async (tableName, id) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';
@@ -255,68 +308,12 @@ export const deleteRecord = async (tableName, id) => {
     // referencing table first so the delete always succeeds.
     if (dbTableName === 'members') {
       await withTransaction(async (client) => {
-        // Pre-clear every table that directly references members.member_id.
-        // Some of these FKs (pending_payments, member_roles, notifications, ...)
-        // are defined WITHOUT ON DELETE CASCADE, which would otherwise block the
-        // delete. Discover them from the schema rather than hard-coding.
-        const fkRes = await client.query(`
-          SELECT kcu.table_name AS table_name, kcu.column_name AS column_name
-          FROM information_schema.referential_constraints rc
-          JOIN information_schema.key_column_usage kcu
-            ON rc.constraint_name = kcu.constraint_name
-           AND rc.constraint_schema = kcu.constraint_schema
-          WHERE rc.unique_constraint_table_name = 'members'
-            AND kcu.table_name <> 'members'
-        `);
-        for (const row of fkRes.rows) {
-          try {
-            await client.query(
-              `DELETE FROM "${row.table_name}" WHERE "${row.column_name}" = $1`,
-              [id]
-            );
-          } catch (childErr) {
-            logger.error(`Pre-cleanup failed for ${row.table_name}: ${childErr.message}`);
-          }
-        }
-
-        // Safety net: if a reference still remains (e.g. a deeper chain),
-        // retry and clear the exact table Postgres reports, up to 20 times.
-        for (let attempt = 0; attempt < 20; attempt++) {
-          try {
-            const result = await client.query(
-              `DELETE FROM members WHERE "member_id" = $1 RETURNING *`,
-              [id]
-            );
-            if (result.rows.length === 0) {
-              const err = new Error('Record not found');
-              err.status = 404;
-              throw err;
-            }
-            return;
-          } catch (e) {
-            if (e.code !== '23503' || !e.detail) throw e;
-            const m = /still referenced from table "([^"]+)"/.exec(e.detail);
-            if (!m) throw e;
-            const childTable = m[1];
-            const colRes = await client.query(`
-              SELECT kcu.column_name
-              FROM information_schema.referential_constraints rc
-              JOIN information_schema.key_column_usage kcu
-                ON rc.constraint_name = kcu.constraint_name
-               AND rc.constraint_schema = kcu.constraint_schema
-              WHERE rc.unique_constraint_table_name = 'members'
-                AND kcu.table_name = $1
-              LIMIT 1
-            `, [childTable]);
-            const col = colRes.rows[0]?.column_name || 'member_id';
-            try {
-              await client.query(`DELETE FROM "${childTable}" WHERE "${col}" = $1`, [id]);
-            } catch (childErr) {
-              logger.error(`Child cleanup failed for ${childTable}: ${childErr.message}`);
-            }
-          }
-        }
-        throw new Error('Unable to delete member: unresolved references');
+        // Members can be referenced through foreign keys that are NOT defined
+        // with ON DELETE CASCADE (e.g. pending_payments, member_roles,
+        // notifications) and those tables can in turn reference others. Delete
+        // the member by recursively clearing the entire FK dependency tree so
+        // the final DELETE FROM members never hits a constraint violation.
+        await cascadeDeleteRow(client, 'members', 'member_id', id);
       });
       return { id, deleted: true };
     }
