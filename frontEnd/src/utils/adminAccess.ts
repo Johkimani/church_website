@@ -138,7 +138,6 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");
         prefixes.add("/admin/activity-log");
-        prefixes.add("/admin/bookings");
         break;
       case "OS":
         prefixes.add("/admin/announcements");
