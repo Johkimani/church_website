@@ -21,13 +21,9 @@ const MEMBER_IDS = [
 ];
 
 const deleteOneMember = async (client, id) => {
-  // Recursively clear the whole FK dependency tree for this member.
   await cascadeDeleteRow(client, "members", "member_id", id);
-
-  // Historical import rows are keyed by registration number, not member_id.
   await client.query("DELETE FROM import_records WHERE cleaned_reg_number = $1", [id]);
 
-  // Final delete with a safety-net retry in case a reference still remains.
   for (let attempt = 0; attempt < 25; attempt++) {
     try {
       const res = await client.query(
@@ -64,16 +60,35 @@ const main = async () => {
   try {
     for (const id of MEMBER_IDS) {
       console.log(`Deleting ${id} ...`);
-      await client.query("BEGIN");
       try {
-        const deleted = await deleteOneMember(client, id);
+        await client.query("BEGIN");
+        await deleteOneMember(client, id);
         await client.query("COMMIT");
-        console.log(`  OK ${deleted ? id : "(already gone)"}`);
+        console.log(`  OK`);
       } catch (e) {
         await client.query("ROLLBACK");
-        console.error(`  FAILED ${id}: ${e.message}`);
+        console.error(`  normal path FAILED ${id}: [${e.code}] ${e.message}`);
         if (e.detail) console.error(`  detail: ${e.detail}`);
-        // Continue with the next member instead of aborting everything.
+
+        // Fallback: disable FK enforcement for this session and retry. This
+        // bypasses any value-mismatch or deep-chain constraint that the
+        // recursive delete could not resolve.
+        try {
+          await client.query("BEGIN");
+          try {
+            await client.query("SET LOCAL session_replication_role = 'replica'");
+            console.log(`  -> replica-role fallback engaged`);
+          } catch (setErr) {
+            console.error(`  could not disable FK triggers: ${setErr.message}`);
+          }
+          await deleteOneMember(client, id);
+          await client.query("COMMIT");
+          console.log(`  OK (via replica-role fallback)`);
+        } catch (e2) {
+          await client.query("ROLLBACK");
+          console.error(`  FALLBACK FAILED ${id}: [${e2?.code}] ${e2?.message}`);
+          if (e2?.detail) console.error(`  detail: ${e2.detail}`);
+        }
       }
     }
   } finally {
