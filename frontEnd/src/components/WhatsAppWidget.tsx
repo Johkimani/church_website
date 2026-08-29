@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { apiClient } from "../api/axiosInstance";
 import { LocalStorage } from "../utils";
@@ -41,6 +42,7 @@ function saveJoined(memberId: string, state: JoinedState) {
 
 export default function WhatsAppWidget() {
   const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [links, setLinks] = useState<WhatsAppLinks | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,7 +184,9 @@ export default function WhatsAppWidget() {
     setShowSuccess(false);
   };
 
-  // Don't render if not ready
+  // Don't render if not ready. The join widget is for members only, so keep it
+  // off the admin side (officials are already assumed to be in the groups).
+  if (location.pathname.startsWith("/admin")) return null;
   if (!isAuthenticated || loading || !links) return null;
   if (groups.length === 0) return null;
   if (allJoined && !showSuccess) return null;
