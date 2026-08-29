@@ -503,11 +503,32 @@ export const deleteJumuiyaMember = async (req, res) => {
     const { id } = req.params; // member_id
 
     await withTransaction(async (client) => {
-      await client.query("DELETE FROM registered WHERE member_id = $1", [id]);
-      await client.query("DELETE FROM group_assignments WHERE member_id = $1", [id]);
-      await client.query("DELETE FROM allocation_approvals WHERE member_id = $1", [id]);
+      // Clean up every table that references members.member_id. This covers
+      // tables whose foreign key lacks ON DELETE CASCADE (e.g. pending_payments,
+      // member_roles, notifications) which would otherwise block the final
+      // DELETE from members with a constraint violation for members that are
+      // referenced elsewhere.
+      const fkRes = await client.query(`
+        SELECT tc.table_name AS table_name, kcu.column_name AS column_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+             AND tc.table_schema = kcu.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.confrelid = 'members'::regclass
+      `);
+
+      for (const row of fkRes.rows) {
+        if (row.table_name === 'members') continue;
+        await client.query(
+          `DELETE FROM "${row.table_name}" WHERE "${row.column_name}" = $1`,
+          [id]
+        );
+      }
+
+      // Also clear historical import rows keyed by registration number rather
+      // than member_id.
       await client.query("DELETE FROM import_records WHERE cleaned_reg_number = $1", [id]);
-      await client.query("DELETE FROM associates WHERE member_id = $1", [id]);
 
       const result = await client.query(
         "DELETE FROM members WHERE member_id = $1 RETURNING *",

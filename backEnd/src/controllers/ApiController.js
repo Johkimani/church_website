@@ -1,4 +1,4 @@
-import { db as pool } from "../Configs/dbConfig.js";
+import { db as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { parsePagination } from "../utils/pagination.js";
 
@@ -248,6 +248,42 @@ export const deleteRecord = async (tableName, id) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';
   try {
+    // Members can be referenced by other tables whose foreign keys are defined
+    // WITHOUT ON DELETE CASCADE (e.g. pending_payments, member_roles,
+    // notifications). A bare DELETE FROM members would then fail with a
+    // foreign-key constraint for any member referenced elsewhere. Clear every
+    // referencing table first so the delete always succeeds.
+    if (dbTableName === 'members') {
+      await withTransaction(async (client) => {
+        const fkRes = await client.query(`
+          SELECT tc.table_name AS table_name, kcu.column_name AS column_name
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+               AND tc.table_schema = kcu.table_schema
+          WHERE tc.constraint_type = 'FOREIGN KEY'
+            AND tc.confrelid = 'members'::regclass
+        `);
+        for (const row of fkRes.rows) {
+          if (row.table_name === 'members') continue;
+          await client.query(
+            `DELETE FROM "${row.table_name}" WHERE "${row.column_name}" = $1`,
+            [id]
+          );
+        }
+        const result = await client.query(
+          `DELETE FROM members WHERE "member_id" = $1 RETURNING *`,
+          [id]
+        );
+        if (result.rows.length === 0) {
+          const err = new Error('Record not found');
+          err.status = 404;
+          throw err;
+        }
+      });
+      return null;
+    }
+
     const query = `DELETE FROM "${dbTableName}" WHERE "${pkName}" = $1 RETURNING *`;
     const result = await pool.query(query, [id]);
     return maybeSanitize(tableName, result.rows)[0];
