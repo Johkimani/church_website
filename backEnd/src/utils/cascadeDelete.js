@@ -28,14 +28,13 @@ const cascadeDeleteRow = async (client, table, pkCol, value, depth = 0) => {
 
   for (const c of childRes.rows) {
     // Find the child table's primary-key column so we can recurse per row.
+    // Use pg_index (schema-agnostic) rather than information_schema filtered
+    // to 'public', since some tables may live in another schema.
     const pkRes = await client.query(
-      `SELECT kcu.column_name AS pk
-       FROM information_schema.table_constraints tc
-       JOIN information_schema.key_column_usage kcu
-         ON tc.constraint_name = kcu.constraint_name
-      WHERE tc.constraint_type = 'PRIMARY KEY'
-        AND tc.table_schema = 'public'
-        AND tc.table_name = $1
+      `SELECT a.attname AS pk
+       FROM pg_index i
+       JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+      WHERE i.indrelid = $1::regclass AND i.indisprimary
       LIMIT 1`,
       [c.ctable]
     );
