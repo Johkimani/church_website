@@ -14,15 +14,23 @@ const cascadeDeleteRow = async (client, table, pkCol, value, depth = 0) => {
     throw new Error(`Cascade delete exceeded depth for ${table}`);
   }
 
-  // Tables that reference `table` via a foreign key.
+  // Tables that reference `table` via a foreign key. Use pg_constraint
+  // (schema-agnostic) rather than information_schema.referential_constraints,
+  // which exposes no direct "referenced table" column.
   const childRes = await client.query(
-    `SELECT kcu.table_name AS ctable, kcu.column_name AS fkcol
-     FROM information_schema.referential_constraints rc
-     JOIN information_schema.key_column_usage kcu
-       ON rc.constraint_name = kcu.constraint_name
-      AND rc.constraint_schema = kcu.constraint_schema
-     WHERE rc.unique_constraint_table_name = $1
-       AND kcu.table_name <> $1`,
+    `SELECT child.relname AS ctable, a.attname AS fkcol
+     FROM pg_constraint c
+     JOIN pg_class child ON child.oid = c.conrelid
+     JOIN pg_class parent ON parent.oid = c.confrelid
+     LEFT JOIN LATERAL (
+       SELECT attname
+       FROM pg_attribute
+       WHERE attrelid = child.oid AND attnum = c.conkey[1]
+       LIMIT 1
+     ) a ON true
+     WHERE c.contype = 'f'
+       AND parent.relname = $1
+       AND child.relname <> $1`,
     [table]
   );
 
