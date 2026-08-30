@@ -161,4 +161,5 @@ export default function CopyWhatsAppButton({
       {registrationUrl.replace(/^https?:\/\//, "")}
     </a>
   </div>
-);
+  );
+}
