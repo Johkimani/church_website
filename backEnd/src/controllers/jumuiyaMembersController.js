@@ -511,26 +511,27 @@ export const updateJumuiyaMember = async (req, res) => {
  */
 export const deleteJumuiyaMember = async (req, res) => {
   try {
-    const id = req.query.id || req.params.id; // member_id
+    const id = String(req.query.id || req.params.id || "").trim(); // member_id
 
     await withTransaction(async (client) => {
-      // Clear the entire FK dependency tree for this member (recursively, to
-      // any depth) so the final DELETE FROM members never hits a constraint
-      // violation from a non-cascade foreign key.
+      // Check existence up front (before deleting): cascadeDeleteRow clears the
+      // entire FK dependency tree for this member (recursively, to any depth)
+      // AND deletes the `members` row itself, so there must be no second
+      // DELETE FROM members after it — that would always match 0 rows and
+      // roll back the whole deletion with a bogus "Member not found".
+      const exists = await client.query(
+        "SELECT 1 FROM members WHERE member_id = $1",
+        [id]
+      );
+      if (exists.rows.length === 0) {
+        throw new HttpError(404, "Member not found");
+      }
+
       await cascadeDeleteRow(client, 'members', 'member_id', id);
 
       // Also clear historical import rows keyed by registration number rather
       // than member_id.
       await client.query("DELETE FROM import_records WHERE cleaned_reg_number = $1", [id]);
-
-      const result = await client.query(
-        "DELETE FROM members WHERE member_id = $1 RETURNING *",
-        [id]
-      );
-
-      if (result.rows.length === 0) {
-        throw new HttpError(404, "Member not found");
-      }
     });
 
     res.json({ success: true, message: "Member permanently removed from the system" });
