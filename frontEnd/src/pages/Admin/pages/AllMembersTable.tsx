@@ -189,7 +189,36 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     setSaving(true);
     try {
       const payload = { ...editForm };
-      if (payload.member_id === memberId) delete payload.member_id;
+      const newReg = (payload.member_id || "").trim();
+      const regChanged = newReg !== (memberId || "").trim();
+
+      // If the registration number (the PK + login username) is being changed,
+      // that is a system-wide re-key across every table. Route it through the
+      // dedicated endpoint (the generic updateMember can't re-key a member with
+      // child rows), and confirm the side-effects with the user first.
+      if (regChanged) {
+        const warn =
+          "Changing the registration number re-keys this member across the ENTIRE system " +
+          "(membership, roles, contributions, attendance, officials, payment records).\n\n" +
+          "The member will log in with the NEW number from now on; the old number stops working. " +
+          "If their password is still the default, it is reset to the new number and they will be prompted to change it.\n\n" +
+          "Continue?";
+        if (!confirm(warn)) {
+          setSaving(false);
+          return;
+        }
+        const regRes = await memberService.changeMemberReg(memberId, newReg);
+        setMembers(prev => prev.map(m =>
+          (m.member_id === memberId || m.id === memberId)
+            ? { ...m, ...regRes.data, member_id: newReg, id: newReg }
+            : m
+        ));
+        setEditingId(null);
+        setSaving(false);
+        return;
+      }
+
+      delete payload.member_id;
       const res = await memberService.updateMember(memberId, payload);
       setMembers(prev => prev.map(m =>
         (m.member_id === memberId || m.id === memberId)
