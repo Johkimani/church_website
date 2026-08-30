@@ -560,7 +560,9 @@ export const changeMemberReg = async (req, res) => {
         "SELECT m.*, sg.name AS jumuiya_name FROM members m LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id WHERE m.member_id = $1",
         [id]
       );
-      if (cur.rows.length === 0) throw new HttpError(404, "Member not found");
+      if (cur.rows.length === 0) {
+        throw new HttpError(404, `Member not found (${id}). The registration number may have changed recently — refresh the member list and try again.`);
+      }
 
       const clash = await client.query("SELECT 1 FROM members WHERE member_id = $1", [newReg]);
       if (clash.rows.length > 0) {

@@ -227,7 +227,14 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       ));
       setEditingId(null);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Failed to update member");
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "Failed to update member";
+      // "Member not found" usually means the row's reg went stale because the
+      // member's identity changed elsewhere — refresh the list so the table
+      // reflects current keys instead of leaving the user stuck.
+      if (/not found/i.test(msg)) {
+        await fetchMembers();
+      }
+      alert(msg);
     } finally {
       setSaving(false);
     }
