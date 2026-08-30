@@ -36,10 +36,11 @@ const normalizeYear = (v) => {
   return null;
 };
 
-// Current academic start year (Sept-based, matching the members table logic).
+// Current academic start year (August-based: the first-year intake arrives at
+// the end of August, so cohorts roll up from month >= 8).
 const academicStartYear = () => {
   const now = new Date();
-  return now.getMonth() + 1 >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
 };
 
 // Bucket a member into Year 1-4 using their stored year_of_study

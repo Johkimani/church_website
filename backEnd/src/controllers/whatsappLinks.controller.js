@@ -3,6 +3,13 @@ import logger from "../logger/winston.js";
 
 const VALID_URL_PREFIX = "https://chat.whatsapp.com/";
 
+// Current academic start year (August-based: the first-year intake arrives at
+// the end of August, so cohorts roll up from month >= 8).
+const academicStartYear = () => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
 const JUMUIYA_SLUGS = [
   "st-anthony",
   "st-augustine",
@@ -72,7 +79,7 @@ export const getWhatsAppLinks = async (req, res) => {
       // Handle "YYYY-YYYY" format
       const rangeMatch = trimmed.match(/^(\d{4})-\d{4}$/);
       if (rangeMatch) {
-        const level = new Date().getFullYear() - parseInt(rangeMatch[1], 10) + 1;
+        const level = academicStartYear() - parseInt(rangeMatch[1], 10) + 1;
         if (level >= 1 && level <= 4) return level;
       }
       // Handle raw 4-digit year (e.g. "2026") → treat as registration year, assume year 1
@@ -83,7 +90,18 @@ export const getWhatsAppLinks = async (req, res) => {
       return null;
     };
 
-    const yearNum = normalizeYear(year_of_study);
+    // Fall back to deriving the year from the registration number cohort when the
+    // stored value is blank, so newly added members land in the right group.
+    const deriveYearFromReg = (reg) => {
+      const match = String(reg || "").match(/(\d{2})\s*$/);
+      if (!match) return null;
+      const admission = 2000 + parseInt(match[1], 10);
+      const level = academicStartYear() - admission + 1;
+      if (level >= 1 && level <= 4) return level;
+      return null;
+    };
+
+    const yearNum = normalizeYear(year_of_study) ?? deriveYearFromReg(userId);
     const isFirstYear = yearNum === 1;
 
     // Resolve jumuiya UUID → slug

@@ -17,7 +17,7 @@ function getCurrentAcaStart() {
   const now = new Date();
   const month = now.getMonth() + 1;
   const cy = now.getFullYear();
-  return month >= 9 ? cy : cy - 1;
+  return month >= 8 ? cy : cy - 1;
 }
 
 function getRawYearOfStudy(memberId) {

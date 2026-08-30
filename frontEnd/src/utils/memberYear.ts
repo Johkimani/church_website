@@ -25,13 +25,17 @@ export function getIntakeYearLabel(reg: string): string {
  *
  * Returns 0 when the reg number doesn't match.
  */
+// Academic year rolls over in August (the new intake arrives end of August),
+// so a cohort admitted in year N becomes Year 1 from ~Aug of year N.
+function academicStartYear(): number {
+  const now = new Date();
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
 export function getYearOfStudy(reg: string): number {
   const admissionYear = extractAdmissionYear(reg);
   if (!admissionYear) return 0;
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const cy = now.getFullYear();
-  const acaStart = month >= 9 ? cy : cy - 1;
+  const acaStart = academicStartYear();
   const year = acaStart - admissionYear + 1;
   return year > 4 ? 4 : year;
 }
@@ -39,9 +43,5 @@ export function getYearOfStudy(reg: string): number {
 export function isGraduated(reg: string): boolean {
   const admissionYear = extractAdmissionYear(reg);
   if (!admissionYear) return false;
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const cy = now.getFullYear();
-  const acaStart = month >= 9 ? cy : cy - 1;
-  return acaStart - admissionYear + 1 > 4;
+  return academicStartYear() - admissionYear + 1 > 4;
 }

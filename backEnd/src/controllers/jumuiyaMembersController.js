@@ -18,8 +18,18 @@ import { payAndWait } from "./stkPush/stkHelper.js";
 import { sendMail, isConfigured } from "../Configs/emailConfig.js";
 
 /**
+ * Current academic start year (August-based: the first-year intake arrives at
+ * the end of August, so cohorts roll up from month >= 8).
+ */
+function academicStartYear() {
+  const now = new Date();
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
+/**
  * Normalize year_of_study to a numeric year level (1-4).
- * Handles "2024-2025" (academic year range) → computes from current year.
+ * Handles "2024-2025" (academic year range) → computes from the current
+ * academic year (August-based).
  * Handles "1","2","3","4" → pass-through.
  * Returns null if it can't be determined.
  */
@@ -30,7 +40,7 @@ function normalizeYearOfStudy(yos) {
   const match = trimmed.match(/^(\d{4})-\d{4}$/);
   if (match) {
     const startYear = parseInt(match[1], 10);
-    const yearLevel = new Date().getFullYear() - startYear + 1;
+    const yearLevel = academicStartYear() - startYear + 1;
     if (yearLevel >= 1 && yearLevel <= 4) return String(yearLevel);
   }
   return null;
@@ -659,7 +669,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
                WHEN year_of_study ~ '^[1-4]$' THEN year_of_study
                WHEN year_of_study ~ '^\\d{4}-\\d{4}$'
                  THEN GREATEST(1, LEAST(4,
-                   EXTRACT(YEAR FROM CURRENT_DATE)::int - CAST(SPLIT_PART(year_of_study, '-', 1) AS integer) + 1
+                   $4::int - CAST(SPLIT_PART(year_of_study, '-', 1) AS integer) + 1
                  ))::text
              END AS norm_yos
            FROM members
@@ -679,7 +689,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
          FROM norm
          WHERE m.member_id = norm.member_id
          RETURNING m.*`,
-        [jumuiya_id, isSecondSem, member_ids]
+        [jumuiya_id, isSecondSem, member_ids, academicStartYear()]
       );
 
       // Insert into registered table
@@ -1794,7 +1804,7 @@ export const getCohortAnalytics = async (req, res) => {
         WHEN m.year_of_study ~ '^[1-4]$' THEN m.year_of_study
         WHEN m.year_of_study ~ '^[0-9]{4}-[0-9]{4}$'
           THEN GREATEST(1, LEAST(4,
-            EXTRACT(YEAR FROM CURRENT_DATE)::int - CAST(SPLIT_PART(m.year_of_study, '-', 1) AS integer) + 1
+            $1::int - CAST(SPLIT_PART(m.year_of_study, '-', 1) AS integer) + 1
           ))::text
       END
     `;
@@ -1811,7 +1821,7 @@ export const getCohortAnalytics = async (req, res) => {
         AND (m.year_of_study ~ '^[1-4]$' OR m.year_of_study ~ '^[0-9]{4}-[0-9]{4}$')
       GROUP BY year_of_study
       ORDER BY year_of_study ASC
-    `);
+    `, [academicStartYear()]);
 
     // All members breakdown by year_of_study (for pie chart — raw values as-is)
     const yearCounts = await pool.query(`
