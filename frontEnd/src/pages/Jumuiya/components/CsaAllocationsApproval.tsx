@@ -262,12 +262,13 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
         </div>
       ) : (
         <div className="space-y-2">
-          {approvals.map(a => (
+          {approvals.map((a, idx) => (
             <div key={a.id} className={`bg-white rounded-xl border p-4 flex items-center gap-4 ${
               a.status === "approved" ? "border-emerald-200 bg-emerald-50/50" :
               a.status === "rejected" ? "border-red-200 bg-red-50/50" :
               "border-slate-200"
             }`}>
+              <div className="w-6 shrink-0 text-center text-xs font-bold text-slate-400">{idx + 1}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm">{a.name}</p>
                 <div className="flex gap-3 text-xs text-slate-500 mt-0.5">

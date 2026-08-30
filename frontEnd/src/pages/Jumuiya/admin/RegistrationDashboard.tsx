@@ -216,6 +216,7 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200">
+                  <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Season</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Start Date</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">End Date</th>
@@ -224,8 +225,9 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
                 </tr>
               </thead>
               <tbody>
-                {seasons.map((s) => (
+                {seasons.map((s, idx) => (
                   <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 text-slate-400 text-xs">{idx + 1}</td>
                     <td className="py-3 px-4 font-medium text-slate-800">{s.season_name}</td>
                     <td className="py-3 px-4 text-slate-500">{s.start_date?.slice(0, 10)}</td>
                     <td className="py-3 px-4 text-slate-500">{s.end_date?.slice(0, 10)}</td>
@@ -272,6 +274,7 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
                   <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
@@ -281,8 +284,9 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
                 </tr>
               </thead>
               <tbody>
-                {csaAllocations.slice(0, 5).map((m: any) => (
+                {csaAllocations.slice(0, 5).map((m: any, idx) => (
                   <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
                     <td className="py-2 px-3 font-medium text-slate-700">{m.name}</td>
                     <td className="py-2 px-3 text-slate-500">{m.reg_number || "—"}</td>
                     <td className="py-2 px-3">

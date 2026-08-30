@@ -176,6 +176,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg #</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Email</th>
@@ -188,10 +189,11 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedMembers.map((m) => {
+                {paginatedMembers.map((m, idx) => {
                   const isEditing = editingId === m.member_id;
                   return (
                     <tr key={m.member_id} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${m.flagged_inactive ? "bg-red-50/40" : ""}`}>
+                      <td className="py-3 px-4 text-slate-400 text-xs">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                       <td className="py-3 px-4 font-medium text-slate-800">{m.member_id}</td>
                       <td className="py-3 px-4">
                         {isEditing ? (

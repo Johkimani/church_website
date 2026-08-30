@@ -798,6 +798,7 @@ export default function CSADistributionCenter() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                     <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Member</th>
                     <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
                     <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Assigned To</th>
@@ -808,6 +809,7 @@ export default function CSADistributionCenter() {
                     const j = JUMUIYAS.find(x => x.id === a.target_slug);
                     return (
                       <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
+                        <td className="py-1.5 px-3 text-slate-400 text-xs">{i + 1}</td>
                         <td className="py-1.5 px-3 font-medium text-slate-700">{a.member_name}</td>
                         <td className="py-1.5 px-3"><span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${a.member_gender === "Male" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>{a.member_gender === "Male" ? "M" : "W"}</span></td>
                         <td className="py-1.5 px-3"><span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${j?.color}15`, color: j?.color }}>{a.target_name}</span></td>
@@ -937,6 +939,7 @@ export default function CSADistributionCenter() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                   <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                   <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
                   <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
@@ -948,10 +951,11 @@ export default function CSADistributionCenter() {
                 </tr>
               </thead>
               <tbody>
-                {rejectedMembers.map(m => {
+                {rejectedMembers.map((m, idx) => {
                   const isEditing = editingRejected === m.id;
                   return (
                     <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
                       <td className="py-2 px-3">
                         {isEditing ? (
                           <input value={editForm.name} onChange={e => setEditForm((p: any) => ({ ...p, name: e.target.value }))}

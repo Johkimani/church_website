@@ -553,6 +553,7 @@ export default function JumuiyaMembersAdmin() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
@@ -564,10 +565,11 @@ export default function JumuiyaMembersAdmin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rejectedMembers.map(m => {
+                    {rejectedMembers.map((m, idx) => {
                       const isEditing = editingRejected === m.id;
                       return (
                         <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
                           <td className="py-2 px-3">
                             {isEditing ? (
                               <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}

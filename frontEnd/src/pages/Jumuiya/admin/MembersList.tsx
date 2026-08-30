@@ -11,8 +11,9 @@ interface Props {
 }
 
 // Memoized table row component
-const MemberRow = memo(({ m }: { m: any }) => (
+const MemberRow = memo(({ m, rowNumber }: { m: any; rowNumber: number }) => (
   <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+    <td className="py-3 px-4 text-slate-400 text-xs">{rowNumber}</td>
     <td className="py-3 px-4 font-medium text-slate-800">{m.member_id}</td>
     <td className="py-3 px-4 text-slate-700">{m.first_name} {m.last_name}</td>
     <td className="py-3 px-4">
@@ -223,6 +224,7 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg #</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
@@ -234,8 +236,8 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedMembers.map((m) => (
-                  <MemberRow key={m.member_id} m={m} />
+                {paginatedMembers.map((m, idx) => (
+                  <MemberRow key={m.member_id} m={m} rowNumber={(currentPage - 1) * itemsPerPage + idx + 1} />
                 ))}
               </tbody>
             </table>
