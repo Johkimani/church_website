@@ -111,7 +111,7 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const updateMember = async (id: string, data: Partial<MemberFormData>) => {
     setIsUpdating(true);
     try {
-      const res = await apiClient.put(`${API_BASE}/${encodeURIComponent(id)}`, data);
+      const res = await apiClient.put(API_BASE, data, { params: { id } });
       const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to update member');
       setMembers(prev => prev.map(m => m.id === id ? json.data : m));
@@ -125,7 +125,7 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const deleteMember = async (id: string) => {
     setIsDeleting(true);
     try {
-      const res = await apiClient.delete(`${API_BASE}/${encodeURIComponent(id)}`);
+      const res = await apiClient.delete(API_BASE, { params: { id } });
       const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to delete member');
       setMembers(prev => prev.filter(m => m.id !== id));
@@ -138,7 +138,7 @@ export const useJumuiyaMembers = ({ jumuiya_id, type = 'all' }: UseJumuiyaMember
   const unregisterMember = async (id: string) => {
     setIsDeleting(true);
     try {
-      const res = await apiClient.delete(`${API_BASE}/unregister/${encodeURIComponent(id)}`);
+      const res = await apiClient.delete(`${API_BASE}/unregister`, { params: { id } });
       const json = res.data;
       if (!json.success) throw new Error(json.message || 'Failed to unregister member');
       // Update local state: if we're in 'all' view, we might want to just update the jumuiya_id

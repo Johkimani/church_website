@@ -2297,7 +2297,7 @@ export const csaDeleteRejectedMember = async (req, res) => {
  */
 export const lookupMemberByRegNumber = async (req, res) => {
   try {
-    const { search } = req.params;
+    const search = req.query.search || req.params.search;
     if (!search || search.trim().length < 2) {
       return res.status(400).json({ success: false, message: "Search must be at least 2 characters" });
     }
@@ -2374,7 +2374,7 @@ export const updateMember = async (req, res) => {
  */
 export const flagMember = async (req, res) => {
   try {
-    const { member_id } = req.params;
+    const member_id = req.query.member_id || req.params.member_id;
     const { flagged } = req.body;
 
     if (typeof flagged !== "boolean") {

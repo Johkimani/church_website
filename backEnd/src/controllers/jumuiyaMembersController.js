@@ -289,7 +289,7 @@ export const createJumuiyaMember = async (req, res) => {
  */
 export const updateJumuiyaMember = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.query.id || req.params.id;
     const {
       member_id, first_name, last_name, year_of_study, email, jumuiya_id,
       phone, gender, course,
@@ -501,7 +501,7 @@ export const updateJumuiyaMember = async (req, res) => {
  */
 export const deleteJumuiyaMember = async (req, res) => {
   try {
-    const { id } = req.params; // member_id
+    const id = req.query.id || req.params.id; // member_id
 
     await withTransaction(async (client) => {
       // Clear the entire FK dependency tree for this member (recursively, to
@@ -1253,7 +1253,7 @@ export const cancelPendingPayment = async (req, res) => {
  */
 export const unregisterJumuiyaMember = async (req, res) => {
   try {
-    const { id } = req.params; // member_id
+    const id = req.query.id || req.params.id; // member_id
 
     const row = await withTransaction(async (client) => {
       // 1. Remove from registered table

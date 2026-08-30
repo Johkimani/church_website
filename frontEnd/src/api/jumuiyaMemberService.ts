@@ -183,13 +183,13 @@ export const memberService = {
     apiClient.get(`/jumuiya-members/all`).then(r => r.data),
 
   updateMember: (id: string, data: any) =>
-    apiClient.put(`/jumuiya-members/${encodeURIComponent(id)}`, data).then(r => r.data),
+    apiClient.put(`/jumuiya-members`, data, { params: { id } }).then(r => r.data),
 
   flagMember: (id: string, flagged: boolean) =>
-    apiClient.patch(`/jumuiya-members/${encodeURIComponent(id)}/flag`, { flagged }).then(r => r.data),
+    apiClient.patch(`/jumuiya-members/flag`, { flagged }, { params: { member_id: id } }).then(r => r.data),
 
   deleteMember: (id: string) =>
-    apiClient.delete(`/jumuiya-members/${encodeURIComponent(id)}`).then(r => r.data),
+    apiClient.delete(`/jumuiya-members`, { params: { id } }).then(r => r.data),
 
   exportMembers: (jumuiyaId: string) =>
     apiClient.get(`${BASE(jumuiyaId)}/export/members`).then(r => r.data),
@@ -198,7 +198,7 @@ export const memberService = {
     apiClient.get(`${BASE(jumuiyaId)}/export/assignments`).then(r => r.data),
 
   lookupMemberByRegNumber: (search: string) =>
-    apiClient.get(`/jumuiya-members/lookup/reg-number/${encodeURIComponent(search)}`).then(r => r.data),
+    apiClient.get(`/jumuiya-members/lookup/reg-number`, { params: { search } }).then(r => r.data),
 
   getAssociatesPending: (params?: { jumuiya_id?: string }) =>
     apiClient.get(`/jumuiya-members/associates/pending`, { params }).then(r => r.data),
