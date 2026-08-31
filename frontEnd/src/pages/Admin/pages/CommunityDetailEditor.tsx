@@ -585,19 +585,21 @@ export default function CommunityDetailEditor() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (res.data?.extractedLyrics) {
+      const extracted = res.data?.extractedLyrics || res.data?.rawText || '';
+
+      if (extracted.trim()) {
         setSongForm((prev) => ({
           ...prev,
-          lyrics_text: res.data.extractedLyrics,
-          title: !prev.title && res.data.guessedTitle ? res.data.guessedTitle : prev.title,
+          lyrics_text: extracted.trim(),
+          title: !prev.title && res.data?.guessedTitle ? res.data.guessedTitle : prev.title,
         }));
-        showToast('✨ Lyrics extracted successfully! You can review or edit below.');
+        showToast('✨ Lyrics extracted successfully! You can review or adjust them below.');
       } else {
-        alert('Could not clearly read text from this image. You can type or paste the lyrics manually.');
+        showToast(res.data?.message || 'Text is faint or handwritten. You can review and type the lyrics in the editor.');
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err);
-      alert(err?.response?.data?.error || 'OCR extraction failed. You can type or paste the lyrics manually.');
+      showToast(err?.response?.data?.error || 'OCR could not read handwriting clearly. You can type or paste lyrics manually.');
     } finally {
       setOcrExtracting(false);
     }

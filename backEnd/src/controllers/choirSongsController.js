@@ -248,31 +248,42 @@ export const extractLyricsOcr = async (req, res) => {
 
     logger.info(`Starting in-memory OCR extraction for image size: ${req.file.buffer.length} bytes`);
 
-    // Initialize Tesseract worker
-    worker = await createWorker();
+    // Initialize Tesseract worker with English/Latin character set
+    worker = await createWorker('eng');
     
     // Recognize text from image buffer
     const ret = await worker.recognize(req.file.buffer);
-    const rawText = ret.data.text || "";
+    const rawText = ret.data?.text || "";
     
     // Beautify and structure the extracted lyrics
     const cleanedLyrics = cleanOcrLyrics(rawText);
     const guessedTitle = guessTitleFromOcr(rawText);
 
-    logger.info(`OCR extraction completed successfully: found ${cleanedLyrics.length} chars`);
+    logger.info(`OCR extraction completed: raw text length = ${rawText.length}, confidence = ${ret.data?.confidence || 0}`);
+
+    if (!cleanedLyrics.trim() && !rawText.trim()) {
+      return res.json({
+        success: true,
+        extractedLyrics: "",
+        rawText: "",
+        guessedTitle: "",
+        confidence: 0,
+        message: "No legible text could be recognized automatically. You can type or paste the lyrics into the editor below."
+      });
+    }
 
     res.json({
       success: true,
-      extractedLyrics: cleanedLyrics,
+      extractedLyrics: cleanedLyrics || rawText.trim(),
       rawText: rawText,
       guessedTitle: guessedTitle,
-      confidence: ret.data.confidence || 0,
+      confidence: ret.data?.confidence || 0,
     });
   } catch (error) {
     logger.error("OCR Extraction failed: " + error.message, { stack: error.stack });
     res.status(500).json({ 
       success: false, 
-      error: "OCR text extraction failed. Please try a clearer photo or type the lyrics manually." 
+      error: "OCR text extraction could not complete (" + (error.message || "Unknown error") + "). You can type or paste the lyrics manually." 
     });
   } finally {
     if (worker) {
