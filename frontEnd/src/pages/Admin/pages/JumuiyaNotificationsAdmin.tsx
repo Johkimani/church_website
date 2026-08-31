@@ -1,39 +1,55 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  FaBell,
-  FaTrash,
-  FaPlus,
-  FaInfoCircle,
-  FaExclamationTriangle,
-  FaCheckCircle,
-  FaExclamationCircle,
-  FaSpinner,
-  FaEdit,
-} from "react-icons/fa";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { apiClient } from "../../../api/axiosInstance";
 import jumuiyaNotificationsService from "../../../api/jumuiyaNotificationsService";
+import { timeAgo } from "../../../utils";
+import { SkeletonCardGrid } from "../../../components/Skeleton";
+import toast from "react-hot-toast";
+import {
+  Bell,
+  Plus,
+  Edit2,
+  Trash2,
+  Megaphone,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Info,
+  X,
+  Save,
+  Loader2,
+} from "lucide-react";
 
 const TYPE_OPTIONS = [
-  { value: "info", label: "Info", color: "#3b82f6", bg: "#eff6ff" },
-  { value: "success", label: "Success", color: "#10b981", bg: "#f0fdf4" },
-  { value: "warning", label: "Warning", color: "#f59e0b", bg: "#fffbeb" },
-  { value: "urgent", label: "Urgent", color: "#ef4444", bg: "#fef2f2" },
+  { value: "info", label: "Info" },
+  { value: "success", label: "Success" },
+  { value: "warning", label: "Warning" },
+  { value: "urgent", label: "Urgent" },
 ];
 
-const typeMeta = (type: string) =>
-  TYPE_OPTIONS.find((t) => t.value === type) ?? TYPE_OPTIONS[0];
+const typeBadge = (type: string) => {
+  switch (type) {
+    case "success":
+      return "text-emerald-700 bg-emerald-50 border-emerald-100";
+    case "warning":
+      return "text-amber-700 bg-amber-50 border-amber-100";
+    case "urgent":
+      return "text-rose-700 bg-rose-50 border-rose-100";
+    default:
+      return "text-blue-700 bg-blue-50 border-blue-100";
+  }
+};
 
 const typeIcon = (type: string) => {
   switch (type) {
     case "success":
-      return <FaCheckCircle />;
+      return <CheckCircle2 className="w-3 h-3" />;
     case "warning":
-      return <FaExclamationTriangle />;
+      return <AlertTriangle className="w-3 h-3" />;
     case "urgent":
-      return <FaExclamationCircle />;
+      return <AlertCircle className="w-3 h-3" />;
     default:
-      return <FaInfoCircle />;
+      return <Info className="w-3 h-3" />;
   }
 };
 
@@ -75,6 +91,7 @@ export default function JumuiyaNotificationsAdmin() {
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
       const response = await apiClient.get("/jumuiya-data/all");
       if (response.data?.success) {
@@ -98,7 +115,7 @@ export default function JumuiyaNotificationsAdmin() {
         }
       }
     } catch {
-      // silent
+      toast.error("Failed to load your notifications");
     } finally {
       setLoading(false);
     }
@@ -117,9 +134,10 @@ export default function JumuiyaNotificationsAdmin() {
       setTitle("");
       setMessage("");
       setType("info");
+      toast.success("Announcement posted successfully!");
       await loadJumuiyaData();
     } catch {
-      // silent
+      toast.error("Failed to post announcement");
     } finally {
       setSending(false);
     }
@@ -132,9 +150,10 @@ export default function JumuiyaNotificationsAdmin() {
       if (!isNaN(numId)) {
         await jumuiyaNotificationsService.remove(numId);
       }
+      toast.success("Notification deleted");
       await loadJumuiyaData();
     } catch {
-      // silent
+      toast.error("Failed to delete notification");
     }
   };
 
@@ -163,463 +182,238 @@ export default function JumuiyaNotificationsAdmin() {
           status: editType,
         });
       }
+      toast.success("Notification updated");
       cancelEdit();
       await loadJumuiyaData();
     } catch {
-      // silent
+      toast.error("Failed to update notification");
     }
   };
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  if (loading) {
-    return (
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 16px" }}>
-        {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <div className="skeleton-shimmer" style={{ height: 26, width: 240, borderRadius: 8, marginBottom: 8 }} />
-          <div className="skeleton-shimmer" style={{ height: 15, width: 360, borderRadius: 6 }} />
-        </div>
-
-        {/* Post form card */}
-        <div style={{ marginBottom: 40, padding: 24, background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0" }}>
-          <div className="skeleton-shimmer" style={{ height: 20, width: 200, borderRadius: 6, marginBottom: 20 }} />
-          <div className="skeleton-shimmer" style={{ height: 46, width: "100%", borderRadius: 12, marginBottom: 16 }} />
-          <div className="skeleton-shimmer" style={{ height: 88, width: "100%", borderRadius: 12, marginBottom: 20 }} />
-          <div className="skeleton-shimmer" style={{ height: 44, width: 180, borderRadius: 12 }} />
-        </div>
-
-        {/* Notifications header + cards */}
-        <div className="skeleton-shimmer" style={{ height: 22, width: 270, borderRadius: 6, marginBottom: 16 }} />
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            style={{
-              padding: 20,
-              background: "#fff",
-              borderRadius: 16,
-              border: "1px solid #e2e8f0",
-              marginBottom: 16,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            }}
-          >
-            <div className="skeleton-shimmer" style={{ height: 14, width: 130, borderRadius: 20, marginBottom: 12 }} />
-            <div className="skeleton-shimmer" style={{ height: 18, width: "60%", borderRadius: 6, marginBottom: 10 }} />
-            <div className="skeleton-shimmer" style={{ height: 14, width: "90%", borderRadius: 6 }} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (!jumuiya) {
-    return (
-      <div style={{ textAlign: "center", padding: 64, color: "var(--text-secondary)" }}>
-        <p>Jumuiya not found for your account.</p>
-      </div>
-    );
-  }
+  const sorted = [...notifications].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 16px" }}>
-      <div style={{ marginBottom: 32 }}>
-        <h2
-          style={{
-            marginBottom: 8,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <FaBell style={{ color: "var(--primary)" }} />
-          Community Updates
-        </h2>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-          {jumuiya.name} — Post announcements visible to all members
-        </p>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md">
+            <Megaphone size={22} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Community Updates</h2>
+            <p className="text-xs text-slate-500 font-medium">
+              {jumuiya ? `${jumuiya.name} — post announcements visible to all members` : "Post announcements visible to all members"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <form
-        onSubmit={handlePost}
-        style={{
-          marginBottom: 40,
-          padding: 24,
-          background: "var(--bg-secondary, #f8f9fa)",
-          borderRadius: 16,
-          border: "1px solid var(--border-color, #e2e8f0)",
-        }}
-      >
-        <h3 style={{ marginBottom: 20, fontSize: "1.1rem" }}>
-          Post New Announcement
-        </h3>
-
-        <div style={{ marginBottom: 16 }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: 8,
-              fontWeight: 600,
-              fontSize: "0.9rem",
-            }}
-          >
-            Title
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Announcement title..."
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              borderRadius: 12,
-              border: "1px solid var(--border-color, #e2e8f0)",
-              boxSizing: "border-box",
-              fontSize: "1rem",
-            }}
-            required
-          />
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: 16,
-            marginBottom: 20,
-          }}
-        >
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: 8,
-                fontWeight: 600,
-                fontSize: "0.9rem",
-              }}
-            >
-              Message
-            </label>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Notification details..."
-              rows={3}
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: 12,
-                border: "1px solid var(--border-color, #e2e8f0)",
-                resize: "vertical",
-                fontFamily: "inherit",
-                fontSize: "1rem",
-                boxSizing: "border-box",
-              }}
-              required
-            />
+      {loading ? (
+        <SkeletonCardGrid count={3} />
+      ) : !jumuiya ? (
+        <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 text-2xl shadow-inner">
+            <Bell size={28} />
           </div>
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: 8,
-                fontWeight: 600,
-                fontSize: "0.9rem",
-              }}
-            >
-              Type
-            </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              style={{
-                padding: "12px 16px",
-                borderRadius: 12,
-                border: "1px solid var(--border-color, #e2e8f0)",
-                background: "white",
-                height: 46,
-                fontSize: "1rem",
-              }}
-            >
-              {TYPE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={sending}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            padding: "12px 32px",
-            borderRadius: 12,
-            background: "var(--primary, #6366f1)",
-            color: "white",
-            border: "none",
-            fontWeight: 600,
-            cursor: sending ? "not-allowed" : "pointer",
-            fontSize: "1rem",
-            opacity: sending ? 0.7 : 1,
-          }}
-        >
-          {sending ? <FaSpinner className="spin" /> : <FaPlus />}
-          Post Announcement
-        </button>
-      </form>
-
-      <h3
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 16,
-        }}
-      >
-        <FaBell /> Your Notifications ({notifications.length})
-      </h3>
-
-      {notifications.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "64px 32px",
-            color: "var(--text-secondary)",
-            background: "var(--bg-secondary, #f8f9fa)",
-            borderRadius: 16,
-            border: "2px dashed var(--border-color, #e2e8f0)",
-          }}
-        >
-          <FaBell style={{ fontSize: "3rem", marginBottom: 16, opacity: 0.3 }} />
-          <p style={{ fontSize: "1.1rem", fontWeight: 600, margin: "0 0 8px 0" }}>
-            No notifications posted yet
-          </p>
-          <p style={{ fontSize: "0.9rem", margin: 0 }}>
-            Create your first announcement using the form above
-          </p>
+          <h3 className="text-lg font-bold text-slate-800 mb-1">Jumuiya not found</h3>
+          <p className="text-sm text-slate-400 max-w-sm">Your account is not linked to a jumuiya.</p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {[...notifications]
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .map((n) => {
-              const meta = typeMeta(n.type || "info");
-              const isEditing = editingId === n.id;
+        <>
+          {/* Post New Announcement form */}
+          <form
+            onSubmit={handlePost}
+            className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-5"
+          >
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Plus size={18} />
+              </div>
+              <h3 className="text-base font-black text-slate-800">Post New Announcement</h3>
+            </div>
 
-              return (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Announcement title..."
+                required
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition-all"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Message
+                </label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Notification details..."
+                  rows={3}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition-all resize-y"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Type
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full h-[46px] px-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition-all"
+                >
+                  {TYPE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={sending}
+              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md shadow-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {sending ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
+              Post Announcement
+            </button>
+          </form>
+
+          {/* Your Notifications */}
+          <div className="flex items-center gap-2 pt-2">
+            <Bell size={18} className="text-emerald-600" />
+            <h3 className="text-base font-black text-slate-800">
+              Your Notifications ({notifications.length})
+            </h3>
+          </div>
+
+          {sorted.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 text-2xl shadow-inner">
+                <Bell size={28} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-1">No notifications posted yet</h3>
+              <p className="text-sm text-slate-400 max-w-sm">
+                Create your first announcement using the form above.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sorted.map((n) => (
                 <div
                   key={n.id}
-                  style={{
-                    padding: 20,
-                    background: "white",
-                    borderRadius: 16,
-                    border: "1px solid var(--border-color, #e2e8f0)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    borderLeft: `4px solid ${meta.color}`,
-                  }}
+                  className="bg-white rounded-2xl border border-slate-100 p-5 flex items-start justify-between gap-4 hover:shadow-md transition-shadow duration-200"
                 >
-                  {isEditing ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {editingId === n.id ? (
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div
+                        className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"
+                        title="Editing"
+                      >
+                        <Edit2 size={16} />
+                      </div>
                       <input
                         type="text"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        style={{
-                          padding: "10px 14px",
-                          borderRadius: 10,
-                          border: "1px solid var(--border-color, #e2e8f0)",
-                          fontSize: "1rem",
-                          fontWeight: 600,
-                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition-all"
                       />
                       <textarea
                         value={editMessage}
                         onChange={(e) => setEditMessage(e.target.value)}
                         rows={3}
-                        style={{
-                          padding: "10px 14px",
-                          borderRadius: 10,
-                          border: "1px solid var(--border-color, #e2e8f0)",
-                          fontFamily: "inherit",
-                          fontSize: "0.95rem",
-                          resize: "vertical",
-                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition-all resize-y"
                       />
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <select
-                          value={editType}
-                          onChange={(e) => setEditType(e.target.value)}
-                          style={{
-                            padding: "8px 12px",
-                            borderRadius: 8,
-                            border: "1px solid var(--border-color, #e2e8f0)",
-                            fontSize: "0.85rem",
-                          }}
-                        >
-                          {TYPE_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                        <div style={{ flex: 1 }} />
-                        <button
-                          onClick={cancelEdit}
-                          style={{
-                            padding: "8px 14px",
-                            borderRadius: 8,
-                            border: "1px solid var(--border-color, #e2e8f0)",
-                            background: "white",
-                            cursor: "pointer",
-                            fontSize: "0.85rem",
-                          }}
-                        >
-                          Cancel
-                        </button>
+                      <select
+                        value={editType}
+                        onChange={(e) => setEditType(e.target.value)}
+                        className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition-all"
+                      >
+                        {TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex items-center gap-2 pt-1">
                         <button
                           onClick={() => saveEdit(n.id)}
-                          style={{
-                            padding: "8px 14px",
-                            borderRadius: 8,
-                            border: "none",
-                            background: "var(--primary, #6366f1)",
-                            color: "white",
-                            cursor: "pointer",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                          }}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors"
                         >
+                          <Save size={14} />
                           Save
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-colors"
+                        >
+                          <X size={14} />
+                          Cancel
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        gap: 16,
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            marginBottom: 8,
-                            flexWrap: "wrap",
-                          }}
-                        >
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
                           <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                              padding: "4px 12px",
-                              borderRadius: 20,
-                              background: meta.bg,
-                              color: meta.color,
-                              fontSize: "0.7rem",
-                              fontWeight: 700,
-                            }}
+                            className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] border px-2.5 py-1 rounded-full ${typeBadge(n.type || "info")}`}
                           >
-                            {typeIcon(n.type || "info")}{" "}
-                            {(n.type || "info").toUpperCase()}
-                          </span>
-                          <span
-                            style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}
-                          >
-                            {formatDate(n.date)}
+                            {typeIcon(n.type || "info")} {(n.type || "info").toUpperCase()}
                           </span>
                           {n.postedBy && (
-                            <span
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "var(--text-secondary)",
-                                fontStyle: "italic",
-                              }}
-                            >
+                            <span className="text-[10px] font-bold text-slate-400 italic">
                               by {n.postedBy}
                             </span>
                           )}
+                          <span className="ml-auto text-[10px] font-bold text-slate-400">
+                            {timeAgo(n.date)}
+                          </span>
                         </div>
-                        <h4
-                          style={{
-                            margin: "0 0 6px 0",
-                            fontSize: "1.05rem",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {n.title}
-                        </h4>
-                        <p
-                          style={{
-                            margin: 0,
-                            color: "var(--text-primary)",
-                            fontSize: "0.95rem",
-                            lineHeight: 1.5,
-                          }}
-                        >
+                        <h3 className="text-base font-black text-slate-900 mb-1">{n.title}</h3>
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed">
                           {n.message}
                         </p>
                       </div>
-                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => startEdit(n)}
-                          style={{
-                            background: "rgba(99,102,241,0.1)",
-                            color: "#6366f1",
-                            border: "none",
-                            padding: 10,
-                            borderRadius: 8,
-                            cursor: "pointer",
-                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-700 text-slate-600 text-xs font-bold transition-colors"
                           title="Edit notification"
                         >
-                          <FaEdit />
+                          <Edit2 size={14} />
+                          Edit
                         </button>
                         <button
                           onClick={() => handleDelete(n.id)}
-                          style={{
-                            background: "rgba(239,68,68,0.1)",
-                            color: "#ef4444",
-                            border: "none",
-                            padding: 10,
-                            borderRadius: 8,
-                            cursor: "pointer",
-                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors"
                           title="Delete notification"
                         >
-                          <FaTrash />
+                          <Trash2 size={14} />
+                          Delete
                         </button>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
-              );
-            })}
-        </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spin { animation: spin 1s linear infinite; }
-      `}</style>
     </div>
   );
 }
