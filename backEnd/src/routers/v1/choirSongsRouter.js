@@ -67,6 +67,14 @@ router.put(
   updateSong
 );
 
+router.patch(
+  "/:id",
+  verifyToken,
+  requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
+  handleMulterSong,
+  updateSong
+);
+
 router.delete(
   "/:id",
   verifyToken,

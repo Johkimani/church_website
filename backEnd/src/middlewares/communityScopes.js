@@ -13,11 +13,13 @@ import { db } from "../Configs/dbConfig.js";
 // Roles with cross-community visibility (CSA-wide leadership).
 const GLOBAL_COMMUNITY_ADMIN_ROLES = [
   "admin",
+  "superadmin",
   "os",
   "csa_chair",
   "csa_vice_chair",
   "csa_secretary",
   "jumuiya_coordinator",
+  "liturgist",
 ];
 
 // Community module -> official roles that belong to it.
