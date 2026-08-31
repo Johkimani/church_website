@@ -231,11 +231,11 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
               <FaMusic size={18} />
             </span>
             <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                Choir Repertoire & Sheet Library
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                Choir Repertoire &amp; Sheet Library
               </h1>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Nyimbo za Misa, Karatasi za Noti, na Mkusanyiko wa Kwaya
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-0.5">
+                Nyimbo za Misa &middot; Karatasi za Noti &middot; Mkusanyiko wa Kwaya
               </p>
             </div>
           </div>
@@ -336,7 +336,6 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                   backgroundColor: isSelected ? cat.accent : undefined,
                 }}
               >
-                <span>{cat.icon}</span>
                 <span>{cat.label}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
