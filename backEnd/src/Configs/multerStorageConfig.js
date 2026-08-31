@@ -83,6 +83,20 @@ const upload = multer({
   fileFilter,
 });
 
+// Community T-shirt product images
+const uploadTshirt = multer({
+  storage: buildCloudinaryStorage("community_tshirts"),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter,
+});
+
+// Jumuiya T-shirt product images
+const uploadJumuiyaTshirt = multer({
+  storage: buildCloudinaryStorage("jumuiya_tshirts"),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter,
+});
+
 // Choir song sheet images → dedicated Cloudinary folder with high clarity for sheet music
 const uploadChoirSong = multer({
   storage: ({
