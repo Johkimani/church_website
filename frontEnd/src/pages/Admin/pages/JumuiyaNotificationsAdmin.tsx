@@ -181,8 +181,40 @@ export default function JumuiyaNotificationsAdmin() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: "center", padding: 64 }}>
-        <FaSpinner className="spin" style={{ fontSize: "2rem", opacity: 0.4 }} />
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 16px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 32 }}>
+          <div className="skeleton-shimmer" style={{ height: 26, width: 240, borderRadius: 8, marginBottom: 8 }} />
+          <div className="skeleton-shimmer" style={{ height: 15, width: 360, borderRadius: 6 }} />
+        </div>
+
+        {/* Post form card */}
+        <div style={{ marginBottom: 40, padding: 24, background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0" }}>
+          <div className="skeleton-shimmer" style={{ height: 20, width: 200, borderRadius: 6, marginBottom: 20 }} />
+          <div className="skeleton-shimmer" style={{ height: 46, width: "100%", borderRadius: 12, marginBottom: 16 }} />
+          <div className="skeleton-shimmer" style={{ height: 88, width: "100%", borderRadius: 12, marginBottom: 20 }} />
+          <div className="skeleton-shimmer" style={{ height: 44, width: 180, borderRadius: 12 }} />
+        </div>
+
+        {/* Notifications header + cards */}
+        <div className="skeleton-shimmer" style={{ height: 22, width: 270, borderRadius: 6, marginBottom: 16 }} />
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            style={{
+              padding: 20,
+              background: "#fff",
+              borderRadius: 16,
+              border: "1px solid #e2e8f0",
+              marginBottom: 16,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div className="skeleton-shimmer" style={{ height: 14, width: 130, borderRadius: 20, marginBottom: 12 }} />
+            <div className="skeleton-shimmer" style={{ height: 18, width: "60%", borderRadius: 6, marginBottom: 10 }} />
+            <div className="skeleton-shimmer" style={{ height: 14, width: "90%", borderRadius: 6 }} />
+          </div>
+        ))}
       </div>
     );
   }
