@@ -8,6 +8,7 @@ import {
 } from "../../../api/axiosInstance";
 import NotificationModal from "../../Devotions/components/NotificationModal";
 import { timeAgo } from "../../../utils";
+import { SkeletonCardGrid } from "../../../components/Skeleton";
 import toast from "react-hot-toast";
 import { Bell, Plus, Edit2, Trash2, AlertCircle, Megaphone } from "lucide-react";
 import type { NotificationPayload } from "../../../interface/api";
@@ -129,15 +130,7 @@ export default function JumuiyaAnnouncementsRegister({
 
       {/* Content List */}
       {loading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2.5 shadow-2xs">
-              <div className="h-4 skeleton-shimmer rounded-full w-24 mb-1" />
-              <div className="h-5 skeleton-shimmer rounded-full w-1/2" />
-              <div className="h-4 skeleton-shimmer rounded-full w-3/4" />
-            </div>
-          ))}
-        </div>
+        <SkeletonCardGrid count={3} />
       ) : notifications.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center flex flex-col items-center justify-center">
           <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 text-2xl shadow-inner">
