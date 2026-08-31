@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { genderCode } from "../../../utils/memberYear";
 import {
   CheckCircle, XCircle, AlertTriangle, RefreshCw, Printer, Users, ThumbsUp, ThumbsDown, Eye,
 } from "lucide-react";
@@ -108,7 +109,7 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                   <td>${i + 1}</td>
                   <td>${m.name || m.member_name || ""}</td>
                   <td>${m.reg_number || ""}</td>
-                  <td class="${m.gender === "Male" ? "male" : "female"}">${m.gender === "Male" ? "M" : "W"}</td>
+                  <td class="${genderCode(m.gender) === "M" ? "male" : genderCode(m.gender) === "W" ? "female" : ""}">${m.gender}
                   <td>${m.phone || ""}</td>
                   <td>${m.academic_year || ""}</td>
                 </tr>
@@ -232,9 +233,7 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                       <td className="py-1.5 px-3 font-medium text-slate-700">{m.name}</td>
                       <td className="py-1.5 px-3 text-slate-600">{m.reg_number}</td>
                       <td className="py-1.5 px-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.gender === "Male" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>
-                          {m.gender === "Male" ? "M" : "W"}
-                        </span>
+                        {(() => { const g = genderCode(m.gender); return g === "—" ? <span className="text-xs text-slate-400">—</span> : <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${g === "M" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>{g}</span>; })()}
                       </td>
                       <td className="py-1.5 px-3 text-slate-600">{m.phone}</td>
                       <td className="py-1.5 px-3 text-slate-600">{m.academic_year}</td>
@@ -273,8 +272,8 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                 <p className="font-semibold text-slate-800 text-sm">{a.name}</p>
                 <div className="flex gap-3 text-xs text-slate-500 mt-0.5">
                   <span>{a.reg_number || "—"}</span>
-                  <span className={`font-semibold ${a.gender === "Male" ? "text-blue-600" : "text-pink-600"}`}>
-                    {a.gender === "Male" ? "M" : "W"}
+                  <span className={`font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                    {genderCode(a.gender)}
                   </span>
                   {a.phone && <span>{a.phone}</span>}
                   {a.academic_year && <span>{a.academic_year}</span>}

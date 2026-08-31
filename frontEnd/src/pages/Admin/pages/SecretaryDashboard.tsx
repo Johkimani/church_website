@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { getYearOfStudy, genderCode } from "../../../utils/memberYear";
+import { getYearOfStudy, genderCode, isMale, isFemale } from "../../../utils/memberYear";
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, Upload, GitMerge, CheckCircle,
@@ -171,15 +171,14 @@ export default function SecretaryDashboard() {
   const genderCounts = useMemo(() => {
     const bd = stats?.genderBreakdown;
     if (bd && Array.isArray(bd)) {
-      const male = bd.find((g: any) => g.gender?.toLowerCase() === "male")?.count || 0;
-      const female = bd.find((g: any) => g.gender?.toLowerCase() === "female")?.count || 0;
+      const male = bd.find((g: any) => isMale(g.gender))?.count || 0;
+      const female = bd.find((g: any) => isFemale(g.gender))?.count || 0;
       return { male, female };
     }
     let male = 0, female = 0;
     members.forEach(m => {
-      const g = (m.gender || "").toLowerCase();
-      if (g === "male") male++;
-      else if (g === "female") female++;
+      if (isMale(m.gender)) male++;
+      else if (isFemale(m.gender)) female++;
     });
     return { male, female };
   }, [stats, members]);

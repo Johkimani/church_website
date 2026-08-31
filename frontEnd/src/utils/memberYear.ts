@@ -60,3 +60,13 @@ export function genderCode(value: string | null | undefined): "M" | "W" | "—" 
   if (v === "f" || v === "female" || v === "woman" || v === "girl") return "W";
   return "—";
 }
+
+/** True when a raw gender value (e.g. ' male ', 'Male', 'M') means male. */
+export function isMale(value: string | null | undefined): boolean {
+  return genderCode(value) === "M";
+}
+
+/** True when a raw gender value (e.g. ' female ', 'Female', 'F') means female. */
+export function isFemale(value: string | null | undefined): boolean {
+  return genderCode(value) === "W";
+}

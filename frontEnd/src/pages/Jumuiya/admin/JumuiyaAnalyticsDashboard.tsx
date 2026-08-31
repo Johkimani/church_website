@@ -11,6 +11,7 @@ import {
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { semesterServices } from "../../../api/semesterServices";
 import { semNumFromConfig, semColForYearSem, yearSemLabel } from "../../../utils/semester";
+import { isMale, isFemale } from "../../../utils/memberYear";
 import toast from "react-hot-toast";
 
 interface Props {
@@ -167,8 +168,8 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   };
 
   const genderBreakdown = useMemo(() => {
-    const male = members.filter((m: any) => m.gender === "male").length;
-    const female = members.filter((m: any) => m.gender === "female").length;
+    const male = members.filter((m: any) => isMale(m.gender)).length;
+    const female = members.filter((m: any) => isFemale(m.gender)).length;
     return [
       { name: "Male", value: male },
       { name: "Female", value: female },
@@ -257,8 +258,8 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   const registrationStats = useMemo(() => {
     const total = members.length;
     const registered = members.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
-    const maleMembers = members.filter((m: any) => m.gender === "male");
-    const femaleMembers = members.filter((m: any) => m.gender === "female");
+    const maleMembers = members.filter((m: any) => isMale(m.gender));
+    const femaleMembers = members.filter((m: any) => isFemale(m.gender));
     const maleTotal = maleMembers.length;
     const maleRegistered = maleMembers.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
     const femaleTotal = femaleMembers.length;
@@ -555,12 +556,12 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
                   </tr>
                 </thead>
                 <tbody>
-                  {members.filter((m: any) => m.gender === genderModal).length === 0 ? (
+                  {members.filter((m: any) => genderModal === "male" ? isMale(m.gender) : isFemale(m.gender)).length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-slate-400">No members found.</td>
                     </tr>
                   ) : (
-                    members.filter((m: any) => m.gender === genderModal).map((m: any, i: number) => (
+                    members.filter((m: any) => genderModal === "male" ? isMale(m.gender) : isFemale(m.gender)).map((m: any, i: number) => (
                       <tr key={m.member_id || i} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="py-2 px-3 font-medium text-slate-700">{m.first_name} {m.last_name}</td>
                         <td className="py-2 px-3 text-slate-500 font-mono text-xs">{m.member_id || "—"}</td>

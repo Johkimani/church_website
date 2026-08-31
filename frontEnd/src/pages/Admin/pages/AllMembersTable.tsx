@@ -23,7 +23,7 @@ function formatJumuiyaName(slugOrUuid: string): string {
   return slugOrUuid.length > 20 ? slugOrUuid.slice(0, 8) + "…" : slugOrUuid;
 }
 
-import { getYearOfStudy, isGraduated, getIntakeYearLabel } from "../../../utils/memberYear";
+import { getYearOfStudy, isGraduated, getIntakeYearLabel, genderCode, isMale, isFemale } from "../../../utils/memberYear";
 
 const styles = `
   .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -98,7 +98,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
         selected.forEach(k => {
           if (k === "RegNo") out.RegNo = row.member_id || row.id || "";
           else if (k === "Name") out.Name = row.name || "";
-          else if (k === "Gender") out.Gender = row.gender === "male" || row.gender === "Male" ? "Male" : row.gender === "female" || row.gender === "Female" ? "Female" : row.gender || "";
+          else if (k === "Gender") out.Gender = isMale(row.gender) ? "Male" : isFemale(row.gender) ? "Female" : (row.gender || "").trim() || "";
           else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
           else if (k === "Year") out.Year = getYearOfStudy(row.member_id || row.id || "") || "";
@@ -486,8 +486,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                             <option value="female">Female</option>
                           </select>
                         ) : (
-                          <span className={`text-xs font-semibold ${m.gender === "male" || m.gender === "Male" ? "text-blue-600" : m.gender === "female" || m.gender === "Female" ? "text-pink-600" : "text-slate-400"}`}>
-                            {m.gender === "male" || m.gender === "Male" ? "M" : m.gender === "female" || m.gender === "Female" ? "W" : "—"}
+                          <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                            {genderCode(m.gender)}
                           </span>
                         )}
                       </td>

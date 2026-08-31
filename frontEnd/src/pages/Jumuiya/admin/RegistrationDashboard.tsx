@@ -188,16 +188,19 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
         <div>
           <h4 className="text-sm font-semibold text-slate-700 mb-3">Gender Breakdown</h4>
           <div className="flex gap-3">
-            {stats.genderBreakdown.map((g: any) => (
-              <div
-                key={g.gender}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  g.gender === "Male" ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-pink-50 text-pink-700 border border-pink-100"
-                }`}
-              >
-                {g.gender}: <strong>{g.count}</strong>
-              </div>
-            ))}
+            {stats.genderBreakdown.map((g: any) => {
+              const gc = genderCode(g.gender);
+              return (
+                <div
+                  key={g.gender}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    gc === "M" ? "bg-blue-50 text-blue-700 border border-blue-100" : gc === "W" ? "bg-pink-50 text-pink-700 border border-pink-100" : "bg-slate-50 text-slate-700 border border-slate-100"
+                  }`}
+                >
+                  {gc === "M" ? "Male" : gc === "W" ? "Female" : (g.gender || "").trim() || "Unknown"}: <strong>{g.count}</strong>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

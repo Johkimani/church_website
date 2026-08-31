@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { RefreshCw, Users, Search, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { SkeletonTable } from "../../../components/Skeleton";
-import { getYearOfStudy, getIntakeYearLabel } from "../../../utils/memberYear";
+import { getYearOfStudy, getIntakeYearLabel, genderCode } from "../../../utils/memberYear";
 
 
 interface Props {
@@ -27,11 +27,11 @@ const MemberRow = memo(({ m, rowNumber }: { m: any; rowNumber: number }) => (
     </td>
     <td className="py-3 px-4">
       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-        m.gender === "male" ? "bg-blue-50 text-blue-700" :
-        m.gender === "female" ? "bg-pink-50 text-pink-700" :
+        genderCode(m.gender) === "M" ? "bg-blue-50 text-blue-700" :
+        genderCode(m.gender) === "W" ? "bg-pink-50 text-pink-700" :
         "bg-slate-50 text-slate-500"
       }`}>
-        {m.gender === "male" ? "M" : m.gender === "female" ? "W" : m.gender || "—"}
+        {genderCode(m.gender)}
       </span>
     </td>
     <td className="py-3 px-4 text-slate-500">{m.email || "—"}</td>
@@ -99,7 +99,7 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     }
 
     if (genderFilter) {
-      result = result.filter(m => m.gender === genderFilter);
+      result = result.filter(m => (genderFilter === "male" ? genderCode(m.gender) === "M" : genderCode(m.gender) === "W"));
     }
 
     if (yearFilter) {
@@ -132,7 +132,7 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     const rows = filtered.map((m: any) => [
       m.member_id, `${m.first_name} ${m.last_name}`,
       m.source === "csa" ? "CSA" : "Jum",
-      m.gender === "male" ? "M" : m.gender === "female" ? "F" : "",
+      genderCode(m.gender) === "M" ? "M" : genderCode(m.gender) === "W" ? "F" : "",
       m.email, m.phone, m.year_of_study, m.join_date?.slice(0, 10)
     ]);
     const csv = [headers.join(","), ...rows.map((r: any) => r.map((v: any) => `"${String(v || "").replace(/"/g, '""')}"`).join(","))].join("\n");

@@ -3,6 +3,7 @@ import { memberService } from "../../../api/jumuiyaMemberService";
 import { Search, X, RefreshCw, GraduationCap, Download, Undo2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton";
+import { genderCode } from "../../../utils/memberYear";
 
 
 
@@ -256,8 +257,8 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId }: { refresh
                     <td className="py-2.5 px-3 font-medium text-slate-800 text-xs">{a.member_id}</td>
                     <td className="py-2.5 px-3 text-slate-700 font-medium text-xs">{a.name}</td>
                     <td className="py-2.5 px-3">
-                      <span className={`text-xs font-semibold ${a.gender === "Male" ? "text-blue-600" : a.gender === "Female" ? "text-pink-600" : "text-slate-400"}`}>
-                        {a.gender === "Male" ? "M" : a.gender === "Female" ? "W" : "—"}
+                      <span className={`text-xs font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                        {genderCode(a.gender)}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-slate-500 text-xs">{a.jumuiya_name || "—"}</td>

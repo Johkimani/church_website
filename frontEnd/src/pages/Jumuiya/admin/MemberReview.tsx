@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Users, Search, X, Edit2, Save, ChevronLeft, ChevronRight, RefreshCw, Flag, Ban } from "lucide-react";
 import { SkeletonTable } from "../../../components/Skeleton";
-import { getYearOfStudy } from "../../../utils/memberYear";
+import { getYearOfStudy, genderCode } from "../../../utils/memberYear";
 
 
 interface Props {
@@ -234,11 +234,11 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
                           </select>
                         ) : (
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            m.gender === "male" ? "bg-blue-50 text-blue-700" :
-                            m.gender === "female" ? "bg-pink-50 text-pink-700" :
+                            genderCode(m.gender) === "M" ? "bg-blue-50 text-blue-700" :
+                            genderCode(m.gender) === "W" ? "bg-pink-50 text-pink-700" :
                             "bg-slate-50 text-slate-500"
                           }`}>
-                            {m.gender === "male" ? "M" : m.gender === "female" ? "W" : "—"}
+                            {genderCode(m.gender)}
                           </span>
                         )}
                       </td>
