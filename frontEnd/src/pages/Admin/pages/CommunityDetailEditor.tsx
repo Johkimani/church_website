@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
-type TabType = 'about' | 'activities' | 'announcements' | 'schedules' | 'members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions';
+type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions';
 
 interface GalleryItem {
   id: number;
@@ -150,6 +150,31 @@ export default function CommunityDetailEditor() {
   // Choir music-class opt-ins (name + phone only)
   const [musicSignups, setMusicSignups] = useState<{ full_name: string; phone: string }[]>([]);
 
+  // Choir Songs & Sheet Music state
+  const [songsList, setSongsList] = useState<any[]>([]);
+  const [songModal, setSongModal] = useState(false);
+  const [editingSong, setEditingSong] = useState<any | null>(null);
+  const [songForm, setSongForm] = useState({
+    title: '',
+    category: 'marian',
+    composer: '',
+    key_signature: '',
+    time_signature: '4/4',
+    tempo: 'Moderate',
+    language: 'Swahili',
+    lyrics_text: '',
+    solfa_notation: '',
+    audio_url: '',
+    image_url: ''
+  });
+  const [songFile, setSongFile] = useState<File | null>(null);
+  const [songFilePreview, setSongFilePreview] = useState<string>('');
+  const [ocrExtracting, setOcrExtracting] = useState(false);
+  const [songCategoryFilter, setSongCategoryFilter] = useState('all');
+  const [songSearch, setSongSearch] = useState('');
+  const [songSaving, setSongSaving] = useState(false);
+  const [viewingSongModal, setViewingSongModal] = useState<any | null>(null);
+
   useEffect(() => {
     loadCategoryData();
   }, [categoryId, activeTab]);
@@ -179,6 +204,25 @@ export default function CommunityDetailEditor() {
 
       // 2. Fetch specific tab data
       if (activeTab === 'about') {
+        setLoading(false);
+        return;
+      }
+
+      if (activeTab === 'songs') {
+        try {
+          const res = await apiClient.get('/choir-songs', {
+            params: {
+              module_id: categoryId || 'choir',
+              category: songCategoryFilter !== 'all' ? songCategoryFilter : undefined,
+              search: songSearch?.trim() || undefined,
+              limit: 200,
+            },
+          });
+          setSongsList(res.data?.data || []);
+        } catch (e) {
+          console.error('Failed to load choir songs', e);
+          setSongsList([]);
+        }
         setLoading(false);
         return;
       }
@@ -479,6 +523,155 @@ export default function CommunityDetailEditor() {
     }
   };
 
+  // ── Choir Songs & Sheet Music Handlers ──
+  const openAddSongModal = () => {
+    setEditingSong(null);
+    setSongFile(null);
+    setSongFilePreview('');
+    setSongForm({
+      title: '',
+      category: 'marian',
+      composer: '',
+      key_signature: '',
+      time_signature: '4/4',
+      tempo: 'Moderate',
+      language: 'Swahili',
+      lyrics_text: '',
+      solfa_notation: '',
+      audio_url: '',
+      image_url: '',
+    });
+    setSongModal(true);
+  };
+
+  const openEditSongModal = (song: any) => {
+    setEditingSong(song);
+    setSongFile(null);
+    setSongFilePreview(song.image_url || '');
+    setSongForm({
+      title: song.title || '',
+      category: (song.category || 'marian').toLowerCase(),
+      composer: song.composer || '',
+      key_signature: song.key_signature || '',
+      time_signature: song.time_signature || '4/4',
+      tempo: song.tempo || 'Moderate',
+      language: song.language || 'Swahili',
+      lyrics_text: song.lyrics_text || '',
+      solfa_notation: song.solfa_notation || '',
+      audio_url: song.audio_url || '',
+      image_url: song.image_url || '',
+    });
+    setSongModal(true);
+  };
+
+  const handleSongFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSongFile(file);
+      const url = URL.createObjectURL(file);
+      setSongFilePreview(url);
+    }
+  };
+
+  const handleOcrExtract = async () => {
+    if (!songFile) {
+      return alert('Please choose or drag-and-drop a sheet music photo first before extracting.');
+    }
+    setOcrExtracting(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', songFile);
+      const res = await apiClient.post('/choir-songs/ocr-extract', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (res.data?.extractedLyrics) {
+        setSongForm((prev) => ({
+          ...prev,
+          lyrics_text: res.data.extractedLyrics,
+          title: !prev.title && res.data.guessedTitle ? res.data.guessedTitle : prev.title,
+        }));
+        showToast('✨ Lyrics extracted successfully! You can review or edit below.');
+      } else {
+        alert('Could not clearly read text from this image. You can type or paste the lyrics manually.');
+      }
+    } catch (err: any) {
+      console.error('OCR Extraction error:', err);
+      alert(err?.response?.data?.error || 'OCR extraction failed. You can type or paste the lyrics manually.');
+    } finally {
+      setOcrExtracting(false);
+    }
+  };
+
+  const handleSaveSong = async () => {
+    if (!songForm.title?.trim() || !songForm.category) {
+      return alert('Song title and liturgical category are required.');
+    }
+    if (!songFile && !songForm.image_url) {
+      return alert('Sheet music photo or song image is required.');
+    }
+    setSongSaving(true);
+    try {
+      if (songFile) {
+        const formData = new FormData();
+        formData.append('sheet_image', songFile);
+        formData.append('module_id', categoryId || 'choir');
+        formData.append('title', songForm.title.trim());
+        formData.append('category', songForm.category.toLowerCase().trim());
+        if (songForm.composer) formData.append('composer', songForm.composer.trim());
+        if (songForm.key_signature) formData.append('key_signature', songForm.key_signature.trim());
+        if (songForm.time_signature) formData.append('time_signature', songForm.time_signature.trim());
+        if (songForm.tempo) formData.append('tempo', songForm.tempo.trim());
+        if (songForm.language) formData.append('language', songForm.language.trim());
+        if (songForm.lyrics_text) formData.append('lyrics_text', songForm.lyrics_text.trim());
+        if (songForm.solfa_notation) formData.append('solfa_notation', songForm.solfa_notation.trim());
+        if (songForm.audio_url) formData.append('audio_url', songForm.audio_url.trim());
+
+        if (editingSong?.id) {
+          await apiClient.put(`/choir-songs/${editingSong.id}`, formData);
+          showToast('Song sheet & lyrics updated successfully!');
+        } else {
+          await apiClient.post('/choir-songs', formData);
+          showToast('Song sheet uploaded & added to repertoire!');
+        }
+      } else {
+        const payload = {
+          module_id: categoryId || 'choir',
+          ...songForm,
+        };
+        if (editingSong?.id) {
+          await apiClient.put(`/choir-songs/${editingSong.id}`, payload);
+          showToast('Song updated successfully!');
+        } else {
+          await apiClient.post('/choir-songs', payload);
+          showToast('Song added to repertoire!');
+        }
+      }
+
+      setSongModal(false);
+      setEditingSong(null);
+      setSongFile(null);
+      setSongFilePreview('');
+      await loadCategoryData();
+    } catch (err: any) {
+      console.error('Save song error:', err);
+      alert(err?.response?.data?.error || 'Failed to save song. Please try again.');
+    } finally {
+      setSongSaving(false);
+    }
+  };
+
+  const handleDeleteSong = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this song from the repertoire? This will also remove the sheet photo.')) return;
+    try {
+      await apiClient.delete(`/choir-songs/${id}`);
+      showToast('Song removed from repertoire');
+      await loadCategoryData();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Failed to delete song');
+    }
+  };
+
   // Gallery Handlers
   const handleAddGalleryImage = async () => {
     if (!newImageForm.image_url || !newImageForm.event_name) {
@@ -678,8 +871,9 @@ export default function CommunityDetailEditor() {
         : 'Practice & Rehearsals',
       icon: Clock
     },
-      { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
-      ...(isChoirAdmin ? [{ id: 'music-class' as TabType, label: 'Music Class', icon: Music }] : []),
+    ...(isChoirAdmin ? [{ id: 'songs' as TabType, label: 'Song Repertoire & Sheets', icon: Music }] : []),
+    { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
+    ...(isChoirAdmin ? [{ id: 'music-class' as TabType, label: 'Music Class', icon: Music }] : []),
     { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
     {
       id: 'tshirts',
@@ -799,7 +993,8 @@ export default function CommunityDetailEditor() {
           {/* Quick Stats Bar */}
           <div className="mt-5 flex flex-wrap items-center gap-3">
             {[
-              { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' },
+              { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'songs' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' },
+              { label: 'Songs', value: songsList.length, show: activeTab === 'songs' },
               { label: 'Gallery Photos', value: galleryImages.length, show: activeTab === 'gallery' },
               { label: 'Products', value: products.length, show: activeTab === 'tshirts' },
               { label: 'Suggestions', value: suggestions.length, show: activeTab === 'suggestions' },
@@ -905,7 +1100,15 @@ export default function CommunityDetailEditor() {
                   />
                 </div>
               )}
-              {activeTab === 'activities' || activeTab === 'announcements' ? (
+              {activeTab === 'songs' ? (
+                <button
+                  onClick={openAddSongModal}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
+                  style={{ background: accentColor }}
+                >
+                  <Plus size={14} /> Upload Song Sheet
+                </button>
+              ) : activeTab === 'activities' || activeTab === 'announcements' ? (
                 <button
                   onClick={openAddModal}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
@@ -1012,7 +1215,6 @@ export default function CommunityDetailEditor() {
                 </div>
               </div>
 
-
               <div className="flex justify-end pt-1">
                 <button
                   onClick={handleSaveAbout}
@@ -1024,6 +1226,167 @@ export default function CommunityDetailEditor() {
                   {aboutSaving ? 'Saving...' : 'Save About Content'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* SONGS & SHEET MUSIC TAB (CHOIR ADMIN) */}
+          {activeTab === 'songs' && (
+            <div className="space-y-6">
+              {/* Header Info & Filter Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                    <Music size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900">Choir Repertoire & Sheet Music</h3>
+                    <p className="text-xs text-slate-500 font-medium">Upload sheet music images, extract lyrics with Smart OCR, and manage Mass songs.</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={songCategoryFilter}
+                    onChange={(e) => {
+                      setSongCategoryFilter(e.target.value);
+                      setTimeout(() => loadCategoryData(), 10);
+                    }}
+                    className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-xs"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="marian">🌹 Marian (Bikira Maria)</option>
+                    <option value="mwanzo">🚪 Entrance (Mwanzo)</option>
+                    <option value="utukufu">✨ Kyrie / Gloria (Utukufu)</option>
+                    <option value="sadaka">🍞 Offertory (Sadaka)</option>
+                    <option value="komunyo">🍷 Communion (Komunyo)</option>
+                    <option value="shukrani">🙏 Thanksgiving (Shukrani)</option>
+                    <option value="kutoka">🚶‍♂️ Recessional (Kutoka)</option>
+                    <option value="kwaresma">✝️ Lent (Kwaresma)</option>
+                    <option value="pasaka">🌅 Easter (Pasaka)</option>
+                    <option value="noeli">⭐ Christmas (Noeli)</option>
+                    <option value="pentecost">🔥 Pentecost (Roho Mtakatifu)</option>
+                    <option value="patron">📖 St. Thomas Aquinas (Patron)</option>
+                    <option value="general">🎼 General / Other</option>
+                  </select>
+
+                  <button
+                    onClick={openAddSongModal}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-sm transition-all"
+                  >
+                    <Plus size={14} /> Upload Song Sheet
+                  </button>
+                </div>
+              </div>
+
+              {/* Songs Table */}
+              {songsList.length === 0 ? (
+                <div className="text-center py-16 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Music size={28} />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-800">No song sheets uploaded yet</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                    Upload photos of sheet music or song lyrics. The built-in Smart OCR will extract the text automatically so choristers can read them easily on mobile.
+                  </p>
+                  <button
+                    onClick={openAddSongModal}
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition-all inline-flex items-center gap-2"
+                  >
+                    <Plus size={14} /> Upload First Song
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
+                  <table className="w-full text-left border-collapse bg-white">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 bg-slate-50 text-[10px] font-black uppercase tracking-wider">
+                        <th className="py-3.5 px-4">Sheet Preview</th>
+                        <th className="py-3.5 px-4">Song Title</th>
+                        <th className="py-3.5 px-4">Category</th>
+                        <th className="py-3.5 px-4">Key / Solfa</th>
+                        <th className="py-3.5 px-4">Composer</th>
+                        <th className="py-3.5 px-4">Lyrics Status</th>
+                        <th className="py-3.5 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {songsList.map((song) => (
+                        <tr key={song.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4">
+                            <div
+                              onClick={() => setViewingSongModal(song)}
+                              className="w-12 h-14 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer shadow-xs hover:scale-105 transition-transform"
+                              title="Click to view sheet"
+                            >
+                              <img src={song.image_url} alt={song.title} className="w-full h-full object-cover object-top" />
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <p className="font-bold text-slate-900">{song.title}</p>
+                            <p className="text-[11px] text-slate-400 font-medium">{song.language || 'Swahili'}</p>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200">
+                              {song.category}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              {song.key_signature ? (
+                                <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                                  Key {song.key_signature}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400">-</span>
+                              )}
+                              {song.time_signature && (
+                                <span className="text-[10px] text-slate-500 font-medium">({song.time_signature})</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 font-medium">
+                            {song.composer || <span className="text-slate-400 italic">Traditional</span>}
+                          </td>
+                          <td className="py-3 px-4">
+                            {song.lyrics_text ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                                <Check size={12} /> Lyrics Extracted
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-medium text-slate-400">Sheet image only</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                onClick={() => setViewingSongModal(song)}
+                                className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="View Sheet & Lyrics"
+                              >
+                                <Eye size={14} />
+                              </button>
+                              <button
+                                onClick={() => openEditSongModal(song)}
+                                className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                title="Edit Song / Re-extract"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSong(song.id)}
+                                className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                title="Delete Song"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -2114,6 +2477,288 @@ export default function CommunityDetailEditor() {
         </div>
       )}
 
+
+      {/* ========================================================================= */}
+      {/* CHOIR SONG UPLOAD & EDIT MODAL (WITH SMART OCR) */}
+      {/* ========================================================================= */}
+      {songModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-200 my-8 max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                  <Music size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    {editingSong ? 'Edit Choir Song' : 'Upload Song Sheet to Repertoire'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Upload sheet photo, run Smart OCR for lyrics, and assign Mass category.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSongModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4 py-4 overflow-y-auto flex-1 pr-1">
+              {/* 1. Sheet Music Image Upload & OCR Action */}
+              <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-3">
+                <label className="text-xs font-black text-blue-950 block uppercase tracking-wide">
+                  Sheet Music Photo / Song Sheet Image *
+                </label>
+
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSongFileSelect}
+                    className="text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                  />
+
+                  {/* Smart OCR Button */}
+                  <button
+                    type="button"
+                    onClick={handleOcrExtract}
+                    disabled={ocrExtracting || (!songFile && !songFilePreview)}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-2 shrink-0 disabled:opacity-50 cursor-pointer"
+                  >
+                    {ocrExtracting ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />
+                        <span>Extracting Lyrics...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={13} />
+                        <span>⚡ Extract Text with Smart OCR</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {songFilePreview && (
+                  <div className="relative w-36 h-48 rounded-xl overflow-hidden border-2 border-blue-200 bg-white shadow-md mt-2">
+                    <img src={songFilePreview} alt="Preview" className="w-full h-full object-cover object-top" />
+                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
+                      Preview
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Song Metadata Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Song Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Mzalendo, Bwana Unirehemu, Ave Maria"
+                    value={songForm.title}
+                    onChange={(e) => setSongForm({ ...songForm, title: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Liturgical Category *</label>
+                  <select
+                    value={songForm.category}
+                    onChange={(e) => setSongForm({ ...songForm, category: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="marian">🌹 Marian (Nyimbo za Bikira Maria)</option>
+                    <option value="mwanzo">🚪 Entrance (Mwanzo)</option>
+                    <option value="utukufu">✨ Kyrie / Gloria (Utukufu na Huruma)</option>
+                    <option value="sadaka">🍞 Offertory (Sadaka / Matoleo)</option>
+                    <option value="komunyo">🍷 Communion (Komunyo / Ekaristi)</option>
+                    <option value="shukrani">🙏 Thanksgiving (Shukrani)</option>
+                    <option value="kutoka">🚶‍♂️ Recessional (Kutoka)</option>
+                    <option value="kwaresma">✝️ Lent (Kwaresma / Mateso)</option>
+                    <option value="pasaka">🌅 Easter (Pasaka / Ufufuko)</option>
+                    <option value="noeli">⭐ Christmas (Noeli / Krismasi)</option>
+                    <option value="pentecost">🔥 Pentecost (Roho Mtakatifu)</option>
+                    <option value="patron">📖 St. Thomas Aquinas (Msimamizi)</option>
+                    <option value="general">🎼 General / Other (Mbalimbali)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Key Signature</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. G, F, D, C, Eb"
+                    value={songForm.key_signature}
+                    onChange={(e) => setSongForm({ ...songForm, key_signature: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Time Signature</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 4/4, 3/4, 6/8"
+                    value={songForm.time_signature}
+                    onChange={(e) => setSongForm({ ...songForm, time_signature: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Language</label>
+                  <select
+                    value={songForm.language}
+                    onChange={(e) => setSongForm({ ...songForm, language: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="Swahili">Swahili</option>
+                    <option value="English">English</option>
+                    <option value="Latin">Latin</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Composer / Arranger</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fr. Jude Njoroge, B. Mukasa, Traditional"
+                  value={songForm.composer}
+                  onChange={(e) => setSongForm({ ...songForm, composer: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* 3. Extracted Lyrics Editor */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide">
+                    Extracted Lyrics & Text
+                  </label>
+                  {/* Quick Format helper buttons */}
+                  <div className="flex items-center gap-1">
+                    {['[Chorus]', '[Verse 1]', '[Verse 2]', '[Bridge]'].map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setSongForm({ ...songForm, lyrics_text: `${songForm.lyrics_text}\n\n${tag}\n` })}
+                        className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-[10px] font-bold text-slate-600 rounded"
+                      >
+                        +{tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <textarea
+                  rows={6}
+                  placeholder="Type lyrics here or click '⚡ Extract Text with Smart OCR' above to auto-populate from the sheet music photo..."
+                  value={songForm.lyrics_text}
+                  onChange={(e) => setSongForm({ ...songForm, lyrics_text: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 leading-relaxed font-sans focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* 4. Sol-fa Notation (Optional) */}
+              <div>
+                <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">
+                  Tonic Sol-fa Notation (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. d:r:m:f | s:s:l:s | m:d:r:d ..."
+                  value={songForm.solfa_notation}
+                  onChange={(e) => setSongForm({ ...songForm, solfa_notation: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 leading-relaxed focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4 border-t border-slate-100 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setSongModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSong}
+                disabled={songSaving}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl transition shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {songSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                {songSaving ? 'Saving Song...' : 'Save Song to Repertoire'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SONG PREVIEW MODAL */}
+      {/* ========================================================================= */}
+      {viewingSongModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex justify-between items-start pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">{viewingSongModal.title}</h3>
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mt-0.5">
+                  <span className="capitalize">{viewingSongModal.category}</span>
+                  {viewingSongModal.composer && <span>• By {viewingSongModal.composer}</span>}
+                  {viewingSongModal.key_signature && <span>• Key {viewingSongModal.key_signature}</span>}
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingSongModal(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Sheet Music Image */}
+            <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-xs max-h-96 flex items-center justify-center overflow-auto p-2">
+              <img
+                src={viewingSongModal.image_url}
+                alt={viewingSongModal.title}
+                className="max-h-80 object-contain rounded-xl"
+              />
+            </div>
+
+            {/* Lyrics Preview */}
+            {viewingSongModal.lyrics_text && (
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-xs font-black uppercase text-slate-400 mb-2">Extracted Lyrics</p>
+                <pre className="text-xs font-sans text-slate-800 whitespace-pre-wrap leading-relaxed">
+                  {viewingSongModal.lyrics_text}
+                </pre>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setViewingSongModal(null)}
+                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   </div>

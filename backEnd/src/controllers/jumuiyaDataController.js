@@ -254,7 +254,7 @@ export const updateJumuiyaChannels = async (req, res) => {
 
     // Resolve the jumuiya to its group_id (matches the pattern used elsewhere)
     const sgResult = await pool.query(
-      `SELECT group_id FROM sub_groups
+      `SELECT group_id, slug FROM sub_groups
        WHERE slug = $1 OR group_id::text = $1 OR LOWER(name) = LOWER($1)`,
       [id]
     );
@@ -288,6 +288,10 @@ export const updateJumuiyaChannels = async (req, res) => {
     } finally {
       client.release();
     }
+
+    // Mirror any WhatsApp channel into the green-button store so the Channels
+    // tab and the WhatsApp widget always point at the same group link.
+    await syncWhatsAppToSettings(groupId, sgResult.rows[0].slug, channels);
 
     logger.info(`Updated channels for Jumuiya ${id} (${channels.length} channels)`);
     res.json({ success: true, data: { jumuiya_id: groupId, channels } });
@@ -349,5 +353,29 @@ export const updateJumuiyaData = async (req, res) => {
   } catch (error) {
     logger.error('Error updating jumuiya data: ' + error.message);
     res.status(500).json({ success: false, error: 'Failed to update jumuiya data' });
+  }
+};
+
+/**
+ * Mirror a jumuiya's WhatsApp channel into the green-button store
+ * (system_settings -> whatsapp_jumuiya_<slug>_link), so both surfaces share
+ * the same group link. An empty/missing WhatsApp channel clears the link.
+ */
+const syncWhatsAppToSettings = async (groupId, slug, channels) => {
+  try {
+    if (!slug) return;
+    const whatsapp = (channels || []).find((ch) =>
+      String(ch.platform || '').toLowerCase().includes('whatsapp')
+    );
+    const url = whatsapp ? String(whatsapp.url || '').trim() : '';
+    await pool.query(
+      `INSERT INTO system_settings (key, value, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
+      [`whatsapp_jumuiya_${slug}_link`, url]
+    );
+  } catch (error) {
+    // Non-fatal: the jumuiya_social_media write already succeeded
+    logger.warn(`syncWhatsAppToSettings failed (non-fatal): ${error.message}`);
   }
 };

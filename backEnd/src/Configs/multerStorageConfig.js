@@ -83,19 +83,59 @@ const upload = multer({
   fileFilter,
 });
 
-// T-shirt product images → dedicated Cloudinary folder
-const uploadTshirt = multer({
-  storage: buildCloudinaryStorage("community_tshirts"),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+// Choir song sheet images → dedicated Cloudinary folder with high clarity for sheet music
+const uploadChoirSong = multer({
+  storage: ({
+    _handleFile(req, file, cb) {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "choir_songs",
+          public_id: `song-${uniqueSuffix}`,
+          resource_type: "image",
+          transformation: [
+            { width: 1800, height: 2400, crop: "limit" },
+            { quality: "auto:good" },
+            { fetch_format: "auto" },
+          ],
+        },
+        (error, result) => {
+          if (error) {
+            logger.error("Cloudinary upload error for choir song: " + error.message);
+            return cb(new UploadError("Failed to upload song sheet to Cloudinary", "CLOUDINARY_UPLOAD_ERROR"));
+          }
+          cb(null, {
+            path: result.secure_url,
+            filename: result.public_id,
+            size: result.bytes,
+            mimetype: file.mimetype,
+            cloudinary: result,
+          });
+        }
+      );
+      file.stream.pipe(uploadStream);
+    },
+    _removeFile(req, file, cb) {
+      if (file.filename) {
+        cloudinary.uploader.destroy(file.filename, (error) => {
+          if (error) logger.warn("Failed to remove song from Cloudinary: " + error.message);
+          cb(null);
+        });
+      } else {
+        cb(null);
+      }
+    },
+  }),
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB limit
   fileFilter,
 });
 
-// Jumuiya t-shirt sample images → dedicated Cloudinary folder
-const uploadJumuiyaTshirt = multer({
-  storage: buildCloudinaryStorage("jumuiya_tshirts"),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+// In-memory multer for smart OCR parsing (does not upload to Cloudinary)
+const uploadMemoryForOcr = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB limit
   fileFilter,
 });
 
 export default upload;
-export { uploadTshirt, uploadJumuiyaTshirt };
+export { uploadTshirt, uploadJumuiyaTshirt, uploadChoirSong, uploadMemoryForOcr };

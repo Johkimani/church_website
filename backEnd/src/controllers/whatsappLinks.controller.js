@@ -305,6 +305,11 @@ export const updateWhatsAppLinks = async (req, res) => {
       );
     }
 
+    // Keep the jumuiya Channels tab (jumuiya_social_media) in sync with the
+    // green-button WhatsApp group links. The "one WhatsApp link" rule means the
+    // same per-jumuiya group link must be reflected everywhere it is surfaced.
+    await syncSocialMediaWhatsApp(updates);
+
     logger.info("WhatsApp links updated by admin:", req.user?.id);
     res.json({ success: true, message: "WhatsApp links saved" });
   } catch (error) {
@@ -392,5 +397,48 @@ export const getAllWhatsAppLinks = async (req, res) => {
   } catch (error) {
     logger.error("Error fetching all WhatsApp links:", error.message);
     res.status(500).json({ error: "Failed to load WhatsApp links" });
+  }
+};
+
+// Mirror per-jumuiya WhatsApp main group links into the jumuiya Channels tab
+// (jumuiya_social_media) so the green button and the Channels tab always point
+// at the same group. Called after updating system_settings.
+const syncSocialMediaWhatsApp = async (updates) => {
+  try {
+    // Collect the jumuiya slug -> link values that were just written
+    const jumuiyaLinks = {};
+    for (const { key, value } of updates) {
+      const match = key.match(/^whatsapp_jumuiya_(.+)_link$/);
+      if (match && !/year_\d+/.test(key)) {
+        jumuiyaLinks[match[1]] = value;
+      }
+    }
+    if (Object.keys(jumuiyaLinks).length === 0) return;
+
+    // Resolve each slug to its group_id once
+    const slugs = Object.keys(jumuiyaLinks);
+    const sgRes = await db.query(
+      `SELECT slug, group_id FROM sub_groups WHERE slug = ANY($1)`,
+      [slugs]
+    );
+
+    for (const row of sgRes.rows) {
+      const link = jumuiyaLinks[row.slug]?.trim();
+      const groupId = row.group_id;
+      if (!link) continue;
+
+      // Clear any existing WhatsApp row so a hidden/empty link removes it
+      await db.query(
+        `DELETE FROM jumuiya_social_media WHERE jumuiya_id = $1 AND LOWER(platform) = 'whatsapp'`,
+        [groupId]
+      );
+      await db.query(
+        `INSERT INTO jumuiya_social_media (jumuiya_id, platform, url) VALUES ($1, 'WhatsApp', $2)`,
+        [groupId, link]
+      );
+    }
+  } catch (error) {
+    // Non-fatal: the system_settings write already succeeded
+    logger.warn(`syncSocialMediaWhatsApp failed (non-fatal): ${error.message}`);
   }
 };

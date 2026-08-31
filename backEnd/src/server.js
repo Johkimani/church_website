@@ -53,6 +53,7 @@ import choirMusicClassMigration from "./migrations/choirMusicClassMigration.js";
 import { refreshTokenGraceWindow } from "./migrations/refreshTokenGraceWindow.js";
 import relaxEnrollmentClassId from "./migrations/relaxEnrollmentClassId.js";
 import jumuiyaChannelsMigration from "./migrations/jumuiyaChannelsMigration.js";
+import whatsappSyncMigration from "./migrations/whatsappSyncMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -221,6 +222,7 @@ const initServer = async () => {
     await removeGeneralParishModule();
     await choirMusicClassMigration();
     await jumuiyaChannelsMigration();
+    await whatsappSyncMigration();
     await refreshTokenGraceWindow();
     await relaxEnrollmentClassId();
 
