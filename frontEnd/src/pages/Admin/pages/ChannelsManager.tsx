@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../../api/axiosInstance";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../../context/AuthContext";
 import { SkeletonCardGrid } from "../../../components/Skeleton";
 
 interface ChannelState {
@@ -53,11 +54,17 @@ const PLATFORMS: {
 ];
 
 export default function ChannelsManager() {
+  const { user } = useAuth();
+  const userJumuiyaId = user?.jumuiya_id || "";
   const [jumuiyas, setJumuiyas] = useState<any[]>([]);
   const [channels, setChannels] = useState<Record<string, ChannelState>>({});
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [savingAll, setSavingAll] = useState(false);
+
+  // Jumuiya-scoped: an official only sees and manages their own jumuiya.
+  const ownJumuiyas = jumuiyas.filter(
+    (j) => userJumuiyaId && String(j.group_id) === String(userJumuiyaId)
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -112,25 +119,6 @@ export default function ChannelsManager() {
     }
   };
 
-  const saveAll = async () => {
-    setSavingAll(true);
-    let ok = 0;
-    let failed = 0;
-    for (const j of jumuiyas) {
-      try {
-        await apiClient.patch(`/jumuiya-data/${encodeURIComponent(j.id)}/channels`, {
-          channels: buildPayload(j),
-        });
-        ok++;
-      } catch {
-        failed++;
-      }
-    }
-    setSavingAll(false);
-    if (failed === 0) toast.success(`Saved channels for all ${ok} jumuiyas`);
-    else toast.error(`Saved ${ok}, failed ${failed}`);
-  };
-
   const hasAny = (j: any) => {
     const c = channels[j.id] || { ...EMPTY };
     return Boolean(c.whatsapp || c.facebook || c.tiktok);
@@ -147,7 +135,7 @@ export default function ChannelsManager() {
           <div>
             <h2 className="text-xl font-bold text-slate-800">Jumuiya Channels</h2>
             <p className="text-xs text-slate-500 font-medium">
-              Manage the WhatsApp, Facebook &amp; TikTok accounts shown on each jumuiya's page
+              Manage the WhatsApp, Facebook &amp; TikTok accounts shown on your jumuiya's page
             </p>
           </div>
         </div>
@@ -159,14 +147,6 @@ export default function ChannelsManager() {
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             Refresh
-          </button>
-          <button
-            onClick={saveAll}
-            disabled={loading || savingAll}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-200 disabled:opacity-50"
-          >
-            {savingAll ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            Save All
           </button>
         </div>
       </div>
@@ -182,14 +162,15 @@ export default function ChannelsManager() {
 
       {/* Cards */}
       {loading ? (
-        <SkeletonCardGrid count={6} />
-      ) : jumuiyas.length === 0 ? (
+        <SkeletonCardGrid count={2} />
+      ) : ownJumuiyas.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center">
-          <p className="text-slate-500 font-bold">No jumuiyas found</p>
+          <p className="text-slate-500 font-bold">No jumuiya linked to your account</p>
+          <p className="text-sm text-slate-400 mt-1">Your account is not assigned to a jumuiya.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {jumuiyas.map((j) => {
+          {ownJumuiyas.map((j) => {
             const jColor = j.color || "#6366f1";
             const cur = channels[j.id] || { ...EMPTY };
             return (
