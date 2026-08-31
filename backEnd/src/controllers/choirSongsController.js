@@ -3,59 +3,209 @@ import logger from "../logger/winston.js";
 import { formatPhotoUrl, deleteFromCloudinary } from "../utils/helpers.js";
 import { createWorker } from "tesseract.js";
 
-/**
- * Normalizes and beautifies OCR extracted text from song sheets.
- */
-function cleanOcrLyrics(rawText) {
-  if (!rawText) return "";
-  
-  const lines = rawText
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(line => {
-      // Filter out pure noise lines (e.g. random punctuation or solo numbers)
-      if (/^[|/\\_=\-+~^`]{2,}$/.test(line)) return false;
-      return line.length > 0;
-    });
-
-  // Re-join with proper verse and chorus spacing
-  const cleaned = [];
-  let prevEmpty = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check if line looks like a chorus / verse marker
-    const isChorusMarker = /^(chorus|kwaya|mwitikio|kiitikio|refrain|coda|bridge)/i.test(line);
-    const isVerseMarker = /^(verse|ubeti|beti|stanza|\d+[\.:\)])/i.test(line);
-
-    if (isChorusMarker || isVerseMarker) {
-      if (cleaned.length > 0 && !prevEmpty) {
-        cleaned.push(""); // add blank line before section
-      }
-    }
-
-    cleaned.push(line);
-    prevEmpty = false;
-  }
-
-  return cleaned.join("\n");
+function cleanPersonName(name) {
+  if (!name) return "";
+  return name
+    .replace(/[0-9\.:\-_=]+/g, "")
+    .replace(/\b(arr|comp|mtunzi|key|solfa|doh)\b/gi, "")
+    .trim();
 }
 
-/**
- * Extract possible song title from the top lines of OCR text
- */
-function guessTitleFromOcr(rawText) {
-  if (!rawText) return "";
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
-  for (const line of lines.slice(0, 4)) {
-    // Avoid headers that are obvious categories or music directions
-    if (/^(moderato|andante|allegro|key|doh|solfa|wimbo|nyimbo|4\/4|3\/4|6\/8)/i.test(line)) continue;
-    if (line.length >= 3 && line.length <= 60) {
-      return line.replace(/^[0-9\.\-\s]+/, "").trim();
+function formatTitle(title) {
+  if (!title) return "";
+  const cleaned = title.replace(/[0-9\.:\-_=]+/g, " ").trim();
+  return cleaned
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function detectCategory(text) {
+  const t = text.toLowerCase();
+  if (/maria|bikira|ave|mama\s*yetu|malkia|nyota\s*ya\s*bahari/i.test(t)) return "marian";
+  if (/mwanzo|twende|nyumbani|ingia|tuingie|mlango|shangwe/i.test(t)) return "mwanzo";
+  if (/utukufu|glory|gloria|huruma|kyrie|bwana\s*u(?:t)?u?hurumie/i.test(t)) return "utukufu";
+  if (/sadaka|matoleo|mkate|divai|twakutolea|tolea|toeni/i.test(t)) return "sadaka";
+  if (/komunyo|ekaristi|mwili\s*wangu|damu\s*yangu|karamu|panis|altare/i.test(t)) return "komunyo";
+  if (/shukrani|asante|ahsante|tunamshukuru|mshukuruni/i.test(t)) return "shukrani";
+  if (/kutoka|toka|enendeni|mwisho|amani\s*ya\s*bwana/i.test(t)) return "kutoka";
+  if (/kwaresma|kwaresima|mateso|msalaba|tubu/i.test(t)) return "kwaresma";
+  if (/pasaka|ufufuko|aleluya|amefufuka|kaburi/i.test(t)) return "pasaka";
+  if (/noeli|krismasi|bethlehemu|mtoto\s*yesu|kuzaliwa/i.test(t)) return "noeli";
+  if (/roho\s*mtakatifu|pentekoste|pentecost|parakleto/i.test(t)) return "pentecost";
+  if (/thomas|akwino|aquinas|msimamizi/i.test(t)) return "patron";
+  return "general";
+}
+
+function detectLanguage(text) {
+  const t = text.toLowerCase();
+  if (/tantum\s*ergo|pange\s*lingua|sanctus|agnus\s*dei|domine|panis\s*angelicus/i.test(t)) return "Latin";
+  if (/\b(the|lord|god|jesus|praise|we|come|holy|father|glory)\b/i.test(t)) return "English";
+  return "Swahili";
+}
+
+function isTonicSolfaLine(line) {
+  const t = line.trim();
+  if (!t) return false;
+  const solfaNotePattern = /\b[drmfslt1-7][,#']?\s*[:\.\-]/i;
+  const solfaMeasurePattern = /[:|]\s*[drmfslt1-7][,#']?/i;
+  const hasMultipleSolfa = (t.match(/[drmfslt][,#']?[:\.\-]/gi) || []).length >= 2;
+  return hasMultipleSolfa || (t.includes('|') && solfaNotePattern.test(t)) || solfaMeasurePattern.test(t);
+}
+
+function extractSongTitle(lines) {
+  for (let i = 0; i < Math.min(lines.length, 8); i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Skip technical music direction lines
+    if (/^(key|doh|tempo|moderato|andante|allegro|\d+\/\d+|mtunzi|composer|comp|arr|arranged)/i.test(line)) continue;
+    if (isTonicSolfaLine(line)) continue;
+    if (/^(chorus|mwitikio|kiitikio|verse|ubeti|stanza)/i.test(line)) break;
+
+    // Strip track numbers
+    const clean = line
+      .replace(/^(?:song\s*\d+|wimbo\s+wa\s+[a-z]+|no\.?\s*\d+|\d+[\.\)\-:]\s*)/i, "")
+      .replace(/[_\-*~#=]+/g, "")
+      .trim();
+
+    if (clean.length >= 3 && clean.length <= 70) {
+      return formatTitle(clean);
     }
   }
   return "";
+}
+
+function separateLyricsAndSolfa(lines, songTitle) {
+  const lyricsLines = [];
+  const solfaLines = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Skip technical headers
+    if (/^(key|doh|tempo|moderato|andante|allegro|\d+\/\d+|mtunzi|composer|comp|arr|arranged)\b/i.test(trimmed)) continue;
+
+    if (songTitle && trimmed.toLowerCase().includes(songTitle.toLowerCase())) continue;
+
+    if (isTonicSolfaLine(trimmed)) {
+      solfaLines.push(trimmed);
+    } else {
+      lyricsLines.push(trimmed);
+    }
+  }
+
+  const formattedLyrics = [];
+  for (let i = 0; i < lyricsLines.length; i++) {
+    const l = lyricsLines[i];
+    const isMarker = /^(chorus|kwaya|mwitikio|kiitikio|refrain|verse|ubeti|beti|\d+[\.:\)])/i.test(l);
+    if (isMarker && formattedLyrics.length > 0) {
+      formattedLyrics.push("");
+    }
+    formattedLyrics.push(l);
+  }
+
+  return {
+    lyrics: formattedLyrics.join("\n"),
+    solfa: solfaLines.join("\n"),
+  };
+}
+
+export function splitIntoSongSections(rawText) {
+  if (!rawText) return [];
+
+  const dividerRegex = /(?:\n\s*[-=_*]{3,}\s*\n|\n\s*\n\s*(?:song\s*[2-9]|wimbo\s*wa\s*(?:pili|tatu|nne)|\b(?:ii|iii|iv)\b|[2-9]\.\s+[A-Za-z]))/i;
+  const rawChunks = rawText.split(dividerRegex).map(c => c.trim()).filter(c => c.length > 20);
+  if (rawChunks.length > 1) {
+    return rawChunks;
+  }
+
+  // Fallback: check multiple Key declarations
+  const keyMatches = [...rawText.matchAll(/(?:key|doh\s*(?:is|ni|ya))\s*[:=]?\s*[A-G]/gi)];
+  if (keyMatches.length >= 2) {
+    const splitIndex = keyMatches[1].index;
+    const part1 = rawText.slice(0, splitIndex).trim();
+    const part2 = rawText.slice(splitIndex).trim();
+    if (part1.length > 30 && part2.length > 30) {
+      return [part1, part2];
+    }
+  }
+
+  return [rawText.trim()];
+}
+
+export function parseSmartSongSheet(rawText) {
+  if (!rawText || !rawText.trim()) return [];
+
+  const rawSections = splitIntoSongSections(rawText);
+  const parsedSongs = [];
+
+  for (let idx = 0; idx < rawSections.length; idx++) {
+    const section = rawSections[idx];
+    const lines = section.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) continue;
+
+    // 1. Key Signature
+    let keySignature = "";
+    const keyMatch = section.match(/(?:key|doh\s*(?:is|ni|ya))\s*[:=]?\s*([A-G][#b]?(?:\s*(?:major|minor|maj|min|m))?)/i);
+    if (keyMatch) {
+      keySignature = keyMatch[1].trim();
+    } else {
+      const altKey = section.match(/\b([A-G][#b]?)\s*(?:major|minor|maj|min)\b/i);
+      if (altKey) keySignature = altKey[0].trim();
+    }
+
+    // 2. Time Signature
+    let timeSignature = "";
+    const timeMatch = section.match(/\b([2346]\/[248])\b/);
+    if (timeMatch) timeSignature = timeMatch[1].trim();
+
+    // 3. Tempo
+    let tempo = "";
+    const tempoMatch = section.match(/\b(allegro|andante|moderato|largo|vivace|presto|adagio|cantabile|kwa kasi|taratibu|wastani)\b/i);
+    if (tempoMatch) {
+      tempo = tempoMatch[1].charAt(0).toUpperCase() + tempoMatch[1].slice(1).toLowerCase();
+    }
+
+    // 4. Composer
+    let composer = "";
+    const composerMatch = section.match(/(?:mtunzi|composer|comp|arr|arranged\s+by|words\s*(?:&|and)\s*music\s+by|by)\s*[:=]?\s*([^\n\r,;:]{3,45})/i);
+    if (composerMatch) {
+      composer = cleanPersonName(composerMatch[1]);
+    } else {
+      const nameMatch = section.match(/\b(Fr\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?|Rev\.\s+[A-Z][a-z]+|Bernard\s+Mukasa|B\.\s*Mukasa|Jude\s+Njoroge|J\.\s*Njoroge)\b/i);
+      if (nameMatch) composer = nameMatch[0].trim();
+    }
+
+    // 5. Title
+    let title = extractSongTitle(lines);
+    if (!title) {
+      title = parsedSongs.length > 0 ? `Song ${idx + 1}` : "";
+    }
+
+    // 6. Category & Language
+    const category = detectCategory(section + " " + title);
+    const language = detectLanguage(section);
+
+    // 7. Lyrics & Solfa
+    const { lyrics, solfa } = separateLyricsAndSolfa(lines, title);
+
+    parsedSongs.push({
+      title: title || (parsedSongs.length === 0 ? "Extracted Song" : `Song ${idx + 1}`),
+      category,
+      composer,
+      key_signature: keySignature,
+      time_signature: timeSignature || "4/4",
+      tempo: tempo || "Moderate",
+      language,
+      lyrics_text: lyrics || section.trim(),
+      solfa_notation: solfa,
+      raw_section: section,
+    });
+  }
+
+  return parsedSongs;
 }
 
 /**
@@ -254,16 +404,18 @@ export const extractLyricsOcr = async (req, res) => {
     // Recognize text from image buffer
     const ret = await worker.recognize(req.file.buffer);
     const rawText = ret.data?.text || "";
-    
-    // Beautify and structure the extracted lyrics
-    const cleanedLyrics = cleanOcrLyrics(rawText);
-    const guessedTitle = guessTitleFromOcr(rawText);
 
-    logger.info(`OCR extraction completed: raw text length = ${rawText.length}, confidence = ${ret.data?.confidence || 0}`);
+    // Smart multi-song & metadata extraction
+    const parsedSongs = parseSmartSongSheet(rawText);
+    const firstSong = parsedSongs[0] || null;
 
-    if (!cleanedLyrics.trim() && !rawText.trim()) {
+    logger.info(`OCR extraction completed: raw text length = ${rawText.length}, songs found = ${parsedSongs.length}, confidence = ${ret.data?.confidence || 0}`);
+
+    if (parsedSongs.length === 0 && !rawText.trim()) {
       return res.json({
         success: true,
+        count: 0,
+        songs: [],
         extractedLyrics: "",
         rawText: "",
         guessedTitle: "",
@@ -274,9 +426,12 @@ export const extractLyricsOcr = async (req, res) => {
 
     res.json({
       success: true,
-      extractedLyrics: cleanedLyrics || rawText.trim(),
+      count: parsedSongs.length,
+      songs: parsedSongs,
+      firstSong: firstSong,
+      extractedLyrics: firstSong?.lyrics_text || rawText.trim(),
+      guessedTitle: firstSong?.title || "",
       rawText: rawText,
-      guessedTitle: guessedTitle,
       confidence: ret.data?.confidence || 0,
     });
   } catch (error) {

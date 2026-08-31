@@ -174,6 +174,7 @@ export default function CommunityDetailEditor() {
   const [songSearch, setSongSearch] = useState('');
   const [songSaving, setSongSaving] = useState(false);
   const [viewingSongModal, setViewingSongModal] = useState<any | null>(null);
+  const [detectedSongsList, setDetectedSongsList] = useState<any[]>([]);
 
   useEffect(() => {
     loadCategoryData();
@@ -524,10 +525,26 @@ export default function CommunityDetailEditor() {
   };
 
   // ── Choir Songs & Sheet Music Handlers ──
+  const applyDetectedSong = (song: any) => {
+    setSongForm((prev) => ({
+      ...prev,
+      title: song.title || prev.title,
+      category: (song.category || prev.category || 'marian').toLowerCase(),
+      composer: song.composer !== undefined ? song.composer : prev.composer,
+      key_signature: song.key_signature !== undefined ? song.key_signature : prev.key_signature,
+      time_signature: song.time_signature || prev.time_signature || '4/4',
+      tempo: song.tempo || prev.tempo || 'Moderate',
+      language: song.language || prev.language || 'Swahili',
+      lyrics_text: song.lyrics_text !== undefined ? song.lyrics_text : prev.lyrics_text,
+      solfa_notation: song.solfa_notation !== undefined ? song.solfa_notation : prev.solfa_notation,
+    }));
+  };
+
   const openAddSongModal = () => {
     setEditingSong(null);
     setSongFile(null);
     setSongFilePreview('');
+    setDetectedSongsList([]);
     setSongForm({
       title: '',
       category: 'marian',
@@ -548,6 +565,7 @@ export default function CommunityDetailEditor() {
     setEditingSong(song);
     setSongFile(null);
     setSongFilePreview(song.image_url || '');
+    setDetectedSongsList([]);
     setSongForm({
       title: song.title || '',
       category: (song.category || 'marian').toLowerCase(),
@@ -585,17 +603,29 @@ export default function CommunityDetailEditor() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const extracted = res.data?.extractedLyrics || res.data?.rawText || '';
+      const songs = res.data?.songs || [];
+      setDetectedSongsList(songs);
 
-      if (extracted.trim()) {
-        setSongForm((prev) => ({
-          ...prev,
-          lyrics_text: extracted.trim(),
-          title: !prev.title && res.data?.guessedTitle ? res.data.guessedTitle : prev.title,
-        }));
-        showToast('✨ Lyrics extracted successfully! You can review or adjust them below.');
+      if (songs.length > 0) {
+        const first = songs[0];
+        applyDetectedSong(first);
+        if (songs.length > 1) {
+          showToast(`🎵 Found ${songs.length} songs on this sheet! Auto-filled "${first.title}". Click other songs to switch.`);
+        } else {
+          showToast(`✨ Auto-filled: "${first.title}" (${first.category}) by ${first.composer || 'Traditional'}`);
+        }
       } else {
-        showToast(res.data?.message || 'Text is faint or handwritten. You can review and type the lyrics in the editor.');
+        const extracted = res.data?.extractedLyrics || res.data?.rawText || '';
+        if (extracted.trim()) {
+          setSongForm((prev) => ({
+            ...prev,
+            lyrics_text: extracted.trim(),
+            title: !prev.title && res.data?.guessedTitle ? res.data.guessedTitle : prev.title,
+          }));
+          showToast('✨ Lyrics extracted! You can adjust details below.');
+        } else {
+          showToast(res.data?.message || 'Text is faint or handwritten. You can type or paste the lyrics in the editor.');
+        }
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err);
@@ -2553,6 +2583,52 @@ export default function CommunityDetailEditor() {
                   </div>
                 )}
               </div>
+
+              {/* Multi-Song Detected Selector Bar */}
+              {detectedSongsList.length > 1 && (
+                <div className="p-3.5 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-purple-200 rounded-2xl space-y-2 animate-fade-in shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-purple-950">
+                      <Sparkles size={14} className="text-purple-600 animate-pulse" />
+                      <span>{detectedSongsList.length} Songs Detected on Sheet!</span>
+                    </div>
+                    <span className="text-[10px] font-bold bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded-full">
+                      Multi-Song Sheet
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-purple-800 font-medium">
+                    Click a song below to auto-fill its title, composer, key, category, and lyrics:
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-0.5">
+                    {detectedSongsList.map((s, idx) => {
+                      const isActive = (songForm.title || '').trim().toLowerCase() === (s.title || '').trim().toLowerCase();
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            applyDetectedSong(s);
+                            showToast(`Auto-filled details for "${s.title}"`);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                            isActive
+                              ? 'bg-purple-700 text-white shadow-md ring-2 ring-purple-400 font-black'
+                              : 'bg-white text-purple-900 border border-purple-200 hover:bg-purple-100 hover:border-purple-300'
+                          }`}
+                        >
+                          <Music size={12} className={isActive ? 'text-purple-200' : 'text-purple-500'} />
+                          <span>{idx + 1}. {s.title || `Song ${idx + 1}`}</span>
+                          <span className={`text-[10px] uppercase font-bold px-1.5 py-0.2 rounded-md ${
+                            isActive ? 'bg-purple-800/80 text-purple-100' : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {s.category}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* 2. Song Metadata Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
