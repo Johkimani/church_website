@@ -124,11 +124,15 @@ const CommunityDetail: React.FC = () => {
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
+  const tabOrder: TabType[] = moduleIdClean === 'choir'
+    ? ['about', 'songs', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions']
+    : DEFAULT_TAB_ORDER;
+
   // Sync activeTab with URL query parameter (e.g. ?tab=members)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab') as TabType;
-    if (tabParam && (TAB_ORDER.includes(tabParam) || tabParam === 'settings' || tabParam === 'request')) {
+    if (tabParam && (tabOrder.includes(tabParam) || tabParam === 'settings' || tabParam === 'request')) {
       setActiveTab(tabParam);
     }
   }, [location.search]);
@@ -142,9 +146,6 @@ const CommunityDetail: React.FC = () => {
     return () => { document.body.style.overflow = ''; };
   }, [isSidebarOpen]);
 
-  const tabOrder: TabType[] = moduleIdClean === 'choir'
-    ? ['about', 'songs', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions']
-    : ['about', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
 
   const renderTabContent = () => {
     if (!moduleData) return null;
