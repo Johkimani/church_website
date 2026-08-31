@@ -134,8 +134,16 @@ export const jumuiyaList: JumuiyaData[] = [
     ],
     socialMedia: [
       {
+        platform: "WhatsApp",
+        url: "https://chat.whatsapp.com/st-anthony"
+      },
+      {
         platform: "Facebook",
         url: "https://facebook.com/stanthonyjumuiya"
+      },
+      {
+        platform: "TikTok",
+        url: "https://www.tiktok.com/@stanthonyjumuiya"
       }
     ],
     gallery: [
@@ -215,8 +223,16 @@ export const jumuiyaList: JumuiyaData[] = [
     ],
     socialMedia: [
       {
+        platform: "WhatsApp",
+        url: "https://chat.whatsapp.com/st-augustine"
+      },
+      {
         platform: "Facebook",
         url: "https://facebook.com/staugustinejumuiya"
+      },
+      {
+        platform: "TikTok",
+        url: "https://www.tiktok.com/@staugustinejumuiya"
       }
     ],
     gallery: [
@@ -297,8 +313,16 @@ export const jumuiyaList: JumuiyaData[] = [
     ],
     socialMedia: [
       {
+        platform: "WhatsApp",
+        url: "https://chat.whatsapp.com/st-catherine"
+      },
+      {
         platform: "Facebook",
         url: "https://facebook.com/stcatherinejumuiya"
+      },
+      {
+        platform: "TikTok",
+        url: "https://www.tiktok.com/@stcatherinejumuiya"
       }
     ],
     gallery: [
@@ -379,8 +403,16 @@ export const jumuiyaList: JumuiyaData[] = [
     ],
     socialMedia: [
       {
+        platform: "WhatsApp",
+        url: "https://chat.whatsapp.com/st-dominic"
+      },
+      {
         platform: "Facebook",
         url: "https://facebook.com/stdominicjumuiya"
+      },
+      {
+        platform: "TikTok",
+        url: "https://www.tiktok.com/@stdominicjumuiya"
       }
     ],
     gallery: [
@@ -461,8 +493,16 @@ export const jumuiyaList: JumuiyaData[] = [
     ],
     socialMedia: [
       {
+        platform: "WhatsApp",
+        url: "https://chat.whatsapp.com/st-elizabeth"
+      },
+      {
         platform: "Facebook",
         url: "https://facebook.com/stelizabethjumuiya"
+      },
+      {
+        platform: "TikTok",
+        url: "https://www.tiktok.com/@stelizabethjumuiya"
       }
     ],
     gallery: [
@@ -543,8 +583,16 @@ export const jumuiyaList: JumuiyaData[] = [
     ],
     socialMedia: [
       {
+        platform: "WhatsApp",
+        url: "https://chat.whatsapp.com/st-maria-goretti"
+      },
+      {
         platform: "Facebook",
         url: "https://facebook.com/stmariagoretti"
+      },
+      {
+        platform: "TikTok",
+        url: "https://www.tiktok.com/@stmariagorettijumuiya"
       }
     ],
     gallery: [
@@ -625,8 +673,16 @@ export const jumuiyaList: JumuiyaData[] = [
     ],
     socialMedia: [
       {
+        platform: "WhatsApp",
+        url: "https://chat.whatsapp.com/st-monica"
+      },
+      {
         platform: "Facebook",
         url: "https://facebook.com/stmonicajumuiya"
+      },
+      {
+        platform: "TikTok",
+        url: "https://www.tiktok.com/@stmonicajumuiya"
       }
     ],
     gallery: [

@@ -238,6 +238,66 @@ export const updateJumuiyaSaintImage = async (req, res) => {
 };
 
 /**
+ * PATCH /jumuiya-data/:id/channels
+ * Replace the social/contact channels (platform + url rows in
+ * jumuiya_social_media) for a single jumuiya.
+ * Body: { channels: [{ platform: string, url: string }] }
+ */
+export const updateJumuiyaChannels = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { channels } = req.body;
+
+    if (!Array.isArray(channels)) {
+      return res.status(400).json({ success: false, error: 'channels must be an array of { platform, url }' });
+    }
+
+    // Resolve the jumuiya to its group_id (matches the pattern used elsewhere)
+    const sgResult = await pool.query(
+      `SELECT group_id FROM sub_groups
+       WHERE slug = $1 OR group_id::text = $1 OR LOWER(name) = LOWER($1)`,
+      [id]
+    );
+    if (sgResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jumuiya not found' });
+    }
+    const groupId = sgResult.rows[0].group_id;
+
+    // Serialize inserts inside a transaction so the list is always consistent
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM jumuiya_social_media WHERE jumuiya_id = $1', [groupId]);
+
+      if (channels.length > 0) {
+        for (const ch of channels) {
+          const platform = String(ch.platform || '').trim();
+          const url = String(ch.url || '').trim();
+          if (!platform || !url) continue;
+          await client.query(
+            'INSERT INTO jumuiya_social_media (jumuiya_id, platform, url) VALUES ($1, $2, $3)',
+            [groupId, platform, url]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    logger.info(`Updated channels for Jumuiya ${id} (${channels.length} channels)`);
+    res.json({ success: true, data: { jumuiya_id: groupId, channels } });
+  } catch (error) {
+    logger.error('Error updating Jumuiya channels: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to update jumuiya channels' });
+  }
+};
+
+/**
  * PATCH /jumuiya-data/:id
  * Update description, fullName, about, color, and/or meetingSchedule for a jumuiya.
  */

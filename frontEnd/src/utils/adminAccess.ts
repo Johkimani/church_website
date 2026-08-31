@@ -63,6 +63,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/community-management",
   "/admin/activity-log",
   "/admin/whatsapp-links",
+  "/admin/jumuiya-channels",
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
   "/admin/jumuiya-suggestions",
@@ -138,6 +139,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");
         prefixes.add("/admin/activity-log");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "OS":
         prefixes.add("/admin/announcements");
@@ -145,6 +147,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/semester-activities");
         prefixes.add("/admin/gallery");
         prefixes.add("/admin/bookings");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "JUMUIYA_OS":
         prefixes.add("/admin/secretary-dashboard");
@@ -153,6 +156,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/semester-activities");
         prefixes.add("/admin/whatsapp-links");
         prefixes.add("/admin/community-updates");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "PROJECT_MANAGER":
         prefixes.add("/admin/sacramentals-banners");
@@ -178,6 +182,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/registered-members");
         prefixes.add("/admin/whatsapp-links");
         prefixes.add("/admin/treasury");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "JUMUIYA_CHAIRPERSON":
         prefixes.add("/admin/suggestions");
@@ -189,16 +194,19 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/semester-activities");
         prefixes.add("/admin/community-updates");
         prefixes.add("/admin/jumuiya-tshirts");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "JUMUIYA_VICE_CHAIRPERSON":
         prefixes.add("/admin/community-updates");
         prefixes.add("/admin/jumuiya-tshirts");
         prefixes.add("/admin/jumuiya-suggestions");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "JUMUIYA_SECRETARY":
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/community-updates");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "CHOIR_CHAIRPERSON":
       case "CHOIR_VICE_CHAIR":
