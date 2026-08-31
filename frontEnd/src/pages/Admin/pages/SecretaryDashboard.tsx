@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { getYearOfStudy } from "../../../utils/memberYear";
+import { getYearOfStudy, genderCode } from "../../../utils/memberYear";
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, Upload, GitMerge, CheckCircle,
@@ -396,8 +396,8 @@ export default function SecretaryDashboard() {
                             <td className="py-2 px-3 font-medium text-slate-700">{m.name}</td>
                             <td className="py-2 px-3 text-slate-500 font-mono text-xs">{m.reg_number || "—"}</td>
                             <td className="py-2 px-3">
-                              <span className={`text-xs font-semibold ${m.gender === "Male" ? "text-blue-600" : "text-pink-600"}`}>
-                                {m.gender === "Male" ? "M" : m.gender === "Female" ? "W" : "—"}
+                              <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                                {genderCode(m.gender)}
                               </span>
                             </td>
                             <td className="py-2 px-3 text-slate-500 text-xs">{getYearOfStudy(m.reg_number || m.member_id || "") || "—"}</td>

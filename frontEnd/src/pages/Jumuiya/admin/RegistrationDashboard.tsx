@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Calendar, Users, CheckCircle, AlertTriangle, GitMerge, RefreshCw, GraduationCap } from "lucide-react";
 import { SkeletonSummaryBar, SkeletonTable } from "../../../components/Skeleton";
-import { getYearOfStudy } from "../../../utils/memberYear";
+import { getYearOfStudy, genderCode } from "../../../utils/memberYear";
 
 
 interface Props {
@@ -290,9 +290,13 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
                     <td className="py-2 px-3 font-medium text-slate-700">{m.name}</td>
                     <td className="py-2 px-3 text-slate-500">{m.reg_number || "—"}</td>
                     <td className="py-2 px-3">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.gender === "Male" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>
-                        {m.gender === "Male" ? "M" : "W"}
-                      </span>
+                      {(() => { const g = genderCode(m.gender); return g === "—" ? (
+                        <span className="text-slate-400 text-xs">—</span>
+                      ) : (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${g === "M" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>
+                          {g}
+                        </span>
+                      ); })()}
                     </td>
                     <td className="py-2 px-3 text-slate-500">{m.phone || "—"}</td>
                     <td className="py-2 px-3 text-slate-500">{m.email || "—"}</td>

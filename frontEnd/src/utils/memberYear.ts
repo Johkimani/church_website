@@ -45,3 +45,18 @@ export function isGraduated(reg: string): boolean {
   if (!admissionYear) return false;
   return academicStartYear() - admissionYear + 1 > 4;
 }
+
+/**
+ * Normalize a gender value from the DB into "M" | "W" | "—".
+ *
+ * The members table stores gender inconsistently (e.g. ' male ', 'female',
+ * 'M', 'Male', 'F', … — often lowercase with surrounding whitespace). This
+ * trims and case-folds before classifying so badges render correctly.
+ */
+export function genderCode(value: string | null | undefined): "M" | "W" | "—" {
+  const v = (value || "").trim().toLowerCase();
+  if (!v) return "—";
+  if (v === "m" || v === "male" || v === "man" || v === "boy") return "M";
+  if (v === "f" || v === "female" || v === "woman" || v === "girl") return "W";
+  return "—";
+}
