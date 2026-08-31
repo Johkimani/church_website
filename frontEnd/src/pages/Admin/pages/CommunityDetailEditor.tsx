@@ -175,6 +175,8 @@ export default function CommunityDetailEditor() {
   const [songSaving, setSongSaving] = useState(false);
   const [viewingSongModal, setViewingSongModal] = useState<any | null>(null);
   const [detectedSongsList, setDetectedSongsList] = useState<any[]>([]);
+  const [ocrStatus, setOcrStatus] = useState<'idle' | 'scanning' | 'success' | 'warning'>('idle');
+  const [ocrStatusMessage, setOcrStatusMessage] = useState<string>('');
 
   useEffect(() => {
     loadCategoryData();
@@ -545,6 +547,8 @@ export default function CommunityDetailEditor() {
     setSongFile(null);
     setSongFilePreview('');
     setDetectedSongsList([]);
+    setOcrStatus('idle');
+    setOcrStatusMessage('');
     setSongForm({
       title: '',
       category: 'marian',
@@ -566,6 +570,8 @@ export default function CommunityDetailEditor() {
     setSongFile(null);
     setSongFilePreview(song.image_url || '');
     setDetectedSongsList([]);
+    setOcrStatus('idle');
+    setOcrStatusMessage('');
     setSongForm({
       title: song.title || '',
       category: (song.category || 'marian').toLowerCase(),
@@ -588,6 +594,8 @@ export default function CommunityDetailEditor() {
       setSongFile(file);
       const url = URL.createObjectURL(file);
       setSongFilePreview(url);
+      setOcrStatus('idle');
+      setOcrStatusMessage('');
     }
   };
 
@@ -596,6 +604,8 @@ export default function CommunityDetailEditor() {
       return alert('Please choose or drag-and-drop a sheet music photo first before extracting.');
     }
     setOcrExtracting(true);
+    setOcrStatus('scanning');
+    setOcrStatusMessage('Reading image and extracting text with Smart OCR...');
     try {
       const formData = new FormData();
       formData.append('image', songFile);
@@ -604,31 +614,38 @@ export default function CommunityDetailEditor() {
       });
 
       const songs = res.data?.songs || [];
+      const extractedLyrics = res.data?.extractedLyrics || res.data?.rawText || '';
       setDetectedSongsList(songs);
 
       if (songs.length > 0) {
         const first = songs[0];
         applyDetectedSong(first);
+        setOcrStatus('success');
         if (songs.length > 1) {
-          showToast(`🎵 Found ${songs.length} songs on this sheet! Auto-filled "${first.title}". Click other songs to switch.`);
+          setOcrStatusMessage(`Found ${songs.length} songs on this sheet! Auto-filled "${first.title}". Click other songs above to switch.`);
+          showToast(`🎵 Found ${songs.length} songs on this sheet! Auto-filled "${first.title}".`);
         } else {
-          showToast(`✨ Auto-filled: "${first.title}" (${first.category}) by ${first.composer || 'Traditional'}`);
+          setOcrStatusMessage(`Auto-filled: "${first.title}" (${first.category}) ${first.composer ? `by ${first.composer}` : ''}`);
+          showToast(`✨ Auto-filled: "${first.title}" (${first.category})`);
         }
+      } else if (extractedLyrics.trim()) {
+        setSongForm((prev) => ({
+          ...prev,
+          lyrics_text: extractedLyrics.trim(),
+          title: !prev.title && res.data?.guessedTitle ? res.data.guessedTitle : prev.title,
+        }));
+        setOcrStatus('success');
+        setOcrStatusMessage('Lyrics text extracted into the editor below! You can review and adjust any field.');
+        showToast('✨ Lyrics extracted into editor!');
       } else {
-        const extracted = res.data?.extractedLyrics || res.data?.rawText || '';
-        if (extracted.trim()) {
-          setSongForm((prev) => ({
-            ...prev,
-            lyrics_text: extracted.trim(),
-            title: !prev.title && res.data?.guessedTitle ? res.data.guessedTitle : prev.title,
-          }));
-          showToast('✨ Lyrics extracted! You can adjust details below.');
-        } else {
-          showToast(res.data?.message || 'Text is faint or handwritten. You can type or paste the lyrics in the editor.');
-        }
+        setOcrStatus('warning');
+        setOcrStatusMessage('Image text is faint or handwritten. The lyrics editor below is open for you to type or paste manually.');
+        showToast(res.data?.message || 'Text is faint or handwritten. You can type or paste the lyrics in the editor.');
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err);
+      setOcrStatus('warning');
+      setOcrStatusMessage(err?.response?.data?.error || 'OCR could not read handwriting clearly. You can type or paste lyrics manually.');
       showToast(err?.response?.data?.error || 'OCR could not read handwriting clearly. You can type or paste lyrics manually.');
     } finally {
       setOcrExtracting(false);
@@ -2574,6 +2591,32 @@ export default function CommunityDetailEditor() {
                   </button>
                 </div>
 
+                {/* OCR Status Banner */}
+                {ocrStatus === 'scanning' && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2.5 text-xs text-blue-800 font-bold animate-pulse">
+                    <Loader2 size={14} className="animate-spin text-blue-600 shrink-0" />
+                    <span>Scanning image and reading text with Smart OCR...</span>
+                  </div>
+                )}
+                {ocrStatus === 'success' && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-xs text-emerald-900 font-bold animate-fade-in">
+                    <Check size={15} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-black text-emerald-950">Smart OCR Complete</p>
+                      <p className="text-[11px] text-emerald-700 font-medium">{ocrStatusMessage}</p>
+                    </div>
+                  </div>
+                )}
+                {ocrStatus === 'warning' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 font-bold animate-fade-in">
+                    <Sparkles size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-black text-amber-950">Notice</p>
+                      <p className="text-[11px] text-amber-800 font-medium">{ocrStatusMessage}</p>
+                    </div>
+                  </div>
+                )}
+
                 {songFilePreview && (
                   <div className="relative w-36 h-48 rounded-xl overflow-hidden border-2 border-blue-200 bg-white shadow-md mt-2">
                     <img src={songFilePreview} alt="Preview" className="w-full h-full object-cover object-top" />
@@ -2701,6 +2744,9 @@ export default function CommunityDetailEditor() {
                     <option value="Swahili">Swahili</option>
                     <option value="English">English</option>
                     <option value="Latin">Latin</option>
+                    <option value="Kikuyu">Kikuyu</option>
+                    <option value="Kamba">Kamba</option>
+                    <option value="Luo">Luo</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>

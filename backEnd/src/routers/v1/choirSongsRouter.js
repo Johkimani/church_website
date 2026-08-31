@@ -15,6 +15,27 @@ import {
 
 const router = Router();
 
+const handleMulterSong = (req, res, next) => {
+  if (req.is && !req.is("multipart/form-data")) {
+    return next();
+  }
+  uploadChoirSong.single("sheet_image")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, error: err.message || "File upload failed" });
+    }
+    next();
+  });
+};
+
+const handleMulterOcr = (req, res, next) => {
+  uploadMemoryForOcr.single("image")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, error: err.message || "Image upload failed for OCR" });
+    }
+    next();
+  });
+};
+
 // Public routes (anyone can browse songs, view lyrics/sheet music, and stats)
 router.get("/", optionalAuth, getSongs);
 router.get("/stats", optionalAuth, getCategoriesAndStats);
@@ -25,7 +46,7 @@ router.post(
   "/ocr-extract",
   verifyToken,
   requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
-  uploadMemoryForOcr.single("image"),
+  handleMulterOcr,
   extractLyricsOcr
 );
 
@@ -34,7 +55,7 @@ router.post(
   "/",
   verifyToken,
   requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
-  uploadChoirSong.single("sheet_image"),
+  handleMulterSong,
   createSong
 );
 
@@ -42,7 +63,7 @@ router.put(
   "/:id",
   verifyToken,
   requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
-  uploadChoirSong.single("sheet_image"),
+  handleMulterSong,
   updateSong
 );
 

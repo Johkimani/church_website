@@ -48,6 +48,8 @@ const allowedTables = [
   "testimonials",
   "finance_ledger",
   "finance_budgets",
+  "choir_songs",
+  "choir-songs",
 ];
 
 // Middleware to validate table name

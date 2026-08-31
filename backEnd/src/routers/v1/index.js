@@ -179,6 +179,7 @@ router.use("/jumuiya-notifications", jumuiyaNotificationsRouter);
 router.use("/serial-config", serialConfigRouter);
 router.use("/jumuiya-tshirts", jumuiyaTshirtsRouter);
 router.use("/choir-songs", choirSongsRouter);
+router.use("/choir_songs", choirSongsRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

@@ -302,6 +302,9 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
               <option value="Swahili">Swahili</option>
               <option value="English">English</option>
               <option value="Latin">Latin</option>
+              <option value="Kikuyu">Kikuyu</option>
+              <option value="Kamba">Kamba</option>
+              <option value="Luo">Luo</option>
             </select>
 
             {/* Sort Order */}
