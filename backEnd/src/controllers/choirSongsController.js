@@ -2,6 +2,71 @@ import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { formatPhotoUrl, deleteFromCloudinary } from "../utils/helpers.js";
 import { createWorker } from "tesseract.js";
+import sharp from "sharp";
+
+/**
+ * Preprocesses image buffer with Sharp to dramatically boost OCR clarity:
+ * - Fixes phone EXIF rotation/skew
+ * - Upscales low-res scans to optimal OCR DPI (>= 2000px)
+ * - Converts to high-contrast grayscale with histogram normalization & sharpening
+ */
+async function preprocessForOcr(inputBuffer) {
+  try {
+    const meta = await sharp(inputBuffer).metadata();
+    let pipeline = sharp(inputBuffer).rotate(); // auto-rotate based on EXIF
+
+    // Upscale if under 2000px width for sharp letter recognition
+    const targetWidth = Math.max(meta.width || 1200, 2000);
+    if ((meta.width || 0) < 2000) {
+      pipeline = pipeline.resize({ width: targetWidth, withoutEnlargement: false });
+    }
+
+    // High-contrast grayscale normalization + edge sharpening
+    pipeline = pipeline
+      .grayscale()
+      .normalize()
+      .sharpen({ sigma: 1.5, m1: 0.5, m2: 2.5 })
+      .linear(1.25, -20); // darken text ink, whiten paper background
+
+    return await pipeline.png().toBuffer();
+  } catch (err) {
+    logger.warn("Sharp OCR preprocessing skipped: " + err.message);
+    return inputBuffer;
+  }
+}
+
+/**
+ * Liturgical and Swahili dictionary repair for common OCR optical misreads
+ */
+function repairHymnOcrTypos(text) {
+  if (!text) return "";
+  return text
+    // Headings
+    .replace(/\b(?:mw[i!l1][t!l1][i!l1]k[i!l1]o|mwitiki0|mwltlko)\b/gi, "Mwitikio")
+    .replace(/\b(?:ub[e3c]t[i!l1]|u8eti|u8et!)\b/gi, "Ubeti")
+    .replace(/\b(?:k[i!l1][i!l1]t[i!l1]k[i!l1]o|kiitiki0)\b/gi, "Kiitikio")
+    .replace(/\b(?:ch[o0]ru[s5]|ch0ru5)\b/gi, "Chorus")
+    .replace(/\b(?:v[e3]rs[e3]|v3rse)\b/gi, "Verse")
+    .replace(/\b(?:r[e3]fra[i!l1]n)\b/gi, "Refrain")
+    // Core liturgical terms
+    .replace(/\b(?:8wana|bw4na|bwan4)\b/gi, "Bwana")
+    .replace(/\b(?:mvngu|mungv|munguu)\b/gi, "Mungu")
+    .replace(/\b(?:s4daka|sad4ka)\b/gi, "Sadaka")
+    .replace(/\b(?:k0munyo|komuny0)\b/gi, "Komunyo")
+    .replace(/\b(?:[e3]kar[i!l1]st[i!l1]|ekarlstl)\b/gi, "Ekaristi")
+    .replace(/\b(?:mar[i!l1]a|marla)\b/gi, "Maria")
+    .replace(/\b(?:b[i!l1]k[i!l1]ra|blkira)\b/gi, "Bikira")
+    .replace(/\b(?:al[e3]luy[a4]|alelu!a|a1e1uya)\b/gi, "Aleluya")
+    .replace(/\b(?:utuk[u0]fu|utukvfu|vtukufu)\b/gi, "Utukufu")
+    .replace(/\b(?:shukran[i!l1]|shukranl)\b/gi, "Shukrani")
+    .replace(/\b(?:mtakat[i!l1]fu|mtak4tifu)\b/gi, "Mtakatifu")
+    .replace(/\b(?:mwok[o0]z[i!l1]|mw0kozi)\b/gi, "Mwokozi")
+    .replace(/\b(?:yes[uv]|ycsu)\b/gi, "Yesu")
+    .replace(/\b(?:kr[i!l1]st[o0]|krlsto)\b/gi, "Kristo")
+    // Remove music staff lines / noise characters
+    .replace(/[~^¢§©®™]/g, "")
+    .replace(/^[_\-=+*#|]{3,}$/gm, "");
+}
 
 function cleanPersonName(name) {
   if (!name) return "";
@@ -396,22 +461,39 @@ export const extractLyricsOcr = async (req, res) => {
       return res.status(400).json({ success: false, error: "Image file is required for OCR extraction" });
     }
 
-    logger.info(`Starting in-memory OCR extraction for image size: ${req.file.buffer.length} bytes`);
+    logger.info(`Starting in-memory high-accuracy OCR extraction for image size: ${req.file.buffer.length} bytes`);
 
-    // Initialize Tesseract worker with English/Latin character set
-    worker = await createWorker('eng');
+    // Step 1: High-clarity image preprocessing via Sharp (rotation, upscale, contrast stretch, noise reduction)
+    const preprocessedBuffer = await preprocessForOcr(req.file.buffer);
+
+    // Step 2: Initialize Tesseract worker with dual English + Swahili recognition models
+    worker = await createWorker(['eng', 'swa']);
+    await worker.setParameters({
+      tessedit_pageseg_mode: '3',
+    });
     
-    // Recognize text from image buffer
-    const ret = await worker.recognize(req.file.buffer);
-    const rawText = ret.data?.text || "";
+    // Step 3: Run recognition on enhanced image buffer
+    const ret = await worker.recognize(preprocessedBuffer);
+    let rawText = ret.data?.text || "";
 
-    // Smart multi-song & metadata extraction
-    const parsedSongs = parseSmartSongSheet(rawText);
+    // Fallback pass: if thresholded text is too short, try raw buffer
+    if (rawText.trim().length < 15 && req.file.buffer.length > 0) {
+      const fallbackRet = await worker.recognize(req.file.buffer);
+      if ((fallbackRet.data?.text || "").trim().length > rawText.trim().length) {
+        rawText = fallbackRet.data?.text || "";
+      }
+    }
+
+    // Step 4: Polish Swahili/liturgical terms and repair OCR letter swaps
+    const cleanedRawText = repairHymnOcrTypos(rawText);
+
+    // Step 5: Smart multi-song & metadata extraction
+    const parsedSongs = parseSmartSongSheet(cleanedRawText);
     const firstSong = parsedSongs[0] || null;
 
-    logger.info(`OCR extraction completed: raw text length = ${rawText.length}, songs found = ${parsedSongs.length}, confidence = ${ret.data?.confidence || 0}`);
+    logger.info(`Smart OCR completed: raw text length = ${cleanedRawText.length}, songs found = ${parsedSongs.length}, confidence = ${ret.data?.confidence || 0}`);
 
-    if (parsedSongs.length === 0 && !rawText.trim()) {
+    if (parsedSongs.length === 0 && !cleanedRawText.trim()) {
       return res.json({
         success: true,
         count: 0,
@@ -429,9 +511,9 @@ export const extractLyricsOcr = async (req, res) => {
       count: parsedSongs.length,
       songs: parsedSongs,
       firstSong: firstSong,
-      extractedLyrics: firstSong?.lyrics_text || rawText.trim(),
+      extractedLyrics: firstSong?.lyrics_text || cleanedRawText.trim(),
       guessedTitle: firstSong?.title || "",
-      rawText: rawText,
+      rawText: cleanedRawText,
       confidence: ret.data?.confidence || 0,
     });
   } catch (error) {
