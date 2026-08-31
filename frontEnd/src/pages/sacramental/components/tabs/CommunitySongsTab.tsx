@@ -220,24 +220,25 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      {/* Header & Subtitle */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <span
-              className="p-2 rounded-xl text-white shadow-md flex items-center justify-center"
-              style={{ background: `linear-gradient(135deg, ${color}, #1e3a8a)` }}
-            >
-              <FaMusic size={18} />
-            </span>
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                Choir Repertoire &amp; Sheet Library
-              </h1>
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-0.5">
-                Nyimbo za Misa &middot; Karatasi za Noti &middot; Mkusanyiko wa Kwaya
-              </p>
-            </div>
+      {/* ── Page Header ── */}
+      <div
+        className="rounded-2xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
+        style={{ background: `linear-gradient(135deg, ${color}18 0%, #1e3a8a12 100%)`, border: `1px solid ${color}30` }}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0"
+            style={{ background: `linear-gradient(135deg, ${color}, #1e3a8a)` }}
+          >
+            <FaMusic size={20} />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">
+              Choir Repertoire & Sheet Library
+            </h1>
+            <p className="text-sm font-bold text-slate-700 mt-0.5">
+              Nyimbo za Misa &nbsp;·&nbsp; Karatasi za Noti &nbsp;·&nbsp; Mkusanyiko wa Kwaya
+            </p>
           </div>
         </div>
 
