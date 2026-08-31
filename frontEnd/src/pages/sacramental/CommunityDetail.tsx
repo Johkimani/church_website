@@ -214,7 +214,7 @@ const CommunityDetail: React.FC = () => {
     );
   }
 
-  const activeIndex = TAB_ORDER.indexOf(activeTab);
+  const activeIndex = tabOrder.indexOf(activeTab);
 
   return (
     <div
