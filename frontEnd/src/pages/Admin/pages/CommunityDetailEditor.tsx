@@ -190,6 +190,10 @@ export default function CommunityDetailEditor() {
   const [detectedSongsList, setDetectedSongsList] = useState<any[]>([]);
   const [ocrStatus, setOcrStatus] = useState<'idle' | 'scanning' | 'success' | 'warning'>('idle');
   const [ocrStatusMessage, setOcrStatusMessage] = useState<string>('');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
+    return localStorage.getItem('csa_gemini_api_key') || '';
+  });
+  const [showGeminiConfig, setShowGeminiConfig] = useState<boolean>(false);
 
   useEffect(() => {
     loadCategoryData();
@@ -630,19 +634,24 @@ export default function CommunityDetailEditor() {
     }
     setOcrExtracting(true);
     setOcrStatus('scanning');
-    setOcrStatusMessage('Reading image and extracting multilingual text with Smart OCR...');
+    setOcrStatusMessage('Reading image and extracting multilingual text with Vision AI...');
     try {
       const formData = new FormData();
       formData.append('image', songFile);
-      const res = await apiClient.post('/choir-songs/ocr-extract', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const headers: Record<string, string> = { 'Content-Type': 'multipart/form-data' };
+      if (geminiApiKey.trim()) {
+        headers['x-gemini-api-key'] = geminiApiKey.trim();
+      }
+
+      const res = await apiClient.post('/choir-songs/ocr-extract', formData, { headers });
 
       const songs = res.data?.songs || [];
       const extractedLyrics = res.data?.extractedLyrics || res.data?.rawText || '';
       const confidence = Number(res.data?.confidence || 0);
       const detectedLang = res.data?.language || 'Swahili';
       const rawText = res.data?.rawText || '';
+      const engineUsed = res.data?.engine || 'tesseract';
+      const engineBadge = engineUsed.includes('gemini') ? '✨ Gemini Vision AI' : (engineUsed.includes('vision') ? '☁️ Cloud Vision' : '⚙️ Local OCR');
 
       setDetectedSongsList(songs);
 
@@ -656,11 +665,11 @@ export default function CommunityDetailEditor() {
         }));
         setOcrStatus('success');
         if (songs.length > 1) {
-          setOcrStatusMessage(`Found ${songs.length} songs on this sheet (${detectedLang}, ${confidence}% accuracy). Auto-filled "${first.title}". Click other songs above to switch.`);
-          showToast(`🎵 Found ${songs.length} songs on sheet! Auto-filled "${first.title}".`);
+          setOcrStatusMessage(`Found ${songs.length} songs on this sheet (${detectedLang}, ${confidence}% accuracy via ${engineBadge}). Auto-filled "${first.title}". Click other songs above to switch.`);
+          showToast(`🎵 Found ${songs.length} songs! Auto-filled "${first.title}" via ${engineBadge}`);
         } else {
-          setOcrStatusMessage(`Auto-filled: "${first.title}" [${detectedLang}] (${first.category}) ${first.composer ? `by ${first.composer}` : ''} • Accuracy: ${confidence}%`);
-          showToast(`✨ Auto-filled: "${first.title}" (${detectedLang})`);
+          setOcrStatusMessage(`Auto-filled: "${first.title}" [${detectedLang}] (${first.category}) ${first.composer ? `by ${first.composer}` : ''} • Accuracy: ${confidence}% via ${engineBadge}`);
+          showToast(`✨ Auto-filled: "${first.title}" (${detectedLang}) via ${engineBadge}`);
         }
       } else if (extractedLyrics.trim()) {
         setSongForm((prev) => ({
@@ -672,8 +681,8 @@ export default function CommunityDetailEditor() {
           confidence_score: confidence,
         }));
         setOcrStatus('success');
-        setOcrStatusMessage(`Lyrics extracted in ${detectedLang} (${confidence}% confidence)! Review in editor below.`);
-        showToast('✨ Lyrics extracted into editor!');
+        setOcrStatusMessage(`Lyrics extracted in ${detectedLang} (${confidence}% confidence via ${engineBadge})! Review in editor below.`);
+        showToast(`✨ Lyrics extracted via ${engineBadge}!`);
       } else {
         setOcrStatus('warning');
         setOcrStatusMessage('Image text is faint or handwritten. The lyrics editor is open for you to type or paste manually.');
@@ -2748,12 +2757,66 @@ export default function CommunityDetailEditor() {
 
                   {/* Upload & Extract Trigger */}
                   <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleSongFileSelect}
-                      className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                    />
+                    <div className="flex items-center justify-between">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSongFileSelect}
+                        className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Gemini AI Key Quick Config Drawer */}
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${geminiApiKey ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`}></span>
+                          <span className="text-[11px] font-bold text-slate-700">
+                            {geminiApiKey ? '✨ Gemini Vision AI: Connected' : '⚙️ Vision AI Engine: Cloud/Env'}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowGeminiConfig(!showGeminiConfig)}
+                          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                        >
+                          {showGeminiConfig ? 'Close' : (geminiApiKey ? 'Change Key' : 'Paste Gemini Key')}
+                        </button>
+                      </div>
+
+                      {showGeminiConfig && (
+                        <div className="mt-2 pt-2 border-t border-slate-200 space-y-1.5 animate-fadeIn">
+                          <p className="text-[10px] text-slate-500">
+                            Paste your free Google AI Studio key here. It is saved securely in your browser and used for instant handwriting & notebook recognition:
+                          </p>
+                          <div className="flex gap-1.5">
+                            <input
+                              type="password"
+                              value={geminiApiKey}
+                              onChange={(e) => {
+                                const val = e.target.value.trim();
+                                setGeminiApiKey(val);
+                                localStorage.setItem('csa_gemini_api_key', val);
+                              }}
+                              placeholder="AIzaSy..."
+                              className="flex-1 px-2.5 py-1 text-xs border border-slate-300 rounded-lg font-mono focus:ring-1 focus:ring-indigo-500 outline-none"
+                            />
+                            {geminiApiKey && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setGeminiApiKey('');
+                                  localStorage.removeItem('csa_gemini_api_key');
+                                }}
+                                className="px-2 py-1 text-[10px] text-red-600 hover:bg-red-50 rounded font-bold"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     <button
                       type="button"
@@ -2764,12 +2827,12 @@ export default function CommunityDetailEditor() {
                       {ocrExtracting ? (
                         <>
                           <Loader2 size={14} className="animate-spin" />
-                          <span>Extracting Lyrics with Smart OCR...</span>
+                          <span>Transcribing Hymn with Vision AI...</span>
                         </>
                       ) : (
                         <>
                           <Sparkles size={14} />
-                          <span>⚡ Extract Multilingual Text with OCR</span>
+                          <span>⚡ Extract Multilingual Text with Vision AI</span>
                         </>
                       )}
                     </button>

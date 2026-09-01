@@ -43,11 +43,14 @@ async function preprocessForOcr(inputBuffer) {
 /**
  * Tier 1: Google Gemini Flash Vision API (Ultra-accurate for cursive handwriting & lined notebook sheets)
  * Tries multiple Gemini models in sequence, retries once on overload/503.
- * Activated when GEMINI_API_KEY or GOOGLE_API_KEY is present.
+ * Activated when GEMINI_API_KEY, GOOGLE_API_KEY or client key is provided.
  */
-async function runGeminiVisionOcr(imageBuffer) {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!apiKey) return null;
+async function runGeminiVisionOcr(imageBuffer, clientKey = "") {
+  const apiKey = (clientKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
+  if (!apiKey) {
+    logger.warn("runGeminiVisionOcr: No Gemini API Key configured in environment or request header.");
+    return null;
+  }
 
   // Detect real MIME type from file magic bytes
   let mimeType = "image/jpeg";
@@ -62,7 +65,7 @@ You will receive a photo of a handwritten or printed hymn sheet, possibly on lin
 Ignore the horizontal ruled lines — they are background noise.
 Extract and transcribe ALL visible text accurately. Supported languages: Swahili, English, Luo (Dholuo), Kikuyu, Kamba, Latin.
 
-Return ONLY a valid JSON object (no markdown, no extra text) with this exact schema:
+Return ONLY a valid JSON object (no markdown code blocks outside JSON) with this exact schema:
 {
   "title": "Clean hymn title",
   "category": "marian",
@@ -113,9 +116,8 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
         );
 
         const rawText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) break; // model gave empty — try next model
+        if (!rawText) break;
 
-        // Extract JSON safely even if model wrapped in markdown fences
         const jsonStart = rawText.indexOf("{");
         const jsonEnd = rawText.lastIndexOf("}");
         if (jsonStart === -1 || jsonEnd === -1) break;
@@ -123,8 +125,8 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
         const parsed = JSON.parse(rawText.slice(jsonStart, jsonEnd + 1));
         if (!parsed.lyrics_text) break;
 
-        logger.info(`Gemini [${model}] Vision OCR succeeded: "${parsed.title}"`);
-        return { ...parsed, confidence: 98, engine: `gemini-vision:${model}` };
+        logger.info(`Gemini [${model}] Vision OCR succeeded for hymn: "${parsed.title}"`);
+        return { ...parsed, confidence: 99, engine: `gemini-vision (${model})` };
 
       } catch (err) {
         const status = err.response?.status;
@@ -134,17 +136,15 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
         logger.warn(`Gemini [${model}] attempt ${attempt} failed (${status}): ${msg}`);
 
         if (isOverloaded && attempt < 2) {
-          // Wait 3 seconds then retry same model
           await new Promise(r => setTimeout(r, 3000));
           continue;
         }
-        // Non-retriable or exhausted retries — try next model
         break;
       }
     }
   }
 
-  logger.warn("All Gemini Vision models failed or were unavailable — falling back.");
+  logger.warn("All Gemini Vision models failed or were unavailable — falling back to local OCR.");
   return null;
 }
 
@@ -152,7 +152,7 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
  * Tier 2: Google Cloud Vision API
  */
 async function runGoogleVisionOcr(imageBuffer) {
-  const apiKey = process.env.GOOGLE_VISION_API_KEY;
+  const apiKey = (process.env.GOOGLE_VISION_API_KEY || "").trim();
   if (!apiKey) return null;
 
   try {
@@ -176,7 +176,7 @@ async function runGoogleVisionOcr(imageBuffer) {
       return {
         text: fullTextAnnotation.text,
         confidence: 95,
-        engine: "google-vision",
+        engine: "google-cloud-vision",
       };
     }
     return null;
@@ -627,10 +627,12 @@ export const extractLyricsOcr = async (req, res) => {
       return res.status(400).json({ success: false, error: "Image file is required for OCR extraction" });
     }
 
-    logger.info(`Starting multi-tier multilingual OCR extraction for image size: ${req.file.buffer.length} bytes`);
+    const clientGeminiKey = (req.headers['x-gemini-api-key'] || req.body.gemini_api_key || "").trim();
+    const hasEnvKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+    logger.info(`Starting OCR extraction. Gemini Key present: ${Boolean(clientGeminiKey) || hasEnvKey} (client: ${Boolean(clientGeminiKey)}, env: ${hasEnvKey}), image size: ${req.file.buffer.length} bytes`);
 
     // Tier 1: Check Google Gemini Flash Vision (flawless for cursive handwriting & notebook lines)
-    const geminiResult = await runGeminiVisionOcr(req.file.buffer);
+    const geminiResult = await runGeminiVisionOcr(req.file.buffer, clientGeminiKey);
     if (geminiResult && geminiResult.lyrics_text) {
       const firstSong = {
         title: geminiResult.title || "Extracted Song",
@@ -653,8 +655,9 @@ export const extractLyricsOcr = async (req, res) => {
         guessedTitle: firstSong.title,
         language: firstSong.language,
         rawText: firstSong.lyrics_text,
-        confidence: 98,
-        engine: "gemini-vision",
+        confidence: geminiResult.confidence || 99,
+        engine: geminiResult.engine || "gemini-vision",
+        geminiConfigured: true,
       });
     }
 
