@@ -66,22 +66,27 @@ Ignore the horizontal ruled lines — they are background noise.
 Extract and transcribe ALL visible text from top to bottom completely. Supported languages: Swahili, English, Luo (Dholuo), Kikuyu, Kamba, Latin.
 
 CRITICAL INSTRUCTIONS:
-1. TRANSCRIBE ALL VERSES: Scan the entire page down to the very last line. You MUST include EVERY numbered verse (e.g. 1, 2, 3, 4, 5, 6, 7, 8...). Do NOT stop after 2 verses. Do NOT truncate, summarize, or omit any verse.
-2. CHORUS & STANZAS: Label the chorus/refrain as [Chorus] and each numbered stanza as [Verse 1], [Verse 2], [Verse 3], [Verse 4], etc., separated by blank lines.
-3. PRESERVE REPETITION: Keep repetition markers like "x2" or "(x2)" exactly as written.
-4. EXACT SPELLING: Transcribe all lyrics accurately in their liturgical language.
+1. MULTIPLE SONGS ON ONE SHEET: If the image contains MORE THAN ONE song (e.g. 2 or 3 separate songs on the same page), you MUST extract each song separately as an item inside the "songs" array.
+2. TRANSCRIBE ALL VERSES: Scan each song completely down to the very last line. Include EVERY numbered verse (1, 2, 3, 4, 5, 6, 7, 8...). Do NOT stop after 2 verses. Do NOT truncate, summarize, or omit any verse.
+3. CHORUS & STANZAS: Label the chorus/refrain as [Chorus] and each numbered stanza as [Verse 1], [Verse 2], [Verse 3], [Verse 4], etc., separated by blank lines.
+4. PRESERVE REPETITION: Keep repetition markers like "x2" or "(x2)" exactly as written.
+5. EXACT SPELLING: Transcribe all lyrics accurately in their liturgical language.
 
 Return ONLY a valid JSON object (no markdown code blocks outside JSON) with this exact schema:
 {
-  "title": "Clean hymn title",
-  "category": "marian",
-  "language": "Swahili",
-  "composer": "",
-  "key_signature": "",
-  "time_signature": "4/4",
-  "tempo": "Moderate",
-  "solfa_notation": "",
-  "lyrics_text": "[Chorus]\nChorus lines here...\n\n[Verse 1]\nVerse 1 lines here...\n\n[Verse 2]\nVerse 2 lines here...\n\n[Verse 3]\nVerse 3 lines here...\n\n[Verse 4]\nVerse 4 lines here..."
+  "songs": [
+    {
+      "title": "Clean hymn title",
+      "category": "marian",
+      "language": "Swahili",
+      "composer": "",
+      "key_signature": "",
+      "time_signature": "4/4",
+      "tempo": "Moderate",
+      "solfa_notation": "",
+      "lyrics_text": "[Chorus]\nChorus lines here...\n\n[Verse 1]\nVerse 1 lines here...\n\n[Verse 2]\nVerse 2 lines here..."
+    }
+  ]
 }
 
 category must be one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general.
@@ -136,10 +141,24 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
         if (jsonStart === -1 || jsonEnd === -1) break;
 
         const parsed = JSON.parse(rawText.slice(jsonStart, jsonEnd + 1));
-        if (!parsed.lyrics_text) break;
+        
+        // Support both { songs: [...] } and single object { title, lyrics_text }
+        let songsArray = [];
+        if (Array.isArray(parsed.songs) && parsed.songs.length > 0) {
+          songsArray = parsed.songs;
+        } else if (parsed.lyrics_text) {
+          songsArray = [parsed];
+        }
 
-        logger.info(`Gemini [${model}] Vision OCR succeeded for hymn: "${parsed.title}"`);
-        return { ...parsed, confidence: 99, engine: `gemini-vision (${model})` };
+        if (songsArray.length === 0) break;
+
+        logger.info(`Gemini [${model}] Vision OCR succeeded: found ${songsArray.length} song(s) ("${songsArray[0].title}")`);
+        return {
+          songs: songsArray,
+          ...songsArray[0],
+          confidence: 99,
+          engine: `gemini-vision (${model})`
+        };
 
       } catch (err) {
         const status = err.response?.status;
@@ -646,32 +665,52 @@ export const extractLyricsOcr = async (req, res) => {
 
     // Tier 1: Check Google Gemini Flash Vision (flawless for cursive handwriting & notebook lines)
     const geminiResult = await runGeminiVisionOcr(req.file.buffer, clientGeminiKey);
-    if (geminiResult && geminiResult.lyrics_text) {
-      const firstSong = {
-        title: geminiResult.title || "Extracted Song",
-        category: geminiResult.category || detectCategory(geminiResult.lyrics_text),
-        language: geminiResult.language || detectHymnLanguage(geminiResult.lyrics_text),
-        composer: geminiResult.composer || "",
-        key_signature: geminiResult.key_signature || "",
-        time_signature: geminiResult.time_signature || "4/4",
-        tempo: geminiResult.tempo || "Moderate",
-        solfa_notation: geminiResult.solfa_notation || "",
-        lyrics_text: geminiResult.lyrics_text,
-      };
+    if (geminiResult) {
+      let songList = [];
+      if (Array.isArray(geminiResult.songs) && geminiResult.songs.length > 0) {
+        songList = geminiResult.songs.map((s, idx) => ({
+          title: s.title || `Song ${idx + 1}`,
+          category: s.category || detectCategory(s.lyrics_text || ''),
+          language: s.language || detectHymnLanguage(s.lyrics_text || ''),
+          composer: s.composer || '',
+          key_signature: s.key_signature || '',
+          time_signature: s.time_signature || '4/4',
+          tempo: s.tempo || 'Moderate',
+          solfa_notation: s.solfa_notation || '',
+          lyrics_text: s.lyrics_text || '',
+          raw_section: s.lyrics_text || '',
+        }));
+      } else if (geminiResult.lyrics_text) {
+        songList = [{
+          title: geminiResult.title || "Extracted Song",
+          category: geminiResult.category || detectCategory(geminiResult.lyrics_text),
+          language: geminiResult.language || detectHymnLanguage(geminiResult.lyrics_text),
+          composer: geminiResult.composer || "",
+          key_signature: geminiResult.key_signature || "",
+          time_signature: geminiResult.time_signature || "4/4",
+          tempo: geminiResult.tempo || "Moderate",
+          solfa_notation: geminiResult.solfa_notation || "",
+          lyrics_text: geminiResult.lyrics_text,
+          raw_section: geminiResult.lyrics_text,
+        }];
+      }
 
-      return res.json({
-        success: true,
-        count: 1,
-        songs: [firstSong],
-        firstSong: firstSong,
-        extractedLyrics: firstSong.lyrics_text,
-        guessedTitle: firstSong.title,
-        language: firstSong.language,
-        rawText: firstSong.lyrics_text,
-        confidence: geminiResult.confidence || 99,
-        engine: geminiResult.engine || "gemini-vision",
-        geminiConfigured: true,
-      });
+      if (songList.length > 0) {
+        const firstSong = songList[0];
+        return res.json({
+          success: true,
+          count: songList.length,
+          songs: songList,
+          firstSong: firstSong,
+          extractedLyrics: firstSong.lyrics_text,
+          guessedTitle: firstSong.title,
+          language: firstSong.language,
+          rawText: songList.map(s => `[${s.title}]\n${s.lyrics_text}`).join('\n\n---\n\n'),
+          confidence: geminiResult.confidence || 99,
+          engine: geminiResult.engine || "gemini-vision",
+          geminiConfigured: true,
+        });
+      }
     }
 
     // Tier 2: Check Google Cloud Vision API
