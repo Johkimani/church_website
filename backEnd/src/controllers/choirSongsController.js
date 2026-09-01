@@ -727,7 +727,12 @@ export const batchCreateSongs = async (req, res) => {
   try {
     let songsData = [];
     if (req.body.songs) {
-      songsData = typeof req.body.songs === "string" ? JSON.parse(req.body.songs) : req.body.songs;
+      try {
+        songsData = typeof req.body.songs === "string" ? JSON.parse(req.body.songs) : req.body.songs;
+      } catch (parseErr) {
+        logger.error("JSON parse error on req.body.songs: " + parseErr.message);
+        return res.status(400).json({ success: false, error: "Invalid songs JSON format" });
+      }
     } else if (Array.isArray(req.body)) {
       songsData = req.body;
     }
@@ -757,15 +762,26 @@ export const batchCreateSongs = async (req, res) => {
         : (typeof req.body.additional_images === 'string' ? JSON.parse(req.body.additional_images) : []);
     }
 
+    if (!imageUrl && songsData[0]?.image_url) {
+      imageUrl = songsData[0].image_url;
+    }
+
     if (!imageUrl) {
-      return res.status(400).json({ success: false, error: "Sheet music or song image is required" });
+      return res.status(400).json({ success: false, error: "Sheet music photo or song image is required" });
     }
 
     const createdBy = req.user?.name || req.user?.username || "Admin";
     const createdSongs = [];
 
     for (const s of songsData) {
-      if (!s.title?.trim() || !s.category) continue;
+      const songTitle = (s.title || "").trim();
+      if (!songTitle) continue;
+
+      const songCategory = (s.category || "marian").toLowerCase().trim();
+      const songLang = (s.language || "Swahili").trim();
+      const confidence = s.confidence_score !== undefined && s.confidence_score !== null && !isNaN(Number(s.confidence_score)) 
+        ? Number(s.confidence_score) 
+        : null;
 
       const insertQuery = `
         INSERT INTO choir_songs (
@@ -778,8 +794,8 @@ export const batchCreateSongs = async (req, res) => {
 
       const values = [
         moduleId,
-        s.title.trim(),
-        (s.category || "marian").toLowerCase().trim(),
+        songTitle,
+        songCategory,
         s.composer ? s.composer.trim() : null,
         s.key_signature ? s.key_signature.trim() : null,
         s.time_signature ? s.time_signature.trim() : null,
@@ -787,12 +803,12 @@ export const batchCreateSongs = async (req, res) => {
         s.solfa_notation ? s.solfa_notation.trim() : null,
         s.lyrics_text ? s.lyrics_text.trim() : null,
         s.raw_ocr_text ? s.raw_ocr_text.trim() : null,
-        s.confidence_score ? Number(s.confidence_score) : null,
+        confidence,
         imageUrl,
         cloudinaryPublicId,
         additionalImages,
         s.audio_url ? s.audio_url.trim() : null,
-        s.language ? s.language.trim() : "Swahili",
+        songLang,
         Array.isArray(s.tags) ? s.tags : [],
         createdBy
       ];
@@ -801,11 +817,11 @@ export const batchCreateSongs = async (req, res) => {
       createdSongs.push(result.rows[0]);
     }
 
-    logger.info(`Batch created ${createdSongs.length} songs in repertoire`);
+    logger.info(`Batch created ${createdSongs.length} songs in repertoire successfully.`);
     res.status(201).json({ success: true, count: createdSongs.length, data: createdSongs });
   } catch (error) {
     logger.error("Error batch creating choir songs: " + error.message, { stack: error.stack });
-    res.status(500).json({ success: false, error: "Failed to batch create songs" });
+    res.status(500).json({ success: false, error: error.message || "Failed to batch create songs" });
   }
 };
 

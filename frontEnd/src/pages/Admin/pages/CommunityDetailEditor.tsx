@@ -3104,61 +3104,30 @@ export default function CommunityDetailEditor() {
                 {/* ── RIGHT PANE: Metadata & Extracted Lyrics Editor (7 cols) ── */}
                 <div className="lg:col-span-7 space-y-3.5">
                   
-                  {/* Multi-Song Extraction Review & Batch Save Bar */}
+                  {/* Multi-Song Switcher Tabs (When 2+ songs found on the sheet) */}
                   {detectedSongsList.length > 1 && (
-                    <div className="p-3 bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 border border-purple-400/40 rounded-2xl text-white shadow-md space-y-2.5 animate-fadeIn">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="p-1.5 bg-purple-500/30 rounded-xl text-amber-300 shrink-0">
-                            <Sparkles size={16} />
-                          </span>
-                          <div>
-                            <p className="text-xs font-black text-white">
-                              {detectedSongsList.length} Distinct Songs Detected on this Sheet!
-                            </p>
-                            <p className="text-[10px] text-purple-200">
-                              Click any song below to review/edit, or save all {detectedSongsList.length} individually with one click.
-                            </p>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={handleBatchSaveAllSongs}
-                          disabled={batchSaving || songSaving}
-                          className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-                          title="Save all extracted songs as individual entries in the repertoire"
-                        >
-                          {batchSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                          <span>{batchSaving ? 'Saving All...' : `💾 Save All ${detectedSongsList.length} Songs`}</span>
-                        </button>
-                      </div>
-
-                      {/* Song Pills to switch between songs */}
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-purple-500/20">
-                        <span className="text-[10px] font-bold text-purple-300 mr-1">Switch Song to Edit:</span>
-                        {detectedSongsList.map((song, idx) => {
-                          const isActive = (songForm.title === song.title) || (!songForm.title && idx === 0);
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => applyDetectedSong(song)}
-                              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                                isActive
-                                  ? 'bg-white text-indigo-950 font-black shadow-sm ring-2 ring-purple-400'
-                                  : 'bg-purple-900/60 hover:bg-purple-800 text-purple-200'
-                              }`}
-                            >
-                              <span>🎵</span>
-                              <span className="max-w-[130px] truncate">{song.title || `Song ${idx + 1}`}</span>
-                              <span className="text-[9px] px-1.5 py-0.2 bg-purple-950/60 rounded capitalize text-purple-300">
-                                {song.category || 'marian'}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                    <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-100/90 border border-slate-200 rounded-2xl">
+                      <span className="text-[11px] font-black text-slate-600 px-1">
+                        Select Song ({detectedSongsList.length}):
+                      </span>
+                      {detectedSongsList.map((song, idx) => {
+                        const isActive = (songForm.title === song.title) || (!songForm.title && idx === 0);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => applyDetectedSong(song)}
+                            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                              isActive
+                                ? 'bg-blue-600 text-white shadow-xs font-black'
+                                : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200/70'
+                            }`}
+                          >
+                            <span>🎵</span>
+                            <span className="max-w-[140px] truncate">{song.title || `Song ${idx + 1}`}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
 
