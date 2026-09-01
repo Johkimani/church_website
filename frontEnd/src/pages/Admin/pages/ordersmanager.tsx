@@ -300,8 +300,7 @@ export default function OrdersManager({ typeFilter }: OrdersManagerProps) {
                         )}
                       </td>
                     </tr>
-                  );
-                })}
+                  ))}
               </tbody>
             </table>
           </div>
