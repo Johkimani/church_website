@@ -178,6 +178,8 @@ export default function CommunityDetailEditor() {
   });
   const [songFile, setSongFile] = useState<File | null>(null);
   const [songFilePreview, setSongFilePreview] = useState<string>('');
+  const [continuationPages, setContinuationPages] = useState<{ file: File; preview: string }[]>([]);
+  const [activeSheetPageIndex, setActiveSheetPageIndex] = useState<number>(0);
   const [sheetZoom, setSheetZoom] = useState<number>(1);
   const [invertSheetContrast, setInvertSheetContrast] = useState<boolean>(false);
   const [showSolfaEditor, setShowSolfaEditor] = useState<boolean>(false);
@@ -562,6 +564,8 @@ export default function CommunityDetailEditor() {
     setEditingSong(null);
     setSongFile(null);
     setSongFilePreview('');
+    setContinuationPages([]);
+    setActiveSheetPageIndex(0);
     setSheetZoom(1);
     setInvertSheetContrast(false);
     setShowSolfaEditor(false);
@@ -590,6 +594,8 @@ export default function CommunityDetailEditor() {
     setEditingSong(song);
     setSongFile(null);
     setSongFilePreview(song.image_url || '');
+    setContinuationPages([]);
+    setActiveSheetPageIndex(0);
     setSheetZoom(1);
     setInvertSheetContrast(false);
     setShowSolfaEditor(Boolean(song.solfa_notation));
@@ -620,21 +626,53 @@ export default function CommunityDetailEditor() {
       setSongFile(file);
       const url = URL.createObjectURL(file);
       setSongFilePreview(url);
+      setActiveSheetPageIndex(0);
       setOcrStatus('idle');
       setOcrStatusMessage('');
     }
   };
 
+  const handleAddContinuationFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newPages = Array.from(files).map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setContinuationPages((prev) => {
+        const next = [...prev, ...newPages];
+        setActiveSheetPageIndex(next.length); // switch to newly added page
+        return next;
+      });
+      setOcrStatus('idle');
+      setOcrStatusMessage('');
+      showToast(`Added ${files.length} continuation page(s)! Click "Extract with Vision AI" to merge lyrics.`);
+    }
+  };
+
+  const handleRemoveContinuationPage = (index: number) => {
+    setContinuationPages((prev) => prev.filter((_, i) => i !== index));
+    setActiveSheetPageIndex(0);
+  };
+
   const handleOcrExtract = async () => {
-    if (!songFile) {
-      return alert('Please choose or drag-and-drop a sheet music photo first before extracting.');
+    if (!songFile && continuationPages.length === 0) {
+      return alert('Please choose or drag-and-drop at least one sheet music photo first before extracting.');
     }
     setOcrExtracting(true);
     setOcrStatus('scanning');
-    setOcrStatusMessage('Reading image and extracting multilingual text with Vision AI...');
+    const totalPages = (songFile ? 1 : 0) + continuationPages.length;
+    setOcrStatusMessage(totalPages > 1 ? `Reading and merging ${totalPages} continuous sheet pages with Vision AI...` : 'Reading sheet and extracting multilingual text with Vision AI...');
+    
     try {
       const formData = new FormData();
-      formData.append('image', songFile);
+      if (songFile) {
+        formData.append('images', songFile);
+      }
+      continuationPages.forEach((page) => {
+        formData.append('images', page.file);
+      });
+
       const headers: Record<string, string> = { 'Content-Type': 'multipart/form-data' };
       const savedKey = localStorage.getItem('csa_gemini_api_key');
       if (savedKey) {
@@ -663,10 +701,10 @@ export default function CommunityDetailEditor() {
         }));
         setOcrStatus('success');
         if (songs.length > 1) {
-          setOcrStatusMessage(`Found ${songs.length} songs on this sheet (${detectedLang}, ${confidence}% accuracy via ${engineBadge}). Auto-filled "${first.title}". Click other songs above to switch.`);
+          setOcrStatusMessage(`Found ${songs.length} songs across ${totalPages} page(s) (${detectedLang}, ${confidence}% accuracy via ${engineBadge}). Auto-filled "${first.title}".`);
           showToast(`🎵 Found ${songs.length} songs! Auto-filled "${first.title}" via ${engineBadge}`);
         } else {
-          setOcrStatusMessage(`Auto-filled: "${first.title}" [${detectedLang}] (${first.category}) ${first.composer ? `by ${first.composer}` : ''} • Accuracy: ${confidence}% via ${engineBadge}`);
+          setOcrStatusMessage(`Auto-filled: "${first.title}" [${detectedLang}] (${first.category}) ${totalPages > 1 ? `• ${totalPages} Pages Merged` : ''} • Accuracy: ${confidence}% via ${engineBadge}`);
           showToast(`✨ Auto-filled: "${first.title}" (${detectedLang}) via ${engineBadge}`);
         }
       } else if (extractedLyrics.trim()) {
@@ -728,6 +766,9 @@ export default function CommunityDetailEditor() {
       if (songFile) {
         const formData = new FormData();
         formData.append('sheet_image', songFile);
+        continuationPages.forEach((page) => {
+          formData.append('additional_sheets', page.file);
+        });
         formData.append('module_id', categoryId || 'choir');
         formData.append('title', songForm.title.trim());
         formData.append('category', songForm.category.toLowerCase().trim());
@@ -768,6 +809,8 @@ export default function CommunityDetailEditor() {
       setEditingSong(null);
       setSongFile(null);
       setSongFilePreview('');
+      setContinuationPages([]);
+      setActiveSheetPageIndex(0);
       await loadCategoryData();
     } catch (err: any) {
       console.error('Save song error:', err);
@@ -2760,11 +2803,11 @@ export default function CommunityDetailEditor() {
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
                       <ImageIcon size={14} className="text-blue-600" />
-                      <span>Sheet Music Photo *</span>
+                      <span>Sheet Music {continuationPages.length > 0 ? `(${continuationPages.length + 1} Pages)` : 'Photo *'}</span>
                     </label>
-                    {songFilePreview && (
+                    {(songFilePreview || continuationPages.length > 0) && (
                       <a
-                        href={songFilePreview}
+                        href={activeSheetPageIndex === 0 ? songFilePreview : (continuationPages[activeSheetPageIndex - 1]?.preview || songFilePreview)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1"
@@ -2774,14 +2817,70 @@ export default function CommunityDetailEditor() {
                     )}
                   </div>
 
-                  {/* Upload & Extract Trigger */}
+                  {/* Multi-Page Tabs Switcher */}
+                  {(songFilePreview || continuationPages.length > 0) && (
+                    <div className="flex flex-wrap items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setActiveSheetPageIndex(0)}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                          activeSheetPageIndex === 0
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span>📄 Page 1 (Main)</span>
+                      </button>
+
+                      {continuationPages.map((page, idx) => (
+                        <div key={idx} className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => setActiveSheetPageIndex(idx + 1)}
+                            className={`px-2.5 py-1 text-[11px] font-bold rounded-l-lg transition flex items-center gap-1 cursor-pointer ${
+                              activeSheetPageIndex === idx + 1
+                                ? 'bg-indigo-600 text-white shadow-xs'
+                                : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            <span>📄 Page {idx + 2}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveContinuationPage(idx)}
+                            className="px-1 py-1 text-[11px] bg-slate-100 hover:bg-red-100 hover:text-red-600 text-slate-400 rounded-r-lg border-l border-slate-200 transition"
+                            title="Remove this continuation page"
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Add Continuation Page Button */}
+                      <label className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-bold rounded-lg border border-purple-200 transition cursor-pointer flex items-center gap-1 ml-auto">
+                        <Plus size={11} />
+                        <span>+ Add Page {continuationPages.length + 2}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleAddContinuationFile}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Main File Upload & Extract Trigger */}
                   <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleSongFileSelect}
-                      className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                    />
+                    {!songFilePreview && (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSongFileSelect}
+                        className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                      />
+                    )}
 
                     {/* Multilingual Vision AI Engine Badge */}
                     <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-xs">
@@ -2792,37 +2891,54 @@ export default function CommunityDetailEditor() {
                         </span>
                       </div>
                       <span className="text-[10px] font-bold bg-indigo-200/60 text-indigo-800 px-1.5 py-0.5 rounded">
-                        Connected
+                        {continuationPages.length > 0 ? `${continuationPages.length + 1} Pages Attached` : 'Ready'}
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={handleOcrExtract}
-                      disabled={ocrExtracting || (!songFile && !songFilePreview)}
+                      disabled={ocrExtracting || (!songFile && !songFilePreview && continuationPages.length === 0)}
                       className="w-full py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                     >
                       {ocrExtracting ? (
                         <>
                           <Loader2 size={14} className="animate-spin" />
-                          <span>Transcribing Hymn with Vision AI...</span>
+                          <span>Transcribing {continuationPages.length > 0 ? `${continuationPages.length + 1} Pages` : 'Hymn'} with Vision AI...</span>
                         </>
                       ) : (
                         <>
                           <Sparkles size={14} />
-                          <span>⚡ Extract Multilingual Text with Vision AI</span>
+                          <span>⚡ Extract {continuationPages.length > 0 ? `All ${continuationPages.length + 1} Continuous Pages` : 'Multilingual Text with Vision AI'}</span>
                         </>
                       )}
                     </button>
                   </div>
 
-                  {/* OCR Status Banner */}
+                  {/* Static Non-Bouncing Loading State with Concentric Rings & Cross */}
                   {ocrStatus === 'scanning' && (
-                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-800 font-bold animate-pulse">
-                      <Loader2 size={13} className="animate-spin text-blue-600 shrink-0" />
-                      <span>Scanning image and recognizing hymn vocabulary...</span>
+                    <div className="p-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 rounded-2xl text-white shadow-md flex items-center gap-3.5 transition-all">
+                      {/* Miniature dual concentric spinning rings with center cross */}
+                      <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
+                        <div className="absolute inset-0 rounded-full border-2 border-indigo-400/30 border-t-indigo-400 animate-spin" style={{ animationDuration: '2.5s' }} />
+                        <div className="absolute inset-1 rounded-full border border-purple-400/30 border-b-purple-300 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.8s' }} />
+                        {/* Latin Cross Icon */}
+                        <svg className="w-4 h-4 text-amber-300 drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M11 2h2v6h5v2h-5v12h-2V10H6V8h5V2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                          <span>Transcribing Hymn with Vision AI</span>
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </p>
+                        <p className="text-[11px] text-indigo-200/90 font-medium truncate">
+                          {ocrStatusMessage || 'Reading sheet music, stanzas & sol-fa notation...'}
+                        </p>
+                      </div>
                     </div>
                   )}
+
                   {ocrStatus === 'success' && (
                     <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2 text-xs text-emerald-900 font-bold">
                       <Check size={14} className="text-emerald-600 shrink-0 mt-0.5" />
@@ -2832,6 +2948,7 @@ export default function CommunityDetailEditor() {
                       </div>
                     </div>
                   )}
+
                   {ocrStatus === 'warning' && (
                     <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900 font-bold">
                       <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
@@ -2843,7 +2960,7 @@ export default function CommunityDetailEditor() {
                   )}
 
                   {/* Interactive Zoomable Sheet Photo Viewer */}
-                  {songFilePreview ? (
+                  {(songFilePreview || continuationPages.length > 0) ? (
                     <div className="space-y-2">
                       {/* Zoom & Contrast Controls */}
                       <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
@@ -2851,7 +2968,7 @@ export default function CommunityDetailEditor() {
                           <button
                             type="button"
                             onClick={() => setSheetZoom(z => Math.max(0.6, z - 0.2))}
-                            className="p-1 text-slate-600 hover:bg-slate-100 rounded"
+                            className="p-1 text-slate-600 hover:bg-slate-100 rounded cursor-pointer"
                             title="Zoom Out"
                           >
                             <ZoomOut size={13} />
@@ -2862,7 +2979,7 @@ export default function CommunityDetailEditor() {
                           <button
                             type="button"
                             onClick={() => setSheetZoom(z => Math.min(2.5, z + 0.2))}
-                            className="p-1 text-slate-600 hover:bg-slate-100 rounded"
+                            className="p-1 text-slate-600 hover:bg-slate-100 rounded cursor-pointer"
                             title="Zoom In"
                           >
                             <ZoomIn size={13} />
@@ -2870,31 +2987,36 @@ export default function CommunityDetailEditor() {
                           <button
                             type="button"
                             onClick={() => setSheetZoom(1)}
-                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded ml-0.5"
+                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded ml-0.5 cursor-pointer"
                             title="Reset Zoom"
                           >
                             <RotateCcw size={11} />
                           </button>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setInvertSheetContrast(!invertSheetContrast)}
-                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition ${
-                            invertSheetContrast
-                              ? 'bg-purple-700 text-white'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }`}
-                          title="Invert dark contrast for rehearsal lighting"
-                        >
-                          <Contrast size={11} />
-                          <span>Dark Sheet</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-slate-400 font-bold">
+                            Viewing Page {activeSheetPageIndex + 1} of {continuationPages.length + (songFilePreview ? 1 : 0)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setInvertSheetContrast(!invertSheetContrast)}
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                              invertSheetContrast
+                                ? 'bg-purple-700 text-white'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            }`}
+                            title="Invert dark contrast for rehearsal lighting"
+                          >
+                            <Contrast size={11} />
+                            <span>Dark Sheet</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div className="relative h-80 sm:h-96 rounded-xl overflow-auto border-2 border-slate-200 bg-slate-900 flex items-start justify-center p-2">
                         <img
-                          src={songFilePreview}
+                          src={activeSheetPageIndex === 0 ? songFilePreview : (continuationPages[activeSheetPageIndex - 1]?.preview || songFilePreview)}
                           alt="Sheet Preview"
                           className="max-w-full rounded-lg transition-transform duration-150 origin-top"
                           style={{
