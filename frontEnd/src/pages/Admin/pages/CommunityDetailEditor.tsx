@@ -41,6 +41,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  RefreshCw,
   Contrast,
   Maximize2,
   Sliders
