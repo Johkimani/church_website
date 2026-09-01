@@ -114,13 +114,14 @@ const Community: React.FC = () => {
                 }}
                 onClick={() => handleCardClick(community.id)}
               >
-                {/* Background Image with Color Overlay */}
-                <div
-                  className="card-background"
-                  style={{ backgroundImage: `url(${image})` }}
-                >
-                  <div className="card-overlay" />
-                </div>
+                {/* Background Image */}
+                <img
+                  src={image}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover object-center z-0"
+                />
+                <div className="card-overlay" />
 
                 {/* Card Content */}
                 <div className="card-content">
@@ -144,12 +145,13 @@ const Community: React.FC = () => {
             style={{ ['--jumuiya-color' as any]: '#1d4ed8' }}
             onClick={() => navigate('/jumuiya')}
           >
-            <div
-              className="card-background"
-              style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800)' }}
-            >
-              <div className="card-overlay" />
-            </div>
+            <img
+              src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover object-center z-0"
+            />
+            <div className="card-overlay" />
             <div className="card-content">
               <div className="card-header">
                 <h2 className="card-title">Our Jumuiyas</h2>
