@@ -281,24 +281,17 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
         </div>
 
         {/* Library vs Programme Switcher */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
           <button
             onClick={() => setActiveMainTab('all')}
-            className={`relative flex flex-col items-center gap-1.5 px-4 py-3.5 rounded-2xl border-2 transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
               activeMainTab === 'all'
-                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/25 scale-[1.02]'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            <FaLayerGroup size={18} className={activeMainTab === 'all' ? 'text-white' : 'text-blue-600 dark:text-blue-400'} />
-            <span className="text-[11px] font-black uppercase tracking-wide">All Songs</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              activeMainTab === 'all'
-                ? 'bg-white/25 text-white'
-                : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-            }`}>
-              {statsData?.total || 0}
-            </span>
+            <FaLayerGroup size={12} />
+            All Songs ({statsData?.total || 0})
           </button>
           {PROGRAMS.map((prog) => {
             const isActive = activeMainTab === prog.id;
@@ -307,21 +300,14 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
               <button
                 key={prog.id}
                 onClick={() => setActiveMainTab(prog.id)}
-                className={`relative flex flex-col items-center gap-1.5 px-4 py-3.5 rounded-2xl border-2 transition-all duration-200 ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
                   isActive
-                    ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/25 scale-[1.02]'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                 }`}
               >
-                <span className={isActive ? 'text-white' : 'text-amber-600 dark:text-amber-400'}>{prog.icon}</span>
-                <span className="text-[11px] font-black uppercase tracking-wide">{prog.label.replace(' Program', '')}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  isActive
-                    ? 'bg-white/25 text-white'
-                    : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                }`}>
-                  {count}
-                </span>
+                <span>{prog.icon}</span>
+                {prog.label.replace(' Program', '')} ({count})
               </button>
             );
           })}
