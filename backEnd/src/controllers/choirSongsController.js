@@ -63,7 +63,13 @@ async function runGeminiVisionOcr(imageBuffer, clientKey = "") {
   const prompt = `You are an expert Catholic Church Hymn transcriber based in Kenya.
 You will receive a photo of a handwritten or printed hymn sheet, possibly on lined notebook paper.
 Ignore the horizontal ruled lines — they are background noise.
-Extract and transcribe ALL visible text accurately. Supported languages: Swahili, English, Luo (Dholuo), Kikuyu, Kamba, Latin.
+Extract and transcribe ALL visible text from top to bottom completely. Supported languages: Swahili, English, Luo (Dholuo), Kikuyu, Kamba, Latin.
+
+CRITICAL INSTRUCTIONS:
+1. TRANSCRIBE ALL VERSES: Scan the entire page down to the very last line. You MUST include EVERY numbered verse (e.g. 1, 2, 3, 4, 5, 6, 7, 8...). Do NOT stop after 2 verses. Do NOT truncate, summarize, or omit any verse.
+2. CHORUS & STANZAS: Label the chorus/refrain as [Chorus] and each numbered stanza as [Verse 1], [Verse 2], [Verse 3], [Verse 4], etc., separated by blank lines.
+3. PRESERVE REPETITION: Keep repetition markers like "x2" or "(x2)" exactly as written.
+4. EXACT SPELLING: Transcribe all lyrics accurately in their liturgical language.
 
 Return ONLY a valid JSON object (no markdown code blocks outside JSON) with this exact schema:
 {
@@ -75,7 +81,7 @@ Return ONLY a valid JSON object (no markdown code blocks outside JSON) with this
   "time_signature": "4/4",
   "tempo": "Moderate",
   "solfa_notation": "",
-  "lyrics_text": "[Chorus]\nChorus lyrics here\n\n[Verse 1]\nVerse lyrics here\n\n[Verse 2]\nVerse lyrics here"
+  "lyrics_text": "[Chorus]\nChorus lines here...\n\n[Verse 1]\nVerse 1 lines here...\n\n[Verse 2]\nVerse 2 lines here...\n\n[Verse 3]\nVerse 3 lines here...\n\n[Verse 4]\nVerse 4 lines here..."
 }
 
 category must be one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general.
@@ -110,7 +116,7 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
             generationConfig: {
               responseMimeType: "application/json",
               temperature: 0.05,
-              maxOutputTokens: 2048,
+              maxOutputTokens: 4096,
             },
           },
           {
