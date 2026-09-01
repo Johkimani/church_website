@@ -100,7 +100,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
 
   // Selected song viewer state
   const [selectedSong, setSelectedSong] = useState<ChoirSong | null>(null);
-  const [viewMode, setViewMode] = useState<'sheet' | 'lyrics'>('sheet');
+  const [viewMode, setViewMode] = useState<'sheet' | 'lyrics' | 'solfa'>('sheet');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [invertContrast, setInvertContrast] = useState<boolean>(false);
   const [fontSize, setFontSize] = useState<number>(18);
@@ -126,32 +126,69 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Programme collections (Sunday / Friday). Each song can be starred into
-  // either, or both. Stored separately in localStorage.
+  // Programme collections state (synced with cloud backend & backed by localStorage)
   const [programIds, setProgramIds] = useState<Record<string, number[]>>(() => ({
     sunday: readCollection(PROGRAMS[0].storageKey),
     friday: readCollection(PROGRAMS[1].storageKey),
   }));
 
+  // Fetch Cloud-synced Mass Programmes from backend
+  const { data: cloudProgrammesData, refetch: refetchProgrammes } = useQuery({
+    queryKey: ['choir-cloud-programmes', moduleId],
+    queryFn: async () => {
+      const res = await apiClient.get('/choir-songs/programmes', { params: { module_id: moduleId } });
+      return res.data?.programmes || null;
+    },
+    staleTime: 30000,
+  });
+
+  // Sync cloud programmes into local state
+  useEffect(() => {
+    if (cloudProgrammesData) {
+      const sundayIds = (cloudProgrammesData.sunday || []).map((s: any) => s.id);
+      const fridayIds = (cloudProgrammesData.friday || []).map((s: any) => s.id);
+      setProgramIds({
+        sunday: Array.from(new Set([...sundayIds, ...readCollection(PROGRAMS[0].storageKey)])),
+        friday: Array.from(new Set([...fridayIds, ...readCollection(PROGRAMS[1].storageKey)])),
+      });
+    }
+  }, [cloudProgrammesData]);
+
   const isInProgram = (program: ProgramId, id: number) => (programIds[program] || []).includes(id);
 
-  const toggleProgram = (program: ProgramId, id: number, e?: React.MouseEvent) => {
+  const toggleProgram = async (program: ProgramId, id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const meta = PROGRAMS.find((p) => p.id === program)!;
+    const list = programIds[program] || [];
+    const isAdding = !list.includes(id);
+    const next = isAdding ? [...list, id] : list.filter((item) => item !== id);
+
+    // Optimistic local update
     setProgramIds((prev) => {
-      const list = prev[program] || [];
-      const next = list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
       const updated = { ...prev, [program]: next };
       try {
         localStorage.setItem(meta.storageKey, JSON.stringify(next));
       } catch {}
-      if (!list.includes(id)) {
-        toast.success(`Added to ${meta.label}`);
-      } else {
-        toast(`Removed from ${meta.label}`, { icon: '🗑️' });
-      }
       return updated;
     });
+
+    if (isAdding) {
+      toast.success(`Added to ${meta.label}`);
+    } else {
+      toast(`Removed from ${meta.label}`, { icon: '🗑️' });
+    }
+
+    // Persist to backend database
+    try {
+      await apiClient.post('/choir-songs/programmes/toggle', {
+        module_id: moduleId,
+        program_type: program,
+        song_id: id,
+      });
+      refetchProgrammes();
+    } catch (err) {
+      console.warn('Programme toggle cloud sync notice:', err);
+    }
   };
 
   const programCount = (program: ProgramId) => (programIds[program] || []).length;
@@ -581,26 +618,41 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                 </div>
               </div>
 
-              {/* Top View Toggle: Sheet vs Lyrics */}
+              {/* Top View Toggle: Sheet vs Lyrics vs Tonic Sol-fa */}
               <div className="flex items-center gap-2">
                 <div className="bg-slate-200 dark:bg-slate-700 p-1 rounded-2xl flex items-center">
                   <button
                     onClick={() => setViewMode('lyrics')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       viewMode === 'lyrics'
                         ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                     }`}
                   >
                     <FaFileAlt size={12} />
-                    <span className="hidden sm:inline">Lyrics & Text</span>
+                    <span className="hidden sm:inline">Lyrics &amp; Text</span>
                   </button>
+
+                  {selectedSong.solfa_notation && (
+                    <button
+                      onClick={() => setViewMode('solfa')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        viewMode === 'solfa'
+                          ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      <FaMusic size={11} />
+                      <span className="hidden sm:inline">Tonic Sol-fa</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setViewMode('sheet')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       viewMode === 'sheet'
                         ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                     }`}
                   >
                     <FaImage size={12} />
@@ -611,7 +663,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                 {/* Reader theme toggle */}
                 <button
                   onClick={cycleReaderTheme}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                     readerTheme === 'dark'
                       ? 'bg-slate-900 text-amber-300 ring-1 ring-amber-400/40'
                       : readerTheme === 'light'
@@ -627,7 +679,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                 {/* Close modal */}
                 <button
                   onClick={() => setSelectedSong(null)}
-                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
                 >
                   <FaTimes size={16} />
                 </button>
@@ -645,7 +697,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                   <div className="sticky top-0 z-20 mb-4 flex items-center gap-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
                     <button
                       onClick={() => setZoomLevel((z) => Math.max(0.6, z - 0.25))}
-                      className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200"
+                      className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 cursor-pointer"
                       title="Zoom Out"
                     >
                       <FaSearchMinus size={14} />
@@ -655,14 +707,14 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     </span>
                     <button
                       onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
-                      className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200"
+                      className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 cursor-pointer"
                       title="Zoom In"
                     >
                       <FaSearchPlus size={14} />
                     </button>
                     <button
                       onClick={() => setZoomLevel(1)}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200"
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 cursor-pointer"
                     >
                       Reset
                     </button>
@@ -672,7 +724,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     {/* Invert contrast for dim church stalls */}
                     <button
                       onClick={() => setInvertContrast(!invertContrast)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         invertContrast
                           ? 'bg-purple-600 text-white'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
@@ -708,6 +760,40 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     />
                   </div>
                 </div>
+              ) : viewMode === 'solfa' ? (
+                /* ========================================================================= */
+                /* Tonic Sol-fa Notation Viewer */
+                /* ========================================================================= */
+                <div className="max-w-2xl mx-auto space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <FaMusic className="text-purple-600" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {selectedSong.key_signature ? `Key: ${selectedSong.key_signature}` : 'Tonic Sol-fa Notation'}
+                        {selectedSong.time_signature ? ` • ${selectedSong.time_signature}` : ''}
+                        {selectedSong.tempo ? ` • ${selectedSong.tempo}` : ''}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (selectedSong.solfa_notation) {
+                          navigator.clipboard.writeText(selectedSong.solfa_notation);
+                          toast.success('Sol-fa notation copied!');
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 hover:bg-purple-100 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <FaCopy size={12} /> Copy Sol-fa
+                    </button>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-900/40 shadow-sm">
+                    <pre className="text-xs font-mono text-purple-950 dark:text-purple-200 whitespace-pre-wrap leading-relaxed tracking-wider">
+                      {selectedSong.solfa_notation}
+                    </pre>
+                  </div>
+                </div>
               ) : (
                 /* ========================================================================= */
                 /* Clean Extracted Lyrics View with Stanzas, High Readability & Font Controls */
@@ -720,14 +806,14 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                       <span className="text-xs font-bold text-slate-500">Text Size:</span>
                       <button
                         onClick={() => setFontSize((s) => Math.max(14, s - 2))}
-                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300"
+                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer"
                       >
                         A-
                       </button>
                       <span className="text-xs font-black text-blue-600">{fontSize}px</span>
                       <button
                         onClick={() => setFontSize((s) => Math.min(32, s + 2))}
-                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300"
+                        className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer"
                       >
                         A+
                       </button>
@@ -736,7 +822,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     {/* Copy Lyrics */}
                     <button
                       onClick={handleCopyLyrics}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 rounded-xl text-xs font-bold transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                     >
                       {copied ? <FaCheck size={12} className="text-green-500" /> : <FaCopy size={12} />}
                       {copied ? 'Copied' : 'Copy Lyrics'}
@@ -753,7 +839,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                       </p>
                       <button
                         onClick={() => setViewMode('sheet')}
-                        className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+                        className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer"
                       >
                         View Sheet Music Photo
                       </button>

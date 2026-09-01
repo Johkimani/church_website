@@ -3,21 +3,29 @@ import logger from "../logger/winston.js";
 import { formatPhotoUrl, deleteFromCloudinary } from "../utils/helpers.js";
 import { createWorker } from "tesseract.js";
 import sharp from "sharp";
+import axios from "axios";
+import {
+  detectHymnLanguage,
+  repairMultilingualOcrText,
+  applyDynamicCorrections,
+  learnOcrCorrections,
+} from "../utils/hymnDictionary.js";
 
 /**
- * Preprocesses image buffer with Sharp to dramatically boost OCR clarity:
- * - Fixes phone EXIF rotation/skew
- * - Upscales low-res scans to optimal OCR DPI (>= 2000px)
- * - Converts to high-contrast grayscale with histogram normalization & sharpening
+ * Enhanced Sharp preprocessing pipeline:
+ * - Auto-rotates based on phone camera EXIF orientation
+ * - Upscales low-res scans to optimal OCR resolution (>= 2200px)
+ * - Contrast stretching, grayscale normalization & edge sharpening
+ * - Suppresses musical staff line residues that interfere with lyric text
  */
 async function preprocessForOcr(inputBuffer) {
   try {
     const meta = await sharp(inputBuffer).metadata();
     let pipeline = sharp(inputBuffer).rotate(); // auto-rotate based on EXIF
 
-    // Upscale if under 2000px width for sharp letter recognition
-    const targetWidth = Math.max(meta.width || 1200, 2000);
-    if ((meta.width || 0) < 2000) {
+    // Upscale if under 2200px width for crystal clear character recognition
+    const targetWidth = Math.max(meta.width || 1200, 2200);
+    if ((meta.width || 0) < 2200) {
       pipeline = pipeline.resize({ width: targetWidth, withoutEnlargement: false });
     }
 
@@ -25,8 +33,8 @@ async function preprocessForOcr(inputBuffer) {
     pipeline = pipeline
       .grayscale()
       .normalize()
-      .sharpen({ sigma: 1.5, m1: 0.5, m2: 2.5 })
-      .linear(1.25, -20); // darken text ink, whiten paper background
+      .sharpen({ sigma: 1.6, m1: 0.7, m2: 2.8 })
+      .linear(1.3, -25); // darken black ink, whiten paper background
 
     return await pipeline.png().toBuffer();
   } catch (err) {
@@ -36,43 +44,48 @@ async function preprocessForOcr(inputBuffer) {
 }
 
 /**
- * Liturgical and Swahili dictionary repair for common OCR optical misreads
+ * Optional Google Cloud Vision REST client (invoked when GOOGLE_VISION_API_KEY is configured)
  */
-function repairHymnOcrTypos(text) {
-  if (!text) return "";
-  return text
-    // Headings
-    .replace(/\b(?:mw[i!l1][t!l1][i!l1]k[i!l1]o|mwitiki0|mwltlko)\b/gi, "Mwitikio")
-    .replace(/\b(?:ub[e3c]t[i!l1]|u8eti|u8et!)\b/gi, "Ubeti")
-    .replace(/\b(?:k[i!l1][i!l1]t[i!l1]k[i!l1]o|kiitiki0)\b/gi, "Kiitikio")
-    .replace(/\b(?:ch[o0]ru[s5]|ch0ru5)\b/gi, "Chorus")
-    .replace(/\b(?:v[e3]rs[e3]|v3rse)\b/gi, "Verse")
-    .replace(/\b(?:r[e3]fra[i!l1]n)\b/gi, "Refrain")
-    // Core liturgical terms
-    .replace(/\b(?:8wana|bw4na|bwan4)\b/gi, "Bwana")
-    .replace(/\b(?:mvngu|mungv|munguu)\b/gi, "Mungu")
-    .replace(/\b(?:s4daka|sad4ka)\b/gi, "Sadaka")
-    .replace(/\b(?:k0munyo|komuny0)\b/gi, "Komunyo")
-    .replace(/\b(?:[e3]kar[i!l1]st[i!l1]|ekarlstl)\b/gi, "Ekaristi")
-    .replace(/\b(?:mar[i!l1]a|marla)\b/gi, "Maria")
-    .replace(/\b(?:b[i!l1]k[i!l1]ra|blkira)\b/gi, "Bikira")
-    .replace(/\b(?:al[e3]luy[a4]|alelu!a|a1e1uya)\b/gi, "Aleluya")
-    .replace(/\b(?:utuk[u0]fu|utukvfu|vtukufu)\b/gi, "Utukufu")
-    .replace(/\b(?:shukran[i!l1]|shukranl)\b/gi, "Shukrani")
-    .replace(/\b(?:mtakat[i!l1]fu|mtak4tifu)\b/gi, "Mtakatifu")
-    .replace(/\b(?:mwok[o0]z[i!l1]|mw0kozi)\b/gi, "Mwokozi")
-    .replace(/\b(?:yes[uv]|ycsu)\b/gi, "Yesu")
-    .replace(/\b(?:kr[i!l1]st[o0]|krlsto)\b/gi, "Kristo")
-    // Remove music staff lines / noise characters
-    .replace(/[~^¢§©®™]/g, "")
-    .replace(/^[_\-=+*#|]{3,}$/gm, "");
+async function runGoogleVisionOcr(imageBuffer) {
+  const apiKey = process.env.GOOGLE_VISION_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const base64Image = imageBuffer.toString("base64");
+    const response = await axios.post(
+      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+      {
+        requests: [
+          {
+            image: { content: base64Image },
+            features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+          },
+        ],
+      },
+      { timeout: 10000 }
+    );
+
+    const fullTextAnnotation = response.data?.responses?.[0]?.fullTextAnnotation;
+    if (fullTextAnnotation?.text) {
+      logger.info("Google Cloud Vision OCR extraction succeeded.");
+      return {
+        text: fullTextAnnotation.text,
+        confidence: 95,
+        engine: "google-vision",
+      };
+    }
+    return null;
+  } catch (err) {
+    logger.warn("Google Vision OCR fallback failed: " + err.message);
+    return null;
+  }
 }
 
 function cleanPersonName(name) {
   if (!name) return "";
   return name
     .replace(/[0-9\.:\-_=]+/g, "")
-    .replace(/\b(arr|comp|mtunzi|key|solfa|doh)\b/gi, "")
+    .replace(/\b(arr|comp|mtunzi|jandiko|muhiki|key|solfa|doh)\b/gi, "")
     .trim();
 }
 
@@ -87,26 +100,19 @@ function formatTitle(title) {
 
 function detectCategory(text) {
   const t = text.toLowerCase();
-  if (/maria|bikira|ave|mama\s*yetu|malkia|nyota\s*ya\s*bahari/i.test(t)) return "marian";
-  if (/mwanzo|twende|nyumbani|ingia|tuingie|mlango|shangwe/i.test(t)) return "mwanzo";
-  if (/utukufu|glory|gloria|huruma|kyrie|bwana\s*u(?:t)?u?hurumie/i.test(t)) return "utukufu";
-  if (/sadaka|matoleo|mkate|divai|twakutolea|tolea|toeni/i.test(t)) return "sadaka";
-  if (/komunyo|ekaristi|mwili\s*wangu|damu\s*yangu|karamu|panis|altare/i.test(t)) return "komunyo";
-  if (/shukrani|asante|ahsante|tunamshukuru|mshukuruni/i.test(t)) return "shukrani";
-  if (/kutoka|toka|enendeni|mwisho|amani\s*ya\s*bwana/i.test(t)) return "kutoka";
-  if (/kwaresma|kwaresima|mateso|msalaba|tubu/i.test(t)) return "kwaresma";
-  if (/pasaka|ufufuko|aleluya|amefufuka|kaburi/i.test(t)) return "pasaka";
-  if (/noeli|krismasi|bethlehemu|mtoto\s*yesu|kuzaliwa/i.test(t)) return "noeli";
-  if (/roho\s*mtakatifu|pentekoste|pentecost|parakleto/i.test(t)) return "pentecost";
-  if (/thomas|akwino|aquinas|msimamizi/i.test(t)) return "patron";
+  if (/maria|bikira|ave|mama\s*yetu|malkia|nyota\s*ya\s*bahari|mariam/i.test(t)) return "marian";
+  if (/mwanzo|twende|nyumbani|ingia|tuingie|mlango|shangwe|donjo|entrance/i.test(t)) return "mwanzo";
+  if (/utukufu|glory|gloria|huruma|kyrie|bwana\s*u(?:t)?u?hurumie|duong|ngwono/i.test(t)) return "utukufu";
+  if (/sadaka|matoleo|mkate|divai|twakutolea|tolea|toeni|misango|offertory|igongona|nthembo/i.test(t)) return "sadaka";
+  if (/komunyo|ekaristi|mwili\s*wangu|damu\s*yangu|karamu|panis|altare|remb|ringo|communion/i.test(t)) return "komunyo";
+  if (/shukrani|asante|ahsante|tunamshukuru|mshukuruni|erokamino|thanksgiving|ngatho|muvea/i.test(t)) return "shukrani";
+  if (/kutoka|toka|enendeni|mwisho|amani\s*ya\s*bwana|recessional/i.test(t)) return "kutoka";
+  if (/kwaresma|kwaresima|mateso|msalaba|tubu|sand|lent/i.test(t)) return "kwaresma";
+  if (/pasaka|ufufuko|aleluya|amefufuka|kaburi|chier|easter/i.test(t)) return "pasaka";
+  if (/noeli|krismasi|bethlehemu|mtoto\s*yesu|kuzaliwa|christmas/i.test(t)) return "noeli";
+  if (/roho\s*mtakatifu|pentekoste|pentecost|parakleto|veva/i.test(t)) return "pentecost";
+  if (/thomas|akwino|aquinas|msimamizi|patron/i.test(t)) return "patron";
   return "general";
-}
-
-function detectLanguage(text) {
-  const t = text.toLowerCase();
-  if (/tantum\s*ergo|pange\s*lingua|sanctus|agnus\s*dei|domine|panis\s*angelicus/i.test(t)) return "Latin";
-  if (/\b(the|lord|god|jesus|praise|we|come|holy|father|glory)\b/i.test(t)) return "English";
-  return "Swahili";
 }
 
 function isTonicSolfaLine(line) {
@@ -119,14 +125,14 @@ function isTonicSolfaLine(line) {
 }
 
 function extractSongTitle(lines) {
-  for (let i = 0; i < Math.min(lines.length, 8); i++) {
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
     // Skip technical music direction lines
     if (/^(key|doh|tempo|moderato|andante|allegro|\d+\/\d+|mtunzi|composer|comp|arr|arranged)/i.test(line)) continue;
     if (isTonicSolfaLine(line)) continue;
-    if (/^(chorus|mwitikio|kiitikio|verse|ubeti|stanza)/i.test(line)) break;
+    if (/^(chorus|mwitikio|kiitikio|verse|ubeti|stanza|wer|rwimbo)/i.test(line)) break;
 
     // Strip track numbers
     const clean = line
@@ -134,7 +140,7 @@ function extractSongTitle(lines) {
       .replace(/[_\-*~#=]+/g, "")
       .trim();
 
-    if (clean.length >= 3 && clean.length <= 70) {
+    if (clean.length >= 3 && clean.length <= 80) {
       return formatTitle(clean);
     }
   }
@@ -152,7 +158,7 @@ function separateLyricsAndSolfa(lines, songTitle) {
     // Skip technical headers
     if (/^(key|doh|tempo|moderato|andante|allegro|\d+\/\d+|mtunzi|composer|comp|arr|arranged)\b/i.test(trimmed)) continue;
 
-    if (songTitle && trimmed.toLowerCase().includes(songTitle.toLowerCase())) continue;
+    if (songTitle && trimmed.toLowerCase().includes(songTitle.toLowerCase()) && trimmed.length <= songTitle.length + 5) continue;
 
     if (isTonicSolfaLine(trimmed)) {
       solfaLines.push(trimmed);
@@ -164,7 +170,7 @@ function separateLyricsAndSolfa(lines, songTitle) {
   const formattedLyrics = [];
   for (let i = 0; i < lyricsLines.length; i++) {
     const l = lyricsLines[i];
-    const isMarker = /^(chorus|kwaya|mwitikio|kiitikio|refrain|verse|ubeti|beti|\d+[\.:\)])/i.test(l);
+    const isMarker = /^(chorus|kwaya|mwitikio|kiitikio|refrain|verse|ubeti|beti|wer|rwimbo|\d+[\.:\)])/i.test(l);
     if (isMarker && formattedLyrics.length > 0) {
       formattedLyrics.push("");
     }
@@ -235,11 +241,11 @@ export function parseSmartSongSheet(rawText) {
 
     // 4. Composer
     let composer = "";
-    const composerMatch = section.match(/(?:mtunzi|composer|comp|arr|arranged\s+by|words\s*(?:&|and)\s*music\s+by|by)\s*[:=]?\s*([^\n\r,;:]{3,45})/i);
+    const composerMatch = section.match(/(?:mtunzi|composer|comp|arr|arranged\s+by|words\s*(?:&|and)\s*music\s+by|by|jandiko)\s*[:=]?\s*([^\n\r,;:]{3,45})/i);
     if (composerMatch) {
       composer = cleanPersonName(composerMatch[1]);
     } else {
-      const nameMatch = section.match(/\b(Fr\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?|Rev\.\s+[A-Z][a-z]+|Bernard\s+Mukasa|B\.\s*Mukasa|Jude\s+Njoroge|J\.\s*Njoroge)\b/i);
+      const nameMatch = section.match(/\b(Fr\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?|Rev\.\s+[A-Z][a-z]+|Bernard\s+Mukasa|B\.\s*Mukasa|Jude\s+Njoroge|J\.\s*Njoroge|G\.\s*Ndung'u)\b/i);
       if (nameMatch) composer = nameMatch[0].trim();
     }
 
@@ -249,11 +255,11 @@ export function parseSmartSongSheet(rawText) {
       title = parsedSongs.length > 0 ? `Song ${idx + 1}` : "";
     }
 
-    // 6. Category & Language
+    // 6. Language & Category
+    const language = detectHymnLanguage(section);
     const category = detectCategory(section + " " + title);
-    const language = detectLanguage(section);
 
-    // 7. Lyrics & Solfa
+    // 7. Lyrics & Solfa separation
     const { lyrics, solfa } = separateLyricsAndSolfa(lines, title);
 
     parsedSongs.push({
@@ -283,9 +289,9 @@ export const getSongs = async (req, res) => {
     const language = req.query.language || "all";
     const keySignature = req.query.key_signature;
     const search = req.query.search ? String(req.query.search).trim() : "";
-    const sortBy = req.query.sortBy || "newest"; // 'newest', 'title_asc', 'views', 'composer'
+    const sortBy = req.query.sortBy || "newest";
     const page = Math.max(1, parseInt(req.query.page || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || "24", 10)));
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit || "50", 10)));
     const offset = (page - 1) * limit;
 
     const conditions = ["module_id = $1"];
@@ -339,8 +345,9 @@ export const getSongs = async (req, res) => {
     const dataQuery = `
       SELECT 
         id, module_id, title, category, composer, key_signature, time_signature, 
-        tempo, solfa_notation, lyrics_text, image_url, additional_images, audio_url, 
-        language, tags, views_count, created_by, created_at, updated_at
+        tempo, solfa_notation, lyrics_text, raw_ocr_text, confidence_score,
+        image_url, additional_images, audio_url, language, tags, views_count, 
+        created_by, created_at, updated_at
       FROM choir_songs
       WHERE ${whereClause}
       ORDER BY ${orderClause}
@@ -366,7 +373,7 @@ export const getSongs = async (req, res) => {
 };
 
 /**
- * GET /choir-songs/stats — Public: Get category breakdown & total stats
+ * GET /choir-songs/stats — Public: Get category & language breakdown & total stats
  */
 export const getCategoriesAndStats = async (req, res) => {
   try {
@@ -452,7 +459,7 @@ export const getSongById = async (req, res) => {
 };
 
 /**
- * POST /choir-songs/ocr-extract — Admin: In-memory Smart OCR extraction of lyrics from song sheet
+ * POST /choir-songs/ocr-extract — Admin: Hybrid Intelligent OCR extraction
  */
 export const extractLyricsOcr = async (req, res) => {
   let worker = null;
@@ -461,37 +468,54 @@ export const extractLyricsOcr = async (req, res) => {
       return res.status(400).json({ success: false, error: "Image file is required for OCR extraction" });
     }
 
-    logger.info(`Starting in-memory high-accuracy OCR extraction for image size: ${req.file.buffer.length} bytes`);
+    logger.info(`Starting hybrid multilingual OCR extraction for image size: ${req.file.buffer.length} bytes`);
 
-    // Step 1: High-clarity image preprocessing via Sharp (rotation, upscale, contrast stretch, noise reduction)
+    // Step 1: High-clarity Sharp image preprocessing
     const preprocessedBuffer = await preprocessForOcr(req.file.buffer);
 
-    // Step 2: Initialize Tesseract worker with dual English + Swahili recognition models
-    worker = await createWorker(['eng', 'swa']);
-    await worker.setParameters({
-      tessedit_pageseg_mode: '3',
-    });
-    
-    // Step 3: Run recognition on enhanced image buffer
-    const ret = await worker.recognize(preprocessedBuffer);
-    let rawText = ret.data?.text || "";
+    let rawText = "";
+    let confidence = 0;
+    let engineUsed = "tesseract";
 
-    // Fallback pass: if thresholded text is too short, try raw buffer
-    if (rawText.trim().length < 15 && req.file.buffer.length > 0) {
-      const fallbackRet = await worker.recognize(req.file.buffer);
-      if ((fallbackRet.data?.text || "").trim().length > rawText.trim().length) {
-        rawText = fallbackRet.data?.text || "";
+    // Step 2: Check for Google Cloud Vision API fallback if configured
+    const visionResult = await runGoogleVisionOcr(req.file.buffer);
+    if (visionResult && visionResult.text) {
+      rawText = visionResult.text;
+      confidence = visionResult.confidence;
+      engineUsed = visionResult.engine;
+    } else {
+      // Step 3: Run Tesseract.js locally with English + Swahili models
+      worker = await createWorker(['eng', 'swa']);
+      await worker.setParameters({
+        tessedit_pageseg_mode: '3',
+      });
+
+      const ret = await worker.recognize(preprocessedBuffer);
+      rawText = ret.data?.text || "";
+      confidence = ret.data?.confidence || 0;
+
+      // Retry on raw buffer if preprocessed yielded too few characters
+      if (rawText.trim().length < 20 && req.file.buffer.length > 0) {
+        const fallbackRet = await worker.recognize(req.file.buffer);
+        if ((fallbackRet.data?.text || "").trim().length > rawText.trim().length) {
+          rawText = fallbackRet.data?.text || "";
+          confidence = fallbackRet.data?.confidence || confidence;
+        }
       }
     }
 
-    // Step 4: Polish Swahili/liturgical terms and repair OCR letter swaps
-    const cleanedRawText = repairHymnOcrTypos(rawText);
+    // Step 4: Detect Language & apply language-specific liturgical dictionaries
+    const detectedLang = detectHymnLanguage(rawText);
+    let cleanedRawText = repairMultilingualOcrText(rawText, detectedLang);
 
-    // Step 5: Smart multi-song & metadata extraction
+    // Step 5: Apply dynamic learned corrections from database
+    cleanedRawText = await applyDynamicCorrections(cleanedRawText, detectedLang, db);
+
+    // Step 6: Parse multi-song layouts and extract musical metadata
     const parsedSongs = parseSmartSongSheet(cleanedRawText);
     const firstSong = parsedSongs[0] || null;
 
-    logger.info(`Smart OCR completed: raw text length = ${cleanedRawText.length}, songs found = ${parsedSongs.length}, confidence = ${ret.data?.confidence || 0}`);
+    logger.info(`Smart OCR completed via [${engineUsed}]: detected language = ${detectedLang}, songs found = ${parsedSongs.length}, confidence = ${confidence}%`);
 
     if (parsedSongs.length === 0 && !cleanedRawText.trim()) {
       return res.json({
@@ -502,6 +526,7 @@ export const extractLyricsOcr = async (req, res) => {
         rawText: "",
         guessedTitle: "",
         confidence: 0,
+        language: detectedLang,
         message: "No legible text could be recognized automatically. You can type or paste the lyrics into the editor below."
       });
     }
@@ -513,8 +538,10 @@ export const extractLyricsOcr = async (req, res) => {
       firstSong: firstSong,
       extractedLyrics: firstSong?.lyrics_text || cleanedRawText.trim(),
       guessedTitle: firstSong?.title || "",
+      language: detectedLang,
       rawText: cleanedRawText,
-      confidence: ret.data?.confidence || 0,
+      confidence: Math.round(confidence),
+      engine: engineUsed
     });
   } catch (error) {
     logger.error("OCR Extraction failed: " + error.message, { stack: error.stack });
@@ -530,7 +557,7 @@ export const extractLyricsOcr = async (req, res) => {
 };
 
 /**
- * POST /choir-songs — Admin: Create a new song record
+ * POST /choir-songs — Admin: Create a new song record & feed correction learner
  */
 export const createSong = async (req, res) => {
   try {
@@ -544,6 +571,8 @@ export const createSong = async (req, res) => {
       tempo,
       solfa_notation,
       lyrics_text,
+      raw_ocr_text,
+      confidence_score,
       audio_url,
       language = "Swahili",
       tags,
@@ -553,7 +582,6 @@ export const createSong = async (req, res) => {
       return res.status(400).json({ success: false, error: "Title and Category are required" });
     }
 
-    // Image: either uploaded file via Cloudinary or provided image_url
     let imageUrl = req.body.image_url || "";
     let cloudinaryPublicId = null;
 
@@ -575,9 +603,9 @@ export const createSong = async (req, res) => {
     const insertQuery = `
       INSERT INTO choir_songs (
         module_id, title, category, composer, key_signature, time_signature, 
-        tempo, solfa_notation, lyrics_text, image_url, cloudinary_public_id, 
-        audio_url, language, tags, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        tempo, solfa_notation, lyrics_text, raw_ocr_text, confidence_score,
+        image_url, cloudinary_public_id, audio_url, language, tags, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *
     `;
 
@@ -591,6 +619,8 @@ export const createSong = async (req, res) => {
       tempo ? tempo.trim() : null,
       solfa_notation ? solfa_notation.trim() : null,
       lyrics_text ? lyrics_text.trim() : null,
+      raw_ocr_text ? raw_ocr_text.trim() : null,
+      confidence_score ? Number(confidence_score) : null,
       imageUrl,
       cloudinaryPublicId,
       audio_url ? audio_url.trim() : null,
@@ -600,6 +630,13 @@ export const createSong = async (req, res) => {
     ];
 
     const result = await db.query(insertQuery, values);
+
+    // Asynchronously learn OCR corrections to build the adaptive dictionary
+    if (raw_ocr_text && lyrics_text) {
+      learnOcrCorrections(raw_ocr_text, lyrics_text, language || "Swahili", db).catch(err =>
+        logger.warn("Correction learning non-fatal error: " + err.message)
+      );
+    }
 
     logger.info(`Choir song created: "${title}" (ID: ${result.rows[0].id})`);
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -624,12 +661,13 @@ export const updateSong = async (req, res) => {
       tempo,
       solfa_notation,
       lyrics_text,
+      raw_ocr_text,
+      confidence_score,
       audio_url,
       language,
       tags,
     } = req.body;
 
-    // Check existing song
     const existing = await db.query(`SELECT * FROM choir_songs WHERE id = $1`, [id]);
     if (existing.rows.length === 0) {
       return res.status(404).json({ success: false, error: "Song not found" });
@@ -639,7 +677,6 @@ export const updateSong = async (req, res) => {
     let imageUrl = song.image_url;
     let cloudinaryPublicId = song.cloudinary_public_id;
 
-    // If new file uploaded, delete old Cloudinary image and update
     if (req.file) {
       if (imageUrl && imageUrl.includes("cloudinary.com")) {
         await deleteFromCloudinary(imageUrl);
@@ -664,13 +701,15 @@ export const updateSong = async (req, res) => {
         tempo = $6,
         solfa_notation = $7,
         lyrics_text = $8,
-        image_url = $9,
-        cloudinary_public_id = $10,
-        audio_url = $11,
-        language = COALESCE($12, language),
-        tags = $13,
+        raw_ocr_text = COALESCE($9, raw_ocr_text),
+        confidence_score = COALESCE($10, confidence_score),
+        image_url = $11,
+        cloudinary_public_id = $12,
+        audio_url = $13,
+        language = COALESCE($14, language),
+        tags = $15,
         updated_at = NOW()
-      WHERE id = $14
+      WHERE id = $16
       RETURNING *
     `;
 
@@ -683,6 +722,8 @@ export const updateSong = async (req, res) => {
       tempo !== undefined ? (tempo ? tempo.trim() : null) : song.tempo,
       solfa_notation !== undefined ? (solfa_notation ? solfa_notation.trim() : null) : song.solfa_notation,
       lyrics_text !== undefined ? (lyrics_text ? lyrics_text.trim() : null) : song.lyrics_text,
+      raw_ocr_text ? raw_ocr_text.trim() : null,
+      confidence_score ? Number(confidence_score) : null,
       imageUrl,
       cloudinaryPublicId,
       audio_url !== undefined ? (audio_url ? audio_url.trim() : null) : song.audio_url,
@@ -692,6 +733,11 @@ export const updateSong = async (req, res) => {
     ];
 
     const result = await db.query(updateQuery, values);
+
+    // Feed correction learner
+    if (lyrics_text && (raw_ocr_text || song.raw_ocr_text)) {
+      learnOcrCorrections(raw_ocr_text || song.raw_ocr_text, lyrics_text, language || song.language || "Swahili", db).catch(() => {});
+    }
 
     logger.info(`Choir song updated: "${result.rows[0].title}" (ID: ${id})`);
     res.json({ success: true, data: result.rows[0] });
@@ -715,7 +761,6 @@ export const deleteSong = async (req, res) => {
 
     const song = existing.rows[0];
 
-    // Delete image from Cloudinary if hosted there
     if (song.image_url && song.image_url.includes("cloudinary.com")) {
       await deleteFromCloudinary(song.image_url);
     }
@@ -727,5 +772,104 @@ export const deleteSong = async (req, res) => {
   } catch (error) {
     logger.error("Error deleting choir song: " + error.message);
     res.status(500).json({ success: false, error: "Failed to delete song" });
+  }
+};
+
+/**
+ * GET /choir-songs/programmes — Public: Get synced Sunday / Friday / Feasts Mass Programmes
+ */
+export const getProgrammes = async (req, res) => {
+  try {
+    const moduleId = (req.query.module_id || "choir").toLowerCase();
+    const programType = req.query.program_type; // 'sunday', 'friday', or all
+
+    let query = `
+      SELECT 
+        p.id as programme_item_id, p.program_type, p.position, p.service_role, p.notes,
+        s.*
+      FROM choir_song_programmes p
+      JOIN choir_songs s ON p.song_id = s.id
+      WHERE p.module_id = $1
+    `;
+    const params = [moduleId];
+
+    if (programType && programType !== "all") {
+      query += ` AND p.program_type = $2`;
+      params.push(programType);
+    }
+
+    query += ` ORDER BY p.position ASC, p.created_at ASC`;
+
+    const result = await db.query(query, params);
+
+    // Group by program_type
+    const programmes = {
+      sunday: [],
+      friday: [],
+      special: []
+    };
+
+    result.rows.forEach(row => {
+      const type = row.program_type || 'sunday';
+      if (!programmes[type]) programmes[type] = [];
+      programmes[type].push(row);
+    });
+
+    res.json({
+      success: true,
+      data: result.rows,
+      programmes,
+    });
+  } catch (error) {
+    logger.error("Error fetching choir programmes: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to fetch programmes" });
+  }
+};
+
+/**
+ * POST /choir-songs/programmes/toggle — Toggle song into a Mass programme (Sunday/Friday)
+ */
+export const toggleSongInProgramme = async (req, res) => {
+  try {
+    const { module_id = "choir", program_type = "sunday", song_id, service_role, notes } = req.body;
+
+    if (!song_id) {
+      return res.status(400).json({ success: false, error: "song_id is required" });
+    }
+
+    const addedBy = req.user?.name || req.user?.username || "Chorister";
+
+    // Check if song is already in programme
+    const existing = await db.query(
+      `SELECT * FROM choir_song_programmes WHERE module_id = $1 AND program_type = $2 AND song_id = $3`,
+      [module_id.toLowerCase(), program_type.toLowerCase(), song_id]
+    );
+
+    if (existing.rows.length > 0) {
+      // Remove
+      await db.query(
+        `DELETE FROM choir_song_programmes WHERE id = $1`,
+        [existing.rows[0].id]
+      );
+      return res.json({ success: true, action: "removed", message: "Removed from programme" });
+    } else {
+      // Add to programme
+      const maxPos = await db.query(
+        `SELECT COALESCE(MAX(position), 0) + 1 as next_pos FROM choir_song_programmes WHERE module_id = $1 AND program_type = $2`,
+        [module_id.toLowerCase(), program_type.toLowerCase()]
+      );
+      const nextPos = maxPos.rows[0]?.next_pos || 1;
+
+      const inserted = await db.query(
+        `INSERT INTO choir_song_programmes (module_id, program_type, song_id, position, service_role, notes, added_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [module_id.toLowerCase(), program_type.toLowerCase(), song_id, nextPos, service_role || null, notes || null, addedBy]
+      );
+      return res.json({ success: true, action: "added", message: "Added to programme", data: inserted.rows[0] });
+    }
+  } catch (error) {
+    logger.error("Error toggling programme song: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to update programme" });
   }
 };

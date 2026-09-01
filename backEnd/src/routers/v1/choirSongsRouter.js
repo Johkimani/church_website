@@ -11,6 +11,8 @@ import {
   createSong,
   updateSong,
   deleteSong,
+  getProgrammes,
+  toggleSongInProgramme,
 } from "../../controllers/choirSongsController.js";
 
 const router = Router();
@@ -36,12 +38,14 @@ const handleMulterOcr = (req, res, next) => {
   });
 };
 
-// Public routes (anyone can browse songs, view lyrics/sheet music, and stats)
-router.get("/", optionalAuth, getSongs);
+// Public routes (browse songs, view lyrics/sheet music, stats, synced programmes)
+router.get("/programmes", optionalAuth, getProgrammes);
+router.post("/programmes/toggle", optionalAuth, toggleSongInProgramme);
 router.get("/stats", optionalAuth, getCategoriesAndStats);
+router.get("/", optionalAuth, getSongs);
 router.get("/:id", optionalAuth, getSongById);
 
-// Admin routes — Smart OCR text extraction from uploaded image buffer
+// Admin routes — Multilingual Smart OCR text extraction from uploaded image buffer
 router.post(
   "/ocr-extract",
   verifyToken,
