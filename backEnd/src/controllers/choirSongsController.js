@@ -42,73 +42,110 @@ async function preprocessForOcr(inputBuffer) {
 
 /**
  * Tier 1: Google Gemini Flash Vision API (Ultra-accurate for cursive handwriting & lined notebook sheets)
- * Activated when GEMINI_API_KEY or GOOGLE_API_KEY is present
+ * Tries multiple Gemini models in sequence, retries once on overload/503.
+ * Activated when GEMINI_API_KEY or GOOGLE_API_KEY is present.
  */
 async function runGeminiVisionOcr(imageBuffer) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) return null;
 
-  try {
-    const base64Image = imageBuffer.toString("base64");
-    const mimeType = "image/jpeg";
+  // Detect real MIME type from file magic bytes
+  let mimeType = "image/jpeg";
+  if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) mimeType = "image/png";
+  else if (imageBuffer[0] === 0x47 && imageBuffer[1] === 0x49) mimeType = "image/gif";
+  else if (imageBuffer[0] === 0x52 && imageBuffer[4] === 0x57) mimeType = "image/webp";
 
-    const prompt = `You are an expert Catholic Church Hymn transcriber (Kenya).
-Extract and transcribe the hymn from this sheet music or handwritten notebook page.
-Be accurate with Swahili, English, Luo (Dholuo), Kikuyu, Kamba, or Latin lyrics.
+  const base64Image = imageBuffer.toString("base64");
 
-Return a STRICT JSON object in this format (no markdown code fences outside JSON):
+  const prompt = `You are an expert Catholic Church Hymn transcriber based in Kenya.
+You will receive a photo of a handwritten or printed hymn sheet, possibly on lined notebook paper.
+Ignore the horizontal ruled lines — they are background noise.
+Extract and transcribe ALL visible text accurately. Supported languages: Swahili, English, Luo (Dholuo), Kikuyu, Kamba, Latin.
+
+Return ONLY a valid JSON object (no markdown, no extra text) with this exact schema:
 {
-  "title": "Song Title",
-  "category": "marian" (one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general),
-  "language": "Swahili" (one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other),
-  "composer": "Composer/Arranger name or empty",
-  "key_signature": "Key if indicated (e.g. G, F, Dm) or empty",
-  "time_signature": "Time signature or 4/4",
-  "tempo": "Tempo or Moderate",
-  "solfa_notation": "Tonic sol-fa notation if written (e.g. d:r:m | s:-:-) or empty",
-  "lyrics_text": "Clean lyrics formatted with stanza tags like [Chorus], [Verse 1], [Verse 2], [Verse 3], etc. Separate stanzas with blank lines."
-}`;
+  "title": "Clean hymn title",
+  "category": "marian",
+  "language": "Swahili",
+  "composer": "",
+  "key_signature": "",
+  "time_signature": "4/4",
+  "tempo": "Moderate",
+  "solfa_notation": "",
+  "lyrics_text": "[Chorus]\nChorus lyrics here\n\n[Verse 1]\nVerse lyrics here\n\n[Verse 2]\nVerse lyrics here"
+}
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const response = await axios.post(
-      url,
-      {
-        contents: [
+category must be one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general.
+language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
+
+  // Try these Gemini models in order — newest first (best free-tier availability)
+  const GEMINI_MODELS = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
+  ];
+
+  for (const model of GEMINI_MODELS) {
+    let attempt = 0;
+    while (attempt < 2) {
+      attempt++;
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const response = await axios.post(
+          url,
           {
-            parts: [
-              { text: prompt },
+            contents: [
               {
-                inlineData: {
-                  mimeType,
-                  data: base64Image,
-                },
+                parts: [
+                  { text: prompt },
+                  { inlineData: { mimeType, data: base64Image } },
+                ],
               },
             ],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.05,
+              maxOutputTokens: 2048,
+            },
           },
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1,
-        },
-      },
-      { timeout: 15000 }
-    );
+          { timeout: 25000 }
+        );
 
-    const candidates = response.data?.candidates;
-    if (candidates?.[0]?.content?.parts?.[0]?.text) {
-      const parsed = JSON.parse(candidates[0].content.parts[0].text);
-      logger.info(`Gemini Flash Vision OCR succeeded for song: "${parsed.title}"`);
-      return {
-        ...parsed,
-        confidence: 98,
-        engine: "gemini-vision",
-      };
+        const rawText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) break; // model gave empty — try next model
+
+        // Extract JSON safely even if model wrapped in markdown fences
+        const jsonStart = rawText.indexOf("{");
+        const jsonEnd = rawText.lastIndexOf("}");
+        if (jsonStart === -1 || jsonEnd === -1) break;
+
+        const parsed = JSON.parse(rawText.slice(jsonStart, jsonEnd + 1));
+        if (!parsed.lyrics_text) break;
+
+        logger.info(`Gemini [${model}] Vision OCR succeeded: "${parsed.title}"`);
+        return { ...parsed, confidence: 98, engine: `gemini-vision:${model}` };
+
+      } catch (err) {
+        const status = err.response?.status;
+        const msg = err.response?.data?.error?.message || err.message || "";
+        const isOverloaded = status === 503 || status === 429 || /overloaded|quota|rate/i.test(msg);
+
+        logger.warn(`Gemini [${model}] attempt ${attempt} failed (${status}): ${msg}`);
+
+        if (isOverloaded && attempt < 2) {
+          // Wait 3 seconds then retry same model
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        // Non-retriable or exhausted retries — try next model
+        break;
+      }
     }
-    return null;
-  } catch (err) {
-    logger.warn("Gemini Vision OCR error: " + (err.response?.data?.error?.message || err.message));
-    return null;
   }
+
+  logger.warn("All Gemini Vision models failed or were unavailable — falling back.");
+  return null;
 }
 
 /**
