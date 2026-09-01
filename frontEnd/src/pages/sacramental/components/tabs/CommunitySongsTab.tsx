@@ -281,13 +281,13 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
         </div>
 
         {/* Library vs Programme Switcher */}
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center bg-slate-200/60 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
           <button
             onClick={() => setActiveMainTab('all')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
               activeMainTab === 'all'
                 ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                : 'bg-white/40 dark:bg-white/10 text-slate-700 dark:text-white hover:bg-white/60'
             }`}
           >
             <FaLayerGroup size={12} />
@@ -303,7 +303,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
                   isActive
                     ? 'bg-amber-500 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    : 'bg-white/40 dark:bg-white/10 text-slate-700 dark:text-white hover:bg-white/60'
                 }`}
               >
                 <span>{prog.icon}</span>
