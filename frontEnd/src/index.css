@@ -694,13 +694,16 @@ html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-slate-800\/60   { b
 html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-slate-800       { background-color: #f1f5f9; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-slate-700      { background-color: #e2e8f0; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-slate-950\/50  { background-color: rgba(248,250,252,0.5); }
+html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-slate-950\/90  { background-color: rgba(255,255,255,0.9); }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-slate-900\/90  { background-color: rgba(255,255,255,0.9); }
+html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-slate-900\/40  { background-color: rgba(248,250,252,0.4); }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-blue-950\/40   { background-color: #eff6ff; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:bg-amber-950\/30  { background-color: #fffbeb; }
 
 html.dark .reader-scope[data-reader-theme="light"] .dark\:border-slate-800  { border-color: #e2e8f0; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:border-slate-700  { border-color: #cbd5e1; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:border-amber-900\/60 { border-color: #fde68a; }
+html.dark .reader-scope[data-reader-theme="light"] .dark\:border-blue-900\/60  { border-color: #bfdbfe; }
 
 html.dark .reader-scope[data-reader-theme="light"] .dark\:text-white        { color: #0f172a; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:text-slate-200   { color: #334155; }
@@ -708,5 +711,6 @@ html.dark .reader-scope[data-reader-theme="light"] .dark\:text-slate-300   { col
 html.dark .reader-scope[data-reader-theme="light"] .dark\:text-slate-400   { color: #64748b; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:text-blue-400    { color: #2563eb; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:text-blue-300    { color: #1d4ed8; }
+html.dark .reader-scope[data-reader-theme="light"] .dark\:text-blue-200    { color: #1e40af; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:text-amber-300   { color: #92400e; }
 html.dark .reader-scope[data-reader-theme="light"] .dark\:text-amber-200   { color: #78350f; }
