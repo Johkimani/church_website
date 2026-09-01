@@ -26,7 +26,9 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaEye,
-  FaPrint
+  FaPrint,
+  FaSun,
+  FaLandmark,
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
@@ -78,7 +80,23 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [languageFilter, setLanguageFilter] = useState<string>('all');
   const [selectedKey, setSelectedKey] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
-  const [activeMainTab, setActiveMainTab] = useState<'library' | 'bookmarked'>('library');
+  const [activeMainTab, setActiveMainTab] = useState<'all' | 'sunday' | 'friday'>('all');
+
+  // Programme collections: each song can belong to Sunday, Friday, or both.
+  const PROGRAMS = [
+    { id: 'sunday', label: 'Sunday Program', icon: <FaSun size={13} />, storageKey: 'csa_choir_bookmarked_songs' },
+    { id: 'friday', label: 'Friday Program', icon: <FaLandmark size={13} />, storageKey: 'csa_choir_friday_songs' },
+  ] as const;
+  type ProgramId = (typeof PROGRAMS)[number]['id'];
+
+  const readCollection = (key: string): number[] => {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  };
 
   // Selected song viewer state
   const [selectedSong, setSelectedSong] = useState<ChoirSong | null>(null);
@@ -93,31 +111,37 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Local storage for "My Sunday Setlist / Bookmarks"
-  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
-    try {
-      const saved = localStorage.getItem('csa_choir_bookmarked_songs');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Programme collections (Sunday / Friday). Each song can be starred into
+  // either, or both. Stored separately in localStorage.
+  const [programIds, setProgramIds] = useState<Record<string, number[]>>(() => ({
+    sunday: readCollection(PROGRAMS[0].storageKey),
+    friday: readCollection(PROGRAMS[1].storageKey),
+  }));
 
-  const toggleBookmark = (id: number, e?: React.MouseEvent) => {
+  const isInProgram = (program: ProgramId, id: number) => (programIds[program] || []).includes(id);
+
+  const toggleProgram = (program: ProgramId, id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setBookmarkedIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+    const meta = PROGRAMS.find((p) => p.id === program)!;
+    setProgramIds((prev) => {
+      const list = prev[program] || [];
+      const next = list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
+      const updated = { ...prev, [program]: next };
       try {
-        localStorage.setItem('csa_choir_bookmarked_songs', JSON.stringify(next));
+        localStorage.setItem(meta.storageKey, JSON.stringify(next));
       } catch {}
-      if (!prev.includes(id)) {
-        toast.success('Added to your Sunday Songbook');
+      if (!list.includes(id)) {
+        toast.success(`Added to ${meta.label}`);
       } else {
-        toast('Removed from your Songbook', { icon: '🗑️' });
+        toast(`Removed from ${meta.label}`, { icon: '🗑️' });
       }
-      return next;
+      return updated;
     });
   };
+
+  const programCount = (program: ProgramId) => (programIds[program] || []).length;
+  const programLabel = (program: string) =>
+    PROGRAMS.find((p) => p.id === program)?.label || 'Programme';
 
   // Fetch song stats & category counts
   const { data: statsData } = useQuery({
@@ -151,13 +175,11 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
 
   const allSongs: ChoirSong[] = songsData?.data || [];
 
-  // Filtered by bookmarked if user is on bookmarked tab
+  // Filter by the active programme (Sunday / Friday) when one is selected
   const displayedSongs = useMemo(() => {
-    if (activeMainTab === 'bookmarked') {
-      return allSongs.filter((s) => bookmarkedIds.includes(s.id));
-    }
-    return allSongs;
-  }, [allSongs, activeMainTab, bookmarkedIds]);
+    if (activeMainTab === 'all') return allSongs;
+    return allSongs.filter((s) => isInProgram(activeMainTab, s.id));
+  }, [allSongs, activeMainTab, programIds]);
 
   // Dynamic category counts map
   const categoryCounts = useMemo(() => {
@@ -234,7 +256,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">
-              Choir Repertoire & Sheet Library
+              Choir songs &amp; lyrics library
             </h1>
             <p className="text-sm font-bold text-slate-700 mt-0.5">
               Nyimbo za Misa &nbsp;·&nbsp; Karatasi za Noti &nbsp;·&nbsp; Mkusanyiko wa Kwaya
@@ -242,30 +264,37 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
           </div>
         </div>
 
-        {/* Library vs. Setlist Switcher */}
+        {/* Library vs Programme Switcher */}
         <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
           <button
-            onClick={() => setActiveMainTab('library')}
+            onClick={() => setActiveMainTab('all')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeMainTab === 'library'
+              activeMainTab === 'all'
                 ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
             <FaLayerGroup size={12} />
-            All Repertoire ({statsData?.total || 0})
+            All Songs ({statsData?.total || 0})
           </button>
-          <button
-            onClick={() => setActiveMainTab('bookmarked')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeMainTab === 'bookmarked'
-                ? 'bg-amber-500 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-            }`}
-          >
-            <FaStar size={12} className={bookmarkedIds.length > 0 ? 'text-amber-200' : ''} />
-            Sunday Setlist ({bookmarkedIds.length})
-          </button>
+          {PROGRAMS.map((prog) => {
+            const isActive = activeMainTab === prog.id;
+            const count = programCount(prog.id);
+            return (
+              <button
+                key={prog.id}
+                onClick={() => setActiveMainTab(prog.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <span className={count > 0 && !isActive ? 'text-amber-400' : ''}>{prog.icon}</span>
+                {prog.label} ({count})
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -366,26 +395,29 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
             <FaMusic size={28} />
           </div>
           <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-            {activeMainTab === 'bookmarked' ? 'No Songs in Your Setlist' : 'No Songs Found'}
+            {activeMainTab === 'all' ? 'No Songs Found' : `No Songs in ${programLabel(activeMainTab)}`}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-4">
-            {activeMainTab === 'bookmarked'
-              ? 'Star your favorite hymns or this Sunday’s mass songs to access them quickly here during practice or mass.'
-              : 'Try adjusting your search keywords or switching category filters.'}
+            {activeMainTab === 'all'
+              ? 'Try adjusting your search keywords or switching category filters.'
+              : `Star the hymns you want for this ${programLabel(activeMainTab).toLowerCase()} to access them quickly during practice or mass.`}
           </p>
-          {activeMainTab === 'bookmarked' && (
+          {activeMainTab !== 'all' && (
             <button
-              onClick={() => setActiveMainTab('library')}
+              onClick={() => setActiveMainTab('all')}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md transition-all"
             >
-              Browse Full Songbook
+              Browse Full Song Library
             </button>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {displayedSongs.map((song) => {
-            const isBookmarked = bookmarkedIds.includes(song.id);
+            // The star acts on the active programme (defaults to Sunday on the
+            // full library view); the modal offers explicit Sunday/Friday toggles.
+            const starProgram: ProgramId = activeMainTab === 'friday' ? 'friday' : 'sunday';
+            const isBookmarked = isInProgram(starProgram, song.id);
             const categoryMeta = SONG_CATEGORIES.find((c) => c.id === song.category.toLowerCase()) || SONG_CATEGORIES[0];
 
             return (
@@ -414,15 +446,15 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     <span>{categoryMeta.label}</span>
                   </div>
 
-                  {/* Bookmark Button */}
+                  {/* Programme Toggle Button */}
                   <button
-                    onClick={(e) => toggleBookmark(song.id, e)}
+                    onClick={(e) => toggleProgram(starProgram, song.id, e)}
                     className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur transition-all ${
                       isBookmarked
                         ? 'bg-amber-500 text-white shadow-md'
                         : 'bg-black/40 text-white/80 hover:bg-black/60 hover:text-white'
                     }`}
-                    title={isBookmarked ? 'Remove from Sunday Setlist' : 'Add to Sunday Setlist'}
+                    title={isBookmarked ? `Remove from ${programLabel(starProgram)}` : `Add to ${programLabel(starProgram)}`}
                   >
                     <FaStar size={13} className={isBookmarked ? 'fill-current' : ''} />
                   </button>
@@ -503,17 +535,27 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
             {/* Modal Header */}
             <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 flex-shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                <button
-                  onClick={() => toggleBookmark(selectedSong.id)}
-                  className={`p-2 rounded-full transition-all ${
-                    bookmarkedIds.includes(selectedSong.id)
-                      ? 'bg-amber-500 text-white shadow-md'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}
-                  title={bookmarkedIds.includes(selectedSong.id) ? 'In your Sunday Setlist' : 'Add to Setlist'}
-                >
-                  <FaStar size={14} className={bookmarkedIds.includes(selectedSong.id) ? 'fill-current' : ''} />
-                </button>
+                {/* Programme toggles: add this song to Sunday / Friday / both */}
+                <div className="flex flex-col gap-1.5 flex-shrink-0">
+                  {PROGRAMS.map((prog) => {
+                    const active = isInProgram(prog.id, selectedSong.id);
+                    return (
+                      <button
+                        key={prog.id}
+                        onClick={() => toggleProgram(prog.id, selectedSong.id)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
+                          active
+                            ? 'bg-amber-500 text-white shadow-md'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300'
+                        }`}
+                        title={active ? `In ${prog.label}` : `Add to ${prog.label}`}
+                      >
+                        <FaStar size={10} className={active ? 'fill-current' : ''} />
+                        {prog.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <div className="min-w-0">
                   <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
                     {selectedSong.title}
