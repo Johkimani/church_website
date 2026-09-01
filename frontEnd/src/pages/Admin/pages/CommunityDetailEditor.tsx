@@ -190,10 +190,7 @@ export default function CommunityDetailEditor() {
   const [detectedSongsList, setDetectedSongsList] = useState<any[]>([]);
   const [ocrStatus, setOcrStatus] = useState<'idle' | 'scanning' | 'success' | 'warning'>('idle');
   const [ocrStatusMessage, setOcrStatusMessage] = useState<string>('');
-  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
-    return localStorage.getItem('csa_gemini_api_key') || '';
-  });
-  const [showGeminiConfig, setShowGeminiConfig] = useState<boolean>(false);
+  const [duplicateModal, setDuplicateModal] = useState<{ existing: any; incomingForm: any; incomingFile: File | null } | null>(null);
 
   useEffect(() => {
     loadCategoryData();
@@ -639,8 +636,9 @@ export default function CommunityDetailEditor() {
       const formData = new FormData();
       formData.append('image', songFile);
       const headers: Record<string, string> = { 'Content-Type': 'multipart/form-data' };
-      if (geminiApiKey.trim()) {
-        headers['x-gemini-api-key'] = geminiApiKey.trim();
+      const savedKey = localStorage.getItem('csa_gemini_api_key');
+      if (savedKey) {
+        headers['x-gemini-api-key'] = savedKey;
       }
 
       const res = await apiClient.post('/choir-songs/ocr-extract', formData, { headers });
@@ -698,13 +696,33 @@ export default function CommunityDetailEditor() {
     }
   };
 
-  const handleSaveSong = async () => {
+  const handleSaveSong = async (forceSave = false, overwriteExistingId: number | null = null) => {
     if (!songForm.title?.trim() || !songForm.category) {
       return alert('Song title and liturgical category are required.');
     }
     if (!songFile && !songForm.image_url) {
       return alert('Sheet music photo or song image is required.');
     }
+
+    // Duplicate detection if creating a new song and not explicitly forced/overwritten
+    if (!editingSong && !forceSave && !overwriteExistingId) {
+      const normIncoming = songForm.title.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const duplicate = songsList.find((s: any) => {
+        const sNorm = (s.title || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        return sNorm === normIncoming || (sNorm.length >= 5 && (sNorm.includes(normIncoming) || normIncoming.includes(sNorm)));
+      });
+
+      if (duplicate) {
+        setDuplicateModal({
+          existing: duplicate,
+          incomingForm: { ...songForm },
+          incomingFile: songFile,
+        });
+        return;
+      }
+    }
+
+    const targetId = overwriteExistingId || editingSong?.id;
     setSongSaving(true);
     try {
       if (songFile) {
@@ -724,9 +742,9 @@ export default function CommunityDetailEditor() {
         if (songForm.confidence_score) formData.append('confidence_score', String(songForm.confidence_score));
         if (songForm.audio_url) formData.append('audio_url', songForm.audio_url.trim());
 
-        if (editingSong?.id) {
-          await apiClient.put(`/choir-songs/${editingSong.id}`, formData);
-          showToast('Song sheet & lyrics updated successfully!');
+        if (targetId) {
+          await apiClient.put(`/choir-songs/${targetId}`, formData);
+          showToast(overwriteExistingId ? `"${duplicateModal?.existing?.title || songForm.title}" updated with new sheet & lyrics!` : 'Song sheet & lyrics updated successfully!');
         } else {
           await apiClient.post('/choir-songs', formData);
           showToast('Song sheet uploaded & added to repertoire!');
@@ -736,15 +754,16 @@ export default function CommunityDetailEditor() {
           module_id: categoryId || 'choir',
           ...songForm,
         };
-        if (editingSong?.id) {
-          await apiClient.put(`/choir-songs/${editingSong.id}`, payload);
-          showToast('Song updated successfully!');
+        if (targetId) {
+          await apiClient.put(`/choir-songs/${targetId}`, payload);
+          showToast(overwriteExistingId ? `"${duplicateModal?.existing?.title || songForm.title}" updated!` : 'Song updated successfully!');
         } else {
           await apiClient.post('/choir-songs', payload);
           showToast('Song added to repertoire!');
         }
       }
 
+      setDuplicateModal(null);
       setSongModal(false);
       setEditingSong(null);
       setSongFile(null);
@@ -2757,65 +2776,24 @@ export default function CommunityDetailEditor() {
 
                   {/* Upload & Extract Trigger */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleSongFileSelect}
-                        className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                      />
-                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSongFileSelect}
+                      className="w-full text-xs text-slate-600 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                    />
 
-                    {/* Gemini AI Key Quick Config Drawer */}
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${geminiApiKey ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`}></span>
-                          <span className="text-[11px] font-bold text-slate-700">
-                            {geminiApiKey ? '✨ Gemini Vision AI: Connected' : '⚙️ Vision AI Engine: Cloud/Env'}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowGeminiConfig(!showGeminiConfig)}
-                          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
-                        >
-                          {showGeminiConfig ? 'Close' : (geminiApiKey ? 'Change Key' : 'Paste Gemini Key')}
-                        </button>
+                    {/* Multilingual Vision AI Engine Badge */}
+                    <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles size={12} className="text-indigo-600 animate-pulse" />
+                        <span className="text-[11px] font-bold text-indigo-900">
+                          Multilingual Vision AI (Swahili, English, Luo, Kikuyu, Kamba, Latin)
+                        </span>
                       </div>
-
-                      {showGeminiConfig && (
-                        <div className="mt-2 pt-2 border-t border-slate-200 space-y-1.5 animate-fadeIn">
-                          <p className="text-[10px] text-slate-500">
-                            Paste your free Google AI Studio key here. It is saved securely in your browser and used for instant handwriting & notebook recognition:
-                          </p>
-                          <div className="flex gap-1.5">
-                            <input
-                              type="password"
-                              value={geminiApiKey}
-                              onChange={(e) => {
-                                const val = e.target.value.trim();
-                                setGeminiApiKey(val);
-                                localStorage.setItem('csa_gemini_api_key', val);
-                              }}
-                              placeholder="AIzaSy..."
-                              className="flex-1 px-2.5 py-1 text-xs border border-slate-300 rounded-lg font-mono focus:ring-1 focus:ring-indigo-500 outline-none"
-                            />
-                            {geminiApiKey && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setGeminiApiKey('');
-                                  localStorage.removeItem('csa_gemini_api_key');
-                                }}
-                                className="px-2 py-1 text-[10px] text-red-600 hover:bg-red-50 rounded font-bold"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      <span className="text-[10px] font-bold bg-indigo-200/60 text-indigo-800 px-1.5 py-0.5 rounded">
+                        Connected
+                      </span>
                     </div>
 
                     <button
@@ -3178,11 +3156,191 @@ export default function CommunityDetailEditor() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setViewingSongModal(null)}
-                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Close Preview
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SIDE-BY-SIDE DUPLICATE SONG COMPARISON & DECISION MODAL */}
+      {/* ========================================================================= */}
+      {duplicateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-5xl w-full shadow-2xl border border-slate-200 max-h-[92vh] flex flex-col overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-white/20 flex items-center justify-center">
+                  <AlertCircle size={20} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight">
+                    Similar Song Already in Repertoire
+                  </h3>
+                  <p className="text-xs text-amber-100 font-medium">
+                    A hymn titled <span className="font-bold underline text-white">"{duplicateModal.existing.title}"</span> already exists. Compare both versions below and choose what to do:
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDuplicateModal(null)}
+                className="p-1.5 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Side-by-Side Comparison Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                
+                {/* LEFT: Existing Version */}
+                <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/70 flex flex-col space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                    <span className="px-2.5 py-1 bg-slate-200 text-slate-800 text-[11px] font-black rounded-lg uppercase tracking-wide">
+                      📁 Existing in Repertoire
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-500">
+                      ID #{duplicateModal.existing.id}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-base font-black text-slate-900">{duplicateModal.existing.title}</h4>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] font-bold text-slate-600">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md capitalize">{duplicateModal.existing.category}</span>
+                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md">{duplicateModal.existing.language || 'Swahili'}</span>
+                      {duplicateModal.existing.key_signature && <span className="px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded-md">Key {duplicateModal.existing.key_signature}</span>}
+                      {duplicateModal.existing.composer && <span>• By {duplicateModal.existing.composer}</span>}
+                    </div>
+                  </div>
+
+                  {/* Existing Sheet Image Thumbnail */}
+                  {duplicateModal.existing.image_url && (
+                    <div className="rounded-xl overflow-hidden border border-slate-200 bg-white h-40 flex items-center justify-center relative group">
+                      <img
+                        src={duplicateModal.existing.image_url}
+                        alt="Existing Sheet"
+                        className="max-h-full object-contain"
+                      />
+                      <a
+                        href={duplicateModal.existing.image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1"
+                      >
+                        <Maximize2 size={13} /> View Full Sheet
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Existing Lyrics */}
+                  <div className="flex-1 flex flex-col">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wide mb-1">
+                      Existing Lyrics
+                    </label>
+                    <div className="p-3 bg-white border border-slate-200 rounded-xl max-h-56 overflow-y-auto text-xs font-sans text-slate-800 whitespace-pre-wrap leading-relaxed">
+                      {duplicateModal.existing.lyrics_text || '(No lyrics recorded)'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT: Newly Extracted / Uploaded Version */}
+                <div className="border-2 border-indigo-300 rounded-2xl p-4 bg-indigo-50/40 flex flex-col space-y-3 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-indigo-100 pb-2.5">
+                    <span className="px-2.5 py-1 bg-indigo-600 text-white text-[11px] font-black rounded-lg uppercase tracking-wide flex items-center gap-1">
+                      <Sparkles size={12} /> New Upload / Scan
+                    </span>
+                    <span className="text-[11px] font-bold text-indigo-700">
+                      Pending Save
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-base font-black text-indigo-950">{duplicateModal.incomingForm.title}</h4>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] font-bold text-slate-600">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md capitalize">{duplicateModal.incomingForm.category}</span>
+                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md">{duplicateModal.incomingForm.language || 'Swahili'}</span>
+                      {duplicateModal.incomingForm.key_signature && <span className="px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded-md">Key {duplicateModal.incomingForm.key_signature}</span>}
+                      {duplicateModal.incomingForm.composer && <span>• By {duplicateModal.incomingForm.composer}</span>}
+                    </div>
+                  </div>
+
+                  {/* Incoming Sheet Image Thumbnail */}
+                  {(songFilePreview || duplicateModal.incomingForm.image_url) && (
+                    <div className="rounded-xl overflow-hidden border border-indigo-200 bg-white h-40 flex items-center justify-center relative group">
+                      <img
+                        src={songFilePreview || duplicateModal.incomingForm.image_url}
+                        alt="New Sheet"
+                        className="max-h-full object-contain"
+                      />
+                      <a
+                        href={songFilePreview || duplicateModal.incomingForm.image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1"
+                      >
+                        <Maximize2 size={13} /> View New Sheet
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Incoming Lyrics */}
+                  <div className="flex-1 flex flex-col">
+                    <label className="text-[10px] font-black text-indigo-900 uppercase tracking-wide mb-1">
+                      New Extracted Lyrics
+                    </label>
+                    <div className="p-3 bg-white border border-indigo-200 rounded-xl max-h-56 overflow-y-auto text-xs font-sans text-indigo-950 whitespace-pre-wrap leading-relaxed">
+                      {duplicateModal.incomingForm.lyrics_text || '(No lyrics provided)'}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Modal Decision Footer Bar */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
+              <span className="text-xs text-slate-500 font-medium text-center sm:text-left">
+                Choir masters can update the existing song or archive both versions in the repertoire.
+              </span>
+
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDuplicateModal(null)}
+                  className="px-3.5 py-2 text-slate-600 hover:bg-slate-200 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveSong(true, null)}
+                  disabled={songSaving}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Keep both copies side-by-side in the songbook"
+                >
+                  <Plus size={14} />
+                  <span>Keep Both (Save New Copy)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveSong(false, duplicateModal.existing.id)}
+                  disabled={songSaving}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Replace old lyrics and sheet with this new version"
+                >
+                  <RefreshCw size={14} />
+                  <span>Overwrite Existing Song</span>
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
