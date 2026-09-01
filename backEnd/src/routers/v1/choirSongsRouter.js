@@ -21,7 +21,10 @@ const handleMulterSong = (req, res, next) => {
   if (req.is && !req.is("multipart/form-data")) {
     return next();
   }
-  uploadChoirSong.single("sheet_image")(req, res, (err) => {
+  uploadChoirSong.fields([
+    { name: "sheet_image", maxCount: 1 },
+    { name: "additional_sheets", maxCount: 6 },
+  ])(req, res, (err) => {
     if (err) {
       return res.status(400).json({ success: false, error: err.message || "File upload failed" });
     }
@@ -30,7 +33,10 @@ const handleMulterSong = (req, res, next) => {
 };
 
 const handleMulterOcr = (req, res, next) => {
-  uploadMemoryForOcr.single("image")(req, res, (err) => {
+  uploadMemoryForOcr.fields([
+    { name: "image", maxCount: 1 },
+    { name: "images", maxCount: 6 },
+  ])(req, res, (err) => {
     if (err) {
       return res.status(400).json({ success: false, error: err.message || "Image upload failed for OCR" });
     }

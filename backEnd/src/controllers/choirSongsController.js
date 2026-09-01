@@ -40,37 +40,44 @@ async function preprocessForOcr(inputBuffer) {
   }
 }
 
+function getBufferMimeType(buf) {
+  if (buf[0] === 0x89 && buf[1] === 0x50) return "image/png";
+  if (buf[0] === 0x47 && buf[1] === 0x49) return "image/gif";
+  if (buf[0] === 0x52 && buf[4] === 0x57) return "image/webp";
+  return "image/jpeg";
+}
+
 /**
- * Tier 1: Google Gemini Flash Vision API (Ultra-accurate for cursive handwriting & lined notebook sheets)
+ * Tier 1: Google Gemini Flash Vision API
+ * Supports multi-page continuous sheet music (e.g. Page 1 + Page 2 continuation).
  * Tries multiple Gemini models in sequence, retries once on overload/503.
- * Activated when GEMINI_API_KEY, GOOGLE_API_KEY or client key is provided.
  */
-async function runGeminiVisionOcr(imageBuffer, clientKey = "") {
+async function runGeminiVisionOcr(inputBuffers, clientKey = "") {
   const apiKey = (clientKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
   if (!apiKey) {
     logger.warn("runGeminiVisionOcr: No Gemini API Key configured in environment or request header.");
     return null;
   }
 
-  // Detect real MIME type from file magic bytes
-  let mimeType = "image/jpeg";
-  if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) mimeType = "image/png";
-  else if (imageBuffer[0] === 0x47 && imageBuffer[1] === 0x49) mimeType = "image/gif";
-  else if (imageBuffer[0] === 0x52 && imageBuffer[4] === 0x57) mimeType = "image/webp";
+  const buffers = (Array.isArray(inputBuffers) ? inputBuffers : [inputBuffers]).filter(Boolean);
+  if (buffers.length === 0) return null;
 
-  const base64Image = imageBuffer.toString("base64");
+  const isMultiPage = buffers.length > 1;
 
   const prompt = `You are an expert Catholic Church Hymn transcriber based in Kenya.
-You will receive a photo of a handwritten or printed hymn sheet, possibly on lined notebook paper.
-Ignore the horizontal ruled lines — they are background noise.
+You have been provided ${buffers.length} photo(s) representing page(s) of a Catholic hymn sheet music.
+${isMultiPage ? 'IMPORTANT: The provided images are consecutive pages of the SAME hymn (Page 1 followed by Page 2, Page 3, etc.). Merge and continue all verses/chorus seamlessly in exact sequence from page to page into a single complete hymn.' : ''}
+
+Ignore horizontal ruled lines — they are background noise.
 Extract and transcribe ALL visible text from top to bottom completely. Supported languages: Swahili, English, Luo (Dholuo), Kikuyu, Kamba, Latin.
 
 CRITICAL INSTRUCTIONS:
-1. MULTIPLE SONGS ON ONE SHEET: If the image contains MORE THAN ONE song (e.g. 2 or 3 separate songs on the same page), you MUST extract each song separately as an item inside the "songs" array.
-2. TRANSCRIBE ALL VERSES: Scan each song completely down to the very last line. Include EVERY numbered verse (1, 2, 3, 4, 5, 6, 7, 8...). Do NOT stop after 2 verses. Do NOT truncate, summarize, or omit any verse.
-3. CHORUS & STANZAS: Label the chorus/refrain as [Chorus] and each numbered stanza as [Verse 1], [Verse 2], [Verse 3], [Verse 4], etc., separated by blank lines.
-4. PRESERVE REPETITION: Keep repetition markers like "x2" or "(x2)" exactly as written.
-5. EXACT SPELLING: Transcribe all lyrics accurately in their liturgical language.
+1. MULTI-PAGE CONTINUATION: Merge lyrics across all provided pages in order. If Page 1 has Verses 1-2 and Page 2 has Verses 3-5, combine them into one continuous hymn entry with all verses ([Verse 1] through [Verse 5]).
+2. MULTIPLE SONGS ON ONE SHEET: If a page contains separate, distinct songs, extract each song separately as an item inside the "songs" array.
+3. TRANSCRIBE ALL VERSES: Scan every page down to the very last line. Include EVERY numbered verse (1, 2, 3, 4, 5, 6, 7, 8...). Do NOT stop after 2 verses. Do NOT truncate, summarize, or omit any verse.
+4. CHORUS & STANZAS: Label the chorus/refrain as [Chorus] and each numbered stanza as [Verse 1], [Verse 2], [Verse 3], [Verse 4], etc., separated by blank lines.
+5. PRESERVE REPETITION: Keep repetition markers like "x2" or "(x2)" exactly as written.
+6. EXACT SPELLING: Transcribe all lyrics accurately in their liturgical language.
 
 Return ONLY a valid JSON object (no markdown code blocks outside JSON) with this exact schema:
 {
@@ -92,6 +99,16 @@ Return ONLY a valid JSON object (no markdown code blocks outside JSON) with this
 category must be one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general.
 language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
 
+  const parts = [{ text: prompt }];
+  for (const buf of buffers) {
+    parts.push({
+      inlineData: {
+        mimeType: getBufferMimeType(buf),
+        data: buf.toString("base64"),
+      },
+    });
+  }
+
   // Active Gemini models for Google AI Studio API keys (ordered by reliability)
   const GEMINI_MODELS = [
     "gemini-3.6-flash",
@@ -110,14 +127,7 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
         const response = await axios.post(
           url,
           {
-            contents: [
-              {
-                parts: [
-                  { text: prompt },
-                  { inlineData: { mimeType, data: base64Image } },
-                ],
-              },
-            ],
+            contents: [{ parts }],
             generationConfig: {
               responseMimeType: "application/json",
               temperature: 0.05,
@@ -129,7 +139,7 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
               "Content-Type": "application/json",
               "x-goog-api-key": apiKey,
             },
-            timeout: 25000,
+            timeout: 30000,
           }
         );
 
@@ -142,7 +152,6 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
 
         const parsed = JSON.parse(rawText.slice(jsonStart, jsonEnd + 1));
         
-        // Support both { songs: [...] } and single object { title, lyrics_text }
         let songsArray = [];
         if (Array.isArray(parsed.songs) && parsed.songs.length > 0) {
           songsArray = parsed.songs;
@@ -152,7 +161,7 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
 
         if (songsArray.length === 0) break;
 
-        logger.info(`Gemini [${model}] Vision OCR succeeded: found ${songsArray.length} song(s) ("${songsArray[0].title}")`);
+        logger.info(`Gemini [${model}] Vision OCR succeeded across ${buffers.length} page(s): found ${songsArray.length} song(s) ("${songsArray[0].title}")`);
         return {
           songs: songsArray,
           ...songsArray[0],
@@ -655,16 +664,28 @@ export const getSongById = async (req, res) => {
 export const extractLyricsOcr = async (req, res) => {
   let worker = null;
   try {
-    if (!req.file || !req.file.buffer) {
+    let imageBuffers = [];
+    if (req.files) {
+      if (Array.isArray(req.files.images)) {
+        imageBuffers.push(...req.files.images.map(f => f.buffer).filter(Boolean));
+      }
+      if (Array.isArray(req.files.image)) {
+        imageBuffers.push(...req.files.image.map(f => f.buffer).filter(Boolean));
+      }
+    } else if (req.file?.buffer) {
+      imageBuffers.push(req.file.buffer);
+    }
+
+    if (imageBuffers.length === 0) {
       return res.status(400).json({ success: false, error: "Image file is required for OCR extraction" });
     }
 
     const clientGeminiKey = (req.headers['x-gemini-api-key'] || req.body.gemini_api_key || "").trim();
     const hasEnvKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
-    logger.info(`Starting OCR extraction. Gemini Key present: ${Boolean(clientGeminiKey) || hasEnvKey} (client: ${Boolean(clientGeminiKey)}, env: ${hasEnvKey}), image size: ${req.file.buffer.length} bytes`);
+    logger.info(`Starting OCR extraction across ${imageBuffers.length} page(s). Gemini Key present: ${Boolean(clientGeminiKey) || hasEnvKey}`);
 
-    // Tier 1: Check Google Gemini Flash Vision (flawless for cursive handwriting & notebook lines)
-    const geminiResult = await runGeminiVisionOcr(req.file.buffer, clientGeminiKey);
+    // Tier 1: Check Google Gemini Flash Vision (multi-page continuation support)
+    const geminiResult = await runGeminiVisionOcr(imageBuffers, clientGeminiKey);
     if (geminiResult) {
       let songList = [];
       if (Array.isArray(geminiResult.songs) && geminiResult.songs.length > 0) {
@@ -700,6 +721,7 @@ export const extractLyricsOcr = async (req, res) => {
         return res.json({
           success: true,
           count: songList.length,
+          pageCount: imageBuffers.length,
           songs: songList,
           firstSong: firstSong,
           extractedLyrics: firstSong.lyrics_text,
@@ -714,7 +736,7 @@ export const extractLyricsOcr = async (req, res) => {
     }
 
     // Tier 2: Check Google Cloud Vision API
-    const visionResult = await runGoogleVisionOcr(req.file.buffer);
+    const visionResult = await runGoogleVisionOcr(imageBuffers[0]);
     let rawText = "";
     let confidence = 0;
     let engineUsed = "tesseract";
@@ -724,8 +746,8 @@ export const extractLyricsOcr = async (req, res) => {
       confidence = visionResult.confidence;
       engineUsed = visionResult.engine;
     } else {
-      // Tier 3: High-clarity Sharp image preprocessing + Tesseract.js (dual English + Swahili)
-      const preprocessedBuffer = await preprocessForOcr(req.file.buffer);
+      // Tier 3: High-clarity Sharp image preprocessing + Tesseract.js
+      const preprocessedBuffer = await preprocessForOcr(imageBuffers[0]);
 
       worker = await createWorker(['eng', 'swa']);
       await worker.setParameters({
@@ -736,9 +758,8 @@ export const extractLyricsOcr = async (req, res) => {
       rawText = ret.data?.text || "";
       confidence = ret.data?.confidence || 0;
 
-      // Retry on raw buffer if preprocessed yielded too few characters
-      if (rawText.trim().length < 20 && req.file.buffer.length > 0) {
-        const fallbackRet = await worker.recognize(req.file.buffer);
+      if (rawText.trim().length < 20 && imageBuffers[0].length > 0) {
+        const fallbackRet = await worker.recognize(imageBuffers[0]);
         if ((fallbackRet.data?.text || "").trim().length > rawText.trim().length) {
           rawText = fallbackRet.data?.text || "";
           confidence = fallbackRet.data?.confidence || confidence;
@@ -753,7 +774,7 @@ export const extractLyricsOcr = async (req, res) => {
     // Apply dynamic learned corrections from database
     cleanedRawText = await applyDynamicCorrections(cleanedRawText, detectedLang, db);
 
-    // AI Post-Processing: Run Groq LLM (openai/gpt-oss-120b) to reconstruct messy handwriting/OCR
+    // AI Post-Processing
     const aiReconstruction = await reconstructHymnWithGroq(cleanedRawText, detectedLang);
 
     let parsedSongs = [];
@@ -849,10 +870,22 @@ export const createSong = async (req, res) => {
 
     let imageUrl = req.body.image_url || "";
     let cloudinaryPublicId = null;
+    let additionalImages = [];
 
-    if (req.file) {
+    if (req.files?.sheet_image?.[0]) {
+      imageUrl = formatPhotoUrl(req.files.sheet_image[0]);
+      cloudinaryPublicId = req.files.sheet_image[0].filename || null;
+    } else if (req.file) {
       imageUrl = formatPhotoUrl(req.file);
       cloudinaryPublicId = req.file.filename || null;
+    }
+
+    if (req.files?.additional_sheets && Array.isArray(req.files.additional_sheets)) {
+      additionalImages = req.files.additional_sheets.map(f => formatPhotoUrl(f)).filter(Boolean);
+    } else if (req.body.additional_images) {
+      additionalImages = Array.isArray(req.body.additional_images)
+        ? req.body.additional_images
+        : (typeof req.body.additional_images === 'string' ? JSON.parse(req.body.additional_images) : []);
     }
 
     if (!imageUrl) {
@@ -869,8 +902,8 @@ export const createSong = async (req, res) => {
       INSERT INTO choir_songs (
         module_id, title, category, composer, key_signature, time_signature, 
         tempo, solfa_notation, lyrics_text, raw_ocr_text, confidence_score,
-        image_url, cloudinary_public_id, audio_url, language, tags, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        image_url, cloudinary_public_id, additional_images, audio_url, language, tags, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *
     `;
 
@@ -888,6 +921,7 @@ export const createSong = async (req, res) => {
       confidence_score ? Number(confidence_score) : null,
       imageUrl,
       cloudinaryPublicId,
+      additionalImages,
       audio_url ? audio_url.trim() : null,
       language ? language.trim() : "Swahili",
       tagsArray,
@@ -902,7 +936,7 @@ export const createSong = async (req, res) => {
       );
     }
 
-    logger.info(`Choir song created: "${title}" (ID: ${result.rows[0].id})`);
+    logger.info(`Choir song created: "${title}" (ID: ${result.rows[0].id}) with ${additionalImages.length} continuation page(s)`);
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     logger.error("Error creating choir song: " + error.message, { stack: error.stack });
@@ -940,8 +974,15 @@ export const updateSong = async (req, res) => {
     const song = existing.rows[0];
     let imageUrl = song.image_url;
     let cloudinaryPublicId = song.cloudinary_public_id;
+    let additionalImages = song.additional_images || [];
 
-    if (req.file) {
+    if (req.files?.sheet_image?.[0]) {
+      if (imageUrl && imageUrl.includes("cloudinary.com")) {
+        await deleteFromCloudinary(imageUrl);
+      }
+      imageUrl = formatPhotoUrl(req.files.sheet_image[0]);
+      cloudinaryPublicId = req.files.sheet_image[0].filename || null;
+    } else if (req.file) {
       if (imageUrl && imageUrl.includes("cloudinary.com")) {
         await deleteFromCloudinary(imageUrl);
       }
@@ -949,6 +990,14 @@ export const updateSong = async (req, res) => {
       cloudinaryPublicId = req.file.filename || null;
     } else if (req.body.image_url && req.body.image_url !== song.image_url) {
       imageUrl = req.body.image_url;
+    }
+
+    if (req.files?.additional_sheets && Array.isArray(req.files.additional_sheets)) {
+      additionalImages = req.files.additional_sheets.map(f => formatPhotoUrl(f)).filter(Boolean);
+    } else if (req.body.additional_images) {
+      additionalImages = Array.isArray(req.body.additional_images)
+        ? req.body.additional_images
+        : (typeof req.body.additional_images === 'string' ? JSON.parse(req.body.additional_images) : []);
     }
 
     const tagsArray = tags !== undefined
@@ -969,11 +1018,12 @@ export const updateSong = async (req, res) => {
         confidence_score = COALESCE($10, confidence_score),
         image_url = $11,
         cloudinary_public_id = $12,
-        audio_url = $13,
-        language = COALESCE($14, language),
-        tags = $15,
+        additional_images = $13,
+        audio_url = $14,
+        language = COALESCE($15, language),
+        tags = $16,
         updated_at = NOW()
-      WHERE id = $16
+      WHERE id = $17
       RETURNING *
     `;
 
@@ -990,6 +1040,7 @@ export const updateSong = async (req, res) => {
       confidence_score ? Number(confidence_score) : null,
       imageUrl,
       cloudinaryPublicId,
+      additionalImages,
       audio_url !== undefined ? (audio_url ? audio_url.trim() : null) : song.audio_url,
       language ? language.trim() : null,
       tagsArray,
