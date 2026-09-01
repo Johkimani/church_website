@@ -31,6 +31,7 @@ import {
   FaLandmark,
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { useDarkMode } from '../../../../hooks/useDarkMode';
 
 export interface ChoirSong {
   id: number;
@@ -106,6 +107,22 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [fontSize, setFontSize] = useState<number>(18);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+
+  // Reader theme: 'auto' follows the site's light/dark, or force light/dark.
+  const [readerTheme, setReaderTheme] = useState<'auto' | 'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('csa_choir_reader_theme');
+    return saved === 'light' || saved === 'dark' ? saved : 'auto';
+  });
+  const { isDarkMode: siteIsDark } = useDarkMode();
+  const isReaderDark =
+    readerTheme === 'dark' || (readerTheme === 'auto' && siteIsDark);
+  const cycleReaderTheme = () => {
+    setReaderTheme((prev) => {
+      const next = prev === 'auto' ? 'light' : prev === 'light' ? 'dark' : 'auto';
+      localStorage.setItem('csa_choir_reader_theme', next);
+      return next;
+    });
+  };
 
   // Audio player state
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -528,9 +545,10 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
       {selectedSong && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
           <div
-            className={`relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 ${
+            className={`reader-scope relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 ${
               isFullscreen ? 'w-full h-full rounded-none' : 'w-full max-w-4xl max-h-[92vh]'
-            }`}
+            } ${isReaderDark ? 'dark' : ''}`}
+            data-reader-theme={isReaderDark ? 'dark' : 'light'}
           >
             {/* Modal Header */}
             <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 flex-shrink-0">
@@ -602,6 +620,22 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                   title="Toggle Fullscreen"
                 >
                   {isFullscreen ? <FaCompress size={14} /> : <FaExpand size={14} />}
+                </button>
+
+                {/* Reader theme toggle */}
+                <button
+                  onClick={cycleReaderTheme}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
+                    readerTheme === 'dark'
+                      ? 'bg-slate-900 text-amber-300 ring-1 ring-amber-400/40'
+                      : readerTheme === 'light'
+                      ? 'bg-amber-400 text-slate-900'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  }`}
+                  title={`Reader theme: ${readerTheme} — click to cycle`}
+                >
+                  {readerTheme === 'dark' ? <FaSun size={11} /> : readerTheme === 'light' ? <FaSun size={11} /> : <FaAdjust size={11} />}
+                  <span className="hidden sm:inline">{readerTheme === 'auto' ? 'Auto' : readerTheme === 'light' ? 'Light' : 'Dark'}</span>
                 </button>
 
                 {/* Close modal */}
