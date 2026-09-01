@@ -439,13 +439,29 @@ tbody tr:hover {
     animation: slideUp 0.5s ease-out;
 }
 
+/* Mobile sidebar states for CommunityAdminLayout */
+.admin-sidebar.mobile-closed {
+    transform: translateX(-100%);
+}
+
+.admin-sidebar.mobile-open {
+    transform: translateX(0);
+}
+
+.admin-main.mobile-main {
+    margin-left: 0;
+    padding-top: 56px;
+    padding-bottom: 72px;
+}
+
 /* Responsive Overrides */
 @media (max-width: 768px) {
     .admin-sidebar {
         transform: translateX(-100%);
     }
     
-    .admin-sidebar.open {
+    .admin-sidebar.open,
+    .admin-sidebar.mobile-open {
         transform: translateX(0);
     }
     

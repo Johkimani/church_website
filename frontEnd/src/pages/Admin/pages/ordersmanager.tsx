@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import apiService from "../../../services/api";
-import { Package, RefreshCcw, Loader2, CheckCircle, MessageCircle, DollarSign, Ban, Archive, CookingPot, ShoppingBag } from "lucide-react";
+import { apiClient } from "../../../api/axiosInstance";
+import { Package, RefreshCcw, Loader2, CheckCircle, MessageCircle, Ban, Archive, CookingPot, ShoppingBag } from "lucide-react";
 import Skeleton from "../../../components/Skeleton";
 import { toast } from "react-hot-toast";
 
@@ -35,7 +36,11 @@ function normalizePhone(raw: string): string {
   return digits;
 }
 
-export default function OrdersManager() {
+interface OrdersManagerProps {
+  typeFilter?: 'sale' | 'hire';
+}
+
+export default function OrdersManager({ typeFilter }: OrdersManagerProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<StatusTab>("all");
@@ -45,13 +50,15 @@ export default function OrdersManager() {
     loadOrders();
     const interval = setInterval(loadOrders, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [typeFilter]);
 
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const data = await apiService.fetchTableData("orders", true);
-      setOrders(Array.isArray(data) ? data : []);
+      const endpoint = typeFilter ? `/orders?type=${typeFilter}` : '/orders';
+      const res = await apiClient.get(endpoint);
+      const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      setOrders(data);
     } catch {
       toast.error("Failed to load orders");
     } finally {
@@ -67,19 +74,6 @@ export default function OrdersManager() {
       toast.success(`Order #${id} updated to ${status}`);
     } catch {
       toast.error("Failed to update order");
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const markAsPaid = async (id: number) => {
-    setUpdating(id);
-    try {
-      await apiService.updateRecord("orders", id, { status: "paid", payment_method: "cash" });
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: "paid", payment_method: "cash" } : o));
-      toast.success(`Order #${id} marked as paid`);
-    } catch {
-      toast.error("Failed to mark as paid");
     } finally {
       setUpdating(null);
     }
@@ -206,9 +200,7 @@ export default function OrdersManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {visible.map((o: any) => {
-                  const isCash = o.payment_method === "cash";
-                  return (
+                {visible.map((o: any) => (
                     <tr key={o.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3 font-mono text-xs text-slate-700">
                         {o.order_reference || `#${o.id}`}
@@ -225,12 +217,10 @@ export default function OrdersManager() {
                       </td>
                       <td className="px-4 py-3 text-xs">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-bold ${
-                          isCash
-                            ? o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                            : o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-800"
+                          o.status === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-800"
                         }`}>
-                          {isCash ? <DollarSign size={10} /> : <ShoppingBag size={10} />}
-                          {isCash ? (o.status === "paid" ? "Paid (Cash)" : "Pending (Cash)") : (o.status === "paid" ? "M-Pesa" : "M-Pesa Pending")}
+                          <ShoppingBag size={10} />
+                          {o.status === "paid" ? "M-Pesa" : "M-Pesa Pending"}
                         </span>
                         {o.mpesa_receipt && <p className="text-[10px] text-slate-700 mt-0.5">Receipt: {o.mpesa_receipt}</p>}
                       </td>
@@ -244,7 +234,7 @@ export default function OrdersManager() {
                           <Loader2 size={16} className="animate-spin text-blue-500" />
                         ) : (
                           <div className="flex gap-1 flex-wrap">
-                            {o.status === "pending" && !isCash && (
+                            {o.status === "pending" && (
                               <button
                                 onClick={() => {
                                   const receipt = prompt("Enter M-Pesa receipt number (e.g. QLS123456):");
@@ -260,12 +250,6 @@ export default function OrdersManager() {
                                 className="flex items-center gap-1 px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-[10px] font-bold transition-colors"
                               >
                                 <CheckCircle size={10} /> Confirm M-Pesa
-                              </button>
-                            )}
-                            {o.status === "pending" && isCash && (
-                              <button onClick={() => markAsPaid(o.id)}
-                                className="flex items-center gap-1 px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-[10px] font-bold transition-colors">
-                                <DollarSign size={10} /> Mark as Paid
                               </button>
                             )}
                             {o.status === "paid" && (

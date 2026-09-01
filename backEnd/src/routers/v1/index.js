@@ -53,6 +53,7 @@ import jumuiyaNotificationsRouter from "./jumuiyaNotificationsRouter.js";
 import serialConfigRouter from "./serialConfigRouter.js";
 import jumuiyaTshirtsRouter from "./jumuiyaTshirtsRouter.js";
 import treasuryRouter from "./treasuryRoutes.js";
+import productReviewsRouter from "./productReviewsRoutes.js";
 
 // Audit trail: records every authenticated admin mutation (who/what/when).
 // Mounted first so it wraps every request in this router; it only writes on
@@ -177,6 +178,9 @@ router.use("/community-enrollment", communityEnrollmentRouter);
 router.use("/jumuiya-notifications", jumuiyaNotificationsRouter);
 router.use("/serial-config", serialConfigRouter);
 router.use("/jumuiya-tshirts", jumuiyaTshirtsRouter);
+
+// Product reviews
+router.use("/", productReviewsRouter);
 
 // Generic Table CRUD (should be last)
 router.use("/", tableApi);

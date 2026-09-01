@@ -11,7 +11,7 @@ const Pageoulet = () => {
     customerName, setCustomerName, customerPhone, setCustomerPhone,
     customerEmail, setCustomerEmail, deliveryAddress, setDeliveryAddress,
     collectionMethod, setCollectionMethod,
-    cartTotal, proceedToCheckout, proceedWithCash, toasts
+    cartTotal, proceedToCheckout, toasts
   } = useApp();
 
   return (
@@ -36,7 +36,6 @@ const Pageoulet = () => {
           collectionMethod={collectionMethod}
           setCollectionMethod={setCollectionMethod}
           proceedToCheckout={proceedToCheckout}
-          proceedWithCash={proceedWithCash}
       />
       <main className="flex-1">
         <Outlet />

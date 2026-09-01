@@ -89,6 +89,40 @@ export const getOrders = async (req, res) => {
   }
 };
 
+export const trackOrder = async (req, res) => {
+  try {
+    const { reference, phone } = req.query;
+    if (!reference) {
+      return res.status(400).json({ error: "Order reference is required" });
+    }
+
+    const conditions = [`order_reference = $1`];
+    const params = [reference.trim()];
+
+    if (phone && phone.trim()) {
+      const digits = phone.replace(/\D/g, '');
+      params.push(`%${digits}%`);
+      conditions.push(`phone LIKE $${params.length}`);
+    }
+
+    const result = await db.query(
+      `SELECT id, order_reference, customer_name, phone, amount, status, payment_method, 
+              mpesa_receipt, collection_method, delivery_address, items, created_at
+       FROM orders WHERE ${conditions.join(' AND ')} LIMIT 1`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found. Check your reference and phone number." });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error(error.message);
+    res.status(500).json({ error: "Failed to track order" });
+  }
+};
+
 export const confirmPayment = async (req, res) => {
   try {
     const { checkout_id, mpesa_receipt } = req.body;

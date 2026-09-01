@@ -743,77 +743,78 @@ export default function CommunityDetailEditor() {
         <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full opacity-5 bg-white" />
         <div className="absolute top-4 right-32 w-20 h-20 rounded-full opacity-10 bg-white" />
 
-        <div className="relative px-6 py-6">
+        <div className="relative px-4 sm:px-6 py-4 sm:py-6">
           {/* Back Navigation */}
           <button
             onClick={() => navigate('/admin/community-management')}
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors font-bold text-sm mb-5 group"
+            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors font-bold text-xs sm:text-sm mb-3 sm:mb-5 group"
           >
             <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition">
               <ArrowLeft size={14} />
             </div>
-            Back to Community Hub
+            <span className="hidden sm:inline">Back to Community Hub</span>
+            <span className="sm:hidden">Back</span>
           </button>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-5">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Community Avatar */}
-              <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border-2 border-white/25 flex items-center justify-center text-white shadow-xl shrink-0">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/15 backdrop-blur-sm border-2 border-white/25 flex items-center justify-center text-white shadow-xl shrink-0">
                 {moduleMeta?.icon_class
-                  ? <i className={`${moduleMeta.icon_class} text-2xl`}></i>
-                  : <Users size={26} />}
+                  ? <i className={`${moduleMeta.icon_class} text-lg sm:text-2xl`}></i>
+                  : <Users size={20} />}
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white/50 bg-white/10 px-2 py-0.5 rounded-md">Admin Command Center</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md">● Active</span>
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white/50 bg-white/10 px-1.5 sm:px-2 py-0.5 rounded-md">Admin Panel</span>
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-300 bg-emerald-500/20 px-1.5 sm:px-2 py-0.5 rounded-md">Active</span>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
                   {moduleMeta?.title || categoryId}
                 </h1>
-                <p className="text-white/55 text-xs mt-1 font-medium">{adminDesc}</p>
+                <p className="text-white/55 text-[11px] sm:text-xs mt-1 font-medium hidden sm:block">{adminDesc}</p>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
               <a
                 href={`/community/${categoryId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 rounded-xl text-sm font-bold text-white transition-all"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 rounded-xl text-xs sm:text-sm font-bold text-white transition-all"
               >
-                <Eye size={14} /> Preview Live Page
+                <Eye size={14} /> <span className="hidden sm:inline">Preview Live Page</span><span className="sm:hidden">Preview</span>
               </a>
               <button
                 onClick={openAddModal}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-slate-800 rounded-xl text-sm font-bold hover:bg-white/90 transition-all shadow-lg"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white text-slate-800 rounded-xl text-xs sm:text-sm font-bold hover:bg-white/90 transition-all shadow-lg"
                 style={{ color: accentColor }}
               >
-                <Plus size={16} /> Add New Record
+                <Plus size={14} /> <span className="hidden sm:inline">Add New Record</span><span className="sm:hidden">Add</span>
               </button>
             </div>
           </div>
 
           {/* Quick Stats Bar */}
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-3 sm:mt-5 flex flex-wrap items-center gap-2 sm:gap-3">
             {[
               { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' },
-              { label: 'Gallery Photos', value: galleryImages.length, show: activeTab === 'gallery' },
+              { label: 'Photos', value: galleryImages.length, show: activeTab === 'gallery' },
               { label: 'Products', value: products.length, show: activeTab === 'tshirts' },
               { label: 'Suggestions', value: suggestions.length, show: activeTab === 'suggestions' },
             ].filter(s => s.show).map((s, i) => (
-              <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/15">
-                <span className="text-white font-black text-base leading-none">{s.value}</span>
-                <span className="text-white/60 text-[11px] font-semibold">{s.label}</span>
+              <div key={i} className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl border border-white/15">
+                <span className="text-white font-black text-sm sm:text-base leading-none">{s.value}</span>
+                <span className="text-white/60 text-[10px] sm:text-[11px] font-semibold">{s.label}</span>
               </div>
             ))}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/15">
-              <span className="text-white font-black text-base leading-none">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl border border-white/15">
+              <span className="text-white font-black text-sm sm:text-base leading-none">
                 {tabs.findIndex(t => t.id === activeTab) + 1}/{tabs.length}
               </span>
-              <span className="text-white/60 text-[11px] font-semibold">Active Tab</span>
+              <span className="text-white/60 text-[10px] sm:text-[11px] font-semibold">Tab</span>
             </div>
           </div>
         </div>
@@ -825,17 +826,17 @@ export default function CommunityDetailEditor() {
       {/* ══════════════════════════════════════════════════════
           MAIN CONTENT: RESPONSIVE TABS + CONTENT PANEL (LIGHT THEME)
       ══════════════════════════════════════════════════════ */}
-      <div className="flex flex-col lg:flex-row gap-0 min-h-[600px] bg-white border border-slate-200/90 rounded-b-3xl overflow-hidden shadow-xl">
+      <div className="flex flex-col lg:flex-row gap-0 min-h-[500px] lg:min-h-[600px] bg-white border border-slate-200/90 rounded-b-3xl overflow-hidden shadow-xl">
 
-        {/* ── Sidebar / Mobile Horizontal Tab Navigation ── */}
-        <div className="w-full lg:w-56 shrink-0 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible py-2 px-2 lg:px-0 no-scrollbar">
+        {/* ── Desktop Sidebar Tab Navigation ── */}
+        <div className="hidden lg:flex w-56 shrink-0 bg-slate-50 border-r border-slate-200 flex-col py-2">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`group relative flex items-center gap-2.5 px-3.5 lg:px-4 py-2.5 lg:py-3 lg:mx-2 my-0.5 rounded-xl text-left text-xs font-black transition-all shrink-0 whitespace-nowrap cursor-pointer ${
+                className={`group relative flex items-center gap-2.5 px-4 py-3 mx-2 my-0.5 rounded-xl text-left text-xs font-black transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'text-white shadow-md ring-1 ring-blue-500/30'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
@@ -848,9 +849,9 @@ export default function CommunityDetailEditor() {
                 } : {}}
               >
                 {isActive && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white animate-pulse hidden lg:block" />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 )}
-                <div className={`w-6 h-6 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
                   isActive ? 'bg-white/25 text-white' : 'bg-slate-200/80 text-slate-600 group-hover:text-slate-900 group-hover:bg-slate-300/80'
                 }`}>
                   <tab.icon size={13} className="text-current" />
@@ -865,10 +866,40 @@ export default function CommunityDetailEditor() {
             );
           })}
 
-          {/* Sidebar footer (desktop only) */}
-          <div className="hidden lg:block mt-auto px-4 py-4 border-t border-slate-200">
+          {/* Sidebar footer */}
+          <div className="mt-auto px-4 py-4 border-t border-slate-200">
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Admin Panel</p>
             <p className="text-[10px] text-slate-600 font-bold mt-0.5">{moduleMeta?.title || categoryId}</p>
+          </div>
+        </div>
+
+        {/* ── Mobile Sticky Bottom Tab Bar ── */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex items-center justify-around px-1 py-1 max-h-16 overflow-x-auto no-scrollbar">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex flex-col items-center gap-0.5 py-1.5 px-1.5 rounded-lg transition-all min-w-0 relative"
+                  style={isActive ? { color: accentColor } : { color: '#94a3b8' }}
+                >
+                  {isActive && (
+                    <span className="absolute -top-1 w-6 h-0.5 rounded-b-full" style={{ background: accentColor }} />
+                  )}
+                  <tab.icon size={16} strokeWidth={isActive ? 2.5 : 1.8} />
+                  <span className={`text-[9px] font-bold leading-tight truncate max-w-[52px] ${isActive ? 'font-black' : ''}`}>
+                    {tab.label.split(' ')[0]}
+                  </span>
+                  {tab.id === 'members' && Number(enrollmentStats?.pending || 0) > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-400 text-slate-900 text-[8px] font-black flex items-center justify-center">
+                      {enrollmentStats.pending}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -876,58 +907,58 @@ export default function CommunityDetailEditor() {
         <div className="flex-1 overflow-hidden flex flex-col min-w-0 bg-white">
 
           {/* ── Content Inner Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-200 bg-white shrink-0">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-white shrink-0">
+            <div className="flex items-center gap-2.5">
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-xs"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shadow-xs"
                 style={{ background: `${accentColor}15`, color: accentColor }}
               >
-                {(() => { const tab = tabs.find(t => t.id === activeTab); return tab ? <tab.icon size={16} /> : null; })()}
+                {(() => { const tab = tabs.find(t => t.id === activeTab); return tab ? <tab.icon size={14} /> : null; })()}
               </div>
               <div>
-                <h2 className="text-sm font-black text-slate-900 leading-tight">
+                <h2 className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
                   {tabs.find(t => t.id === activeTab)?.label}
                 </h2>
-                <p className="text-[11px] text-slate-500 font-bold">{moduleMeta?.title || categoryId} · Administration Command Center</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold">{moduleMeta?.title || categoryId}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members') && (
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                   <input
                     type="text"
                     placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 bg-slate-50 w-36 md:w-48"
+                    className="pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 bg-slate-50 w-full sm:w-48"
                   />
                 </div>
               )}
               {activeTab === 'activities' || activeTab === 'announcements' ? (
                 <button
                   onClick={openAddModal}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
+                  className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer shrink-0"
                   style={{ background: accentColor }}
                 >
-                  <Plus size={14} /> Add {activeTab === 'activities' ? 'Activity' : 'Announcement'}
+                  <Plus size={14} /> <span className="hidden sm:inline">Add {activeTab === 'activities' ? 'Activity' : 'Announcement'}</span><span className="sm:hidden">Add</span>
                 </button>
               ) : activeTab === 'members' ? (
                 <button
                   onClick={openAddModal}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
+                  className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer shrink-0"
                   style={{ background: accentColor }}
                 >
-                  <Plus size={14} /> Add Member
+                  <Plus size={14} /> <span className="hidden sm:inline">Add Member</span><span className="sm:hidden">Add</span>
                 </button>
               ) : activeTab === 'schedules' ? (
                 <button
                   onClick={openAddModal}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer"
+                  className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md cursor-pointer shrink-0"
                   style={{ background: accentColor }}
                 >
-                  <Plus size={14} /> Add Session
+                  <Plus size={14} /> <span className="hidden sm:inline">Add Session</span><span className="sm:hidden">Add</span>
                 </button>
               ) : activeTab === 'gallery' ? (
                 <button
@@ -950,7 +981,7 @@ export default function CommunityDetailEditor() {
           </div>
 
           {/* ── Tab Content ── */}
-          <div className="flex-1 overflow-y-auto p-6 bg-white text-slate-800">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-white text-slate-800 pb-20 lg:pb-6">
 
 
           {/* ABOUT TAB */}
@@ -1045,11 +1076,11 @@ export default function CommunityDetailEditor() {
                         <p className="text-xs font-bold text-white truncate">{img.event_name}</p>
                         <p className="text-[10px] text-slate-400 font-medium">{img.category || 'General'}</p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteGalleryImage(img.id)}
-                        className="absolute top-2 right-2 p-2 bg-rose-600 text-white rounded-xl opacity-0 group-hover:opacity-100 transition shadow-md"
-                        title="Delete photo"
-                      >
+                        <button
+                          onClick={() => handleDeleteGalleryImage(img.id)}
+                          className="absolute top-2 right-2 p-2 bg-rose-600 text-white rounded-xl sm:opacity-0 sm:group-hover:opacity-100 transition shadow-md"
+                          title="Delete photo"
+                        >
                         <Trash2 size={14} />
                       </button>
                     </div>

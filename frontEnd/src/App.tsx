@@ -38,6 +38,8 @@ const OtherProjectsPage = lazy(() => import("./pages/projects/pages/OtherProject
 const ActivitiesPage = lazy(() => import("./pages/Landing/components/page/ActivitiesPage"));
 const ProductDetailsPage = lazy(() => import("./pages/projects/pages/ProductDetails"));
 const MyReceiptsPage = lazy(() => import("./pages/MyReceipts").then((module) => ({ default: module.MyReceipts })));
+const OrderTrackingPage = lazy(() => import("./pages/projects/pages/OrderTracking").then((module) => ({ default: module.OrderTracking })));
+const WishlistPage = lazy(() => import("./pages/projects/pages/Wishlist").then((module) => ({ default: module.Wishlist })));
 
 // New Admin Pages
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
@@ -233,6 +235,8 @@ const App: React.FC = () => {
               <Route path="other-projects" element={<OtherProjectsPage />} />
               <Route path="activities" element={<ActivitiesPage />} />
               <Route path="product/:id" element={<ProductDetailsPage />} />
+              <Route path="track-order" element={<OrderTrackingPage />} />
+              <Route path="wishlist" element={<WishlistPage />} />
             </Route>
 
             {/* Account receipts (login required) */}

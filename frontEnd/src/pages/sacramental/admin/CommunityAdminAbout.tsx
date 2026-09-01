@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
-import { FaSave, FaImage, FaCalendarAlt, FaMapMarkerAlt, FaAlignLeft } from 'react-icons/fa';
+import { FaSave, FaImage, FaCalendarAlt, FaMapMarkerAlt, FaAlignLeft, FaInfoCircle } from 'react-icons/fa';
 import '../../Jumuiya/admin/Admin.css';
 
 interface Props {
@@ -68,58 +68,91 @@ const CommunityAdminAbout: React.FC<Props> = ({ color }) => {
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const inputClass = "w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all";
+
   return (
-    <div style={{ maxWidth: '720px' }}>
+    <div className="max-w-2xl">
       <h2 className="admin-section-title">Home Page / About</h2>
-      <p className="admin-hint" style={{ color: '#64748b', fontSize: '13px', marginTop: '-6px', marginBottom: '16px' }}>
-        This content appears on the public community home page. All fields below are shown to visitors.
+      <p className="text-xs sm:text-sm text-slate-500 font-semibold mb-5">
+        This content appears on the public community home page.
       </p>
 
-      <div className="admin-form">
-        <div className="form-group">
-          <label><FaAlignLeft style={{ marginRight: 6 }} /> Tagline (short description under the title)</label>
-          <textarea value={form.description} onChange={set('description')} rows={3}
-            placeholder="One-line invitation shown at the top of the page" />
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-100 shadow-sm space-y-5">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}12` }}>
+            <FaInfoCircle style={{ color }} size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Community Details</h3>
+            <p className="text-[11px] text-slate-400 font-semibold">Edit your community's public info</p>
+          </div>
         </div>
 
-        <div className="form-group">
-          <label><FaAlignLeft style={{ marginRight: 6 }} /> Full Story / About</label>
-          <textarea value={form.story} onChange={set('story')} rows={8}
-            placeholder="Detailed story of this ministry — shown in the 'Our story' section" />
+        <div>
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+            <FaAlignLeft size={12} /> Tagline
+          </label>
+          <textarea value={form.description} onChange={set('description')} rows={2}
+            placeholder="One-line invitation shown at the top of the page"
+            className={inputClass + ' resize-none'} />
         </div>
 
-        <div className="form-group">
-          <label><FaImage style={{ marginRight: 6 }} /> Hero image URL</label>
+        <div>
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+            <FaAlignLeft size={12} /> Full Story / About
+          </label>
+          <textarea value={form.story} onChange={set('story')} rows={6}
+            placeholder="Detailed story of this ministry"
+            className={inputClass + ' resize-none'} />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+            <FaImage size={12} /> Hero Image URL
+          </label>
           <input type="url" value={form.image} onChange={set('image')}
-            placeholder="https://...  (leave blank to use the default church image)" />
+            placeholder="https://..."
+            className={inputClass} />
           {form.image && (
-            <img src={form.image} alt="preview" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 10, marginTop: 10 }} />
+            <img src={form.image} alt="preview" className="w-full max-h-40 object-cover rounded-xl mt-3" />
           )}
         </div>
 
-        <div className="form-group">
-          <label><FaCalendarAlt style={{ marginRight: 6 }} /> Schedule label</label>
-          <input type="text" value={form.schedule_label} onChange={set('schedule_label')}
-            placeholder="e.g. Practice Schedule" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+              <FaCalendarAlt size={12} /> Schedule Label
+            </label>
+            <input type="text" value={form.schedule_label} onChange={set('schedule_label')}
+              placeholder="e.g. Practice Schedule"
+              className={inputClass} />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+              <FaCalendarAlt size={12} /> Meeting Time
+            </label>
+            <input type="text" value={form.training_time} onChange={set('training_time')}
+              placeholder="e.g. Every Friday, 5-7 PM"
+              className={inputClass} />
+          </div>
         </div>
 
-        <div className="form-group">
-          <label><FaCalendarAlt style={{ marginRight: 6 }} /> Meeting time (text, e.g. 'Every Friday, 5:00 – 7:00 PM')</label>
-          <input type="text" value={form.training_time} onChange={set('training_time')} />
-        </div>
-
-        <div className="form-group">
-          <label><FaMapMarkerAlt style={{ marginRight: 6 }} /> Meeting location</label>
-          <input type="text" value={form.location} onChange={set('location')} />
+        <div>
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+            <FaMapMarkerAlt size={12} /> Meeting Location
+          </label>
+          <input type="text" value={form.location} onChange={set('location')}
+            placeholder="e.g. Church Hall"
+            className={inputClass} />
         </div>
 
         <button
-          className="btn-premium primary"
           onClick={() => updateMutation.mutate()}
           disabled={updateMutation.isPending}
-          style={{ background: color, border: 'none', color: '#fff' }}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white shadow-md transition-all disabled:opacity-50 cursor-pointer"
+          style={{ background: color }}
         >
-          <FaSave /> {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+          <FaSave size={14} /> {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>
