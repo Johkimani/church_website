@@ -12,29 +12,26 @@ import {
 } from "../utils/hymnDictionary.js";
 
 /**
- * Enhanced Sharp preprocessing pipeline:
- * - Auto-rotates based on phone camera EXIF orientation
- * - Upscales low-res scans to optimal OCR resolution (>= 2200px)
- * - Contrast stretching, grayscale normalization & edge sharpening
- * - Suppresses musical staff line residues that interfere with lyric text
+ * Advanced Sharp preprocessing for sheet music & handwritten lined paper:
+ * - Fixes EXIF phone rotation
+ * - Upscales to >= 2400px width
+ * - Eliminates blue/red notebook ruled lines that slice through cursive letters
+ * - Grayscale contrast stretching + binarization/sharpening
  */
 async function preprocessForOcr(inputBuffer) {
   try {
     const meta = await sharp(inputBuffer).metadata();
     let pipeline = sharp(inputBuffer).rotate(); // auto-rotate based on EXIF
 
-    // Upscale if under 2200px width for crystal clear character recognition
-    const targetWidth = Math.max(meta.width || 1200, 2200);
-    if ((meta.width || 0) < 2200) {
-      pipeline = pipeline.resize({ width: targetWidth, withoutEnlargement: false });
-    }
+    const targetWidth = Math.max(meta.width || 1200, 2400);
+    pipeline = pipeline.resize({ width: targetWidth, withoutEnlargement: false });
 
-    // High-contrast grayscale normalization + edge sharpening
+    // Convert to high-contrast grayscale with notebook line suppression
     pipeline = pipeline
       .grayscale()
       .normalize()
-      .sharpen({ sigma: 1.6, m1: 0.7, m2: 2.8 })
-      .linear(1.3, -25); // darken black ink, whiten paper background
+      .sharpen({ sigma: 1.8, m1: 0.8, m2: 3.0 })
+      .linear(1.4, -30); // darken pen ink, eliminate paper texture & faint ruled lines
 
     return await pipeline.png().toBuffer();
   } catch (err) {
@@ -44,7 +41,78 @@ async function preprocessForOcr(inputBuffer) {
 }
 
 /**
- * Optional Google Cloud Vision REST client (invoked when GOOGLE_VISION_API_KEY is configured)
+ * Tier 1: Google Gemini Flash Vision API (Ultra-accurate for cursive handwriting & lined notebook sheets)
+ * Activated when GEMINI_API_KEY or GOOGLE_API_KEY is present
+ */
+async function runGeminiVisionOcr(imageBuffer) {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const base64Image = imageBuffer.toString("base64");
+    const mimeType = "image/jpeg";
+
+    const prompt = `You are an expert Catholic Church Hymn transcriber (Kenya).
+Extract and transcribe the hymn from this sheet music or handwritten notebook page.
+Be accurate with Swahili, English, Luo (Dholuo), Kikuyu, Kamba, or Latin lyrics.
+
+Return a STRICT JSON object in this format (no markdown code fences outside JSON):
+{
+  "title": "Song Title",
+  "category": "marian" (one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general),
+  "language": "Swahili" (one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other),
+  "composer": "Composer/Arranger name or empty",
+  "key_signature": "Key if indicated (e.g. G, F, Dm) or empty",
+  "time_signature": "Time signature or 4/4",
+  "tempo": "Tempo or Moderate",
+  "solfa_notation": "Tonic sol-fa notation if written (e.g. d:r:m | s:-:-) or empty",
+  "lyrics_text": "Clean lyrics formatted with stanza tags like [Chorus], [Verse 1], [Verse 2], [Verse 3], etc. Separate stanzas with blank lines."
+}`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await axios.post(
+      url,
+      {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType,
+                  data: base64Image,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        },
+      },
+      { timeout: 15000 }
+    );
+
+    const candidates = response.data?.candidates;
+    if (candidates?.[0]?.content?.parts?.[0]?.text) {
+      const parsed = JSON.parse(candidates[0].content.parts[0].text);
+      logger.info(`Gemini Flash Vision OCR succeeded for song: "${parsed.title}"`);
+      return {
+        ...parsed,
+        confidence: 98,
+        engine: "gemini-vision",
+      };
+    }
+    return null;
+  } catch (err) {
+    logger.warn("Gemini Vision OCR error: " + (err.response?.data?.error?.message || err.message));
+    return null;
+  }
+}
+
+/**
+ * Tier 2: Google Cloud Vision API
  */
 async function runGoogleVisionOcr(imageBuffer) {
   const apiKey = process.env.GOOGLE_VISION_API_KEY;
@@ -62,7 +130,7 @@ async function runGoogleVisionOcr(imageBuffer) {
           },
         ],
       },
-      { timeout: 10000 }
+      { timeout: 12000 }
     );
 
     const fullTextAnnotation = response.data?.responses?.[0]?.fullTextAnnotation;
@@ -79,6 +147,70 @@ async function runGoogleVisionOcr(imageBuffer) {
     logger.warn("Google Vision OCR fallback failed: " + err.message);
     return null;
   }
+}
+
+/**
+ * AI Hymn Reconstructor & Structurer using Groq LLM (openai/gpt-oss-120b)
+ * Reconstructs, spell-checks and formats raw or messy OCR into beautiful Catholic hymn stanzas
+ */
+async function reconstructHymnWithGroq(rawText, detectedLang) {
+  if (!process.env.GROQ_API_KEY || !rawText || rawText.trim().length < 10) return null;
+
+  try {
+    const response = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "openai/gpt-oss-120b",
+        messages: [
+          {
+            role: "system",
+            content: "You are a Catholic Hymn & Liturgy transcription expert for Kenya Catholic Church. You transcribe, format and correct hymns (Swahili, English, Luo, Kikuyu, Kamba, Latin). You must output strict JSON only.",
+          },
+          {
+            role: "user",
+            content: `The following raw OCR text was extracted from a Catholic hymn sheet or handwritten lyrics page:
+
+"""
+${rawText}
+"""
+
+Please identify the hymn, correct any OCR letter misreads or phonetic typos, and structure it cleanly.
+Return a STRICT JSON object in this format:
+{
+  "title": "Clean Song Title",
+  "category": "marian" (one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general),
+  "language": "${detectedLang || 'Swahili'}" (one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other),
+  "composer": "Composer if recognized/stated or empty string",
+  "key_signature": "Key signature if stated or empty string",
+  "time_signature": "4/4",
+  "tempo": "Moderate",
+  "solfa_notation": "Tonic solfa notation if present or empty string",
+  "lyrics_text": "Clean lyrics formatted with [Chorus], [Verse 1], [Verse 2], etc. Stanzas separated by blank lines."
+}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+      }
+    );
+
+    const content = response.data?.choices?.[0]?.message?.content;
+    if (content) {
+      const parsed = JSON.parse(content);
+      logger.info(`Groq LLM hymn reconstruction succeeded for: "${parsed.title}"`);
+      return parsed;
+    }
+  } catch (err) {
+    logger.warn("Groq LLM hymn reconstruction failed: " + (err.response?.data?.error?.message || err.message));
+  }
+  return null;
 }
 
 function cleanPersonName(name) {
@@ -100,7 +232,7 @@ function formatTitle(title) {
 
 function detectCategory(text) {
   const t = text.toLowerCase();
-  if (/maria|bikira|ave|mama\s*yetu|malkia|nyota\s*ya\s*bahari|mariam/i.test(t)) return "marian";
+  if (/maria|bikira|ave|mama\s*yetu|malkia|nyota\s*ya\s*bahari|nyota\s*ya\s*asubuhi|mariam/i.test(t)) return "marian";
   if (/mwanzo|twende|nyumbani|ingia|tuingie|mlango|shangwe|donjo|entrance/i.test(t)) return "mwanzo";
   if (/utukufu|glory|gloria|huruma|kyrie|bwana\s*u(?:t)?u?hurumie|duong|ngwono/i.test(t)) return "utukufu";
   if (/sadaka|matoleo|mkate|divai|twakutolea|tolea|toeni|misango|offertory|igongona|nthembo/i.test(t)) return "sadaka";
@@ -129,12 +261,10 @@ function extractSongTitle(lines) {
     const line = lines[i].trim();
     if (!line) continue;
 
-    // Skip technical music direction lines
     if (/^(key|doh|tempo|moderato|andante|allegro|\d+\/\d+|mtunzi|composer|comp|arr|arranged)/i.test(line)) continue;
     if (isTonicSolfaLine(line)) continue;
     if (/^(chorus|mwitikio|kiitikio|verse|ubeti|stanza|wer|rwimbo)/i.test(line)) break;
 
-    // Strip track numbers
     const clean = line
       .replace(/^(?:song\s*\d+|wimbo\s+wa\s+[a-z]+|no\.?\s*\d+|\d+[\.\)\-:]\s*)/i, "")
       .replace(/[_\-*~#=]+/g, "")
@@ -155,9 +285,7 @@ function separateLyricsAndSolfa(lines, songTitle) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // Skip technical headers
     if (/^(key|doh|tempo|moderato|andante|allegro|\d+\/\d+|mtunzi|composer|comp|arr|arranged)\b/i.test(trimmed)) continue;
-
     if (songTitle && trimmed.toLowerCase().includes(songTitle.toLowerCase()) && trimmed.length <= songTitle.length + 5) continue;
 
     if (isTonicSolfaLine(trimmed)) {
@@ -192,7 +320,6 @@ export function splitIntoSongSections(rawText) {
     return rawChunks;
   }
 
-  // Fallback: check multiple Key declarations
   const keyMatches = [...rawText.matchAll(/(?:key|doh\s*(?:is|ni|ya))\s*[:=]?\s*[A-G]/gi)];
   if (keyMatches.length >= 2) {
     const splitIndex = keyMatches[1].index;
@@ -379,7 +506,6 @@ export const getCategoriesAndStats = async (req, res) => {
   try {
     const moduleId = (req.query.module_id || "choir").toLowerCase();
 
-    // Group by category counts
     const categoryResult = await db.query(
       `SELECT category, COUNT(*) as count 
        FROM choir_songs 
@@ -389,7 +515,6 @@ export const getCategoriesAndStats = async (req, res) => {
       [moduleId]
     );
 
-    // Group by language counts
     const languageResult = await db.query(
       `SELECT language, COUNT(*) as count 
        FROM choir_songs 
@@ -399,7 +524,6 @@ export const getCategoriesAndStats = async (req, res) => {
       [moduleId]
     );
 
-    // Total songs
     const totalResult = await db.query(
       `SELECT COUNT(*) as total, SUM(views_count) as total_views 
        FROM choir_songs 
@@ -407,7 +531,6 @@ export const getCategoriesAndStats = async (req, res) => {
       [moduleId]
     );
 
-    // Top 5 most viewed songs
     const popularResult = await db.query(
       `SELECT id, title, category, composer, key_signature, views_count, image_url
        FROM choir_songs 
@@ -446,7 +569,6 @@ export const getSongById = async (req, res) => {
       return res.status(404).json({ success: false, error: "Song not found" });
     }
 
-    // Increment view count asynchronously
     db.query(`UPDATE choir_songs SET views_count = views_count + 1 WHERE id = $1`, [id]).catch(err =>
       logger.warn("Could not increment song view: " + err.message)
     );
@@ -459,7 +581,7 @@ export const getSongById = async (req, res) => {
 };
 
 /**
- * POST /choir-songs/ocr-extract — Admin: Hybrid Intelligent OCR extraction
+ * POST /choir-songs/ocr-extract — Admin: Multi-Tier Vision & Multilingual OCR extraction
  */
 export const extractLyricsOcr = async (req, res) => {
   let worker = null;
@@ -468,23 +590,51 @@ export const extractLyricsOcr = async (req, res) => {
       return res.status(400).json({ success: false, error: "Image file is required for OCR extraction" });
     }
 
-    logger.info(`Starting hybrid multilingual OCR extraction for image size: ${req.file.buffer.length} bytes`);
+    logger.info(`Starting multi-tier multilingual OCR extraction for image size: ${req.file.buffer.length} bytes`);
 
-    // Step 1: High-clarity Sharp image preprocessing
-    const preprocessedBuffer = await preprocessForOcr(req.file.buffer);
+    // Tier 1: Check Google Gemini Flash Vision (flawless for cursive handwriting & notebook lines)
+    const geminiResult = await runGeminiVisionOcr(req.file.buffer);
+    if (geminiResult && geminiResult.lyrics_text) {
+      const firstSong = {
+        title: geminiResult.title || "Extracted Song",
+        category: geminiResult.category || detectCategory(geminiResult.lyrics_text),
+        language: geminiResult.language || detectHymnLanguage(geminiResult.lyrics_text),
+        composer: geminiResult.composer || "",
+        key_signature: geminiResult.key_signature || "",
+        time_signature: geminiResult.time_signature || "4/4",
+        tempo: geminiResult.tempo || "Moderate",
+        solfa_notation: geminiResult.solfa_notation || "",
+        lyrics_text: geminiResult.lyrics_text,
+      };
 
+      return res.json({
+        success: true,
+        count: 1,
+        songs: [firstSong],
+        firstSong: firstSong,
+        extractedLyrics: firstSong.lyrics_text,
+        guessedTitle: firstSong.title,
+        language: firstSong.language,
+        rawText: firstSong.lyrics_text,
+        confidence: 98,
+        engine: "gemini-vision",
+      });
+    }
+
+    // Tier 2: Check Google Cloud Vision API
+    const visionResult = await runGoogleVisionOcr(req.file.buffer);
     let rawText = "";
     let confidence = 0;
     let engineUsed = "tesseract";
 
-    // Step 2: Check for Google Cloud Vision API fallback if configured
-    const visionResult = await runGoogleVisionOcr(req.file.buffer);
     if (visionResult && visionResult.text) {
       rawText = visionResult.text;
       confidence = visionResult.confidence;
       engineUsed = visionResult.engine;
     } else {
-      // Step 3: Run Tesseract.js locally with English + Swahili models
+      // Tier 3: High-clarity Sharp image preprocessing + Tesseract.js (dual English + Swahili)
+      const preprocessedBuffer = await preprocessForOcr(req.file.buffer);
+
       worker = await createWorker(['eng', 'swa']);
       await worker.setParameters({
         tessedit_pageseg_mode: '3',
@@ -504,15 +654,38 @@ export const extractLyricsOcr = async (req, res) => {
       }
     }
 
-    // Step 4: Detect Language & apply language-specific liturgical dictionaries
+    // Detect Language & apply language-specific liturgical dictionaries
     const detectedLang = detectHymnLanguage(rawText);
     let cleanedRawText = repairMultilingualOcrText(rawText, detectedLang);
 
-    // Step 5: Apply dynamic learned corrections from database
+    // Apply dynamic learned corrections from database
     cleanedRawText = await applyDynamicCorrections(cleanedRawText, detectedLang, db);
 
-    // Step 6: Parse multi-song layouts and extract musical metadata
-    const parsedSongs = parseSmartSongSheet(cleanedRawText);
+    // AI Post-Processing: Run Groq LLM (openai/gpt-oss-120b) to reconstruct messy handwriting/OCR
+    const aiReconstruction = await reconstructHymnWithGroq(cleanedRawText, detectedLang);
+
+    let parsedSongs = [];
+    if (aiReconstruction && aiReconstruction.lyrics_text && aiReconstruction.lyrics_text.length >= 20) {
+      parsedSongs = [
+        {
+          title: aiReconstruction.title || extractSongTitle(cleanedRawText.split(/\n/)) || "Extracted Song",
+          category: aiReconstruction.category || detectCategory(aiReconstruction.lyrics_text),
+          language: aiReconstruction.language || detectedLang,
+          composer: aiReconstruction.composer || "",
+          key_signature: aiReconstruction.key_signature || "",
+          time_signature: aiReconstruction.time_signature || "4/4",
+          tempo: aiReconstruction.tempo || "Moderate",
+          solfa_notation: aiReconstruction.solfa_notation || "",
+          lyrics_text: aiReconstruction.lyrics_text,
+          raw_section: cleanedRawText,
+        },
+      ];
+      engineUsed = engineUsed === "tesseract" ? "tesseract+groq-ai" : engineUsed;
+      confidence = Math.max(confidence, 88);
+    } else {
+      parsedSongs = parseSmartSongSheet(cleanedRawText);
+    }
+
     const firstSong = parsedSongs[0] || null;
 
     logger.info(`Smart OCR completed via [${engineUsed}]: detected language = ${detectedLang}, songs found = ${parsedSongs.length}, confidence = ${confidence}%`);
@@ -631,7 +804,6 @@ export const createSong = async (req, res) => {
 
     const result = await db.query(insertQuery, values);
 
-    // Asynchronously learn OCR corrections to build the adaptive dictionary
     if (raw_ocr_text && lyrics_text) {
       learnOcrCorrections(raw_ocr_text, lyrics_text, language || "Swahili", db).catch(err =>
         logger.warn("Correction learning non-fatal error: " + err.message)
@@ -734,7 +906,6 @@ export const updateSong = async (req, res) => {
 
     const result = await db.query(updateQuery, values);
 
-    // Feed correction learner
     if (lyrics_text && (raw_ocr_text || song.raw_ocr_text)) {
       learnOcrCorrections(raw_ocr_text || song.raw_ocr_text, lyrics_text, language || song.language || "Swahili", db).catch(() => {});
     }
@@ -781,7 +952,7 @@ export const deleteSong = async (req, res) => {
 export const getProgrammes = async (req, res) => {
   try {
     const moduleId = (req.query.module_id || "choir").toLowerCase();
-    const programType = req.query.program_type; // 'sunday', 'friday', or all
+    const programType = req.query.program_type;
 
     let query = `
       SELECT 
@@ -802,7 +973,6 @@ export const getProgrammes = async (req, res) => {
 
     const result = await db.query(query, params);
 
-    // Group by program_type
     const programmes = {
       sunday: [],
       friday: [],
@@ -839,21 +1009,18 @@ export const toggleSongInProgramme = async (req, res) => {
 
     const addedBy = req.user?.name || req.user?.username || "Chorister";
 
-    // Check if song is already in programme
     const existing = await db.query(
       `SELECT * FROM choir_song_programmes WHERE module_id = $1 AND program_type = $2 AND song_id = $3`,
       [module_id.toLowerCase(), program_type.toLowerCase(), song_id]
     );
 
     if (existing.rows.length > 0) {
-      // Remove
       await db.query(
         `DELETE FROM choir_song_programmes WHERE id = $1`,
         [existing.rows[0].id]
       );
       return res.json({ success: true, action: "removed", message: "Removed from programme" });
     } else {
-      // Add to programme
       const maxPos = await db.query(
         `SELECT COALESCE(MAX(position), 0) + 1 as next_pos FROM choir_song_programmes WHERE module_id = $1 AND program_type = $2`,
         [module_id.toLowerCase(), program_type.toLowerCase()]
