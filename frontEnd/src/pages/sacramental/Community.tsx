@@ -108,7 +108,7 @@ const Community: React.FC = () => {
                 key={community.id}
                 type="button"
                 aria-label={`View ${community.title}`}
-                className="jumuiya-card card card-clickable animate-fade-in"
+                className="jumuiya-card card-clickable animate-fade-in"
                 style={{
                   ['--jumuiya-color' as any]: color,
                 }}
@@ -140,7 +140,7 @@ const Community: React.FC = () => {
           <button
             type="button"
             aria-label="View Our Jumuiyas"
-            className="jumuiya-card card card-clickable animate-fade-in"
+            className="jumuiya-card card-clickable animate-fade-in"
             style={{ ['--jumuiya-color' as any]: '#1d4ed8' }}
             onClick={() => navigate('/jumuiya')}
           >
