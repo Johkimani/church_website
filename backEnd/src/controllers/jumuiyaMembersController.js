@@ -1,4 +1,10 @@
 import { testDb as pool, withTransaction } from "../Configs/dbConfig.js";
+import { cascadeDeleteRow } from "../utils/cascadeDelete.js";
+import {
+  ensureMemberFksDeferrable,
+  REG_REFERENCE_COLUMNS,
+  discoverMemberFkColumns,
+} from "../utils/regEdit.js";
 import logger from "../logger/winston.js";
 import bcrypt from "bcrypt";
 import { getCurrentSemester } from "../utils/semesterConfig.js";
@@ -17,8 +23,18 @@ import { payAndWait } from "./stkPush/stkHelper.js";
 import { sendMail, isConfigured } from "../Configs/emailConfig.js";
 
 /**
+ * Current academic start year (August-based: the first-year intake arrives at
+ * the end of August, so cohorts roll up from month >= 8).
+ */
+function academicStartYear() {
+  const now = new Date();
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
+/**
  * Normalize year_of_study to a numeric year level (1-4).
- * Handles "2024-2025" (academic year range) → computes from current year.
+ * Handles "2024-2025" (academic year range) → computes from the current
+ * academic year (August-based).
  * Handles "1","2","3","4" → pass-through.
  * Returns null if it can't be determined.
  */
@@ -29,7 +45,7 @@ function normalizeYearOfStudy(yos) {
   const match = trimmed.match(/^(\d{4})-\d{4}$/);
   if (match) {
     const startYear = parseInt(match[1], 10);
-    const yearLevel = new Date().getFullYear() - startYear + 1;
+    const yearLevel = academicStartYear() - startYear + 1;
     if (yearLevel >= 1 && yearLevel <= 4) return String(yearLevel);
   }
   return null;
@@ -288,7 +304,7 @@ export const createJumuiyaMember = async (req, res) => {
  */
 export const updateJumuiyaMember = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.query.id || req.params.id;
     const {
       member_id, first_name, last_name, year_of_study, email, jumuiya_id,
       phone, gender, course,
@@ -494,29 +510,193 @@ export const updateJumuiyaMember = async (req, res) => {
 
 
 /**
+ * PATCH /api/jumuiya-members/reg-number
+ * Change a member's registration number (member_id) across the ENTIRE system.
+ *
+ * Because `member_id` is the primary key AND the login username, changing it
+ * must atomically re-point every child table and the login identity:
+ *   - members.member_id  (the new PK + username)
+ *   - every FK child (activity_bookings, contributions, group_assignments,
+ *     member_roles incl. assigned_by/approved_by, mpesa_request.user_id,
+ *     password_history, password_resets, pending_payments, refresh_tokens, ...)
+ *   - loose references (registered, import_records.cleaned_reg_number,
+ *     associates, notifications, suggestions, attempts, attendance, officials,
+ *     t-shirt orders, weekly challenges, enrollments, ...)
+ *
+ * Password handling ("smart default"): if the member's stored hash still equals
+ * their old (default = reg) password, we re-hash it to the NEW reg so the
+ * "force a password change on first login" behaviour keeps working. If they had
+ * set a custom password it is left untouched. Their existing refresh tokens are
+ * revoked so they sign in once more with the new reg.
+ *
+ * Auth flow impact: after the change the member logs in with the NEW reg only;
+ * the old reg stops working as a username everywhere.
+ *
+ * Invariant: the member stays fully attached to their existing jumuiya — the
+ * registered row, roles, group assignments, attendance and approvals all follow
+ * the new key, which is precisely the "re-validate on their jumuiya" behaviour.
+ */
+export const changeMemberReg = async (req, res) => {
+  try {
+    const id = String(req.body?.id || req.query?.id || "").trim();
+    const newReg = String(req.body?.newReg ?? "").trim();
+    const dryRun = req.body?.dryRun === true;
+
+    if (!id || !newReg) {
+      return res.status(400).json({ success: false, message: "id and newReg are required" });
+    }
+    if (id === newReg) {
+      return res.status(400).json({ success: false, message: "New registration number is the same as the current one" });
+    }
+
+    // Make member-referencing FKs deferrable (committed, idempotent).
+    await ensureMemberFksDeferrable();
+
+    const result = await withTransaction(async (client) => {
+      await client.query("SET CONSTRAINTS ALL DEFERRED");
+
+      // Target member must exist; target reg must not already be in use.
+      const cur = await client.query(
+        "SELECT m.*, sg.name AS jumuiya_name FROM members m LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id WHERE m.member_id = $1",
+        [id]
+      );
+      if (cur.rows.length === 0) {
+        throw new HttpError(404, `Member not found (${id}). The registration number may have changed recently — refresh the member list and try again.`);
+      }
+
+      const clash = await client.query("SELECT 1 FROM members WHERE member_id = $1", [newReg]);
+      if (clash.rows.length > 0) {
+        throw new HttpError(409, `Registration number ${newReg} already belongs to another member`);
+      }
+
+      const oldHash = cur.rows[0].password || null;
+
+      // Re-point every FK child that references the member.
+      const fkCols = await discoverMemberFkColumns(client);
+      const touched = [];
+      for (const { table, column } of fkCols) {
+        const upd = await client.query(
+          `UPDATE "${table}" SET "${column}" = $1 WHERE "${column}" = $2`,
+          [newReg, id]
+        );
+        if (upd.rowCount > 0) touched.push(`${table}.${column} (${upd.rowCount})`);
+      }
+
+      // Re-point every loose (non-FK) reference keyed by the old reg.
+      for (const [table, column] of REG_REFERENCE_COLUMNS) {
+        const upd = await client.query(
+          `UPDATE "${table}" SET "${column}" = $1 WHERE "${column}" = $2`,
+          [newReg, id]
+        );
+        if (upd.rowCount > 0) touched.push(`${table}.${column} (${upd.rowCount})`);
+      }
+
+      // Rename the parent row itself (the new PK / login username).
+      await client.query("UPDATE members SET member_id = $1 WHERE member_id = $2", [newReg, id]);
+
+      // Smart-default password: if the stored hash still equals the old reg
+      // (i.e. the default "reg-number" password was never changed), re-hash to
+      // the new reg so the next-login force-change still triggers correctly.
+      let passwordReset = false;
+      if (oldHash) {
+        const isDefault = await bcrypt.compare(id, oldHash);
+        if (isDefault) {
+          const newHash = await bcrypt.hash(newReg, 10);
+          await client.query("UPDATE members SET password = $1 WHERE member_id = $2", [newHash, newReg]);
+          passwordReset = true;
+        }
+      }
+
+      // Revoke existing sessions: they were issued under the old username.
+      const tokens = await client.query(
+        "SELECT 1 FROM refresh_tokens WHERE member_id = $1",
+        [newReg]
+      );
+      const revokedTokens = tokens.rowCount;
+      await client.query("DELETE FROM refresh_tokens WHERE member_id = $1", [newReg]);
+
+      // Return the updated member under the new key.
+      const rowRes = await client.query(
+        `SELECT m.*, sg.name AS jumuiya_name
+         FROM members m LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+         WHERE m.member_id = $1`,
+        [newReg]
+      );
+      const row = rowRes.rows[0];
+
+      const plan = {
+        newReg,
+        touched,
+        passwordReset,
+        revokedTokens,
+      };
+
+      if (dryRun) {
+        // Throw a sentinel AFTER computing the plan so withTransaction rolls
+        // the whole change back. Nothing persists in dry-run mode.
+        const e = new Error("dry-run");
+        e.isDryRunPlan = plan;
+        throw e;
+      }
+
+      return {
+        member: {
+          ...row,
+          id: row.member_id,
+          name: `${row.first_name} ${row.last_name || ""}`.trim(),
+        },
+        ...plan,
+      };
+    });
+
+    if (dryRun) {
+      // Unreachable in normal flow (dry-run always throws the sentinel), but
+      // kept for safety.
+      return res.json({ success: true, dryRun: true, newReg });
+    }
+    const { member, touched, passwordReset, revokedTokens } = result;
+    return res.json({ success: true, message: "Registration number updated", data: member, touched, passwordReset, revokedTokens });
+  } catch (error) {
+    if (error.isDryRunPlan) {
+      return res.json({ success: true, dryRun: true, ...error.isDryRunPlan });
+    }
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    logger.error(`Error changing member reg: ${error.message} | stack: ${error.stack}`);
+    res.status(500).json({ success: false, message: "Failed to change registration number" });
+  }
+};
+
+
+/**
  * DELETE /api/jumuiya-members/:id
  * Permanently delete a member from ALL tables in the system.
  * Cleans up members, registered, import_records, group_assignments, allocation_approvals, associates.
  */
 export const deleteJumuiyaMember = async (req, res) => {
   try {
-    const { id } = req.params; // member_id
+    const id = String(req.query.id || req.params.id || "").trim(); // member_id
 
     await withTransaction(async (client) => {
-      await client.query("DELETE FROM registered WHERE member_id = $1", [id]);
-      await client.query("DELETE FROM group_assignments WHERE member_id = $1", [id]);
-      await client.query("DELETE FROM allocation_approvals WHERE member_id = $1", [id]);
-      await client.query("DELETE FROM import_records WHERE cleaned_reg_number = $1", [id]);
-      await client.query("DELETE FROM associates WHERE member_id = $1", [id]);
-
-      const result = await client.query(
-        "DELETE FROM members WHERE member_id = $1 RETURNING *",
+      // Check existence up front (before deleting): cascadeDeleteRow clears the
+      // entire FK dependency tree for this member (recursively, to any depth)
+      // AND deletes the `members` row itself, so there must be no second
+      // DELETE FROM members after it — that would always match 0 rows and
+      // roll back the whole deletion with a bogus "Member not found".
+      const exists = await client.query(
+        "SELECT 1 FROM members WHERE member_id = $1",
         [id]
       );
-
-      if (result.rows.length === 0) {
+      if (exists.rows.length === 0) {
         throw new HttpError(404, "Member not found");
       }
+
+      await cascadeDeleteRow(client, 'members', 'member_id', id);
+
+      // Also clear historical import rows keyed by registration number rather
+      // than member_id.
+      await client.query("DELETE FROM import_records WHERE cleaned_reg_number = $1", [id]);
     });
 
     res.json({ success: true, message: "Member permanently removed from the system" });
@@ -655,7 +835,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
                WHEN year_of_study ~ '^[1-4]$' THEN year_of_study
                WHEN year_of_study ~ '^\\d{4}-\\d{4}$'
                  THEN GREATEST(1, LEAST(4,
-                   EXTRACT(YEAR FROM CURRENT_DATE)::int - CAST(SPLIT_PART(year_of_study, '-', 1) AS integer) + 1
+                   $4::int - CAST(SPLIT_PART(year_of_study, '-', 1) AS integer) + 1
                  ))::text
              END AS norm_yos
            FROM members
@@ -675,7 +855,7 @@ export const bulkRegisterWithPayment = async (req, res) => {
          FROM norm
          WHERE m.member_id = norm.member_id
          RETURNING m.*`,
-        [jumuiya_id, isSecondSem, member_ids]
+        [jumuiya_id, isSecondSem, member_ids, academicStartYear()]
       );
 
       // Insert into registered table
@@ -1249,7 +1429,7 @@ export const cancelPendingPayment = async (req, res) => {
  */
 export const unregisterJumuiyaMember = async (req, res) => {
   try {
-    const { id } = req.params; // member_id
+    const id = req.query.id || req.params.id; // member_id
 
     const row = await withTransaction(async (client) => {
       // 1. Remove from registered table
@@ -1790,7 +1970,7 @@ export const getCohortAnalytics = async (req, res) => {
         WHEN m.year_of_study ~ '^[1-4]$' THEN m.year_of_study
         WHEN m.year_of_study ~ '^[0-9]{4}-[0-9]{4}$'
           THEN GREATEST(1, LEAST(4,
-            EXTRACT(YEAR FROM CURRENT_DATE)::int - CAST(SPLIT_PART(m.year_of_study, '-', 1) AS integer) + 1
+            $1::int - CAST(SPLIT_PART(m.year_of_study, '-', 1) AS integer) + 1
           ))::text
       END
     `;
@@ -1807,7 +1987,7 @@ export const getCohortAnalytics = async (req, res) => {
         AND (m.year_of_study ~ '^[1-4]$' OR m.year_of_study ~ '^[0-9]{4}-[0-9]{4}$')
       GROUP BY year_of_study
       ORDER BY year_of_study ASC
-    `);
+    `, [academicStartYear()]);
 
     // All members breakdown by year_of_study (for pie chart — raw values as-is)
     const yearCounts = await pool.query(`

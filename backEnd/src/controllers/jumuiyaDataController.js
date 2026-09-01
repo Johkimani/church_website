@@ -238,6 +238,70 @@ export const updateJumuiyaSaintImage = async (req, res) => {
 };
 
 /**
+ * PATCH /jumuiya-data/:id/channels
+ * Replace the social/contact channels (platform + url rows in
+ * jumuiya_social_media) for a single jumuiya.
+ * Body: { channels: [{ platform: string, url: string }] }
+ */
+export const updateJumuiyaChannels = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { channels } = req.body;
+
+    if (!Array.isArray(channels)) {
+      return res.status(400).json({ success: false, error: 'channels must be an array of { platform, url }' });
+    }
+
+    // Resolve the jumuiya to its group_id (matches the pattern used elsewhere)
+    const sgResult = await pool.query(
+      `SELECT group_id, slug FROM sub_groups
+       WHERE slug = $1 OR group_id::text = $1 OR LOWER(name) = LOWER($1)`,
+      [id]
+    );
+    if (sgResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jumuiya not found' });
+    }
+    const groupId = sgResult.rows[0].group_id;
+
+    // Serialize inserts inside a transaction so the list is always consistent
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM jumuiya_social_media WHERE jumuiya_id = $1', [groupId]);
+
+      if (channels.length > 0) {
+        for (const ch of channels) {
+          const platform = String(ch.platform || '').trim();
+          const url = String(ch.url || '').trim();
+          if (!platform || !url) continue;
+          await client.query(
+            'INSERT INTO jumuiya_social_media (jumuiya_id, platform, url) VALUES ($1, $2, $3)',
+            [groupId, platform, url]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    // Mirror any WhatsApp channel into the green-button store so the Channels
+    // tab and the WhatsApp widget always point at the same group link.
+    await syncWhatsAppToSettings(groupId, sgResult.rows[0].slug, channels);
+
+    logger.info(`Updated channels for Jumuiya ${id} (${channels.length} channels)`);
+    res.json({ success: true, data: { jumuiya_id: groupId, channels } });
+  } catch (error) {
+    logger.error('Error updating Jumuiya channels: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to update jumuiya channels' });
+  }
+};
+
+/**
  * PATCH /jumuiya-data/:id
  * Update description, fullName, about, color, and/or meetingSchedule for a jumuiya.
  */
@@ -289,5 +353,29 @@ export const updateJumuiyaData = async (req, res) => {
   } catch (error) {
     logger.error('Error updating jumuiya data: ' + error.message);
     res.status(500).json({ success: false, error: 'Failed to update jumuiya data' });
+  }
+};
+
+/**
+ * Mirror a jumuiya's WhatsApp channel into the green-button store
+ * (system_settings -> whatsapp_jumuiya_<slug>_link), so both surfaces share
+ * the same group link. An empty/missing WhatsApp channel clears the link.
+ */
+const syncWhatsAppToSettings = async (groupId, slug, channels) => {
+  try {
+    if (!slug) return;
+    const whatsapp = (channels || []).find((ch) =>
+      String(ch.platform || '').toLowerCase().includes('whatsapp')
+    );
+    const url = whatsapp ? String(whatsapp.url || '').trim() : '';
+    await pool.query(
+      `INSERT INTO system_settings (key, value, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
+      [`whatsapp_jumuiya_${slug}_link`, url]
+    );
+  } catch (error) {
+    // Non-fatal: the jumuiya_social_media write already succeeded
+    logger.warn(`syncWhatsAppToSettings failed (non-fatal): ${error.message}`);
   }
 };

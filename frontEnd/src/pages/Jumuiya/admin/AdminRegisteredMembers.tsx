@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { isMale, isFemale, genderCode } from "../../../utils/memberYear";
 import { FaSearch, FaDownload, FaSync, FaUserGraduate, FaUsers, FaCheckCircle, FaGraduationCap } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
@@ -73,8 +74,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
   // Stats
   const stats = useMemo(() => {
     const total = members.length;
-    const male = members.filter(m => (m.gender || "").toLowerCase() === "male").length;
-    const female = members.filter(m => (m.gender || "").toLowerCase() === "female").length;
+    const male = members.filter(m => isMale(m.gender)).length;
+    const female = members.filter(m => isFemale(m.gender)).length;
     const semesterCounts: Record<string, number> = {};
     SEMESTERS.forEach(s => {
       semesterCounts[s.label] = members.filter(m => m[s.dbCol] === true || m[s.dbCol] === "true" || m[s.dbCol] === 1).length;
@@ -96,7 +97,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
     }
 
     if (genderFilter !== "all") {
-      result = result.filter(m => (m.gender || "").toLowerCase() === genderFilter);
+      result = result.filter(m => genderFilter === "male" ? isMale(m.gender) : isFemale(m.gender));
     }
 
     if (semesterFilter !== "all") {
@@ -304,10 +305,10 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{
                       padding: "3px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600,
-                      background: (m.gender || "").toLowerCase() === "male" ? "#eff6ff" : "#fdf2f8",
-                      color: (m.gender || "").toLowerCase() === "male" ? "#3b82f6" : "#ec4899"
+                      background: genderCode(m.gender) === "M" ? "#eff6ff" : genderCode(m.gender) === "W" ? "#fdf2f8" : "#f1f5f9",
+                      color: genderCode(m.gender) === "M" ? "#3b82f6" : genderCode(m.gender) === "W" ? "#ec4899" : "#64748b"
                     }}>
-                      {(m.gender || "").toLowerCase() === "male" ? "M" : "W"}
+                      {genderCode(m.gender)}
                     </span>
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-secondary)", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={m.course}>

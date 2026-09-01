@@ -68,6 +68,18 @@ export default function AdminPanel() {
     return (localStorage.getItem('admin_mode') as 'csa' | 'jumuiya' | 'groups') || 'csa';
   });
 
+  // Total archived records for the chosen category across ALL terms (not just
+  // the current term), so the dashboard count reflects every archived official.
+  // NOTE: must be declared after `adminMode` (above) to avoid a TDZ error.
+  const totalArchived = useMemo(() => {
+    if (!terms || terms.length === 0) return 0;
+    const key =
+      adminMode === 'csa' ? 'archived_csa_count'
+      : adminMode === 'jumuiya' ? 'archived_jumuiya_count'
+      : 'archived_group_count';
+    return terms.reduce((sum, t) => sum + Number((t as any)[key] || 0), 0);
+  }, [terms, adminMode]);
+
   const handleModeChange = (mode: 'csa' | 'jumuiya' | 'groups') => {
     setAdminMode(mode);
     localStorage.setItem('admin_mode', mode);
@@ -223,12 +235,7 @@ export default function AdminPanel() {
         {/* Stats Overview */}
         <DashboardStats 
           officialsCount={activeOfficialsList.length} 
-          archivedCount={adminMode === 'csa' 
-            ? Number(currentTerm?.archived_csa_count || 0) 
-            : adminMode === 'jumuiya'
-              ? Number(currentTerm?.archived_jumuiya_count || 0)
-              : Number(currentTerm?.archived_group_count || 0)
-          } 
+          archivedCount={totalArchived} 
           currentTerm={currentTerm} 
           displayTerm={displayTerm}
         />

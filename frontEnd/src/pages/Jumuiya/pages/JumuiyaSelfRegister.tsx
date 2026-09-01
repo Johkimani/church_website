@@ -460,7 +460,16 @@ export default function JumuiyaSelfRegister() {
             </h2>
             <p className="text-sm text-slate-600 mt-2 max-w-sm mx-auto leading-relaxed">
               Your details have been submitted into the Jumuiya coordinator&apos;s side for <strong className="text-slate-800">{submittedSession.jumuiyaName}</strong>.
-              Visit <span className="font-bold">csakyu.com</span> to learn more about CSA Kirinyaga.
+              Visit{" "}
+              <a
+                href="https://csakyu.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-blue-600 underline underline-offset-2"
+              >
+                csakyu.com
+              </a>{" "}
+              to learn more about CSA Kirinyaga.
             </p>
 
             {/* Member Details Pill */}

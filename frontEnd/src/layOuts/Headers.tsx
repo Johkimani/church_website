@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useApp } from "../context/AppContext";
+import { useUserJumuiya } from "../hooks/useUserJumuiya";
 import { FaBell, FaReceipt, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 import AdminPanel from "../pages/Landing/components/AdminPanel";
@@ -19,6 +20,7 @@ const isAdminRole = (role: string | string[] | undefined): boolean => {
 
 const Headers = () => {
   const { user, logout } = useAuth();
+  const userJumuiya = useUserJumuiya();
   const { unreadCount } = useNotifications();
   const { cart, cartItemsCount, setIsCartOpen } = useApp();
   const navigate = useNavigate();
@@ -175,6 +177,31 @@ const Headers = () => {
           {/* Auth */}
           {user ? (
             <div className="hidden md:flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200">
+              {/* Clickable User Jumuiya Pill */}
+              {userJumuiya && (
+                <button
+                  onClick={() => navigate(userJumuiya.path)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all border shadow-xs hover:shadow-md hover:scale-[1.03] cursor-pointer"
+                  style={{
+                    backgroundColor: `${userJumuiya.color}12`,
+                    color: userJumuiya.color,
+                    borderColor: `${userJumuiya.color}35`,
+                  }}
+                  title={`Go to ${userJumuiya.name} Jumuiya`}
+                >
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: userJumuiya.color }} />
+                  <span className="truncate max-w-[130px]">{userJumuiya.name}</span>
+                  {userJumuiya.isFirstYear && (
+                    <span
+                      className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full text-white tracking-wide"
+                      style={{ backgroundColor: userJumuiya.color }}
+                    >
+                      1st Yr
+                    </span>
+                  )}
+                </button>
+              )}
+
               <button
                 onClick={() => setProfileOpen(true)}
                 className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-sm hover:shadow-md hover:scale-105 transition-all cursor-pointer"
@@ -332,6 +359,54 @@ const Headers = () => {
 
               {user ? (
                 <div className="space-y-2">
+                  {/* Dedicated My Jumuiya Quick Access Card */}
+                  {userJumuiya && (
+                    <div
+                      onClick={() => {
+                        navigate(userJumuiya.path);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="p-3 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between gap-3 group active:scale-[0.98]"
+                      style={{
+                        backgroundColor: `${userJumuiya.color}12`,
+                        borderColor: `${userJumuiya.color}35`,
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0"
+                          style={{ backgroundColor: userJumuiya.color }}
+                        >
+                          ⛪
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-xs text-slate-900 leading-tight truncate">
+                              {userJumuiya.name}
+                            </span>
+                            {userJumuiya.isFirstYear && (
+                              <span
+                                className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full text-white shrink-0"
+                                style={{ backgroundColor: userJumuiya.color }}
+                              >
+                                1st Yr
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-500 truncate">
+                            Your Assigned Jumuiya &bull; Tap to Open
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className="text-[10px] font-black px-2.5 py-1 rounded-lg text-white group-hover:translate-x-0.5 transition-transform shrink-0"
+                        style={{ backgroundColor: userJumuiya.color }}
+                      >
+                        Open &rarr;
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3 px-4 py-3">
                     <button
                       onClick={() => {

@@ -1,5 +1,6 @@
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { formatPhotoUrl, deleteFromCloudinary } from "../utils/helpers.js";
 
 /**
  * Helper to resolve jumuiya identifier (slug or UUID) to standard slug/id.
@@ -20,6 +21,27 @@ const resolveJumuiyaKey = async (idOrSlug) => {
     logger.warn(`Could not resolve jumuiya slug for ${idOrSlug}: ${err.message}`);
   }
   return raw;
+};
+
+/**
+ * Resolve a jumuiya identifier (slug/uuid/name) to its sub_groups group_id
+ * (UUID). The orders table stores jumuiya_id as a UUID while the settings
+ * table uses the slug string, so order queries must be keyed by the UUID.
+ */
+const resolveJumuiyaUuid = async (idOrSlug) => {
+  if (!idOrSlug) return null;
+  const raw = String(idOrSlug).trim().toLowerCase();
+  try {
+    const res = await db.query(
+      `SELECT group_id::text AS group_id FROM sub_groups 
+        WHERE LOWER(slug) = $1 OR LOWER(group_id::text) = $1 OR LOWER(name) = $1 LIMIT 1`,
+      [raw]
+    );
+    if (res.rows.length > 0) return res.rows[0].group_id;
+  } catch (err) {
+    logger.warn(`Could not resolve jumuiya uuid for ${idOrSlug}: ${err.message}`);
+  }
+  return null;
 };
 
 /**
@@ -70,25 +92,44 @@ export const updatePaymentSettings = async (req, res) => {
     const slug = await resolveJumuiyaKey(rawId);
     const { payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url } = req.body;
 
+    // Accept any numeric price (no step/parity restriction)
     const price = !isNaN(parseFloat(unit_price)) ? parseFloat(unit_price) : 1200.0;
-    const active = is_active !== undefined ? Boolean(is_active) : true;
+    const active = is_active === undefined ? true
+      : (is_active === true || is_active === "true" || is_active === "1" || is_active === 1);
     const collDate = collection_date || null;
-    const imageUrl = tshirt_image_url || null;
+
+    let imageUrl = tshirt_image_url || null;
+
+    if (req.file) {
+      // Clean up the previously stored Cloudinary asset (if any)
+      try {
+        const existing = await db.query(
+          `SELECT tshirt_image_url FROM jumuiya_tshirt_settings WHERE jumuiya_id = $1 OR jumuiya_id = $2 LIMIT 1`,
+          [slug, rawId]
+        );
+        if (existing.rows.length > 0 && existing.rows[0].tshirt_image_url) {
+          await deleteFromCloudinary(existing.rows[0].tshirt_image_url);
+        }
+      } catch (cleanupErr) {
+        logger.warn("Could not remove old jumuiya t-shirt image: " + cleanupErr.message);
+      }
+      imageUrl = formatPhotoUrl(req.file);
+    }
 
     const result = await db.query(
       `INSERT INTO jumuiya_tshirt_settings
-         (jumuiya_id, payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-       ON CONFLICT (jumuiya_id) DO UPDATE SET
-         payment_phone = EXCLUDED.payment_phone,
-         account_name = EXCLUDED.account_name,
-         payment_instructions = EXCLUDED.payment_instructions,
-         unit_price = EXCLUDED.unit_price,
-         is_active = EXCLUDED.is_active,
-         collection_date = EXCLUDED.collection_date,
-         tshirt_image_url = EXCLUDED.tshirt_image_url,
-         updated_at = NOW()
-       RETURNING *`,
+        (jumuiya_id, payment_phone, account_name, payment_instructions, unit_price, is_active, collection_date, tshirt_image_url, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      ON CONFLICT (jumuiya_id) DO UPDATE SET
+        payment_phone = EXCLUDED.payment_phone,
+        account_name = EXCLUDED.account_name,
+        payment_instructions = EXCLUDED.payment_instructions,
+        unit_price = EXCLUDED.unit_price,
+        is_active = EXCLUDED.is_active,
+        collection_date = EXCLUDED.collection_date,
+        tshirt_image_url = EXCLUDED.tshirt_image_url,
+        updated_at = NOW()
+      RETURNING *`,
       [slug || rawId, payment_phone || "", account_name || "", payment_instructions || "", price, active, collDate, imageUrl]
     );
 
@@ -108,6 +149,7 @@ export const createOrder = async (req, res) => {
   try {
     const rawId = req.params.jumuiyaId;
     const slug = await resolveJumuiyaKey(rawId);
+    const jumuiyaUuid = await resolveJumuiyaUuid(rawId);
     const { holder_name, payer_name, phone, size, quantity, mpesa_code } = req.body;
 
     const memberId = req.user?.member_id || req.user?.id || null;
@@ -135,7 +177,7 @@ export const createOrder = async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending_confirmation', NOW())
        RETURNING *`,
       [
-        slug || rawId,
+        jumuiyaUuid || slug || rawId,
         memberId,
         holder_name.trim(),
         payer_name ? payer_name.trim() : (req.user?.name || holder_name.trim()),
@@ -160,27 +202,29 @@ export const createOrder = async (req, res) => {
  * GET /api/v1/jumuiya-tshirts/:jumuiyaId/my-orders
  * Logged-in member: Get user's own orders for this Jumuiya.
  */
-export const getUserOrders = async (req, res) => {
-  try {
-    const rawId = req.params.jumuiyaId;
-    const slug = await resolveJumuiyaKey(rawId);
-    const memberId = req.user?.member_id || req.user?.id;
-    const userPhone = req.user?.phone;
+  export const getUserOrders = async (req, res) => {
+    try {
+      const rawId = req.params.jumuiyaId;
+      const slug = await resolveJumuiyaKey(rawId);
+      const jumuiyaUuid = await resolveJumuiyaUuid(rawId);
+      const memberId = req.user?.member_id || req.user?.id;
+      const userPhone = req.user?.phone;
 
-    if (!memberId) {
-      return res.status(401).json({ success: false, error: "Authentication required" });
-    }
+      if (!memberId) {
+        return res.status(401).json({ success: false, error: "Authentication required" });
+      }
 
-    let query = `
-      SELECT id, jumuiya_id, member_id, holder_name, payer_name, phone, size, quantity,
-             unit_price, total_amount, mpesa_code, status, rejection_reason,
-             confirmed_at, completed_at, submitted_at
-      FROM jumuiya_tshirt_orders
-      WHERE (jumuiya_id = $1 OR jumuiya_id = $2)
-        AND (member_id = $3 ${userPhone ? "OR phone = $4" : ""})
-      ORDER BY submitted_at DESC
-    `;
-    const params = userPhone ? [slug, rawId, memberId, userPhone] : [slug, rawId, memberId];
+      const orderKey = jumuiyaUuid || slug;
+      let query = `
+        SELECT id, jumuiya_id, member_id, holder_name, payer_name, phone, size, quantity,
+               unit_price, total_amount, mpesa_code, status, rejection_reason,
+               confirmed_at, completed_at, submitted_at
+        FROM jumuiya_tshirt_orders
+        WHERE (jumuiya_id = $1 OR jumuiya_id = $2)
+          AND (member_id = $3 ${userPhone ? "OR phone = $4" : ""})
+        ORDER BY submitted_at DESC
+      `;
+      const params = userPhone ? [orderKey, slug, memberId, userPhone] : [orderKey, slug, memberId];
 
     const result = await db.query(query, params);
     res.json({ success: true, data: result.rows });
@@ -194,21 +238,23 @@ export const getUserOrders = async (req, res) => {
  * GET /api/v1/jumuiya-tshirts/:jumuiyaId/admin/orders
  * Vice-Chair / Admin: Get all orders for the Jumuiya with metrics.
  */
-export const getAdminOrders = async (req, res) => {
-  try {
-    const rawId = req.params.jumuiyaId;
-    const slug = await resolveJumuiyaKey(rawId);
-    const { status, search } = req.query;
+  export const getAdminOrders = async (req, res) => {
+    try {
+      const rawId = req.params.jumuiyaId;
+      const slug = await resolveJumuiyaKey(rawId);
+      const jumuiyaUuid = await resolveJumuiyaUuid(rawId);
+      const orderKey = jumuiyaUuid || slug;
+      const { status, search } = req.query;
 
-    let query = `
-      SELECT id, jumuiya_id, member_id, holder_name, payer_name, phone, size, quantity,
-             unit_price, total_amount, mpesa_code, status, rejection_reason,
-             confirmed_at, confirmed_by, completed_at, completed_by, cancelled_at, cancelled_by,
-             submitted_at
-      FROM jumuiya_tshirt_orders
-      WHERE (jumuiya_id = $1 OR jumuiya_id = $2)
-    `;
-    const params = [slug, rawId];
+      let query = `
+        SELECT id, jumuiya_id, member_id, holder_name, payer_name, phone, size, quantity,
+               unit_price, total_amount, mpesa_code, status, rejection_reason,
+               confirmed_at, confirmed_by, completed_at, completed_by, cancelled_at, cancelled_by,
+               submitted_at
+        FROM jumuiya_tshirt_orders
+        WHERE (jumuiya_id = $1 OR jumuiya_id = $2)
+      `;
+      const params = [orderKey, slug];
 
     if (status && status !== "all") {
       params.push(status);
@@ -241,7 +287,7 @@ export const getAdminOrders = async (req, res) => {
         COALESCE(SUM(CASE WHEN status = 'confirmed' OR status = 'completed' THEN total_amount ELSE 0 END), 0) AS total_revenue
        FROM jumuiya_tshirt_orders
        WHERE jumuiya_id = $1 OR jumuiya_id = $2`,
-      [slug, rawId]
+      [orderKey, slug]
     );
 
     const stats = statsRes.rows[0] || {

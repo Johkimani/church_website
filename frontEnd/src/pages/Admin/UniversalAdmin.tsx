@@ -26,6 +26,7 @@ import {
   Shirt,
   Wallet,
   CalendarCheck2,
+  Share2,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -95,6 +96,7 @@ const menuSections: NavSection[] = [
       { id: 'attendance-tally', name: 'Attendance Tally', icon: CalendarCheck, path: '/admin/attendance-tally' },
       { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
       { id: 'jumuiya-tshirts', name: 'Jumuiya T-Shirts', icon: Shirt, path: '/admin/jumuiya-tshirts' },
+      { id: 'jumuiya-channels', name: 'Channels', icon: Share2, path: '/admin/jumuiya-channels' },
     ],
   },
   {

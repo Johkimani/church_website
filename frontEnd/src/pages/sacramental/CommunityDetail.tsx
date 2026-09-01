@@ -15,11 +15,12 @@ import CommunityNotificationsTab from './components/tabs/CommunityNotificationsT
 import CommunityRequestTab from './components/tabs/CommunityRequestTab';
 import CommunitySuggestionsTab from './components/tabs/CommunitySuggestionsTab';
 import CommunityNoticeBoardTab from './components/tabs/CommunityNoticeBoardTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn } from 'react-icons/fa';
+import CommunitySongsTab from './components/tabs/CommunitySongsTab';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn, FaMusic } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
-type TabType = 'about' | 'noticeboard' | 'officials' | 'activities' | 'members' | 'channels' | 'tshirts' | 'suggestions' | 'settings' | 'request';
+type TabType = 'about' | 'songs' | 'noticeboard' | 'officials' | 'activities' | 'members' | 'channels' | 'tshirts' | 'suggestions' | 'settings' | 'request';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e40af',
@@ -43,6 +44,7 @@ const DEFAULT_COMMUNITY_IMAGE = 'https://images.unsplash.com/photo-1438029071396
 
 const TAB_ICONS: Record<TabType, React.ReactNode> = {
   about: <FaInfoCircle />,
+  songs: <FaMusic />,
   noticeboard: <FaBullhorn />,
   officials: <FaUserTie />,
   activities: <FaCalendarAlt />,
@@ -56,6 +58,7 @@ const TAB_ICONS: Record<TabType, React.ReactNode> = {
 
 const TAB_LABELS: Record<TabType, string> = {
   about: 'About',
+  songs: 'Songbook',
   noticeboard: 'Notice Board',
   officials: 'Officials',
   activities: 'Activities',
@@ -67,7 +70,8 @@ const TAB_LABELS: Record<TabType, string> = {
   request: 'Request',
 };
 
-const TAB_ORDER: TabType[] = ['about', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
+const DEFAULT_TAB_ORDER: TabType[] = ['about', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions'];
+
 
 const GROUP_ROLES_BY_MODULE: Record<string, string[]> = {
   choir: ['choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer', 'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative'],
@@ -120,11 +124,15 @@ const CommunityDetail: React.FC = () => {
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
 
+  const tabOrder: TabType[] = moduleIdClean === 'choir'
+    ? ['about', 'songs', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions']
+    : DEFAULT_TAB_ORDER;
+
   // Sync activeTab with URL query parameter (e.g. ?tab=members)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab') as TabType;
-    if (tabParam && (TAB_ORDER.includes(tabParam) || tabParam === 'settings' || tabParam === 'request')) {
+    if (tabParam && (tabOrder.includes(tabParam) || tabParam === 'settings' || tabParam === 'request')) {
       setActiveTab(tabParam);
     }
   }, [location.search]);
@@ -138,12 +146,15 @@ const CommunityDetail: React.FC = () => {
     return () => { document.body.style.overflow = ''; };
   }, [isSidebarOpen]);
 
+
   const renderTabContent = () => {
     if (!moduleData) return null;
 
     switch (activeTab) {
       case 'about':
         return <CommunityAboutTab module={moduleData} color={detailColor} onNavigateBack={() => navigate('/community')} onQuickLink={(tab) => setTabWithUrl(tab)} />;
+      case 'songs':
+        return <CommunitySongsTab moduleId={moduleIdClean} color={detailColor} />;
       case 'noticeboard':
         return <CommunityNoticeBoardTab module={moduleData} color={detailColor} />;
       case 'officials':
@@ -203,7 +214,7 @@ const CommunityDetail: React.FC = () => {
     );
   }
 
-  const activeIndex = TAB_ORDER.indexOf(activeTab);
+  const activeIndex = tabOrder.indexOf(activeTab);
 
   return (
     <div
@@ -250,7 +261,7 @@ const CommunityDetail: React.FC = () => {
         </div>
 
         <nav className="sidebar-nav">
-          {TAB_ORDER.map((tabId, idx) => {
+          {tabOrder.map((tabId, idx) => {
             const isActive = activeTab === tabId;
             return (
               <button

@@ -23,7 +23,7 @@ function formatJumuiyaName(slugOrUuid: string): string {
   return slugOrUuid.length > 20 ? slugOrUuid.slice(0, 8) + "…" : slugOrUuid;
 }
 
-import { getYearOfStudy, isGraduated, getIntakeYearLabel } from "../../../utils/memberYear";
+import { getYearOfStudy, isGraduated, getIntakeYearLabel, genderCode, isMale, isFemale } from "../../../utils/memberYear";
 
 const styles = `
   .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -98,7 +98,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
         selected.forEach(k => {
           if (k === "RegNo") out.RegNo = row.member_id || row.id || "";
           else if (k === "Name") out.Name = row.name || "";
-          else if (k === "Gender") out.Gender = row.gender === "male" || row.gender === "Male" ? "Male" : row.gender === "female" || row.gender === "Female" ? "Female" : row.gender || "";
+          else if (k === "Gender") out.Gender = isMale(row.gender) ? "Male" : isFemale(row.gender) ? "Female" : (row.gender || "").trim() || "";
           else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
           else if (k === "Year") out.Year = getYearOfStudy(row.member_id || row.id || "") || "";
@@ -189,7 +189,36 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     setSaving(true);
     try {
       const payload = { ...editForm };
-      if (payload.member_id === memberId) delete payload.member_id;
+      const newReg = (payload.member_id || "").trim();
+      const regChanged = newReg !== (memberId || "").trim();
+
+      // If the registration number (the PK + login username) is being changed,
+      // that is a system-wide re-key across every table. Route it through the
+      // dedicated endpoint (the generic updateMember can't re-key a member with
+      // child rows), and confirm the side-effects with the user first.
+      if (regChanged) {
+        const warn =
+          "Changing the registration number re-keys this member across the ENTIRE system " +
+          "(membership, roles, contributions, attendance, officials, payment records).\n\n" +
+          "The member will log in with the NEW number from now on; the old number stops working. " +
+          "If their password is still the default, it is reset to the new number and they will be prompted to change it.\n\n" +
+          "Continue?";
+        if (!confirm(warn)) {
+          setSaving(false);
+          return;
+        }
+        const regRes = await memberService.changeMemberReg(memberId, newReg);
+        setMembers(prev => prev.map(m =>
+          (m.member_id === memberId || m.id === memberId)
+            ? { ...m, ...regRes.data, member_id: newReg, id: newReg }
+            : m
+        ));
+        setEditingId(null);
+        setSaving(false);
+        return;
+      }
+
+      delete payload.member_id;
       const res = await memberService.updateMember(memberId, payload);
       setMembers(prev => prev.map(m =>
         (m.member_id === memberId || m.id === memberId)
@@ -198,7 +227,14 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       ));
       setEditingId(null);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Failed to update member");
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "Failed to update member";
+      // "Member not found" usually means the row's reg went stale because the
+      // member's identity changed elsewhere — refresh the list so the table
+      // reflects current keys instead of leaving the user stuck.
+      if (/not found/i.test(msg)) {
+        await fetchMembers();
+      }
+      alert(msg);
     } finally {
       setSaving(false);
     }
@@ -450,8 +486,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                             <option value="female">Female</option>
                           </select>
                         ) : (
-                          <span className={`text-xs font-semibold ${m.gender === "male" || m.gender === "Male" ? "text-blue-600" : m.gender === "female" || m.gender === "Female" ? "text-pink-600" : "text-slate-400"}`}>
-                            {m.gender === "male" || m.gender === "Male" ? "M" : m.gender === "female" || m.gender === "Female" ? "W" : "—"}
+                          <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                            {genderCode(m.gender)}
                           </span>
                         )}
                       </td>

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Users, ArrowLeft, Church, RefreshCw, UserPlus, Upload, Search, ThumbsDown, Edit2, Save, Trash2, GraduationCap, UserCheck, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { getYearOfStudy } from "../../../utils/memberYear";
+import { getYearOfStudy, isMale, isFemale, genderCode } from "../../../utils/memberYear";
 import { useAuth } from "../../../context/AuthContext";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
@@ -54,11 +54,11 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
   const totalJum = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.jum?.total || 0), 0);
   const totalCSA = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.csa?.total || 0), 0);
   const totalMale = Object.values(stats).reduce((sum: number, s: any) => {
-    const m = s?.genderBreakdown?.find((g: any) => g.gender === "Male" || g.gender === "male");
+    const m = s?.genderBreakdown?.find((g: any) => isMale(g.gender));
     return sum + (m?.count || 0);
   }, 0);
   const totalFemale = Object.values(stats).reduce((sum: number, s: any) => {
-    const f = s?.genderBreakdown?.find((g: any) => g.gender === "Female" || g.gender === "female");
+    const f = s?.genderBreakdown?.find((g: any) => isFemale(g.gender));
     return sum + (f?.count || 0);
   }, 0);
 
@@ -147,8 +147,8 @@ function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any;
   const totalMembers = s?.totalMembers || 0;
   const hasData = totalMembers > 0;
   const isLocked = !onClick;
-  const maleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Male" || g.gender === "male")?.count || 0);
-  const femaleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Female" || g.gender === "female")?.count || 0);
+  const maleTotal = (s?.genderBreakdown?.find((g: any) => isMale(g.gender))?.count || 0);
+  const femaleTotal = (s?.genderBreakdown?.find((g: any) => isFemale(g.gender))?.count || 0);
 
   return (
     <button
@@ -553,6 +553,7 @@ export default function JumuiyaMembersAdmin() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
@@ -564,10 +565,11 @@ export default function JumuiyaMembersAdmin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rejectedMembers.map(m => {
+                    {rejectedMembers.map((m, idx) => {
                       const isEditing = editingRejected === m.id;
                       return (
                         <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
                           <td className="py-2 px-3">
                             {isEditing ? (
                               <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
@@ -593,8 +595,8 @@ export default function JumuiyaMembersAdmin() {
                                 <option value="Female">Female</option>
                               </select>
                             ) : (
-                              <span className={`text-xs font-semibold ${m.gender === "Male" ? "text-blue-600" : "text-pink-600"}`}>
-                                {m.gender === "Male" ? "M" : m.gender === "Female" ? "W" : "—"}
+                              <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                                {genderCode(m.gender)}
                               </span>
                             )}
                           </td>

@@ -8,6 +8,7 @@ import './TabsSystem.css';
 interface ChannelsTabProps {
     socialMedia: SocialMedia[];
     jumuiyaId?: string; // group_id from the jumuiya record
+    isMember?: boolean; // whether the viewer belongs to this jumuiya
 }
 
 // The 3 fixed categories for every Jumuiya gallery
@@ -47,11 +48,21 @@ const getPlatformIcon = (platform: string) => {
     return <FaGlobe />;
 };
 
-const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, jumuiyaId }) => {
+const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, jumuiyaId, isMember }) => {
     const [albums, setAlbums] = useState<AlbumView[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedAlbum, setSelectedAlbum] = useState<AlbumView | null>(null);
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+    // WhatsApp group links are only shown to members of the jumuiya so that
+    // non-members cannot crowd the groups. Other channels (Facebook, TikTok)
+    // remain public.
+    const visibleSocial = isMember
+        ? socialMedia
+        : socialMedia.filter((c) => {
+              const p = (c.platform || '').toLowerCase();
+              return !(p.includes('whatsapp') || p.includes('whats app'));
+          });
 
     useEffect(() => {
         if (!jumuiyaId) return;
@@ -140,7 +151,7 @@ const ChannelsTab: React.FC<ChannelsTabProps> = ({ socialMedia, jumuiyaId }) => 
                     <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
                 </div>
                 <div className="tab-grid">
-                    {socialMedia.map((channel, index) => (
+                    {visibleSocial.map((channel, index) => (
                         <a
                             key={index}
                             href={channel.url}

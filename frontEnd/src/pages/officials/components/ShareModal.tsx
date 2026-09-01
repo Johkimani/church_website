@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Share2, Copy, Send, Mail, CheckCircle } from 'lucide-react';
+import { X, Share2, Copy, Mail, CheckCircle } from 'lucide-react';
 import { showSuccessToast } from '../../../utils/customToast';
 import type { Official } from '../../../hooks/useOfficials';
 import { JUMUIYA_OPTIONS, GROUP_OPTIONS } from '../constants/adminConstants';
@@ -50,16 +50,12 @@ export function ShareModal({ isOpen, onClose, officials, mode }: ShareModalProps
 
  if (!isOpen) return null;
 
- const copyToClipboard = () => {
- navigator.clipboard.writeText(shareText);
- showSuccessToast('Copied to Clipboard', 'The text list has been successfully copied.');
- };
+  const copyToClipboard = () => {
+  navigator.clipboard.writeText(shareText);
+  showSuccessToast('Copied to Clipboard', 'The text list has been successfully copied.');
+  };
 
- const shareWhatsApp = () => {
- window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
- };
-
- const shareEmail = () => {
+  const shareEmail = () => {
  window.location.href = `mailto:?subject=Church Officials List&body=${encodeURIComponent(shareText)}`;
  };
 
@@ -140,29 +136,22 @@ export function ShareModal({ isOpen, onClose, officials, mode }: ShareModalProps
  </div>
  </div>
 
- <div className="p-6 border-t border-gray-100 bg-gray-50/50 grid grid-cols-2 gap-3">
- <button 
- onClick={copyToClipboard}
- className="flex items-center justify-center gap-2 px-4 py-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 :bg-gray-700 transition-all active:scale-[0.98]"
- >
- <Copy className="w-4 h-4" />
- Copy
- </button>
- <button 
- onClick={shareWhatsApp}
- className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white font-bold rounded-xl shadow-md hover:bg-green-700 transition-all active:scale-[0.98]"
- >
- <Send className="w-4 h-4" />
- WhatsApp
- </button>
- <button 
- onClick={shareEmail}
- className="col-span-2 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border border-indigo-100 hover:bg-indigo-100 :bg-indigo-900/60 transition-all active:scale-[0.98]"
- >
- <Mail className="w-4 h-4" />
- Email List
- </button>
- </div>
+  <div className="p-6 border-t border-gray-100 bg-gray-50/50 grid grid-cols-2 gap-3">
+  <button 
+  onClick={copyToClipboard}
+  className="flex items-center justify-center gap-2 px-4 py-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 :bg-gray-700 transition-all active:scale-[0.98]"
+  >
+  <Copy className="w-4 h-4" />
+  Copy
+  </button>
+  <button 
+  onClick={shareEmail}
+  className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border border-indigo-100 hover:bg-indigo-100 :bg-indigo-900/60 transition-all active:scale-[0.98]"
+  >
+  <Mail className="w-4 h-4" />
+  Email List
+  </button>
+  </div>
  </div>
  </div>
  );

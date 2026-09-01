@@ -47,6 +47,19 @@ export const copyWhatsAppLink = async (slug: string, name: string) => {
   }
 };
 
+const getRegistrationBaseUrl = () => {
+  if (
+    typeof window !== "undefined" &&
+    (window.location.origin.includes("localhost") ||
+      window.location.origin.includes("127.0.0.1"))
+  ) {
+    return "https://csakyu.com";
+  }
+  return typeof window !== "undefined"
+    ? window.location.origin
+    : "https://csakyu.com";
+};
+
 export default function CopyWhatsAppButton({
   jumuiyaSlug,
   jumuiyaName,
@@ -54,6 +67,7 @@ export default function CopyWhatsAppButton({
   className = "",
 }: CopyWhatsAppButtonProps) {
   const [copied, setCopied] = useState(false);
+  const registrationUrl = `${getRegistrationBaseUrl()}/register/${jumuiyaSlug}`;
 
   const handleCopy = async () => {
     const ok = await copyWhatsAppLink(jumuiyaSlug, jumuiyaName);
@@ -94,12 +108,21 @@ export default function CopyWhatsAppButton({
         >
           <MessageCircle size={14} />
         </button>
+        <a
+          href={registrationUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-bold text-blue-600 underline underline-offset-2 hover:text-blue-700"
+          title="Open registration page"
+        >
+          {registrationUrl.replace(/^https?:\/\//, "")}
+        </a>
       </div>
     );
   }
 
   return (
-    <div className={`inline-flex items-center gap-1.5 ${className}`}>
+    <div className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
       <button
         type="button"
         onClick={handleCopy}
@@ -128,6 +151,15 @@ export default function CopyWhatsAppButton({
       >
         <Share2 size={16} />
       </button>
-    </div>
+    <a
+      href={registrationUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-xs font-bold text-blue-600 underline underline-offset-2 hover:text-blue-700"
+      title="Open registration page"
+    >
+      {registrationUrl.replace(/^https?:\/\//, "")}
+    </a>
+  </div>
   );
 }

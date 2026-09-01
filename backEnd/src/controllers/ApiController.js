@@ -1,4 +1,5 @@
-import { db as pool } from "../Configs/dbConfig.js";
+import { db as pool, withTransaction } from "../Configs/dbConfig.js";
+import { cascadeDeleteRow } from "../utils/cascadeDelete.js";
 import logger from "../logger/winston.js";
 import { parsePagination } from "../utils/pagination.js";
 
@@ -248,6 +249,23 @@ export const deleteRecord = async (tableName, id) => {
   const dbTableName = tableName === 'jumuiya' ? 'sub_groups' : tableName;
   const pkName = TABLE_PRIMARY_KEYS[dbTableName] || 'id';
   try {
+    // Members can be referenced by other tables whose foreign keys are defined
+    // WITHOUT ON DELETE CASCADE (e.g. pending_payments, member_roles,
+    // notifications). A bare DELETE FROM members would then fail with a
+    // foreign-key constraint for any member referenced elsewhere. Clear every
+    // referencing table first so the delete always succeeds.
+    if (dbTableName === 'members') {
+      await withTransaction(async (client) => {
+        // Members can be referenced through foreign keys that are NOT defined
+        // with ON DELETE CASCADE (e.g. pending_payments, member_roles,
+        // notifications) and those tables can in turn reference others. Delete
+        // the member by recursively clearing the entire FK dependency tree so
+        // the final DELETE FROM members never hits a constraint violation.
+        await cascadeDeleteRow(client, 'members', 'member_id', id);
+      });
+      return { id, deleted: true };
+    }
+
     const query = `DELETE FROM "${dbTableName}" WHERE "${pkName}" = $1 RETURNING *`;
     const result = await pool.query(query, [id]);
     return maybeSanitize(tableName, result.rows)[0];

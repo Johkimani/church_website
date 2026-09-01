@@ -30,7 +30,7 @@ interface Props {
   module: CommunityModule;
   color: string;
   onNavigateBack: () => void;
-  onQuickLink?: (tab: 'officials' | 'activities' | 'channels' | 'tshirts' | 'members' | 'suggestions') => void;
+  onQuickLink?: (tab: 'songs' | 'officials' | 'activities' | 'channels' | 'tshirts' | 'members' | 'suggestions') => void;
 }
 
 const STATUS_STYLE: Record<string, { bg: string; dot: string }> = {
@@ -129,6 +129,30 @@ export default function CommunityAboutTab({ module, color, onNavigateBack, onQui
             Our story
           </h2>
           <p className="mt-2 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{story}</p>
+        </section>
+      )}
+
+      {/* ——— Choir Songbook Highlight Banner (Choir Only) ——— */}
+      {module.id === 'choir' && (
+        <section className="mt-6 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/30 border border-blue-400/30 text-[10px] font-black uppercase tracking-wider text-blue-200">
+                <FaMusic size={10} /> Mass Repertoire & Sheet Music
+              </span>
+              <h3 className="text-lg font-black text-white">Choir Digital Songbook</h3>
+              <p className="text-xs text-blue-200/85 max-w-md">
+                Browse Sunday hymns, Marian songs, offertory & communion pieces with zoomable sheet music & extracted lyrics.
+              </p>
+            </div>
+            <button
+              onClick={() => onQuickLink?.('songs')}
+              className="px-5 py-2.5 rounded-xl bg-white text-blue-950 font-black text-xs shadow-lg hover:bg-blue-50 transition-all flex items-center gap-2 flex-shrink-0"
+            >
+              Open Songbook <FaArrowRight size={11} />
+            </button>
+          </div>
         </section>
       )}
 
@@ -236,45 +260,6 @@ export default function CommunityAboutTab({ module, color, onNavigateBack, onQui
           {module.meetingSchedule && schedules.length === 0 && (
             <p className="mt-2 text-sm text-slate-600">{module.meetingSchedule}</p>
           )}
-        </section>
-      )}
-
-      {/* ——— Our leaders ——— */}
-      {leaders.length > 0 && (
-        <section className="mt-6">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-              <span className="h-4 w-1 rounded-full" style={{ background: color }} />
-              Our leaders
-            </h2>
-            <button
-              onClick={() => onQuickLink?.("officials")}
-              className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
-              style={{ color }}
-            >
-              See all <FaArrowRight size={10} />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {leaders.map((o) => (
-              <div key={o.id} className="rounded-2xl border border-slate-200 bg-white px-3 py-3 flex items-center gap-2.5 shadow-sm">
-                {o.photoUrl ? (
-                  <img src={o.photoUrl} alt={o.name} className="h-9 w-9 rounded-full object-cover ring-2 ring-slate-100" />
-                ) : (
-                  <span
-                    className="grid place-items-center h-9 w-9 rounded-full text-white text-xs font-bold"
-                    style={{ background: color }}
-                  >
-                    {(o.name || "?").charAt(0).toUpperCase()}
-                  </span>
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{o.name}</p>
-                  <p className="text-xs font-semibold mt-0.5" style={{ color }}>{o.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
       )}
 

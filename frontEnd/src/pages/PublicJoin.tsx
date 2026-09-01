@@ -422,7 +422,16 @@ export default function PublicJoin() {
               <p>
                 The Jumuiya coordinator will review your details and assign you to a Jumuiya.
                 You will be able to log in using your Registration Number as your initial password.
-                Visit <span className="font-bold">csakyu.com</span> to learn more about CSA Kirinyaga.
+                Visit{" "}
+                <a
+                  href="https://csakyu.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold underline"
+                >
+                  csakyu.com
+                </a>{" "}
+                to learn more about CSA Kirinyaga.
               </p>
             </div>
           </div>

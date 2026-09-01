@@ -1,6 +1,7 @@
 import { Router } from "express";
 import verifyToken from "../../middlewares/Tokens.js";
 import { requireRole, enforceJumuiyaScope } from "../../middlewares/requireRole.js";
+import { uploadJumuiyaTshirtMiddleware } from "../../middlewares/uploadMiddleware.js";
 import {
   getPaymentSettings,
   updatePaymentSettings,
@@ -26,8 +27,8 @@ const scopedToJumuiya = enforceJumuiyaScope((req) => req.params.jumuiyaId);
 // Public/Member read
 router.get("/:jumuiyaId/settings", getPaymentSettings);
 
-// Vice-Chairperson & Admin update
-router.put("/:jumuiyaId/settings", verifyToken, tshirtAdminGate, scopedToJumuiya, updatePaymentSettings);
+// Vice-Chairperson & Admin update (accepts optional `tshirt_image` file upload)
+router.put("/:jumuiyaId/settings", verifyToken, tshirtAdminGate, scopedToJumuiya, uploadJumuiyaTshirtMiddleware, updatePaymentSettings);
 
 // 2. Member Order Placement & Tracking
 router.post("/:jumuiyaId/orders", verifyToken, createOrder);

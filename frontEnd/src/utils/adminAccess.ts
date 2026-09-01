@@ -63,6 +63,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/community-management",
   "/admin/activity-log",
   "/admin/whatsapp-links",
+  "/admin/jumuiya-channels",
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
   "/admin/jumuiya-suggestions",
@@ -86,6 +87,7 @@ const CHAIR_FORBIDDEN_PATHS = [
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
   "/admin/jumuiya-suggestions",
+  "/admin/jumuiya-channels",
 ];
 
 export const hasAnyAdminAccess = (roles: string[]): boolean =>
@@ -138,7 +140,6 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");
         prefixes.add("/admin/activity-log");
-        prefixes.add("/admin/bookings");
         break;
       case "OS":
         prefixes.add("/admin/announcements");
@@ -154,6 +155,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/semester-activities");
         prefixes.add("/admin/whatsapp-links");
         prefixes.add("/admin/community-updates");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "PROJECT_MANAGER":
         prefixes.add("/admin/sacramentals-banners");
@@ -190,6 +192,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/semester-activities");
         prefixes.add("/admin/community-updates");
         prefixes.add("/admin/jumuiya-tshirts");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "JUMUIYA_VICE_CHAIRPERSON":
         prefixes.add("/admin/community-updates");
@@ -200,6 +203,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/community-updates");
+        prefixes.add("/admin/jumuiya-channels");
         break;
       case "CHOIR_CHAIRPERSON":
       case "CHOIR_VICE_CHAIR":

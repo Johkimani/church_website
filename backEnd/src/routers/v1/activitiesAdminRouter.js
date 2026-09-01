@@ -210,9 +210,9 @@ router.post(
 );
 
 // Booking lists expose member PII (name, email, phone, reg, jumuiya) and
-// payment info, so reads are gated to the same officials who may write to them.
-router.get("/bookings", verifyToken, requireRole("os", "csa_chair", "jumuiya_coordinator"), getBookings);
-router.get("/bookings/export", verifyToken, requireRole("os", "csa_chair", "jumuiya_coordinator"), exportBookingsExcel);
+// payment info, so reads are gated to the CSA OS / CSA chairperson only.
+router.get("/bookings", verifyToken, requireRole("os", "csa_chair"), getBookings);
+router.get("/bookings/export", verifyToken, requireRole("os", "csa_chair"), exportBookingsExcel);
 // CSA OS (or chair) books an activity on a member's behalf when the member
 // approaches them in person. Non-member guests are also supported (event-only).
 router.post("/bookings", verifyToken, requireRole("os", "csa_chair"), createBookingForMember);

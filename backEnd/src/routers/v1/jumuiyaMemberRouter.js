@@ -103,10 +103,12 @@ router.get("/:jumuiya_id/csa-allocations", verifyToken, requireRole(...JUMUIYA_R
 router.get("/:jumuiya_id/export/members", verifyToken, requireRole(...JUMUIYA_READ_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), exportMembers);
 router.get("/:jumuiya_id/export/assignments", verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.params?.jumuiya_id), exportAssignments);
 
-// Member lookup (by reg number — officials only)
-router.get("/lookup/reg-number/:search", verifyToken, requireRole(...OFFICIAL_ROLES), lookupMemberByRegNumber);
+// Member lookup (by reg number — officials only). The search string is sent as
+// a query param (?search=...) because registration numbers contain slashes.
+router.get("/lookup/reg-number", verifyToken, requireRole(...OFFICIAL_ROLES), lookupMemberByRegNumber);
 
 // Flag a single member (update handled by jumuiyaMembersRouter at routers/jumuiyaMembersRouter.js)
-router.patch("/:member_id/flag", verifyToken, requireRole(...OFFICIAL_ROLES), flagMember);
+// id travels as ?member_id=... (registration numbers may contain slashes)
+router.patch("/flag", verifyToken, requireRole(...OFFICIAL_ROLES), flagMember);
 
 export default router;

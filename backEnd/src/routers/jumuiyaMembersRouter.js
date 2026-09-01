@@ -6,6 +6,7 @@ import {
   getAllMembersAcrossJumuiyas,
   createJumuiyaMember,
   updateJumuiyaMember,
+  changeMemberReg,
   deleteJumuiyaMember,
   getUnregisteredMembers,
   bulkJoinJumuiya,
@@ -81,9 +82,16 @@ router.post('/bulk-join', verifyToken, requireRole(...JUMUIYA_ROLES), enforceJum
 router.post('/bulk-register-with-payment', verifyToken, enforceJumuiyaScope((req) => req.body?.jumuiya_id), bulkRegisterWithPayment);
 router.post('/register-with-payment', verifyToken, enforceJumuiyaScope((req) => req.body?.jumuiya_id), registerWithPayment);
 router.post('/send-stamp-card', verifyToken, sendStampCard);
-router.put('/:id', verifyToken, requireRole(...OFFICIAL_ROLES), updateJumuiyaMember);
-router.delete('/:id', verifyToken, requireRole(...OFFICIAL_ROLES), deleteJumuiyaMember);
-router.delete('/unregister/:id', verifyToken, requireRole(...OFFICIAL_ROLES), unregisterJumuiyaMember);
+router.put('/', verifyToken, requireRole(...OFFICIAL_ROLES), updateJumuiyaMember);
+// CSA executives only: changing a reg re-keys the member system-wide (PK +
+// login username), so it is intentionally restricted above the per-jumuiya
+// official roles. Body carries { id, newReg } — query/id is also accepted.
+// dryRun:true verifies the change and rolls it back without persisting.
+router.patch('/reg-number', verifyToken, requireRole(...CSA_ROLES), changeMemberReg);
+// Note: id is sent as a query parameter (e.g. ?id=ED100/G/18019/23) so that
+// registration numbers containing slashes survive URL routing intact.
+router.delete('/', verifyToken, requireRole(...OFFICIAL_ROLES), deleteJumuiyaMember);
+router.delete('/unregister', verifyToken, requireRole(...OFFICIAL_ROLES), unregisterJumuiyaMember);
 
 router.get('/associates/pending', verifyToken, requireRole(...CSA_ROLES), getPendingMigrationMembers);
 router.post('/associates/migrate', verifyToken, requireRole(...CSA_ROLES), migrateToAssociates);

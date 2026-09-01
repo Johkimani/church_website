@@ -809,6 +809,11 @@ export const getJumuiyaOfficialsByTerm = async (req, res) => {
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE o.election_term_id = $1 AND o.status = 'archived'`;
       params = [termId];
+      const category = req.query.category;
+      if (category) {
+        queryBase += ` AND o.category = $2`;
+        params.push(category);
+      }
     } else if (req.query.only_archived === 'true') {
       queryBase = `
         FROM jumuiya_officials o
