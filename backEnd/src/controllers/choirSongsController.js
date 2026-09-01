@@ -81,12 +81,13 @@ Return ONLY a valid JSON object (no markdown code blocks outside JSON) with this
 category must be one of: marian, mwanzo, utukufu, sadaka, komunyo, shukrani, kutoka, kwaresma, pasaka, noeli, pentecost, patron, general.
 language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
 
-  // Try these Gemini models in order — newest first (best free-tier availability)
+  // Active Gemini models for Google AI Studio API keys (ordered by reliability)
   const GEMINI_MODELS = [
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-flash-latest",
+    "gemini-3.1-flash-lite",
+    "gemini-3.7-flash",
   ];
 
   for (const model of GEMINI_MODELS) {
@@ -112,7 +113,13 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
               maxOutputTokens: 2048,
             },
           },
-          { timeout: 25000 }
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey,
+            },
+            timeout: 25000,
+          }
         );
 
         const rawText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -131,12 +138,12 @@ language must be one of: Swahili, English, Luo, Kikuyu, Kamba, Latin, Other.`;
       } catch (err) {
         const status = err.response?.status;
         const msg = err.response?.data?.error?.message || err.message || "";
-        const isOverloaded = status === 503 || status === 429 || /overloaded|quota|rate/i.test(msg);
+        const isOverloaded = status === 503 || status === 429 || /overloaded|spikes in demand|quota|rate/i.test(msg);
 
         logger.warn(`Gemini [${model}] attempt ${attempt} failed (${status}): ${msg}`);
 
         if (isOverloaded && attempt < 2) {
-          await new Promise(r => setTimeout(r, 3000));
+          await new Promise(r => setTimeout(r, 2000));
           continue;
         }
         break;
