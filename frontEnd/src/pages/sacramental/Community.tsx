@@ -104,24 +104,25 @@ const Community: React.FC = () => {
             const color = MINISTRY_COLORS[community.id] || community.color || '#7c2d12';
 
             return (
-              <button
+              <div
                 key={community.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 aria-label={`View ${community.title}`}
                 className="jumuiya-card card-clickable animate-fade-in"
                 style={{
                   ['--jumuiya-color' as any]: color,
+                  cursor: 'pointer',
                 }}
                 onClick={() => handleCardClick(community.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(community.id); }}
               >
                 {/* Background Image */}
-                <div className="card-background">
-                  <img
-                    src={image.replace(/^http:\/\//i, 'https://')}
-                    alt=""
-                    className="w-full h-full object-cover object-center"
-                  />
-                </div>
+                <img
+                  src={image.replace(/^http:\/\//i, 'https://')}
+                  alt=""
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0 }}
+                />
                 <div className="card-overlay" />
 
                 {/* Card Content */}
@@ -134,25 +135,25 @@ const Community: React.FC = () => {
                     <span className="card-link">Explore Ministry →</span>
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
 
           {/* Our Jumuiyas — dedicated link card (not a ministry group) */}
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             aria-label="View Our Jumuiyas"
             className="jumuiya-card card-clickable animate-fade-in"
-            style={{ ['--jumuiya-color' as any]: '#1d4ed8' }}
+            style={{ ['--jumuiya-color' as any]: '#1d4ed8', cursor: 'pointer' }}
             onClick={() => navigate('/jumuiya')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/jumuiya'); }}
           >
-            <div className="card-background">
-              <img
-                src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"
-                alt=""
-                className="w-full h-full object-cover object-center"
-              />
-            </div>
+            <img
+              src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"
+              alt=""
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0 }}
+            />
             <div className="card-overlay" />
             <div className="card-content">
               <div className="card-header">
@@ -165,7 +166,7 @@ const Community: React.FC = () => {
                 <span className="card-link">Visit the Jumuiyas →</span>
               </div>
             </div>
-          </button>
+          </div>
         </div>
 
         {/* My Communities — logged-in members see their enrollment status */}
