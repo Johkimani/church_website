@@ -7,6 +7,8 @@ import {
   getSongs,
   getCategoriesAndStats,
   getSongById,
+  checkDuplicateSong,
+  batchCreateSongs,
   extractLyricsOcr,
   createSong,
   updateSong,
@@ -48,6 +50,7 @@ const handleMulterOcr = (req, res, next) => {
 router.get("/programmes", optionalAuth, getProgrammes);
 router.post("/programmes/toggle", optionalAuth, toggleSongInProgramme);
 router.get("/stats", optionalAuth, getCategoriesAndStats);
+router.get("/check-duplicate", optionalAuth, checkDuplicateSong);
 router.get("/", optionalAuth, getSongs);
 router.get("/:id", optionalAuth, getSongById);
 
@@ -58,6 +61,15 @@ router.post(
   requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
   handleMulterOcr,
   extractLyricsOcr
+);
+
+// Admin routes — Batch create multiple songs from one sheet
+router.post(
+  "/batch-create",
+  verifyToken,
+  requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
+  handleMulterSong,
+  batchCreateSongs
 );
 
 // Admin routes — Create, Update, Delete songs

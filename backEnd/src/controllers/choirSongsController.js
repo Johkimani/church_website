@@ -659,6 +659,157 @@ export const getSongById = async (req, res) => {
 };
 
 /**
+ * GET /choir-songs/check-duplicate — Smart fuzzy duplicate detector against full database
+ */
+export const checkDuplicateSong = async (req, res) => {
+  try {
+    const title = (req.query.title || "").trim();
+    const moduleId = (req.query.module_id || "choir").toLowerCase();
+    const excludeId = req.query.exclude_id ? parseInt(req.query.exclude_id, 10) : null;
+
+    if (!title) {
+      return res.json({ success: true, isDuplicate: false, duplicate: null });
+    }
+
+    const normTitle = title.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    let query = `SELECT id, module_id, title, category, composer, key_signature, language, lyrics_text, image_url, created_at FROM choir_songs WHERE module_id = $1`;
+    const params = [moduleId];
+    if (excludeId) {
+      query += ` AND id != $2`;
+      params.push(excludeId);
+    }
+
+    const result = await db.query(query, params);
+    
+    let match = null;
+    for (const song of result.rows) {
+      const sNorm = (song.title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (!sNorm) continue;
+
+      // Exact normalized match
+      if (sNorm === normTitle) {
+        match = song;
+        break;
+      }
+      // Substring match for titles >= 4 chars
+      if (normTitle.length >= 4 && sNorm.length >= 4) {
+        if (sNorm.includes(normTitle) || normTitle.includes(sNorm)) {
+          match = song;
+          break;
+        }
+      }
+    }
+
+    if (match) {
+      return res.json({
+        success: true,
+        isDuplicate: true,
+        duplicate: match,
+      });
+    }
+
+    return res.json({
+      success: true,
+      isDuplicate: false,
+      duplicate: null,
+    });
+  } catch (error) {
+    logger.error("Error checking song duplicate: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to check duplicate" });
+  }
+};
+
+/**
+ * POST /choir-songs/batch-create — Admin: Batch save multiple songs extracted from sheet image(s)
+ */
+export const batchCreateSongs = async (req, res) => {
+  try {
+    let songsData = [];
+    if (req.body.songs) {
+      songsData = typeof req.body.songs === "string" ? JSON.parse(req.body.songs) : req.body.songs;
+    } else if (Array.isArray(req.body)) {
+      songsData = req.body;
+    }
+
+    if (!Array.isArray(songsData) || songsData.length === 0) {
+      return res.status(400).json({ success: false, error: "Songs array is required" });
+    }
+
+    const moduleId = (req.body.module_id || "choir").toLowerCase();
+    let imageUrl = req.body.image_url || "";
+    let cloudinaryPublicId = null;
+    let additionalImages = [];
+
+    if (req.files?.sheet_image?.[0]) {
+      imageUrl = formatPhotoUrl(req.files.sheet_image[0]);
+      cloudinaryPublicId = req.files.sheet_image[0].filename || null;
+    } else if (req.file) {
+      imageUrl = formatPhotoUrl(req.file);
+      cloudinaryPublicId = req.file.filename || null;
+    }
+
+    if (req.files?.additional_sheets && Array.isArray(req.files.additional_sheets)) {
+      additionalImages = req.files.additional_sheets.map(f => formatPhotoUrl(f)).filter(Boolean);
+    } else if (req.body.additional_images) {
+      additionalImages = Array.isArray(req.body.additional_images)
+        ? req.body.additional_images
+        : (typeof req.body.additional_images === 'string' ? JSON.parse(req.body.additional_images) : []);
+    }
+
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, error: "Sheet music or song image is required" });
+    }
+
+    const createdBy = req.user?.name || req.user?.username || "Admin";
+    const createdSongs = [];
+
+    for (const s of songsData) {
+      if (!s.title?.trim() || !s.category) continue;
+
+      const insertQuery = `
+        INSERT INTO choir_songs (
+          module_id, title, category, composer, key_signature, time_signature, 
+          tempo, solfa_notation, lyrics_text, raw_ocr_text, confidence_score,
+          image_url, cloudinary_public_id, additional_images, audio_url, language, tags, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        RETURNING *
+      `;
+
+      const values = [
+        moduleId,
+        s.title.trim(),
+        (s.category || "marian").toLowerCase().trim(),
+        s.composer ? s.composer.trim() : null,
+        s.key_signature ? s.key_signature.trim() : null,
+        s.time_signature ? s.time_signature.trim() : null,
+        s.tempo ? s.tempo.trim() : null,
+        s.solfa_notation ? s.solfa_notation.trim() : null,
+        s.lyrics_text ? s.lyrics_text.trim() : null,
+        s.raw_ocr_text ? s.raw_ocr_text.trim() : null,
+        s.confidence_score ? Number(s.confidence_score) : null,
+        imageUrl,
+        cloudinaryPublicId,
+        additionalImages,
+        s.audio_url ? s.audio_url.trim() : null,
+        s.language ? s.language.trim() : "Swahili",
+        Array.isArray(s.tags) ? s.tags : [],
+        createdBy
+      ];
+
+      const result = await db.query(insertQuery, values);
+      createdSongs.push(result.rows[0]);
+    }
+
+    logger.info(`Batch created ${createdSongs.length} songs in repertoire`);
+    res.status(201).json({ success: true, count: createdSongs.length, data: createdSongs });
+  } catch (error) {
+    logger.error("Error batch creating choir songs: " + error.message, { stack: error.stack });
+    res.status(500).json({ success: false, error: "Failed to batch create songs" });
+  }
+};
+
+/**
  * POST /choir-songs/ocr-extract — Admin: Multi-Tier Vision & Multilingual OCR extraction
  */
 export const extractLyricsOcr = async (req, res) => {

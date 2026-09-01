@@ -544,20 +544,81 @@ export default function CommunityDetailEditor() {
   };
 
   // ── Choir Songs & Sheet Music Handlers ──
+  const [batchSaving, setBatchSaving] = useState(false);
+
   const applyDetectedSong = (song: any) => {
+    // If the admin had made edits to the previous active song, save them into detectedSongsList
+    if (songForm.title) {
+      setDetectedSongsList((prev) =>
+        prev.map((s) => (s.title === songForm.title ? { ...s, ...songForm } : s))
+      );
+    }
+
     setSongForm((prev) => ({
       ...prev,
-      title: song.title || prev.title,
+      title: song.title || '',
       category: (song.category || prev.category || 'marian').toLowerCase(),
-      composer: song.composer !== undefined ? song.composer : prev.composer,
-      key_signature: song.key_signature !== undefined ? song.key_signature : prev.key_signature,
-      time_signature: song.time_signature || prev.time_signature || '4/4',
-      tempo: song.tempo || prev.tempo || 'Moderate',
-      language: song.language || prev.language || 'Swahili',
-      solfa_notation: song.solfa_notation !== undefined ? song.solfa_notation : prev.solfa_notation,
-      lyrics_text: song.lyrics_text !== undefined ? song.lyrics_text : prev.lyrics_text,
+      composer: song.composer !== undefined ? song.composer : '',
+      key_signature: song.key_signature !== undefined ? song.key_signature : '',
+      time_signature: song.time_signature || '4/4',
+      tempo: song.tempo || 'Moderate',
+      language: song.language || 'Swahili',
+      solfa_notation: song.solfa_notation !== undefined ? song.solfa_notation : '',
+      lyrics_text: song.lyrics_text !== undefined ? song.lyrics_text : '',
       raw_ocr_text: song.raw_section || song.raw_ocr_text || prev.raw_ocr_text,
     }));
+  };
+
+  const handleBatchSaveAllSongs = async () => {
+    if (detectedSongsList.length === 0) return;
+    if (!songFile && !songForm.image_url) {
+      return alert('Sheet music photo or song image is required to save songs.');
+    }
+
+    // Sync any edits currently in songForm into detectedSongsList
+    const songsToSave = detectedSongsList.map((s, idx) => {
+      if (s.title === songForm.title || (detectedSongsList.length === 1 && idx === 0)) {
+        return { ...s, ...songForm };
+      }
+      return s;
+    });
+
+    setBatchSaving(true);
+    try {
+      if (songFile) {
+        const formData = new FormData();
+        formData.append('sheet_image', songFile);
+        continuationPages.forEach((page) => {
+          formData.append('additional_sheets', page.file);
+        });
+        formData.append('module_id', categoryId || 'choir');
+        formData.append('songs', JSON.stringify(songsToSave));
+
+        await apiClient.post('/choir-songs/batch-create', formData);
+      } else {
+        await apiClient.post('/choir-songs/batch-create', {
+          module_id: categoryId || 'choir',
+          image_url: songForm.image_url,
+          songs: songsToSave,
+        });
+      }
+
+      showToast(`🎉 Successfully saved all ${songsToSave.length} songs to the repertoire!`);
+      setDuplicateModal(null);
+      setSongModal(false);
+      setEditingSong(null);
+      setSongFile(null);
+      setSongFilePreview('');
+      setContinuationPages([]);
+      setActiveSheetPageIndex(0);
+      setDetectedSongsList([]);
+      await loadCategoryData();
+    } catch (err: any) {
+      console.error('Batch save error:', err);
+      alert(err?.response?.data?.error || 'Failed to save songs batch. Please try again.');
+    } finally {
+      setBatchSaving(false);
+    }
   };
 
   const openAddSongModal = () => {
@@ -742,21 +803,26 @@ export default function CommunityDetailEditor() {
       return alert('Sheet music photo or song image is required.');
     }
 
-    // Duplicate detection if creating a new song and not explicitly forced/overwritten
+    // Realtime Database Duplicate Detection if creating a new song and not explicitly forced/overwritten
     if (!editingSong && !forceSave && !overwriteExistingId) {
-      const normIncoming = songForm.title.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const duplicate = songsList.find((s: any) => {
-        const sNorm = (s.title || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-        return sNorm === normIncoming || (sNorm.length >= 5 && (sNorm.includes(normIncoming) || normIncoming.includes(sNorm)));
-      });
-
-      if (duplicate) {
-        setDuplicateModal({
-          existing: duplicate,
-          incomingForm: { ...songForm },
-          incomingFile: songFile,
+      try {
+        const dupRes = await apiClient.get('/choir-songs/check-duplicate', {
+          params: {
+            title: songForm.title.trim(),
+            module_id: categoryId || 'choir',
+            exclude_id: editingSong?.id || undefined,
+          },
         });
-        return;
+        if (dupRes.data?.isDuplicate && dupRes.data?.duplicate) {
+          setDuplicateModal({
+            existing: dupRes.data.duplicate,
+            incomingForm: { ...songForm },
+            incomingFile: songFile,
+          });
+          return;
+        }
+      } catch (dupErr) {
+        console.warn('Realtime duplicate check notice:', dupErr);
       }
     }
 
@@ -3038,6 +3104,64 @@ export default function CommunityDetailEditor() {
                 {/* ── RIGHT PANE: Metadata & Extracted Lyrics Editor (7 cols) ── */}
                 <div className="lg:col-span-7 space-y-3.5">
                   
+                  {/* Multi-Song Extraction Review & Batch Save Bar */}
+                  {detectedSongsList.length > 1 && (
+                    <div className="p-3 bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 border border-purple-400/40 rounded-2xl text-white shadow-md space-y-2.5 animate-fadeIn">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 bg-purple-500/30 rounded-xl text-amber-300 shrink-0">
+                            <Sparkles size={16} />
+                          </span>
+                          <div>
+                            <p className="text-xs font-black text-white">
+                              {detectedSongsList.length} Distinct Songs Detected on this Sheet!
+                            </p>
+                            <p className="text-[10px] text-purple-200">
+                              Click any song below to review/edit, or save all {detectedSongsList.length} individually with one click.
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleBatchSaveAllSongs}
+                          disabled={batchSaving || songSaving}
+                          className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                          title="Save all extracted songs as individual entries in the repertoire"
+                        >
+                          {batchSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                          <span>{batchSaving ? 'Saving All...' : `💾 Save All ${detectedSongsList.length} Songs`}</span>
+                        </button>
+                      </div>
+
+                      {/* Song Pills to switch between songs */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-purple-500/20">
+                        <span className="text-[10px] font-bold text-purple-300 mr-1">Switch Song to Edit:</span>
+                        {detectedSongsList.map((song, idx) => {
+                          const isActive = (songForm.title === song.title) || (!songForm.title && idx === 0);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => applyDetectedSong(song)}
+                              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                                isActive
+                                  ? 'bg-white text-indigo-950 font-black shadow-sm ring-2 ring-purple-400'
+                                  : 'bg-purple-900/60 hover:bg-purple-800 text-purple-200'
+                              }`}
+                            >
+                              <span>🎵</span>
+                              <span className="max-w-[130px] truncate">{song.title || `Song ${idx + 1}`}</span>
+                              <span className="text-[9px] px-1.5 py-0.2 bg-purple-950/60 rounded capitalize text-purple-300">
+                                {song.category || 'marian'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Row 1: Title & Category */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -3206,27 +3330,43 @@ export default function CommunityDetailEditor() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-3 border-t border-slate-100 gap-2 flex-shrink-0">
               <span className="text-[11px] text-slate-400 hidden sm:inline font-medium">
-                Edits to lyrics build the adaptive dictionary for recurring typo correction.
+                {detectedSongsList.length > 1
+                  ? `Tip: You can save all ${detectedSongsList.length} songs at once, or switch between them above.`
+                  : 'Edits to lyrics build the adaptive dictionary for recurring typo correction.'}
               </span>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={() => setSongModal(false)}
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
+
+                {detectedSongsList.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleBatchSaveAllSongs}
+                    disabled={batchSaving || songSaving}
+                    className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black rounded-xl transition shadow-md flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                    title="Save all extracted songs as individual entries in the repertoire"
+                  >
+                    {batchSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                    <span>{batchSaving ? 'Saving All...' : `Save All ${detectedSongsList.length} Songs`}</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={handleSaveSong}
-                  disabled={songSaving}
-                  className="flex-1 sm:flex-none px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl transition shadow-md flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                  onClick={() => handleSaveSong(false, null)}
+                  disabled={songSaving || batchSaving}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl transition shadow-md flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
                 >
                   {songSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                  {songSaving ? 'Saving Song...' : 'Save Song to Repertoire'}
+                  <span>{songSaving ? 'Saving Song...' : (detectedSongsList.length > 1 ? 'Save This Song Only' : 'Save Song to Repertoire')}</span>
                 </button>
               </div>
             </div>
