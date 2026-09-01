@@ -531,13 +531,15 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
       {selectedSong && (
         <div style={{ animation: 'detailFadeIn 0.3s ease-out' }}>
           {/* Sticky back button */}
-          <div className="sticky top-0 z-10 py-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 px-4 mb-4">
-            <button
-              onClick={() => setSelectedSong(null)}
-              className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              <FaChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> Back to all songs
-            </button>
+          <div className="sticky top-0 z-10 py-3 mb-4">
+            <div className="mx-auto max-w-2xl">
+              <button
+                onClick={() => setSelectedSong(null)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-md transition-all"
+              >
+                <FaChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> Back to all songs
+              </button>
+            </div>
           </div>
 
           <div
