@@ -109,7 +109,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   // Reader theme: 'auto' follows the site's light/dark, or force light/dark.
   const [readerTheme, setReaderTheme] = useState<'auto' | 'light' | 'dark'>(() => {
     const saved = localStorage.getItem('csa_choir_reader_theme');
-    return saved === 'light' || saved === 'dark' ? saved : 'auto';
+    return saved === 'light' || saved === 'dark' ? saved : 'light';
   });
   const { isDarkMode: siteIsDark } = useDarkMode();
   const isReaderDark =
@@ -473,21 +473,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     title={isBookmarked ? `Remove from ${programLabel(starProgram)}` : `Add to ${programLabel(starProgram)}`}
                   >
                     <FaStar size={13} className={isBookmarked ? 'fill-current' : ''} />
-                  </button>
-
-                  {/* Key & Solfa indicator */}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                    {song.key_signature && (
-                      <span className="bg-blue-600/90 backdrop-blur text-white px-2.5 py-0.5 rounded-lg text-[10px] font-black tracking-wide">
-                        Key {song.key_signature}
-                      </span>
-                    )}
-                    {song.time_signature && (
-                      <span className="bg-white/20 backdrop-blur text-white px-2 py-0.5 rounded-lg text-[10px] font-bold">
-                        {song.time_signature}
-                      </span>
-                    )}
-                  </div>
+                   </button>
                 </div>
 
                 {/* Body Content */}
@@ -589,8 +575,6 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                   </h2>
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
                     {selectedSong.composer && <span>{selectedSong.composer}</span>}
-                    {selectedSong.key_signature && <span>• Key {selectedSong.key_signature}</span>}
-                    {selectedSong.time_signature && <span>• {selectedSong.time_signature}</span>}
                   </div>
                 </div>
               </div>
@@ -756,18 +740,6 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                       {copied ? 'Copied' : 'Copy Lyrics'}
                     </button>
                   </div>
-
-                  {/* Sol-fa Notation (if provided) */}
-                  {selectedSong.solfa_notation && (
-                    <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60">
-                      <div className="flex items-center gap-2 mb-2 text-amber-900 dark:text-amber-300 font-bold text-xs">
-                        <FaMusic size={13} /> Tonic Sol-fa Notation
-                      </div>
-                      <pre className="font-mono text-xs text-amber-950 dark:text-amber-200 whitespace-pre-wrap overflow-x-auto leading-relaxed">
-                        {selectedSong.solfa_notation}
-                      </pre>
-                    </div>
-                  )}
 
                   {/* Extracted Lyrics Stanzas */}
                   {formattedLyrics ? (

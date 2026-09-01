@@ -158,12 +158,9 @@ export default function CommunityDetailEditor() {
     title: '',
     category: 'marian',
     composer: '',
-    key_signature: '',
-    time_signature: '4/4',
     tempo: 'Moderate',
     language: 'Swahili',
     lyrics_text: '',
-    solfa_notation: '',
     audio_url: '',
     image_url: ''
   });
@@ -533,12 +530,9 @@ export default function CommunityDetailEditor() {
       title: song.title || prev.title,
       category: (song.category || prev.category || 'marian').toLowerCase(),
       composer: song.composer !== undefined ? song.composer : prev.composer,
-      key_signature: song.key_signature !== undefined ? song.key_signature : prev.key_signature,
-      time_signature: song.time_signature || prev.time_signature || '4/4',
       tempo: song.tempo || prev.tempo || 'Moderate',
       language: song.language || prev.language || 'Swahili',
       lyrics_text: song.lyrics_text !== undefined ? song.lyrics_text : prev.lyrics_text,
-      solfa_notation: song.solfa_notation !== undefined ? song.solfa_notation : prev.solfa_notation,
     }));
   };
 
@@ -553,12 +547,9 @@ export default function CommunityDetailEditor() {
       title: '',
       category: 'marian',
       composer: '',
-      key_signature: '',
-      time_signature: '4/4',
       tempo: 'Moderate',
       language: 'Swahili',
       lyrics_text: '',
-      solfa_notation: '',
       audio_url: '',
       image_url: '',
     });
@@ -576,12 +567,9 @@ export default function CommunityDetailEditor() {
       title: song.title || '',
       category: (song.category || 'marian').toLowerCase(),
       composer: song.composer || '',
-      key_signature: song.key_signature || '',
-      time_signature: song.time_signature || '4/4',
       tempo: song.tempo || 'Moderate',
       language: song.language || 'Swahili',
       lyrics_text: song.lyrics_text || '',
-      solfa_notation: song.solfa_notation || '',
       audio_url: song.audio_url || '',
       image_url: song.image_url || '',
     });
@@ -668,12 +656,9 @@ export default function CommunityDetailEditor() {
         formData.append('title', songForm.title.trim());
         formData.append('category', songForm.category.toLowerCase().trim());
         if (songForm.composer) formData.append('composer', songForm.composer.trim());
-        if (songForm.key_signature) formData.append('key_signature', songForm.key_signature.trim());
-        if (songForm.time_signature) formData.append('time_signature', songForm.time_signature.trim());
         if (songForm.tempo) formData.append('tempo', songForm.tempo.trim());
         if (songForm.language) formData.append('language', songForm.language.trim());
         if (songForm.lyrics_text) formData.append('lyrics_text', songForm.lyrics_text.trim());
-        if (songForm.solfa_notation) formData.append('solfa_notation', songForm.solfa_notation.trim());
         if (songForm.audio_url) formData.append('audio_url', songForm.audio_url.trim());
 
         if (editingSong?.id) {
@@ -1383,7 +1368,6 @@ export default function CommunityDetailEditor() {
                         <th className="py-3.5 px-4">Sheet Preview</th>
                         <th className="py-3.5 px-4">Song Title</th>
                         <th className="py-3.5 px-4">Category</th>
-                        <th className="py-3.5 px-4">Key / Solfa</th>
                         <th className="py-3.5 px-4">Composer</th>
                         <th className="py-3.5 px-4">Lyrics Status</th>
                         <th className="py-3.5 px-4 text-right">Actions</th>
@@ -1409,20 +1393,6 @@ export default function CommunityDetailEditor() {
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200">
                               {song.category}
                             </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1.5">
-                              {song.key_signature ? (
-                                <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                                  Key {song.key_signature}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">-</span>
-                              )}
-                              {song.time_signature && (
-                                <span className="text-[10px] text-slate-500 font-medium">({song.time_signature})</span>
-                              )}
-                            </div>
                           </td>
                           <td className="py-3 px-4 text-slate-600 font-medium">
                             {song.composer || <span className="text-slate-400 italic">Traditional</span>}
@@ -2744,28 +2714,6 @@ export default function CommunityDetailEditor() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Key Signature</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. G, F, D, C, Eb"
-                    value={songForm.key_signature}
-                    onChange={(e) => setSongForm({ ...songForm, key_signature: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Time Signature</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 4/4, 3/4, 6/8"
-                    value={songForm.time_signature}
-                    onChange={(e) => setSongForm({ ...songForm, time_signature: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
                   <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">Language</label>
                   <select
                     value={songForm.language}
@@ -2823,20 +2771,6 @@ export default function CommunityDetailEditor() {
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 leading-relaxed font-sans focus:outline-none focus:border-blue-500"
                 />
               </div>
-
-              {/* 4. Sol-fa Notation (Optional) */}
-              <div>
-                <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wide">
-                  Tonic Sol-fa Notation (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="e.g. d:r:m:f | s:s:l:s | m:d:r:d ..."
-                  value={songForm.solfa_notation}
-                  onChange={(e) => setSongForm({ ...songForm, solfa_notation: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 leading-relaxed focus:outline-none focus:border-blue-500"
-                />
-              </div>
             </div>
 
             <div className="flex gap-2 pt-4 border-t border-slate-100 flex-shrink-0">
@@ -2873,7 +2807,6 @@ export default function CommunityDetailEditor() {
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mt-0.5">
                   <span className="capitalize">{viewingSongModal.category}</span>
                   {viewingSongModal.composer && <span>• By {viewingSongModal.composer}</span>}
-                  {viewingSongModal.key_signature && <span>• Key {viewingSongModal.key_signature}</span>}
                 </div>
               </div>
               <button
