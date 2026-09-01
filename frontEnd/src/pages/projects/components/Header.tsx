@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { FaHeart, FaSearch } from 'react-icons/fa';
 
 // Icons
 export const SearchIcon = () => (
@@ -62,6 +63,32 @@ export const Header = ({
                 </NavLink>
 
                 <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <NavLink to="/track-order" style={{
+                        color: 'var(--color-text-muted)',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--color-border)'
+                    }}>
+                        TRACK ORDER
+                    </NavLink>
+
+                    <NavLink to="/wishlist" style={{
+                        color: 'var(--color-text-muted)',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        borderRadius: 'var(--radius-sm)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                    }} aria-label="Wishlist">
+                        <FaHeart size={14} />
+                    </NavLink>
+
                     <NavLink to="/admin" style={{
                         color: 'var(--color-text-muted)',
                         textDecoration: 'none',

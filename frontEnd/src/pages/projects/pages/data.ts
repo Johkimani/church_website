@@ -23,16 +23,17 @@ export const SELLER_NUMBERS = {
     tshirts: "254112051739"
 };
 
-export type SacramentalCategory = 'all' | 'rosaries' | 'bibles' | 'chains' | 'crucifixes' | 'statues' | 'candles';
+export type SacramentalCategory = 'all' | 'rosaries' | 'bibles' | 'chains' | 'crucifixes' | 'statues' | 'candles' | 'sacramentals';
 
 export const SACRAMENTAL_CATEGORIES: { id: SacramentalCategory; label: string; icon: string }[] = [
-    { id: 'all', label: 'All Items', icon: '' },
-    { id: 'rosaries', label: 'Rosaries', icon: '' },
-    { id: 'bibles', label: 'Bibles & Books', icon: '' },
-    { id: 'chains', label: 'Chains & Medals', icon: '' },
-    { id: 'crucifixes', label: 'Crucifixes', icon: '' },
-    { id: 'statues', label: 'Statues', icon: '' },
-    { id: 'candles', label: 'Candles & More', icon: '' },
+    { id: 'all', label: 'All Items', icon: '🛍️' },
+    { id: 'sacramentals', label: 'Sacramentals', icon: '⛪' },
+    { id: 'rosaries', label: 'Rosaries', icon: '📿' },
+    { id: 'bibles', label: 'Bibles & Books', icon: '📖' },
+    { id: 'chains', label: 'Chains & Medals', icon: '⛓️' },
+    { id: 'crucifixes', label: 'Crucifixes', icon: '✝️' },
+    { id: 'statues', label: 'Statues', icon: '🗽' },
+    { id: 'candles', label: 'Candles & More', icon: '🕯️' },
 ];
 
 export interface SacramentalProduct {

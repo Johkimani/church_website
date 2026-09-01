@@ -52,6 +52,7 @@ import removeGeneralParishModule from "./migrations/removeGeneralParishModule.js
 import choirMusicClassMigration from "./migrations/choirMusicClassMigration.js";
 import { refreshTokenGraceWindow } from "./migrations/refreshTokenGraceWindow.js";
 import relaxEnrollmentClassId from "./migrations/relaxEnrollmentClassId.js";
+import productReviewsMigration from "./migrations/productReviewsMigration.js";
 import jumuiyaChannelsMigration from "./migrations/jumuiyaChannelsMigration.js";
 import whatsappSyncMigration from "./migrations/whatsappSyncMigration.js";
 
@@ -225,6 +226,7 @@ const initServer = async () => {
     await whatsappSyncMigration();
     await refreshTokenGraceWindow();
     await relaxEnrollmentClassId();
+    await productReviewsMigration();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

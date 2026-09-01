@@ -61,7 +61,6 @@ interface AppContextType {
     collectionMethod: "pickup" | "delivery";
     setCollectionMethod: (method: "pickup" | "delivery") => void;
     proceedToCheckout: () => Promise<void>;
-    proceedWithCash: () => Promise<void>;
 
     // Payment status (for M-Pesa manual confirmation)
     paymentPending: boolean;
@@ -79,7 +78,7 @@ interface AppContextType {
     sacCategory: SacramentalCategory;
     setSacCategory: (cat: SacramentalCategory) => void;
     sectionBanners: Record<string, { img: string; title: string; subtitle: string }> | null;
-    cashPhone: string;
+    projectManagerPhone: string;
 
     // Hire Cart
     hireItems: HireItem[];
@@ -417,47 +416,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPendingPhone('');
     };
 
-    const proceedWithCash = async () => {
-        if (cart.length === 0) return;
-        const phoneDigits = customerPhone.replace(/\D/g, '');
-        if (!customerName.trim() || !/^\d{10}$/.test(phoneDigits)) {
-            showToast(!customerName.trim() ? "Please provide your name" : "Enter a valid 10-digit phone number", 'warning');
-            return;
-        }
-
-        let phone = '254' + phoneDigits.replace(/^0+/, '');
-
-        try {
-            const order = await apiService.createRecord('orders', {
-                amount: cartTotal,
-                phone,
-                customer_name: customerName.trim(),
-                customer_email: customerEmail.trim() || getAccountEmail() || null,
-                payment_method: 'cash',
-                collection_method: collectionMethod,
-                delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
-                items: cart,
-                status: 'pending',
-            });
-
-            const orderRef = order?.order_reference || order?.id;
-            const cashPhone = settings.cash_phone || '254112051739';
-            localStorage.setItem('csa_receipt_phone', phone);
-            setCart([]);
-            setIsCartOpen(false);
-            setCustomerName('');
-            setCustomerPhone('');
-            setCustomerEmail('');
-            setDeliveryAddress('');
-            setCollectionMethod('pickup');
-            sessionStorage.setItem('csa_order_phone', cashPhone);
-            navigate(`/order-confirmation?order_id=${orderRef}&method=cash`);
-        } catch (err: any) {
-            console.error("Cash checkout error:", err);
-            showToast(err?.response?.data?.message || err?.response?.data?.error || "Failed to place order. Try again.", 'error');
-        }
-    };
-
     return (
         <AppContext.Provider value={{
             products, apiMessages, sliderImages, sectionBanners, isLoading,
@@ -468,7 +426,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             customerEmail, setCustomerEmail,
             deliveryAddress, setDeliveryAddress,
             collectionMethod, setCollectionMethod,
-            proceedToCheckout, proceedWithCash,
+            proceedToCheckout,
             paymentPending, pendingCheckoutId, pendingPhone,
             confirmMpesaPayment, dismissPaymentPending,
             toasts, showToast, dismissToast,
@@ -476,7 +434,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             hireItems, addToHire, removeFromHire, updateHireQty, clearHire, hireItemsCount,
             isHireModalOpen, setHireModalOpen,
             isAdmin, setIsAdmin,
-            cashPhone: settings.cash_phone || '254112051739'
+            projectManagerPhone: settings.cash_phone || '254112051739'
         }}>
             {children}
         </AppContext.Provider>

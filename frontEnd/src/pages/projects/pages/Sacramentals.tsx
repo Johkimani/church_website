@@ -5,8 +5,9 @@ import { motion } from 'framer-motion';
 import { SACRAMENTAL_CATEGORIES } from '../pages/data';
 import type { SacramentalCategory } from '../pages/data';
 import {
-    FaSearch, FaShoppingCart, FaFilter, FaCheckCircle
+    FaSearch, FaShoppingCart, FaFilter, FaCheckCircle, FaHeart
 } from 'react-icons/fa';
+import { toggleWishlist, isInWishlist } from './Wishlist';
 import { HeroSlider, useSliderImages, type SliderImg } from '../components/HeroSlider';
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
@@ -71,6 +72,7 @@ interface Product {
 const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ product, onAdd }) => {
     const navigate = useNavigate();
     const [adding, setAdding] = React.useState(false);
+    const [wishlisted, setWishlisted] = React.useState(isInWishlist(String(product.id || product.name)));
     const image = product.image_url || product.img;
     const inStock = product.stock == null || Number(product.stock) > 0;
 
@@ -88,6 +90,26 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
         >
             {/* Image */}
             <div className="relative aspect-square bg-gradient-to-br from-blue-50 to-slate-50 overflow-hidden">
+                {image && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const added = toggleWishlist({
+                                id: String(product.id || product.name),
+                                name: product.name,
+                                price: Number(product.price),
+                                image: image || '',
+                                category: product.category || 'sacramentals',
+                            });
+                            setWishlisted(added);
+                        }}
+                        className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                            wishlisted ? 'bg-rose-500 text-white' : 'bg-white/90 backdrop-blur-sm text-slate-400 hover:text-rose-500'
+                        }`}
+                    >
+                        <FaHeart size={12} className={wishlisted ? 'fill-current' : ''} />
+                    </button>
+                )}
                 {image ? (
                     <img
                         src={image}
@@ -175,6 +197,8 @@ export const Sacramentals = () => {
     const [search, setSearch] = React.useState('');
     const [debouncedSearch, setDebouncedSearch] = React.useState('');
     const [sortBy, setSortBy] = React.useState<'none' | 'price-asc' | 'price-desc' | 'name'>('none');
+    const [page, setPage] = React.useState(1);
+    const PAGE_SIZE = 12;
     const productsRef = React.useRef<HTMLDivElement>(null);
 
     // Debounce search (300ms)
@@ -185,6 +209,7 @@ export const Sacramentals = () => {
 
     // Auto-scroll to products when filtering
     React.useEffect(() => {
+        setPage(1);
         if ((debouncedSearch || sacCategory !== 'all' || sortBy !== 'none') && productsRef.current) {
             productsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -243,6 +268,12 @@ export const Sacramentals = () => {
 
         return result;
     }, [sourceProducts, sacCategory, debouncedSearch, sortBy]);
+
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    const paginatedProducts = React.useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return filtered.slice(start, start + PAGE_SIZE);
+    }, [filtered, page]);
 
     const handleAddToCart = (product: typeof sourceProducts[0]) => {
         addToCart({
@@ -364,15 +395,44 @@ export const Sacramentals = () => {
                         {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
                     </div>
                 ) : filtered.length > 0 ? (
-                    <div className="grid gap-2.5 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                        {filtered.map(product => (
-                            <ProductCard
-                                key={product.id || product.name}
-                                product={product}
-                                onAdd={() => handleAddToCart(product)}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="grid gap-2.5 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                            {paginatedProducts.map(product => (
+                                <ProductCard
+                                    key={product.id || product.name}
+                                    product={product}
+                                    onAdd={() => handleAddToCart(product)}
+                                />
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-6">
+                                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                                    className="px-3 py-2 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                    Prev
+                                </button>
+                                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                    let pageNum: number;
+                                    if (totalPages <= 7) pageNum = i + 1;
+                                    else if (page <= 4) pageNum = i + 1;
+                                    else if (page >= totalPages - 3) pageNum = totalPages - 6 + i;
+                                    else pageNum = page - 3 + i;
+                                    return (
+                                        <button key={pageNum} onClick={() => setPage(pageNum)}
+                                            className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
+                                                page === pageNum ? 'bg-blue-600 text-white shadow-md' : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
+                                            }`}>
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                                    className="px-3 py-2 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
                         <div className="w-16 sm:w-20 h-16 sm:h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 shadow-inner">

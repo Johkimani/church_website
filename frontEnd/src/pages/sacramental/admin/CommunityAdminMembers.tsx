@@ -76,26 +76,26 @@ const CommunityAdminMembers: React.FC<Props> = ({ color }) => {
   return (
     <div className="admin-members">
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-6">
         {[
-          { label: 'Total', value: stats.total, icon: <FaUsers size={16} />, bg: `${color}12`, textColor: color },
-          { label: 'Approved', value: stats.approved, icon: <FaCheckCircle size={16} />, bg: '#10b98115', textColor: '#10b981' },
-          { label: 'Pending', value: stats.pending, icon: <FaClock size={16} />, bg: '#f59e0b15', textColor: '#f59e0b' },
-          { label: 'Rejected', value: stats.rejected, icon: <FaTimesCircle size={16} />, bg: '#ef444415', textColor: '#ef4444' },
+          { label: 'Total', value: stats.total, icon: <FaUsers size={14} />, bg: `${color}12`, textColor: color },
+          { label: 'Approved', value: stats.approved, icon: <FaCheckCircle size={14} />, bg: '#10b98115', textColor: '#10b981' },
+          { label: 'Pending', value: stats.pending, icon: <FaClock size={14} />, bg: '#f59e0b15', textColor: '#f59e0b' },
+          { label: 'Rejected', value: stats.rejected, icon: <FaTimesCircle size={14} />, bg: '#ef444415', textColor: '#ef4444' },
         ].map((stat, i) => (
-          <div key={i} className="rounded-2xl p-4 text-center" style={{ background: stat.bg, border: `1px solid ${color}10` }}>
-            <div className="flex items-center justify-center gap-2 mb-1">
+          <div key={i} className="rounded-2xl p-3 sm:p-4 text-center" style={{ background: stat.bg, border: `1px solid ${color}10` }}>
+            <div className="flex items-center justify-center gap-1.5 mb-1">
               <span style={{ color: stat.textColor }}>{stat.icon}</span>
-              <span className="text-2xl font-black" style={{ color: stat.textColor }}>{stat.value}</span>
+              <span className="text-xl sm:text-2xl font-black" style={{ color: stat.textColor }}>{stat.value}</span>
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{stat.label}</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">{stat.label}</span>
           </div>
         ))}
       </div>
 
       {/* Search + Filter + Export */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex-1 relative">
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="relative">
           <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
           <input
             type="text"
@@ -105,12 +105,12 @@ const CommunityAdminMembers: React.FC<Props> = ({ color }) => {
             className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {(['all', 'pending', 'approved', 'rejected'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 statusFilter === s ? 'text-white shadow-md' : 'text-slate-500 bg-white border border-slate-200 hover:border-slate-300'
               }`}
               style={statusFilter === s ? { background: color } : {}}
@@ -120,7 +120,7 @@ const CommunityAdminMembers: React.FC<Props> = ({ color }) => {
           ))}
           <button
             onClick={handleExport}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-500 bg-white border border-slate-200 hover:border-slate-300 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-500 bg-white border border-slate-200 hover:border-slate-300 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
           >
             <FaDownload size={11} /> Export
           </button>
@@ -132,22 +132,22 @@ const CommunityAdminMembers: React.FC<Props> = ({ color }) => {
           <div className="w-10 h-10 border-4 border-slate-200 rounded-full animate-spin" style={{ borderTopColor: color }} />
         </div>
       ) : enrollments.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {enrollments.map((m: any) => {
             const initials = (m.full_name || '').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
             const status = (m.status || 'Pending').toLowerCase();
             return (
               <div
                 key={m.id}
-                className="relative rounded-2xl p-5 bg-white border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden group"
+                className="relative rounded-2xl p-4 sm:p-5 bg-white border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden group"
               >
                 <div className="absolute top-0 left-0 right-0 h-1" style={{
                   background: status === 'approved' ? '#10b981' : status === 'rejected' ? '#ef4444' : '#f59e0b',
                 }} />
 
-                <div className="flex items-start gap-3.5 mt-1">
+                <div className="flex items-start gap-3 mt-1">
                   <div
-                    className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-md ring-2 transition-transform group-hover:scale-105 flex items-center justify-center font-black text-lg text-white"
+                    className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl overflow-hidden shrink-0 shadow-md ring-2 transition-transform group-hover:scale-105 flex items-center justify-center font-black text-sm sm:text-lg text-white"
                     style={{ ringColor: `${color}20`, background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
                   >
                     {initials}
@@ -203,7 +203,7 @@ const CommunityAdminMembers: React.FC<Props> = ({ color }) => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+                <div className="flex gap-2 mt-3 sm:mt-4 pt-3 border-t border-slate-100">
                   {status !== 'approved' && (
                     <button
                       onClick={() => updateStatusMutation.mutate({ id: m.id, status: 'Approved' })}

@@ -53,9 +53,8 @@ const purchaseNav: SidebarItem[] = [
 
 const hireNav: SidebarItem[] = [
   { id: "dashboard",       label: "Dashboard",      icon: LayoutDashboard },
-  { id: "hire-orders",     label: "Orders",         icon: Package },
-  { id: "hire-products",   label: "Products",       icon: ShoppingBag },
   { id: "hire-requests",   label: "Hire Requests",  icon: CalendarDays },
+  { id: "hire-products",   label: "Products",       icon: ShoppingBag },
   { id: "hire-categories", label: "Categories",     icon: Tag },
   { id: "hire-cards",      label: "Home Cards",     icon: LayoutGrid },
   { id: "hire-sliders",    label: "Slider",         icon: Image },
@@ -225,7 +224,7 @@ export default function ProjectsManager() {
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                 <Package size={14} className="text-blue-600" /> Recent Orders
               </h3>
-              <button onClick={() => handleNavChange(s === 'purchase' ? 'orders' : 'hire-orders')} className="text-[11px] font-bold text-blue-600 hover:text-blue-700">View All →</button>
+              <button onClick={() => handleNavChange(s === 'purchase' ? 'orders' : 'hire-requests')} className="text-[11px] font-bold text-blue-600 hover:text-blue-700">View All →</button>
             </div>
             <div className="divide-y divide-slate-100">
               {recentOrders.length === 0 ? (
@@ -275,7 +274,7 @@ export default function ProjectsManager() {
     switch (activeNav) {
       case "dashboard": return renderDashboard();
       case "products": return <ProductsPanel categoryFilter={['sacramentals', 'tshirts']} />;
-      case "orders": return <OrdersPanel />;
+      case "orders": return <OrdersPanel typeFilter="sale" />;
       case "categories": return <CategoriesPanel typeFilter="sale" />;
       case "customers": return <CustomersPanel />;
       case "cards": return <CategoryCardManager sectionFilter={['sacramentals', 'tshirts']} />;
@@ -283,7 +282,6 @@ export default function ProjectsManager() {
       case "testimonials": return <TestimonialManager />;
       case "reports": return <ReportsPanel typeFilter="sale" />;
       case "hire-products": return <ProductsPanel categoryFilter={['chairs', 'instruments']} />;
-      case "hire-orders": return <OrdersPanel />;
       case "hire-requests": return <HireRequestsPanel />;
       case "hire-settings": return <HireSettingsSection />;
       case "hire-categories": return <CategoriesPanel typeFilter="hire" />;
@@ -325,7 +323,7 @@ export default function ProjectsManager() {
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
           {currentNav.map(item => {
             const isActive = activeNav === item.id;
-            const isOrders = item.id === 'orders' || item.id === 'hire-orders';
+            const isOrders = item.id === 'orders';
             const isTestimonials = item.id === 'testimonials' || item.id === 'hire-testimonials';
             return (
               <button

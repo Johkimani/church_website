@@ -3,7 +3,8 @@ import {
   createOrder,
   getOrders,
   confirmPayment,
-  updateOrderStatus
+  updateOrderStatus,
+  trackOrder
 } from "../../controllers/orders.controller.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
@@ -12,6 +13,9 @@ const router = Router();
 
 // CREATE ORDER (public checkout)
 router.post("/", createOrder);
+
+// TRACK ORDER (public — customer looks up own order)
+router.get("/track", trackOrder);
 
 // GET ALL ORDERS (officials only — contains buyer PII)
 router.get("/", verifyToken, requireRole(...OFFICIAL_ROLES), getOrders);

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CartItem } from '../pages/data';
-import { X, Trash2, ShoppingBag, ShieldCheck, Plus, Minus, MapPin, Truck, CreditCard, Wallet, Package, User, Phone, MessageCircle, Mail } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ShieldCheck, Plus, Minus, MapPin, Truck, CreditCard, Package, User, Phone, MessageCircle, Mail } from 'lucide-react';
 
 interface CartDrawerProps {
     isOpen: boolean;
@@ -20,11 +20,10 @@ interface CartDrawerProps {
     collectionMethod: "pickup" | "delivery";
     setCollectionMethod: (val: "pickup" | "delivery") => void;
     proceedToCheckout: () => void;
-    proceedWithCash: () => void;
     paymentPending?: boolean;
     confirmMpesaPayment?: (receipt: string) => void;
     dismissPaymentPending?: () => void;
-    cashPhone?: string;
+    projectManagerPhone?: string;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -33,13 +32,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     customerEmail, setCustomerEmail,
     deliveryAddress, setDeliveryAddress,
     collectionMethod, setCollectionMethod,
-    proceedToCheckout, proceedWithCash,
+    proceedToCheckout,
     paymentPending, confirmMpesaPayment, dismissPaymentPending,
-    cashPhone
+    projectManagerPhone
 }) => {
     const [receiptInput, setReceiptInput] = React.useState('');
     if (!isOpen) return null;
-    const displayPhone = cashPhone || '';
+    const displayPhone = projectManagerPhone || '';
     const isValidPhone = /^\d{10}$/.test(customerPhone.replace(/\s/g, ''));
     const detailsFilled = customerName.trim().length > 0 && isValidPhone;
     const canProceed = detailsFilled && (collectionMethod !== "delivery" || deliveryAddress.trim().length > 0);
@@ -220,10 +219,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
                                 <CreditCard size={14} /> Pay via M-Pesa
                             </button>
-                            <button onClick={proceedWithCash} disabled={!canProceed}
-                                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                                <Wallet size={14} /> Cash on Pickup
-                            </button>
                             {!detailsFilled && (
                                 <p className="text-center text-[10px] text-amber-600 font-medium">
                                     {!customerName.trim() ? 'Enter your name' : 'Enter a valid 10-digit phone number'}
@@ -233,14 +228,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                                 <p className="text-center text-[10px] text-amber-600 font-medium">Enter your delivery address</p>
                             )}
                             {displayPhone && <a
-                                href={`https://wa.me/${displayPhone.replace(/\D/g, '')}?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20an%20order.`}
+                                href={`https://wa.me/${displayPhone.replace(/\D/g, '')}?text=Hello%2C%20I%20would%20like%20to%20place%20a%20special%20order%20or%20arrange%20a%20cash%20payment%20for%20my%20cart%20items.`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 hover:bg-emerald-100 transition-all group"
                             >
                                 <MessageCircle size={18} className="text-emerald-500 shrink-0" />
                                 <div className="text-xs">
-                                    <p className="font-semibold text-emerald-800">Chat with us on WhatsApp</p>
-                                    <p className="text-emerald-500 font-bold mt-0.5 group-hover:underline">{displayPhone}</p>
+                                    <p className="font-semibold text-emerald-800">Need to pay with cash or special order?</p>
+                                    <p className="text-emerald-500 font-bold mt-0.5 group-hover:underline">Chat with the Project Manager on WhatsApp</p>
                                 </div>
                             </a>}
                         </div>
