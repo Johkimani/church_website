@@ -9,8 +9,6 @@ import {
   FaStar,
   FaRegStar,
   FaTimes,
-  FaExpand,
-  FaCompress,
   FaSearchPlus,
   FaSearchMinus,
   FaAdjust,
@@ -29,6 +27,7 @@ import {
   FaPrint,
   FaSun,
   FaLandmark,
+  FaChevronDown,
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../../../hooks/useDarkMode';
@@ -105,7 +104,6 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [invertContrast, setInvertContrast] = useState<boolean>(false);
   const [fontSize, setFontSize] = useState<number>(18);
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
   // Reader theme: 'auto' follows the site's light/dark, or force light/dark.
@@ -259,6 +257,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {!selectedSong && (<>
       {/* ── Page Header ── */}
       <div
         className="rounded-2xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -538,17 +537,27 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
           })}
         </div>
       )}
+      </>)}
 
       {/* ========================================================================= */}
-      {/* Interactive Song Modal / Fullscreen Dual-Mode Reader */}
+      {/* Inline Song Detail — replaces list when a song is selected */}
       {/* ========================================================================= */}
       {selectedSong && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+        <div style={{ animation: 'detailFadeIn 0.3s ease-out' }}>
+          {/* Sticky back button */}
+          <div className="sticky top-0 z-10 py-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 -mx-4 px-4 mb-4">
+            <button
+              onClick={() => setSelectedSong(null)}
+              className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              <FaChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> Back to all songs
+            </button>
+          </div>
+
           <div
-            className={`reader-scope relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 ${
-              isFullscreen ? 'w-full h-full rounded-none' : 'w-full max-w-4xl max-h-[92vh]'
-            } ${isReaderDark ? 'dark' : ''}`}
+            className={`reader-scope mx-auto max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-300 ${isReaderDark ? 'dark' : ''}`}
             data-reader-theme={isReaderDark ? 'dark' : 'light'}
+            style={{ animation: 'detailCardIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}
           >
             {/* Modal Header */}
             <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 flex-shrink-0">
@@ -612,15 +621,6 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     <span className="hidden sm:inline">Sheet Photo</span>
                   </button>
                 </div>
-
-                {/* Fullscreen toggle */}
-                <button
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors hidden sm:flex"
-                  title="Toggle Fullscreen"
-                >
-                  {isFullscreen ? <FaCompress size={14} /> : <FaExpand size={14} />}
-                </button>
 
                 {/* Reader theme toggle */}
                 <button
