@@ -41,10 +41,10 @@ const EXPLORE_FIELDS = [
 
 const EXPLORE_DEFAULTS: Record<string, string> = {
   explore_jumuiya_image: '/images/biblestudy.webp',
-  explore_activities_image: '/images/eucharist.jpg',
+  explore_activities_image: '/images/eucharist.webp',
   explore_projects_image: '/images/church.jpg',
   explore_officials_image: '/images/st-thomas-icon.jpg',
-  explore_background_image: '/images/christ.jpg',
+  explore_background_image: '/images/christ.webp',
 };
 
 export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
@@ -193,9 +193,14 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
     setExploreUploading(key);
     setExploreUploadProgress(p => ({ ...p, [key]: 0 }));
     try {
-      const { uploadFile: uploadFileFn } = await import('../../../api/axiosInstance');
-      const res = await uploadFileFn(file, {
-        onProgress: (pct) => setExploreUploadProgress(prev => ({ ...prev, [key]: pct })),
+      // Use the dedicated landscape-optimised upload endpoint (900×500 crop)
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiClient.post('/settings/upload-explore', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          if (e.total) setExploreUploadProgress(prev => ({ ...prev, [key]: Math.round((e.loaded / e.total!) * 100) }));
+        },
       });
       const url = res?.data?.data?.url || res?.data?.url || '';
       if (url) {
@@ -211,6 +216,7 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
       setExploreUploadProgress(p => ({ ...p, [key]: 0 }));
     }
   };
+
 
   const handleExploreSave = async () => {
     setExploreSaving(true);

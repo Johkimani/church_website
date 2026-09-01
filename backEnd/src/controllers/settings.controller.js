@@ -79,3 +79,24 @@ export const updateSettings = async (req, res) => {
     res.status(500).json({ error: "Failed to save settings" });
   }
 };
+
+/**
+ * POST /settings/upload-explore
+ * Accepts a single image file (via the uploadExploreImage multer middleware)
+ * and returns its Cloudinary URL. The image is processed with landscape
+ * transformations (900×500, fill, gravity:auto) suitable for card headers.
+ */
+export const uploadExploreCardImage = (req, res) => {
+  const file = req.file || req.files?.[0];
+  if (!file) {
+    return res.status(400).json({ error: "No image file provided" });
+  }
+  // multer's Cloudinary storage sets file.path to the secure_url
+  const url = file.path;
+  if (!url) {
+    return res.status(500).json({ error: "Upload succeeded but no URL was returned" });
+  }
+  logger.info(`Explore card image uploaded: ${url}`);
+  res.json({ success: true, data: { url } });
+};
+
