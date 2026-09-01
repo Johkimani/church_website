@@ -115,12 +115,13 @@ const Community: React.FC = () => {
                 onClick={() => handleCardClick(community.id)}
               >
                 {/* Background Image */}
-                <img
-                  src={image}
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover object-center z-0"
-                />
+                <div className="card-background">
+                  <img
+                    src={image.replace(/^http:\/\//i, 'https://')}
+                    alt=""
+                    className="w-full h-full object-cover object-center"
+                  />
+                </div>
                 <div className="card-overlay" />
 
                 {/* Card Content */}
@@ -145,12 +146,13 @@ const Community: React.FC = () => {
             style={{ ['--jumuiya-color' as any]: '#1d4ed8' }}
             onClick={() => navigate('/jumuiya')}
           >
-            <img
-              src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"
-              alt=""
-              loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover object-center z-0"
-            />
+            <div className="card-background">
+              <img
+                src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"
+                alt=""
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
             <div className="card-overlay" />
             <div className="card-content">
               <div className="card-header">
