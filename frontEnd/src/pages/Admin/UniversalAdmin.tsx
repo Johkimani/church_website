@@ -27,6 +27,7 @@ import {
   Wallet,
   CalendarCheck2,
   Share2,
+  Home,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -476,6 +477,15 @@ export default function UniversalAdmin() {
             >
               <Menu size={19} />
             </button>
+
+            {/* Home button — mobile only */}
+            <Link
+              to="/"
+              className="sm:hidden w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all shadow-xs"
+              aria-label="Back to site"
+            >
+              <Home size={18} />
+            </Link>
 
             {/* Breadcrumb */}
             <nav className="hidden sm:flex items-center gap-1.5 text-sm ml-1 min-w-0">
