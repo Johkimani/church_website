@@ -1443,18 +1443,20 @@ export default function CommunityDetailEditor() {
                 </div>
                 <div>
                   <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image</label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    {/* URL input */}
-                    <input
-                      type="url"
-                      className="flex-1 w-full sm:w-auto border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
-                      style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
-                      placeholder="https://... (direct image link)"
-                      value={aboutForm.saint_image_url}
-                      onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
-                    />
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    {/* URL input section */}
+                    <div className="flex-1 sm:w-auto">
+                      <input
+                        type="url"
+                        className="w-full border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
+                        style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
+                        placeholder="https://... (direct image link)"
+                        value={aboutForm.saint_image_url}
+                        onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
+                      />
+                    </div>
                     {/* Upload button */}
-                    <div className="relative sm:w-auto">
+                    <div>
                       <input
                         type="file"
                         accept="image/*"
@@ -1462,35 +1464,35 @@ export default function CommunityDetailEditor() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          setAboutForm(v => ({ ...v, uploading: file.name }));
+                          setAboutForm(v => ({ ...v, uploading: true }));
                           uploadFile(file).then(
                             res => {
                               const url = res?.data?.url || '';
                               if (url) {
-                                setAboutForm(v => ({ ...v, saint_image_url: url, uploading: null }));
+                                setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false }));
                                 showToast('Image uploaded successfully');
                               } else {
                                 toast.error('Upload succeeded but no URL returned');
-                                setAboutForm(v => ({ ...v, uploading: null }));
+                                setAboutForm(v => ({ ...v, uploading: false }));
                               }
                             }
                           ).catch(() => {
                             toast.error('Upload failed');
-                            setAboutForm(v => ({ ...v, uploading: null }));
+                            setAboutForm(v => ({ ...v, uploading: false }));
                           });
                         }}
                       />
                       <button
                         onClick={() => { document.querySelector('input[type="file"]').click(); }}
-                        className="absolute left-0 top-0 w-full h-full cursor-pointer opacity-0 z-10"
-                      />
-                      <span
-                        className="absolute left-0 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-blue-600"
-                        onClick={() => { document.querySelector('input[type="file"]').click(); }}
+                        className="w-full sm:w-auto flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all px-4 py-2.5 text-sm font-medium shadow-sm"
                       >
+                        {aboutForm.uploading ? (
+                          <Loader2 size={14} className="mr-2 animate-spin opacity-80" />
+                        ) : (
+                          <Upload size={14} className="mr-2" />
+                        )}
                         {aboutForm.uploading ? 'Uploading...' : 'Upload Photo'}
-                        <Upload size={14} className="ml-1 opacity-50" />
-                      </span>
+                      </button>
                     </div>
                   </div>
                   {aboutForm.uploading && <p className="mt-2 text-sm text-slate-500">Uploading image...</p>}
