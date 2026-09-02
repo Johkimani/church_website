@@ -1465,7 +1465,7 @@ export default function CommunityDetailEditor() {
                           setAboutForm(v => ({ ...v, uploading: file.name }));
                           uploadFile(file).then(
                             res => {
-                              const url = res?.data?.url || res?.data?.?.url || '';
+                              const url = res?.data?.url || '';
                               if (url) {
                                 setAboutForm(v => ({ ...v, saint_image_url: url, uploading: null }));
                                 showToast('Image uploaded successfully');
