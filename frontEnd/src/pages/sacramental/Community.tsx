@@ -49,7 +49,7 @@ const TAB_LABELS: Record<string, string> = {
 // The community hub shows exactly these five groups. Anything else in
 // hub_modules (e.g. a "General Parish" entry) is not a ministry group and is
 // hidden from the grid — jumuiyas get their own dedicated card below.
-const GROUP_MODULE_IDS = new Set(['choir', 'dancers', 'charismatic', 'st-francis', 'youth']);
+const GROUP_MODULE_IDS = new Set(['choir', 'dancers', 'charismatic', 'st-francis', 'youth', 'mentorship']);
 
 const Community: React.FC = () => {
   const navigate = useNavigate();
@@ -76,9 +76,16 @@ const Community: React.FC = () => {
   }> = myCommunitiesData || [];
 
   // The hub is public — every visitor sees all five groups plus the
-  // Jumuiyas card. Role restrictions live on the ADMIN side only
-  // (/admin/community-management via utils/adminAccess.ts).
-  const activeModules = (modules || []).filter((m) => GROUP_MODULE_IDS.has(String(m.id)));
+  // Jumuiyas card.
+  const seenModuleKeys = new Set<string>();
+  const activeModules = (modules || []).filter((m) => {
+    const rawId = String(m.id || '').toLowerCase();
+    const key = rawId === 'youth' || rawId === 'mentorship' ? 'mentorship' : rawId;
+    if (!GROUP_MODULE_IDS.has(rawId) && !GROUP_MODULE_IDS.has(key)) return false;
+    if (seenModuleKeys.has(key)) return false;
+    seenModuleKeys.add(key);
+    return true;
+  });
 
   const handleCardClick = (moduleId: string) => {
     navigate(`/community/${moduleId}`);

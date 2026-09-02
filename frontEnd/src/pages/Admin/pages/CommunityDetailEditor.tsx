@@ -525,25 +525,36 @@ export default function CommunityDetailEditor() {
 
   const handleSaveAbout = async () => {
     if (!categoryId) return;
+    if (aboutForm.uploading) {
+      alert('Please wait a moment for the image to finish uploading before saving.');
+      return;
+    }
+    if (aboutForm.saint_image_url && aboutForm.saint_image_url.startsWith('blob:')) {
+      alert('The image is still being uploaded to the server. Please wait a few seconds and try again.');
+      return;
+    }
     setAboutSaving(true);
     try {
-      await apiClient.patch(`/hub_modules/${categoryId}`, {
+      const targetId = moduleMeta?.id || categoryId;
+      await apiClient.patch(`/hub_modules/${targetId}`, {
         description: aboutForm.biography,
         story: aboutForm.biography,
-        about: aboutForm.biography,
         saint_image_url: aboutForm.saint_image_url,
         history_pdf_url: aboutForm.history_pdf_url,
       });
       showToast('About content saved successfully!');
-      // Bust the community modules cache so public pages immediately show the new image
-      try { localStorage.removeItem('community_modules_cache'); } catch { }
+      // Bust both caches so public pages and admin hub reflect the new image immediately
+      try {
+        localStorage.removeItem('community_modules_cache');
+        localStorage.removeItem('csa_cache_hub_modules');
+      } catch { }
       const modulesResponse = await apiClient.get('/hub_modules');
       const modules = Array.isArray(modulesResponse.data) ? modulesResponse.data : (modulesResponse.data?.data || []);
-      const meta = modules.find((m: any) => m.id === categoryId);
+      const meta = modules.find((m: any) => m.id === categoryId) || (categoryId === 'mentorship' ? modules.find((m: any) => m.id === 'youth') : null);
       setModuleMeta(meta);
     } catch (err: any) {
       console.error('Save about failed', err);
-      alert('Failed to save about content. Please try again.');
+      alert('Failed to save about content: ' + (err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Please try again.'));
     } finally {
       setAboutSaving(false);
     }
@@ -1475,18 +1486,19 @@ export default function CommunityDetailEditor() {
                           setAboutForm(v => ({ ...v, saint_image_url: localUrl, uploading: true }));
                           // Upload in the background
                           uploadFile(file, { compress: false }).then(res => {
-                            const url = res?.data?.url || res?.data?.[0]?.url || '';
+                            const url = res?.data?.data?.url || res?.data?.url || res?.data?.data?.[0]?.url || res?.data?.[0]?.url || '';
                             if (url) {
                               URL.revokeObjectURL(localUrl);
                               setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false }));
-                              showToast('Image saved');
+                              showToast('Image uploaded! Click "Save About Content" to save.');
                             } else {
                               setAboutForm(v => ({ ...v, uploading: false }));
                             }
-                          }).catch(() => {
+                          }).catch((err) => {
                             // Keep the local preview so user can still see it; upload can be retried
                             setAboutForm(v => ({ ...v, uploading: false }));
-                            toast.error('Upload failed — image preview shown but not saved yet');
+                            console.error('Image upload failed:', err);
+                            alert('Image upload failed. Please try again.');
                           });
                         }}
                       />
