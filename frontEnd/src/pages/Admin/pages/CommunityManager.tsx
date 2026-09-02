@@ -161,7 +161,7 @@ export default function CommunityManager() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {filteredModules.length > 0 ? filteredModules.map((module) => (
           <ClickableCard
             key={module.id}
@@ -169,7 +169,7 @@ export default function CommunityManager() {
             ariaLabel={`Manage ${module.title}`}
             className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-all duration-300 overflow-hidden flex flex-col group"
           >
-            <div className="h-36 sm:h-44 w-full overflow-hidden relative bg-slate-100">
+            <div className="h-36 sm:h-40 w-full overflow-hidden relative bg-slate-100">
               <img
                 src={module.saint_image_url || module.image_url || COMMUNITY_IMAGES[module.id] || DEFAULT_IMAGE}
                 alt={module.title}
