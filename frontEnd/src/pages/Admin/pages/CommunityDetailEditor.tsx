@@ -21,6 +21,7 @@ import {
   Info,
   Save,
   Image as ImageIcon,
+  Upload,
   ShoppingBag,
   MessageSquare,
   FileText as FilePdf,
@@ -1441,17 +1442,88 @@ export default function CommunityDetailEditor() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image URL</label>
-                  <input
-                    type="url"
-                    className="w-full border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
-                    style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
-                    placeholder="https://... (direct image link)"
-                    value={aboutForm.saint_image_url}
-                    onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
-                  />
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image</label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {/* URL input */}
+                    <input
+                      type="url"
+                      className="flex-1 w-full sm:w-auto border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
+                      style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
+                      placeholder="https://... (direct image link)"
+                      value={aboutForm.saint_image_url}
+                      onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
+                    />
+                    {/* Upload button */}
+                    <div className="relative sm:w-auto">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setAboutForm(v => ({ ...v, uploading: file.name }));
+                          uploadFile(file).then(
+                            res => {
+                              const url = res?.data?.url || res?.data?.?.url || '';
+                              if (url) {
+                                setAboutForm(v => ({ ...v, saint_image_url: url, uploading: null }));
+                                showToast('Image uploaded successfully');
+                              } else {
+                                toast.error('Upload succeeded but no URL returned');
+                                setAboutForm(v => ({ ...v, uploading: null }));
+                              }
+                            }
+                          ).catch(() => {
+                            toast.error('Upload failed');
+                            setAboutForm(v => ({ ...v, uploading: null }));
+                          });
+                        }}
+                      />
+                      <button
+                        onClick={() => { document.querySelector('input[type="file"]').click(); }}
+                        className="absolute left-0 top-0 w-full h-full cursor-pointer opacity-0 z-10"
+                      />
+                      <span
+                        className="absolute left-0 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-blue-600"
+                        onClick={() => { document.querySelector('input[type="file"]').click(); }}
+                      >
+                        {aboutForm.uploading ? 'Uploading...' : 'Upload Photo'}
+                        <Upload size={14} className="ml-1 opacity-50" />
+                      </span>
+                    </div>
+                  </div>
+                  {aboutForm.uploading && <p className="mt-2 text-sm text-slate-500">Uploading image...</p>}
                   {aboutForm.saint_image_url && (
-                    <img src={aboutForm.saint_image_url} alt="Preview" className="mt-3 w-40 h-40 object-cover rounded-xl border-2 border-slate-200 shadow-md" />
+                    <div className="mt-3">
+                      {aboutForm.uploading ? (
+                        <p className="text-xs text-slate-400">New image being uploaded...</p>
+                      ) : (
+                        <img
+                          src={aboutForm.saint_image_url}
+                          alt="Preview"
+                          className="w-full max-h-48 object-cover rounded-xl border border-slate-200 mt-2"
+                        />
+                      )}
+                      {aboutForm.saint_image_url && (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => setAboutForm(v => ({ ...v, saint_image_url: '' }))}
+                            className="flex-1 text-xs text-red-600 hover:underline"
+                          >
+                            Remove
+                          </button>
+                          <a
+                            href={aboutForm.saint_image_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Open full size
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div>
