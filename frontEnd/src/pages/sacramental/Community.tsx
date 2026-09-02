@@ -113,16 +113,13 @@ const Community: React.FC = () => {
                 style={{
                   ['--jumuiya-color' as any]: color,
                   cursor: 'pointer',
+                  backgroundImage: `url(${image.replace(/^http:\/\//i, 'https://')})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
                 }}
                 onClick={() => handleCardClick(community.id)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(community.id); }}
               >
-                {/* Background Image */}
-                <img
-                  src={image.replace(/^http:\/\//i, 'https://')}
-                  alt=""
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0 }}
-                />
                 <div className="card-overlay" />
 
                 {/* Card Content */}
@@ -145,15 +142,16 @@ const Community: React.FC = () => {
             tabIndex={0}
             aria-label="View Our Jumuiyas"
             className="jumuiya-card card-clickable animate-fade-in"
-            style={{ ['--jumuiya-color' as any]: '#1d4ed8', cursor: 'pointer' }}
+            style={{
+              ['--jumuiya-color' as any]: '#1d4ed8',
+              cursor: 'pointer',
+              backgroundImage: 'url(https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
             onClick={() => navigate('/jumuiya')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/jumuiya'); }}
           >
-            <img
-              src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"
-              alt=""
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', zIndex: 0 }}
-            />
             <div className="card-overlay" />
             <div className="card-content">
               <div className="card-header">
