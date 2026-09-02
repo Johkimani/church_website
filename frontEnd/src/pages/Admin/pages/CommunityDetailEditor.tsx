@@ -1447,20 +1447,20 @@ export default function CommunityDetailEditor() {
                 </div>
                 <div>
                   <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image</label>
-                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                  <div className="flex flex-col sm:flex-row gap-3 items-start">
                     {/* URL input section */}
-                    <div className="flex-1 sm:w-auto">
+                    <div className="flex-1">
                       <input
                         type="url"
-                        className="w-full border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
+                        className="w-full border border-slate-200 bg-white px-3 py-2 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
                         style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
                         placeholder="https://... (direct image link)"
                         value={aboutForm.saint_image_url}
                         onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
                       />
                     </div>
-                    {/* Upload button + drag-and-drop zone */}
-                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                    {/* Compact upload button */}
+                    <div className="shrink-0">
                       {/* Hidden file input — always triggered via ref */}
                       <input
                         ref={communityImageInputRef}
@@ -1470,105 +1470,51 @@ export default function CommunityDetailEditor() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          setAboutForm(v => ({ ...v, uploading: true, uploadProgress: 0 }));
-                          uploadFile(file, {
-                            onProgress: (pct) => setAboutForm(v => ({ ...v, uploadProgress: pct })),
-                            compress: true,
-                          }).then(
-                            res => {
-                              const url = res?.data?.url || '';
-                              if (url) {
-                                setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false, uploadProgress: 0 }));
-                                showToast('Image uploaded successfully');
-                              } else {
-                                toast.error('Upload succeeded but no URL returned');
-                                setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
-                              }
+                          // Show instant local preview immediately — feels instant
+                          const localUrl = URL.createObjectURL(file);
+                          setAboutForm(v => ({ ...v, saint_image_url: localUrl, uploading: true }));
+                          // Upload in the background
+                          uploadFile(file, { compress: false }).then(res => {
+                            const url = res?.data?.url || res?.data?.[0]?.url || '';
+                            if (url) {
+                              URL.revokeObjectURL(localUrl);
+                              setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false }));
+                              showToast('Image saved');
+                            } else {
+                              setAboutForm(v => ({ ...v, uploading: false }));
                             }
-                          ).catch(() => {
-                            toast.error('Upload failed');
-                            setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
+                          }).catch(() => {
+                            // Keep the local preview so user can still see it; upload can be retried
+                            setAboutForm(v => ({ ...v, uploading: false }));
+                            toast.error('Upload failed — image preview shown but not saved yet');
                           });
                         }}
                       />
-
-                      {/* Drag-and-drop / click-to-upload zone */}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onDragOver={(e) => { e.preventDefault(); setImageDropActive(true); }}
-                        onDragLeave={() => setImageDropActive(false)}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          setImageDropActive(false);
-                          const file = e.dataTransfer.files?.[0];
-                          if (!file || !file.type.startsWith('image/')) return;
-                          setAboutForm(v => ({ ...v, uploading: true, uploadProgress: 0 }));
-                          uploadFile(file, {
-                            onProgress: (pct) => setAboutForm(v => ({ ...v, uploadProgress: pct })),
-                            compress: true,
-                          }).then(res => {
-                            const url = res?.data?.url || '';
-                            if (url) {
-                              setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false, uploadProgress: 0 }));
-                              showToast('Image uploaded successfully');
-                            } else {
-                              toast.error('Upload succeeded but no URL returned');
-                              setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
-                            }
-                          }).catch(() => {
-                            toast.error('Upload failed');
-                            setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
-                          });
-                        }}
+                      <button
+                        type="button"
                         onClick={() => communityImageInputRef.current?.click()}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') communityImageInputRef.current?.click(); }}
-                        className={`w-full sm:w-48 flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed transition-all px-3 py-3 cursor-pointer text-center select-none ${
-                          imageDropActive
-                            ? 'border-blue-400 bg-blue-50'
-                            : aboutForm.uploading
-                            ? 'border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed'
-                            : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50 bg-white'
-                        }`}
+                        disabled={aboutForm.uploading}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all text-xs font-semibold shadow-xs disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
                       >
-                        {aboutForm.uploading ? (
-                          <>
-                            <Loader2 size={18} className="animate-spin text-blue-500" />
-                            <span className="text-xs font-semibold text-slate-500">
-                              {aboutForm.uploadProgress > 0 ? `${aboutForm.uploadProgress}%` : 'Uploading…'}
-                            </span>
-                            {aboutForm.uploadProgress > 0 && (
-                              <div className="w-full mt-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{ width: `${aboutForm.uploadProgress}%`, background: accentColor }}
-                                />
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <Upload size={18} className="text-slate-400" />
-                            <span className="text-xs font-semibold text-slate-500 leading-tight">
-                              {imageDropActive ? 'Drop image here' : 'Click or drag & drop'}
-                            </span>
-                            <span className="text-[10px] text-slate-400">JPG, PNG, WEBP</span>
-                          </>
-                        )}
-                      </div>
+                        {aboutForm.uploading
+                          ? <Loader2 size={13} className="animate-spin" />
+                          : <Upload size={13} />}
+                        {aboutForm.uploading ? 'Saving…' : 'Upload'}
+                      </button>
                     </div>
                   </div>
-                  {aboutForm.uploading && <p className="mt-2 text-sm text-slate-500">Uploading image...</p>}
                   {aboutForm.saint_image_url && (
-                    <div className="mt-3">
-                      {aboutForm.uploading ? (
-                        <p className="text-xs text-slate-400">New image being uploaded...</p>
-                      ) : (
-                        <img
-                          src={aboutForm.saint_image_url}
-                          alt="Preview"
-                          className="w-full max-h-48 object-cover rounded-xl border border-slate-200 mt-2"
-                        />
+                    <div className="mt-3 relative">
+                      <img
+                        src={aboutForm.saint_image_url}
+                        alt="Preview"
+                        className="w-full max-h-44 object-cover rounded-xl border border-slate-200"
+                      />
+                      {aboutForm.uploading && (
+                        <div className="absolute inset-0 rounded-xl bg-white/50 flex items-center justify-center gap-2">
+                          <Loader2 size={16} className="animate-spin text-slate-600" />
+                          <span className="text-xs font-semibold text-slate-600">Saving to cloud…</span>
+                        </div>
                       )}
                       {aboutForm.saint_image_url && (
                         <div className="flex gap-2 mt-2">
