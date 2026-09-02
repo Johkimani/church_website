@@ -122,7 +122,7 @@ export default function CommunityDetailEditor() {
   const [choirVoiceFilter, setChoirVoiceFilter] = useState<'all' | 'soprano' | 'alto' | 'tenor' | 'bass'>('all');
   const [choirGenderFilter, setChoirGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [aboutSaving, setAboutSaving] = useState(false);
-  const [aboutForm, setAboutForm] = useState({ biography: '', saint_image_url: '', history_pdf_url: '' });
+  const [aboutForm, setAboutForm] = useState({ biography: '', saint_image_url: '', history_pdf_url: '', uploadProgress: 0 });
   const [enrollmentStats, setEnrollmentStats] = useState<{ total: string; approved: string; pending: string; rejected: string } | null>(null);
 
   // Community-specific Gallery state
@@ -1456,7 +1456,7 @@ export default function CommunityDetailEditor() {
                       />
                     </div>
                     {/* Upload button */}
-                    <div>
+<div>
                       <input
                         type="file"
                         accept="image/*"
@@ -1464,21 +1464,24 @@ export default function CommunityDetailEditor() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          setAboutForm(v => ({ ...v, uploading: true }));
-                          uploadFile(file).then(
+                          setAboutForm(v => ({ ...v, uploading: true, uploadProgress: 0 }));
+                          uploadFile(file, {
+                            onProgress: (pct) => setAboutForm(v => ({ ...v, uploadProgress: pct })),
+                            compress: true,
+                          }).then(
                             res => {
                               const url = res?.data?.url || '';
                               if (url) {
-                                setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false }));
+                                setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false, uploadProgress: 0 }));
                                 showToast('Image uploaded successfully');
                               } else {
                                 toast.error('Upload succeeded but no URL returned');
-                                setAboutForm(v => ({ ...v, uploading: false }));
+                                setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
                               }
                             }
                           ).catch(() => {
                             toast.error('Upload failed');
-                            setAboutForm(v => ({ ...v, uploading: false }));
+                            setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
                           });
                         }}
                       />
@@ -1487,11 +1490,18 @@ export default function CommunityDetailEditor() {
                         className="w-full sm:w-auto flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all px-4 py-2.5 text-sm font-medium shadow-sm"
                       >
                         {aboutForm.uploading ? (
-                          <Loader2 size={14} className="mr-2 animate-spin opacity-80" />
+                          <>
+                            <Loader2 size={14} className="mr-2 animate-spin opacity-80" />
+                            {aboutForm.uploadProgress > 0 ? (
+                              <span className="text-xs text-slate-500">{aboutForm.uploadProgress}%</span>
+                            ) : null}
+                          </>
                         ) : (
-                          <Upload size={14} className="mr-2" />
+                          <>
+                            <Upload size={14} className="mr-2" />
+                          </>
                         )}
-                        {aboutForm.uploading ? 'Uploading...' : 'Upload Photo'}
+                        {aboutForm.uploading ? 'Uploading' : 'Upload Photo'}
                       </button>
                     </div>
                   </div>
