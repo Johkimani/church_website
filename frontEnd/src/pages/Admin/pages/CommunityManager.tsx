@@ -68,7 +68,7 @@ export default function CommunityManager() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="h-40 sm:h-56 w-full overflow-hidden relative">
             <img
-              src={COMMUNITY_IMAGES[module.id] || DEFAULT_IMAGE}
+              src={module.saint_image_url || module.image_url || COMMUNITY_IMAGES[module.id] || DEFAULT_IMAGE}
               alt={module.title}
               className="w-full h-full object-cover"
             />
@@ -141,7 +141,7 @@ export default function CommunityManager() {
           >
             <div className="h-36 sm:h-44 w-full overflow-hidden relative bg-slate-100">
               <img
-                src={COMMUNITY_IMAGES[module.id] || DEFAULT_IMAGE}
+                src={module.saint_image_url || module.image_url || COMMUNITY_IMAGES[module.id] || DEFAULT_IMAGE}
                 alt={module.title}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />

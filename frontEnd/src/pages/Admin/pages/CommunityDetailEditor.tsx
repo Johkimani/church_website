@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient, createTableRecord, updateTableRecord, deleteTableRecord, uploadFile } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
@@ -122,7 +122,9 @@ export default function CommunityDetailEditor() {
   const [choirVoiceFilter, setChoirVoiceFilter] = useState<'all' | 'soprano' | 'alto' | 'tenor' | 'bass'>('all');
   const [choirGenderFilter, setChoirGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [aboutSaving, setAboutSaving] = useState(false);
-  const [aboutForm, setAboutForm] = useState({ biography: '', saint_image_url: '', history_pdf_url: '', uploadProgress: 0 });
+  const [aboutForm, setAboutForm] = useState({ biography: '', saint_image_url: '', history_pdf_url: '', uploadProgress: 0, uploading: false });
+  const communityImageInputRef = useRef<HTMLInputElement>(null);
+  const [imageDropActive, setImageDropActive] = useState(false);
   const [enrollmentStats, setEnrollmentStats] = useState<{ total: string; approved: string; pending: string; rejected: string } | null>(null);
 
   // Community-specific Gallery state
@@ -533,6 +535,8 @@ export default function CommunityDetailEditor() {
         history_pdf_url: aboutForm.history_pdf_url,
       });
       showToast('About content saved successfully!');
+      // Bust the community modules cache so public pages immediately show the new image
+      try { localStorage.removeItem('community_modules_cache'); } catch { }
       const modulesResponse = await apiClient.get('/hub_modules');
       const modules = Array.isArray(modulesResponse.data) ? modulesResponse.data : (modulesResponse.data?.data || []);
       const meta = modules.find((m: any) => m.id === categoryId);
@@ -1455,9 +1459,11 @@ export default function CommunityDetailEditor() {
                         onChange={(e) => setAboutForm(v => ({ ...v, saint_image_url: e.target.value }))}
                       />
                     </div>
-                    {/* Upload button */}
-<div>
+                    {/* Upload button + drag-and-drop zone */}
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                      {/* Hidden file input — always triggered via ref */}
                       <input
+                        ref={communityImageInputRef}
                         type="file"
                         accept="image/*"
                         className="hidden"
@@ -1485,24 +1491,71 @@ export default function CommunityDetailEditor() {
                           });
                         }}
                       />
-                      <button
-                        onClick={() => { document.querySelector('input[type="file"]').click(); }}
-                        className="w-full sm:w-auto flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all px-4 py-2.5 text-sm font-medium shadow-sm"
+
+                      {/* Drag-and-drop / click-to-upload zone */}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onDragOver={(e) => { e.preventDefault(); setImageDropActive(true); }}
+                        onDragLeave={() => setImageDropActive(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setImageDropActive(false);
+                          const file = e.dataTransfer.files?.[0];
+                          if (!file || !file.type.startsWith('image/')) return;
+                          setAboutForm(v => ({ ...v, uploading: true, uploadProgress: 0 }));
+                          uploadFile(file, {
+                            onProgress: (pct) => setAboutForm(v => ({ ...v, uploadProgress: pct })),
+                            compress: true,
+                          }).then(res => {
+                            const url = res?.data?.url || '';
+                            if (url) {
+                              setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false, uploadProgress: 0 }));
+                              showToast('Image uploaded successfully');
+                            } else {
+                              toast.error('Upload succeeded but no URL returned');
+                              setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
+                            }
+                          }).catch(() => {
+                            toast.error('Upload failed');
+                            setAboutForm(v => ({ ...v, uploading: false, uploadProgress: 0 }));
+                          });
+                        }}
+                        onClick={() => communityImageInputRef.current?.click()}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') communityImageInputRef.current?.click(); }}
+                        className={`w-full sm:w-48 flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed transition-all px-3 py-3 cursor-pointer text-center select-none ${
+                          imageDropActive
+                            ? 'border-blue-400 bg-blue-50'
+                            : aboutForm.uploading
+                            ? 'border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed'
+                            : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50 bg-white'
+                        }`}
                       >
                         {aboutForm.uploading ? (
                           <>
-                            <Loader2 size={14} className="mr-2 animate-spin opacity-80" />
-                            {aboutForm.uploadProgress > 0 ? (
-                              <span className="text-xs text-slate-500">{aboutForm.uploadProgress}%</span>
-                            ) : null}
+                            <Loader2 size={18} className="animate-spin text-blue-500" />
+                            <span className="text-xs font-semibold text-slate-500">
+                              {aboutForm.uploadProgress > 0 ? `${aboutForm.uploadProgress}%` : 'Uploading…'}
+                            </span>
+                            {aboutForm.uploadProgress > 0 && (
+                              <div className="w-full mt-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all"
+                                  style={{ width: `${aboutForm.uploadProgress}%`, background: accentColor }}
+                                />
+                              </div>
+                            )}
                           </>
                         ) : (
                           <>
-                            <Upload size={14} className="mr-2" />
+                            <Upload size={18} className="text-slate-400" />
+                            <span className="text-xs font-semibold text-slate-500 leading-tight">
+                              {imageDropActive ? 'Drop image here' : 'Click or drag & drop'}
+                            </span>
+                            <span className="text-[10px] text-slate-400">JPG, PNG, WEBP</span>
                           </>
                         )}
-                        {aboutForm.uploading ? 'Uploading' : 'Upload Photo'}
-                      </button>
+                      </div>
                     </div>
                   </div>
                   {aboutForm.uploading && <p className="mt-2 text-sm text-slate-500">Uploading image...</p>}
