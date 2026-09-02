@@ -67,6 +67,18 @@ const Community: React.FC = () => {
     staleTime: 60000,
   });
 
+  // Fetch system settings for the Our Jumuiyas card image
+  const { data: settingsData } = useQuery({
+    queryKey: ['system-settings-jumuiya-card'],
+    queryFn: async () => {
+      const res = await apiClient.get('/settings');
+      return res.data || {};
+    },
+    staleTime: 60000,
+  });
+
+  const jumuiyaCardImage = settingsData?.community_jumuiya_image || settingsData?.explore_jumuiya_image || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800';
+
   const myCommunities: Array<{
     module_id: string;
     status: string;
@@ -152,7 +164,7 @@ const Community: React.FC = () => {
             style={{
               ['--jumuiya-color' as any]: '#1d4ed8',
               cursor: 'pointer',
-              backgroundImage: 'url(https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800)',
+              backgroundImage: `url(${jumuiyaCardImage.replace(/^http:\/\//i, 'https://')})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}

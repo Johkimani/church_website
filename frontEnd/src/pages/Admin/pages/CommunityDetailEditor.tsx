@@ -217,6 +217,29 @@ export default function CommunityDetailEditor() {
     setLoading(true);
     setError(null);
     try {
+      if (isOurJumuiyasAdmin) {
+        const settingsRes = await apiClient.get('/settings').catch(() => ({ data: {} }));
+        const settings = settingsRes.data || {};
+        const img = settings.community_jumuiya_image || settings.explore_jumuiya_image || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800';
+        setModuleMeta({
+          id: 'our-jumuiyas',
+          title: 'Our Jumuiyas',
+          description: 'Small Christian Communities link card banner',
+          theme_color: '#1d4ed8',
+          icon_class: 'fas fa-users',
+          saint_image_url: img,
+        });
+        setAboutForm({
+          biography: 'Our Jumuiyas link card image displayed on the community hub page.',
+          saint_image_url: img,
+          history_pdf_url: '',
+          uploadProgress: 0,
+          uploading: false,
+        });
+        setLoading(false);
+        return;
+      }
+
       // 1. Fetch Module Meta if not already loaded or category changed
       if (!moduleMeta || moduleMeta.id !== categoryId) {
         const modulesResponse = await apiClient.get('/hub_modules');
@@ -535,6 +558,21 @@ export default function CommunityDetailEditor() {
     }
     setAboutSaving(true);
     try {
+      if (isOurJumuiyasAdmin) {
+        await apiClient.put('/settings', {
+          community_jumuiya_image: aboutForm.saint_image_url,
+          explore_jumuiya_image: aboutForm.saint_image_url,
+        });
+        showToast('Our Jumuiyas card image saved successfully!');
+        try {
+          localStorage.removeItem('community_modules_cache');
+          localStorage.removeItem('csa_cache_hub_modules');
+          sessionStorage.removeItem('cs_explore_settings');
+        } catch { }
+        setModuleMeta((prev: any) => ({ ...prev, saint_image_url: aboutForm.saint_image_url }));
+        return;
+      }
+
       const targetId = moduleMeta?.id || categoryId;
       await apiClient.patch(`/hub_modules/${targetId}`, {
         description: aboutForm.biography,
@@ -1071,59 +1109,62 @@ export default function CommunityDetailEditor() {
   const isChoirAdmin = categoryId === 'choir';
   const isCharismaticAdmin = categoryId === 'charismatic';
   const isMentorshipAdmin = categoryId === 'youth' || categoryId === 'mentorship';
+  const isOurJumuiyasAdmin = categoryId === 'our-jumuiyas' || categoryId === 'jumuiya';
 
-  const tabs: { id: TabType; label: string; icon: any }[] = [
-    { id: 'about', label: 'About Content', icon: Info },
-    {
-      id: 'activities',
-      label: isStFrancisAdmin
-        ? 'Feast Days & Outreaches'
-        : isDancersAdmin
-        ? 'Ministrations & Masses'
-        : isCharismaticAdmin
-        ? 'Prayer Vigils & Gatherings'
-        : isMentorshipAdmin
-        ? 'Workshops & Seminars'
-        : 'Activities & Masses',
-      icon: Calendar
-    },
-    {
-      id: 'announcements',
-      label: isStFrancisAdmin
-        ? 'Welfare & Eco Notices'
-        : isDancersAdmin
-        ? 'Costume & Stage Notices'
-        : isCharismaticAdmin
-        ? 'Intercession Bulletins'
-        : isMentorshipAdmin
-        ? 'Cohort & Resource Bulletins'
-        : 'Announcements & Costumes',
-      icon: Megaphone
-    },
-    {
-      id: 'schedules',
-      label: isStFrancisAdmin
-        ? 'Fellowship & SCC Schedule'
-        : isDancersAdmin
-        ? 'Rehearsal & Staging Schedule'
-        : isCharismaticAdmin
-        ? 'Prayer & Vigil Schedule'
-        : isMentorshipAdmin
-        ? 'Cohort & Coaching Sessions'
-        : 'Practice & Rehearsals',
-      icon: Clock
-    },
-    ...(isChoirAdmin ? [{ id: 'songs' as TabType, label: 'Song Repertoire & Sheets', icon: Music }] : []),
-    { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
-    ...(isChoirAdmin ? [{ id: 'music-class' as TabType, label: 'Music Class', icon: Music }] : []),
-    { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
-    {
-      id: 'tshirts',
-      label: isStFrancisAdmin ? 'Polo Shirts & Uniform Orders' : 'T-Shirts & Orders',
-      icon: ShoppingBag
-    },
-    { id: 'suggestions', label: 'Suggestion Box', icon: MessageSquare },
-  ];
+  const tabs: { id: TabType; label: string; icon: any }[] = isOurJumuiyasAdmin
+    ? [{ id: 'about', label: 'Jumuiyas Card Image', icon: ImageIcon }]
+    : [
+        { id: 'about', label: 'About Content', icon: Info },
+        {
+          id: 'activities',
+          label: isStFrancisAdmin
+            ? 'Feast Days & Outreaches'
+            : isDancersAdmin
+            ? 'Ministrations & Masses'
+            : isCharismaticAdmin
+            ? 'Prayer Vigils & Gatherings'
+            : isMentorshipAdmin
+            ? 'Workshops & Seminars'
+            : 'Activities & Masses',
+          icon: Calendar
+        },
+        {
+          id: 'announcements',
+          label: isStFrancisAdmin
+            ? 'Welfare & Eco Notices'
+            : isDancersAdmin
+            ? 'Costume & Stage Notices'
+            : isCharismaticAdmin
+            ? 'Intercession Bulletins'
+            : isMentorshipAdmin
+            ? 'Cohort & Resource Bulletins'
+            : 'Announcements & Costumes',
+          icon: Megaphone
+        },
+        {
+          id: 'schedules',
+          label: isStFrancisAdmin
+            ? 'Fellowship & SCC Schedule'
+            : isDancersAdmin
+            ? 'Rehearsal & Staging Schedule'
+            : isCharismaticAdmin
+            ? 'Prayer & Vigil Schedule'
+            : isMentorshipAdmin
+            ? 'Cohort & Coaching Sessions'
+            : 'Practice & Rehearsals',
+          icon: Clock
+        },
+        ...(isChoirAdmin ? [{ id: 'songs' as TabType, label: 'Song Repertoire & Sheets', icon: Music }] : []),
+        { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
+        ...(isChoirAdmin ? [{ id: 'music-class' as TabType, label: 'Music Class', icon: Music }] : []),
+        { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
+        {
+          id: 'tshirts',
+          label: isStFrancisAdmin ? 'Polo Shirts & Uniform Orders' : 'T-Shirts & Orders',
+          icon: ShoppingBag
+        },
+        { id: 'suggestions', label: 'Suggestion Box', icon: MessageSquare },
+      ];
 
   if (loading && !moduleMeta) {
     return <PageLoader message={`Connecting to ${categoryId} dashboard`} fullScreen />;
@@ -1139,11 +1180,15 @@ export default function CommunityDetailEditor() {
   const rawThemeColor = moduleMeta?.theme_color;
   const isInvalidWhite = !rawThemeColor || rawThemeColor === '#ffffff' || rawThemeColor === '#fff' || rawThemeColor.toLowerCase() === 'white' || rawThemeColor === '#f8fafc' || rawThemeColor === '#f1f5f9';
   
-  const accentColor = !isInvalidWhite
+  const accentColor = isOurJumuiyasAdmin
+    ? '#1d4ed8'
+    : (!isInvalidWhite
     ? rawThemeColor
-    : (isChoirAdmin ? '#1e40af' : isDancersAdmin ? '#db2777' : isCharismaticAdmin ? '#7c3aed' : isStFrancisAdmin ? '#047857' : isMentorshipAdmin ? '#8e44ad' : '#2563eb');
+    : (isChoirAdmin ? '#1e40af' : isDancersAdmin ? '#db2777' : isCharismaticAdmin ? '#7c3aed' : isStFrancisAdmin ? '#047857' : isMentorshipAdmin ? '#8e44ad' : '#2563eb'));
 
-  const accentGradient = isChoirAdmin
+  const accentGradient = isOurJumuiyasAdmin
+    ? 'from-[#1d4ed8] via-[#2563eb] to-[#1e40af]'
+    : isChoirAdmin
     ? 'from-[#1e40af] via-[#1d4ed8] to-[#1e3a8a]'
     : isDancersAdmin
     ? 'from-[#db2777] via-[#be185d] to-[#9d174d]'
@@ -1155,7 +1200,9 @@ export default function CommunityDetailEditor() {
     ? 'from-[#8e44ad] via-[#7d3c98] to-[#6c3483]'
     : 'from-[#2563eb] via-[#1d4ed8] to-[#1e40af]';
 
-  const adminDesc = isStFrancisAdmin
+  const adminDesc = isOurJumuiyasAdmin
+    ? 'Small Christian Communities link card banner & image update'
+    : isStFrancisAdmin
     ? 'Charity outreach • Eco stewardship • SCC fellowship • Member welfare'
     : isDancersAdmin
     ? 'Ministrations • Costume notices • Choreography schedules • Gallery'
@@ -1216,44 +1263,48 @@ export default function CommunityDetailEditor() {
             {/* Quick Actions */}
             <div className="flex items-center gap-2">
               <a
-                href={`/community/${categoryId}`}
+                href={isOurJumuiyasAdmin ? '/jumuiya' : `/community/${categoryId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 rounded-xl text-xs sm:text-sm font-bold text-white transition-all"
               >
                 <Eye size={14} /> <span className="hidden sm:inline">Preview Live Page</span><span className="sm:hidden">Preview</span>
               </a>
-              <button
-                onClick={openAddModal}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white text-slate-800 rounded-xl text-xs sm:text-sm font-bold hover:bg-white/90 transition-all shadow-lg"
-                style={{ color: accentColor }}
-              >
-                <Plus size={14} /> <span className="hidden sm:inline">Add New Record</span><span className="sm:hidden">Add</span>
-              </button>
+              {!isOurJumuiyasAdmin && (
+                <button
+                  onClick={openAddModal}
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white text-slate-800 rounded-xl text-xs sm:text-sm font-bold hover:bg-white/90 transition-all shadow-lg"
+                  style={{ color: accentColor }}
+                >
+                  <Plus size={14} /> <span className="hidden sm:inline">Add New Record</span><span className="sm:hidden">Add</span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* Quick Stats Bar */}
-          <div className="mt-3 sm:mt-5 flex flex-wrap items-center gap-2 sm:gap-3">
-            {[
-              { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'songs' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' },
-              { label: 'Songs', value: songsList.length, show: activeTab === 'songs' },
-              { label: 'Gallery Photos', value: galleryImages.length, show: activeTab === 'gallery' },
-              { label: 'Products', value: products.length, show: activeTab === 'tshirts' },
-              { label: 'Suggestions', value: suggestions.length, show: activeTab === 'suggestions' },
-            ].filter(s => s.show).map((s, i) => (
-              <div key={i} className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl border border-white/15">
-                <span className="text-white font-black text-sm sm:text-base leading-none">{s.value}</span>
-                <span className="text-white/60 text-[10px] sm:text-[11px] font-semibold">{s.label}</span>
+          {!isOurJumuiyasAdmin && (
+            <div className="mt-3 sm:mt-5 flex flex-wrap items-center gap-2 sm:gap-3">
+              {[
+                { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'songs' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' },
+                { label: 'Songs', value: songsList.length, show: activeTab === 'songs' },
+                { label: 'Gallery Photos', value: galleryImages.length, show: activeTab === 'gallery' },
+                { label: 'Products', value: products.length, show: activeTab === 'tshirts' },
+                { label: 'Suggestions', value: suggestions.length, show: activeTab === 'suggestions' },
+              ].filter(s => s.show).map((s, i) => (
+                <div key={i} className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl border border-white/15">
+                  <span className="text-white font-black text-sm sm:text-base leading-none">{s.value}</span>
+                  <span className="text-white/60 text-[10px] sm:text-[11px] font-semibold">{s.label}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl border border-white/15">
+                <span className="text-white font-black text-sm sm:text-base leading-none">
+                  {tabs.findIndex(t => t.id === activeTab) + 1}/{tabs.length}
+                </span>
+                <span className="text-white/60 text-[10px] sm:text-[11px] font-semibold">Tab</span>
               </div>
-            ))}
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl border border-white/15">
-              <span className="text-white font-black text-sm sm:text-base leading-none">
-                {tabs.findIndex(t => t.id === activeTab) + 1}/{tabs.length}
-              </span>
-              <span className="text-white/60 text-[10px] sm:text-[11px] font-semibold">Tab</span>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Bottom fade border */}
@@ -1429,7 +1480,7 @@ export default function CommunityDetailEditor() {
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-white text-slate-800 pb-20 lg:pb-6">
 
 
-          {/* ABOUT TAB */}
+          {/* ABOUT TAB / JUMUIYAS CARD IMAGE TAB */}
           {activeTab === 'about' && (
             <div className="space-y-5 max-w-2xl">
               <div
@@ -1437,27 +1488,33 @@ export default function CommunityDetailEditor() {
                 style={{ background: `${accentColor}10`, borderColor: `${accentColor}30` }}
               >
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${accentColor}20`, color: accentColor }}>
-                  <FilePdf size={16} />
+                  {isOurJumuiyasAdmin ? <ImageIcon size={16} /> : <FilePdf size={16} />}
                 </div>
                 <p className="text-xs font-bold leading-relaxed" style={{ color: accentColor }}>
-                  Manage the biography, image, and PDF history document displayed on the public About tab.
+                  {isOurJumuiyasAdmin
+                    ? "Manage the background image displayed on the 'Our Jumuiyas' card in the public community hub."
+                    : "Manage the biography, image, and PDF history document displayed on the public About tab."}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 space-y-6 shadow-sm">
+                {!isOurJumuiyasAdmin && (
+                  <div>
+                    <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Biography / Description</label>
+                    <textarea
+                      rows={8}
+                      className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 resize-y shadow-xs"
+                      style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
+                      placeholder="Enter a biography or description for this community..."
+                      value={aboutForm.biography}
+                      onChange={(e) => setAboutForm(v => ({ ...v, biography: e.target.value }))}
+                    />
+                  </div>
+                )}
                 <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Biography / Description</label>
-                  <textarea
-                    rows={8}
-                    className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 resize-y shadow-xs"
-                    style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
-                    placeholder="Enter a biography or description for this community..."
-                    value={aboutForm.biography}
-                    onChange={(e) => setAboutForm(v => ({ ...v, biography: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">Saint / Community Image</label>
+                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">
+                    {isOurJumuiyasAdmin ? 'Our Jumuiyas Card Image' : 'Saint / Community Image'}
+                  </label>
                   <div className="flex flex-col sm:flex-row gap-3 items-start">
                     {/* URL input section */}
                     <div className="flex-1">
@@ -1490,7 +1547,7 @@ export default function CommunityDetailEditor() {
                             if (url) {
                               URL.revokeObjectURL(localUrl);
                               setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false }));
-                              showToast('Image uploaded! Click "Save About Content" to save.');
+                              showToast(isOurJumuiyasAdmin ? 'Image uploaded! Click "Save Jumuiyas Card Image" to save.' : 'Image uploaded! Click "Save About Content" to save.');
                             } else {
                               setAboutForm(v => ({ ...v, uploading: false }));
                             }
@@ -1506,7 +1563,7 @@ export default function CommunityDetailEditor() {
                         type="button"
                         onClick={() => communityImageInputRef.current?.click()}
                         disabled={aboutForm.uploading}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all text-xs font-semibold shadow-xs disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all text-xs font-semibold shadow-xs disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
                       >
                         {aboutForm.uploading
                           ? <Loader2 size={13} className="animate-spin" />
@@ -1520,7 +1577,7 @@ export default function CommunityDetailEditor() {
                       <img
                         src={aboutForm.saint_image_url}
                         alt="Preview"
-                        className="w-full max-h-44 object-cover rounded-xl border border-slate-200"
+                        className="w-full max-h-56 object-cover rounded-xl border border-slate-200"
                       />
                       {aboutForm.uploading && (
                         <div className="absolute inset-0 rounded-xl bg-white/50 flex items-center justify-center gap-2">
@@ -1532,7 +1589,7 @@ export default function CommunityDetailEditor() {
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={() => setAboutForm(v => ({ ...v, saint_image_url: '' }))}
-                            className="flex-1 text-xs text-red-600 hover:underline"
+                            className="flex-1 text-xs text-red-600 hover:underline cursor-pointer text-left"
                           >
                             Remove
                           </button>
@@ -1549,33 +1606,35 @@ export default function CommunityDetailEditor() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">History PDF URL</label>
-                  <input
-                    type="url"
-                    className="w-full border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
-                    style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
-                    placeholder="https://... (link to PDF document)"
-                    value={aboutForm.history_pdf_url}
-                    onChange={(e) => setAboutForm(v => ({ ...v, history_pdf_url: e.target.value }))}
-                  />
-                  {aboutForm.history_pdf_url && (
-                    <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-600 font-bold hover:underline">
-                      <FilePdf size={16} /> Preview PDF
-                    </a>
-                  )}
-                </div>
+                {!isOurJumuiyasAdmin && (
+                  <div>
+                    <label className="text-xs font-black text-slate-700 block mb-1.5 uppercase tracking-wide">History PDF URL</label>
+                    <input
+                      type="url"
+                      className="w-full border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 shadow-xs"
+                      style={{ '--tw-ring-color': `${accentColor}55` } as React.CSSProperties}
+                      placeholder="https://... (link to PDF document)"
+                      value={aboutForm.history_pdf_url}
+                      onChange={(e) => setAboutForm(v => ({ ...v, history_pdf_url: e.target.value }))}
+                    />
+                    {aboutForm.history_pdf_url && (
+                      <a href={aboutForm.history_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 text-sm text-red-600 font-bold hover:underline">
+                        <FilePdf size={16} /> Preview PDF
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-1">
                 <button
                   onClick={handleSaveAbout}
                   disabled={aboutSaving}
-                  className="inline-flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl transition-all shadow-md disabled:opacity-60"
+                  className="inline-flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl transition-all shadow-md disabled:opacity-60 cursor-pointer"
                   style={{ background: accentColor }}
                 >
                   {aboutSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {aboutSaving ? 'Saving...' : 'Save About Content'}
+                  {aboutSaving ? 'Saving...' : isOurJumuiyasAdmin ? 'Save Jumuiyas Card Image' : 'Save About Content'}
                 </button>
               </div>
             </div>

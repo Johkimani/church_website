@@ -114,6 +114,10 @@ const COMMUNITY_MODULES_BY_ROLE: Record<string, string[]> = {
   ST_FRANCIS_TREASURER: ["st-francis"],
   MENTORSHIP_CHAIR: ["mentorship", "youth"], // mentorship community historically lives under both ids
   MENTORSHIP_VICE_CHAIR: ["mentorship", "youth"],
+  JUMUIYA_COORDINATOR: ["our-jumuiyas"],
+  JUMUIYA_CHAIRPERSON: ["our-jumuiyas"],
+  JUMUIYA_VICE_CHAIRPERSON: ["our-jumuiyas"],
+  JUMUIYA_OS: ["our-jumuiyas"],
 };
 
 /**
