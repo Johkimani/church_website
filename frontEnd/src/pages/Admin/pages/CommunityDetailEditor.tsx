@@ -200,6 +200,11 @@ export default function CommunityDetailEditor() {
   const [ocrStatus, setOcrStatus] = useState<'idle' | 'scanning' | 'success' | 'warning'>('idle');
   const [ocrStatusMessage, setOcrStatusMessage] = useState<string>('');
   const [duplicateModal, setDuplicateModal] = useState<{ existing: any; incomingForm: any; incomingFile: File | null } | null>(null);
+  const [batchDuplicateReview, setBatchDuplicateReview] = useState<{
+    conflicts: { incoming: any; existing: any }[];
+    decisions: Record<string, 'keep' | 'overwrite'>;
+    songs: any[];
+  } | null>(null);
 
   useEffect(() => {
     loadCategoryData();
@@ -661,6 +666,40 @@ setSongsList(res.data?.data || []);
 
     setBatchSaving(true);
     try {
+      const conflicts: { incoming: any; existing: any }[] = [];
+      for (const song of songsToSave) {
+        if (!song.title?.trim()) continue;
+        try {
+          const duplicateResponse = await apiClient.get('/choir-songs/check-duplicate', {
+            params: { title: song.title.trim(), module_id: categoryId || 'choir' },
+          });
+          if (duplicateResponse.data?.isDuplicate && duplicateResponse.data?.duplicate) {
+            conflicts.push({ incoming: song, existing: duplicateResponse.data.duplicate });
+          }
+        } catch (duplicateError) {
+          console.warn(`Could not check duplicate for "${song.title}":`, duplicateError);
+        }
+      }
+
+      if (conflicts.length > 0) {
+        setBatchDuplicateReview({ conflicts, decisions: {}, songs: songsToSave });
+        setBatchSaving(false);
+        return;
+      }
+
+      await saveBatchSongs(songsToSave, {});
+    } catch (err: any) {
+      console.error('Batch save error:', err);
+      alert(err?.response?.data?.error || 'Failed to save songs batch. Please try again.');
+    } finally {
+      setBatchSaving(false);
+    }
+  };
+
+  const saveBatchSongs = async (songsToSave: any[], overwriteIds: Record<string, number>) => {
+    setBatchSaving(true);
+    try {
+      const newSongs = songsToSave.filter((song) => !overwriteIds[song.title?.trim().toLowerCase()]);
       if (songFile) {
         const formData = new FormData();
         formData.append('sheet_image', songFile);
@@ -668,18 +707,38 @@ setSongsList(res.data?.data || []);
           formData.append('additional_sheets', page.file);
         });
         formData.append('module_id', categoryId || 'choir');
-        formData.append('songs', JSON.stringify(songsToSave));
+        formData.append('songs', JSON.stringify(newSongs));
 
-        await apiClient.post('/choir-songs/batch-create', formData);
-      } else {
+        if (newSongs.length > 0) await apiClient.post('/choir-songs/batch-create', formData);
+      } else if (newSongs.length > 0) {
         await apiClient.post('/choir-songs/batch-create', {
           module_id: categoryId || 'choir',
           image_url: songForm.image_url,
-          songs: songsToSave,
+          songs: newSongs,
         });
       }
 
+      for (const song of songsToSave.filter((item) => overwriteIds[item.title?.trim().toLowerCase()])) {
+        const targetId = overwriteIds[song.title.trim().toLowerCase()];
+        if (songFile) {
+          const formData = new FormData();
+          formData.append('sheet_image', songFile);
+          continuationPages.forEach((page) => formData.append('additional_sheets', page.file));
+          formData.append('module_id', categoryId || 'choir');
+          formData.append('title', song.title.trim());
+          formData.append('category', (song.category || 'marian').toLowerCase().trim());
+          Object.entries(song).forEach(([key, value]) => {
+            if (['title', 'category', 'image_url'].includes(key) || value === undefined || value === null || value === '') return;
+            formData.append(key, String(value));
+          });
+          await apiClient.put(`/choir-songs/${targetId}`, formData);
+        } else {
+          await apiClient.put(`/choir-songs/${targetId}`, { module_id: categoryId || 'choir', ...song });
+        }
+      }
+
       showToast(`🎉 Successfully saved all ${songsToSave.length} songs to the repertoire!`);
+      setBatchDuplicateReview(null);
       setDuplicateModal(null);
       setSongModal(false);
       setEditingSong(null);
@@ -695,6 +754,24 @@ setSongsList(res.data?.data || []);
     } finally {
       setBatchSaving(false);
     }
+  };
+
+  const finishBatchDuplicateReview = async (decision: 'keep' | 'overwrite') => {
+    if (!batchDuplicateReview) return;
+    const conflict = batchDuplicateReview.conflicts[0];
+    const decisions = { ...batchDuplicateReview.decisions, [conflict.incoming.title.trim().toLowerCase()]: decision };
+    const remaining = batchDuplicateReview.conflicts.slice(1);
+    if (remaining.length > 0) {
+      setBatchDuplicateReview({ ...batchDuplicateReview, conflicts: remaining, decisions });
+      return;
+    }
+    const overwriteIds: Record<string, number> = {};
+    batchDuplicateReview.conflicts.forEach(({ incoming, existing }) => {
+      const selected = decisions[incoming.title.trim().toLowerCase()];
+      if (selected === 'overwrite') overwriteIds[incoming.title.trim().toLowerCase()] = existing.id;
+    });
+    setBatchDuplicateReview(null);
+    await saveBatchSongs(batchDuplicateReview.songs, overwriteIds);
   };
 
   const openAddSongModal = () => {
@@ -3627,6 +3704,81 @@ setSongsList(res.data?.data || []);
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-black tracking-tight">
+
+              {batchDuplicateReview && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+                  <div className="bg-white rounded-3xl max-w-4xl w-full shadow-2xl border border-slate-200 max-h-[92vh] flex flex-col overflow-hidden">
+                    <div className="p-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-black">Similar Songs Found</h3>
+                        <p className="text-xs text-amber-100 font-medium mt-1">
+                          Review each match before saving this multi-song OCR result.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBatchDuplicateReview(null)}
+                        className="p-2 rounded-xl hover:bg-white/15 transition cursor-pointer"
+                        title="Cancel batch save"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                        <span>Match {batchDuplicateReview.decisions && Object.keys(batchDuplicateReview.decisions).length + 1} of {batchDuplicateReview.conflicts.length + Object.keys(batchDuplicateReview.decisions).length}</span>
+                        <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700">Batch save paused</span>
+                      </div>
+                      {(() => {
+                        const conflict = batchDuplicateReview.conflicts[0];
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Existing in repertoire</p>
+                              <h4 className="text-base font-black text-slate-900">{conflict.existing.title}</h4>
+                              <p className="text-xs text-slate-500">{conflict.existing.category} {conflict.existing.language ? `• ${conflict.existing.language}` : ''}</p>
+                              <p className="text-xs text-slate-600 whitespace-pre-wrap max-h-40 overflow-y-auto">{conflict.existing.lyrics_text || 'No lyrics recorded.'}</p>
+                            </div>
+                            <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/50 p-4 space-y-2">
+                              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-500">New OCR result</p>
+                              <h4 className="text-base font-black text-indigo-950">{conflict.incoming.title}</h4>
+                              <p className="text-xs text-slate-500">{conflict.incoming.category} {conflict.incoming.language ? `• ${conflict.incoming.language}` : ''}</p>
+                              <p className="text-xs text-slate-700 whitespace-pre-wrap max-h-40 overflow-y-auto">{conflict.incoming.lyrics_text || 'No lyrics extracted.'}</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBatchDuplicateReview(null)}
+                        className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+                      >
+                        Cancel Batch
+                      </button>
+                      <button
+                        type="button"
+                        disabled={batchSaving}
+                        onClick={() => finishBatchDuplicateReview('keep')}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition disabled:opacity-50 cursor-pointer"
+                      >
+                        Keep Both
+                      </button>
+                      <button
+                        type="button"
+                        disabled={batchSaving}
+                        onClick={() => finishBatchDuplicateReview('overwrite')}
+                        className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black transition disabled:opacity-50 cursor-pointer"
+                      >
+                        Overwrite Existing
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
                     Similar Song Already in Repertoire
                   </h3>
                   <p className="text-xs text-amber-100 font-medium">
