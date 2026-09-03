@@ -48,7 +48,12 @@ const handleMulterOcr = (req, res, next) => {
 
 // Public routes (browse songs, view lyrics/sheet music, stats, synced programmes)
 router.get("/programmes", optionalAuth, getProgrammes);
-router.post("/programmes/toggle", optionalAuth, toggleSongInProgramme);
+router.post(
+  "/programmes/toggle",
+  verifyToken,
+  requireRole(...ALL_COMMUNITY_ADMIN_ROLES),
+  toggleSongInProgramme
+);
 router.get("/stats", optionalAuth, getCategoriesAndStats);
 router.get("/check-duplicate", optionalAuth, checkDuplicateSong);
 router.get("/", optionalAuth, getSongs);

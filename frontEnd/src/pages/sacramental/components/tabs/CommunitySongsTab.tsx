@@ -6,8 +6,6 @@ import {
   FaMusic,
   FaFileAlt,
   FaImage,
-  FaStar,
-  FaRegStar,
   FaTimes,
   FaSearchPlus,
   FaSearchMinus,
@@ -83,7 +81,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [sortBy, setSortBy] = useState<string>('newest');
   const [activeMainTab, setActiveMainTab] = useState<'all' | 'sunday' | 'friday' | 'tuesday' | 'saturday'>('all');
 
-  // Programme collections: each song can belong to Sunday, Friday, or both.
+  // Programme collections assigned by choir admins.
   const PROGRAMS = [
     { id: 'sunday', label: 'Sunday Program', icon: <FaSun size={13} />, storageKey: 'csa_choir_bookmarked_songs' },
     { id: 'friday', label: 'Friday Program', icon: <FaLandmark size={13} />, storageKey: 'csa_choir_friday_songs' },
@@ -133,10 +131,12 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [programIds, setProgramIds] = useState<Record<string, number[]>>(() => ({
     sunday: readCollection(PROGRAMS[0].storageKey),
     friday: readCollection(PROGRAMS[1].storageKey),
+    tuesday: readCollection(PROGRAMS[2].storageKey),
+    saturday: readCollection(PROGRAMS[3].storageKey),
   }));
 
   // Fetch Cloud-synced Mass Programmes from backend
-  const { data: cloudProgrammesData, refetch: refetchProgrammes } = useQuery({
+  const { data: cloudProgrammesData } = useQuery({
     queryKey: ['choir-cloud-programmes', moduleId],
     queryFn: async () => {
       const res = await apiClient.get('/choir-songs/programmes', { params: { module_id: moduleId } });
@@ -162,41 +162,6 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   }, [cloudProgrammesData]);
 
   const isInProgram = (program: ProgramId, id: number) => (programIds[program] || []).includes(id);
-
-  const toggleProgram = async (program: ProgramId, id: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    const meta = PROGRAMS.find((p) => p.id === program)!;
-    const list = programIds[program] || [];
-    const isAdding = !list.includes(id);
-    const next = isAdding ? [...list, id] : list.filter((item) => item !== id);
-
-    // Optimistic local update
-    setProgramIds((prev) => {
-      const updated = { ...prev, [program]: next };
-      try {
-        localStorage.setItem(meta.storageKey, JSON.stringify(next));
-      } catch {}
-      return updated;
-    });
-
-    if (isAdding) {
-      toast.success(`Added to ${meta.label}`);
-    } else {
-      toast(`Removed from ${meta.label}`, { icon: 'ðŸ—‘ï¸' });
-    }
-
-    // Persist to backend database
-    try {
-      await apiClient.post('/choir-songs/programmes/toggle', {
-        module_id: moduleId,
-        program_type: program,
-        song_id: id,
-      });
-      refetchProgrammes();
-    } catch (err) {
-      console.warn('Programme toggle cloud sync notice:', err);
-    }
-  };
 
   const programCount = (program: ProgramId) => (programIds[program] || []).length;
   const programLabel = (program: string) =>
@@ -475,10 +440,6 @@ return (
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {displayedSongs.map((song) => {
-            // The star acts on the active programme (defaults to Sunday on the
-            // full library view); the modal offers explicit Sunday/Friday toggles.
-            const starProgram: ProgramId = activeMainTab === 'friday' ? 'friday' : 'sunday';
-            const isBookmarked = isInProgram(starProgram, song.id);
             const categoryMeta = SONG_CATEGORIES.find((c) => c.id === song.category.toLowerCase()) || SONG_CATEGORIES[0];
 
             return (
@@ -506,10 +467,8 @@ return (
 
                   {/* Adminâ€‘programme badges (readâ€‘only for users) */}
 <div className="absolute top-3 right-3 flex items-center gap-1.5 text-xs">
-                    {programIds[song.id] ? (
-                      Object.entries(programIds[song.id])
-                        .filter(([progType]) => progType)
-                        .map(([progType]) => (
+                    {programIds[song.id]?.length ? (
+                      programIds[song.id].map((progType) => (
                           <span
                             key={progType}
                             className="px-2 py-0.5 rounded bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 capitalize text-[10px] hover:bg-slate-200/80 dark:hover:bg-slate-700/90"

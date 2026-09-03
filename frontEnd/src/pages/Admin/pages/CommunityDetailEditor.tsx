@@ -182,7 +182,7 @@ export default function CommunityDetailEditor() {
     image_url: ''
   });
   const [songFile, setSongFile] = useState<File | null>(null);
-  const [programmes, setProgrammes] = useState<Record<number, Record<string, number[]>>>({});
+  const [programmes, setProgrammes] = useState<Record<number, string[]>>({});
   const [songFilePreview, setSongFilePreview] = useState<string>('');
   const [continuationPages, setContinuationPages] = useState<{ file: File; preview: string }[]>([]);
   const [activeSheetPageIndex, setActiveSheetPageIndex] = useState<number>(0);
@@ -973,19 +973,18 @@ setSongsList(res.data?.data || []);
   };
 
   // Admin: toggle song into programme (Sunday/Friday/Tuesday/Saturday)
-  const isInProgram = (progType: string, songId: number) =>
-    !!(programmes[songId] && programmes[songId][progType]?.includes(songId));
-
   const toggleProgramAdmin = async (progType: string, songId: number) => {
     try {
-      await apiClient.post('/choir-songs/programmes/toggle', {
+      const response = await apiClient.post('/choir-songs/programmes/toggle', {
         module_id: categoryId || 'choir',
         program_type: progType,
         song_id: songId,
       });
       // Refresh the data
       await loadCategoryData();
-      showToast(`Song ${isInProgram(progType, songId) ? 'removed' : 'added'} from ${progType} programme`);
+      showToast(response.data?.action === 'removed'
+        ? `Song removed from ${progType} programme`
+        : `Song added to ${progType} programme`);
     } catch (err: any) {
       alert(err?.response?.data?.error || 'Failed to toggle programme');
     }
@@ -1828,29 +1827,26 @@ setSongsList(res.data?.data || []);
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex flex-col gap-2 text-xs">
-                              {programmes[song.id] ? (
-                                Object.entries(programmes[song.id]).map(([progType, songIds]) => {
-                                  const isIn = songIds.includes(song.id);
-                                  return (
-                                    <div
-                                      key={progType}
-                                      className={`flex items-center gap-1 px-2 py-1 rounded border ${
-                                        isIn ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 border-slate-400 dark:text-slate-400'
-                                      }`}
-                                      onClick={() => toggleProgramAdmin(progType, song.id)}
-                                    >
-                                      <FaStar size={10} className={isIn ? 'fill-current text-white' : 'text-slate-400'} />
-                                      <span className="capitalize text-[10px]">{progType === 'sunday' ? 'Sunday' : progType === 'friday' ? 'Friday' : progType === 'tuesday' ? 'Tuesday' : 'Saturday'}</span>
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <div className="flex items-center gap-1 px-2 py-1 rounded border bg-slate-200 text-slate-600 dark:bg-slate-700 border-slate-400 dark:text-slate-400">
-                                  <FaStar size={10} className="text-slate-400" />
-                                  <span className="capitalize text-[10px]">Not in any programme</span>
-                                </div>
-                              )}
+                            <div className="flex flex-wrap gap-1.5 text-xs">
+                              {(['tuesday', 'friday', 'saturday', 'sunday'] as const).map((progType) => {
+                                const isIn = programmes[song.id]?.includes(progType) || false;
+                                const label = progType.charAt(0).toUpperCase() + progType.slice(1);
+                                return (
+                                  <button
+                                    key={progType}
+                                    type="button"
+                                    aria-label={`${isIn ? 'Remove' : 'Add'} ${song.title} ${label} programme`}
+                                    title={`${isIn ? 'Remove from' : 'Add to'} ${label} programme`}
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded border transition-colors cursor-pointer ${
+                                      isIn ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-200 text-slate-600 border-slate-300 hover:bg-amber-100 hover:text-amber-700'
+                                    }`}
+                                    onClick={() => toggleProgramAdmin(progType, song.id)}
+                                  >
+                                    <FaStar size={10} className={isIn ? 'fill-current' : 'text-slate-400'} />
+                                    <span className="text-[10px]">{label}</span>
+                                  </button>
+                                );
+                              })}
                             </div>
                           </td>
                           <td className="py-3 px-4 text-slate-600 font-medium">
