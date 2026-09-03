@@ -607,7 +607,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                           active ? 'bg-amber-500 text-white' : ''
                         }"
                       >
-                        <span className="text-[9px]">{progType === 'sunday' ? 'S' : progType === 'friday' ? 'F' : progType === 'tuesday' ? 'T' : 'Sa'}</span>
+                        <span className="text-[9px]">{prog.id === 'sunday' ? 'S' : prog.id === 'friday' ? 'F' : prog.id === 'tuesday' ? 'T' : 'Sa'}</span>
                         <span className="hidden sm:inline">{prog.label}</span>
                       </div>
                     );
