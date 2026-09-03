@@ -971,6 +971,22 @@ setSongsList(res.data?.data || []);
     }
   };
 
+  // Admin: toggle song into programme (Sunday/Friday/Tuesday/Saturday)
+  const toggleProgramAdmin = async (progType: string, songId: number) => {
+    try {
+      await apiClient.post('/choir-songs/programmes/toggle', {
+        module_id: categoryId || 'choir',
+        program_type: progType,
+        song_id: songId,
+      });
+      // Refresh the data
+      await loadCategoryData();
+      showToast(`Song ${isInProgram(progType, songId) ? 'removed' : 'added'} from ${progType} programme`);
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Failed to toggle programme');
+    }
+  };
+
   // Gallery Handlers
   const handleAddGalleryImage = async () => {
     if (!newImageForm.image_url || !newImageForm.event_name) {
@@ -1826,6 +1842,7 @@ setSongsList(res.data?.data || []);
                                       className="flex items-center gap-1 px-2 py-1 rounded border ${
                                         isIn ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 border-slate-400 dark:text-slate-400'
                                       }"
+                                      onClick={() => toggleProgramAdmin(progType, song.id)}
                                     >
                                       <FaStar size={10} className={isIn ? 'fill-current text-white' : 'text-slate-400'} />
                                       <span className="capitalize text-[10px]">{progType === 'sunday' ? 'Sunday' : progType === 'friday' ? 'Friday' : progType === 'tuesday' ? 'Tuesday' : 'Saturday'}</span>
@@ -1833,7 +1850,10 @@ setSongsList(res.data?.data || []);
                                   );
                                 })
                               ) : (
-                                <span className="text-slate-500 opacity-50">Not in any programme</span>
+                                <div className="flex items-center gap-1 px-2 py-1 rounded border bg-slate-200 text-slate-600 dark:bg-slate-700 border-slate-400 dark:text-slate-400">
+                                  <FaStar size={10} className="text-slate-400" />
+                                  <span className="capitalize text-[10px]">Not in any programme</span>
+                                </div>
                               )}
                             </div>
                           </td>
