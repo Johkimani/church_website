@@ -1692,15 +1692,8 @@ setSongsList(res.data?.data || []);
                     <div>
                       <h3 className="text-sm font-black text-slate-900">Choir Repertoire & Sheet Music</h3>
                       <p className="text-xs text-slate-500 font-medium">Multilingual Sheet OCR (Swahili, English, Luo, Kamba, Kikuyu, Latin) & Mass Repertoire.</p>
-                    </div>
+</div>
                   </div>
-
-                  <button
-                    onClick={openAddSongModal}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-sm transition-all self-start sm:self-auto cursor-pointer"
-                  >
-                    <Plus size={14} /> Upload Song Sheet
-                  </button>
                 </div>
 
                 {/* Search & Filter Toolbar */}
@@ -1832,6 +1825,11 @@ setSongsList(res.data?.data || []);
                           </td>
                           <td className="py-3 px-4">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              {song.language || 'Swahili'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                               {song.language || 'Swahili'}
                             </span>
                           </td>
