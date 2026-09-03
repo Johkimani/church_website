@@ -299,9 +299,10 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
     });
   }, [selectedSong?.lyrics_text, fontSize]);
 
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      {!selectedSong && (<>
+return (
+     <div className="max-w-6xl mx-auto px-4 py-6">
+       {/* Single Song View */}
+       <div>
       {/* â”€â”€ Page Header â”€â”€ */}
       <div
         className="rounded-2xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
