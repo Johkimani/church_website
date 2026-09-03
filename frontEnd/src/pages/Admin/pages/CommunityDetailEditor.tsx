@@ -45,7 +45,9 @@ import {
   RefreshCw,
   Contrast,
   Maximize2,
-  Sliders
+  Sliders,
+  Menu,
+  ChevronRight
 } from 'lucide-react';
 import { FaStar } from 'react-icons/fa';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -111,6 +113,7 @@ export default function CommunityDetailEditor() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('about');
+  const [isCommunityNavOpen, setIsCommunityNavOpen] = useState(false);
   const [moduleMeta, setModuleMeta] = useState<any>(null);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1470,6 +1473,74 @@ setSongsList(res.data?.data || []);
       ══════════════════════════════════════════════════════ */}
       <div className="flex flex-col lg:flex-row gap-0 min-h-[500px] lg:min-h-[600px] bg-white border border-slate-200/90 rounded-b-3xl overflow-hidden shadow-xl">
 
+        {/* Mobile community navigation trigger and drawer */}
+        <div className="lg:hidden flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
+          <button
+            type="button"
+            onClick={() => setIsCommunityNavOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black shadow-sm cursor-pointer"
+          >
+            <Menu size={16} style={{ color: accentColor }} />
+            <span>Community menu</span>
+          </button>
+          <span className="text-[11px] font-bold text-slate-500 truncate">
+            {tabs.find(t => t.id === activeTab)?.label}
+          </span>
+        </div>
+
+        {isCommunityNavOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="Close community menu"
+              onClick={() => setIsCommunityNavOpen(false)}
+              className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm cursor-pointer"
+            />
+            <aside className="fixed inset-y-0 left-0 z-50 w-[min(19rem,86vw)] bg-slate-50 shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+              <div className="flex items-center justify-between px-4 py-4 border-b border-slate-200 bg-white">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Community menu</p>
+                  <p className="text-sm text-slate-800 font-black mt-0.5">{moduleMeta?.title || categoryId}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCommunityNavOpen(false)}
+                  className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 cursor-pointer"
+                  title="Close community menu"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto py-3">
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => { setActiveTab(tab.id); setIsCommunityNavOpen(false); }}
+                      className={`w-[calc(100%-1rem)] mx-2 flex items-center gap-3 px-3 py-3 mb-1 rounded-xl text-left text-xs font-black transition-colors cursor-pointer ${
+                        isActive ? 'text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/70'
+                      }`}
+                      style={isActive ? { background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)` } : undefined}
+                    >
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-200 text-slate-600'}`}>
+                        <tab.icon size={14} />
+                      </span>
+                      <span className="leading-tight">{tab.label}</span>
+                      {tab.id === 'members' && Number(enrollmentStats?.pending || 0) > 0 && (
+                        <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black flex items-center justify-center">
+                          {enrollmentStats.pending}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </aside>
+          </>
+        )}
+
         {/* ── Desktop Sidebar Tab Navigation ── */}
         <div className="hidden lg:flex w-56 shrink-0 bg-slate-50 border-r border-slate-200 flex-col py-2">
           {tabs.map((tab) => {
@@ -1512,36 +1583,6 @@ setSongsList(res.data?.data || []);
           <div className="mt-auto px-4 py-4 border-t border-slate-200">
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Admin Panel</p>
             <p className="text-[10px] text-slate-600 font-bold mt-0.5">{moduleMeta?.title || categoryId}</p>
-          </div>
-        </div>
-
-        {/* ── Mobile Sticky Bottom Tab Bar ── */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center justify-around px-1 py-1 max-h-16 overflow-x-auto no-scrollbar">
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="flex flex-col items-center gap-0.5 py-1.5 px-1.5 rounded-lg transition-all min-w-0 relative"
-                  style={isActive ? { color: accentColor } : { color: '#94a3b8' }}
-                >
-                  {isActive && (
-                    <span className="absolute -top-1 w-6 h-0.5 rounded-b-full" style={{ background: accentColor }} />
-                  )}
-                  <tab.icon size={16} strokeWidth={isActive ? 2.5 : 1.8} />
-                  <span className={`text-[9px] font-bold leading-tight truncate max-w-[52px] ${isActive ? 'font-black' : ''}`}>
-                    {tab.label.split(' ')[0]}
-                  </span>
-                  {tab.id === 'members' && Number(enrollmentStats?.pending || 0) > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-400 text-slate-900 text-[8px] font-black flex items-center justify-center">
-                      {enrollmentStats.pending}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
           </div>
         </div>
 
