@@ -10,15 +10,16 @@ import { getAvatarForCategory } from './constants/positionInfo'
 import PageLoader from '../../assets/Layouts/PageLoader'
 
 const CATEGORY_ORDER = [
-  'Executive','Jumuiya Coordinators','Bible Coordinators','Rosary',
+  'Executive','Jumuiya Coordinators','Bible Coordinators','Rosary Coordinators',
   'Pamphlet Managers','Project Managers','Instrument Managers',
-  'Choir Officials','Liturgical Dancers','Liturgist','Catechist'
+  'Choir Officials','Liturgical Dancers','Liturgists','Catechist'
 ]
 
 const CATEGORY_ALIAS_MAP: Record<string, string> = {
   'Bible Coordinator': 'Bible Coordinators',
   'Bible Study Coordinator': 'Bible Coordinators',
-  'Rosary Coordinator': 'Rosary',
+  'Rosary': 'Rosary Coordinators',
+  'Rosary Coordinator': 'Rosary Coordinators',
   'Pamphlet Manager': 'Pamphlet Managers',
   'Jumuiya Coordinator': 'Jumuiya Coordinators',
   'Project Manager': 'Project Managers',
@@ -26,16 +27,17 @@ const CATEGORY_ALIAS_MAP: Record<string, string> = {
   'Choir Official': 'Choir Officials',
   'Liturgical Dance': 'Liturgical Dancers',
   'Liturgical Dancer': 'Liturgical Dancers',
+  'Liturgist': 'Liturgists',
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
   'Executive': 'from-purple-600 to-purple-700',
   'Jumuiya Coordinators': 'from-blue-600 to-blue-700',
   'Bible Coordinators': 'from-emerald-600 to-emerald-700',
-  'Rosary': 'from-pink-600 to-rose-700',
+  'Rosary Coordinators': 'from-pink-600 to-rose-700',
   'Pamphlet Managers': 'from-amber-600 to-orange-700',
   'Project Managers': 'from-indigo-600 to-indigo-700',
-  'Liturgist': 'from-cyan-600 to-cyan-700',
+  'Liturgists': 'from-cyan-600 to-cyan-700',
   'Choir Officials': 'from-red-600 to-red-700',
   'Instrument Managers': 'from-sky-600 to-blue-700',
   'Liturgical Dancers': 'from-violet-600 to-purple-700',
@@ -255,7 +257,7 @@ export default function PublicView() {
     const explicitPairs: Record<string, string> = {
       'Project Managers': 'Instrument Managers',
       'Choir Officials': 'Liturgical Dancers',
-      'Liturgist': 'Catechist'
+      'Liturgists': 'Catechist'
     };
     const isPairedRight = Object.values(explicitPairs);
 

@@ -329,6 +329,7 @@ export const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
   'Jumuiya Coordinators': 'https://images.unsplash.com/photo-1529156069898-49953eb1b5b6?auto=format&fit=crop&w=400&q=80',
   'Bible Coordinators': 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?auto=format&fit=crop&w=400&q=80',
   'Rosary': 'https://images.unsplash.com/photo-1608681283625-f7619f71c4d9?auto=format&fit=crop&w=400&q=80',
+  'Rosary Coordinators': 'https://images.unsplash.com/photo-1608681283625-f7619f71c4d9?auto=format&fit=crop&w=400&q=80',
   'Pamphlet Managers': 'https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?auto=format&fit=crop&w=400&q=80',
   'Project Managers': 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=400&q=80',
   'Liturgist': 'https://images.unsplash.com/photo-1548625361-ecacbd7ce01a?auto=format&fit=crop&w=400&q=80',
