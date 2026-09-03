@@ -469,7 +469,6 @@ return (
                     className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105 filter group-hover:brightness-95"
                   />
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-white shadow-sm">
-                    <span>{categoryMeta.icon}</span>
                     <span>{categoryMeta.label}</span>
                   </div>
 
@@ -565,23 +564,6 @@ return (
             {/* Modal Header */}
             <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 flex-shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                {/* Programme toggles: add this song to Sunday / Friday / both */}
-                <div className="flex flex-col gap-1.5 flex-shrink-0">
-                  {PROGRAMS.map((prog) => {
-                    const active = isInProgram(prog.id, selectedSong.id);
-                    return (
-                      <div
-                        key={prog.id}
-                        className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 capitalize text-[10px] ${
-                          active ? 'bg-amber-500 text-white' : ''
-                        }"
-                      >
-                        <span className="text-[9px]">{prog.id === 'sunday' ? 'S' : prog.id === 'friday' ? 'F' : prog.id === 'tuesday' ? 'T' : 'Sa'}</span>
-                        <span className="hidden sm:inline">{prog.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
                 <div className="min-w-0">
                   <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
                     {selectedSong.title}
