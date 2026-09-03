@@ -1311,7 +1311,7 @@ setSongsList(res.data?.data || []);
             : 'Practice & Rehearsals',
           icon: Clock
         },
-        ...(isChoirAdmin ? [{ id: 'songs' as TabType, label: 'Song Repertoire & Sheets', icon: Music }] : []),
+        ...(isChoirAdmin ? [{ id: 'songs' as TabType, label: 'Songs Lyrics & Sheets', icon: Music }] : []),
         { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
         ...(isChoirAdmin ? [{ id: 'music-class' as TabType, label: 'Music Class', icon: Music }] : []),
         { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
@@ -1845,15 +1845,15 @@ setSongsList(res.data?.data || []);
                       <Music size={20} />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-900">Choir Repertoire & Sheet Music</h3>
+                      <h3 className="text-sm font-black text-slate-900">Songs Lyrics & Sheets</h3>
                       <p className="text-xs text-slate-500 font-medium">Multilingual Sheet OCR (Swahili, English, Luo, Kamba, Kikuyu, Latin) & Mass Repertoire.</p>
 </div>
                   </div>
                 </div>
 
                 {/* Search & Filter Toolbar */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/80">
-                  <div className="relative flex-1 min-w-[200px]">
+                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_11rem_9rem] items-center gap-2 pt-2 border-t border-slate-200/80">
+                  <div className="relative min-w-0">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
@@ -1875,28 +1875,28 @@ setSongsList(res.data?.data || []);
                   <select
                     value={songCategoryFilter}
                     onChange={(e) => setSongCategoryFilter(e.target.value)}
-                    className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-xs"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-xs"
                   >
                     <option value="all">All Categories</option>
-                    <option value="marian">🌹 Marian (Bikira Maria)</option>
-                    <option value="mwanzo">🚪 Entrance (Mwanzo)</option>
-                    <option value="utukufu">✨ Kyrie / Gloria (Utukufu)</option>
-                    <option value="sadaka">🍞 Offertory (Sadaka)</option>
-                    <option value="komunyo">🍷 Communion (Komunyo)</option>
-                    <option value="shukrani">🙏 Thanksgiving (Shukrani)</option>
-                    <option value="kutoka">🚶‍♂️ Recessional (Kutoka)</option>
-                    <option value="kwaresma">✝️ Lent (Kwaresma)</option>
-                    <option value="pasaka">🌅 Easter (Pasaka)</option>
-                    <option value="noeli">⭐ Christmas (Noeli)</option>
-                    <option value="pentecost">🔥 Pentecost (Roho Mtakatifu)</option>
-                    <option value="patron">📖 St. Thomas Aquinas (Patron)</option>
-                    <option value="general">🎼 General / Other</option>
+                    <option value="marian">Marian (Bikira Maria)</option>
+                    <option value="mwanzo">Entrance (Mwanzo)</option>
+                    <option value="utukufu">Kyrie / Gloria (Utukufu)</option>
+                    <option value="sadaka">Offertory (Sadaka)</option>
+                    <option value="komunyo">Communion (Komunyo)</option>
+                    <option value="shukrani">Thanksgiving (Shukrani)</option>
+                    <option value="kutoka">Recessional (Kutoka)</option>
+                    <option value="kwaresma">Lent (Kwaresma)</option>
+                    <option value="pasaka">Easter (Pasaka)</option>
+                    <option value="noeli">Christmas (Noeli)</option>
+                    <option value="pentecost">Pentecost (Roho Mtakatifu)</option>
+                    <option value="patron">St. Thomas Aquinas (Patron)</option>
+                    <option value="general">General / Other</option>
                   </select>
 
                   <select
                     value={songLanguageFilter}
                     onChange={(e) => setSongLanguageFilter(e.target.value)}
-                    className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-xs"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-xs"
                   >
                     <option value="all">All Languages</option>
                     <option value="Swahili">Swahili</option>
