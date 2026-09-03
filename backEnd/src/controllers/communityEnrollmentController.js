@@ -1,4 +1,5 @@
 import { db } from "../Configs/dbConfig.js";
+import { sendMail, isConfigured } from "../Configs/emailConfig.js";
 import logger from "../logger/winston.js";
 
 // Public: submit a community enrollment
@@ -176,7 +177,86 @@ export const updateEnrollmentStatus = async (req, res) => {
       return res.status(404).json({ error: "Enrollment not found" });
     }
 
-    return res.json(result.rows[0]);
+    const enrollment = result.rows[0];
+
+    // Send email notification to the member if email is available
+    if (enrollment.email && isConfigured()) {
+      try {
+        // Look up the community/module name
+        const moduleResult = await db.query(
+          `SELECT title FROM hub_modules WHERE id = $1`,
+          [moduleId]
+        );
+        const moduleName = moduleResult.rows[0]?.title || moduleId;
+
+        const subject = status === 'Approved'
+          ? `🎉 Your ${moduleName} Application Has Been Approved!`
+          : `📋 Update on Your ${moduleName} Application`;
+
+        const html = status === 'Approved'
+          ? `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px;">🎉 Application Approved!</h1>
+              </div>
+              <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+                <p style="font-size: 16px; color: #334155;">Dear <strong>${enrollment.full_name}</strong>,</p>
+                <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+                  We are pleased to inform you that your application to join <strong>${moduleName}</strong> has been <span style="color: #059669; font-weight: bold;">approved</span>!
+                </p>
+                <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+                  Welcome to the community! You are now an official member. Please reach out to your community leaders for next steps, meeting schedules, and how to get involved.
+                </p>
+                <div style="background: white; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <p style="margin: 0; font-size: 14px; color: #64748b;"><strong>Status:</strong> <span style="color: #059669;">Approved</span></p>
+                  <p style="margin: 5px 0 0; font-size: 14px; color: #64748b;"><strong>Community:</strong> ${moduleName}</p>
+                </div>
+                <p style="font-size: 14px; color: #94a3b8; margin-top: 30px; text-align: center;">
+                  God bless you — CSA Kirinyaga
+                </p>
+              </div>
+            </div>
+          `
+          : `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px;">📋 Application Update</h1>
+              </div>
+              <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+                <p style="font-size: 16px; color: #334155;">Dear <strong>${enrollment.full_name}</strong>,</p>
+                <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+                  Thank you for your interest in joining <strong>${moduleName}</strong>. After careful review, we regret to inform you that your application has been <span style="color: #dc2626; font-weight: bold;">not approved</span> at this time.
+                </p>
+                ${rejectionReason ? `
+                <div style="background: white; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <p style="margin: 0; font-size: 14px; color: #64748b;"><strong>Reason:</strong></p>
+                  <p style="margin: 5px 0 0; font-size: 14px; color: #475569;">${rejectionReason}</p>
+                </div>
+                ` : ''}
+                <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+                  If you believe this was an error or would like to reapply, please contact the community admin or try again later.
+                </p>
+                <p style="font-size: 14px; color: #94a3b8; margin-top: 30px; text-align: center;">
+                  God bless you — CSA Kirinyaga
+                </p>
+              </div>
+            </div>
+          `;
+
+        const text = status === 'Approved'
+          ? `Dear ${enrollment.full_name}, your application to join ${moduleName} has been approved! Welcome to the community.`
+          : `Dear ${enrollment.full_name}, your application to join ${moduleName} has not been approved.${rejectionReason ? ` Reason: ${rejectionReason}` : ''}`;
+
+        // Fire-and-forget: don't block the response if email fails
+        sendMail({ to: enrollment.email, subject, html, text }).catch((err) => {
+          logger.error("Failed to send enrollment status email:", err.message);
+        });
+      } catch (emailErr) {
+        logger.error("Error preparing enrollment email:", emailErr.message);
+      }
+    }
+
+    return res.json(enrollment);
   } catch (error) {
     logger.error("updateEnrollmentStatus error:", error.message);
     return res.status(500).json({ error: "Failed to update status" });
