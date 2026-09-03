@@ -151,6 +151,28 @@ function OfficialCard({ off, cat, navigate, threeCol }: OfficialCardProps) {
           {off.position && (
             <p className="text-slate-500 text-xs mt-1 line-clamp-1">{off.position}</p>
           )}
+          {off.contact && (
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-center gap-2">
+              <a
+                href={`tel:${off.contact.replace(/[^+0-9]/g, '')}`}
+                onClick={(e) => e.stopPropagation()}
+                className="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                title="Call"
+              >
+                <FaPhoneAlt size={13} />
+              </a>
+              <a
+                href={`https://wa.me/${off.contact.replace(/[^+0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="w-9 h-9 rounded-xl bg-emerald-50 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-sm"
+                title="WhatsApp"
+              >
+                <FaWhatsapp size={17} />
+              </a>
+            </div>
+          )}
         </div>
       </article>
     </>
