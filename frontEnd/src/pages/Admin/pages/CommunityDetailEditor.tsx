@@ -1852,8 +1852,8 @@ setSongsList(res.data?.data || []);
                 </div>
 
                 {/* Search & Filter Toolbar */}
-                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_11rem_9rem] items-center gap-2 pt-2 border-t border-slate-200/80">
-                  <div className="relative min-w-0">
+                <div className="grid grid-cols-2 sm:grid-cols-[minmax(16rem,26rem)_11rem_9rem] items-center gap-2 pt-2 border-t border-slate-200/80">
+                  <div className="relative min-w-0 col-span-2 sm:col-span-1">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
