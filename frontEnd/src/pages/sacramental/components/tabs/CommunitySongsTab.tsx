@@ -570,7 +570,6 @@ return (
           })}
         </div>
       )}
-      </>)}
 
       {/* ========================================================================= */}
       {/* Inline Song Detail â€” replaces list when a song is selected */}
@@ -870,6 +869,7 @@ return (
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

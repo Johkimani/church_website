@@ -976,7 +976,7 @@ setSongsList(res.data?.data || []);
   const isInProgram = (progType: string, songId: number) =>
     !!(programmes[songId] && programmes[songId][progType]?.includes(songId));
 
-  const toggleProgramAdmin = async (progType: string, songId: number) => {ProgramAdmin = async (progType: string, songId: number) => {
+  const toggleProgramAdmin = async (progType: string, songId: number) => {
     try {
       await apiClient.post('/choir-songs/programmes/toggle', {
         module_id: categoryId || 'choir',
@@ -1568,7 +1568,7 @@ setSongsList(res.data?.data || []);
                     </div>
                     {/* Compact upload button */}
                     <div className="shrink-0">
-                      {/* Hidden file input — always triggered via ref */}
+                      {/* Hidden file input - always triggered via ref */}
                       <input
                         ref={communityImageInputRef}
                         type="file"
@@ -1577,14 +1577,13 @@ setSongsList(res.data?.data || []);
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          // Show instant local preview immediately — feels instant
+                          // Show instant local preview immediately
                           const localUrl = URL.createObjectURL(file);
                           setAboutForm(v => ({ ...v, saint_image_url: localUrl, uploading: true }));
                           // Upload in the background
                           uploadFile(file, { compress: false }).then(res => {
                             const url = res?.data?.data?.url || res?.data?.url || res?.data?.data?.[0]?.url || res?.data?.[0]?.url || '';
                             if (url) {
-                              URL.revokeObjectURL(localUrl);
                               setAboutForm(v => ({ ...v, saint_image_url: url, uploading: false }));
                               showToast(isOurJumuiyasAdmin ? 'Image uploaded! Click "Save Jumuiyas Card Image" to save.' : 'Image uploaded! Click "Save About Content" to save.');
                             } else {
@@ -1829,11 +1828,6 @@ setSongsList(res.data?.data || []);
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                              {song.language || 'Swahili'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
                             <div className="flex flex-col gap-2 text-xs">
                               {programmes[song.id] ? (
                                 Object.entries(programmes[song.id]).map(([progType, songIds]) => {
@@ -1841,9 +1835,9 @@ setSongsList(res.data?.data || []);
                                   return (
                                     <div
                                       key={progType}
-                                      className="flex items-center gap-1 px-2 py-1 rounded border ${
+                                      className={`flex items-center gap-1 px-2 py-1 rounded border ${
                                         isIn ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 border-slate-400 dark:text-slate-400'
-                                      }"
+                                      }`}
                                       onClick={() => toggleProgramAdmin(progType, song.id)}
                                     >
                                       <FaStar size={10} className={isIn ? 'fill-current text-white' : 'text-slate-400'} />
