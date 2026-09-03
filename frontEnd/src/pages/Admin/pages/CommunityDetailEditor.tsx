@@ -47,6 +47,7 @@ import {
   Maximize2,
   Sliders
 } from 'lucide-react';
+import { FaStar } from 'react-icons/fa';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
 type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions';
