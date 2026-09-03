@@ -505,15 +505,18 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
 
                   {/* Admin‑programme badges (read‑only for users) */}
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 text-xs">
-                    {programmes[song.id] ? (
-                      Object.entries(programmes[song.id]).map(([progType, _]) => (
-                        <span
-                          key={progType}
-                          className="px-2 py-0.5 rounded bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 capitalize text-[10px] hover:bg-slate-200/80 dark:hover:bg-slate-700/90"
-                        >
-                          {progType === 'sunday' ? 'S' : progType === 'friday' ? 'F' : progType === 'tuesday' ? 'T' : 'Sa'}
-                        </span>
-                      ))
+                    {programIds[song.id] ? (
+                      Object.entries(programIds[song.id]).map(([progType, ids]) => {
+                        if (!progType) return null;
+                        return (
+                          <span
+                            key={progType}
+                            className="px-2 py-0.5 rounded bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 capitalize text-[10px] hover:bg-slate-200/80 dark:hover:bg-slate-700/90"
+                          >
+                            {progType === 'sunday' ? 'S' : progType === 'friday' ? 'F' : progType === 'tuesday' ? 'T' : 'Sa'}
+                          </span>
+                        );
+                      }))
                     ) : (
                       <span className="text-slate-400 opacity-50">—</span>
                     )}
