@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../api/axiosInstance';
 import {
@@ -59,20 +59,20 @@ interface Props {
 }
 
 export const SONG_CATEGORIES = [
-  { id: 'all', label: 'All Songs', swahili: 'Nyimbo Zote', icon: '🎵', accent: '#2563eb' },
-  { id: 'marian', label: 'Marian', swahili: 'Bikira Maria', icon: '🌹', accent: '#0284c7' },
-  { id: 'mwanzo', label: 'Entrance', swahili: 'Mwanzo', icon: '🚪', accent: '#059669' },
-  { id: 'utukufu', label: 'Kyrie / Gloria', swahili: 'Utukufu & Huruma', icon: '✨', accent: '#7c3aed' },
-  { id: 'sadaka', label: 'Offertory', swahili: 'Sadaka / Matoleo', icon: '🍞', accent: '#d97706' },
-  { id: 'komunyo', label: 'Communion', swahili: 'Komunyo / Ekaristi', icon: '🍷', accent: '#dc2626' },
-  { id: 'shukrani', label: 'Thanksgiving', swahili: 'Shukrani', icon: '🙏', accent: '#16a34a' },
-  { id: 'kutoka', label: 'Recessional', swahili: 'Kutoka', icon: '🚶‍♂️', accent: '#4f46e5' },
-  { id: 'kwaresma', label: 'Lent', swahili: 'Kwaresma / Mateso', icon: '✝️', accent: '#6b21a8' },
-  { id: 'pasaka', label: 'Easter', swahili: 'Pasaka / Ufufuko', icon: '🌅', accent: '#ea580c' },
-  { id: 'noeli', label: 'Christmas', swahili: 'Noeli / Krismasi', icon: '⭐', accent: '#0891b2' },
-  { id: 'pentecost', label: 'Pentecost', swahili: 'Roho Mtakatifu', icon: '🔥', accent: '#b91c1c' },
-  { id: 'patron', label: 'St. Thomas Aquinas', swahili: 'Msimamizi Wetu', icon: '📖', accent: '#1e3a8a' },
-  { id: 'general', label: 'General', swahili: 'Mbalimbali', icon: '🎼', accent: '#475569' },
+  { id: 'all', label: 'All Songs', swahili: 'Nyimbo Zote', icon: 'ðŸŽµ', accent: '#2563eb' },
+  { id: 'marian', label: 'Marian', swahili: 'Bikira Maria', icon: 'ðŸŒ¹', accent: '#0284c7' },
+  { id: 'mwanzo', label: 'Entrance', swahili: 'Mwanzo', icon: 'ðŸšª', accent: '#059669' },
+  { id: 'utukufu', label: 'Kyrie / Gloria', swahili: 'Utukufu & Huruma', icon: 'âœ¨', accent: '#7c3aed' },
+  { id: 'sadaka', label: 'Offertory', swahili: 'Sadaka / Matoleo', icon: 'ðŸž', accent: '#d97706' },
+  { id: 'komunyo', label: 'Communion', swahili: 'Komunyo / Ekaristi', icon: 'ðŸ·', accent: '#dc2626' },
+  { id: 'shukrani', label: 'Thanksgiving', swahili: 'Shukrani', icon: 'ðŸ™', accent: '#16a34a' },
+  { id: 'kutoka', label: 'Recessional', swahili: 'Kutoka', icon: 'ðŸš¶â€â™‚ï¸', accent: '#4f46e5' },
+  { id: 'kwaresma', label: 'Lent', swahili: 'Kwaresma / Mateso', icon: 'âœï¸', accent: '#6b21a8' },
+  { id: 'pasaka', label: 'Easter', swahili: 'Pasaka / Ufufuko', icon: 'ðŸŒ…', accent: '#ea580c' },
+  { id: 'noeli', label: 'Christmas', swahili: 'Noeli / Krismasi', icon: 'â­', accent: '#0891b2' },
+  { id: 'pentecost', label: 'Pentecost', swahili: 'Roho Mtakatifu', icon: 'ðŸ”¥', accent: '#b91c1c' },
+  { id: 'patron', label: 'St. Thomas Aquinas', swahili: 'Msimamizi Wetu', icon: 'ðŸ“–', accent: '#1e3a8a' },
+  { id: 'general', label: 'General', swahili: 'Mbalimbali', icon: 'ðŸŽ¼', accent: '#475569' },
 ];
 
 export default function CommunitySongsTab({ moduleId, color }: Props) {
@@ -182,7 +182,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
     if (isAdding) {
       toast.success(`Added to ${meta.label}`);
     } else {
-      toast(`Removed from ${meta.label}`, { icon: '🗑️' });
+      toast(`Removed from ${meta.label}`, { icon: 'ðŸ—‘ï¸' });
     }
 
     // Persist to backend database
@@ -302,7 +302,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       {!selectedSong && (<>
-      {/* ── Page Header ── */}
+      {/* â”€â”€ Page Header â”€â”€ */}
       <div
         className="rounded-2xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
         style={{ background: `linear-gradient(135deg, ${color}18 0%, #1e3a8a12 100%)`, border: `1px solid ${color}30` }}
@@ -319,7 +319,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
               Choir songs &amp; lyrics library
             </h1>
             <p className="text-sm font-bold text-slate-700 mt-0.5">
-              Nyimbo za Misa &nbsp;·&nbsp; Karatasi za Noti &nbsp;·&nbsp; Mkusanyiko wa Kwaya
+              Nyimbo za Misa &nbsp;Â·&nbsp; Karatasi za Noti &nbsp;Â·&nbsp; Mkusanyiko wa Kwaya
             </p>
           </div>
         </div>
@@ -503,7 +503,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     <span>{categoryMeta.label}</span>
                   </div>
 
-                  {/* Admin‑programme badges (read‑only for users) */}
+                  {/* Adminâ€‘programme badges (readâ€‘only for users) */}
 <div className="absolute top-3 right-3 flex items-center gap-1.5 text-xs">
                     {programIds[song.id] ? (
                       Object.entries(programIds[song.id])
@@ -517,7 +517,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                           </span>
                         ))
                     ) : (
-                      <span className="text-slate-400 opacity-50">—</span>
+                      <span className="text-slate-400 opacity-50">â€”</span>
                     )}
                   </div>
                 </div>
@@ -555,7 +555,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                   {/* Footer Actions */}
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <span className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
-                      {song.lyrics_text ? 'Read Lyrics / Sheet' : 'Open Sheet Music'} →
+                      {song.lyrics_text ? 'Read Lyrics / Sheet' : 'Open Sheet Music'} â†’
                     </span>
                     {song.views_count ? (
                       <span className="text-[11px] text-slate-400 flex items-center gap-1">
@@ -572,7 +572,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
       </>)}
 
       {/* ========================================================================= */}
-      {/* Inline Song Detail — replaces list when a song is selected */}
+      {/* Inline Song Detail â€” replaces list when a song is selected */}
       {/* ========================================================================= */}
       {selectedSong && (
         <div style={{ animation: 'detailFadeIn 0.3s ease-out' }}>
@@ -675,7 +675,7 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                       ? 'bg-amber-400 text-slate-900'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                   }`}
-                  title={`Reader theme: ${readerTheme} — click to cycle`}
+                  title={`Reader theme: ${readerTheme} â€” click to cycle`}
                 >
                   {readerTheme === 'dark' ? <FaSun size={11} /> : readerTheme === 'light' ? <FaSun size={11} /> : <FaAdjust size={11} />}
                   <span className="hidden sm:inline">{readerTheme === 'auto' ? 'Auto' : readerTheme === 'light' ? 'Light' : 'Dark'}</span>
@@ -775,8 +775,8 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                       <FaMusic className="text-purple-600" />
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                         {selectedSong.key_signature ? `Key: ${selectedSong.key_signature}` : 'Tonic Sol-fa Notation'}
-                        {selectedSong.time_signature ? ` • ${selectedSong.time_signature}` : ''}
-                        {selectedSong.tempo ? ` • ${selectedSong.tempo}` : ''}
+                        {selectedSong.time_signature ? ` â€¢ ${selectedSong.time_signature}` : ''}
+                        {selectedSong.tempo ? ` â€¢ ${selectedSong.tempo}` : ''}
                       </span>
                     </div>
 
