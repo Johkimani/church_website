@@ -2350,16 +2350,10 @@ export default function CommunityDetailEditor() {
                         <thead>
                           <tr className="border-b border-slate-200 text-slate-500 bg-slate-50">
                             <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Full Name</th>
-                            {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
-                              <>
-                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
-                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
-                              </>
-                            ) : (
-                              <>
-                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
-                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Gender</th>
-                              </>
+                            <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
+                            <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
+                            {categoryId === 'choir' && (
+                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
                             )}
                             <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Status</th>
                             <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
@@ -2382,56 +2376,39 @@ export default function CommunityDetailEditor() {
                           }).map((member) => (
                             <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-slate-800">
                               <td className="py-3.5 px-4 font-extrabold text-slate-900">{member.fullName || member.full_name}</td>
-                              {['charismatic', 'dancers', 'youth', 'st-francis'].includes(categoryId || '') ? (
-                                <>
-                                  <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.phoneNumber || member.phone || 'N/A'}</td>
-                                  <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.email || 'N/A'}</td>
-                                </>
-                              ) : (
-                                <>
-                                  <td className="py-3.5 px-4 text-sm font-bold">
-                                    {categoryId === 'choir' ? (
-                                      <select
-                                        value={member.voice_type || ''}
-                                        onChange={async (e) => {
-                                          const v = e.target.value;
-                                          if (!v) return;
-                                          try {
-                                            await updateTableRecord('enrollments', member.id, { voice_type: v });
-                                            showToast(`Voice section saved: ${v}`);
-                                            await loadCategoryData();
-                                          } catch {
-                                            alert('Could not save voice section');
-                                          }
-                                        }}
-                                        className={`px-2 py-1 rounded-md border text-xs font-black uppercase cursor-pointer ${
-                                          (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800 border-pink-200' :
-                                          (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                                          (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800 border-sky-200' :
-                                          (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
-                                          'bg-white text-slate-500 border-slate-300'
-                                        }`}
-                                        title="Set this member's voice section"
-                                      >
-                                        <option value="">Set voice…</option>
-                                        <option value="Soprano">Soprano</option>
-                                        <option value="Alto">Alto</option>
-                                        <option value="Tenor">Tenor</option>
-                                        <option value="Bass">Bass</option>
-                                      </select>
-                                    ) : (
-                                      <span className={`px-2.5 py-0.5 rounded-md text-xs font-black uppercase ${
-                                        (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800 border border-pink-200' :
-                                        (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                                        (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800 border border-sky-200' :
-                                        (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                      }`}>
-                                        {member.voice_type || 'General'}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="py-3.5 px-4 text-sm text-slate-700 font-semibold capitalize">{member.gender || 'N/A'}</td>
-                                </>
+                              <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.phoneNumber || member.phone || 'N/A'}</td>
+                              <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.email || 'N/A'}</td>
+                              {categoryId === 'choir' && (
+                                <td className="py-3.5 px-4 text-sm font-bold">
+                                  <select
+                                    value={member.voice_type || ''}
+                                    onChange={async (e) => {
+                                      const v = e.target.value;
+                                      if (!v) return;
+                                      try {
+                                        await updateTableRecord('enrollments', member.id, { voice_type: v });
+                                        showToast(`Voice section saved: ${v}`);
+                                        await loadCategoryData();
+                                      } catch {
+                                        alert('Could not save voice section');
+                                      }
+                                    }}
+                                    className={`px-2 py-1 rounded-md border text-xs font-black uppercase cursor-pointer ${
+                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800 border-pink-200' :
+                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800 border-sky-200' :
+                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800 border-indigo-200' :
+                                      'bg-white text-slate-500 border-slate-300'
+                                    }`}
+                                    title="Set this member's voice section"
+                                  >
+                                    <option value="">Set voice…</option>
+                                    <option value="Soprano">Soprano</option>
+                                    <option value="Alto">Alto</option>
+                                    <option value="Tenor">Tenor</option>
+                                    <option value="Bass">Bass</option>
+                                  </select>
+                                </td>
                               )}
                               <td className="py-3.5 px-4">
                                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
