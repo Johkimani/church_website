@@ -973,7 +973,10 @@ setSongsList(res.data?.data || []);
   };
 
   // Admin: toggle song into programme (Sunday/Friday/Tuesday/Saturday)
-  const toggleProgramAdmin = async (progType: string, songId: number) => {
+  const isInProgram = (progType: string, songId: number) =>
+    !!(programmes[songId] && programmes[songId][progType]?.includes(songId));
+
+  const toggleProgramAdmin = async (progType: string, songId: number) => {ProgramAdmin = async (progType: string, songId: number) => {
     try {
       await apiClient.post('/choir-songs/programmes/toggle', {
         module_id: categoryId || 'choir',
