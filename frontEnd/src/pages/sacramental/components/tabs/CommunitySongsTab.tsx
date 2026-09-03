@@ -80,12 +80,14 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   const [languageFilter, setLanguageFilter] = useState<string>('all');
   const [selectedKey, setSelectedKey] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
-  const [activeMainTab, setActiveMainTab] = useState<'all' | 'sunday' | 'friday'>('all');
+  const [activeMainTab, setActiveMainTab] = useState<'all' | 'sunday' | 'friday' | 'tuesday' | 'saturday'>('all');
 
   // Programme collections: each song can belong to Sunday, Friday, or both.
   const PROGRAMS = [
     { id: 'sunday', label: 'Sunday Program', icon: <FaSun size={13} />, storageKey: 'csa_choir_bookmarked_songs' },
     { id: 'friday', label: 'Friday Program', icon: <FaLandmark size={13} />, storageKey: 'csa_choir_friday_songs' },
+    { id: 'tuesday', label: 'Tuesday Program', icon: <FaCalendar size={13} />, storageKey: 'csa_choir_tuesday_songs' },
+    { id: 'saturday', label: 'Saturday Program', icon: <FaCalendar size={13} />, storageKey: 'csa_choir_saturday_songs' },
   ] as const;
   type ProgramId = (typeof PROGRAMS)[number]['id'];
 
@@ -147,9 +149,13 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
     if (cloudProgrammesData) {
       const sundayIds = (cloudProgrammesData.sunday || []).map((s: any) => s.id);
       const fridayIds = (cloudProgrammesData.friday || []).map((s: any) => s.id);
+      const tuesdayIds = (cloudProgrammesData.tuesday || []).map((s: any) => s.id);
+      const saturdayIds = (cloudProgrammesData.saturday || []).map((s: any) => s.id);
       setProgramIds({
         sunday: Array.from(new Set([...sundayIds, ...readCollection(PROGRAMS[0].storageKey)])),
         friday: Array.from(new Set([...fridayIds, ...readCollection(PROGRAMS[1].storageKey)])),
+        tuesday: Array.from(new Set([...tuesdayIds, ...readCollection(PROGRAMS[2].storageKey)])),
+        saturday: Array.from(new Set([...saturdayIds, ...readCollection(PROGRAMS[3].storageKey)])),
       });
     }
   }, [cloudProgrammesData]);
@@ -491,26 +497,26 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                     loading="lazy"
                     className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105 filter group-hover:brightness-95"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
-
-                  {/* Category Badge */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-white shadow-sm">
                     <span>{categoryMeta.icon}</span>
                     <span>{categoryMeta.label}</span>
                   </div>
 
-                  {/* Programme Toggle Button */}
-                  <button
-                    onClick={(e) => toggleProgram(starProgram, song.id, e)}
-                    className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur transition-all ${
-                      isBookmarked
-                        ? 'bg-amber-500 text-white shadow-md'
-                        : 'bg-black/40 text-white/80 hover:bg-black/60 hover:text-white'
-                    }`}
-                    title={isBookmarked ? `Remove from ${programLabel(starProgram)}` : `Add to ${programLabel(starProgram)}`}
-                  >
-                    <FaStar size={13} className={isBookmarked ? 'fill-current' : ''} />
-                   </button>
+                  {/* Admin‑programme badges (read‑only for users) */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 text-xs">
+                    {programmes[song.id] ? (
+                      Object.entries(programmes[song.id]).map(([progType, _]) => (
+                        <span
+                          key={progType}
+                          className="px-2 py-0.5 rounded bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 capitalize text-[10px] hover:bg-slate-200/80 dark:hover:bg-slate-700/90"
+                        >
+                          {progType === 'sunday' ? 'S' : progType === 'friday' ? 'F' : progType === 'tuesday' ? 'T' : 'Sa'}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-slate-400 opacity-50">—</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Body Content */}
@@ -592,19 +598,15 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
                   {PROGRAMS.map((prog) => {
                     const active = isInProgram(prog.id, selectedSong.id);
                     return (
-                      <button
+                      <div
                         key={prog.id}
-                        onClick={() => toggleProgram(prog.id, selectedSong.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
-                          active
-                            ? 'bg-amber-500 text-white shadow-md'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300'
-                        }`}
-                        title={active ? `In ${prog.label}` : `Add to ${prog.label}`}
+                        className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 capitalize text-[10px] ${
+                          active ? 'bg-amber-500 text-white' : ''
+                        }"
                       >
-                        <FaStar size={10} className={active ? 'fill-current' : ''} />
-                        {prog.label}
-                      </button>
+                        <span className="text-[9px]">{progType === 'sunday' ? 'S' : progType === 'friday' ? 'F' : progType === 'tuesday' ? 'T' : 'Sa'}</span>
+                        <span className="hidden sm:inline">{prog.label}</span>
+                      </div>
                     );
                   })}
                 </div>
