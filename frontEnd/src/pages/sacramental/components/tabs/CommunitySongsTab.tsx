@@ -74,6 +74,7 @@ export const SONG_CATEGORIES = [
 ];
 
 export default function CommunitySongsTab({ moduleId, color }: Props) {
+  const songbookRootRef = useRef<HTMLDivElement>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [languageFilter, setLanguageFilter] = useState<string>('all');
@@ -160,6 +161,12 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
       });
     }
   }, [cloudProgrammesData]);
+
+  useEffect(() => {
+    if (!selectedSong || !songbookRootRef.current) return;
+    const rootTop = songbookRootRef.current.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: Math.max(0, rootTop - 16), behavior: 'smooth' });
+  }, [selectedSong]);
 
   const isInProgram = (program: ProgramId, id: number) => (programIds[program] || []).includes(id);
 
@@ -265,9 +272,10 @@ export default function CommunitySongsTab({ moduleId, color }: Props) {
   }, [selectedSong?.lyrics_text, fontSize]);
 
 return (
-     <div className="max-w-6xl mx-auto px-4 py-6">
+  <div ref={songbookRootRef} className="max-w-6xl mx-auto px-4 py-6">
        {/* Single Song View */}
        <div>
+      {!selectedSong && (<>
       {/* â”€â”€ Page Header â”€â”€ */}
       <div
         className="rounded-2xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -529,6 +537,8 @@ return (
           })}
         </div>
       )}
+
+      </>)}
 
       {/* ========================================================================= */}
       {/* Inline Song Detail â€” replaces list when a song is selected */}
