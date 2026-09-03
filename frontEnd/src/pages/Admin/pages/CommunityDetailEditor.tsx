@@ -183,6 +183,7 @@ export default function CommunityDetailEditor() {
   });
   const [songFile, setSongFile] = useState<File | null>(null);
   const [programmes, setProgrammes] = useState<Record<number, string[]>>({});
+  const [pendingProgrammeToggles, setPendingProgrammeToggles] = useState<Set<string>>(new Set());
   const [songFilePreview, setSongFilePreview] = useState<string>('');
   const [continuationPages, setContinuationPages] = useState<{ file: File; preview: string }[]>([]);
   const [activeSheetPageIndex, setActiveSheetPageIndex] = useState<number>(0);
@@ -974,19 +975,44 @@ setSongsList(res.data?.data || []);
 
   // Admin: toggle song into programme (Sunday/Friday/Tuesday/Saturday)
   const toggleProgramAdmin = async (progType: string, songId: number) => {
+    const toggleKey = `${songId}:${progType}`;
+    if (pendingProgrammeToggles.has(toggleKey)) return;
+
+    const wasInProgramme = programmes[songId]?.includes(progType) || false;
+    setPendingProgrammeToggles((pending) => new Set(pending).add(toggleKey));
+    setProgrammes((current) => {
+      const songProgrammes = current[songId] || [];
+      const nextProgrammes = wasInProgramme
+        ? songProgrammes.filter((program) => program !== progType)
+        : [...songProgrammes, progType];
+      return { ...current, [songId]: nextProgrammes };
+    });
+
     try {
       const response = await apiClient.post('/choir-songs/programmes/toggle', {
         module_id: categoryId || 'choir',
         program_type: progType,
         song_id: songId,
       });
-      // Refresh the data
-      await loadCategoryData();
       showToast(response.data?.action === 'removed'
         ? `Song removed from ${progType} programme`
         : `Song added to ${progType} programme`);
     } catch (err: any) {
+      setProgrammes((current) => {
+        const songProgrammes = current[songId] || [];
+        const restoredProgrammes = wasInProgramme
+          ? [...new Set([...songProgrammes, progType])]
+          : songProgrammes.filter((program) => program !== progType);
+        return { ...current, [songId]: restoredProgrammes };
+      });
       alert(err?.response?.data?.error || 'Failed to toggle programme');
+    } finally {
+      setPendingProgrammeToggles((pending) => {
+        const next = new Set(pending);
+        next.delete(toggleKey);
+        return next;
+      });
+      loadCategoryData();
     }
   };
 
@@ -1827,23 +1853,27 @@ setSongsList(res.data?.data || []);
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex flex-wrap gap-1.5 text-xs">
+                            <div className="grid grid-cols-4 gap-1.5 min-w-[220px]">
                               {(['tuesday', 'friday', 'saturday', 'sunday'] as const).map((progType) => {
                                 const isIn = programmes[song.id]?.includes(progType) || false;
-                                const label = progType.charAt(0).toUpperCase() + progType.slice(1);
+                                const isPending = pendingProgrammeToggles.has(`${song.id}:${progType}`);
+                                const label = progType.slice(0, 3).toUpperCase();
                                 return (
                                   <button
                                     key={progType}
                                     type="button"
                                     aria-label={`${isIn ? 'Remove' : 'Add'} ${song.title} ${label} programme`}
                                     title={`${isIn ? 'Remove from' : 'Add to'} ${label} programme`}
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded border transition-colors cursor-pointer ${
-                                      isIn ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-200 text-slate-600 border-slate-300 hover:bg-amber-100 hover:text-amber-700'
+                                    disabled={isPending}
+                                    className={`flex flex-col items-center justify-center gap-0.5 min-h-12 rounded-lg border text-[9px] font-black tracking-wide transition-all cursor-pointer disabled:cursor-wait ${
+                                      isIn
+                                        ? 'border-amber-300 bg-amber-50 text-amber-700 shadow-sm'
+                                        : 'border-slate-200 bg-white text-slate-400 hover:border-amber-200 hover:bg-amber-50/60 hover:text-amber-600'
                                     }`}
                                     onClick={() => toggleProgramAdmin(progType, song.id)}
                                   >
-                                    <FaStar size={10} className={isIn ? 'fill-current' : 'text-slate-400'} />
-                                    <span className="text-[10px]">{label}</span>
+                                    <FaStar size={12} className={`${isIn ? 'fill-current text-amber-500' : 'text-slate-300'} ${isPending ? 'animate-pulse' : ''}`} />
+                                    <span>{label}</span>
                                   </button>
                                 );
                               })}
