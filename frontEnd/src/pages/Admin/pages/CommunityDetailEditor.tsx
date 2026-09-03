@@ -181,6 +181,7 @@ export default function CommunityDetailEditor() {
     image_url: ''
   });
   const [songFile, setSongFile] = useState<File | null>(null);
+  const [programmes, setProgrammes] = useState<Record<number, Record<string, number[]>>>({});
   const [songFilePreview, setSongFilePreview] = useState<string>('');
   const [continuationPages, setContinuationPages] = useState<{ file: File; preview: string }[]>([]);
   const [activeSheetPageIndex, setActiveSheetPageIndex] = useState<number>(0);
@@ -265,10 +266,28 @@ export default function CommunityDetailEditor() {
               limit: 200,
             },
           });
-          setSongsList(res.data?.data || []);
+setSongsList(res.data?.data || []);
+
+          // Fetch cloud-synced programmes (Sunday/Friday/Saturday/Special)
+          const progRes = await apiClient.get('/choir-songs/programmes', {
+            params: { module_id: categoryId || 'choir' },
+          });
+          const cloudProgrammes = progRes.data?.programmes || {};
+          // Build map: song_id -> [progTypes the song belongs to]
+          const programmeMap: Record<number, string[]> = {};
+          Object.entries(cloudProgrammes).forEach(([type, songIds]) => {
+            ;(songIds || []).forEach((song: any) => {
+              if (song.id) {
+                if (!programmeMap[song.id]) programmeMap[song.id] = [];
+                if (!programmeMap[song.id].includes(type)) programmeMap[song.id].push(type);
+              }
+            });
+          });
+          setProgrammes(programmeMap);
         } catch (e) {
           console.error('Failed to load choir songs', e);
           setSongsList([]);
+          setProgrammes({});
         }
         setLoading(false);
         return;
@@ -1753,6 +1772,7 @@ export default function CommunityDetailEditor() {
                         <th className="py-3.5 px-4">Song Title & Details</th>
                         <th className="py-3.5 px-4">Category</th>
                         <th className="py-3.5 px-4">Language</th>
+                        <th className="py-3.5 px-4">Programme</th>
                         <th className="py-3.5 px-4">Composer</th>
                         <th className="py-3.5 px-4">Lyrics / Solfa</th>
                         <th className="py-3.5 px-4 text-right">Actions</th>
@@ -1794,6 +1814,28 @@ export default function CommunityDetailEditor() {
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                               {song.language || 'Swahili'}
                             </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-col gap-2 text-xs">
+                              {programmes[song.id] ? (
+                                Object.entries(programmes[song.id]).map(([progType, songIds]) => {
+                                  const isIn = songIds.includes(song.id);
+                                  return (
+                                    <div
+                                      key={progType}
+                                      className="flex items-center gap-1 px-2 py-1 rounded border ${
+                                        isIn ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 border-slate-400 dark:text-slate-400'
+                                      }"
+                                    >
+                                      <FaStar size={10} className={isIn ? 'fill-current text-white' : 'text-slate-400'} />
+                                      <span className="capitalize text-[10px]">{progType === 'sunday' ? 'Sunday' : progType === 'friday' ? 'Friday' : progType === 'tuesday' ? 'Tuesday' : 'Saturday'}</span>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <span className="text-slate-500 opacity-50">Not in any programme</span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4 text-slate-600 font-medium">
                             {song.composer || <span className="text-slate-400 italic">Traditional</span>}

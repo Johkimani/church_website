@@ -1286,6 +1286,8 @@ export const getProgrammes = async (req, res) => {
     const programmes = {
       sunday: [],
       friday: [],
+      tuesday: [],
+      saturday: [],
       special: []
     };
 
