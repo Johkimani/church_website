@@ -299,10 +299,10 @@ return (
         </div>
 
         {/* Library vs Programme Switcher */}
-        <div className="flex items-center bg-slate-200/60 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-2 sm:flex items-center bg-slate-200/60 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 gap-1 w-full sm:w-auto">
           <button
             onClick={() => setActiveMainTab('all')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
+            className={`col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all ${
               activeMainTab === 'all'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white/40 dark:bg-white/10 text-slate-700 dark:text-white hover:bg-white/60'
@@ -318,7 +318,7 @@ return (
               <button
                 key={prog.id}
                 onClick={() => setActiveMainTab(prog.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
+                className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all min-w-0 ${
                   isActive
                     ? 'bg-amber-500 text-white shadow-sm'
                     : 'bg-white/40 dark:bg-white/10 text-slate-700 dark:text-white hover:bg-white/60'
