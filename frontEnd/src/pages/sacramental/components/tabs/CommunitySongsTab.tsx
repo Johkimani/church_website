@@ -21,6 +21,7 @@ import {
   FaFilter,
   FaSlidersH,
   FaLayerGroup,
+  FaCalendar,
   FaChevronLeft,
   FaChevronRight,
   FaEye,
