@@ -123,7 +123,7 @@ export default function CSADistributionCenter() {
 
   // Balance mode: "membership" levels against the full jumuiya membership,
   // "equal" (equal-split) spreads the new intake evenly ignoring seniors.
-  const [strategy, setStrategy] = useState<"membership" | "equal">("membership");
+  const [strategy, setStrategy] = useState<"membership" | "equal">("equal");
   const strategyParam = strategy === "equal" ? "equal-split" : undefined;
 
   // Approval workflow state
