@@ -66,7 +66,6 @@ export const ALL_ADMIN_PATHS = [
   "/admin/jumuiya-channels",
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
-  "/admin/jumuiya-suggestions",
   "/admin/bookings",
 ];
 
@@ -86,7 +85,6 @@ const CHAIR_FORBIDDEN_PATHS = [
   "/admin/secretary-dashboard",
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
-  "/admin/jumuiya-suggestions",
   "/admin/jumuiya-channels",
 ];
 
@@ -188,7 +186,6 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         break;
       case "JUMUIYA_CHAIRPERSON":
         prefixes.add("/admin/suggestions");
-        prefixes.add("/admin/jumuiya-suggestions");
         prefixes.add("/admin/suggestion-bin");
         prefixes.add("/admin/secretary-dashboard");
         prefixes.add("/admin/jumuiya-members");
@@ -201,7 +198,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
       case "JUMUIYA_VICE_CHAIRPERSON":
         prefixes.add("/admin/community-updates");
         prefixes.add("/admin/jumuiya-tshirts");
-        prefixes.add("/admin/jumuiya-suggestions");
+        prefixes.add("/admin/suggestions");
         break;
       case "JUMUIYA_SECRETARY":
         prefixes.add("/admin/secretary-dashboard");

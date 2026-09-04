@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
+import { memberService } from '../../../api/jumuiyaMemberService';
 import { MessageSquare, Trash2, Search, Calendar, User, Mail, RefreshCcw, Loader2, Shield, Reply, CheckCircle, Check, Filter, Clock, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -40,10 +41,51 @@ const CATEGORY_COLORS: Record<string, string> = {
   events: 'bg-yellow-50 text-yellow-600 border-yellow-200',
 };
 
+const SLUG_NAME_MAP: Record<string, string> = {
+  'st-anthony': 'St. Anthony',
+  'st-augustine': 'St. Augustine',
+  'st-catherine': 'St. Catherine',
+  'st-dominic': 'St. Dominic',
+  'st-elizabeth': 'St. Elizabeth',
+  'st-maria-goretti': 'St. Maria Goretti',
+  'st-monica': 'St. Monica',
+};
+
+const JUMUIYA_OPTIONS = [
+  { id: '', name: 'All Jumuiyas' },
+  { id: 'st-anthony', name: 'St. Anthony' },
+  { id: 'st-augustine', name: 'St. Augustine' },
+  { id: 'st-catherine', name: 'St. Catherine' },
+  { id: 'st-dominic', name: 'St. Dominic' },
+  { id: 'st-elizabeth', name: 'St. Elizabeth' },
+  { id: 'st-maria-goretti', name: 'St. Maria Goretti' },
+  { id: 'st-monica', name: 'St. Monica' },
+];
+
 export default function AdminSuggestions() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
   const isVC = userRoles.some((r: any) => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson'].includes(r));
+
+  const userJumuiyaId = user?.jumuiya_id || '';
+  const [selectedJumuiya, setSelectedJumuiya] = useState<string>(userJumuiyaId);
+
+  const [resolvedName, setResolvedName] = useState<string>('');
+  useEffect(() => {
+    const activeId = selectedJumuiya || userJumuiyaId;
+    if (!activeId) { setResolvedName(''); return; }
+    if (SLUG_NAME_MAP[activeId]) { setResolvedName(SLUG_NAME_MAP[activeId]); return; }
+    memberService.getJumuiyaLookup()
+      .then((res: any) => {
+        const data = res?.data || res || {};
+        const entry = data[activeId];
+        setResolvedName(entry ? (entry.name || entry.fullName || activeId) : '');
+      })
+      .catch(() => setResolvedName(''));
+  }, [selectedJumuiya, userJumuiyaId]);
+
+  const activeId = selectedJumuiya || userJumuiyaId;
+  const displayName = resolvedName || SLUG_NAME_MAP[activeId] || (activeId ? 'Jumuiya' : 'All Jumuiyas');
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +102,9 @@ export default function AdminSuggestions() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get('/suggestions');
+      const activeJumuiya = selectedJumuiya || userJumuiyaId;
+      const params = activeJumuiya ? { jumuiya_id: activeJumuiya } : {};
+      const res = await apiClient.get('/suggestions', { params });
       const data = Array.isArray(res.data?.data) ? res.data.data : [];
       const sortedData = data.sort((a: any, b: any) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -76,7 +120,7 @@ export default function AdminSuggestions() {
 
   useEffect(() => {
     loadSuggestions();
-  }, []);
+  }, [selectedJumuiya, userJumuiyaId]);
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this suggestion?')) {
@@ -155,10 +199,19 @@ export default function AdminSuggestions() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-white/40 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full blur-3xl -mr-32 -mt-32 opacity-40 pointer-events-none"></div>
         <div className="relative z-10">
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">User Suggestions</h2>
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">{displayName} Suggestions</h2>
           <p className="text-slate-500 font-medium mt-1 uppercase tracking-wider text-xs">Manage community feedback and ideas</p>
         </div>
         <div className="flex items-center gap-3 relative z-10">
+          <select
+            value={selectedJumuiya}
+            onChange={(e) => setSelectedJumuiya(e.target.value)}
+            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-indigo-400 transition-all cursor-pointer shadow-sm"
+          >
+            {JUMUIYA_OPTIONS.map(opt => (
+              <option key={opt.id} value={opt.id}>{opt.name}</option>
+            ))}
+          </select>
           <button
             onClick={loadSuggestions}
             disabled={loading}
@@ -403,7 +456,7 @@ export default function AdminSuggestions() {
               ? `No suggestions categorized as "${categoryFilter}".`
               : statusFilter !== 'all'
                 ? `No suggestions with status "${statusFilter.replace(/_/g, ' ')}".`
-                : 'When users share ideas, they\'ll appear here.'}
+                : `When ${displayName} members submit ideas, they'll appear here.`}
           </p>
         </div>
       )}

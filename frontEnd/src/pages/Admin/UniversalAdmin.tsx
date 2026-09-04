@@ -80,7 +80,6 @@ const menuSections: NavSection[] = [
       { id: 'community-updates', name: 'Community Updates', icon: Bell, path: '/admin/community-updates' },
       { id: 'gallery', name: 'Gallery', icon: ImageIcon, path: '/admin/gallery' },
       { id: 'suggestions', name: 'Suggestions', icon: MessageSquare, path: '/admin/suggestions' },
-      { id: 'jumuiya-suggestions', name: 'Jumuiya Suggestions', icon: MessageSquare, path: '/admin/jumuiya-suggestions' },
       { id: 'suggestion-bin', name: 'Suggestion Bin', icon: Trash2, path: '/admin/suggestion-bin' },
       { id: 'donations', name: 'Donations', icon: HandCoins, path: '/admin/donations' },
       { id: 'treasury', name: 'Treasury', icon: Wallet, path: '/admin/treasury' },
