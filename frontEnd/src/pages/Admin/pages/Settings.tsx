@@ -593,7 +593,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <div className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
           <Clock className="w-5 h-5 text-amber-500" />
           Pending Approvals
@@ -609,8 +609,9 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
           Refresh
         </button>
       </div>
-      <table className="w-full text-left border-collapse table-fixed">
-        <thead>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[980px] text-left border-collapse table-fixed">
+          <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
             <th className="px-3 py-3 w-[18%]">Member</th>
             <th className="pl-1 pr-2 py-3 w-[12%]">Role</th>
@@ -620,8 +621,8 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
             <th className="px-3 py-3 w-[8%]">Date</th>
             <th className="px-3 py-3 w-[16%] text-right">Actions</th>
           </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
+          </thead>
+          <tbody className="divide-y divide-slate-100">
           {filtered.map((a) => (
             <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
               <td className="px-3 py-3">
@@ -690,8 +691,9 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
               </td>
             </tr>
           ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -737,20 +739,21 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+      <div className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50/50">
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
           <Shield className="w-5 h-5 text-emerald-500" />
           Active Role Assignments
           <span className="ml-2 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">
-            {active.length}
+            {filtered.length}
           </span>
         </h2>
         <p className="text-sm text-slate-500 mt-1">
           Officials with approved access. You can revoke access at any time.
         </p>
       </div>
-      <table className="w-full text-left border-collapse table-fixed">
-        <thead>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[980px] text-left border-collapse table-fixed">
+          <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
             <th className="px-3 py-3 w-[18%]">Member</th>
             <th className="pl-1 pr-2 py-3 w-[12%]">Role</th>
@@ -760,8 +763,8 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
             <th className="px-3 py-3 w-[8%]">Approved At</th>
             <th className="px-3 py-3 w-[16%] text-right">Actions</th>
           </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
+          </thead>
+          <tbody className="divide-y divide-slate-100">
           {filtered.map((a) => (
             <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
               <td className="px-3 py-3">
@@ -820,8 +823,9 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
               </td>
             </tr>
           ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
