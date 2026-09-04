@@ -66,6 +66,7 @@ export const ALL_ADMIN_PATHS = [
   "/admin/jumuiya-channels",
   "/admin/community-updates",
   "/admin/jumuiya-tshirts",
+  "/admin/csa-tshirts",
   "/admin/bookings",
 ];
 
@@ -175,8 +176,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         break;
       case "CSA_VICE_CHAIR":
         prefixes.add("/admin/suggestions");
-        prefixes.add("/admin/products");
-        prefixes.add("/admin/orders");
+        prefixes.add("/admin/csa-tshirts");
         break;
       case "LITURGIST":
         prefixes.add("/admin/devotions");

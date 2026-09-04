@@ -50,7 +50,7 @@ interface Assignment {
 
 const ROLE_PAGES_MAP: Record<string, string[]> = {
   csa_chair: ['All pages (Super Admin)'],
-  csa_vice_chair: ['Suggestion Box', 'Products', 'Orders'],
+  csa_vice_chair: ['Suggestion Box', 'T-Shirts'],
   jumuiya_coordinator: ['Officials Management', 'Members'],
   project_manager: ['Sacramentals Banners', 'Products', 'Orders', 'Hire Requests', 'Project Management'],
   instrument_manager: ['Seats and Instruments'],

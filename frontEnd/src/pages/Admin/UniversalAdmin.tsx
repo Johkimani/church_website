@@ -104,6 +104,7 @@ const menuSections: NavSection[] = [
     items: [
       { id: 'devotions', name: 'Devotions & AI', icon: BookOpen, path: '/admin/devotions' },
       { id: 'projects', name: 'Projects', icon: Store, path: '/admin/projects' },
+      { id: 'csa-tshirts', name: 'T-Shirts', icon: Shirt, path: '/admin/csa-tshirts' },
     ],
   },
   {
