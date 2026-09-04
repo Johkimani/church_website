@@ -98,7 +98,9 @@ export const listSuggestions = async (req, res) => {
       const scope = buildScopeClause(scopedIds, params.length + 1);
       whereClause += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];
-    } else if (jumuiya_id && jumuiya_id !== 'all' && jumuiya_id !== 'csa') {
+    } else if (jumuiya_id === 'csa') {
+      whereClause += ` AND s.scope = 'csa'`;
+    } else if (jumuiya_id && jumuiya_id !== 'all') {
       const scope = buildScopeClause([jumuiya_id], params.length + 1);
       whereClause += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];

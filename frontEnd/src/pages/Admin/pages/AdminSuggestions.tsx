@@ -67,14 +67,19 @@ export default function AdminSuggestions() {
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
   const isVC = userRoles.some((r: any) => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson'].includes(r));
 
-  // CSA-level roles can see all jumuiyas and use the dropdown;
-  // jumuiya-scoped roles (chairperson, vice chairperson) are locked to their own jumuiya.
-  const isCSALevel = userRoles.some((r: any) =>
-    ['csa_chair', 'csa_vice_chair', 'jumuiya_coordinator', 'admin', 'developer'].includes(r)
+  // CSA Chair / admin / developer can see all jumuiyas via dropdown.
+  // CSA Vice Chair is locked to CSA-scoped suggestions only (no dropdown).
+  // Jumuiya chairperson / vice chairperson are locked to their own jumuiya.
+  const isCSAChair = userRoles.some((r: any) =>
+    ['csa_chair', 'admin', 'developer'].includes(r)
   );
+  const isCSAViceChair = userRoles.some((r: any) => r === 'csa_vice_chair');
+  const canSeeDropdown = isCSAChair;
 
   const userJumuiyaId = user?.jumuiya_id || '';
-  const [selectedJumuiya, setSelectedJumuiya] = useState<string>(isCSALevel ? '' : userJumuiyaId);
+  const [selectedJumuiya, setSelectedJumuiya] = useState<string>(
+    isCSAChair ? '' : isCSAViceChair ? 'csa' : userJumuiyaId
+  );
 
   const [resolvedName, setResolvedName] = useState<string>('');
   useEffect(() => {
@@ -209,7 +214,7 @@ export default function AdminSuggestions() {
           <p className="text-slate-500 font-medium mt-1 uppercase tracking-wider text-xs">Manage community feedback and ideas</p>
         </div>
         <div className="flex items-center gap-3 relative z-10">
-          {isCSALevel && (
+          {canSeeDropdown && (
             <select
               value={selectedJumuiya}
               onChange={(e) => setSelectedJumuiya(e.target.value)}
