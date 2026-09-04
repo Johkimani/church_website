@@ -135,6 +135,10 @@ export default function CommunityDetailEditor() {
   const [galleryImages, setGalleryImages] = useState<GalleryItem[]>([]);
   const [galleryModal, setGalleryModal] = useState(false);
   const [newImageForm, setNewImageForm] = useState({ event_name: '', image_url: '', category: '' });
+  const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);
+  const [galleryImagePreview, setGalleryImagePreview] = useState<string>('');
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryImageInputRef = useRef<HTMLInputElement>(null);
 
   // Community-specific T-Shirts state
   const [tshirtTab, setTshirtTab] = useState<'products' | 'orders'>('products');
@@ -1111,12 +1115,28 @@ setSongsList(res.data?.data || []);
 
   // Gallery Handlers
   const handleAddGalleryImage = async () => {
-    if (!newImageForm.image_url || !newImageForm.event_name) {
-      return alert('Event name and image URL are required');
+    if (!newImageForm.event_name) {
+      return alert('Event name is required');
+    }
+    if (!galleryImageFile && !newImageForm.image_url) {
+      return alert('Please select an image file or enter an image URL');
     }
     try {
+      let imageUrl = newImageForm.image_url;
+      if (galleryImageFile) {
+        setGalleryUploading(true);
+        const { resizeImage } = await import('../../../utils/imageOptimization');
+        const blob = await resizeImage(galleryImageFile, 1200, 1200);
+        const fd = new FormData();
+        fd.append('file', blob, 'gallery.jpg');
+        const res = await apiClient.post('/hub-gallery/upload', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        imageUrl = res.data?.image_url || res.data?.url || res.data?.path;
+        setGalleryUploading(false);
+      }
       await apiClient.post('/hub-gallery', {
-        image_url: newImageForm.image_url,
+        image_url: imageUrl,
         event_name: newImageForm.event_name,
         category: newImageForm.category || moduleMeta?.title || 'Community',
         module_id: categoryId,
@@ -1124,8 +1144,11 @@ setSongsList(res.data?.data || []);
       showToast('Photo added to community gallery!');
       setGalleryModal(false);
       setNewImageForm({ event_name: '', image_url: '', category: '' });
+      setGalleryImageFile(null);
+      setGalleryImagePreview('');
       await loadCategoryData();
     } catch (err: any) {
+      setGalleryUploading(false);
       alert('Failed to add gallery photo');
     }
   };
@@ -2886,21 +2909,60 @@ setSongsList(res.data?.data || []);
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700">Direct Image URL</label>
+                <label className="text-xs font-bold text-slate-700">Image *</label>
                 <input
-                  type="url"
-                  placeholder="https://..."
-                  value={newImageForm.image_url}
-                  onChange={(e) => setNewImageForm(v => ({ ...v, image_url: e.target.value }))}
-                  className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2.5 rounded-xl text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
+                  ref={galleryImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setGalleryImageFile(file);
+                      setGalleryImagePreview(URL.createObjectURL(file));
+                      setNewImageForm(v => ({ ...v, image_url: '' }));
+                    }
+                  }}
                 />
+                <div
+                  onClick={() => galleryImageInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all mt-1"
+                >
+                  {galleryImagePreview ? (
+                    <img src={galleryImagePreview} alt="preview" className="w-full h-36 object-cover rounded-lg" />
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-slate-600">Click to select image</p>
+                      <p className="text-[10px] text-slate-400">JPG, PNG up to 10MB</p>
+                    </div>
+                  )}
+                </div>
+                {galleryImageFile && (
+                  <p className="text-[10px] text-slate-500 mt-1 truncate">{galleryImageFile.name}</p>
+                )}
+                <div className="mt-2">
+                  <label className="text-[10px] font-bold text-slate-500">Or paste image URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={newImageForm.image_url}
+                    onChange={(e) => {
+                      setNewImageForm(v => ({ ...v, image_url: e.target.value }));
+                      setGalleryImageFile(null);
+                      setGalleryImagePreview('');
+                    }}
+                    className="w-full border border-slate-200 bg-slate-50 text-slate-800 p-2 rounded-lg text-xs mt-1 focus:outline-none focus:border-blue-500 placeholder:text-slate-400 font-medium"
+                  />
+                </div>
               </div>
-              {newImageForm.image_url && (
-                <img src={newImageForm.image_url} alt="preview" className="w-full h-36 object-cover rounded-xl border border-slate-200 mt-2" />
+              {(galleryImagePreview || newImageForm.image_url) && (
+                <img src={galleryImagePreview || newImageForm.image_url} alt="preview" className="w-full h-36 object-cover rounded-xl border border-slate-200 mt-2" />
               )}
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button onClick={() => setGalleryModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer">Cancel</button>
-                <button onClick={handleAddGalleryImage} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer" style={{ background: accentColor }}>Upload Photo</button>
+                <button onClick={handleAddGalleryImage} disabled={galleryUploading} className="px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50" style={{ background: accentColor }}>
+                  {galleryUploading ? 'Uploading...' : 'Upload Photo'}
+                </button>
               </div>
             </div>
           </div>
