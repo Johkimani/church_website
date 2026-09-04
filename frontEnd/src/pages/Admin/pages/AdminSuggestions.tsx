@@ -67,8 +67,14 @@ export default function AdminSuggestions() {
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
   const isVC = userRoles.some((r: any) => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson'].includes(r));
 
+  // CSA-level roles can see all jumuiyas and use the dropdown;
+  // jumuiya-scoped roles (chairperson, vice chairperson) are locked to their own jumuiya.
+  const isCSALevel = userRoles.some((r: any) =>
+    ['csa_chair', 'csa_vice_chair', 'jumuiya_coordinator', 'admin', 'developer'].includes(r)
+  );
+
   const userJumuiyaId = user?.jumuiya_id || '';
-  const [selectedJumuiya, setSelectedJumuiya] = useState<string>(userJumuiyaId);
+  const [selectedJumuiya, setSelectedJumuiya] = useState<string>(isCSALevel ? '' : userJumuiyaId);
 
   const [resolvedName, setResolvedName] = useState<string>('');
   useEffect(() => {
@@ -203,15 +209,17 @@ export default function AdminSuggestions() {
           <p className="text-slate-500 font-medium mt-1 uppercase tracking-wider text-xs">Manage community feedback and ideas</p>
         </div>
         <div className="flex items-center gap-3 relative z-10">
-          <select
-            value={selectedJumuiya}
-            onChange={(e) => setSelectedJumuiya(e.target.value)}
-            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-indigo-400 transition-all cursor-pointer shadow-sm"
-          >
-            {JUMUIYA_OPTIONS.map(opt => (
-              <option key={opt.id} value={opt.id}>{opt.name}</option>
-            ))}
-          </select>
+          {isCSALevel && (
+            <select
+              value={selectedJumuiya}
+              onChange={(e) => setSelectedJumuiya(e.target.value)}
+              className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-indigo-400 transition-all cursor-pointer shadow-sm"
+            >
+              {JUMUIYA_OPTIONS.map(opt => (
+                <option key={opt.id} value={opt.id}>{opt.name}</option>
+              ))}
+            </select>
+          )}
           <button
             onClick={loadSuggestions}
             disabled={loading}
