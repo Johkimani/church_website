@@ -33,6 +33,7 @@ import { pendingPaymentsMigration } from "./migrations/pendingPaymentsMigration.
 import attendanceMigration from "./migrations/attendanceMigration.js";
 import jumuiyaAttendanceMigration from "./migrations/jumuiyaAttendanceMigration.js";
 import activityLogMigration from "./migrations/activityLogMigration.js";
+import loginAuditMigration from "./migrations/loginAuditMigration.js";
 import semesterConfigMigration from "./migrations/semesterConfigMigration.js";
 import whatsappLinksMigration from "./migrations/whatsappLinksMigration.js";
 import profileImageMigration from "./migrations/profileImageMigration.js";
@@ -206,6 +207,7 @@ const initServer = async () => {
     await attendanceMigration();
     await jumuiyaAttendanceMigration();
     await activityLogMigration();
+    await loginAuditMigration();
     await semesterConfigMigration();
     await whatsappLinksMigration();
     await profileImageMigration();
