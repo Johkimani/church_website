@@ -66,6 +66,12 @@ export default function AdminSuggestions() {
     ['csa_vice_chair', 'csa_chair', 'admin', 'developer'].includes(r)
   );
 
+  // Only the CSA Vice Chairperson (or admin/developer) can soft-delete CSA suggestions.
+  // The CSA Chairperson cannot delete active suggestions; their role is to permanently delete from the bin.
+  const canDelete = isCSAOfficial
+    ? userRoles.some((r: any) => ['csa_vice_chair', 'admin', 'developer'].includes(r))
+    : userRoles.some((r: any) => ['jumuiya_vice_chairperson', 'admin', 'developer'].includes(r));
+
   const userJumuiyaId = user?.jumuiya_id || '';
   const selectedJumuiya = isCSAOfficial ? 'csa' : userJumuiyaId;
 
@@ -120,13 +126,18 @@ export default function AdminSuggestions() {
   }, [selectedJumuiya, userJumuiyaId]);
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this suggestion?')) {
+    if (window.confirm('Are you sure you want to delete this suggestion? It will be moved to the bin.')) {
       try {
-        await apiClient.delete(`/suggestions/${id}`);
-        toast.success('Suggestion deleted');
+        const adminName = user
+          ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.name
+          : '';
+        await apiClient.delete(`/suggestions/${id}`, {
+          data: { deleted_by: adminName || undefined }
+        });
+        toast.success('Suggestion moved to bin');
         loadSuggestions();
       } catch (err: any) {
-        toast.error('Failed to delete: ' + err.message);
+        toast.error(err.response?.data?.error || 'Failed to delete: ' + err.message);
       }
     }
   };
@@ -301,10 +312,11 @@ export default function AdminSuggestions() {
                       </span>
                     )}
                   </div>
-                  {isVC && (
+                  {canDelete && (
                     <button
                       onClick={() => handleDelete(item.id)}
                       className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                      title="Move to bin"
                     >
                       <Trash2 size={20} />
                     </button>
