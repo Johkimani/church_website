@@ -3181,7 +3181,7 @@ setSongsList(res.data?.data || []);
                                         )}
                                       </td>
                                        <td className="py-2.5 px-3">
-                                         <span className="text-slate-500 text-xs">{member.member_id || member.reg_number || 'u{2014}'}</span>
+                                         <span className="text-slate-500 text-xs">{member.member_id || member.reg_number || 'N/A'}</span>
                                        </td>
                                       <td className="py-2.5 px-3">
                                         {isEditing ? (
