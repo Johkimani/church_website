@@ -379,12 +379,19 @@ setSongsList(res.data?.data || []);
           const res = await apiClient.get(`/community-enrollment/${categoryId}`, {
             params: { status: 'all' },
           });
-          setData(res.data?.enrollments || []);
-          setEnrollmentStats(res.data?.stats || null);
+          const all = res.data?.enrollments || [];
+          setData(all.filter((m: any) => (m.status || '').toLowerCase() !== 'approved'));
+          const rawStats = res.data?.stats || {};
+          setEnrollmentStats({
+            total: String(Number(rawStats.pending || 0) + Number(rawStats.rejected || 0)),
+            approved: rawStats.approved || '0',
+            pending: rawStats.pending || '0',
+            rejected: rawStats.rejected || '0',
+          });
         } catch {
           const response = await apiClient.get('/enrollments');
           const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-          setData(items.filter((item: any) => (item.module_id === categoryId) || (item.class_id === categoryId)));
+          setData(items.filter((item: any) => ((item.module_id === categoryId) || (item.class_id === categoryId)) && (item.status || '').toLowerCase() !== 'approved'));
         }
         setLoading(false);
         return;
@@ -2588,10 +2595,9 @@ setSongsList(res.data?.data || []);
                       )}
 
                       {enrollmentStats && (
-                        <div className="grid grid-cols-4 gap-4 mb-6">
+                        <div className="grid grid-cols-3 gap-4 mb-6">
                           {[
                             { label: 'Total', value: enrollmentStats.total, color: 'blue' },
-                            { label: 'Approved', value: enrollmentStats.approved, color: 'emerald' },
                             { label: 'Pending', value: enrollmentStats.pending, color: 'amber' },
                             { label: 'Rejected', value: enrollmentStats.rejected, color: 'rose' },
                           ].map((stat) => (
