@@ -13,6 +13,7 @@ import {
   FaShareAlt,
 } from 'react-icons/fa';
 import { apiClient } from '../../../../api/axiosInstance';
+import { normalizeChannelUrl } from '../../../../utils/channelUrl';
 import type { CommunityModule } from '../../context/CommunityDataContext';
 import '../../../Jumuiya/components/TabsSystem.css';
 
@@ -258,7 +259,7 @@ const CommunityChannelsTab: React.FC<Props> = ({
             return (
               <a
                 key={channel.platform || idx}
-                href={channel.url}
+                href={normalizeChannelUrl(channel.platform, channel.url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="tab-card animate-fade group cursor-pointer"

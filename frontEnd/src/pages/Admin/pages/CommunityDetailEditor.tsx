@@ -1,8 +1,9 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient, createTableRecord, updateTableRecord, deleteTableRecord, uploadFile } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
 import { normalizeRoles, getAllowedCommunityModules } from '../../../utils/adminAccess';
+import { normalizeChannelUrl } from '../../../utils/channelUrl';
 import { ArtDeco404 } from '../components/ArtDeco404';
 import {
   ArrowLeft,
@@ -2596,18 +2597,16 @@ setSongsList(res.data?.data || []);
             const selectedPlatformInfo = availablePlatforms.find(p => p.id === channelForm.platform) || availablePlatforms[0];
 
             const handleSaveChannel = async (platformToSave: string, urlToSave: string) => {
-              let trimmed = (urlToSave || '').trim();
+              const trimmed = (urlToSave || '').trim();
               if (!trimmed) {
-                alert('Please provide a valid URL');
+                alert('Please provide a valid URL or handle');
                 return;
               }
-              if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-                trimmed = `https://${trimmed}`;
-              }
+              const normalized = normalizeChannelUrl(platformToSave, trimmed);
 
               setChannelSaving(true);
               try {
-                const updated = [...channels.filter(c => c.platform !== platformToSave), { platform: platformToSave, url: trimmed }];
+                const updated = [...channels.filter(c => c.platform !== platformToSave), { platform: platformToSave, url: normalized }];
                 await apiClient.patch(`/community-channels/${categoryId}/channels`, { channels: updated });
                 setChannels(updated);
                 setChannelEditing(null);
@@ -2843,12 +2842,12 @@ setSongsList(res.data?.data || []);
                                   />
                                 ) : (
                                   <a
-                                    href={ch.url}
+                                    href={normalizeChannelUrl(ch.platform, ch.url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-xs font-semibold text-slate-600 hover:text-amber-600 truncate flex items-center gap-1.5 group cursor-pointer"
                                   >
-                                    <span className="truncate max-w-xs sm:max-w-md">{ch.url}</span>
+                                    <span className="truncate max-w-xs sm:max-w-md">{normalizeChannelUrl(ch.platform, ch.url)}</span>
                                     <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition shrink-0 text-amber-500" />
                                   </a>
                                 )}
