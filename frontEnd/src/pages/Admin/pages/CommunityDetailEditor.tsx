@@ -1609,8 +1609,9 @@ setSongsList(res.data?.data || []);
                         </span>
                       )}
                     </button>
-                  );
-                })}
+);
+                      })}
+                    )}
               </nav>
             </aside>
           </>
