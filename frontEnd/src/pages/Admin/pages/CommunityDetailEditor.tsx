@@ -2541,7 +2541,7 @@ setSongsList(res.data?.data || []);
           )}
 
           {/* MEMBERS / ACTIVITIES / ANNOUNCEMENTS */}
-          {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members') && (
+          {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members' || activeTab === 'approved-members') && (
             <>
               {loading ? (
                 <PageLoader message="Synchronizing table data" />
@@ -2550,7 +2550,7 @@ setSongsList(res.data?.data || []);
                   <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-500">
                     {activeTab === 'activities' && <Calendar size={32} />}
                     {activeTab === 'announcements' && <Megaphone size={32} />}
-                    {activeTab === 'members' && <Users size={32} />}
+                    {(activeTab === 'members' || activeTab === 'approved-members') && <Users size={32} />}
                   </div>
                   <h4 className="text-slate-300 font-bold italic">No records found</h4>
                   <p className="text-slate-500 text-sm mt-1">Click the "Add" button to populate this section.</p>
