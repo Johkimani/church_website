@@ -16,7 +16,7 @@ export const createEnrollment = async (req, res) => {
     const phoneClean = phone.replace(/\s+/g, '').trim();
 
     // If logged-in user, get their member_id and phone from the members table
-    let memberId = null;
+    let memberId = req.body.memberId || req.body.regNumber || req.body.reg_number || null;
     let userPhone = phoneClean;
     if (req.user?.id || req.user?.member_id) {
       const mid = req.user.id || req.user.member_id;
@@ -31,6 +31,32 @@ export const createEnrollment = async (req, res) => {
         if (m.phone) {
           userPhone = m.phone.replace(/\s+/g, '').trim();
         }
+      }
+    }
+
+    // If still no memberId (e.g. public enrollment form), attempt to auto-match against existing members
+    if (!memberId) {
+      try {
+        const matchRes = await db.query(
+          `SELECT member_id FROM members
+           WHERE (phone IS NOT NULL AND phone != '' AND RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 9) = RIGHT(REGEXP_REPLACE($1, '[^0-9]', '', 'g'), 9))
+              OR ($2 != '' AND email IS NOT NULL AND LOWER(TRIM(email)) = LOWER(TRIM($2)))
+              OR ($3 != '' AND (
+                   LOWER(TRIM(CONCAT(first_name, ' ', last_name))) = LOWER(TRIM($3))
+                   OR LOWER(TRIM(CONCAT(last_name, ' ', first_name))) = LOWER(TRIM($3))
+                 ))
+           ORDER BY 
+             CASE WHEN phone IS NOT NULL AND phone != '' AND RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 9) = RIGHT(REGEXP_REPLACE($1, '[^0-9]', '', 'g'), 9) THEN 1
+                  WHEN $2 != '' AND email IS NOT NULL AND LOWER(TRIM(email)) = LOWER(TRIM($2)) THEN 2
+                  ELSE 3 END
+           LIMIT 1`,
+          [userPhone, email || '', displayName.trim()]
+        );
+        if (matchRes.rows.length > 0) {
+          memberId = matchRes.rows[0].member_id;
+        }
+      } catch (matchErr) {
+        logger.warn("Auto-match member_id failed:", matchErr.message);
       }
     }
 
@@ -118,23 +144,57 @@ export const getModuleEnrollments = async (req, res) => {
     const { moduleId } = req.params;
     const { status, search } = req.query;
 
-    let query = `SELECT * FROM enrollments WHERE module_id = $1`;
+    let query = `
+      SELECT e.*,
+             COALESCE(
+               NULLIF(TRIM(e.member_id), ''),
+               m_id.member_id,
+               m_phone.member_id,
+               m_email.member_id,
+               m_name.member_id
+             ) AS resolved_reg_no
+      FROM enrollments e
+      LEFT JOIN members m_id ON (
+        e.member_id IS NOT NULL AND e.member_id != '' AND m_id.member_id = e.member_id
+      )
+      LEFT JOIN members m_phone ON (
+        e.phone IS NOT NULL AND e.phone != '' AND m_phone.phone IS NOT NULL AND
+        RIGHT(REGEXP_REPLACE(e.phone, '[^0-9]', '', 'g'), 9) = RIGHT(REGEXP_REPLACE(m_phone.phone, '[^0-9]', '', 'g'), 9)
+      )
+      LEFT JOIN members m_email ON (
+        e.email IS NOT NULL AND e.email != '' AND m_email.email IS NOT NULL AND
+        LOWER(TRIM(e.email)) = LOWER(TRIM(m_email.email))
+      )
+      LEFT JOIN members m_name ON (
+        e.full_name IS NOT NULL AND e.full_name != '' AND (
+          LOWER(TRIM(e.full_name)) = LOWER(TRIM(CONCAT(m_name.first_name, ' ', m_name.last_name)))
+          OR LOWER(TRIM(e.full_name)) = LOWER(TRIM(CONCAT(m_name.last_name, ' ', m_name.first_name)))
+        )
+      )
+      WHERE e.module_id = $1
+    `;
     const params = [moduleId];
     let paramIdx = 2;
 
     if (status && status !== 'all') {
-      query += ` AND LOWER(status) = LOWER($${paramIdx})`;
+      query += ` AND LOWER(e.status) = LOWER($${paramIdx})`;
       params.push(status);
       paramIdx++;
     }
 
     if (search) {
-      query += ` AND (LOWER(full_name) LIKE LOWER($${paramIdx}) OR LOWER(phone) LIKE LOWER($${paramIdx}) OR LOWER(email) LIKE LOWER($${paramIdx}))`;
+      query += ` AND (
+        LOWER(e.full_name) LIKE LOWER($${paramIdx})
+        OR LOWER(e.phone) LIKE LOWER($${paramIdx})
+        OR LOWER(COALESCE(e.email, '')) LIKE LOWER($${paramIdx})
+        OR LOWER(COALESCE(e.member_id, '')) LIKE LOWER($${paramIdx})
+        OR LOWER(COALESCE(m_phone.member_id, '')) LIKE LOWER($${paramIdx})
+      )`;
       params.push(`%${search}%`);
       paramIdx++;
     }
 
-    query += ` ORDER BY joined_at DESC NULLS LAST, enrolled_at DESC NULLS LAST`;
+    query += ` ORDER BY e.joined_at DESC NULLS LAST, e.enrolled_at DESC NULLS LAST`;
 
     const result = await db.query(query, params);
 
@@ -148,8 +208,19 @@ export const getModuleEnrollments = async (req, res) => {
       [moduleId]
     );
 
+    const mappedEnrollments = result.rows.map((row) => {
+      const regNo = row.resolved_reg_no || row.member_id || null;
+      return {
+        ...row,
+        member_id: regNo,
+        reg_number: regNo,
+        regNumber: regNo,
+        memberId: regNo,
+      };
+    });
+
     return res.json({
-      enrollments: result.rows,
+      enrollments: mappedEnrollments,
       stats: stats.rows[0],
     });
   } catch (error) {

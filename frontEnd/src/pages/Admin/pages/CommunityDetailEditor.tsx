@@ -3010,7 +3010,10 @@ setSongsList(res.data?.data || []);
                         <tbody>
                           {data.filter(m => {
                             const name = (m.fullName || m.full_name || '').toLowerCase();
-                            const matchesSearch = name.includes(searchTerm.toLowerCase());
+                            const reg = (m.reg_number || m.regNumber || m.member_id || m.memberId || '').toLowerCase();
+                            const phone = (m.phoneNumber || m.phone || '').toLowerCase();
+                            const q = searchTerm.toLowerCase();
+                            const matchesSearch = name.includes(q) || reg.includes(q) || phone.includes(q);
                             if (!matchesSearch) return false;
 
                             if (categoryId === 'choir') {
@@ -3025,7 +3028,7 @@ setSongsList(res.data?.data || []);
                             <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-slate-800">
                               <td className="py-3.5 px-4 font-extrabold text-slate-900">{member.fullName || member.full_name}</td>
                               <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.phoneNumber || member.phone || 'N/A'}</td>
-                              <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.member_id || member.reg_number || 'N/A'}</td>
+                              <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.reg_number || member.regNumber || member.member_id || member.memberId || 'N/A'}</td>
                               {categoryId === 'choir' && (
                                 <td className="py-3.5 px-4 text-sm font-bold">
                                   <select
@@ -3151,7 +3154,10 @@ setSongsList(res.data?.data || []);
                               <tbody>
                                 {data.filter(m => {
                                   const name = (m.fullName || m.full_name || '').toLowerCase();
-                                  const matchesSearch = name.includes(searchTerm.toLowerCase());
+                                  const reg = (m.reg_number || m.regNumber || m.member_id || m.memberId || '').toLowerCase();
+                                  const phone = (m.phoneNumber || m.phone || '').toLowerCase();
+                                  const q = searchTerm.toLowerCase();
+                                  const matchesSearch = name.includes(q) || reg.includes(q) || phone.includes(q);
                                   if (!matchesSearch) return false;
                                   if (categoryId === 'choir') {
                                     const v = (m.voice_type || m.voiceType || m.voice || '').toLowerCase();
@@ -3181,7 +3187,7 @@ setSongsList(res.data?.data || []);
                                         )}
                                       </td>
                                        <td className="py-2.5 px-3">
-                                         <span className="text-slate-500 text-xs">{member.member_id || member.reg_number || 'N/A'}</span>
+                                         <span className="text-slate-700 font-medium text-xs">{member.reg_number || member.regNumber || member.member_id || member.memberId || 'N/A'}</span>
                                        </td>
                                       <td className="py-2.5 px-3">
                                         {isEditing ? (
