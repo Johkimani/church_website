@@ -51,52 +51,35 @@ const SLUG_NAME_MAP: Record<string, string> = {
   'st-monica': 'St. Monica',
 };
 
-const JUMUIYA_OPTIONS = [
-  { id: '', name: 'All Jumuiyas' },
-  { id: 'st-anthony', name: 'St. Anthony' },
-  { id: 'st-augustine', name: 'St. Augustine' },
-  { id: 'st-catherine', name: 'St. Catherine' },
-  { id: 'st-dominic', name: 'St. Dominic' },
-  { id: 'st-elizabeth', name: 'St. Elizabeth' },
-  { id: 'st-maria-goretti', name: 'St. Maria Goretti' },
-  { id: 'st-monica', name: 'St. Monica' },
-];
 
 export default function AdminSuggestions() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
-  const isVC = userRoles.some((r: any) => ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson'].includes(r));
 
-  // CSA Chair / admin / developer can see all jumuiyas via dropdown.
-  // CSA Vice Chair is locked to CSA-scoped suggestions only (no dropdown).
-  // Jumuiya chairperson / vice chairperson are locked to their own jumuiya.
-  const isCSAChair = userRoles.some((r: any) =>
-    ['csa_chair', 'admin', 'developer'].includes(r)
+  // In the Universal Admin, the suggestion box is strictly for the CSA level.
+  // CSA officials (CSA Vice Chair, CSA Chair, Admin, Developer) focus purely on CSA-level suggestions.
+  // Jumuiya officials are locked to their own specific jumuiya.
+  const isCSAOfficial = userRoles.some((r: any) =>
+    ['csa_vice_chair', 'csa_chair', 'admin', 'developer'].includes(r)
   );
-  const isCSAViceChair = userRoles.some((r: any) => r === 'csa_vice_chair');
-  const canSeeDropdown = isCSAChair;
 
   const userJumuiyaId = user?.jumuiya_id || '';
-  const [selectedJumuiya, setSelectedJumuiya] = useState<string>(
-    isCSAChair ? '' : isCSAViceChair ? 'csa' : userJumuiyaId
-  );
+  const selectedJumuiya = isCSAOfficial ? 'csa' : userJumuiyaId;
 
   const [resolvedName, setResolvedName] = useState<string>('');
   useEffect(() => {
-    const activeId = selectedJumuiya || userJumuiyaId;
-    if (!activeId) { setResolvedName(''); return; }
-    if (SLUG_NAME_MAP[activeId]) { setResolvedName(SLUG_NAME_MAP[activeId]); return; }
+    if (isCSAOfficial || !userJumuiyaId) { setResolvedName(''); return; }
+    if (SLUG_NAME_MAP[userJumuiyaId]) { setResolvedName(SLUG_NAME_MAP[userJumuiyaId]); return; }
     memberService.getJumuiyaLookup()
       .then((res: any) => {
         const data = res?.data || res || {};
-        const entry = data[activeId];
-        setResolvedName(entry ? (entry.name || entry.fullName || activeId) : '');
+        const entry = data[userJumuiyaId];
+        setResolvedName(entry ? (entry.name || entry.fullName || userJumuiyaId) : '');
       })
       .catch(() => setResolvedName(''));
-  }, [selectedJumuiya, userJumuiyaId]);
+  }, [isCSAOfficial, userJumuiyaId]);
 
-  const activeId = selectedJumuiya || userJumuiyaId;
-  const displayName = resolvedName || SLUG_NAME_MAP[activeId] || (activeId ? 'Jumuiya' : 'All Jumuiyas');
+  const displayName = isCSAOfficial ? 'CSA' : (resolvedName || SLUG_NAME_MAP[userJumuiyaId] || (userJumuiyaId ? 'Jumuiya' : 'CSA'));
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,8 +96,8 @@ export default function AdminSuggestions() {
     setLoading(true);
     setError(null);
     try {
-      const activeJumuiya = selectedJumuiya || userJumuiyaId;
-      const params = activeJumuiya ? { jumuiya_id: activeJumuiya } : {};
+      const activeJumuiya = selectedJumuiya || (isCSAOfficial ? 'csa' : userJumuiyaId);
+      const params = activeJumuiya ? { jumuiya_id: activeJumuiya } : { jumuiya_id: 'csa' };
       const res = await apiClient.get('/suggestions', { params });
       const data = Array.isArray(res.data?.data) ? res.data.data : [];
       const sortedData = data.sort((a: any, b: any) =>
@@ -211,20 +194,11 @@ export default function AdminSuggestions() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full blur-3xl -mr-32 -mt-32 opacity-40 pointer-events-none"></div>
         <div className="relative z-10">
           <h2 className="text-3xl font-black text-slate-800 tracking-tight">{displayName} Suggestions</h2>
-          <p className="text-slate-500 font-medium mt-1 uppercase tracking-wider text-xs">Manage community feedback and ideas</p>
+          <p className="text-slate-500 font-medium mt-1 uppercase tracking-wider text-xs">
+            {isCSAOfficial ? 'Manage CSA-level community feedback and ideas' : 'Manage community feedback and ideas'}
+          </p>
         </div>
         <div className="flex items-center gap-3 relative z-10">
-          {canSeeDropdown && (
-            <select
-              value={selectedJumuiya}
-              onChange={(e) => setSelectedJumuiya(e.target.value)}
-              className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-indigo-400 transition-all cursor-pointer shadow-sm"
-            >
-              {JUMUIYA_OPTIONS.map(opt => (
-                <option key={opt.id} value={opt.id}>{opt.name}</option>
-              ))}
-            </select>
-          )}
           <button
             onClick={loadSuggestions}
             disabled={loading}

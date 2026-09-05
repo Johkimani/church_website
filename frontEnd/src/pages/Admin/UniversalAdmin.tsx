@@ -33,6 +33,7 @@ import { useNavigate, useLocation, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationDropdown, { type Notification } from './components/NotificationDropdown';
 import apiService from '../../services/api';
+import { apiClient } from '../../api/axiosInstance';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
@@ -195,10 +196,15 @@ export default function UniversalAdmin() {
 
   const fetchNotifications = async () => {
     try {
-      const [suggestions, donations] = await Promise.all([
-        apiService.fetchTableData('suggestions'),
+      const [suggestionsRes, donations] = await Promise.all([
+        apiClient.get('/suggestions', { params: { jumuiya_id: 'csa' } }).catch(() => ({ data: [] })),
         apiService.fetchTableData('mpesa_request')
       ]);
+
+      const suggestionsData = suggestionsRes?.data;
+      const suggestions = Array.isArray(suggestionsData?.data)
+        ? suggestionsData.data
+        : (Array.isArray(suggestionsData) ? suggestionsData : []);
 
       const formattedSuggestions: Notification[] = suggestions.map((s: any) => ({
         id: `s-${s.id}`,

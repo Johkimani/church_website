@@ -87,19 +87,21 @@ export const listSuggestions = async (req, res) => {
   try {
     const { isGlobal, scopedIds } = getSuggestionAccess(req);
     const { jumuiya_id } = req.query;
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
 
     let whereClause = `WHERE s.deleted_at IS NULL`;
     let params = [];
 
-    if (!isGlobal) {
+    if (isCSAViceChairOnly || jumuiya_id === 'csa') {
+      whereClause += ` AND s.scope = 'csa'`;
+    } else if (!isGlobal) {
       if (scopedIds.length === 0) {
         return res.json({ status: "success", data: [] });
       }
       const scope = buildScopeClause(scopedIds, params.length + 1);
       whereClause += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];
-    } else if (jumuiya_id === 'csa') {
-      whereClause += ` AND s.scope = 'csa'`;
     } else if (jumuiya_id && jumuiya_id !== 'all') {
       const scope = buildScopeClause([jumuiya_id], params.length + 1);
       whereClause += ` AND ${scope.clause}`;
@@ -120,14 +122,24 @@ export const listSuggestions = async (req, res) => {
 export const getBin = async (req, res) => {
   try {
     const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const { jumuiya_id } = req.query;
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
+
     let whereClause = `WHERE s.deleted_at IS NOT NULL`;
     let params = [];
 
-    if (!isGlobal) {
+    if (isCSAViceChairOnly || jumuiya_id === 'csa') {
+      whereClause += ` AND s.scope = 'csa'`;
+    } else if (!isGlobal) {
       if (scopedIds.length === 0) {
         return res.json({ status: "success", data: [] });
       }
       const scope = buildScopeClause(scopedIds, params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    } else if (jumuiya_id && jumuiya_id !== 'all') {
+      const scope = buildScopeClause([jumuiya_id], params.length + 1);
       whereClause += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];
     }
@@ -158,11 +170,15 @@ export const softDelete = async (req, res) => {
     const { id } = req.params;
     const deletedBy = req.body?.deleted_by || req.user?.member_id || "unknown";
     const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
 
     let query = `UPDATE suggestions SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $1 WHERE id = $2 AND deleted_at IS NULL`;
     let params = [deletedBy, id];
 
-    if (!isGlobal && scopedIds.length > 0) {
+    if (isCSAViceChairOnly) {
+      query += ` AND scope = 'csa'`;
+    } else if (!isGlobal && scopedIds.length > 0) {
       const scope = buildScopeClause(scopedIds, params.length + 1);
       query += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];
@@ -187,11 +203,15 @@ export const restoreFromBin = async (req, res) => {
   try {
     const { id } = req.params;
     const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
 
     let query = `UPDATE suggestions SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 AND deleted_at IS NOT NULL`;
     let params = [id];
 
-    if (!isGlobal && scopedIds.length > 0) {
+    if (isCSAViceChairOnly) {
+      query += ` AND scope = 'csa'`;
+    } else if (!isGlobal && scopedIds.length > 0) {
       const scope = buildScopeClause(scopedIds, params.length + 1);
       query += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];
@@ -216,11 +236,15 @@ export const permanentDelete = async (req, res) => {
   try {
     const { id } = req.params;
     const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
 
     let query = `DELETE FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL`;
     let params = [id];
 
-    if (!isGlobal && scopedIds.length > 0) {
+    if (isCSAViceChairOnly) {
+      query += ` AND scope = 'csa'`;
+    } else if (!isGlobal && scopedIds.length > 0) {
       const scope = buildScopeClause(scopedIds, params.length + 1);
       query += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];
@@ -244,11 +268,15 @@ export const clearBin = async (req, res) => {
   if (!requireVcRole(req, res)) return;
   try {
     const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
 
     let query = `DELETE FROM suggestions WHERE deleted_at IS NOT NULL`;
     let params = [];
 
-    if (!isGlobal && scopedIds.length > 0) {
+    if (isCSAViceChairOnly) {
+      query += ` AND scope = 'csa'`;
+    } else if (!isGlobal && scopedIds.length > 0) {
       const scope = buildScopeClause(scopedIds, params.length + 1);
       query += ` AND ${scope.clause}`;
       params = [...params, ...scope.params];

@@ -8,7 +8,11 @@ import PageLoader from '../../../assets/Layouts/PageLoader';
 export default function SuggestionBin() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
+  const isCSAOfficial = userRoles.some((r: any) =>
+    ['csa_vice_chair', 'csa_chair', 'admin', 'developer'].includes(r)
+  );
   const isChair = userRoles.some((r: any) => ['csa_chair', 'jumuiya_chairperson'].includes(r));
+  const jumuiyaTarget = isCSAOfficial ? 'csa' : (user?.jumuiya_id || '');
 
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +21,8 @@ export default function SuggestionBin() {
   const loadBin = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/suggestions/bin');
+      const params = jumuiyaTarget ? { jumuiya_id: jumuiyaTarget } : { jumuiya_id: 'csa' };
+      const res = await apiClient.get('/suggestions/bin', { params });
       setItems(res.data.data || []);
     } catch {
       toast.error('Failed to load suggestion bin');
