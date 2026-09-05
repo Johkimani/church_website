@@ -39,6 +39,7 @@ interface Assignment {
   created_at: string;
   role_name: string;
   role_description: string;
+  source_position: string | null;
   first_name: string;
   last_name: string;
   jumuiya_name: string | null;
@@ -663,7 +664,7 @@ function ApprovalsPanel({ activeTab, onChanged }: { activeTab: TabKey; onChanged
               </td>
               <td className="pl-1 pr-2 py-3">
                 <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-lg border border-blue-100 capitalize block truncate">
-                  {a.role_name.replace(/_/g, ' ')}
+                  {a.source_position || a.role_name.replace(/_/g, ' ')}
                 </span>
               </td>
               <td className="px-3 py-3">
@@ -805,7 +806,7 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
               </td>
               <td className="pl-1 pr-2 py-3">
                 <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-100 capitalize block truncate">
-                  {a.role_name.replace(/_/g, ' ')}
+                  {a.source_position || a.role_name.replace(/_/g, ' ')}
                 </span>
               </td>
               <td className="px-3 py-3">
@@ -962,7 +963,7 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
                 </td>
                 <td className="pl-1 pr-2 py-3">
                   <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-100 capitalize block truncate">
-                    {a.role_name.replace(/_/g, ' ')}
+                    {a.source_position || a.role_name.replace(/_/g, ' ')}
                   </span>
                 </td>
                 <td className="px-3 py-3">

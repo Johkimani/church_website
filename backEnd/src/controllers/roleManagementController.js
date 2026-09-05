@@ -104,7 +104,7 @@ export const syncPendingOfficialsToRoles = async () => {
       }
 
       const existing = await pool.query(
-        "SELECT id FROM member_roles WHERE member_id = $1 AND role_id = $2",
+        "SELECT id, status FROM member_roles WHERE member_id = $1 AND role_id = $2 ORDER BY id DESC LIMIT 1",
         [memberId, roleId]
       );
 
@@ -200,6 +200,14 @@ export const syncPendingOfficialsToRoles = async () => {
           [memberId, roleId]
         );
         logger.info(`syncPendingOfficialsToRoles: Auto-created pending role ${roleName} for group official ${off.name} (${off.category})`);
+      } else if (['rejected', 'revoked'].includes(existing.rows[0].status)) {
+        await pool.query(
+          `UPDATE member_roles
+           SET status = 'pending', assigned_by = NULL, approved_by = NULL, approved_at = NULL, created_at = NOW(), updated_at = NOW()
+           WHERE id = $1`,
+          [existing.rows[0].id]
+        );
+        logger.info(`syncPendingOfficialsToRoles: Reopened ${existing.rows[0].status} role ${roleName} for group official ${off.name}`);
       }
     }
   } catch (err) {
@@ -229,6 +237,7 @@ export const listAssignments = async (req, res) => {
              mr.approved_at, mr.jumuiya_id, mr.created_at,
              COALESCE(r.role_name, 'unknown') as role_name, 
              COALESCE(r.description, 'Role assignment') as role_description,
+             COALESCE(go.position, jo.position, o.position) as source_position,
              COALESCE(m.first_name, jo.name, o.name, mr.member_id) as first_name,
              COALESCE(m.last_name, '') as last_name,
              COALESCE(sg.name, msg.name, jo.category, o.category) as jumuiya_name,
@@ -239,6 +248,7 @@ export const listAssignments = async (req, res) => {
       LEFT JOIN members m ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(m.member_id))
       LEFT JOIN jumuiya_officials jo ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(jo.reg_number))
       LEFT JOIN officials o ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(o.reg_number))
+      LEFT JOIN group_officials go ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(go.reg_number))
       LEFT JOIN sub_groups sg ON mr.jumuiya_id::text = sg.group_id::text
       LEFT JOIN sub_groups msg ON (
         m.jumuiya_id::text = msg.group_id::text 
