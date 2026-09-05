@@ -1609,9 +1609,8 @@ setSongsList(res.data?.data || []);
                         </span>
                       )}
                     </button>
-);
-                      })}
-                    )}
+                  );
+                })}
               </nav>
             </aside>
           </>
@@ -2736,7 +2735,8 @@ setSongsList(res.data?.data || []);
                             </td>
                           </tr>
                         );
-                      })}
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
