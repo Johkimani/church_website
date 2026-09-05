@@ -3018,9 +3018,11 @@ setSongsList(res.data?.data || []);
                             if (categoryId === 'choir') {
                               const v = (m.voice_type || m.voiceType || m.voice || '').toLowerCase();
                               if (choirVoiceFilter !== 'all' && !v.includes(choirVoiceFilter)) return false;
-                              const g = (m.gender || '').toLowerCase();
-                              if (choirGenderFilter === 'male' && !(g.includes('male') || g.includes('gent') || v.includes('tenor') || v.includes('bass'))) return false;
-                              if (choirGenderFilter === 'female' && !(g.includes('female') || g.includes('lady') || v.includes('soprano') || v.includes('alto'))) return false;
+                              const g = (m.gender || '').toLowerCase().trim();
+                              const isFemale = g.includes('female') || g === 'f' || g.includes('lady') || v.includes('soprano') || v.includes('alto');
+                              const isMale = !isFemale && (g.includes('male') || g === 'm' || g.includes('gent') || v.includes('tenor') || v.includes('bass'));
+                              if (choirGenderFilter === 'male' && !isMale) return false;
+                              if (choirGenderFilter === 'female' && !isFemale) return false;
                             }
                             return true;
                           }).map((member) => (
@@ -3161,9 +3163,11 @@ setSongsList(res.data?.data || []);
                                   if (categoryId === 'choir') {
                                     const v = (m.voice_type || m.voiceType || m.voice || '').toLowerCase();
                                     if (choirVoiceFilter !== 'all' && !v.includes(choirVoiceFilter)) return false;
-                                    const g = (m.gender || '').toLowerCase();
-                                    if (choirGenderFilter === 'male' && !(g.includes('male') || g.includes('gent') || v.includes('tenor') || v.includes('bass'))) return false;
-                                    if (choirGenderFilter === 'female' && !(g.includes('female') || g.includes('lady') || v.includes('soprano') || v.includes('alto'))) return false;
+                                    const g = (m.gender || '').toLowerCase().trim();
+                                    const isFemale = g.includes('female') || g === 'f' || g.includes('lady') || v.includes('soprano') || v.includes('alto');
+                                    const isMale = !isFemale && (g.includes('male') || g === 'm' || g.includes('gent') || v.includes('tenor') || v.includes('bass'));
+                                    if (choirGenderFilter === 'male' && !isMale) return false;
+                                    if (choirGenderFilter === 'female' && !isFemale) return false;
                                   }
                                   return true;
                                 }).map((member, idx) => {

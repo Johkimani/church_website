@@ -135,12 +135,16 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
 
   // Helper: Extract or assign gender (Gents / Ladies)
   const getGender = (m: any): 'Gent' | 'Lady' => {
-    const g = (m.gender || m.sex || '').toLowerCase();
-    if (g.includes('male') || g === 'm' || g.includes('gent') || g.includes('man') || g.includes('boy')) return 'Gent';
-    if (g.includes('female') || g === 'f' || g.includes('lady') || g.includes('woman') || g.includes('girl')) return 'Lady';
+    // 1. Explicit voice section takes precedence
     const v = (m.voice_type || m.voiceType || m.voice || m.part || '').toLowerCase();
-    if (v.includes('tenor') || v.includes('bass')) return 'Gent';
     if (v.includes('soprano') || v.includes('alto')) return 'Lady';
+    if (v.includes('tenor') || v.includes('bass')) return 'Gent';
+
+    // 2. Gender check (MUST check female first because substring 'female' contains 'male'!)
+    const g = (m.gender || m.sex || '').toLowerCase().trim();
+    if (g.includes('female') || g === 'f' || g.includes('lady') || g.includes('woman') || g.includes('girl')) return 'Lady';
+    if (g.includes('male') || g === 'm' || g.includes('gent') || g.includes('man') || g.includes('boy')) return 'Gent';
+
     return 'Lady';
   };
 
@@ -178,14 +182,19 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
     let soprano = 0, alto = 0, tenor = 0, bass = 0, gents = 0, ladies = 0;
     visibleEnrollments.forEach((m) => {
       const v = getVoiceType(m);
-      const g = getGender(m);
-      if (v === 'Soprano') soprano++;
-      else if (v === 'Alto') alto++;
-      else if (v === 'Tenor') tenor++;
-      else if (v === 'Bass') bass++;
-
-      if (g === 'Gent') gents++;
-      else ladies++;
+      if (v === 'Soprano') {
+        soprano++;
+        ladies++;
+      } else if (v === 'Alto') {
+        alto++;
+        ladies++;
+      } else if (v === 'Tenor') {
+        tenor++;
+        gents++;
+      } else if (v === 'Bass') {
+        bass++;
+        gents++;
+      }
     });
     return { soprano, alto, tenor, bass, gents, ladies, total: visibleEnrollments.length };
   }, [visibleEnrollments, isChoir]);
@@ -234,9 +243,9 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
     // Choir Gender Filter (Gents / Ladies)
     if (isChoir && genderFilter !== 'all') {
       result = result.filter((m) => {
-        const g = getGender(m);
-        if (genderFilter === 'male') return g === 'Gent';
-        if (genderFilter === 'female') return g === 'Lady';
+        const v = getVoiceType(m);
+        if (genderFilter === 'male') return v === 'Tenor' || v === 'Bass';
+        if (genderFilter === 'female') return v === 'Soprano' || v === 'Alto';
         return true;
       });
     }
