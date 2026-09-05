@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient, createTableRecord, updateTableRecord, deleteTableRecord, uploadFile } from '../../../api/axiosInstance';
 import { useAuth } from '../../../context/AuthContext';
@@ -2999,7 +2999,7 @@ setSongsList(res.data?.data || []);
                           <tr className="border-b border-slate-200 text-slate-500 bg-slate-50">
                             <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Full Name</th>
                             <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
-                            <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
+                            <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Reg No</th>
                             {categoryId === 'choir' && (
                               <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
                             )}
@@ -3025,7 +3025,7 @@ setSongsList(res.data?.data || []);
                             <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-slate-800">
                               <td className="py-3.5 px-4 font-extrabold text-slate-900">{member.fullName || member.full_name}</td>
                               <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.phoneNumber || member.phone || 'N/A'}</td>
-                              <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.email || 'N/A'}</td>
+                              <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.member_id || member.reg_number || 'N/A'}</td>
                               {categoryId === 'choir' && (
                                 <td className="py-3.5 px-4 text-sm font-bold">
                                   <select
@@ -3139,7 +3139,7 @@ setSongsList(res.data?.data || []);
                                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
                                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
                                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Phone</th>
-                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Email</th>
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg No</th>
                                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Gender</th>
                                   {categoryId === 'choir' && (
                                     <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Voice</th>
@@ -3180,13 +3180,9 @@ setSongsList(res.data?.data || []);
                                           <span className="text-slate-500 text-xs">{member.phoneNumber || member.phone || '—'}</span>
                                         )}
                                       </td>
-                                      <td className="py-2.5 px-3">
-                                        {isEditing ? (
-                                          <input value={memberEditForm.email || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, email: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1 w-36" />
-                                        ) : (
-                                          <span className="text-slate-500 text-xs">{member.email || '—'}</span>
-                                        )}
-                                      </td>
+                                       <td className="py-2.5 px-3">
+                                         <span className="text-slate-500 text-xs">{member.member_id || member.reg_number || 'u{2014}'}</span>
+                                       </td>
                                       <td className="py-2.5 px-3">
                                         {isEditing ? (
                                           <select value={memberEditForm.gender || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, gender: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1">
