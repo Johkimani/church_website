@@ -51,7 +51,7 @@ export const getHeroSlides = async (req, res) => {
       // 4. Upcoming weekly activities (next 3, happening within 7 days)
       // For weekly activities, we calculate the next occurrence date
       const weeklyRes = await pool.query(
-        `SELECT id, title as activity, time as time_str, venue, 
+        `SELECT id, activity, time, venue, 
                 image_url, 'weekly' as activity_type,
                 day,
                 CASE day
@@ -60,7 +60,7 @@ export const getHeroSlides = async (req, res) => {
                 END as day_num
          FROM weekly_activities
          WHERE is_active = true AND image_url IS NOT NULL
-         ORDER BY day_num ASC, time_str ASC
+         ORDER BY day_num ASC, time ASC
          LIMIT 3`
       );
 
@@ -90,7 +90,7 @@ export const getHeroSlides = async (req, res) => {
 
       const weeklySlides = weeklyRes.rows.map(r => {
         // Parse time string (e.g., "4:00PM-6:00PM" or "16:00")
-        const timeMatch = r.time_str.match(/(\d{1,2}):?(\d{0,2})\s*(AM|PM)?/i);
+        const timeMatch = r.time.match(/(\d{1,2}):?(\d{0,2})\s*(AM|PM)?/i);
         let activityHour = 12, activityMin = 0;
         if (timeMatch) {
           activityHour = parseInt(timeMatch[1]);
@@ -119,7 +119,7 @@ export const getHeroSlides = async (req, res) => {
         return {
           id: `activity-weekly-${r.id}`,
           title: r.activity,
-          description: `${r.venue} · ${r.day} · ${r.time_str}`,
+          description: `${r.venue} · ${r.day} · ${r.time}`,
           image_url: r.image_url,
           category: 'Weekly Activity',
           event_date: nextDate.toISOString(),
