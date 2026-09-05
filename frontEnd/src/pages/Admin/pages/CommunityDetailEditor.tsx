@@ -48,7 +48,10 @@ import {
   Sliders,
   Menu,
   ChevronRight,
-  GraduationCap
+  GraduationCap,
+  Globe,
+  Lock,
+  Share2
 } from 'lucide-react';
 import { FaStar } from 'react-icons/fa';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -179,6 +182,7 @@ export default function CommunityDetailEditor() {
   const [channelForm, setChannelForm] = useState({ platform: 'whatsapp', url: '' });
   const [channelSaving, setChannelSaving] = useState(false);
   const [channelEditing, setChannelEditing] = useState<string | null>(null);
+  const [isAddingChannel, setIsAddingChannel] = useState(false);
 
   // Choir music-class opt-ins (name + phone only)
   const [musicSignups, setMusicSignups] = useState<{ full_name: string; phone: string }[]>([]);
@@ -2574,184 +2578,360 @@ setSongsList(res.data?.data || []);
             </div>
           )}
 
-          {/* CHANNELS — Social Media Links */}
-          {activeTab === 'channels' && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <p className="text-xs text-slate-400 font-medium">
-                  Manage social media links for {moduleMeta?.title || categoryId}. 
-                  <br />
-                  <span className="text-[11px] text-amber-400 font-bold">
-                    Choir & Dancers: WhatsApp, Facebook, TikTok, YouTube. 
-                    Others: WhatsApp only. WhatsApp hidden from non-members.
-                  </span>
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setChannelEditing(null);
-                      setChannelForm({ platform: 'whatsapp', url: '' });
-                    }}
-                    className="px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 transition"
-                  >
-                    <Plus size={14} className="mr-1" /> Add Channel
-                  </button>
-                </div>
-              </div>
+          {/* CHANNELS — Social Media & Video Links */}
+          {activeTab === 'channels' && (() => {
+            const isVideoPlatformCommunity = categoryId === 'choir' || categoryId === 'dancers';
+            const availablePlatforms = isVideoPlatformCommunity
+              ? [
+                  { id: 'whatsapp', label: 'WhatsApp', isMemberOnly: true, placeholder: 'https://chat.whatsapp.com/...' },
+                  { id: 'tiktok', label: 'TikTok', isMemberOnly: false, placeholder: 'https://www.tiktok.com/@...' },
+                  { id: 'youtube', label: 'YouTube', isMemberOnly: false, placeholder: 'https://www.youtube.com/@...' },
+                  { id: 'facebook', label: 'Facebook', isMemberOnly: false, placeholder: 'https://www.facebook.com/...' },
+                ]
+              : [
+                  { id: 'whatsapp', label: 'WhatsApp', isMemberOnly: true, placeholder: 'https://chat.whatsapp.com/...' },
+                  { id: 'facebook', label: 'Facebook', isMemberOnly: false, placeholder: 'https://www.facebook.com/...' },
+                ];
 
-              {channelSaving && (
-                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500 rounded-full animate-pulse" style={{ width: '100%' }} />
-                </div>
-              )}
+            const selectedPlatformInfo = availablePlatforms.find(p => p.id === channelForm.platform) || availablePlatforms[0];
 
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="text-left py-3 px-4 text-[10px] font-black uppercase tracking-widest">Platform</th>
-                      <th className="text-left py-3 px-4 text-[10px] font-black uppercase tracking-widest">URL</th>
-                      <th className="text-left py-3 px-4 text-[10px] font-black uppercase tracking-widest w-32">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {channels.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="text-center py-12 text-slate-400 text-xs">
-                          No channels configured. Click "Add Channel" to add WhatsApp, Facebook, TikTok, or YouTube.
-                        </td>
-                      </tr>
-                    ) : (
-                      channels.map((ch, idx) => {
+            const handleSaveChannel = async (platformToSave: string, urlToSave: string) => {
+              let trimmed = (urlToSave || '').trim();
+              if (!trimmed) {
+                alert('Please provide a valid URL');
+                return;
+              }
+              if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+                trimmed = `https://${trimmed}`;
+              }
+
+              setChannelSaving(true);
+              try {
+                const updated = [...channels.filter(c => c.platform !== platformToSave), { platform: platformToSave, url: trimmed }];
+                await apiClient.patch(`/community-channels/${categoryId}/channels`, { channels: updated });
+                setChannels(updated);
+                setChannelEditing(null);
+                setIsAddingChannel(false);
+                setChannelForm({ platform: availablePlatforms[0].id, url: '' });
+                showToast('Channel saved successfully');
+              } catch (e: any) {
+                alert(e?.response?.data?.error || 'Failed to save channel');
+              } finally {
+                setChannelSaving(false);
+              }
+            };
+
+            const handleDeleteChannel = async (platformToDelete: string) => {
+              if (!confirm(`Are you sure you want to remove the ${platformToDelete} channel?`)) return;
+              setChannelSaving(true);
+              try {
+                const updated = channels.filter(c => c.platform !== platformToDelete);
+                await apiClient.patch(`/community-channels/${categoryId}/channels`, { channels: updated });
+                setChannels(updated);
+                showToast('Channel removed');
+              } catch (e) {
+                alert('Failed to remove channel');
+              } finally {
+                setChannelSaving(false);
+              }
+            };
+
+            return (
+              <div className="space-y-6">
+                {/* Header info */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                  <div>
+                    <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                      <Share2 size={18} className="text-amber-500" />
+                      Social &amp; Video Channels
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Manage official online channels for {moduleMeta?.title || categoryId}.
+                    </p>
+                  </div>
+                  {!isAddingChannel && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChannelEditing(null);
+                        setChannelForm({ platform: availablePlatforms[0].id, url: '' });
+                        setIsAddingChannel(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-xl text-xs font-black hover:bg-amber-600 transition shadow-sm cursor-pointer shrink-0"
+                    >
+                      <Plus size={15} /> Add Channel
+                    </button>
+                  )}
+                </div>
+
+                {/* Progress bar when saving */}
+                {channelSaving && (
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full animate-pulse w-full" />
+                  </div>
+                )}
+
+                {/* Add Channel Card */}
+                {isAddingChannel && (
+                  <div className="p-5 bg-amber-50/70 border-2 border-amber-200 rounded-2xl animate-fade space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                        <Plus size={16} className="text-amber-600" /> Add New Channel
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingChannel(false)}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white/60 transition cursor-pointer"
+                        title="Cancel"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1">
+                          Platform
+                        </label>
+                        <select
+                          value={channelForm.platform}
+                          onChange={(e) => setChannelForm({ ...channelForm, platform: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-500 shadow-sm"
+                        >
+                          {availablePlatforms.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label} ({p.isMemberOnly ? 'Members Only' : 'Public'})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1">
+                          Channel URL
+                        </label>
+                        <input
+                          type="url"
+                          value={channelForm.url}
+                          onChange={(e) => setChannelForm({ ...channelForm, url: e.target.value })}
+                          placeholder={selectedPlatformInfo.placeholder}
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-amber-500 shadow-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Visibility explanation */}
+                    <div className="p-3 bg-white/80 rounded-xl border border-amber-100 text-[11px] text-slate-600 flex items-start gap-2">
+                      {selectedPlatformInfo.isMemberOnly ? (
+                        <>
+                          <Lock size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong className="text-emerald-700">Members-Only Access:</strong> WhatsApp group links are hidden from non-members on the public page to avoid unmoderated crowding. Only approved members can view and join.
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Globe size={14} className="text-sky-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong className="text-sky-700">Public Access:</strong> This link is openly visible to all church members and visitors to watch and explore ministry content.
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingChannel(false)}
+                        className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveChannel(channelForm.platform, channelForm.url)}
+                        disabled={channelSaving || !channelForm.url.trim()}
+                        className="px-5 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Save size={14} /> Save Channel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Channels List Table */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-600">
+                      Configured Channels ({channels.length})
+                    </h4>
+                  </div>
+
+                  {channels.length === 0 ? (
+                    <div className="text-center py-12 px-4">
+                      <Share2 size={36} className="mx-auto text-slate-300 mb-2" />
+                      <p className="text-sm font-bold text-slate-600">No social channels configured yet</p>
+                      <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                        {isVideoPlatformCommunity
+                          ? 'Add WhatsApp for member communications, or TikTok and YouTube to showcase choir/dance ministrations.'
+                          : 'Add your community official WhatsApp group for enrolled member discussions.'}
+                      </p>
+                      {!isAddingChannel && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChannelForm({ platform: availablePlatforms[0].id, url: '' });
+                            setIsAddingChannel(true);
+                          }}
+                          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-black hover:bg-amber-600 transition cursor-pointer"
+                        >
+                          <Plus size={14} /> Add First Channel
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {channels.map((ch) => {
                         const isEditing = channelEditing === ch.platform;
+                        const isWhatsApp = ch.platform.toLowerCase().includes('whatsapp');
+                        const isTikTok = ch.platform.toLowerCase().includes('tiktok');
+                        const isYouTube = ch.platform.toLowerCase().includes('youtube');
+                        const isFacebook = ch.platform.toLowerCase().includes('facebook');
+
                         return (
-                          <tr key={ch.platform} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 px-4">
-                              {isEditing ? (
-                                <select
-                                  value={channelForm.platform}
-                                  onChange={(e) => setChannelForm({ ...channelForm, platform: e.target.value })}
-                                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-500"
-                                >
-                                  <option value="whatsapp">WhatsApp</option>
-                                  <option value="facebook">Facebook</option>
-                                  <option value="tiktok">TikTok</option>
-                                  <option value="youtube">YouTube</option>
-                                </select>
+                          <div
+                            key={ch.platform}
+                            className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 transition"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              {/* Platform badge */}
+                              <span
+                                className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 ${
+                                  isWhatsApp
+                                    ? 'bg-green-100 text-green-800'
+                                    : isTikTok
+                                    ? 'bg-slate-900 text-white'
+                                    : isYouTube
+                                    ? 'bg-red-100 text-red-800'
+                                    : isFacebook
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-slate-100 text-slate-800'
+                                }`}
+                              >
+                                {ch.platform}
+                              </span>
+
+                              {/* Visibility indicator */}
+                              {isWhatsApp ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                  <Lock size={10} /> Members Only
+                                </span>
                               ) : (
-                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                                  ch.platform === 'whatsapp' ? 'bg-green-100 text-green-700' :
-                                  ch.platform === 'facebook' ? 'bg-blue-100 text-blue-700' :
-                                  ch.platform === 'tiktok' ? 'bg-pink-100 text-pink-700' :
-                                  'bg-red-100 text-red-700'
-                                }`}>
-                                  {ch.platform.charAt(0).toUpperCase() + ch.platform.slice(1)}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                                  <Globe size={10} /> Public
                                 </span>
                               )}
-                            </td>
-                            <td className="py-3 px-4">
-                              {isEditing ? (
-                                <input
-                                  type="url"
-                                  value={channelForm.url}
-                                  onChange={(e) => setChannelForm({ ...channelForm, url: e.target.value })}
-                                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-500"
-                                  placeholder="https://..."
-                                />
-                              ) : (
-                                <a href={ch.url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-slate-600 hover:text-amber-500 truncate block max-w-xs">
-                                  {ch.url}
-                                </a>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-1.5">
+
+                              {/* URL View or Edit */}
+                              <div className="flex-1 min-w-0 ml-2">
                                 {isEditing ? (
-                                  <>
-                                    <button
-                                      onClick={async () => {
-                                        setChannelSaving(true);
-                                        try {
-                                          const updated = [...channels.filter(c => c.platform !== ch.platform), channelForm];
-                                          await apiClient.patch(`/community-channels/${categoryId}/channels`, { channels: updated });
-                                          setChannels(updated);
-                                          setChannelEditing(null);
-                                          showToast('Channel updated');
-                                        } catch (e) {
-                                          alert('Failed to update channel');
-                                        } finally {
-                                          setChannelSaving(false);
-                                        }
-                                      }}
-                                      disabled={channelSaving}
-                                      className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                                      title="Save"
-                                    >
-                                      <CheckCircle size={16} />
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setChannelEditing(null);
-                                        setChannelForm({ platform: 'whatsapp', url: '' });
-                                      }}
-                                      className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition"
-                                      title="Cancel"
-                                    >
-                                      <X size={16} />
-                                    </button>
-                                  </>
+                                  <input
+                                    type="url"
+                                    value={channelForm.url}
+                                    onChange={(e) => setChannelForm({ ...channelForm, url: e.target.value })}
+                                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-amber-500 shadow-sm"
+                                  />
                                 ) : (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        setChannelEditing(ch.platform);
-                                        setChannelForm({ platform: ch.platform, url: ch.url });
-                                      }}
-                                      className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition"
-                                      title="Edit"
-                                    >
-                                      <Edit2 size={16} />
-                                    </button>
-                                    <button
-                                      onClick={async () => {
-                                        if (!confirm(`Remove ${ch.platform} channel?`)) return;
-                                        try {
-                                          const updated = channels.filter(c => c.platform !== ch.platform);
-                                          await apiClient.patch(`/community-channels/${categoryId}/channels`, { channels: updated });
-                                          setChannels(updated);
-                                          showToast('Channel removed');
-                                        } catch (e) {
-                                          alert('Failed to remove channel');
-                                        }
-                                      }}
-                                      className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                                      title="Delete"
-                                    >
-                                      <Trash2 size={16} />
-                                    </button>
-                                  </>
+                                  <a
+                                    href={ch.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-semibold text-slate-600 hover:text-amber-600 truncate flex items-center gap-1.5 group cursor-pointer"
+                                  >
+                                    <span className="truncate max-w-xs sm:max-w-md">{ch.url}</span>
+                                    <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition shrink-0 text-amber-500" />
+                                  </a>
                                 )}
                               </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                            </div>
 
-              {/* Validation notice */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
-                <p className="font-bold text-slate-700 mb-1">Platform Rules:</p>
-                <ul className="list-disc list-inside space-y-0.5 text-xs">
-                  <li><span className="font-bold">Choir & Dancers:</span> WhatsApp, Facebook, TikTok, YouTube allowed</li>
-                  <li><span className="font-bold">Other communities:</span> WhatsApp only (Facebook, TikTok, YouTube will be ignored)</li>
-                  <li><span className="font-bold text-green-600">WhatsApp links</span> are hidden from non-members on the public page to prevent crowding</li>
-                </ul>
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                              {isEditing ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveChannel(ch.platform, channelForm.url)}
+                                    disabled={channelSaving || !channelForm.url.trim()}
+                                    className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
+                                    title="Save changes"
+                                  >
+                                    <CheckCircle size={17} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setChannelEditing(null);
+                                      setChannelForm({ platform: availablePlatforms[0].id, url: '' });
+                                    }}
+                                    className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                                    title="Cancel"
+                                  >
+                                    <X size={17} />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setChannelEditing(ch.platform);
+                                      setChannelForm({ platform: ch.platform, url: ch.url });
+                                    }}
+                                    className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                                    title="Edit URL"
+                                  >
+                                    <Edit2 size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteChannel(ch.platform)}
+                                    className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                    title="Delete channel"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Platform Guidance Banner */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
+                  <p className="font-black text-slate-700">Platform Visibility Rules:</p>
+                  <ul className="list-disc list-inside space-y-1 text-slate-500 text-[11px]">
+                    <li>
+                      <strong className="text-slate-700">WhatsApp Groups:</strong> Strictly hidden from non-members on the public community page to protect member privacy and prevent spam.
+                    </li>
+                    {isVideoPlatformCommunity ? (
+                      <li>
+                        <strong className="text-slate-700">TikTok &amp; YouTube:</strong> Available for Choir and Dancers to share performances, choreography, and liturgical recordings with the entire church and public visitors.
+                      </li>
+                    ) : (
+                      <li>
+                        <strong className="text-slate-700">Other Platforms:</strong> Video channels (TikTok/YouTube) are designated for Choir and Dancers media teams.
+                      </li>
+                    )}
+                  </ul>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* MEMBERS / ACTIVITIES / ANNOUNCEMENTS */}
           {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members' || activeTab === 'approved-members') && (
