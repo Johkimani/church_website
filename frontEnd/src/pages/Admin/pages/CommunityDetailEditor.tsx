@@ -2780,7 +2780,7 @@ setSongsList(res.data?.data || []);
                                   </td>
                                 )}
                                 <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold capitalize">{member.gender || 'N/A'}</td>
-                                <td className="py-3.5 px-4 text-[10px] font-bold text-slate-500">{member.created_at ? new Date(member.created_at).toLocaleDateString() : 'N/A'}</td>
+                                <td className="py-3.5 px-4 text-[10px] font-bold text-slate-500">{member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'N/A'}</td>
                               </tr>
                             ))}
                           </tbody>

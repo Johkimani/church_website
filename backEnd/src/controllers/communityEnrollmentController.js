@@ -169,7 +169,7 @@ export const updateEnrollmentStatus = async (req, res) => {
     }
 
     const result = await db.query(
-      `UPDATE enrollments SET status = $1, rejection_reason = $2 WHERE id = $3 AND module_id = $4 RETURNING *`,
+      `UPDATE enrollments SET status = $1, rejection_reason = $2, joined_at = CASE WHEN $1 = 'Approved' THEN NOW() ELSE joined_at END WHERE id = $3 AND module_id = $4 RETURNING *`,
       [status, rejectionReason || null, id, moduleId]
     );
 
