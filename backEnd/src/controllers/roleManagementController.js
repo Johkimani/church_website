@@ -312,8 +312,15 @@ export const listAssignments = async (req, res) => {
              mr.approved_at, mr.jumuiya_id, mr.created_at,
              COALESCE(r.role_name, 'unknown') as role_name, 
              COALESCE(r.description, 'Role assignment') as role_description,
-             COALESCE(go.position, jo.position, o.position) as source_position,
-             COALESCE(m.first_name, jo.name, o.name, mr.member_id) as first_name,
+             CASE
+               WHEN r.role_name IN ('csa_chair', 'jumuiya_coordinator', 'csa_vice_chair', 'csa_secretary', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist')
+                 THEN COALESCE(o.position, go.position, jo.position)
+               WHEN r.role_name LIKE 'jumuiya_%'
+                 THEN COALESCE(jo.position, o.position, go.position)
+               ELSE
+                 COALESCE(go.position, o.position, jo.position)
+             END as source_position,
+             COALESCE(m.first_name, jo.name, o.name, go.name, mr.member_id) as first_name,
              COALESCE(m.last_name, '') as last_name,
              CASE
                WHEN r.role_name LIKE 'dance_%' THEN 'Dancers'
@@ -321,16 +328,36 @@ export const listAssignments = async (req, res) => {
                WHEN r.role_name LIKE 'charismatic_%' THEN 'Charismatic'
                WHEN r.role_name LIKE 'st_francis_%' THEN 'St. Francis'
                WHEN r.role_name LIKE 'mentorship_%' THEN 'Mentorship'
-               ELSE COALESCE(sg.name, msg.name, go.category, jo.category, o.category)
+               WHEN r.role_name IN ('csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist')
+                 THEN 'CSA Executive'
+               ELSE COALESCE(sg.name, msg.name, jo.category, go.category, o.category)
              END as jumuiya_name,
              ab.first_name as assigned_by_first, ab.last_name as assigned_by_last,
              apb.first_name as approved_by_first, apb.last_name as approved_by_last
       FROM member_roles mr
       LEFT JOIN roles r ON mr.role_id = r.role_id
       LEFT JOIN members m ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(m.member_id))
-      LEFT JOIN jumuiya_officials jo ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(jo.reg_number))
-      LEFT JOIN officials o ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(o.reg_number))
-      LEFT JOIN group_officials go ON LOWER(TRIM(mr.member_id)) = LOWER(TRIM(go.reg_number))
+      LEFT JOIN LATERAL (
+        SELECT jo.position, jo.name, jo.category
+        FROM jumuiya_officials jo
+        WHERE LOWER(TRIM(jo.reg_number)) = LOWER(TRIM(mr.member_id))
+        ORDER BY CASE WHEN jo.status = 'active' THEN 0 ELSE 1 END, jo.id DESC
+        LIMIT 1
+      ) jo ON true
+      LEFT JOIN LATERAL (
+        SELECT o.position, o.name, o.category
+        FROM officials o
+        WHERE LOWER(TRIM(o.reg_number)) = LOWER(TRIM(mr.member_id))
+        ORDER BY CASE WHEN o.status = 'active' THEN 0 ELSE 1 END, o.id DESC
+        LIMIT 1
+      ) o ON true
+      LEFT JOIN LATERAL (
+        SELECT go.position, go.name, go.category
+        FROM group_officials go
+        WHERE LOWER(TRIM(go.reg_number)) = LOWER(TRIM(mr.member_id))
+        ORDER BY CASE WHEN go.status = 'active' THEN 0 ELSE 1 END, go.id DESC
+        LIMIT 1
+      ) go ON true
       LEFT JOIN sub_groups sg ON mr.jumuiya_id::text = sg.group_id::text
       LEFT JOIN sub_groups msg ON (
         m.jumuiya_id::text = msg.group_id::text 

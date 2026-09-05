@@ -107,16 +107,34 @@ const getPagesForRole = (roleName: string): string[] => {
   return ROLE_PAGES_MAP[key] || [`Role: ${roleName}`];
 };
 
+const ROLE_LABEL_MAP: Record<string, string> = {
+  csa_chair: 'CSA Chairperson',
+  csa_vice_chair: 'CSA Vice Chairperson',
+  csa_secretary: 'CSA Secretary',
+  jumuiya_coordinator: 'Jumuiya Coordinator',
+  os: 'Organizing Secretary',
+  project_manager: 'Project Manager',
+  instrument_manager: 'Instrument Manager',
+  treasurer: 'Treasurer',
+  liturgist: 'Liturgist',
+  jumuiya_chairperson: 'Jumuiya Chairperson',
+  jumuiya_vice_chairperson: 'Jumuiya Vice Chairperson',
+  jumuiya_os: 'Jumuiya Organizing Secretary',
+  jumuiya_secretary: 'Jumuiya Secretary',
+};
+
+const getRoleDisplayName = (assignment: Assignment): string => {
+  if (assignment.source_position) return assignment.source_position;
+  const key = (assignment.role_name || '').toLowerCase().trim();
+  return ROLE_LABEL_MAP[key] || assignment.role_name.replace(/_/g, ' ');
+};
+
 const roleBelongsToTab = (roleName: string, tab: TabKey): boolean => {
   const name = (roleName || '').toLowerCase().trim();
-  switch (tab) {
-    case 'jumuiya':
-      return JUMUIYA_ROLES.includes(name) || name.includes('jumuiya');
-    case 'subgroup':
-      return SUBGROUP_ROLES.includes(name) || name.includes('choir') || name.includes('dance') || name.includes('charismatic') || name.includes('francis') || name.includes('mentorship');
-    case 'csa':
-      return CSA_ROLES.includes(name) || (!JUMUIYA_ROLES.includes(name) && !SUBGROUP_ROLES.includes(name) && !name.includes('jumuiya') && !name.includes('choir') && !name.includes('dance') && !name.includes('charismatic') && !name.includes('francis') && !name.includes('mentorship'));
-  }
+  if (CSA_ROLES.includes(name)) return tab === 'csa';
+  if (JUMUIYA_ROLES.includes(name) || (name.startsWith('jumuiya_') && !name.includes('coordinator'))) return tab === 'jumuiya';
+  if (SUBGROUP_ROLES.includes(name) || name.includes('choir') || name.includes('dance') || name.includes('charismatic') || name.includes('francis') || name.includes('mentorship')) return tab === 'subgroup';
+  return tab === 'csa';
 };
 
 export default function Settings() {
@@ -664,7 +682,7 @@ function ApprovalsPanel({ activeTab, onChanged }: { activeTab: TabKey; onChanged
               </td>
               <td className="pl-1 pr-2 py-3">
                 <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-lg border border-blue-100 capitalize block truncate">
-                  {a.source_position || a.role_name.replace(/_/g, ' ')}
+                  {getRoleDisplayName(a)}
                 </span>
               </td>
               <td className="px-3 py-3">
@@ -806,7 +824,7 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
               </td>
               <td className="pl-1 pr-2 py-3">
                 <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-100 capitalize block truncate">
-                  {a.source_position || a.role_name.replace(/_/g, ' ')}
+                  {getRoleDisplayName(a)}
                 </span>
               </td>
               <td className="px-3 py-3">
@@ -963,7 +981,7 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
                 </td>
                 <td className="pl-1 pr-2 py-3">
                   <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-100 capitalize block truncate">
-                    {a.source_position || a.role_name.replace(/_/g, ' ')}
+                    {getRoleDisplayName(a)}
                   </span>
                 </td>
                 <td className="px-3 py-3">
