@@ -791,7 +791,7 @@ export default function CsaSecretaryDashboard() {
         <select
           value={filterJumuiya}
           onChange={e => setFilterJumuiya(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="order-4 px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:order-none"
         >
           <option value="all">All Jumuiyas</option>
           {JUMUIYAS.map(j => (
@@ -812,13 +812,13 @@ export default function CsaSecretaryDashboard() {
         </select>
         <button
           onClick={() => setShowExport(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors"
+          className="order-5 flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors sm:order-none"
         >
           <Download size={16} /> Export
         </button>
         <button
           onClick={() => setShowRegister(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+          className="order-2 flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors sm:order-none"
         >
           <UserPlus size={16} /> Register Member
         </button>
