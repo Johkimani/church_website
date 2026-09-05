@@ -778,7 +778,8 @@ export default function CsaSecretaryDashboard() {
 
       {/* Search & Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="flex w-full items-center gap-3 sm:contents">
+        <div className="relative min-w-0 flex-1 sm:order-1 sm:min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
@@ -788,10 +789,18 @@ export default function CsaSecretaryDashboard() {
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
           />
         </div>
+        <button
+          onClick={() => setShowRegister(true)}
+          className="flex shrink-0 items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors sm:order-5"
+        >
+          <UserPlus size={16} /> Register Member
+        </button>
+        </div>
+        <div className="flex w-full items-center gap-3 sm:contents">
         <select
           value={filterJumuiya}
           onChange={e => setFilterJumuiya(e.target.value)}
-          className="order-4 px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:order-none"
+          className="min-w-0 flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:order-2 sm:flex-none"
         >
           <option value="all">All Jumuiyas</option>
           {JUMUIYAS.map(j => (
@@ -801,7 +810,7 @@ export default function CsaSecretaryDashboard() {
         <select
           value={filterSemester}
           onChange={e => setFilterSemester(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="min-w-0 flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:order-3 sm:flex-none"
         >
           <option value="all">All Semesters</option>
           <option value="current">Current Semester</option>
@@ -810,24 +819,21 @@ export default function CsaSecretaryDashboard() {
             <option key={s.label} value={s.label}>{s.label}</option>
           ))}
         </select>
+        </div>
+        <div className="flex w-full items-center gap-3 sm:contents">
         <button
           onClick={() => setShowExport(true)}
-          className="order-5 flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors sm:order-none"
+          className="flex flex-1 items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors sm:order-4 sm:flex-none"
         >
           <Download size={16} /> Export
         </button>
         <button
-          onClick={() => setShowRegister(true)}
-          className="order-2 flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors sm:order-none"
-        >
-          <UserPlus size={16} /> Register Member
-        </button>
-        <button
           onClick={fetchData}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors"
+          className="flex flex-1 items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors sm:order-6 sm:flex-none"
         >
           <RefreshCw size={16} /> Refresh
         </button>
+        </div>
       </div>
 
       {/* Table */}
