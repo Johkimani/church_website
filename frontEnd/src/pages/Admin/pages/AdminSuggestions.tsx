@@ -55,6 +55,9 @@ const SLUG_NAME_MAP: Record<string, string> = {
 export default function AdminSuggestions() {
   const { user } = useAuth();
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
+  const isVC = userRoles.some((r: any) =>
+    ['csa_vice_chair', 'csa_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson', 'admin', 'developer'].includes(r)
+  );
 
   // In the Universal Admin, the suggestion box is strictly for the CSA level.
   // CSA officials (CSA Vice Chair, CSA Chair, Admin, Developer) focus purely on CSA-level suggestions.
