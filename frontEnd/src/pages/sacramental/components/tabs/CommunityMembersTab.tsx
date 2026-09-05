@@ -522,10 +522,8 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
               }}
               placeholder={
                 isChoir
-                  ? 'Search chorister by name, reg no, voice part, or year…'
-                  : isAdmin
-                  ? 'Search by name, reg no, email, or phone…'
-                  : 'Search members by name or reg no…'
+                  ? 'Search chorister by name, voice part, or year…'
+                  : 'Search members by name or year…'
               }
               className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 transition-all"
             />
@@ -783,12 +781,6 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
                       )}
 
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        {regNo && (
-                          <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                            {regNo}
-                          </span>
-                        )}
-
                         <span
                           className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md"
                           style={{ background: `${color}0c`, color }}
@@ -896,12 +888,6 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
                             style={{ background: vStyle.bg, color: vStyle.text, border: `1px solid ${vStyle.border}` }}
                           >
                             <FaMusic size={8} /> {voice}
-                          </span>
-                        )}
-
-                        {regNo && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                            {regNo}
                           </span>
                         )}
 
