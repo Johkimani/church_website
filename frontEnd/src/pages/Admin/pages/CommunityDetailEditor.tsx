@@ -2736,7 +2736,6 @@ setSongsList(res.data?.data || []);
                           </tr>
                         );
                       })}
-                    )}
                   </tbody>
                 </table>
               </div>
