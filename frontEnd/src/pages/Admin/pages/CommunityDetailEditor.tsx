@@ -52,7 +52,7 @@ import {
 import { FaStar } from 'react-icons/fa';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
-type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions';
+type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'approved-members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions';
 
 interface GalleryItem {
   id: number;
@@ -385,6 +385,22 @@ setSongsList(res.data?.data || []);
           const response = await apiClient.get('/enrollments');
           const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
           setData(items.filter((item: any) => (item.module_id === categoryId) || (item.class_id === categoryId)));
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Approved members only
+      if (activeTab === 'approved-members') {
+        try {
+          const res = await apiClient.get(`/community-enrollment/${categoryId}`, {
+            params: { status: 'Approved' },
+          });
+          setData(res.data?.enrollments || []);
+        } catch {
+          const response = await apiClient.get('/enrollments');
+          const items = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+          setData(items.filter((item: any) => ((item.module_id === categoryId) || (item.class_id === categoryId)) && item.status === 'Approved'));
         }
         setLoading(false);
         return;
@@ -1336,6 +1352,7 @@ setSongsList(res.data?.data || []);
         },
         ...(isChoirAdmin ? [{ id: 'songs' as TabType, label: 'Songs Lyrics & Sheets', icon: Music }] : []),
         { id: 'members', label: isMentorshipAdmin ? 'Enrolled Mentees & Mentors' : 'Join Requests', icon: Users },
+        { id: 'approved-members', label: 'Members', icon: Users },
         ...(isChoirAdmin ? [{ id: 'music-class' as TabType, label: 'Music Class', icon: Music }] : []),
         { id: 'gallery', label: 'Gallery & Media', icon: ImageIcon },
         {
@@ -1466,7 +1483,8 @@ setSongsList(res.data?.data || []);
           {!isOurJumuiyasAdmin && (
             <div className="mt-3 sm:mt-5 flex flex-wrap items-center gap-2 sm:gap-3">
               {[
-                { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'songs' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' },
+                { label: 'Records', value: data.length, show: activeTab !== 'about' && activeTab !== 'songs' && activeTab !== 'gallery' && activeTab !== 'tshirts' && activeTab !== 'suggestions' && activeTab !== 'approved-members' },
+                { label: 'Members', value: data.length, show: activeTab === 'approved-members' },
                 { label: 'Songs', value: songsList.length, show: activeTab === 'songs' },
                 { label: 'Gallery Photos', value: galleryImages.length, show: activeTab === 'gallery' },
                 { label: 'Products', value: products.length, show: activeTab === 'tshirts' },
@@ -1630,7 +1648,7 @@ setSongsList(res.data?.data || []);
             </div>
 
             <div className="flex items-center gap-2">
-              {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members') && (
+              {(activeTab === 'activities' || activeTab === 'announcements' || activeTab === 'members' || activeTab === 'approved-members') && (
                 <div className="relative flex-1 sm:flex-none">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                   <input
@@ -2676,6 +2694,92 @@ setSongsList(res.data?.data || []);
                           ))}
                         </tbody>
                       </table>
+                    </>
+                  ) : activeTab === 'approved-members' ? (
+                    <>
+                      <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-4">
+                        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                          <Search size={14} className="text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Search members by name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-800 placeholder:text-slate-400"
+                          />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-500 uppercase">{data.length} Members</span>
+                        {categoryId === 'choir' && (
+                          <>
+                            <select value={choirVoiceFilter} onChange={(e: any) => setChoirVoiceFilter(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs">
+                              <option value="all">All Voices</option>
+                              <option value="soprano">Soprano</option>
+                              <option value="alto">Alto</option>
+                              <option value="tenor">Tenor</option>
+                              <option value="bass">Bass</option>
+                            </select>
+                            <select value={choirGenderFilter} onChange={(e: any) => setChoirGenderFilter(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs">
+                              <option value="all">All Genders</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                            </select>
+                          </>
+                        )}
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500 bg-slate-50">
+                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">#</th>
+                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Full Name</th>
+                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
+                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
+                              {categoryId === 'choir' && (
+                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
+                              )}
+                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Gender</th>
+                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Joined</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.filter(m => {
+                              const name = (m.fullName || m.full_name || '').toLowerCase();
+                              const matchesSearch = name.includes(searchTerm.toLowerCase());
+                              if (!matchesSearch) return false;
+                              if (categoryId === 'choir') {
+                                const v = (m.voice_type || m.voiceType || m.voice || '').toLowerCase();
+                                if (choirVoiceFilter !== 'all' && !v.includes(choirVoiceFilter)) return false;
+                                const g = (m.gender || '').toLowerCase();
+                                if (choirGenderFilter === 'male' && !(g.includes('male') || g.includes('gent') || v.includes('tenor') || v.includes('bass'))) return false;
+                                if (choirGenderFilter === 'female' && !(g.includes('female') || g.includes('lady') || v.includes('soprano') || v.includes('alto'))) return false;
+                              }
+                              return true;
+                            }).map((member, idx) => (
+                              <tr key={member.id} className="border-b border-slate-100 hover:bg-emerald-50/50 transition-colors text-slate-800">
+                                <td className="py-3.5 px-4 text-xs font-bold text-slate-400">{idx + 1}</td>
+                                <td className="py-3.5 px-4 font-extrabold text-slate-900">{member.fullName || member.full_name}</td>
+                                <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.phoneNumber || member.phone || 'N/A'}</td>
+                                <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.email || 'N/A'}</td>
+                                {categoryId === 'choir' && (
+                                  <td className="py-3.5 px-4 text-sm font-bold">
+                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800' :
+                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800' :
+                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800' :
+                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800' :
+                                      'bg-slate-100 text-slate-500'
+                                    }`}>
+                                      {member.voice_type || 'Not set'}
+                                    </span>
+                                  </td>
+                                )}
+                                <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold capitalize">{member.gender || 'N/A'}</td>
+                                <td className="py-3.5 px-4 text-[10px] font-bold text-slate-500">{member.created_at ? new Date(member.created_at).toLocaleDateString() : 'N/A'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </>
                   ) : activeTab === 'schedules' ? (
                     <div className="space-y-4">
