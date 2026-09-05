@@ -427,7 +427,7 @@ export default function CsaSecretaryDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+        <div className="w-8 h-8 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -583,7 +583,7 @@ export default function CsaSecretaryDashboard() {
         </div>
         {loadingPending ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 size={24} className="text-blue-500 animate-spin" />
+            <div className="w-6 h-6 border-3 border-blue-100 border-t-blue-500 rounded-full animate-spin" />
           </div>
         ) : pendingPayments.length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
@@ -763,7 +763,7 @@ export default function CsaSecretaryDashboard() {
           disabled={serialSaving}
           className="px-4 py-1.5 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
         >
-          {serialSaving ? <Loader2 size={13} className="animate-spin" /> : <Settings2 size={13} />}
+          {serialSaving ? <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Settings2 size={13} />}
           {serialSaving ? "Saving..." : "Save"}
         </button>
         {serialConfig && (
@@ -950,7 +950,7 @@ export default function CsaSecretaryDashboard() {
                     onChange={e => searchMember(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
-                  {regSearching && <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 animate-spin" />}
+                  {regSearching && <span className="absolute right-3 top-1/2 w-4 h-4 -translate-y-1/2 border-2 border-blue-100 border-t-blue-500 rounded-full animate-spin" />}
                 </div>
                 {regResults.length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -1060,7 +1060,7 @@ export default function CsaSecretaryDashboard() {
                     disabled={!regJumuiya || regSubmitting}
                     className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
-                    {regSubmitting ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                    {regSubmitting ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <UserPlus size={16} />}
                     {regSubmitting ? "Registering..." : "Register Member"}
                   </button>
                 </div>
