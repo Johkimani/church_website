@@ -120,6 +120,24 @@ const roleBelongsToTab = (roleName: string, tab: TabKey): boolean => {
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<TabKey>('csa');
+  const [pendingCounts, setPendingCounts] = useState<Record<TabKey, number>>({ csa: 0, jumuiya: 0, subgroup: 0 });
+  const [pendingRefresh, setPendingRefresh] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    apiService.getRoleAssignments('pending').then((assignments) => {
+      if (!mounted) return;
+      const counts: Record<TabKey, number> = { csa: 0, jumuiya: 0, subgroup: 0 };
+      assignments.forEach((assignment) => {
+        const tab = (['csa', 'jumuiya', 'subgroup'] as TabKey[]).find((key) => roleBelongsToTab(assignment.role_name, key));
+        if (tab) counts[tab] += 1;
+      });
+      setPendingCounts(counts);
+    }).catch(() => {
+      if (mounted) setPendingCounts({ csa: 0, jumuiya: 0, subgroup: 0 });
+    });
+    return () => { mounted = false; };
+  }, [pendingRefresh]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -148,13 +166,18 @@ export default function Settings() {
             }`}
           >
             {tab.label}
+            {pendingCounts[tab.key] > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                {pendingCounts[tab.key]}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {(activeTab === 'csa' || activeTab === 'all') && <SemesterConfigPanel />}
       {activeTab === 'csa' && <TermHandoverPanel />}
-      <ApprovalsPanel activeTab={activeTab} />
+      <ApprovalsPanel activeTab={activeTab} onChanged={() => setPendingRefresh((value) => value + 1)} />
       <ActiveRolesPanel activeTab={activeTab} />
       <RevokedRolesPanel activeTab={activeTab} />
     </div>
@@ -512,7 +535,7 @@ function TermHandoverPanel() {
   );
 }
 
-function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
+function ApprovalsPanel({ activeTab, onChanged }: { activeTab: TabKey; onChanged: () => void }) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -539,6 +562,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
       await apiService.approveAssignment(id);
       toast.success('Assignment approved');
       setAssignments((prev) => prev.filter((a) => a.id !== id));
+      onChanged();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to approve');
     } finally {
@@ -552,6 +576,7 @@ function ApprovalsPanel({ activeTab }: { activeTab: TabKey }) {
       await apiService.rejectAssignment(id);
       toast.success('Assignment rejected');
       setAssignments((prev) => prev.filter((a) => a.id !== id));
+      onChanged();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to reject');
     } finally {
