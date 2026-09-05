@@ -5,8 +5,9 @@ import logger from "../logger/winston.js";
  * GET /hero-slides
  * Returns a combined list of slides for the hero slider:
  *  1. Gallery images with category = 'Hero Slider'
- *  2. Upcoming semester activities (next 2)
- *  3. Featured or latest in-stock products (up to 3)
+ *  2. Upcoming semester activities (next 3, happening within 30 days)
+ *  3. Upcoming weekly activities (next 3, happening within 7 days)
+ *  4. Featured or latest in-stock products (up to 5)
  *
  * Query params:
  *  - limit (optional, default 15): max total slides to return
@@ -38,22 +39,40 @@ export const getHeroSlides = async (req, res) => {
     let productSlides = [];
 
     if (dynamicEnabled) {
-      // 3. Upcoming semester activities (next 2, happening within 30 days)
-      const activityRes = await pool.query(
-        `SELECT id, title, date_time, venue, description, image_url
+      // 3. Upcoming semester activities (next 3, happening within 30 days)
+      const semesterRes = await pool.query(
+        `SELECT id, title, date_time, venue, description, image_url, 'semester' as activity_type
          FROM semester_activities
-         WHERE is_active = true AND date_time >= NOW()
+         WHERE is_active = true AND date_time >= NOW() AND date_time <= NOW() + INTERVAL '30 days'
          ORDER BY date_time ASC
-         LIMIT 2`
+         LIMIT 3`
       );
-      activitySlides = activityRes.rows.map(r => {
+
+      // 4. Upcoming weekly activities (next 3, happening within 7 days)
+      // For weekly activities, we calculate the next occurrence date
+      const weeklyRes = await pool.query(
+        `SELECT id, title as activity, time as time_str, venue, 
+                image_url, 'weekly' as activity_type,
+                day,
+                CASE day
+                  WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3
+                  WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7
+                END as day_num
+         FROM weekly_activities
+         WHERE is_active = true AND image_url IS NOT NULL
+         ORDER BY day_num ASC, time_str ASC
+         LIMIT 3`
+      );
+
+      // Process semester activities
+      const semesterSlides = semesterRes.rows.map(r => {
         const dt = new Date(r.date_time);
         const now = new Date();
         const hoursUntil = (dt.getTime() - now.getTime()) / (1000 * 60 * 60);
         return {
-          id: `activity-${r.id}`,
+          id: `activity-semester-${r.id}`,
           title: r.title,
-          description: r.venue ? `${r.venue} · ${dt.toLocaleDateString('en-KE', { weekday: 'short', month: 'short', day: 'numeric' })}` : r.description || '',
+          description: r.venue ? `${r.venue} · ${dt.toLocaleDateString('en-KE', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : r.description || '',
           image_url: r.image_url || '/images/church.jpg',
           category: 'Upcoming Activity',
           event_date: r.date_time,
@@ -64,13 +83,65 @@ export const getHeroSlides = async (req, res) => {
         };
       });
 
-      // 4. Featured products or latest in-stock (up to 3)
+      // Process weekly activities - calculate next occurrence
+      const now = new Date();
+      const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+      const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+
+      const weeklySlides = weeklyRes.rows.map(r => {
+        // Parse time string (e.g., "4:00PM-6:00PM" or "16:00")
+        const timeMatch = r.time_str.match(/(\d{1,2}):?(\d{0,2})\s*(AM|PM)?/i);
+        let activityHour = 12, activityMin = 0;
+        if (timeMatch) {
+          activityHour = parseInt(timeMatch[1]);
+          activityMin = parseInt(timeMatch[2] || '0');
+          if (timeMatch[3]?.toUpperCase() === 'PM' && activityHour !== 12) activityHour += 12;
+          if (timeMatch[3]?.toUpperCase() === 'AM' && activityHour === 12) activityHour = 0;
+        }
+        const activityMinutes = activityHour * 60 + activityMin;
+
+        // Calculate days until next occurrence
+        let targetDay = r.day_num === 7 ? 0 : r.day_num; // Convert Sunday=7 to 0
+        let daysUntil = targetDay - currentDay;
+        if (daysUntil < 0 || (daysUntil === 0 && activityMinutes <= currentTime)) {
+          daysUntil += 7;
+        }
+
+        const nextDate = new Date(now);
+        nextDate.setDate(now.getDate() + daysUntil);
+        nextDate.setHours(activityHour, activityMin, 0, 0);
+
+        const hoursUntil = (nextDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+        // Only include if within 7 days
+        if (hoursUntil > 168) return null;
+
+        return {
+          id: `activity-weekly-${r.id}`,
+          title: r.activity,
+          description: `${r.venue} · ${r.day} · ${r.time_str}`,
+          image_url: r.image_url,
+          category: 'Weekly Activity',
+          event_date: nextDate.toISOString(),
+          slide_type: 'activity',
+          link: '/activities',
+          happening_soon: hoursUntil <= 48,
+          activity_date: nextDate.toISOString(),
+        };
+      }).filter(Boolean);
+
+      // Combine and sort by next occurrence
+      activitySlides = [...semesterSlides, ...weeklySlides]
+        .sort((a, b) => new Date(a.activity_date).getTime() - new Date(b.activity_date).getTime())
+        .slice(0, 4); // Max 4 activities total
+
+      // 5. Featured products or latest in-stock (up to 5)
       let productsRes = await pool.query(
         `SELECT id, name, price, image_url, category, description, stock
          FROM products
          WHERE is_featured = true AND stock > 0 AND image_url IS NOT NULL
          ORDER BY created_at DESC
-         LIMIT 3`
+         LIMIT 5`
       );
       if (productsRes.rows.length === 0) {
         productsRes = await pool.query(
@@ -78,7 +149,7 @@ export const getHeroSlides = async (req, res) => {
            FROM products
            WHERE stock > 0 AND image_url IS NOT NULL AND category IN ('tshirts', 'sacramentals')
            ORDER BY created_at DESC
-           LIMIT 3`
+           LIMIT 5`
         );
       }
       productSlides = productsRes.rows.map(r => ({
@@ -95,9 +166,9 @@ export const getHeroSlides = async (req, res) => {
       }));
     }
 
-    // 5. Merge: gallery slides first, then interleave activities + products
+    // 6. Merge: gallery slides first, then interleave activities + products
     const dynamicSlides = [];
-    const maxDynamic = Math.min(activitySlides.length + productSlides.length, 5);
+    const maxDynamic = Math.min(activitySlides.length + productSlides.length, 6);
     let ai = 0, pi = 0;
     while (dynamicSlides.length < maxDynamic) {
       if (ai < activitySlides.length) dynamicSlides.push(activitySlides[ai++]);
