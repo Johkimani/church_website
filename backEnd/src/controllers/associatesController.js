@@ -152,10 +152,15 @@ export const migrateToAssociates = async (req, res) => {
 
 export const getAssociatesList = async (req, res) => {
   try {
-    const { jumuiya_id, graduation_year } = req.query;
+    const { jumuiya_id, graduation_year, module_id } = req.query;
     let query = `SELECT * FROM associates`;
     const params = [];
     const conditions = [];
+
+    if (module_id) {
+      conditions.push(`module_id = $${params.length + 1}`);
+      params.push(module_id);
+    }
 
     if (jumuiya_id) {
       conditions.push(`(jumuiya_id = $${params.length + 1} OR jumuiya_name = $${params.length + 1})`);

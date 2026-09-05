@@ -47,10 +47,12 @@ import {
   Maximize2,
   Sliders,
   Menu,
-  ChevronRight
+  ChevronRight,
+  GraduationCap
 } from 'lucide-react';
 import { FaStar } from 'react-icons/fa';
 import PageLoader from '../../../assets/Layouts/PageLoader';
+import AssociatesTable from './AssociatesTable';
 
 type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'approved-members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions';
 
@@ -139,6 +141,12 @@ export default function CommunityDetailEditor() {
   const [galleryImagePreview, setGalleryImagePreview] = useState<string>('');
   const [galleryUploading, setGalleryUploading] = useState(false);
   const galleryImageInputRef = useRef<HTMLInputElement>(null);
+
+  // Community-specific Members state
+  const [memberSubTab, setMemberSubTab] = useState<'members' | 'associates'>('members');
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [memberEditForm, setMemberEditForm] = useState<any>({});
+  const [memberSaving, setMemberSaving] = useState(false);
 
   // Community-specific T-Shirts state
   const [tshirtTab, setTshirtTab] = useState<'products' | 'orders'>('products');
@@ -2703,89 +2711,192 @@ setSongsList(res.data?.data || []);
                     </>
                   ) : activeTab === 'approved-members' ? (
                     <>
-                      <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-4">
-                        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                          <Search size={14} className="text-slate-400" />
-                          <input
-                            type="text"
-                            placeholder="Search members by name..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-800 placeholder:text-slate-400"
-                          />
-                        </div>
-                        <span className="text-[10px] font-black text-slate-500 uppercase">{data.length} Members</span>
-                        {categoryId === 'choir' && (
-                          <>
-                            <select value={choirVoiceFilter} onChange={(e: any) => setChoirVoiceFilter(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs">
-                              <option value="all">All Voices</option>
-                              <option value="soprano">Soprano</option>
-                              <option value="alto">Alto</option>
-                              <option value="tenor">Tenor</option>
-                              <option value="bass">Bass</option>
-                            </select>
-                            <select value={choirGenderFilter} onChange={(e: any) => setChoirGenderFilter(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs">
-                              <option value="all">All Genders</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
-                            </select>
-                          </>
-                        )}
+                      {/* Sub-tab switcher */}
+                      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-4 w-fit">
+                        <button onClick={() => setMemberSubTab('members')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${memberSubTab === 'members' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                          <Users size={13} className="inline mr-1.5" />Members
+                        </button>
+                        <button onClick={() => setMemberSubTab('associates')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${memberSubTab === 'associates' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                          <GraduationCap size={13} className="inline mr-1.5" />Associates
+                        </button>
                       </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-slate-500 bg-slate-50">
-                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">#</th>
-                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Full Name</th>
-                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Phone</th>
-                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Email</th>
-                              {categoryId === 'choir' && (
-                                <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Voice Section</th>
-                              )}
-                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Gender</th>
-                              <th className="py-3.5 px-4 text-[10px] font-black uppercase tracking-widest">Joined</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {data.filter(m => {
-                              const name = (m.fullName || m.full_name || '').toLowerCase();
-                              const matchesSearch = name.includes(searchTerm.toLowerCase());
-                              if (!matchesSearch) return false;
-                              if (categoryId === 'choir') {
-                                const v = (m.voice_type || m.voiceType || m.voice || '').toLowerCase();
-                                if (choirVoiceFilter !== 'all' && !v.includes(choirVoiceFilter)) return false;
-                                const g = (m.gender || '').toLowerCase();
-                                if (choirGenderFilter === 'male' && !(g.includes('male') || g.includes('gent') || v.includes('tenor') || v.includes('bass'))) return false;
-                                if (choirGenderFilter === 'female' && !(g.includes('female') || g.includes('lady') || v.includes('soprano') || v.includes('alto'))) return false;
-                              }
-                              return true;
-                            }).map((member, idx) => (
-                              <tr key={member.id} className="border-b border-slate-100 hover:bg-emerald-50/50 transition-colors text-slate-800">
-                                <td className="py-3.5 px-4 text-xs font-bold text-slate-400">{idx + 1}</td>
-                                <td className="py-3.5 px-4 font-extrabold text-slate-900">{member.fullName || member.full_name}</td>
-                                <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.phoneNumber || member.phone || 'N/A'}</td>
-                                <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold">{member.email || 'N/A'}</td>
-                                {categoryId === 'choir' && (
-                                  <td className="py-3.5 px-4 text-sm font-bold">
-                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                                      (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-100 text-pink-800' :
-                                      (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-100 text-amber-800' :
-                                      (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-100 text-sky-800' :
-                                      (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-100 text-indigo-800' :
-                                      'bg-slate-100 text-slate-500'
-                                    }`}>
-                                      {member.voice_type || 'Not set'}
-                                    </span>
-                                  </td>
-                                )}
-                                <td className="py-3.5 px-4 text-sm text-slate-600 font-semibold capitalize">{member.gender || 'N/A'}</td>
-                                <td className="py-3.5 px-4 text-[10px] font-bold text-slate-500">{member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'N/A'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+
+                      {memberSubTab === 'associates' ? (
+                        <AssociatesTable moduleId={categoryId} />
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap items-center gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-4">
+                            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                              <Search size={14} className="text-slate-400" />
+                              <input
+                                type="text"
+                                placeholder="Search members by name..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-800 placeholder:text-slate-400"
+                              />
+                            </div>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">{data.length} Members</span>
+                            {categoryId === 'choir' && (
+                              <>
+                                <select value={choirVoiceFilter} onChange={(e: any) => setChoirVoiceFilter(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs">
+                                  <option value="all">All Voices</option>
+                                  <option value="soprano">Soprano</option>
+                                  <option value="alto">Alto</option>
+                                  <option value="tenor">Tenor</option>
+                                  <option value="bass">Bass</option>
+                                </select>
+                                <select value={choirGenderFilter} onChange={(e: any) => setChoirGenderFilter(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs">
+                                  <option value="all">All Genders</option>
+                                  <option value="male">Male</option>
+                                  <option value="female">Female</option>
+                                </select>
+                              </>
+                            )}
+                          </div>
+                          <div className="rounded-xl border border-slate-200 max-h-[600px] overflow-x-auto overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                            <table className="w-full text-sm">
+                              <thead className="sticky top-0 z-10">
+                                <tr className="bg-slate-50 border-b border-slate-200">
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Phone</th>
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Email</th>
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Gender</th>
+                                  {categoryId === 'choir' && (
+                                    <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Voice</th>
+                                  )}
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Joined</th>
+                                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider w-28">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {data.filter(m => {
+                                  const name = (m.fullName || m.full_name || '').toLowerCase();
+                                  const matchesSearch = name.includes(searchTerm.toLowerCase());
+                                  if (!matchesSearch) return false;
+                                  if (categoryId === 'choir') {
+                                    const v = (m.voice_type || m.voiceType || m.voice || '').toLowerCase();
+                                    if (choirVoiceFilter !== 'all' && !v.includes(choirVoiceFilter)) return false;
+                                    const g = (m.gender || '').toLowerCase();
+                                    if (choirGenderFilter === 'male' && !(g.includes('male') || g.includes('gent') || v.includes('tenor') || v.includes('bass'))) return false;
+                                    if (choirGenderFilter === 'female' && !(g.includes('female') || g.includes('lady') || v.includes('soprano') || v.includes('alto'))) return false;
+                                  }
+                                  return true;
+                                }).map((member, idx) => {
+                                  const isEditing = editingMemberId === member.id;
+                                  return (
+                                    <tr key={member.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                      <td className="py-2.5 px-3 text-slate-400 text-xs">{idx + 1}</td>
+                                      <td className="py-2.5 px-3">
+                                        {isEditing ? (
+                                          <input value={memberEditForm.full_name || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, full_name: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1 w-40" />
+                                        ) : (
+                                          <span className="text-slate-700 font-medium text-xs">{member.fullName || member.full_name}</span>
+                                        )}
+                                      </td>
+                                      <td className="py-2.5 px-3">
+                                        {isEditing ? (
+                                          <input value={memberEditForm.phone || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, phone: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28" />
+                                        ) : (
+                                          <span className="text-slate-500 text-xs">{member.phoneNumber || member.phone || '—'}</span>
+                                        )}
+                                      </td>
+                                      <td className="py-2.5 px-3">
+                                        {isEditing ? (
+                                          <input value={memberEditForm.email || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, email: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1 w-36" />
+                                        ) : (
+                                          <span className="text-slate-500 text-xs">{member.email || '—'}</span>
+                                        )}
+                                      </td>
+                                      <td className="py-2.5 px-3">
+                                        {isEditing ? (
+                                          <select value={memberEditForm.gender || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, gender: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1">
+                                            <option value="">—</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                          </select>
+                                        ) : (
+                                          <span className={`text-xs font-semibold ${(member.gender || '').toLowerCase() === 'male' ? 'text-blue-600' : (member.gender || '').toLowerCase() === 'female' ? 'text-pink-600' : 'text-slate-400'}`}>
+                                            {(member.gender || '').toLowerCase() === 'male' ? 'M' : (member.gender || '').toLowerCase() === 'female' ? 'F' : '—'}
+                                          </span>
+                                        )}
+                                      </td>
+                                      {categoryId === 'choir' && (
+                                        <td className="py-2.5 px-3">
+                                          {isEditing ? (
+                                            <select value={memberEditForm.voice_type || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, voice_type: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24">
+                                              <option value="">—</option>
+                                              <option value="Soprano">Soprano</option>
+                                              <option value="Alto">Alto</option>
+                                              <option value="Tenor">Tenor</option>
+                                              <option value="Bass">Bass</option>
+                                            </select>
+                                          ) : (
+                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                              (member.voice_type || '').toLowerCase().includes('soprano') ? 'bg-pink-50 text-pink-700' :
+                                              (member.voice_type || '').toLowerCase().includes('alto') ? 'bg-amber-50 text-amber-700' :
+                                              (member.voice_type || '').toLowerCase().includes('tenor') ? 'bg-sky-50 text-sky-700' :
+                                              (member.voice_type || '').toLowerCase().includes('bass') ? 'bg-indigo-50 text-indigo-700' :
+                                              'bg-slate-50 text-slate-500'
+                                            }`}>
+                                              {member.voice_type || '—'}
+                                            </span>
+                                          )}
+                                        </td>
+                                      )}
+                                      <td className="py-2.5 px-3 text-slate-500 text-xs">{member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—'}</td>
+                                      <td className="py-2.5 px-3">
+                                        <div className="flex gap-1">
+                                          {isEditing ? (
+                                            <>
+                                              <button onClick={async () => {
+                                                setMemberSaving(true);
+                                                try {
+                                                  await updateTableRecord('enrollments', member.id, {
+                                                    full_name: memberEditForm.full_name,
+                                                    phone: memberEditForm.phone,
+                                                    email: memberEditForm.email,
+                                                    gender: memberEditForm.gender,
+                                                    voice_type: memberEditForm.voice_type,
+                                                  });
+                                                  showToast('Member updated');
+                                                  setEditingMemberId(null);
+                                                  await loadCategoryData();
+                                                } catch { alert('Update failed'); }
+                                                setMemberSaving(false);
+                                              }} disabled={memberSaving} className="text-xs font-semibold px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 disabled:opacity-50">
+                                                <Save size={12} />
+                                              </button>
+                                              <button onClick={() => setEditingMemberId(null)} className="text-xs font-semibold px-2 py-1 rounded bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200">
+                                                <X size={12} />
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <button onClick={() => { setEditingMemberId(member.id); setMemberEditForm({ full_name: member.fullName || member.full_name || '', phone: member.phoneNumber || member.phone || '', email: member.email || '', gender: member.gender || '', voice_type: member.voice_type || '' }); }} className="text-xs font-semibold px-2 py-1 rounded bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200">
+                                              <Edit2 size={12} />
+                                            </button>
+                                          )}
+                                          <button onClick={async () => {
+                                            if (!confirm('Remove this member?')) return;
+                                            try {
+                                              await deleteTableRecord('enrollments', member.id);
+                                              showToast('Member removed');
+                                              await loadCategoryData();
+                                            } catch { alert('Delete failed'); }
+                                          }} className="text-xs font-semibold px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 border border-red-200">
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
                     </>
                   ) : activeTab === 'schedules' ? (
                     <div className="space-y-4">
