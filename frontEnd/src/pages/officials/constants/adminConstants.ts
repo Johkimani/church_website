@@ -29,7 +29,7 @@ export const POSITION_BY_CATEGORY: Record<string, string[]> = {
   'Liturgists': ['Liturgist', 'Assistant Liturgist'],
   'Choir Officials': ['Choir Chairperson', 'Choir Vice Chairperson'],
   'Instrument Managers': ['Instrument Manager', 'Assistant Instrument Manager'],
-  'Liturgical Dancers': ['Dance Coordinator', 'Assistant Dance Coordinator'],
+  'Liturgical Dancers': ['Dance Chairperson', 'Dance Vice Chairperson'],
   'Catechist': ['Catechist']
 };
 
@@ -83,7 +83,7 @@ export const GROUP_OPTIONS = [
 
 export const POSITIONS_BY_GROUP: Record<string, string[]> = {
   'Choir': ['Choir Master', 'Choir Mistress', 'Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager', 'Male Representative', 'Female Representative'],
-  'Dancers': ['Chairperson', 'Vice Chairperson'],
+  'Dancers': ['Dance Chairperson', 'Dance Vice Chairperson'],
   'Charismatic': ['Chairperson', 'Vice Chairperson'],
   'St. Francis': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer'],
   'Mentorship': ['Coordinator', 'Vice Coordinator']

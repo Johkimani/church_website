@@ -1,6 +1,7 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { getRoleNameForPosition, getGroupRoleName, checkExecutiveExclusivity } from "../utils/positionToRole.js";
+import { syncDancerToGroups, syncDancerToCsa } from "../utils/danceSync.js";
 
 const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
 
@@ -125,12 +126,16 @@ export const syncPendingOfficialsToRoles = async () => {
     }
 
     const groupOfficials = await pool.query(`
-      SELECT go.id, go.name, go.category, go.position, go.contact, go.reg_number
+      SELECT go.id, go.name, go.category, go.position, go.contact, go.photo, go.election_term_id, go.status, go.term_of_service, go.reg_number
       FROM group_officials go
       WHERE (go.status = 'active' OR go.status IS NULL)
     `);
 
     for (const off of groupOfficials.rows) {
+      if (off.category === 'Dancers') {
+        await syncDancerToCsa(off);
+      }
+
       const roleName = getGroupRoleName(off.category, off.position);
       if (!roleName) continue;
 
@@ -183,7 +188,7 @@ export const syncPendingOfficialsToRoles = async () => {
       }
 
       const existing = await pool.query(
-        "SELECT id FROM member_roles WHERE member_id = $1 AND role_id = $2",
+        "SELECT id, status FROM member_roles WHERE member_id = $1 AND role_id = $2",
         [memberId, roleId]
       );
 
@@ -208,6 +213,76 @@ export const syncPendingOfficialsToRoles = async () => {
           [existing.rows[0].id]
         );
         logger.info(`syncPendingOfficialsToRoles: Reopened ${existing.rows[0].status} role ${roleName} for group official ${off.name}`);
+      }
+    }
+
+    // Sync CSA officials (including Liturgical Dancers and executive/liaison roles)
+    const csaOfficials = await pool.query(`
+      SELECT o.id, o.name, o.category, o.position, o.contact, o.photo, o.election_term_id, o.status, o.term_of_service, o.reg_number
+      FROM officials o
+      WHERE (o.status = 'active' OR o.status IS NULL)
+    `);
+
+    for (const off of csaOfficials.rows) {
+      if (off.category === 'Liturgical Dancers') {
+        await syncDancerToGroups(off);
+      }
+
+      const roleName = getRoleNameForPosition(off.position, false);
+      if (!roleName) continue;
+
+      let roleRes = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [roleName]);
+      if (roleRes.rows.length === 0) {
+        roleRes = await pool.query(
+          "INSERT INTO roles (role_name, description, status) VALUES ($1, $2, 'active') RETURNING role_id",
+          [roleName, roleName.replace(/_/g, ' ')]
+        );
+      }
+      const roleId = roleRes.rows[0].role_id;
+
+      let memberId = off.reg_number?.trim() || null;
+      if (memberId) {
+        const mCheck = await pool.query("SELECT member_id FROM members WHERE member_id = $1", [memberId]);
+        if (mCheck.rows.length === 0) memberId = null;
+      }
+      if (!memberId && off.contact) {
+        const cleanPhone = off.contact.replace(/[^0-9]/g, '');
+        if (cleanPhone.length >= 8) {
+          const pMatch = await pool.query("SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1", [cleanPhone.slice(-8)]);
+          if (pMatch.rows.length > 0) memberId = pMatch.rows[0].member_id;
+        }
+      }
+      if (!memberId && off.name) {
+        const nMatch = await pool.query("SELECT member_id FROM members WHERE (first_name || ' ' || last_name) ILIKE $1 LIMIT 1", [`%${off.name.trim()}%`]);
+        if (nMatch.rows.length > 0) memberId = nMatch.rows[0].member_id;
+      }
+      if (!memberId) continue;
+
+      const existing = await pool.query(
+        "SELECT id, status FROM member_roles WHERE member_id = $1 AND role_id = $2",
+        [memberId, roleId]
+      );
+
+      if (existing.rows.length === 0) {
+        const exclusivity = await checkExecutiveExclusivity(memberId, roleName);
+        if (exclusivity) {
+          logger.warn(`syncPendingOfficialsToRoles: skipped ${roleName} for csa official ${off.name} — ${exclusivity.message}`);
+          continue;
+        }
+        const status = roleName === 'csa_chair' ? 'approved' : 'pending';
+        await pool.query(
+          `INSERT INTO member_roles (member_id, role_id, status, created_at)
+           VALUES ($1, $2, $3, NOW())`,
+          [memberId, roleId, status]
+        );
+        logger.info(`syncPendingOfficialsToRoles: Auto-created ${status} role ${roleName} for csa official ${off.name} (${off.category})`);
+      } else if (['rejected', 'revoked'].includes(existing.rows[0].status) && roleName !== 'csa_chair') {
+        await pool.query(
+          `UPDATE member_roles
+           SET status = 'pending', assigned_by = NULL, approved_by = NULL, approved_at = NULL, created_at = NOW(), updated_at = NOW()
+           WHERE id = $1`,
+          [existing.rows[0].id]
+        );
       }
     }
   } catch (err) {
@@ -240,7 +315,14 @@ export const listAssignments = async (req, res) => {
              COALESCE(go.position, jo.position, o.position) as source_position,
              COALESCE(m.first_name, jo.name, o.name, mr.member_id) as first_name,
              COALESCE(m.last_name, '') as last_name,
-             COALESCE(sg.name, msg.name, jo.category, o.category) as jumuiya_name,
+             CASE
+               WHEN r.role_name LIKE 'dance_%' THEN 'Dancers'
+               WHEN r.role_name LIKE 'choir_%' THEN 'Choir'
+               WHEN r.role_name LIKE 'charismatic_%' THEN 'Charismatic'
+               WHEN r.role_name LIKE 'st_francis_%' THEN 'St. Francis'
+               WHEN r.role_name LIKE 'mentorship_%' THEN 'Mentorship'
+               ELSE COALESCE(sg.name, msg.name, go.category, jo.category, o.category)
+             END as jumuiya_name,
              ab.first_name as assigned_by_first, ab.last_name as assigned_by_last,
              apb.first_name as approved_by_first, apb.last_name as approved_by_last
       FROM member_roles mr

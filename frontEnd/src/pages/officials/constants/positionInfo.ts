@@ -274,9 +274,31 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
     qualities: ['Responsibility', 'Teamwork', 'Technical aptitude'],
   },
 
+  'Dance Chairperson': {
+    icon: '',
+    description: 'The Dance Chairperson leads the liturgical dance ministry, blending artistic movement with prayerful worship to glorify God.',
+    responsibilities: [
+      'Coordinates liturgical dance rehearsals and performances',
+      'Choreographs worship dances in alignment with liturgical themes',
+      'Trains and mentors dance ministry members',
+      'Ensures dancers are spiritually prepared and modestly attired',
+      'Liaises with the Liturgist for integration into worship',
+    ],
+    qualities: ['Dance skills', 'Spirituality', 'Creativity', 'Leadership'],
+  },
+  'Dance Vice Chairperson': {
+    icon: '',
+    description: 'Assists the Dance Chairperson in leading the liturgical dance ministry.',
+    responsibilities: [
+      'Assists in dance rehearsals and choreography',
+      'Deputises the Dance Chairperson when absent',
+      'Helps manage dance ministry members',
+    ],
+    qualities: ['Dance skills', 'Reliability', 'Teamwork'],
+  },
   'Dance Coordinator': {
     icon: '',
-    description: 'The Dance Coordinator leads the liturgical dance ministry, blending artistic movement with prayerful worship to glorify God.',
+    description: 'The Dance Chairperson leads the liturgical dance ministry, blending artistic movement with prayerful worship to glorify God.',
     responsibilities: [
       'Coordinates liturgical dance rehearsals and performances',
       'Choreographs worship dances in alignment with liturgical themes',
@@ -288,10 +310,10 @@ export const POSITION_INFO: Record<string, PositionInfo> = {
   },
   'Assistant Dance Coordinator': {
     icon: '',
-    description: 'Assists the Dance Coordinator in leading the liturgical dance ministry.',
+    description: 'Assists the Dance Chairperson in leading the liturgical dance ministry.',
     responsibilities: [
       'Assists in dance rehearsals and choreography',
-      'Deputises the Dance Coordinator when absent',
+      'Deputises the Dance Chairperson when absent',
       'Helps manage dance ministry members',
     ],
     qualities: ['Dance skills', 'Reliability', 'Teamwork'],
