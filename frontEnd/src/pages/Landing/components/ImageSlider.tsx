@@ -155,7 +155,7 @@ function ImageSlider() {
 
   if (total === 0) {
     return (
-      <section className="relative h-[60vh] md:h-[85vh] min-h-[450px] overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex items-center justify-center">
+      <section className="relative h-[60vh] md:h-[75vh] lg:h-[70vh] xl:h-[65vh] max-h-[700px] xl:max-h-[800px] min-h-[450px] overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex items-center justify-center mx-auto max-w-[1920px]">
         <div className="text-center px-6">
           <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
             <svg className="w-8 h-8 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,7 +172,7 @@ function ImageSlider() {
 
   return (
     <section
-      className="relative h-[60vh] md:h-[85vh] min-h-[450px] overflow-hidden bg-black group"
+      className="relative h-[60vh] md:h-[75vh] lg:h-[70vh] xl:h-[65vh] max-h-[700px] xl:max-h-[800px] min-h-[450px] overflow-hidden bg-black group mx-auto max-w-[1920px]"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -197,7 +197,7 @@ function ImageSlider() {
               onLoad={() => handleImageLoad(slide.id)}
               className={`object-cover w-full h-full transition-all duration-[2000ms] ease-out ${
                 isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-md'
-              } ${i === currentSlide ? 'scale-110' : 'scale-100'}`}
+              } ${i === currentSlide ? 'scale-[1.03] md:scale-[1.05] lg:scale-[1.04] xl:scale-[1.03]' : 'scale-100'}`}
             />
             {/* Centered vignette overlay — darkens edges, keeps center clear */}
             <div className="absolute inset-0 bg-black/40" />
@@ -232,22 +232,22 @@ function ImageSlider() {
         return (
           <div
             key={`txt-${slide.id}`}
-            className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-8 text-center text-white pointer-events-none z-10
+            className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 text-center text-white pointer-events-none z-10
               transition-all duration-[1500ms] ease-out ${active ? 'opacity-100 delay-300' : 'opacity-0 delay-0'}`}
           >
-            <h1 className={`mb-3 sm:mb-5 text-[26px] sm:text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight
+            <h1 className={`mb-3 sm:mb-5 text-[26px] sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight
               drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] transition-all duration-[1500ms] ease-[cubic-bezier(0.23,1,0.32,1)]
               ${active ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 scale-95 opacity-0'}`}
             >
               {line1}
               {line2 && (
-                <span className="block mt-2 text-lg sm:text-2xl md:text-4xl text-blue-300 font-bold drop-shadow-xl">
+                <span className="block mt-2 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-blue-300 font-bold drop-shadow-xl">
                   {line2}
                 </span>
               )}
             </h1>
 
-            <p className={`max-w-[320px] sm:max-w-lg md:max-w-2xl text-[13px] sm:text-base md:text-xl italic font-light leading-relaxed
+            <p className={`max-w-[320px] sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl text-[13px] sm:text-base md:text-lg lg:text-xl xl:text-2xl italic font-light leading-relaxed
               drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-gray-200 mx-auto
               transition-all duration-[1500ms] ease-[cubic-bezier(0.23,1,0.32,1)] delay-[400ms]
               ${active ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
