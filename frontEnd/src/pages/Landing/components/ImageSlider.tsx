@@ -1,63 +1,107 @@
 import { useState, useEffect, useCallback } from 'react'
 import apiService from '../../../services/api'
-import { FaArrowLeft, FaArrowRight } from 'react-icons/fa'
+import { FaArrowLeft, FaArrowRight, FaClock, FaShoppingBag, FaImage } from 'react-icons/fa'
 
-interface GalleryItem {
-  id: number
+interface HeroSlide {
+  id: string | number
   title: string
   description: string
   image_url: string
   category: string
-  event_date: string
+  event_date?: string
+  slide_type?: 'gallery' | 'activity' | 'product'
+  link?: string | null
+  happening_soon?: boolean
+  price?: string | number
+  product_category?: string
 }
 
-const SLIDE_DURATION_MS = 12000   // How long each slide stays visible
-const ANIM_LOCK_MS = 300    // Execution lock time for transition
-const MIN_SWIPE_PX = 50      // Minimum px to register as a swipe
+const SLIDE_DURATION_MS = 12000
+const ANIM_LOCK_MS = 300
+const MIN_SWIPE_PX = 50
 
-function enrichSlides(dbSlides: GalleryItem[]): GalleryItem[] {
-  return dbSlides.map((slide) => ({
-    ...slide,
-    title: slide.title?.length > 3 ? slide.title : 'CSA Kirinyaga',
-    description: slide.description ? slide.description : '',
-  }))
-}
-
-function buildDisplaySlides(dbSlides: GalleryItem[]): GalleryItem[] {
-  return enrichSlides(dbSlides)
-}
-
-/** Fire-and-forget browser image pre-fetch */
 function preloadImage(url: string) {
   const img = new Image()
   img.src = url
 }
 
-function ImageSlider() {
+function getSlideIcon(type?: string) {
+  switch (type) {
+    case 'activity': return <FaClock size={14} className="text-amber-300" />
+    case 'product': return <FaShoppingBag size={14} className="text-emerald-300" />
+    default: return <FaImage size={14} className="text-blue-300" />
+  }
+}
 
-  const [dbSlides, setDbSlides] = useState<GalleryItem[]>([])
+function ImageSlider() {
+  const [dbSlides, setDbSlides] = useState<HeroSlide[]>([])
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
-  const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({})
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({})
+  const [dynamicEnabled, setDynamicEnabled] = useState(true)
 
-  const displaySlides = buildDisplaySlides(dbSlides)
+  const displaySlides = dbSlides
   const total = displaySlides.length
 
-  const handleImageLoad = (id: number) => {
+  const handleImageLoad = (id: string | number) => {
     setLoadedImages(prev => ({ ...prev, [id]: true }))
   }
 
+  // Fetch hero slides with caching (5 min TTL)
   useEffect(() => {
-    apiService.getGallery()
-      .then((data: GalleryItem[]) => {
-        const sorted = data
-          .filter(item => item.image_url && item.category === 'Hero Slider')
-          .sort((a, b) => new Date(b.event_date ?? 0).getTime() - new Date(a.event_date ?? 0).getTime())
-        setDbSlides(sorted)
-      })
-      .catch(() => setDbSlides([]))
+    let cancelled = false
+    const cacheKey = 'csa_hero_slides_cache'
+    const cacheTTL = 5 * 60 * 1000 // 5 minutes
+
+    const loadFromCache = () => {
+      try {
+        const cached = localStorage.getItem(cacheKey)
+        if (cached) {
+          const { slides, timestamp, dynamic_enabled } = JSON.parse(cached)
+          if (Date.now() - timestamp < cacheTTL) {
+            setDbSlides(slides)
+            setDynamicEnabled(dynamic_enabled)
+            return true
+          }
+        }
+      } catch {}
+      return false
+    }
+
+    const fetchSlides = async () => {
+      if (loadFromCache()) return
+      try {
+        const res = await apiService.getHeroSlides?.()
+        if (cancelled) return
+        const slides = res?.slides || []
+        setDbSlides(slides)
+        setDynamicEnabled(res?.dynamic_enabled ?? true)
+        localStorage.setItem(cacheKey, JSON.stringify({
+          slides,
+          timestamp: Date.now(),
+          dynamic_enabled: res?.dynamic_enabled ?? true
+        }))
+      } catch {
+        if (cancelled) return
+        // Fallback: try old gallery endpoint
+        try {
+          const gallery = await apiService.getGallery()
+          const sorted = (gallery as any[])
+            .filter(item => item.image_url && item.category === 'Hero Slider')
+            .sort((a, b) => new Date(b.event_date ?? 0).getTime() - new Date(a.event_date ?? 0).getTime())
+          setDbSlides(sorted)
+          setDynamicEnabled(false)
+        } catch {
+          setDbSlides([])
+          setDynamicEnabled(false)
+        }
+      }
+    }
+
+    fetchSlides()
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
@@ -66,14 +110,14 @@ function ImageSlider() {
     const prevIdx = (currentSlide - 1 + total) % total
     preloadImage(displaySlides[nextIdx].image_url)
     preloadImage(displaySlides[prevIdx].image_url)
-  }, [currentSlide, total]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentSlide, total])
 
   useEffect(() => {
     if (total === 0) return
     displaySlides.forEach((slide) => {
       preloadImage(slide.image_url)
     })
-  }, [total]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [total])
 
   useEffect(() => {
     if (total === 0) return
@@ -101,6 +145,12 @@ function ImageSlider() {
     const d = touchStart - touchEnd
     if (d > MIN_SWIPE_PX) nextSlide()
     if (d < -MIN_SWIPE_PX) prevSlide()
+  }
+
+  const handleSlideClick = (slide: HeroSlide) => {
+    if (slide.link) {
+      window.location.href = slide.link
+    }
   }
 
   if (total === 0) {
@@ -132,7 +182,8 @@ function ImageSlider() {
         return (
           <div
             key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${i === currentSlide ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
+            className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${i === currentSlide ? 'opacity-100 z-0' : 'opacity-0 -z-10'} cursor-pointer`}
+            onClick={() => handleSlideClick(slide)}
           >
             {/* Shimmer / blur background placeholder while loading */}
             {!isLoaded && (
@@ -140,7 +191,7 @@ function ImageSlider() {
             )}
             <img
               src={slide.image_url}
-              alt={slide.title.replace('\n', ' ') || `CSA Gathering ${i + 1}`}
+              alt={slide.title.replace('\n', ' ') || `CSA ${slide.category} ${i + 1}`}
               loading="eager"
               decoding="async"
               onLoad={() => handleImageLoad(slide.id)}
@@ -150,6 +201,27 @@ function ImageSlider() {
             />
             {/* Centered vignette overlay — darkens edges, keeps center clear */}
             <div className="absolute inset-0 bg-black/40" />
+            {/* Slide type badge */}
+            {slide.slide_type && slide.slide_type !== 'gallery' && (
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-white text-[11px] font-bold uppercase tracking-wider">
+                {getSlideIcon(slide.slide_type)}
+                <span>{slide.category}</span>
+              </div>
+            )}
+            {/* Happening Soon badge */}
+            {slide.happening_soon && (
+              <div className="absolute top-4 right-4 z-20 px-3 py-1.5 bg-amber-500 text-white text-[10px] font-black rounded-full animate-pulse flex items-center gap-1">
+                <FaClock size={10} />
+                Happening Soon
+              </div>
+            )}
+            {/* Price badge for products */}
+            {slide.slide_type === 'product' && slide.price && (
+              <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-emerald-500 text-white text-sm font-bold rounded-full flex items-center gap-1">
+                <FaShoppingBag size={12} />
+                KES {Number(slide.price).toLocaleString()}
+              </div>
+            )}
           </div>
         )
       })}

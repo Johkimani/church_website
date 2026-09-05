@@ -84,7 +84,7 @@ const WRITE_COLUMN_ALLOWLISTS = {
   hub_announcements: ["module_id", "title", "content", "announcement_date", "status"],
   hub_gallery: ["module_id", "image_url", "title", "caption", "category", "status"],
   hub_officials: ["module_id", "name", "role", "photo_url", "phone", "email", "bio", "order", "status"],
-  products: ["name", "description", "price", "category", "image", "stock", "status", "featured"],
+  products: ["name", "description", "price", "category", "image", "stock", "status", "is_featured"],
   categories: ["name", "description", "order", "status"],
   testimonials: ["name", "message", "rating", "status"],
   suggestions: ["suggestion", "category", "scope", "jumuiya_id", "name", "email", "user_id", "status", "reply", "replied_at", "replied_by", "approved", "is_approved", "requested_unmask", "unmask_response"],

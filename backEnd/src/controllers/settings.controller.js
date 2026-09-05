@@ -22,6 +22,7 @@ const PUBLIC_SAFE_KEYS = new Set([
   "explore_background_image",
   "gallery_items",
   "semester_default_image",
+  "hero_dynamic_enabled",
 ]);
 
 // Keys that the settings write endpoint will accept. Anything else is dropped,
@@ -44,6 +45,7 @@ const WRITE_ALLOWED_KEYS = new Set([
   "explore_background_image",
   "gallery_items",
   "semester_default_image",
+  "hero_dynamic_enabled",
 ]);
 
 // GET all settings — only public-safe keys are returned to anonymous clients.

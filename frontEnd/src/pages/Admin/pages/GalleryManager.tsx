@@ -106,10 +106,25 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
   const [activeTab, setActiveTab] = useState('All');
   const [editItem, setEditItem] = useState<GalleryImage | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [dynamicSlidesEnabled, setDynamicSlidesEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('hero_dynamic_enabled')
+      return saved !== 'false'
+    }
+    return true
+  });
 
   useEffect(() => {
     loadImages();
   }, [jumuiyaId]);
+
+  useEffect(() => {
+    if (!jumuiyaId) {
+      localStorage.setItem('hero_dynamic_enabled', String(dynamicSlidesEnabled))
+      apiClient.put('/settings', { hero_dynamic_enabled: String(dynamicSlidesEnabled) })
+        .catch(() => {})
+    }
+  }, [dynamicSlidesEnabled, jumuiyaId]);
 
   const loadImages = async () => {
     setLoading(true);
@@ -388,6 +403,20 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
           <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold border border-blue-100">
             {images.length} Photos in Gallery
           </div>
+          {!jumuiyaId && (
+            <label className="relative inline-flex items-center cursor-pointer px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={dynamicSlidesEnabled}
+                onChange={(e) => setDynamicSlidesEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-12 h-6 bg-slate-200 peer-checked:bg-amber-500 rounded-full transition-colors duration-200 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:bg-white after:rounded-full after:transition-transform after:duration-200 peer-checked:after:translate-x-full" />
+              <span className="ml-3 text-xs font-bold text-slate-700 whitespace-nowrap">
+                Dynamic Slides (Activities + Products)
+              </span>
+            </label>
+          )}
         </div>
       </div>
 
