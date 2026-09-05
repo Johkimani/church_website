@@ -115,6 +115,8 @@ const CommunityDetail: React.FC = () => {
   const groupRoles = moduleIdClean ? (GROUP_ROLES_BY_MODULE[moduleIdClean] || []) : [];
   const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
   const isGroupOfficial = groupRoles.length > 0 && userRoles.some(r => groupRoles.includes(r));
+  // Consider user a member if they're a group official or have a member_id (enrolled member)
+  const isMember = isGroupOfficial || !!user?.member_id;
   const isAdmin = isGlobalAdmin || isGroupOfficial;
 
   const setTabWithUrl = (tab: TabType) => {
@@ -164,7 +166,7 @@ const CommunityDetail: React.FC = () => {
       case 'activities':
         return <CommunityActivitiesTab moduleId={moduleIdClean} color={detailColor} module={moduleData} />;
       case 'channels':
-        return <CommunityChannelsTab moduleId={moduleIdClean} module={moduleData} color={detailColor} />;
+        return <CommunityChannelsTab moduleId={moduleIdClean} module={moduleData} color={detailColor} isMember={isMember} />;
       case 'tshirts':
         return <CommunityTshirtsTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
       case 'suggestions':

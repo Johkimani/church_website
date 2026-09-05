@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaFacebook, FaTwitter, FaInstagram, FaWhatsapp, FaYoutube, FaEnvelope, FaGlobe, FaTiktok, FaImages, FaChevronLeft, FaChevronRight, FaTimes, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaFacebook, FaYoutube, FaWhatsapp, FaImages, FaChevronLeft, FaChevronRight, FaTimes, FaExternalLinkAlt, FaTiktok } from 'react-icons/fa';
 import { apiClient } from '../../../../api/axiosInstance';
 import type { CommunityModule } from '../../context/CommunityDataContext';
 import '../../../Jumuiya/components/TabsSystem.css';
@@ -8,6 +8,7 @@ interface Props {
   moduleId: string;
   module: CommunityModule;
   color: string;
+  isMember?: boolean;
 }
 
 interface GalleryImage {
@@ -17,17 +18,17 @@ interface GalleryImage {
   category?: string;
 }
 
-const PLATFORM_STYLES: Record<string, { icon: React.ReactNode; gradient: string; hoverShadow: string }> = {
-  facebook: { icon: <FaFacebook size={22} />, gradient: 'linear-gradient(135deg, #1877f2 0%, #1877f2 100%)', hoverShadow: '0 8px 24px rgba(24,119,242,0.35)' },
-  twitter: { icon: <FaTwitter size={22} />, gradient: 'linear-gradient(135deg, #1da1f2 0%, #0d8ecf 100%)', hoverShadow: '0 8px 24px rgba(29,161,242,0.35)' },
-  x: { icon: <FaTwitter size={22} />, gradient: 'linear-gradient(135deg, #1a1a1a 0%, #000 100%)', hoverShadow: '0 8px 24px rgba(0,0,0,0.35)' },
-  instagram: { icon: <FaInstagram size={22} />, gradient: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', hoverShadow: '0 8px 24px rgba(225,48,108,0.35)' },
-  whatsapp: { icon: <FaWhatsapp size={22} />, gradient: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)', hoverShadow: '0 8px 24px rgba(37,211,102,0.35)' },
-  youtube: { icon: <FaYoutube size={22} />, gradient: 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)', hoverShadow: '0 8px 24px rgba(255,0,0,0.35)' },
-  email: { icon: <FaEnvelope size={22} />, gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', hoverShadow: '0 8px 24px rgba(59,130,246,0.35)' },
-  mail: { icon: <FaEnvelope size={22} />, gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', hoverShadow: '0 8px 24px rgba(59,130,246,0.35)' },
-  tiktok: { icon: <FaTiktok size={22} />, gradient: 'linear-gradient(135deg, #010101 0%, #69c9d0 100%)', hoverShadow: '0 8px 24px rgba(0,0,0,0.35)' },
-  default: { icon: <FaGlobe size={22} />, gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', hoverShadow: '0 8px 24px rgba(107,114,128,0.35)' },
+interface Channel {
+  platform: string;
+  url: string;
+}
+
+const PLATFORM_STYLES: Record<string, { icon: React.ReactNode; gradient: string; hoverShadow: string; textColor: string }> = {
+  whatsapp: { icon: <FaWhatsapp size={22} />, gradient: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)', hoverShadow: '0 8px 24px rgba(37,211,102,0.35)', textColor: '#25d366' },
+  facebook: { icon: <FaFacebook size={22} />, gradient: 'linear-gradient(135deg, #1877f2 0%, #1877f2 100%)', hoverShadow: '0 8px 24px rgba(24,119,242,0.35)', textColor: '#1877f2' },
+  tiktok: { icon: <FaTiktok size={22} />, gradient: 'linear-gradient(135deg, #010101 0%, #69c9d0 100%)', hoverShadow: '0 8px 24px rgba(0,0,0,0.35)', textColor: '#000' },
+  youtube: { icon: <FaYoutube size={22} />, gradient: 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)', hoverShadow: '0 8px 24px rgba(255,0,0,0.35)', textColor: '#ff0000' },
+  default: { icon: <FaImages size={22} />, gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', hoverShadow: '0 8px 24px rgba(107,114,128,0.35)', textColor: '#6b7280' },
 };
 
 const getPlatformStyle = (platform: string) => {
@@ -35,12 +36,17 @@ const getPlatformStyle = (platform: string) => {
   return PLATFORM_STYLES[key] || PLATFORM_STYLES.default;
 };
 
-const CommunityChannelsTab: React.FC<Props> = ({ moduleId, module, color }) => {
+// Communities that support TikTok, YouTube, Facebook (beyond WhatsApp)
+const EXTENDED_PLATFORM_COMMUNITIES = ['choir', 'dancers'];
+
+const CommunityChannelsTab: React.FC<Props> = ({ moduleId, module, color, isMember = false }) => {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [filter, setFilter] = useState<string>('all');
 
   useEffect(() => {
+    // Fetch gallery
     const fetchGallery = async () => {
       try {
         const res = await apiClient.get('/hub-gallery', { params: { module_id: moduleId } });
@@ -48,10 +54,18 @@ const CommunityChannelsTab: React.FC<Props> = ({ moduleId, module, color }) => {
       } catch { /* silent */ }
     };
     fetchGallery();
+
+    // Fetch channels from new API
+    const fetchChannels = async () => {
+      try {
+        const res = await apiClient.get(`/community-channels/${moduleId}/channels`);
+        if (res.data?.channels) setChannels(res.data.channels);
+      } catch { /* silent */ }
+    };
+    fetchChannels();
   }, [moduleId]);
 
   const gallery = module.gallery || [];
-  const socialMedia = (module as any).socialMedia || [];
   const allImages = [...gallery, ...galleryImages.map(g => ({ id: String(g.id), url: g.image_url, caption: g.event_name, category: g.category || 'All' }))];
   const categories = ['all', ...Array.from(new Set(allImages.map((g: any) => g.category || 'All')))];
 
@@ -81,6 +95,21 @@ const CommunityChannelsTab: React.FC<Props> = ({ moduleId, module, color }) => {
     return () => window.removeEventListener('keydown', handler);
   }, [selectedIdx, goNext, goPrev]);
 
+  // Filter channels based on community type and membership
+  const visibleChannels = channels.filter(ch => {
+    const platform = ch.platform.toLowerCase();
+    
+    // WhatsApp: hide for non-members (like Jumuiya)
+    if (platform === 'whatsapp' && !isMember) return false;
+    
+    // Extended platforms (TikTok, YouTube, Facebook): only for Choir & Dancers
+    if (['tiktok', 'youtube', 'facebook'].includes(platform)) {
+      return EXTENDED_PLATFORM_COMMUNITIES.includes(moduleId);
+    }
+    
+    return true;
+  });
+
   return (
     <div className="tab-system-content" style={{ '--jumuiya-color': color } as React.CSSProperties}>
       <div className="tab-header-wrap">
@@ -91,19 +120,19 @@ const CommunityChannelsTab: React.FC<Props> = ({ moduleId, module, color }) => {
       </div>
 
       {/* Social Media - Platform-colored Cards */}
-      {socialMedia.length > 0 && (
+      {visibleChannels.length > 0 && (
         <div className="mb-8">
           <h2 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
             <span className="w-1 h-6 rounded-full" style={{ background: color }} />
             Social Channels
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {socialMedia.map((sm: any, i: number) => {
-              const style = getPlatformStyle(sm.platform || sm.name);
+            {visibleChannels.map((ch: Channel, i: number) => {
+              const style = getPlatformStyle(ch.platform);
               return (
                 <a
-                  key={i}
-                  href={sm.url || '#'}
+                  key={ch.platform}
+                  href={ch.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group relative rounded-2xl p-5 text-center overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
@@ -118,7 +147,7 @@ const CommunityChannelsTab: React.FC<Props> = ({ moduleId, module, color }) => {
                       {style.icon}
                     </div>
                     <span className="text-sm font-bold text-slate-700 group-hover:text-white transition-colors duration-300">
-                      {sm.platform || sm.name}
+                      {ch.platform.charAt(0).toUpperCase() + ch.platform.slice(1)}
                     </span>
                     <div className="flex items-center justify-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <FaExternalLinkAlt size={10} className="text-white/70" />
