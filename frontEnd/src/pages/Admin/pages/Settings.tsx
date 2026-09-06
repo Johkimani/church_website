@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sliders,
@@ -24,7 +24,7 @@ import apiService from '../../../services/api';
 import { apiClient } from '../../../api/axiosInstance';
 import { semesterServices, SemesterConfig } from '../../../api/semesterServices';
 import { useAuth } from '../../../context/AuthContext';
-import { API_HANDOVER } from '../../../utils/officialsApi';
+import { API_HANDOVER, API_LOOKUP_MEMBER } from '../../../utils/officialsApi';
 import { toast } from 'react-hot-toast';
 
 interface Assignment {
@@ -351,6 +351,9 @@ function TermHandoverPanel() {
     .some((r) => String(r).toLowerCase().trim() === 'csa_chair');
 
   const [successorRegNumber, setSuccessorRegNumber] = useState('');
+  const [successorName, setSuccessorName] = useState('');
+  const [lookingUp, setLookingUp] = useState(false);
+  const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [termName, setTermName] = useState('');
   const [termYear, setTermYear] = useState('');
   const [confirming, setConfirming] = useState(false);
@@ -361,6 +364,31 @@ function TermHandoverPanel() {
     revoked_roles: number;
     term_name: string;
   } | null>(null);
+
+  const lookupMember = useCallback((reg: string) => {
+    if (lookupTimerRef.current) clearTimeout(lookupTimerRef.current);
+    if (!reg.trim()) {
+      setSuccessorName('');
+      setLookingUp(false);
+      return;
+    }
+    setLookingUp(true);
+    lookupTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await apiClient.get(`${API_LOOKUP_MEMBER}/${encodeURIComponent(reg.trim())}`);
+        setSuccessorName(res.data?.data?.name || '');
+      } catch {
+        setSuccessorName('');
+      } finally {
+        setLookingUp(false);
+      }
+    }, 400);
+  }, []);
+
+  const handleRegChange = (val: string) => {
+    setSuccessorRegNumber(val);
+    lookupMember(val);
+  };
 
   if (!isChair) return null;
 
@@ -484,11 +512,26 @@ function TermHandoverPanel() {
               <input
                 type="text"
                 value={successorRegNumber}
-                onChange={(e) => setSuccessorRegNumber(e.target.value)}
+                onChange={(e) => handleRegChange(e.target.value)}
                 placeholder="e.g. CS/0012/2022"
                 disabled={executing || confirming}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
               />
+              {successorRegNumber.trim() && (
+                <div className="mt-1.5 flex items-center gap-2">
+                  {lookingUp ? (
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                      <Loader2 size={10} className="animate-spin" /> Looking up...
+                    </span>
+                  ) : successorName ? (
+                    <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                      <UserCheck size={10} /> {successorName}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-rose-500 font-medium">No member found with this reg number</span>
+                  )}
+                </div>
+              )}
               <p className="text-[11px] text-slate-400 mt-1">They log in with their usual reg number &amp; password and take over from there.</p>
             </div>
             <div>
@@ -518,7 +561,7 @@ function TermHandoverPanel() {
           {confirming ? (
             <div className="bg-rose-50 border border-rose-300 rounded-xl p-3 space-y-2">
               <p className="text-xs font-bold text-rose-800">
-                Final confirmation — this cannot be undone. Hand over to "{successorRegNumber.trim()}"?
+                Final confirmation — this cannot be undone. Hand over to "{successorName || successorRegNumber.trim()}"?
               </p>
               <div className="flex items-center gap-2">
                 <button

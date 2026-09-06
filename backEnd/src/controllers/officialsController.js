@@ -1189,6 +1189,41 @@ export const bulkDeleteArchivedOfficials = async (req, res) => {
 };
 
 /**
+ * GET /officials/lookup-member/:regNumber
+ * Lightweight member lookup for handover form — returns name only.
+ */
+export const lookupMember = async (req, res) => {
+  try {
+    const { regNumber } = req.params;
+    if (!regNumber || !regNumber.trim()) {
+      return res.status(400).json({ success: false, message: 'Reg number is required' });
+    }
+    const trimmed = regNumber.trim();
+    const result = await pool.query(
+      `SELECT member_id, first_name, last_name FROM members
+       WHERE member_id = $1
+          OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+       LIMIT 1`,
+      [trimmed]
+    );
+    if (result.rows.length === 0) {
+      return res.json({ success: true, data: null });
+    }
+    const m = result.rows[0];
+    res.json({
+      success: true,
+      data: {
+        member_id: m.member_id,
+        name: `${m.first_name || ''} ${m.last_name || ''}`.trim(),
+      },
+    });
+  } catch (error) {
+    logger.error('Error looking up member: ' + error.message);
+    res.status(500).json({ success: false, message: 'Failed to look up member' });
+  }
+};
+
+/**
  * Handover — archive ALL active officials across CSA, Jumuiya & Group tables
  * in a single transaction, then create / promote the next election term.
  *
