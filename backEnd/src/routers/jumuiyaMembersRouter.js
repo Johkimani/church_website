@@ -52,6 +52,7 @@ const TREASURY_ROLES = ["treasurer", ...CSA_ROLES];
 router.get('/', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id), getAllJumuiyaMembers);
 router.get('/registered', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id), getRegisteredJumuiyaMembers);
 router.get('/unregistered', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id), getUnregisteredMembers);
+router.get('/associates', verifyToken, enforceJumuiyaScope((req) => req.query?.jumuiya_id), getAssociatesList);
 router.get('/lookup', verifyToken, getJumuiyaLookup);
 router.get('/:jumuiyaId/pending-self-registrations', verifyToken, requireRole(...CSA_ROLES), getPendingSelfRegistrations);
 
