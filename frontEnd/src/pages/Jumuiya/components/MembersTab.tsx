@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaCheck, FaUsers, FaGraduationCap, FaSearch, FaTimes } from "react-icons/fa";
+import { FaCheck, FaUsers, FaGraduationCap } from "react-icons/fa";
 import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
 import type { Official } from '../data/jumuiyaData';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -50,7 +50,6 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
     const [activeSubTab, setActiveSubTab] = useState<'registered' | 'all' | 'associates'>('registered');
     const [members, setMembers] = useState<JumuiyaRosterMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
 
     const officialNames = useMemo(
         () => new Set(officials.map(o => o.name?.toLowerCase().trim())),
@@ -60,6 +59,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
     useEffect(() => {
         let cancelled = false;
         if (jumuiyaId) {
+            setMembers([]);
             setIsLoading(true);
             (async () => {
                 try {
@@ -67,31 +67,21 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                     if (activeSubTab === 'registered') {
                         res = await memberService.getJumuiyaRegistered(jumuiyaId);
                     } else if (activeSubTab === 'associates') {
-                        res = await memberService.getJumuiyaAssociates(jumuiyaId);
+                        res = await memberService.getAssociatesList({ jumuiya_id: jumuiyaId });
                     } else {
                         res = await memberService.getJumuiyaRoster(jumuiyaId);
                     }
                     if (!cancelled && res?.success) setMembers(res.data || []);
-                } catch { /* roster read is best-effort */ }
+                } catch {
+                    if (!cancelled) setMembers([]);
+                }
                 if (!cancelled) setIsLoading(false);
             })();
         }
         return () => { cancelled = true; };
     }, [jumuiyaId, activeSubTab]);
 
-    const displayedMembers = useMemo(() => {
-        if (!searchQuery.trim()) return members;
-        const q = searchQuery.toLowerCase().trim();
-        return members.filter(m => {
-            const nameMatch = (m.name || '').toLowerCase().includes(q);
-            const courseMatch = (m.course || '').toLowerCase().includes(q);
-            const yearMatch = String(m.year || '').toLowerCase().includes(q);
-            const idMatch = String(m.member_id || m.id || '').toLowerCase().includes(q);
-            const gradYear = getGraduationYear(m);
-            const classOfMatch = gradYear ? String(gradYear).includes(q) || `class of ${gradYear}`.includes(q) : false;
-            return nameMatch || courseMatch || yearMatch || idMatch || classOfMatch;
-        });
-    }, [members, searchQuery]);
+    const displayedMembers = members;
 
     const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
@@ -127,80 +117,34 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
             <div className="members-action-bar animate-fade" style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
-                alignItems: 'center',
+                alignItems: 'stretch',
                 marginBottom: 'var(--space-xl)',
                 gap: '12px',
-                flexWrap: 'wrap'
+                flexDirection: window.innerWidth < 768 ? 'column' : 'row'
             }}>
-                <div className="toggle-wrapper" style={{ margin: 0, flex: '1 1 340px' }}>
+                <div className="toggle-wrapper" style={{ margin: 0, width: '100%', flex: '1 1 auto' }}>
                     <button
                         className={`toggle-item ${activeSubTab === 'registered' ? 'active' : ''}`}
-                        onClick={() => { setActiveSubTab('registered'); setSearchQuery(''); }}
+                        onClick={() => setActiveSubTab('registered')}
                     >
                         <FaCheck /> <span className="tab-label">Registered</span>
                     </button>
                     <button
                         className={`toggle-item ${activeSubTab === 'all' ? 'active' : ''}`}
-                        onClick={() => { setActiveSubTab('all'); setSearchQuery(''); }}
+                        onClick={() => setActiveSubTab('all')}
                     >
                         <FaUsers /> <span className="tab-label">All Members</span>
                     </button>
                     <button
                         className={`toggle-item ${activeSubTab === 'associates' ? 'active' : ''}`}
-                        onClick={() => { setActiveSubTab('associates'); setSearchQuery(''); }}
+                        onClick={() => setActiveSubTab('associates')}
                     >
                         <FaGraduationCap /> <span className="tab-label">Associates</span>
                     </button>
                 </div>
-
-                {/* Quick Search Bar */}
-                <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: '360px' }}>
-                    <FaSearch style={{ 
-                        position: 'absolute', 
-                        left: '12px', 
-                        top: '50%', 
-                        transform: 'translateY(-50%)', 
-                        color: 'var(--text-muted)', 
-                        fontSize: '0.85rem' 
-                    }} />
-                    <input
-                        type="text"
-                        placeholder={activeSubTab === 'associates' ? "Search associates, class, course..." : "Search members, course..."}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="form-input-premium"
-                        style={{ 
-                            paddingLeft: '34px', 
-                            paddingRight: searchQuery ? '32px' : '12px',
-                            fontSize: '0.85rem', 
-                            paddingBlock: '0.65rem' 
-                        }}
-                    />
-                    {searchQuery && (
-                        <button
-                            type="button"
-                            onClick={() => setSearchQuery('')}
-                            style={{
-                                position: 'absolute',
-                                right: '10px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-muted)',
-                                cursor: 'pointer',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center'
-                            }}
-                        >
-                            <FaTimes size={12} />
-                        </button>
-                    )}
-                </div>
             </div>
 
-            <div className="premium-table-wrap animate-fade" style={{ minHeight: '300px', maxHeight: '550px', overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: 'var(--rs)', position: 'relative' }}>
+            <div className="premium-table-wrap animate-fade" style={{ minHeight: '300px', maxHeight: '500px', overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: 'var(--rs)', position: 'relative' }}>
                 {isLoading ? (
                     <div style={{ padding: '64px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                         <PageLoader message={activeSubTab === 'associates' ? "Fetching Associates Data" : "Fetching Membership Data"} />
@@ -218,9 +162,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                             {displayedMembers.length === 0 ? (
                                 <tr>
                                     <td colSpan={3} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-                                        {searchQuery
-                                            ? `No matches found for "${searchQuery}".`
-                                            : activeSubTab === 'associates'
+                                        {activeSubTab === 'associates'
                                             ? `No associates found for ${jumuiyaName}.`
                                             : `No members found in this category.`}
                                     </td>

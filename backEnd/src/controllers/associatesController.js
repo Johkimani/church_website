@@ -174,10 +174,16 @@ export const getAssociatesList = async (req, res) => {
       conditions.push(`(
         a.jumuiya_id = $${params.length + 1}
         OR a.jumuiya_name = $${params.length + 1}
+        OR a.jumuiya_id = $${params.length + 2}
+        OR a.jumuiya_name = $${params.length + 2}
         OR sg.slug = $${params.length + 1}
+        OR sg.slug = $${params.length + 2}
         OR sg.group_id::varchar = $${params.length + 1}
+        OR sg.group_id::varchar = $${params.length + 2}
         OR LOWER(sg.name) = LOWER($${params.length + 1})
+        OR LOWER(sg.name) = LOWER($${params.length + 2})
       )`);
+      params.push(jumuiya_id);
       params.push(resolvedName);
     }
 
@@ -199,9 +205,13 @@ export const getAssociatesList = async (req, res) => {
       const graduationYear = r.graduation_year || calcGraduationYear(admissionYear);
       return {
         ...r,
+        id: r.member_id || String(r.id),
+        name: r.name,
+        course: r.course || '',
         admission_year: admissionYear,
         graduation_year: graduationYear,
         class_of: graduationYear ? `Class of ${graduationYear}` : null,
+        is_associate: true,
       };
     });
 
