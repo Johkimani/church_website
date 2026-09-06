@@ -1201,10 +1201,12 @@ export const lookupMember = async (req, res) => {
     const trimmed = regNumber.trim();
     const result = await pool.query(
       `SELECT member_id, first_name, last_name FROM members
-       WHERE member_id = $1
-          OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+       WHERE member_id LIKE '%/' || $1 || '/%'
+          OR LOWER(TRIM(member_id)) = LOWER(TRIM($2))
+          OR member_id ILIKE $3
+       ORDER BY CASE WHEN LOWER(TRIM(member_id)) = LOWER(TRIM($2)) THEN 1 ELSE 2 END
        LIMIT 1`,
-      [trimmed]
+      [trimmed, trimmed, `%${trimmed}%`]
     );
     if (result.rows.length === 0) {
       return res.json({ success: true, data: null });

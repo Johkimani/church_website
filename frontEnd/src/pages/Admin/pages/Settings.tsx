@@ -518,15 +518,17 @@ function TermHandoverPanel() {
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
               />
               {successorRegNumber.trim() && (
-                <div className="mt-1.5 flex items-center gap-2">
+                <div className="mt-1.5">
                   {lookingUp ? (
                     <span className="text-[11px] text-slate-400 flex items-center gap-1">
                       <Loader2 size={10} className="animate-spin" /> Looking up...
                     </span>
                   ) : successorName ? (
-                    <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                      <UserCheck size={10} /> {successorName}
-                    </span>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-xl">
+                      <UserCheck size={12} className="text-violet-600" />
+                      <span className="text-xs font-bold text-violet-800">{successorName}</span>
+                      <span className="text-[10px] text-violet-400 ml-1">Incoming Chairperson</span>
+                    </div>
                   ) : (
                     <span className="text-[11px] text-rose-500 font-medium">No member found with this reg number</span>
                   )}
