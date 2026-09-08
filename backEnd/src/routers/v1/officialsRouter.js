@@ -21,6 +21,7 @@ import {
   deleteArchivedOfficial,
   bulkDeleteArchivedOfficials,
   clearAllOfficials,
+  getJumuiyaCoordinatorContact,
 } from '../../controllers/officialsController.js';
 
 import { uploadMiddleware } from '../../middlewares/uploadMiddleware.js';
@@ -53,6 +54,9 @@ router.get('/lookup-member/:regNumber', verifyToken, requireRole(...OFFICIAL_ROL
 
 // Clear all (admin utility)
 router.delete('/clear-all', verifyToken, requireRole(...OFFICIAL_ROLES), clearAllOfficials);
+
+// Public: current Jumuiya Coordinator contact (used by the landing page wa.me link)
+router.get('/coordinator', getJumuiyaCoordinatorContact);
 
 // Basic CRUD routes for Officials
 router.get('/list', optionalAuth, getAllOfficials); 

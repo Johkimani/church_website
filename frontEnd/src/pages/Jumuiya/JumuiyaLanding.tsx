@@ -1,15 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from './context/DataContext';
+import { apiClient } from '../../../api/axiosInstance';
 import './JumuiyaLanding.css';
+
+interface Coordinator {
+    name: string | null;
+    phone: string;
+}
+
+/** Normalises a phone number to E.164 format (digits only, country code 254 for Kenya).
+ *  Examples accepted: 0712345678 → 254712345678, +254712345678 → 254712345678 */
+const toWaPhone = (raw: string): string => {
+    let digits = raw.replace(/\D/g, '');
+    if (digits.startsWith('0') && digits.length === 10) {
+        digits = '254' + digits.slice(1);
+    }
+    if (digits.startsWith('254') && digits.length === 12) return digits;
+    if (digits.startsWith('7') && digits.length === 9) return '254' + digits;
+    return digits; // Return as-is if unknown format — still attempts a wa.me link
+};
 
 const JumuiyaLanding: React.FC = () => {
     const navigate = useNavigate();
     const { jumuiyaList } = useData();
+    const [coordinator, setCoordinator] = useState<Coordinator | null | undefined>(undefined);
+
+    useEffect(() => {
+        apiClient
+            .get('/officials/coordinator')
+            .then(({ data }) => setCoordinator(data?.coordinator ?? null))
+            .catch(() => setCoordinator(null));
+    }, []);
 
     const handleCardClick = (jumuiyaId: string) => {
         navigate(`/jumuiya/${jumuiyaId}`);
     };
+
+    const waLink = coordinator?.phone
+        ? `https://wa.me/${toWaPhone(coordinator.phone)}`
+        : null;
 
     return (
         <div className="landing-page">
@@ -59,12 +89,22 @@ const JumuiyaLanding: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Footer Info */}
-                <div className="landing-footer">
-                    <p>
-                        Don't have a Jumuiya? Contact the Jumuiya Coordinator at <a href="mailto:info@jumuiya.co.ke">info@jumuiya.co.ke</a>
-                    </p>
-                </div>
+                {/* Footer Info — only rendered when an active coordinator with a phone exists */}
+                {coordinator !== undefined && waLink && (
+                    <div className="landing-footer">
+                        <p>
+                            Don't have a Jumuiya? Contact the Jumuiya Coordinator on WhatsApp:{' '}
+                            <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Chat with ${coordinator.name ?? 'the Jumuiya Coordinator'} on WhatsApp`}
+                            >
+                                {coordinator.name ?? 'Chat on WhatsApp'}
+                            </a>
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

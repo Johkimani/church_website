@@ -1431,3 +1431,41 @@ export const handoverOfficials = async (req, res) => {
     client.release();
   }
 };
+
+// =============================================================================
+// PUBLIC — Jumuiya Coordinator contact info
+// GET /officials/coordinator
+// Returns the name + phone of the current active Jumuiya Coordinator so the
+// frontend can build a dynamic wa.me link without hardcoding any contact.
+// No authentication required — this is intentionally public.
+// =============================================================================
+export const getJumuiyaCoordinatorContact = async (req, res) => {
+  try {
+    // Look for an active official in the "Jumuiya Coordinators" category whose
+    // position is the main coordinator (not the assistant / vice coordinator).
+    const result = await pool.query(
+      `SELECT name, contact
+       FROM officials
+       WHERE category = 'Jumuiya Coordinators'
+         AND (status = 'active' OR status IS NULL)
+         AND LOWER(position) LIKE '%coordinator%'
+         AND LOWER(position) NOT LIKE '%assistant%'
+         AND LOWER(position) NOT LIKE '%vice%'
+         AND LOWER(position) NOT LIKE '%ass%'
+         AND contact IS NOT NULL
+         AND TRIM(contact) <> ''
+       ORDER BY created_at DESC
+       LIMIT 1`
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ coordinator: null });
+    }
+
+    const { name, contact } = result.rows[0];
+    res.json({ coordinator: { name: name || null, phone: (contact || '').trim() } });
+  } catch (error) {
+    logger.error('Error fetching Jumuiya Coordinator contact: ' + error.message);
+    res.status(500).json({ error: 'Failed to load coordinator contact' });
+  }
+};
