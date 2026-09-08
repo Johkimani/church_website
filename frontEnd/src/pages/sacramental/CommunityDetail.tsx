@@ -355,7 +355,7 @@ const CommunityDetail: React.FC = () => {
             onClick={() => navigate('/community')}
             style={{ width: '100%', justifyContent: 'center' }}
           >
-            <FaArrowLeft style={{ marginRight: '8px' }} /> All Ministries
+            <FaArrowLeft style={{ marginRight: '8px' }} /> All Communities
           </button>
         </div>
       </aside>
