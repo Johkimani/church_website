@@ -275,12 +275,12 @@ const Community: React.FC = () => {
         {coordinator !== undefined && coordinator !== null && (
           <div className="landing-footer">
             <p>
-              Interested in joining a ministry or starting a new group? Contact the Parish Coordinator on WhatsApp:{' '}
+              Interested in joining a Community or starting a new group? Contact the CSA Coordinator on WhatsApp:{' '}
               <a
                 href={coordinator.waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Chat with ${coordinator.name ?? 'the Parish Coordinator'} on WhatsApp`}
+                aria-label={`Chat with ${coordinator.name ?? 'the CSA Coordinator'} on WhatsApp`}
               >
                 {coordinator.name ?? 'Chat on WhatsApp'}
               </a>
