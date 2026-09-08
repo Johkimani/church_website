@@ -110,10 +110,9 @@ const Community: React.FC = () => {
       <div className="container">
         {/* Hero Section */}
         <header className="hero animate-fade-in">
-          <h1 className="hero-title">Communities & Ministries</h1>
-          <p className="hero-subtitle">Parish Groups & Vocations</p>
+          <h1 className="hero-title">CSA Communities</h1>
           <p className="hero-description">
-            Join one of our vibrant parish ministries and grow in faith, fellowship, and service.
+            Join one of our vibrant CSA Communities and grow in faith, fellowship, and service.
             Each community is a family where we pray together, support one another, and live out the Gospel.
           </p>
         </header>
