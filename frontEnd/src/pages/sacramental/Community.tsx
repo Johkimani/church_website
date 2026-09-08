@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCommunityData } from './context/CommunityDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../api/axiosInstance';
+import { useCoordinatorContact } from '../../api/useCoordinatorContact';
 import CommunityDetail from './CommunityDetail';
 import CommunityAboutTab from './components/tabs/CommunityAboutTab';
 import { FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaTshirt, FaCommentDots, FaChurch, FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
@@ -55,6 +56,7 @@ const Community: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { modules } = useCommunityData();
+  const coordinator = useCoordinatorContact();
 
   // Fetch logged-in user's community enrollments
   const { data: myCommunitiesData } = useQuery({
@@ -270,13 +272,22 @@ const Community: React.FC = () => {
           </div>
         )}
 
-        {/* Footer Info */}
-        <div className="landing-footer">
-          <p>
-            Interested in joining a ministry or starting a new group? Contact the Parish Coordinator at{' '}
-            <a href="mailto:info@jumuiya.co.ke">info@jumuiya.co.ke</a>
-          </p>
-        </div>
+        {/* Footer Info — only shown when an active coordinator with a phone is found */}
+        {coordinator !== undefined && coordinator !== null && (
+          <div className="landing-footer">
+            <p>
+              Interested in joining a ministry or starting a new group? Contact the Parish Coordinator on WhatsApp:{' '}
+              <a
+                href={coordinator.waLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Chat with ${coordinator.name ?? 'the Parish Coordinator'} on WhatsApp`}
+              >
+                {coordinator.name ?? 'Chat on WhatsApp'}
+              </a>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
