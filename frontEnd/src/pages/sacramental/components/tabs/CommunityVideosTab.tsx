@@ -251,12 +251,6 @@ const CommunityVideosTab: React.FC<Props> = ({
       setIsUploading(false);
     }
   };
-    } catch (e: any) {
-      alert(e?.response?.data?.error || 'Failed to upload video');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const handleDelete = async (video: Video) => {
     if (!confirm(`Delete "${video.title || 'this video'}"?`)) return;
