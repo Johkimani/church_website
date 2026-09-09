@@ -87,7 +87,7 @@ function getThumbnailUrl(platform, url) {
 
 async function getVideoCount(moduleId) {
   const result = await pool.query(
-    `SELECT COUNT(*)::int as count FROM community_module_videos WHERE module_id = $1`,
+    `SELECT COUNT(*)::int as count FROM community_module_videos WHERE module_id = $1 AND video_type = 'upload'`,
     [moduleId]
   );
   return result.rows[0].count;

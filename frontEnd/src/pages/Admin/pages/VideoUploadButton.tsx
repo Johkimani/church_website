@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, X } from 'lucide-react';
 
 interface VideoUploadButtonProps {
   onUpload: (file: File, title: string, description: string) => Promise<void>;

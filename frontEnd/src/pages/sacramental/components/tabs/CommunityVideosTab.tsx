@@ -238,25 +238,6 @@ const CommunityVideosTab: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Video Counter */}
-      <div className="flex items-center justify-between mb-4 p-3 bg-white rounded-xl border border-slate-200">
-        <div className="flex items-center gap-2">
-          <FaVideo className="text-slate-400" size={14} />
-          <span className="text-xs font-bold text-slate-600">
-            {videos.length} / {maxVideos} videos
-          </span>
-        </div>
-        <div className="flex gap-1">
-          {Array.from({ length: maxVideos }).map((_, i) => (
-            <div
-              key={i}
-              className="w-2 h-2 rounded-full transition-colors"
-              style={{ background: i < videos.length ? color : '#e2e8f0' }}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Upload Zone (drag-and-drop) */}
       {isMember && !isAtMax && (
         <div

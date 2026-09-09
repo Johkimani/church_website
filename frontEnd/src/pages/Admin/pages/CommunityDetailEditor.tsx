@@ -2956,7 +2956,8 @@ setSongsList(res.data?.data || []);
           {activeTab === 'videos' && (() => {
             const isVideoCommunity = categoryId === 'choir' || categoryId === 'dancers';
             const MAX_VIDEOS = 7;
-            const isAtMax = videos.length >= MAX_VIDEOS;
+            const uploadedCount = videos.filter(v => v.video_type === 'upload').length;
+            const isAtMax = uploadedCount >= MAX_VIDEOS;
             const availableVideoPlatforms = [
               { id: 'tiktok', label: 'TikTok', placeholder: 'https://www.tiktok.com/@user/video/...' },
               { id: 'youtube', label: 'YouTube', placeholder: 'https://www.youtube.com/watch?v=...' },
@@ -3043,10 +3044,10 @@ setSongsList(res.data?.data || []);
                   <div className="flex items-center gap-3">
                     {/* Video counter */}
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-500">{videos.length}/{MAX_VIDEOS}</span>
+                      <span className="text-xs font-bold text-slate-500">{uploadedCount}/{MAX_VIDEOS} uploaded</span>
                       <div className="flex gap-1">
                         {Array.from({ length: MAX_VIDEOS }).map((_, i) => (
-                          <div key={i} className="w-2 h-2 rounded-full" style={{ background: i < videos.length ? '#7c3aed' : '#e2e8f0' }} />
+                          <div key={i} className="w-2 h-2 rounded-full" style={{ background: i < uploadedCount ? '#7c3aed' : '#e2e8f0' }} />
                         ))}
                       </div>
                     </div>
