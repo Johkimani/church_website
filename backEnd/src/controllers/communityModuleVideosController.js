@@ -26,8 +26,6 @@ export const getUploadSignature = async (req, res) => {
       timestamp,
       folder,
       public_id: publicId,
-      resource_type: 'video',
-      transformation: JSON.stringify([{ quality: "auto:good" }, { fetch_format: "auto" }]),
     };
 
     const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET);

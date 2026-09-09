@@ -202,8 +202,6 @@ const CommunityVideosTab: React.FC<Props> = ({
       formData.append('signature', signature);
       formData.append('folder', folder);
       formData.append('public_id', public_id);
-      formData.append('resource_type', 'video');
-      formData.append('transformation', JSON.stringify([{ quality: "auto:good" }, { fetch_format: "auto" }]));
 
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`;
 
@@ -220,7 +218,9 @@ const CommunityVideosTab: React.FC<Props> = ({
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText));
           } else {
-            reject(new Error(`Cloudinary upload failed: ${xhr.statusText}`));
+            let errMsg = `Cloudinary upload failed: ${xhr.statusText}`;
+            try { errMsg = JSON.parse(xhr.responseText)?.error?.message || errMsg; } catch {}
+            reject(new Error(errMsg));
           }
         };
         xhr.onerror = () => reject(new Error('Network error during upload'));
