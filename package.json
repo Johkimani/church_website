@@ -1,0 +1,7 @@
+{
+  "name": "church-website",
+  "private": true,
+  "scripts": {
+    "build": "cd frontEnd && npm install && npm run build"
+  }
+}

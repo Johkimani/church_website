@@ -7,7 +7,10 @@
 *.md
 *.json
 !vercel.json
-!frontEnd/*.json
+!package.json
+!frontEnd/package.json
+!frontEnd/tsconfig.json
+!frontEnd/vite.config.ts
 frontEnd/node_modules
 frontEnd/dist
 .env*
