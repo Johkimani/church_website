@@ -105,7 +105,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
     return (
         <div
-            className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl group"
+            className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 group"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
             onTouchStart={onTouchStart}
@@ -128,7 +128,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
                 return (
                     <div
                         key={i}
-                        className={`absolute inset-0 ${isActive ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
+                        className={`absolute inset-0 ${isActive && isLoaded ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
                         style={{ transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     >
                         <img
