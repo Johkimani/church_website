@@ -246,7 +246,7 @@ const CommunityVideosTab: React.FC<Props> = ({
       setUploadProgress(0);
       setUploadStatus('');
     } catch (e: any) {
-      alert(e?.message || e?.response?.data?.error || 'Failed to upload video');
+      alert(e?.response?.data?.error || e?.message || 'Failed to upload video');
     } finally {
       setIsUploading(false);
     }

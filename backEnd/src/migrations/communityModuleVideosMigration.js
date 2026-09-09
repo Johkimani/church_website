@@ -74,5 +74,23 @@ export default async function communityModuleVideosMigration() {
     logger.warn("[videos migration] Unique index skipped:", e.message);
   }
 
+  // 6. Relax NOT NULL on video_url — uploaded videos have no video_url, only video_file_url.
+  //    The original table was created with video_url NOT NULL, blocking all upload inserts.
+  try {
+    await pool.query(`ALTER TABLE community_module_videos ALTER COLUMN video_url DROP NOT NULL`);
+    logger.info("[videos migration] video_url NOT NULL constraint removed.");
+  } catch (e) {
+    logger.warn("[videos migration] video_url NOT NULL drop skipped:", e.message);
+  }
+
+  // 7. Relax NOT NULL on platform — the column has DEFAULT 'upload' but original schema
+  //    may have set it NOT NULL without a default, which can cause issues on edge cases.
+  try {
+    await pool.query(`ALTER TABLE community_module_videos ALTER COLUMN platform DROP NOT NULL`);
+    logger.info("[videos migration] platform NOT NULL constraint removed.");
+  } catch (e) {
+    logger.warn("[videos migration] platform NOT NULL drop skipped:", e.message);
+  }
+
   logger.info("Community module videos migration complete.");
 }

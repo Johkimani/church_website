@@ -95,7 +95,7 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ moduleId, onUploa
       setUploadStatus('');
       onUploadComplete();
     } catch (e: any) {
-      alert(e?.message || e?.response?.data?.error || 'Failed to upload video');
+      alert(e?.response?.data?.error || e?.message || 'Failed to upload video');
     } finally {
       setIsUploading(false);
     }
