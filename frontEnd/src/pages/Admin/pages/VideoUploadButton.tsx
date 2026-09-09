@@ -39,7 +39,7 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ moduleId, onUploa
     try {
       // Step 1: Get signed upload params from backend
       const sigRes = await apiClient.get(`/community-videos/${moduleId}/videos/signature`);
-      const { signature, timestamp, folder, public_id, api_key, cloud_name } = sigRes.data;
+      const { signature, timestamp, folder, public_id, api_key, cloud_name, resource_type } = sigRes.data;
 
       // Step 2: Upload directly to Cloudinary from browser
       setUploadStatus('Uploading to Cloudinary...');
@@ -50,6 +50,7 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ moduleId, onUploa
       formData.append('signature', signature);
       formData.append('folder', folder);
       formData.append('public_id', public_id);
+      if (resource_type) formData.append('resource_type', resource_type);
 
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`;
 

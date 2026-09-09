@@ -36,10 +36,12 @@ export const getUploadSignature = async (req, res) => {
     const timestamp = Math.round(Date.now() / 1000);
     const folder = 'community_videos';
     const publicId = `${moduleId}/${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const resourceType = 'video';
 
     const paramsToSign = {
       folder,
       public_id: publicId,
+      resource_type: resourceType,
       timestamp,
     };
 
@@ -52,6 +54,7 @@ export const getUploadSignature = async (req, res) => {
       timestamp,
       folder,
       public_id: publicId,
+      resource_type: resourceType,
       api_key: process.env.CLOUDINARY_API_KEY,
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     });
