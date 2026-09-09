@@ -235,7 +235,7 @@ export const getNotification = async (req, res) => {
         )
       : await pool.query(
           `${baseQuery}
-           WHERE n.posted_to = 'csa' OR n.posted_to = $1
+           WHERE n.posted_to = $1
            GROUP BY n.id
            ORDER BY COALESCE(n.created_at, n.posted_at) DESC`,
           [String(jumuiyaId)]
