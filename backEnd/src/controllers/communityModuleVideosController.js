@@ -57,7 +57,7 @@ export const getUploadSignature = async (req, res) => {
     });
   } catch (error) {
     logger.error(`[CommunityModuleVideos] Signature error: ${error.message}`);
-    res.status(500).json({ success: false, error: "Failed to generate upload signature" });
+    res.status(500).json({ success: false, error: `Signature error: ${error.message}` });
   }
 };
 
@@ -80,7 +80,7 @@ export const saveUploadedVideo = async (req, res) => {
     res.json({ success: true, video: result.rows[0] });
   } catch (error) {
     logger.error(`[CommunityModuleVideos] Save upload error: ${error.message}`);
-    res.status(500).json({ success: false, error: "Failed to save video" });
+    res.status(500).json({ success: false, error: `Save error: ${error.message}` });
   }
 };
 
