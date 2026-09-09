@@ -156,6 +156,22 @@ const Headers = () => {
         <div className="flex items-center gap-2 lg:gap-3 ml-auto">
 
 
+          {/* Notifications Bell */}
+          <Link
+            to="/Notification"
+            className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+            title="Updates"
+          >
+            <FaBell className="text-lg" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-white min-w-[18px] h-[18px] flex items-center justify-center"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
+
           {/* Cart */}
           <button
             className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
