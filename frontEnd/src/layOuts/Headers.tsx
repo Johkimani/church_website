@@ -84,16 +84,16 @@ const Headers = () => {
     <>
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
 
-      <nav
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
-            : "bg-white/95 backdrop-blur-sm"
-        } px-[6%] lg:px-[8%] py-2 flex justify-between items-center min-h-16 lg:min-h-20`}
+<nav
+         className={`sticky top-0 z-50 transition-all duration-300 ${
+           scrolled
+             ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
+             : "bg-white/95 backdrop-blur-sm"
+         } px-4 lg:px-6 py-2 flex justify-between items-center min-h-16 lg:min-h-20`}
       >
         {/* Logo */}
         <div
-          className="flex items-center gap-1.5 cursor-pointer group mr-auto shrink-0"
+          className="flex items-center gap-1.5 cursor-pointer group shrink-0"
           onClick={() => navigate("/")}
         >
           <img
@@ -109,7 +109,7 @@ const Headers = () => {
         </div>
 
         {/* Desktop Nav */}
-        <ul className="hidden md:flex items-center ml-auto gap-x-0.5 lg:gap-x-1 overflow-x-auto scrollbar-hide flex-nowrap">
+        <ul className="hidden md:flex items-center flex-1 justify-center gap-x-0.5 lg:gap-x-1 overflow-x-auto scrollbar-hide flex-nowrap">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
@@ -153,7 +153,7 @@ const Headers = () => {
         </ul>
 
         {/* Right side */}
-        <div className="flex items-center gap-2 lg:gap-3">
+        <div className="flex items-center gap-2 lg:gap-3 ml-auto">
 
 
           {/* Cart */}
