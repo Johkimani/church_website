@@ -58,6 +58,7 @@ import jumuiyaChannelsMigration from "./migrations/jumuiyaChannelsMigration.js";
 import whatsappSyncMigration from "./migrations/whatsappSyncMigration.js";
 import heroSliderDynamicMigration from "./migrations/heroSliderDynamicMigration.js";
 import communityModuleChannelsMigration from "./migrations/communityModuleChannelsMigration.js";
+import communityModuleVideosMigration from "./migrations/communityModuleVideosMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -230,6 +231,7 @@ const initServer = async () => {
     await whatsappSyncMigration();
     await heroSliderDynamicMigration();
     await communityModuleChannelsMigration();
+    await communityModuleVideosMigration();
     await refreshTokenGraceWindow();
     await relaxEnrollmentClassId();
     await productReviewsMigration();

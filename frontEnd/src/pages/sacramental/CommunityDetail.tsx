@@ -16,11 +16,12 @@ import CommunityRequestTab from './components/tabs/CommunityRequestTab';
 import CommunitySuggestionsTab from './components/tabs/CommunitySuggestionsTab';
 import CommunityNoticeBoardTab from './components/tabs/CommunityNoticeBoardTab';
 import CommunitySongsTab from './components/tabs/CommunitySongsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn, FaMusic } from 'react-icons/fa';
+import CommunityVideosTab from './components/tabs/CommunityVideosTab';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn, FaMusic, FaVideo } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
-type TabType = 'about' | 'songs' | 'noticeboard' | 'officials' | 'activities' | 'members' | 'channels' | 'tshirts' | 'suggestions' | 'settings' | 'request';
+type TabType = 'about' | 'songs' | 'noticeboard' | 'officials' | 'activities' | 'members' | 'channels' | 'videos' | 'tshirts' | 'suggestions' | 'settings' | 'request';
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e40af',
@@ -50,6 +51,7 @@ const TAB_ICONS: Record<TabType, React.ReactNode> = {
   activities: <FaCalendarAlt />,
   members: <FaUsers />,
   channels: <FaShareAlt />,
+  videos: <FaVideo />,
   tshirts: <FaTshirt />,
   suggestions: <FaCommentDots />,
   settings: <FaKey />,
@@ -64,6 +66,7 @@ const TAB_LABELS: Record<TabType, string> = {
   activities: 'Activities',
   members: 'Members',
   channels: 'Channels',
+  videos: 'Videos',
   tshirts: 'T-Shirts',
   suggestions: 'Suggestions',
   settings: 'Settings',
@@ -144,7 +147,9 @@ const CommunityDetail: React.FC = () => {
   };
 
   const tabOrder: TabType[] = moduleIdClean === 'choir'
-    ? ['about', 'songs', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'tshirts', 'suggestions']
+    ? ['about', 'songs', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'videos', 'tshirts', 'suggestions']
+    : moduleIdClean === 'dancers'
+    ? ['about', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'videos', 'tshirts', 'suggestions']
     : DEFAULT_TAB_ORDER;
 
   // Sync activeTab with URL query parameter (e.g. ?tab=members)
@@ -184,6 +189,8 @@ const CommunityDetail: React.FC = () => {
         return <CommunityActivitiesTab moduleId={moduleIdClean} color={detailColor} module={moduleData} />;
       case 'channels':
         return <CommunityChannelsTab moduleId={moduleIdClean} module={moduleData} color={detailColor} isMember={isMember} />;
+      case 'videos':
+        return <CommunityVideosTab moduleId={moduleIdClean} module={moduleData} color={detailColor} isMember={isMember} />;
       case 'tshirts':
         return <CommunityTshirtsTab moduleId={moduleIdClean} moduleName={moduleData.title} color={detailColor} />;
       case 'suggestions':
