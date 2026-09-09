@@ -207,5 +207,71 @@ const uploadMemoryForOcr = multer({
   fileFilter,
 });
 
+// Video upload storage engine for community module videos
+const buildVideoStorage = (folder = "community_videos") => ({
+  _handleFile(req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const publicId = `${folder}/${file.fieldname}-${uniqueSuffix}`;
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        public_id: `${file.fieldname}-${uniqueSuffix}`,
+        resource_type: "video",
+        transformation: [
+          { quality: "auto:good" },
+          { fetch_format: "auto" },
+        ],
+      },
+      (error, result) => {
+        if (error) {
+          logger.error("Cloudinary video upload error: " + error.message);
+          return cb(new UploadError("Failed to upload video to Cloudinary", "CLOUDINARY_UPLOAD_ERROR"));
+        }
+        cb(null, {
+          path: result.secure_url,
+          filename: result.public_id,
+          size: result.bytes,
+          mimetype: file.mimetype,
+          cloudinary: result,
+        });
+      }
+    );
+
+    file.stream.pipe(uploadStream);
+  },
+
+  _removeFile(req, file, cb) {
+    if (file.filename) {
+      cloudinary.uploader.destroy(file.filename, { resource_type: "video" }, (error) => {
+        if (error) logger.warn("Failed to remove video from Cloudinary: " + error.message);
+        cb(null);
+      });
+    } else {
+      cb(null);
+    }
+  },
+});
+
+function videoFileFilter(req, file, cb) {
+  const allowedExt = /mp4|webm|mov|avi|mkv/;
+  const allowedMime = /^video\/(mp4|webm|quicktime|x-msvideo|x-matroska)$/;
+  const ext = path.extname(file.originalname).toLowerCase().replace(".", "");
+  const mimeOk = allowedMime.test(file.mimetype || "");
+
+  if (allowedExt.test(ext) && mimeOk) {
+    cb(null, true);
+  } else {
+    logger.warn(`Unsupported video type attempted: ext=${ext} mime=${file.mimetype}`);
+    cb(new UploadError("Unsupported video type. Only MP4, WebM, and MOV are allowed.", "UNSUPPORTED_TYPE"), false);
+  }
+}
+
+const uploadCommunityVideo = multer({
+  storage: buildVideoStorage("community_videos"),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB limit
+  fileFilter: videoFileFilter,
+});
+
 export default upload;
-export { uploadTshirt, uploadJumuiyaTshirt, uploadChoirSong, uploadMemoryForOcr, uploadExploreImage };
+export { uploadTshirt, uploadJumuiyaTshirt, uploadChoirSong, uploadMemoryForOcr, uploadExploreImage, uploadCommunityVideo };

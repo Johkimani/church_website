@@ -1,7 +1,9 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import cloudinary from "../Configs/cloudinaryConfigs.js";
 
 const VALID_PLATFORMS = ['tiktok', 'youtube', 'facebook'];
+const MAX_VIDEOS_PER_MODULE = 7;
 
 function normalizePlatform(p) {
   const normalized = p.toLowerCase().trim();
@@ -83,6 +85,14 @@ function getThumbnailUrl(platform, url) {
   return null;
 }
 
+async function getVideoCount(moduleId) {
+  const result = await pool.query(
+    `SELECT COUNT(*)::int as count FROM community_module_videos WHERE module_id = $1`,
+    [moduleId]
+  );
+  return result.rows[0].count;
+}
+
 export const getCommunityModuleVideos = async (req, res) => {
   try {
     const { moduleId } = req.params;
@@ -96,7 +106,7 @@ export const getCommunityModuleVideos = async (req, res) => {
       thumbnail_url: v.thumbnail_url || getThumbnailUrl(v.platform, v.video_url),
     }));
 
-    res.json({ success: true, videos });
+    res.json({ success: true, videos, maxVideos: MAX_VIDEOS_PER_MODULE });
   } catch (error) {
     logger.error(`[CommunityModuleVideos] Get error: ${error.message}`);
     res.status(500).json({ success: false, error: "Failed to fetch videos" });
@@ -120,8 +130,8 @@ export const addCommunityModuleVideo = async (req, res) => {
     const normalizedUrl = normalizeVideoUrl(normalizedPlatform, video_url);
 
     const result = await pool.query(
-      `INSERT INTO community_module_videos (module_id, platform, video_url, title, description, thumbnail_url, posted_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO community_module_videos (module_id, platform, video_url, title, description, thumbnail_url, posted_by, video_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'link')
        ON CONFLICT (module_id, video_url) DO UPDATE SET
          title = EXCLUDED.title,
          description = EXCLUDED.description,
@@ -137,20 +147,75 @@ export const addCommunityModuleVideo = async (req, res) => {
   }
 };
 
+export const uploadCommunityModuleVideo = async (req, res) => {
+  try {
+    const { moduleId } = req.params;
+    const { title, description } = req.body;
+
+    // Enforce max 7 videos per module
+    const currentCount = await getVideoCount(moduleId);
+    if (currentCount >= MAX_VIDEOS_PER_MODULE) {
+      // Clean up uploaded file since we're rejecting
+      if (req.file?.filename) {
+        cloudinary.uploader.destroy(req.file.filename, { resource_type: "video" });
+      }
+      return res.status(400).json({
+        success: false,
+        error: `Maximum ${MAX_VIDEOS_PER_MODULE} videos allowed. Delete an existing video first.`,
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "No video file uploaded" });
+    }
+
+    const videoUrl = req.file.path;
+    const cloudinaryPublicId = req.file.filename;
+
+    const result = await pool.query(
+      `INSERT INTO community_module_videos (module_id, platform, video_file_url, video_type, cloudinary_public_id, title, description, posted_by)
+       VALUES ($1, 'upload', $2, 'upload', $3, $4, $5, $6)
+       RETURNING *`,
+      [moduleId, videoUrl, cloudinaryPublicId, title || req.file.originalname || '', description || '', req.user?.name || req.user?.email || 'Admin']
+    );
+
+    res.json({ success: true, video: result.rows[0] });
+  } catch (error) {
+    logger.error(`[CommunityModuleVideos] Upload error: ${error.message}`);
+    res.status(500).json({ success: false, error: "Failed to upload video" });
+  }
+};
+
 export const deleteCommunityModuleVideo = async (req, res) => {
   try {
     const { moduleId, videoId } = req.params;
 
-    const result = await pool.query(
-      `DELETE FROM community_module_videos WHERE id = $1 AND module_id = $2 RETURNING *`,
+    // Get video info first to clean up Cloudinary file
+    const videoResult = await pool.query(
+      `SELECT * FROM community_module_videos WHERE id = $1 AND module_id = $2`,
       [videoId, moduleId]
     );
 
-    if (result.rows.length === 0) {
+    if (videoResult.rows.length === 0) {
       return res.status(404).json({ success: false, error: "Video not found" });
     }
 
-    res.json({ success: true, deleted: result.rows[0] });
+    const video = videoResult.rows[0];
+
+    // Delete from Cloudinary if it's an uploaded video
+    if (video.video_type === 'upload' && video.cloudinary_public_id) {
+      cloudinary.uploader.destroy(video.cloudinary_public_id, { resource_type: "video" }, (err) => {
+        if (err) logger.warn(`Failed to delete video from Cloudinary: ${err.message}`);
+      });
+    }
+
+    // Delete from database
+    await pool.query(
+      `DELETE FROM community_module_videos WHERE id = $1 AND module_id = $2`,
+      [videoId, moduleId]
+    );
+
+    res.json({ success: true, deleted: video });
   } catch (error) {
     logger.error(`[CommunityModuleVideos] Delete error: ${error.message}`);
     res.status(500).json({ success: false, error: "Failed to delete video" });

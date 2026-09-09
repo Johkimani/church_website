@@ -57,6 +57,7 @@ import {
 import { FaStar } from 'react-icons/fa';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import AssociatesTable from './AssociatesTable';
+import VideoUploadButton from './VideoUploadButton';
 
 type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'approved-members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions' | 'channels' | 'videos';
 
@@ -2954,6 +2955,8 @@ setSongsList(res.data?.data || []);
           {/* VIDEOS — Individual Video Links */}
           {activeTab === 'videos' && (() => {
             const isVideoCommunity = categoryId === 'choir' || categoryId === 'dancers';
+            const MAX_VIDEOS = 7;
+            const isAtMax = videos.length >= MAX_VIDEOS;
             const availableVideoPlatforms = [
               { id: 'tiktok', label: 'TikTok', placeholder: 'https://www.tiktok.com/@user/video/...' },
               { id: 'youtube', label: 'YouTube', placeholder: 'https://www.youtube.com/watch?v=...' },
@@ -2989,6 +2992,27 @@ setSongsList(res.data?.data || []);
               }
             };
 
+            const handleUploadVideo = async (file: File, title: string, description: string) => {
+              const formData = new FormData();
+              formData.append('video', file);
+              if (title) formData.append('title', title);
+              if (description) formData.append('description', description);
+
+              setVideoSaving(true);
+              try {
+                await apiClient.post(`/community-videos/${categoryId}/videos/upload`, formData, {
+                  headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                const res = await apiClient.get(`/community-videos/${categoryId}/videos`);
+                setVideos(res.data?.videos || []);
+                showToast('Video uploaded successfully');
+              } catch (e: any) {
+                alert(e?.response?.data?.error || 'Failed to upload video');
+              } finally {
+                setVideoSaving(false);
+              }
+            };
+
             const handleDeleteVideo = async (videoId: number) => {
               if (!confirm('Are you sure you want to remove this video?')) return;
               setVideoSaving(true);
@@ -3013,21 +3037,35 @@ setSongsList(res.data?.data || []);
                       Videos
                     </h3>
                     <p className="text-xs text-slate-500 mt-1">
-                      Post individual TikTok, YouTube, or Facebook videos for {moduleMeta?.title || categoryId}.
+                      Post individual TikTok, YouTube, Facebook videos or upload short clips for {moduleMeta?.title || categoryId}.
                     </p>
                   </div>
-                  {!isAddingVideo && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setVideoForm({ platform: 'tiktok', video_url: '', title: '', description: '' });
-                        setIsAddingVideo(true);
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-500 text-white rounded-xl text-xs font-black hover:bg-purple-600 transition shadow-sm cursor-pointer shrink-0"
-                    >
-                      <Plus size={15} /> Add Video
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {/* Video counter */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-500">{videos.length}/{MAX_VIDEOS}</span>
+                      <div className="flex gap-1">
+                        {Array.from({ length: MAX_VIDEOS }).map((_, i) => (
+                          <div key={i} className="w-2 h-2 rounded-full" style={{ background: i < videos.length ? '#7c3aed' : '#e2e8f0' }} />
+                        ))}
+                      </div>
+                    </div>
+                    {!isAddingVideo && !isAtMax && (
+                      <>
+                        <VideoUploadButton onUpload={handleUploadVideo} saving={videoSaving} />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVideoForm({ platform: 'tiktok', video_url: '', title: '', description: '' });
+                            setIsAddingVideo(true);
+                          }}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-500 text-white rounded-xl text-xs font-black hover:bg-purple-600 transition shadow-sm cursor-pointer shrink-0"
+                        >
+                          <Plus size={15} /> Add Link
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Progress bar when saving */}
@@ -3037,12 +3075,12 @@ setSongsList(res.data?.data || []);
                   </div>
                 )}
 
-                {/* Add Video Card */}
+                {/* Add Video Link Card */}
                 {isAddingVideo && (
                   <div className="p-5 bg-purple-50/70 border-2 border-purple-200 rounded-2xl animate-fade space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
-                        <Plus size={16} className="text-purple-600" /> Add New Video
+                        <Plus size={16} className="text-purple-600" /> Add Video Link
                       </h4>
                       <button
                         type="button"
@@ -3142,30 +3180,40 @@ setSongsList(res.data?.data || []);
                     <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
                       <ImageIcon size={28} className="text-slate-400 mx-auto mb-2" />
                       <p className="text-sm font-bold text-slate-600">No videos posted yet</p>
-                      <p className="text-xs text-slate-400 mt-1">Click "Add Video" to share a TikTok, YouTube, or Facebook video.</p>
+                      <p className="text-xs text-slate-400 mt-1">Click "Add Link" for TikTok/YouTube or "Upload" for short clips.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {videos.map((video) => {
-                        const info = availableVideoPlatforms.find(p => p.id === video.platform) || { id: video.platform, label: video.platform };
+                        const isUploaded = video.video_type === 'upload';
+                        const info = isUploaded
+                          ? { id: 'upload', label: 'Uploaded' }
+                          : availableVideoPlatforms.find(p => p.id === video.platform) || { id: video.platform, label: video.platform };
                         return (
                           <div
                             key={video.id}
                             className="flex items-start gap-3 p-4 bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition group"
                           >
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                              isUploaded ? 'bg-purple-100 text-purple-600' :
                               video.platform === 'tiktok' ? 'bg-slate-100 text-slate-800' :
                               video.platform === 'youtube' ? 'bg-red-100 text-red-600' :
                               video.platform === 'facebook' ? 'bg-blue-100 text-blue-600' :
                               'bg-slate-100 text-slate-600'
                             }`}>
-                              {video.platform === 'tiktok' && <Globe size={18} />}
-                              {video.platform === 'youtube' && <ExternalLink size={18} />}
-                              {video.platform === 'facebook' && <Globe size={18} />}
+                              {isUploaded ? <Upload size={18} /> :
+                               video.platform === 'tiktok' ? <Globe size={18} /> :
+                               video.platform === 'youtube' ? <ExternalLink size={18} /> :
+                               <Globe size={18} />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-slate-800 truncate">{video.title || 'Untitled Video'}</p>
-                              <p className="text-xs text-slate-500 truncate">{video.video_url}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-slate-800 truncate">{video.title || 'Untitled Video'}</p>
+                                {isUploaded && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-700 shrink-0">FILE</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 truncate">{isUploaded ? (video.video_file_url || '').substring(0, 50) + '...' : video.video_url}</p>
                               {video.description && (
                                 <p className="text-xs text-slate-400 mt-1 line-clamp-1">{video.description}</p>
                               )}
@@ -3174,15 +3222,27 @@ setSongsList(res.data?.data || []);
                               </p>
                             </div>
                             <div className="flex items-center gap-1 shrink-0 ml-2">
-                              <a
-                                href={video.video_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
-                                title="Open video"
-                              >
-                                <ExternalLink size={15} />
-                              </a>
+                              {isUploaded && video.video_file_url ? (
+                                <a
+                                  href={video.video_file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+                                  title="Open video"
+                                >
+                                  <ExternalLink size={15} />
+                                </a>
+                              ) : video.video_url ? (
+                                <a
+                                  href={video.video_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+                                  title="Open video"
+                                >
+                                  <ExternalLink size={15} />
+                                </a>
+                              ) : null}
                               <button
                                 type="button"
                                 onClick={() => handleDeleteVideo(video.id)}
@@ -3206,6 +3266,17 @@ setSongsList(res.data?.data || []);
                     <span>
                       <strong>Videos are currently available for Choir and Dancers communities.</strong> Other community types can manage video links through the Channels tab.
                     </span>
+                  </div>
+                )}
+
+                {isVideoCommunity && (
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
+                    <p className="font-black text-slate-700">Video Guidelines:</p>
+                    <ul className="list-disc list-inside space-y-1 text-slate-500 text-[11px]">
+                      <li>Maximum <strong className="text-slate-700">7 videos</strong> per community. Delete an existing video before adding a new one when at max.</li>
+                      <li><strong className="text-slate-700">Uploaded files:</strong> Short clips only — MP4, WebM, or MOV, max 50 MB each.</li>
+                      <li><strong className="text-slate-700">Video links:</strong> For full performances, paste a TikTok or YouTube URL.</li>
+                    </ul>
                   </div>
                 )}
               </div>

@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   FaTiktok,
   FaYoutube,
   FaFacebook,
   FaShareAlt,
   FaTimes,
-  FaChevronLeft,
-  FaChevronRight,
   FaPlay,
   FaExternalLinkAlt,
+  FaUpload,
+  FaVideo,
+  FaCloudUploadAlt,
+  FaTrash,
 } from 'react-icons/fa';
 import { apiClient } from '../../../../api/axiosInstance';
 import type { CommunityModule } from '../../context/CommunityDataContext';
@@ -25,7 +27,10 @@ interface Video {
   id: number;
   module_id: string;
   platform: string;
-  video_url: string;
+  video_url: string | null;
+  video_file_url: string | null;
+  video_type: 'link' | 'upload';
+  cloudinary_public_id: string | null;
   title: string;
   description: string;
   thumbnail_url: string | null;
@@ -56,6 +61,11 @@ const PLATFORM_CONFIG: Record<
     icon: <FaFacebook size={18} />,
     brandColor: '#1877F2',
   },
+  upload: {
+    name: 'Uploaded',
+    icon: <FaVideo size={18} />,
+    brandColor: '#7c3aed',
+  },
 };
 
 const getPlatformDetails = (platform: string) => {
@@ -63,6 +73,7 @@ const getPlatformDetails = (platform: string) => {
   if (p.includes('tiktok')) return PLATFORM_CONFIG.tiktok;
   if (p.includes('youtube')) return PLATFORM_CONFIG.youtube;
   if (p.includes('facebook')) return PLATFORM_CONFIG.facebook;
+  if (p.includes('upload')) return PLATFORM_CONFIG.upload;
   return {
     name: platform.charAt(0).toUpperCase() + platform.slice(1),
     icon: <FaShareAlt size={18} />,
@@ -80,12 +91,10 @@ const getEmbedUrl = (platform: string, url: string): string | null => {
     if (videoId) return `https://www.youtube.com/embed/${videoId}`;
   }
 
-  if (p.includes('tiktok')) {
-    return null;
-  }
-
   return null;
 };
+
+const MAX_VIDEOS = 7;
 
 const CommunityVideosTab: React.FC<Props> = ({
   moduleId,
@@ -97,6 +106,15 @@ const CommunityVideosTab: React.FC<Props> = ({
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadDescription, setUploadDescription] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [maxVideos, setMaxVideos] = useState(MAX_VIDEOS);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -104,6 +122,7 @@ const CommunityVideosTab: React.FC<Props> = ({
       try {
         const res = await apiClient.get(`/community-videos/${moduleId}/videos`);
         setVideos(res.data?.videos || []);
+        if (res.data?.maxVideos) setMaxVideos(res.data.maxVideos);
       } catch {
         setVideos([]);
       } finally {
@@ -113,9 +132,14 @@ const CommunityVideosTab: React.FC<Props> = ({
     fetchVideos();
   }, [moduleId]);
 
-  const platforms = ['all', ...Array.from(new Set(videos.map(v => v.platform.toLowerCase())))];
+  const platforms = ['all', ...Array.from(new Set(videos.map(v => v.video_type === 'upload' ? 'upload' : v.platform.toLowerCase())))];
 
-  const filteredVideos = filter === 'all' ? videos : videos.filter(v => v.platform.toLowerCase() === filter);
+  const filteredVideos = filter === 'all' ? videos : videos.filter(v => {
+    if (filter === 'upload') return v.video_type === 'upload';
+    return v.platform.toLowerCase() === filter;
+  });
+
+  const isAtMax = videos.length >= maxVideos;
 
   const closeModal = useCallback(() => {
     setSelectedVideo(null);
@@ -128,6 +152,77 @@ const CommunityVideosTab: React.FC<Props> = ({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [selectedVideo, closeModal]);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('video/')) {
+      setUploadFile(file);
+      setShowUploadForm(true);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      setShowUploadForm(true);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile || isUploading) return;
+
+    const formData = new FormData();
+    formData.append('video', uploadFile);
+    if (uploadTitle) formData.append('title', uploadTitle);
+    if (uploadDescription) formData.append('description', uploadDescription);
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      await apiClient.post(`/community-videos/${moduleId}/videos/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+          setUploadProgress(percent);
+        },
+      });
+
+      const res = await apiClient.get(`/community-videos/${moduleId}/videos`);
+      setVideos(res.data?.videos || []);
+      setShowUploadForm(false);
+      setUploadFile(null);
+      setUploadTitle('');
+      setUploadDescription('');
+      setUploadProgress(0);
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'Failed to upload video');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDelete = async (video: Video) => {
+    if (!confirm(`Delete "${video.title || 'this video'}"?`)) return;
+    try {
+      await apiClient.delete(`/community-videos/${moduleId}/videos/${video.id}`);
+      setVideos(videos.filter(v => v.id !== video.id));
+    } catch {
+      alert('Failed to delete video');
+    }
+  };
 
   return (
     <div
@@ -142,6 +237,131 @@ const CommunityVideosTab: React.FC<Props> = ({
           </p>
         </div>
       </div>
+
+      {/* Video Counter */}
+      <div className="flex items-center justify-between mb-4 p-3 bg-white rounded-xl border border-slate-200">
+        <div className="flex items-center gap-2">
+          <FaVideo className="text-slate-400" size={14} />
+          <span className="text-xs font-bold text-slate-600">
+            {videos.length} / {maxVideos} videos
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {Array.from({ length: maxVideos }).map((_, i) => (
+            <div
+              key={i}
+              className="w-2 h-2 rounded-full transition-colors"
+              style={{ background: i < videos.length ? color : '#e2e8f0' }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Upload Zone (drag-and-drop) */}
+      {isMember && !isAtMax && (
+        <div
+          className={`mb-5 p-6 border-2 border-dashed rounded-2xl text-center transition-all cursor-pointer ${
+            isDragging
+              ? 'border-purple-400 bg-purple-50'
+              : 'border-slate-300 hover:border-purple-300 hover:bg-slate-50'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <FaCloudUploadAlt className={`mx-auto mb-2 ${isDragging ? 'text-purple-500' : 'text-slate-400'}`} size={28} />
+          <p className="text-sm font-bold text-slate-600">
+            {isDragging ? 'Drop video here' : 'Drag & drop a video or click to upload'}
+          </p>
+          <p className="text-xs text-slate-400 mt-1">MP4, WebM, MOV — Max 50 MB</p>
+        </div>
+      )}
+
+      {/* Upload Form Modal */}
+      {showUploadForm && uploadFile && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => !isUploading && setShowUploadForm(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-black text-slate-800">Upload Video</h3>
+              {!isUploading && (
+                <button onClick={() => setShowUploadForm(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
+                  <FaTimes size={16} />
+                </button>
+              )}
+            </div>
+
+            <div className="mb-4 p-3 bg-slate-50 rounded-xl">
+              <p className="text-xs font-bold text-slate-700 truncate">{uploadFile.name}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{(uploadFile.size / (1024 * 1024)).toFixed(1)} MB</p>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <input
+                type="text"
+                value={uploadTitle}
+                onChange={(e) => setUploadTitle(e.target.value)}
+                placeholder="Video title (optional)"
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500"
+                disabled={isUploading}
+              />
+              <input
+                type="text"
+                value={uploadDescription}
+                onChange={(e) => setUploadDescription(e.target.value)}
+                placeholder="Short description (optional)"
+                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500"
+                disabled={isUploading}
+              />
+            </div>
+
+            {isUploading && (
+              <div className="mb-4">
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 text-center">{uploadProgress}% uploaded</p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowUploadForm(false)}
+                disabled={isUploading}
+                className="px-4 py-2 text-slate-500 text-xs font-bold hover:text-slate-700 transition cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={isUploading}
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-purple-500 text-white rounded-xl text-xs font-black hover:bg-purple-600 transition shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {isUploading ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <FaUpload size={12} />
+                    Upload
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Platform Filter */}
       {platforms.length > 2 && (
@@ -168,16 +388,24 @@ const CommunityVideosTab: React.FC<Props> = ({
       {!isLoading && filteredVideos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredVideos.map((video) => {
-            const info = getPlatformDetails(video.platform);
+            const info = getPlatformDetails(video.video_type === 'upload' ? 'upload' : video.platform);
+            const videoSrc = video.video_type === 'upload' ? video.video_file_url : null;
             return (
               <div
                 key={video.id}
-                className="group rounded-2xl overflow-hidden bg-white border border-slate-100 hover:border-slate-200 transition-all duration-300 hover:shadow-lg cursor-pointer"
+                className="group rounded-2xl overflow-hidden bg-white border border-slate-100 hover:border-slate-200 transition-all duration-300 hover:shadow-lg cursor-pointer relative"
                 onClick={() => setSelectedVideo(video)}
               >
-                {/* Thumbnail */}
+                {/* Thumbnail / Preview */}
                 <div className="relative aspect-video bg-slate-100 overflow-hidden">
-                  {video.thumbnail_url ? (
+                  {videoSrc ? (
+                    <video
+                      src={videoSrc}
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                      muted
+                    />
+                  ) : video.thumbnail_url ? (
                     <img
                       src={video.thumbnail_url}
                       alt={video.title || 'Video thumbnail'}
@@ -211,6 +439,14 @@ const CommunityVideosTab: React.FC<Props> = ({
                     {info.icon}
                     <span>{info.name}</span>
                   </div>
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
+                    className="absolute top-3 right-3 w-7 h-7 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-600"
+                  >
+                    <FaTrash size={10} />
+                  </button>
                 </div>
 
                 {/* Info */}
@@ -231,7 +467,11 @@ const CommunityVideosTab: React.FC<Props> = ({
                         year: 'numeric',
                       })}
                     </span>
-                    <FaExternalLinkAlt className="text-slate-300 group-hover:text-slate-500 transition-colors" size={12} />
+                    {videoSrc ? (
+                      <FaVideo className="text-slate-300" size={12} />
+                    ) : (
+                      <FaExternalLinkAlt className="text-slate-300 group-hover:text-slate-500 transition-colors" size={12} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -254,7 +494,7 @@ const CommunityVideosTab: React.FC<Props> = ({
           </div>
           <p className="font-bold text-slate-500 text-sm">No videos posted yet</p>
           <p className="text-slate-400 text-xs mt-1">
-            Videos from TikTok and YouTube will appear here.
+            Videos from TikTok, YouTube, or uploaded files will appear here.
           </p>
         </div>
       ) : (
@@ -283,10 +523,19 @@ const CommunityVideosTab: React.FC<Props> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Video Player or Link */}
-            {getEmbedUrl(selectedVideo.platform, selectedVideo.video_url) ? (
+            {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
+              <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+                <video
+                  src={selectedVideo.video_file_url}
+                  controls
+                  className="w-full h-full"
+                  autoPlay
+                />
+              </div>
+            ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
                 <iframe
-                  src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url)!}
+                  src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
                   className="absolute inset-0 w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -310,7 +559,7 @@ const CommunityVideosTab: React.FC<Props> = ({
                   </div>
                 )}
                 <a
-                  href={selectedVideo.video_url}
+                  href={selectedVideo.video_url || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 transition-colors"
@@ -333,8 +582,8 @@ const CommunityVideosTab: React.FC<Props> = ({
               )}
               <div className="flex items-center justify-center gap-4 text-white/40 text-xs">
                 <span className="flex items-center gap-1.5">
-                  {getPlatformDetails(selectedVideo.platform).icon}
-                  {getPlatformDetails(selectedVideo.platform).name}
+                  {getPlatformDetails(selectedVideo.video_type === 'upload' ? 'upload' : selectedVideo.platform).icon}
+                  {getPlatformDetails(selectedVideo.video_type === 'upload' ? 'upload' : selectedVideo.platform).name}
                 </span>
                 <span>
                   {new Date(selectedVideo.created_at).toLocaleDateString('en-US', {
