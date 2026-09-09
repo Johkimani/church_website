@@ -41,8 +41,10 @@ export const getUploadSignature = async (req, res) => {
     const paramsToSign = {
       folder,
       public_id: publicId,
-      resource_type: resourceType,
       timestamp,
+      // NOTE: resource_type is intentionally excluded — Cloudinary does NOT
+      // include it in the signature hash, so signing it breaks the signature.
+      // It is sent separately in the FormData by the frontend.
     };
 
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
