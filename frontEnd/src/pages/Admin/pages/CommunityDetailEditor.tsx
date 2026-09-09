@@ -2993,27 +2993,6 @@ setSongsList(res.data?.data || []);
               }
             };
 
-            const handleUploadVideo = async (file: File, title: string, description: string) => {
-              const formData = new FormData();
-              formData.append('video', file);
-              if (title) formData.append('title', title);
-              if (description) formData.append('description', description);
-
-              setVideoSaving(true);
-              try {
-                await apiClient.post(`/community-videos/${categoryId}/videos/upload`, formData, {
-                  headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                const res = await apiClient.get(`/community-videos/${categoryId}/videos`);
-                setVideos(res.data?.videos || []);
-                showToast('Video uploaded successfully');
-              } catch (e: any) {
-                alert(e?.response?.data?.error || 'Failed to upload video');
-              } finally {
-                setVideoSaving(false);
-              }
-            };
-
             const handleDeleteVideo = async (videoId: number) => {
               if (!confirm('Are you sure you want to remove this video?')) return;
               setVideoSaving(true);
@@ -3053,7 +3032,7 @@ setSongsList(res.data?.data || []);
                     </div>
                     {!isAddingVideo && !isAtMax && (
                       <>
-                        <VideoUploadButton onUpload={handleUploadVideo} saving={videoSaving} />
+                        <VideoUploadButton moduleId={categoryId || ''} onUploadComplete={async () => { const res = await apiClient.get(`/community-videos/${categoryId}/videos`); setVideos(res.data?.videos || []); }} saving={videoSaving} />
                         <button
                           type="button"
                           onClick={() => {

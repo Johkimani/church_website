@@ -1,23 +1,30 @@
 import React, { useRef, useState } from 'react';
 import { Upload, Loader2, X } from 'lucide-react';
+import { apiClient } from '../../../api/axiosInstance';
 
 interface VideoUploadButtonProps {
-  onUpload: (file: File, title: string, description: string) => Promise<void>;
+  moduleId: string;
+  onUploadComplete: () => void;
   saving: boolean;
 }
 
-const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ onUpload, saving }) => {
+const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ moduleId, onUploadComplete, saving }) => {
   const [showModal, setShowModal] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 50 * 1024 * 1024) {
+        alert('File too large. Maximum size is 50 MB.');
+        return;
+      }
       setUploadFile(file);
       setShowModal(true);
     }
@@ -27,15 +34,68 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ onUpload, saving 
     if (!uploadFile || isUploading) return;
     setIsUploading(true);
     setProgress(0);
+    setUploadStatus('Requesting upload signature...');
+
     try {
-      await onUpload(uploadFile, title, description);
+      // Step 1: Get signed upload params from backend
+      const sigRes = await apiClient.get(`/community-videos/${moduleId}/videos/signature`);
+      const { signature, timestamp, folder, public_id, api_key, cloud_name } = sigRes.data;
+
+      // Step 2: Upload directly to Cloudinary from browser
+      setUploadStatus('Uploading to Cloudinary...');
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('api_key', api_key);
+      formData.append('timestamp', String(timestamp));
+      formData.append('signature', signature);
+      formData.append('folder', folder);
+      formData.append('public_id', public_id);
+      formData.append('resource_type', 'video');
+      formData.append('transformation', JSON.stringify([{ quality: "auto:good" }, { fetch_format: "auto" }]));
+
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`;
+
+      const xhr = new XMLHttpRequest();
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.open('POST', cloudinaryUrl);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            setProgress(percent);
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`Cloudinary upload failed: ${xhr.statusText}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(formData);
+      });
+
+      const cloudinaryResult = await uploadPromise;
+
+      // Step 3: Save metadata to backend
+      setUploadStatus('Saving video details...');
+      setProgress(100);
+      await apiClient.post(`/community-videos/${moduleId}/videos/save-upload`, {
+        title: title || uploadFile.name.replace(/\.[^/.]+$/, ''),
+        description,
+        video_file_url: cloudinaryResult.secure_url,
+        cloudinary_public_id: cloudinaryResult.public_id,
+      });
+
       setShowModal(false);
       setUploadFile(null);
       setTitle('');
       setDescription('');
       setProgress(0);
-    } catch {
-      // Error handled by parent
+      setUploadStatus('');
+      onUploadComplete();
+    } catch (e: any) {
+      alert(e?.message || e?.response?.data?.error || 'Failed to upload video');
     } finally {
       setIsUploading(false);
     }
@@ -47,6 +107,8 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ onUpload, saving 
     setUploadFile(null);
     setTitle('');
     setDescription('');
+    setProgress(0);
+    setUploadStatus('');
   };
 
   return (
@@ -61,7 +123,7 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ onUpload, saving 
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        disabled={saving}
+        disabled={saving || isUploading}
         className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-black hover:bg-emerald-600 transition shadow-sm cursor-pointer shrink-0 disabled:opacity-50"
       >
         <Upload size={15} /> Upload
@@ -108,7 +170,9 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ onUpload, saving 
                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1 text-center">Uploading...</p>
+                <p className="text-[10px] text-slate-500 mt-1 text-center">
+                  {uploadStatus} {progress > 0 && `${progress}%`}
+                </p>
               </div>
             )}
 

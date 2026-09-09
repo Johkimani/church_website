@@ -4,6 +4,71 @@ import cloudinary from "../Configs/cloudinaryConfigs.js";
 
 const VALID_PLATFORMS = ['tiktok', 'youtube', 'facebook'];
 const MAX_VIDEOS_PER_MODULE = 7;
+const MAX_UPLOADED_VIDEOS = 7;
+
+export const getUploadSignature = async (req, res) => {
+  try {
+    const { moduleId } = req.params;
+
+    const currentCount = await getVideoCount(moduleId);
+    if (currentCount >= MAX_UPLOADED_VIDEOS) {
+      return res.status(400).json({
+        success: false,
+        error: `Maximum ${MAX_UPLOADED_VIDEOS} uploaded videos allowed. Delete an existing uploaded video first.`,
+      });
+    }
+
+    const timestamp = Math.round(Date.now() / 1000);
+    const folder = 'community_videos';
+    const publicId = `${moduleId}/${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+
+    const paramsToSign = {
+      timestamp,
+      folder,
+      public_id: publicId,
+      resource_type: 'video',
+      transformation: JSON.stringify([{ quality: "auto:good" }, { fetch_format: "auto" }]),
+    };
+
+    const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET);
+
+    res.json({
+      success: true,
+      signature,
+      timestamp,
+      folder,
+      public_id: publicId,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    });
+  } catch (error) {
+    logger.error(`[CommunityModuleVideos] Signature error: ${error.message}`);
+    res.status(500).json({ success: false, error: "Failed to generate upload signature" });
+  }
+};
+
+export const saveUploadedVideo = async (req, res) => {
+  try {
+    const { moduleId } = req.params;
+    const { title, description, video_file_url, cloudinary_public_id } = req.body;
+
+    if (!video_file_url || !cloudinary_public_id) {
+      return res.status(400).json({ success: false, error: "video_file_url and cloudinary_public_id are required" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO community_module_videos (module_id, platform, video_file_url, video_type, cloudinary_public_id, title, description, posted_by)
+       VALUES ($1, 'upload', $2, 'upload', $3, $4, $5, $6)
+       RETURNING *`,
+      [moduleId, video_file_url, cloudinary_public_id, title || '', description || '', req.user?.name || req.user?.email || 'Admin']
+    );
+
+    res.json({ success: true, video: result.rows[0] });
+  } catch (error) {
+    logger.error(`[CommunityModuleVideos] Save upload error: ${error.message}`);
+    res.status(500).json({ success: false, error: "Failed to save video" });
+  }
+};
 
 function normalizePlatform(p) {
   const normalized = p.toLowerCase().trim();

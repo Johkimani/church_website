@@ -112,6 +112,7 @@ const CommunityVideosTab: React.FC<Props> = ({
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [maxVideos, setMaxVideos] = useState(MAX_VIDEOS);
@@ -183,21 +184,57 @@ const CommunityVideosTab: React.FC<Props> = ({
   const handleUpload = async () => {
     if (!uploadFile || isUploading) return;
 
-    const formData = new FormData();
-    formData.append('video', uploadFile);
-    if (uploadTitle) formData.append('title', uploadTitle);
-    if (uploadDescription) formData.append('description', uploadDescription);
-
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadStatus('Requesting upload signature...');
 
     try {
-      await apiClient.post(`/community-videos/${moduleId}/videos/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
-          setUploadProgress(percent);
-        },
+      // Step 1: Get signed upload params from backend
+      const sigRes = await apiClient.get(`/community-videos/${moduleId}/videos/signature`);
+      const { signature, timestamp, folder, public_id, api_key, cloud_name } = sigRes.data;
+
+      // Step 2: Upload directly to Cloudinary from browser
+      setUploadStatus('Uploading to Cloudinary...');
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('api_key', api_key);
+      formData.append('timestamp', String(timestamp));
+      formData.append('signature', signature);
+      formData.append('folder', folder);
+      formData.append('public_id', public_id);
+      formData.append('resource_type', 'video');
+      formData.append('transformation', JSON.stringify([{ quality: "auto:good" }, { fetch_format: "auto" }]));
+
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`;
+
+      const xhr = new XMLHttpRequest();
+      const cloudinaryResult = await new Promise<any>((resolve, reject) => {
+        xhr.open('POST', cloudinaryUrl);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(percent);
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`Cloudinary upload failed: ${xhr.statusText}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(formData);
+      });
+
+      // Step 3: Save metadata to backend
+      setUploadStatus('Saving video details...');
+      setUploadProgress(100);
+      await apiClient.post(`/community-videos/${moduleId}/videos/save-upload`, {
+        title: uploadTitle || uploadFile.name.replace(/\.[^/.]+$/, ''),
+        description: uploadDescription,
+        video_file_url: cloudinaryResult.secure_url,
+        cloudinary_public_id: cloudinaryResult.public_id,
       });
 
       const res = await apiClient.get(`/community-videos/${moduleId}/videos`);
@@ -207,6 +244,13 @@ const CommunityVideosTab: React.FC<Props> = ({
       setUploadTitle('');
       setUploadDescription('');
       setUploadProgress(0);
+      setUploadStatus('');
+    } catch (e: any) {
+      alert(e?.message || e?.response?.data?.error || 'Failed to upload video');
+    } finally {
+      setIsUploading(false);
+    }
+  };
     } catch (e: any) {
       alert(e?.response?.data?.error || 'Failed to upload video');
     } finally {
@@ -308,7 +352,9 @@ const CommunityVideosTab: React.FC<Props> = ({
                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1 text-center">{uploadProgress}% uploaded</p>
+                <p className="text-[10px] text-slate-500 mt-1 text-center">
+                  {uploadStatus} {uploadProgress > 0 && `${uploadProgress}%`}
+                </p>
               </div>
             )}
 
