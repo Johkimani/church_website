@@ -102,20 +102,11 @@ export const Home = () => {
           {/* Background glow */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-400/20 rounded-full blur-[120px] pointer-events-none" />
 
-          <motion.span
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-block text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full"
-          >
-            KYU CSA Catholic Store
-          </motion.span>
-
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-5 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight"
           >
             Welcome to{' '}
             <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
