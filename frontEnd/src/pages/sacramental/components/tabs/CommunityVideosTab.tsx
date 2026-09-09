@@ -10,7 +10,6 @@ import {
   FaUpload,
   FaVideo,
   FaCloudUploadAlt,
-  FaTrash,
 } from 'react-icons/fa';
 import { apiClient } from '../../../../api/axiosInstance';
 import type { CommunityModule } from '../../context/CommunityDataContext';
@@ -252,15 +251,7 @@ const CommunityVideosTab: React.FC<Props> = ({
     }
   };
 
-  const handleDelete = async (video: Video) => {
-    if (!confirm(`Delete "${video.title || 'this video'}"?`)) return;
-    try {
-      await apiClient.delete(`/community-videos/${moduleId}/videos/${video.id}`);
-      setVideos(videos.filter(v => v.id !== video.id));
-    } catch {
-      alert('Failed to delete video');
-    }
-  };
+
 
   return (
     <div
@@ -420,12 +411,26 @@ const CommunityVideosTab: React.FC<Props> = ({
                 {/* Thumbnail / Preview */}
                 <div className="relative aspect-video bg-slate-100 overflow-hidden">
                   {videoSrc ? (
-                    <video
-                      src={videoSrc}
-                      className="w-full h-full object-cover"
-                      preload="metadata"
-                      muted
-                    />
+                    // Use Cloudinary's thumbnail generation: replace /upload/ with /upload/so_0/
+                    // and swap the extension to .jpg for a still-frame poster image.
+                    // Falls back to a video icon if the URL can't be transformed.
+                    (() => {
+                      const poster = videoSrc
+                        .replace('/video/upload/', '/video/upload/so_0,w_640/')
+                        .replace(/\.(mp4|webm|mov|avi)$/i, '.jpg');
+                      return (
+                        <img
+                          src={poster}
+                          alt={video.title || 'Video thumbnail'}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                          onError={(e) => {
+                            // If poster generation fails, show the video icon placeholder
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      );
+                    })()
                   ) : video.thumbnail_url ? (
                     <img
                       src={video.thumbnail_url}
@@ -460,14 +465,6 @@ const CommunityVideosTab: React.FC<Props> = ({
                     {info.icon}
                     <span>{info.name}</span>
                   </div>
-                  {/* Delete button */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(video); }}
-                    className="absolute top-3 right-3 w-7 h-7 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-600"
-                  >
-                    <FaTrash size={10} />
-                  </button>
                 </div>
 
                 {/* Info */}
@@ -547,10 +544,12 @@ const CommunityVideosTab: React.FC<Props> = ({
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
                 <video
-                  src={selectedVideo.video_file_url}
+                  src={`${selectedVideo.video_file_url}#t=0.001`}
                   controls
+                  playsInline
                   className="w-full h-full"
                   autoPlay
+                  preload="auto"
                 />
               </div>
             ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
