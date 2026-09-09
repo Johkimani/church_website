@@ -1,10 +1,25 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import cloudinary from "../Configs/cloudinaryConfigs.js";
+import crypto from "crypto";
 
 const VALID_PLATFORMS = ['tiktok', 'youtube', 'facebook'];
 const MAX_VIDEOS_PER_MODULE = 7;
 const MAX_UPLOADED_VIDEOS = 7;
+
+/**
+ * Manually compute a Cloudinary API signature.
+ * Cloudinary's algorithm: sort params alphabetically, join as "k=v&k=v",
+ * append the raw API secret, then SHA-1 hash the whole string.
+ * Using crypto directly avoids any SDK-version quirks.
+ */
+function signCloudinaryParams(params, apiSecret) {
+  const sortedKeys = Object.keys(params).sort();
+  const stringToSign = sortedKeys
+    .map((k) => `${k}=${params[k]}`)
+    .join('&') + apiSecret;
+  return crypto.createHash('sha1').update(stringToSign).digest('hex');
+}
 
 export const getUploadSignature = async (req, res) => {
   try {
@@ -23,12 +38,13 @@ export const getUploadSignature = async (req, res) => {
     const publicId = `${moduleId}/${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 
     const paramsToSign = {
-      timestamp,
       folder,
       public_id: publicId,
+      timestamp,
     };
 
-    const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET);
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const signature = signCloudinaryParams(paramsToSign, apiSecret);
 
     res.json({
       success: true,
