@@ -30,6 +30,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
+    const [loadedImages, setLoadedImages] = useState<Record<string | number, boolean>>({});
     const len = images.length;
     const timeoutRef = useRef<number | null>(null);
     const progressRef = useRef<number | null>(null);
@@ -123,26 +124,24 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             {/* Slides */}
             {images.map((img, i) => {
                 const isActive = i === idx;
+                const isLoaded = loadedImages[img.id || i];
                 return (
                     <div
                         key={i}
-                        className="absolute inset-0 will-change-opacity"
-                        style={{
-                            opacity: isActive ? 1 : 0,
-                            zIndex: isActive ? 10 : 0,
-                            transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)',
-                        }}
+                        className={`absolute inset-0 ${isActive ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
+                        style={{ transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     >
                         <img
                             src={img.url}
                             alt={img.title || img.message || 'slide'}
-                            className="w-full h-full object-cover"
-                            style={{
-                                transform: isActive ? 'scale(1)' : 'scale(1.05)',
-                                transition: 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)',
-                            }}
+                            className={`w-full h-full object-cover ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            style={{ transform: 'scale(1)', transition: 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)' }}
                             loading={i === 0 ? 'eager' : 'lazy'}
+                            onLoad={() => setLoadedImages(prev => ({ ...prev, [img.id || i]: true }))}
                         />
+                        {!isLoaded && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse" />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 
                         <div
