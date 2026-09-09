@@ -53,7 +53,7 @@ function ImageSlider() {
   useEffect(() => {
     let cancelled = false
     const cacheKey = 'csa_hero_slides_cache'
-    const cacheTTL = 5 * 60 * 1000 // 5 minutes
+    const cacheTTL = 24 * 60 * 60 * 1000 // 24 hours
 
     const loadFromCache = () => {
       try {
