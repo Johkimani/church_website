@@ -227,8 +227,8 @@ export default function RecordPage({ token, onSaved }: Props) {
           setMessage({ ok: true, text: `Saved ${mode === "year" ? "year tallies" : "tallies"} for ${date} and synced to the server.` });
         } else if (res.failed > 0) {
           setMessage({
-            ok: true,
-            text: `Saved ${date} locally, but the server rejected it: ${lastError}. It will retry later.`,
+            ok: false,
+            text: `Server rejected the tally for ${date}: ${lastError}. The data is saved on your device — it will retry when you reopen the app.`,
           });
         }
       } else {

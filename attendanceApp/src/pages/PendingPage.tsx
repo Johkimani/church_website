@@ -31,15 +31,21 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     setStatus(null);
     try {
       const t = (await getSession("token")) || token;
-      const res = await syncPending(t);
-      setStatus({
-        ok: true,
-        text:
-          res.pushed > 0
-            ? `Synced ${res.pushed} date${res.pushed === 1 ? "" : "s"}`
-            : "Nothing to sync",
+      const errors: string[] = [];
+      const res = await syncPending(t, (_s, msg) => {
+        errors.push(`${_s.date}: ${msg}`);
       });
-      if (res.pushed > 0) onSynced(res.pushed);
+      if (res.pushed > 0 && res.failed === 0) {
+        setStatus({ ok: true, text: `Synced ${res.pushed} date${res.pushed === 1 ? "" : "s"}` });
+        onSynced(res.pushed);
+      } else if (res.pushed > 0 && res.failed > 0) {
+        setStatus({ ok: false, text: `Synced ${res.pushed}, but ${res.failed} failed: ${errors[0] || "server error"}` });
+        onSynced(res.pushed);
+      } else if (res.failed > 0) {
+        setStatus({ ok: false, text: `All ${res.failed} failed: ${errors[0] || "server error"}. Check date & try again.` });
+      } else {
+        setStatus({ ok: true, text: "Nothing to sync" });
+      }
       load();
     } catch {
       setStatus({ ok: false, text: "Sync failed — you're likely offline. It will retry automatically." });

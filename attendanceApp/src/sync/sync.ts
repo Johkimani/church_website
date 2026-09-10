@@ -41,8 +41,6 @@ export async function syncPending(
     } catch (err) {
       failed += 1;
       onError?.(s, getApiErrorMessage(err));
-      // Stop on first failure — remaining sessions stay queued for the next retry.
-      break;
     }
   }
 

@@ -430,6 +430,7 @@ export const saveSession = async (req, res) => {
   try {
     const ctx = await getActivityForDate(normalizedDate);
     if (!ctx.isTallyDay) {
+      console.warn(`saveSession REJECTED: ${normalizedDate} is not a tally day (user: ${req.user?.id})`);
       return res.status(400).json({
         success: false,
         error: `${normalizedDate} is not a tally day. Tally days are Monday (Rosary), Wednesday (Bible Study), Thursday (Rosary), or any day of an active novena.`,
@@ -448,7 +449,8 @@ export const saveSession = async (req, res) => {
       if (existing.rows.length === 0) {
         const window = semester
           ? ` (${semester.start_date} → ${semester.end_date})`
-          : "";
+          : " (no semester configured)";
+        console.warn(`saveSession REJECTED: ${normalizedDate} outside semester${window} (user: ${req.user?.id})`);
         return res.status(400).json({
           success: false,
           error: `Attendance tallies are closed for the semester break. New tallies can only be recorded within the current semester${window}.`,

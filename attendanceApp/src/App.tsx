@@ -81,6 +81,12 @@ export default function App() {
           text: `Synced ${res.pushed} record${res.pushed === 1 ? "" : "s"} to the server`,
         });
         refreshPendingCount();
+      } else if (res.failed > 0) {
+        setSyncMsg({
+          ok: false,
+          text: `${res.failed} record${res.failed === 1 ? "" : "s"} failed to sync. Open Saved tab to retry.`,
+        });
+        refreshPendingCount();
       }
     };
     doSync();
