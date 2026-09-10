@@ -12,10 +12,11 @@ import {
   FaCloudUploadAlt,
   FaTrash,
 } from 'react-icons/fa';
-import cloudinary from '../../../../Configs/cloudinaryConfigs';
+import { v2 as cloudinary } from 'cloudinary';
 import { apiClient } from '../../../../api/axiosInstance';
-import type { CommunityModule } from '../../context/CommunityDataContext';
-import '../../../Jumuiya/components/TabsSystem.css';
+cloudinary.config({
+  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+});
 
 interface Props {
   moduleId: string;
