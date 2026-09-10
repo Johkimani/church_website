@@ -11,6 +11,8 @@ import {
   FaVideo,
   FaCloudUploadAlt,
   FaTrash,
+  FaChevronLeft,
+  FaChevronRight,
 } from 'react-icons/fa';
 import { apiClient } from '../../../../api/axiosInstance';
 
@@ -553,7 +555,7 @@ const CommunityVideosTab: React.FC<Props> = ({
               className="flex items-center gap-2 text-white/60 hover:text-white transition-all group shrink-0 cursor-pointer"
             >
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
-                <FaTimes size={14} className="rotate-45" />
+                <FaChevronLeft size={14} />
               </div>
               <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
             </button>
@@ -589,15 +591,15 @@ const CommunityVideosTab: React.FC<Props> = ({
               >
                 <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Next</span>
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
-                  <FaTimes size={14} className="-rotate-45" />
+                  <FaChevronRight size={14} />
                 </div>
               </button>
             </div>
           </div>
 
           {/* Video Canvas */}
-          <div className="flex-1 min-h-0 flex items-center justify-center px-3 md:px-10 py-4" onClick={(e) => e.stopPropagation()}>
-            <div className="w-full h-full max-w-5xl max-h-[75vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+          <div className="flex-1 min-h-0 flex items-center justify-center px-2 md:px-6 py-2" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full h-full max-w-6xl rounded-lg overflow-hidden shadow-2xl border border-white/10">
               {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
                 <video
                   src={selectedVideo.video_file_url}

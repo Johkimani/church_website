@@ -104,16 +104,35 @@ const GallerySection: React.FC = () => {
     return () => { active = false; };
   }, [activeView]);
 
+  const filteredVideos = filterCategory === 'All'
+    ? videos
+    : videos.filter(v => (v.category || 'general') === filterCategory);
+
+  const selectedVideoIndex = selectedVideo ? filteredVideos.findIndex(v => v.id === selectedVideo.id) : -1;
+
+  const goToNextVideo = useCallback(() => {
+    if (selectedVideoIndex < 0 || filteredVideos.length === 0) return;
+    setSelectedVideo(filteredVideos[(selectedVideoIndex + 1) % filteredVideos.length]);
+  }, [selectedVideoIndex, filteredVideos]);
+
+  const goToPrevVideo = useCallback(() => {
+    if (selectedVideoIndex < 0 || filteredVideos.length === 0) return;
+    setSelectedVideo(filteredVideos[(selectedVideoIndex - 1 + filteredVideos.length) % filteredVideos.length]);
+  }, [selectedVideoIndex, filteredVideos]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (selectedVideo) setSelectedVideo(null);
-        else if (selectedIdx !== null) setSelectedIdx(null);
+      if (selectedVideo) {
+        if (e.key === 'Escape') setSelectedVideo(null);
+        if (e.key === 'ArrowRight') goToNextVideo();
+        if (e.key === 'ArrowLeft') goToPrevVideo();
+      } else if (selectedIdx !== null) {
+        if (e.key === 'Escape') setSelectedIdx(null);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedVideo, selectedIdx]);
+  }, [selectedVideo, selectedIdx, goToNextVideo, goToPrevVideo]);
 
   const filteredItems = items.filter(item => {
     const matchesSearch = 
@@ -320,11 +339,7 @@ const GallerySection: React.FC = () => {
                 <Play size={48} strokeWidth={1} className="mb-4" />
                 <p className="text-stone-400 text-sm font-semibold">No videos uploaded yet</p>
               </div>
-            ) : (() => {
-              const filteredVideos = filterCategory === 'All'
-                ? videos
-                : videos.filter(v => (v.category || 'general') === filterCategory);
-              return (
+            ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredVideos.length === 0 ? (
                     <div className="col-span-full flex flex-col items-center justify-center py-12 text-stone-300">
@@ -380,10 +395,9 @@ const GallerySection: React.FC = () => {
                       </div>
                     </motion.div>
                   );
-                    })}
+                })}
                 </div>
-              );
-            })()}
+            )}
           </div>
         )}
       </div>
@@ -398,16 +412,49 @@ const GallerySection: React.FC = () => {
               className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl flex flex-col"
               onClick={() => setSelectedVideo(null)}
             >
-              <div className="shrink-0 flex items-center justify-between px-4 md:px-8 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10">
+              <div className="shrink-0 flex items-center justify-between px-4 md:px-8 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 z-[110]">
+                {/* Prev */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); goToPrevVideo(); }}
+                  className="flex items-center gap-2 text-white/60 hover:text-white transition-all group shrink-0"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                    <ChevronLeft size={18} />
+                  </div>
+                  <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
+                </button>
+
+                {/* Title + Counter */}
                 <div className="flex-1 min-w-0 text-center">
                   <h2 className="text-sm md:text-base font-bold text-white truncate">{selectedVideo.title || 'Untitled Video'}</h2>
+                  <div className="flex items-center justify-center gap-3 mt-1">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2.5 py-0.5 rounded-full">
+                      {selectedVideo.video_type === 'upload' ? 'Uploaded' : selectedVideo.platform}
+                    </span>
+                    <span className="text-[9px] font-medium text-white/30">
+                      {selectedVideoIndex + 1}/{filteredVideos.length}
+                    </span>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setSelectedVideo(null)}
-                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all"
-                >
-                  <X size={16} />
-                </button>
+
+                {/* Close + Next */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setSelectedVideo(null)}
+                    className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all"
+                  >
+                    <X size={16} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); goToNextVideo(); }}
+                    className="flex items-center gap-2 text-white/60 hover:text-white transition-all group"
+                  >
+                    <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Next</span>
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                      <ChevronRight size={18} />
+                    </div>
+                  </button>
+                </div>
               </div>
               <div className="flex-1 min-h-0 flex items-center justify-center px-3 md:px-10 py-4">
                 <div className="w-full h-full max-w-5xl max-h-[75vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
