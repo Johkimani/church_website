@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Camera,
   ChevronLeft,
@@ -11,6 +11,8 @@ import {
   Send,
   Calendar,
   Search,
+  Play,
+  Loader2,
 } from 'lucide-react';
 import { useCachedData } from '../../../../../hooks/useCachedData';
 import { apiClient } from '../../../../../api/axiosInstance';
@@ -27,10 +29,33 @@ interface GalleryItem {
   is_anniversary?: boolean;
 }
 
+interface GalleryVideo {
+  id: number;
+  title: string;
+  description: string;
+  video_url: string | null;
+  video_file_url: string | null;
+  video_type: 'link' | 'upload';
+  platform: string;
+  thumbnail_url: string | null;
+  created_at: string;
+  posted_by: string;
+}
+
 interface GalleryResponse {
   items: GalleryItem[];
   theme: string;
   userContext: { jumuiyaId: string } | null;
+}
+
+function getEmbedUrl(platform: string, url: string): string | null {
+  if (!url) return null;
+  if (platform === 'youtube') {
+    const match = url.match(/(?:watch\?v=|youtu\.be\/|embed\/)([^&?#]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  }
+  if (platform === 'tiktok') return null;
+  return null;
 }
 
 const GallerySection: React.FC = () => {
@@ -38,6 +63,10 @@ const GallerySection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [likedItems, setLikedItems] = useState<Set<number>>(new Set());
+  const [activeView, setActiveView] = useState<'photos' | 'videos'>('photos');
+  const [videos, setVideos] = useState<GalleryVideo[]>([]);
+  const [videosLoading, setVideosLoading] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<GalleryVideo | null>(null);
 
   // Toggle Like Logic
   const toggleLike = (e: React.MouseEvent, id: number) => {
@@ -61,6 +90,30 @@ const GallerySection: React.FC = () => {
 
   const items = galleryData.items || [];
   const theme = galleryData.theme || 'default';
+
+  useEffect(() => {
+    if (activeView !== 'videos') return;
+    let active = true;
+    setVideosLoading(true);
+    apiClient.get('/community-videos/csa_main/videos')
+      .then(({ data }) => {
+        if (active) setVideos(data?.videos || []);
+      })
+      .catch(() => { if (active) setVideos([]); })
+      .finally(() => { if (active) setVideosLoading(false); });
+    return () => { active = false; };
+  }, [activeView]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selectedVideo) setSelectedVideo(null);
+        else if (selectedIdx !== null) setSelectedIdx(null);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedVideo, selectedIdx]);
 
   const filteredItems = items.filter(item => {
     const matchesSearch = 
@@ -132,6 +185,23 @@ const GallerySection: React.FC = () => {
               </AnimatePresence>
             </div>
 
+            {/* Photos / Videos Toggle */}
+            <div className="flex p-1 bg-stone-100 rounded-full">
+              {(['photos', 'videos'] as const).map(view => (
+                <button
+                  key={view}
+                  onClick={() => setActiveView(view)}
+                  className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all ${
+                    activeView === view
+                      ? 'bg-stone-900 text-white shadow-md'
+                      : 'text-stone-400 hover:text-stone-600'
+                  }`}
+                >
+                  {view}
+                </button>
+              ))}
+            </div>
+
             {/* Category Chips */}
             <div className="flex flex-wrap justify-center gap-2">
               {['All', 'general', 'choir', 'jumuiya'].map(cat => (
@@ -151,8 +221,10 @@ const GallerySection: React.FC = () => {
           </div>
         </div>
 
-        {/* Improved Masonry Grid - High-End Feed Style */}
-        <div className="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10 max-w-[1400px] mx-auto">
+        {/* Content based on active view */}
+        {activeView === 'photos' ? (
+          /* Improved Masonry Grid - High-End Feed Style */
+          <div className="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3 gap-8 md:gap-10 max-w-[1400px] mx-auto">
           {filteredItems.map((item, index) => (
             <motion.div 
               layout
@@ -235,7 +307,124 @@ const GallerySection: React.FC = () => {
             </motion.div>
           ))}
         </div>
+        ) : (
+          /* Videos Grid */
+          <div className="max-w-[1400px] mx-auto">
+            {videosLoading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 size={32} className="text-stone-300 animate-spin mb-3" />
+                <p className="text-stone-400 text-sm font-semibold">Loading videos...</p>
+              </div>
+            ) : videos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-stone-300">
+                <Play size={48} strokeWidth={1} className="mb-4" />
+                <p className="text-stone-400 text-sm font-semibold">No videos uploaded yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {videos.map(video => {
+                  const thumbnail = video.thumbnail_url || video.video_file_url;
+                  const embedUrl = video.video_type === 'link' ? getEmbedUrl(video.platform, video.video_url || '') : null;
+                  return (
+                    <motion.div
+                      key={video.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="group relative bg-white rounded-[2rem] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] border border-slate-50 transition-all duration-700 cursor-pointer"
+                      onClick={() => setSelectedVideo(video)}
+                    >
+                      <div className="relative overflow-hidden mx-4 md:mx-0 rounded-[1.5rem] md:rounded-none border border-slate-100/50 md:border-none shadow-sm md:shadow-none aspect-video bg-stone-100">
+                        {embedUrl ? (
+                          <img
+                            src={video.thumbnail_url || `https://img.youtube.com/vi/${(video.video_url || '').match(/(?:watch\?v=|youtu\.be\/|embed\/)([^&?#]+)/)?.[1] || ''}/hqdefault.jpg`}
+                            alt={video.title}
+                            className="w-full h-full object-cover transition-transform duration-[2500ms] group-hover:scale-105"
+                          />
+                        ) : video.video_type === 'upload' && video.video_file_url ? (
+                          <img
+                            src={thumbnail || ''}
+                            alt={video.title}
+                            className="w-full h-full object-cover transition-transform duration-[2500ms] group-hover:scale-105"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-stone-100">
+                            <Play size={48} className="text-stone-300" />
+                          </div>
+                        )}
+                        {/* Play button overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center group-hover:bg-black/60 group-hover:scale-110 transition-all duration-300">
+                            <Play size={24} className="text-white ml-1" fill="white" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">{video.title || 'Untitled Video'}</h3>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="px-2 py-0.5 bg-stone-100 rounded-md text-[9px] font-black uppercase tracking-widest text-stone-500">
+                            {video.video_type === 'upload' ? 'Uploaded' : video.platform}
+                          </span>
+                          <span className="text-[10px] text-stone-300 font-medium">
+                            {video.created_at ? new Date(video.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+        {/* Video Modal */}
+        <AnimatePresence>
+          {selectedVideo && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl flex flex-col"
+              onClick={() => setSelectedVideo(null)}
+            >
+              <div className="shrink-0 flex items-center justify-between px-4 md:px-8 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10">
+                <div className="flex-1 min-w-0 text-center">
+                  <h2 className="text-sm md:text-base font-bold text-white truncate">{selectedVideo.title || 'Untitled Video'}</h2>
+                </div>
+                <button
+                  onClick={() => setSelectedVideo(null)}
+                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 flex items-center justify-center px-3 md:px-10 py-4">
+                <div className="w-full h-full max-w-5xl max-h-[75vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                  {(() => {
+                    const embedUrl = selectedVideo.video_type === 'link' ? getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') : null;
+                    if (embedUrl) {
+                      return <iframe src={embedUrl} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen />;
+                    }
+                    if (selectedVideo.video_type === 'upload' && selectedVideo.video_file_url) {
+                      return <video src={selectedVideo.video_file_url} controls autoPlay className="w-full h-full" />;
+                    }
+                    return <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">No video source available</div>;
+                  })()}
+                </div>
+              </div>
+              <div className="shrink-0 bg-white/5 backdrop-blur-xl border-t border-white/10 px-8 py-3 flex items-center justify-center gap-4">
+                <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/50">
+                  {selectedVideo.video_type === 'upload' ? 'Uploaded Video' : selectedVideo.platform}
+                </span>
+                {selectedVideo.description && (
+                  <p className="text-xs text-white/40 text-center max-w-lg">{selectedVideo.description}</p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Chronicle Explorer - Clean Three-Zone Layout */}
         <AnimatePresence>
