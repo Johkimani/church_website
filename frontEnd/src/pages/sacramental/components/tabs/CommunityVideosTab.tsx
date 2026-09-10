@@ -547,10 +547,9 @@ const CommunityVideosTab: React.FC<Props> = ({
                 <video
                   src={selectedVideo.video_file_url}
                   controls
-                  playsInline
                   className="w-full h-full"
                   preload="auto"
-                  crossOrigin="anonymous"
+                  poster={selectedVideo.video_file_url.replace(/\.(mp4|webm|mov|avi)$/i, '.jpg').replace('/upload/', '/upload/so_0,w_640/')}
                 />
               </div>
             ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
