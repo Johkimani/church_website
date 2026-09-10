@@ -15,7 +15,7 @@ import {
 import cloudinary from 'cloudinary';
 import { apiClient } from '../../../../api/axiosInstance';
 cloudinary.v2.config({
-  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
+  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dnelprtgz',
 });
 
 interface Props {
