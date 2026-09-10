@@ -545,12 +545,13 @@ const CommunityVideosTab: React.FC<Props> = ({
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
                 <video
-                  src={selectedVideo.video_file_url}
                   controls
                   className="w-full h-full"
-                  preload="auto"
                   poster={selectedVideo.video_file_url.replace(/\.(mp4|webm|mov|avi)$/i, '.jpg').replace('/upload/', '/upload/so_0,w_640/')}
-                />
+                >
+                  <source src={selectedVideo.video_file_url} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               </div>
             ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
