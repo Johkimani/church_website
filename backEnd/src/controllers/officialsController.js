@@ -20,10 +20,10 @@ export const CATEGORY_LIMITS = {
   'Executive': 6,
   'Jumuiya Coordinators': 2,
   'Bible Coordinators': 2,
-  'Rosary': 2,
+  'Rosary Coordinators': 2,
   'Pamphlet Managers': 2,
   'Project Managers': 2,
-  'Liturgist': 2,
+  'Liturgists': 2,
   'Choir Officials': 2,
   'Instrument Managers': 2,
   'Liturgical Dancers': 2,
@@ -37,9 +37,11 @@ export const CSA_SORT_SQL = `
     WHEN 'Executive' THEN 1
     WHEN 'Jumuiya Coordinators' THEN 2
     WHEN 'Bible Coordinators' THEN 3
+    WHEN 'Rosary Coordinators' THEN 4
     WHEN 'Rosary' THEN 4
     WHEN 'Pamphlet Managers' THEN 5
     WHEN 'Project Managers' THEN 6
+    WHEN 'Liturgists' THEN 7
     WHEN 'Liturgist' THEN 7
     WHEN 'Instrument Managers' THEN 8
     WHEN 'Choir Officials' THEN 9
