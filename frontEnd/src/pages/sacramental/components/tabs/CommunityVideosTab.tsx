@@ -547,14 +547,14 @@ const CommunityVideosTab: React.FC<Props> = ({
           onClick={closeModal}
         >
           {/* Header Bar */}
-          <div className="shrink-0 flex items-center justify-between gap-4 px-4 md:px-8 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 z-10">
+          <div className="shrink-0 flex items-center justify-between gap-2 md:gap-4 px-2 md:px-8 py-2 md:py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 z-10">
             {/* Prev */}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); goToPrev(); }}
               className="flex items-center gap-2 text-white/60 hover:text-white transition-all group shrink-0 cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
                 <FaChevronLeft size={14} />
               </div>
               <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
@@ -562,10 +562,10 @@ const CommunityVideosTab: React.FC<Props> = ({
 
             {/* Title + Badge + Counter */}
             <div className="flex-1 min-w-0 text-center">
-              <h2 className="text-sm md:text-base font-bold text-white truncate">
+              <h2 className="text-xs md:text-base font-bold text-white truncate">
                 {selectedVideo.title || 'Untitled Video'}
               </h2>
-              <div className="flex items-center justify-center gap-3 mt-1">
+              <div className="hidden md:flex items-center justify-center gap-3 mt-1">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2.5 py-0.5 rounded-full">
                   {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
                 </span>
@@ -576,11 +576,11 @@ const CommunityVideosTab: React.FC<Props> = ({
             </div>
 
             {/* Close + Next */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <button
                 type="button"
                 onClick={closeModal}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all cursor-pointer"
+                className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all cursor-pointer"
               >
                 <FaTimes size={14} />
               </button>
@@ -590,7 +590,7 @@ const CommunityVideosTab: React.FC<Props> = ({
                 className="flex items-center gap-2 text-white/60 hover:text-white transition-all group cursor-pointer"
               >
                 <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Next</span>
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
                   <FaChevronRight size={14} />
                 </div>
               </button>
@@ -598,8 +598,9 @@ const CommunityVideosTab: React.FC<Props> = ({
           </div>
 
           {/* Video Canvas */}
-          <div className="flex-1 min-h-0 flex items-center justify-center px-2 md:px-6 py-2" onClick={(e) => e.stopPropagation()}>
-            <div className="w-full h-full max-w-6xl rounded-lg overflow-hidden shadow-2xl border border-white/10">
+          <div className="flex-1 min-h-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full h-full md:px-6 md:py-2">
+              <div className="w-full h-full md:max-w-6xl md:mx-auto md:rounded-lg overflow-hidden shadow-2xl md:border md:border-white/10">
               {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
                 <video
                   src={selectedVideo.video_file_url}
@@ -628,16 +629,17 @@ const CommunityVideosTab: React.FC<Props> = ({
                   </a>
                 </div>
               )}
+              </div>
             </div>
           </div>
 
           {/* Footer Bar */}
-          <div className="shrink-0 bg-white/5 backdrop-blur-xl border-t border-white/10 px-8 py-3 flex items-center justify-center gap-4">
-            <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/50">
-              {selectedVideo.video_type === 'upload' ? 'Uploaded Video' : getPlatformDetails(selectedVideo.platform).name}
+          <div className="shrink-0 bg-white/5 backdrop-blur-xl border-t border-white/10 px-4 md:px-8 py-2 md:py-3 flex items-center justify-center gap-3 md:gap-4">
+            <span className="px-2 md:px-3 py-0.5 md:py-1 bg-white/10 rounded-full text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-white/50">
+              {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
             </span>
             {selectedVideo.description && (
-              <p className="text-xs text-white/40 text-center max-w-lg">{selectedVideo.description}</p>
+              <p className="text-[10px] md:text-xs text-white/40 text-center max-w-lg hidden md:block">{selectedVideo.description}</p>
             )}
           </div>
         </div>
