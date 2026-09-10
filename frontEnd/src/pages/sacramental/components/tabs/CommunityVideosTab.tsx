@@ -598,7 +598,7 @@ const CommunityVideosTab: React.FC<Props> = ({
           </div>
 
           {/* Video — fills all remaining space on mobile */}
-          <div className="flex-1 min-h-0 bg-black" onClick={(e) => e.stopPropagation()}>
+          <div className="flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
             <div className="w-full h-full md:px-6 md:py-2">
               <div className="w-full h-full md:max-w-6xl md:mx-auto md:rounded-lg overflow-hidden md:shadow-2xl md:border md:border-white/10">
                 {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
@@ -606,7 +606,7 @@ const CommunityVideosTab: React.FC<Props> = ({
                     src={selectedVideo.video_file_url}
                     controls
                     autoPlay
-                    className="w-full h-full object-contain bg-black"
+                    className="w-full h-full"
                   />
                 ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
                   <iframe
