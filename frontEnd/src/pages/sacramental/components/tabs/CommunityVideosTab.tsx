@@ -115,7 +115,14 @@ const CommunityVideosTab: React.FC<Props> = ({
   const [uploadStatus, setUploadStatus] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
   const [maxVideos, setMaxVideos] = useState(MAX_VIDEOS);
+
+  useEffect(() => {
+    if (selectedVideo && playerRef.current) {
+      playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedVideo]);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -540,108 +547,101 @@ const CommunityVideosTab: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Video Modal — Immersive Player */}
+      {/* Inline Video Player — expands in-page, no dark letterbox backgrounds */}
       {selectedVideo && (
-        <div
-          className="fixed inset-0 z-50 bg-black flex flex-col"
-          onClick={closeModal}
-        >
-          {/* Header Bar — mobile-compact */}
-          <div className="shrink-0 flex items-center justify-between gap-2 md:gap-4 px-2 md:px-8 py-2 md:py-3 bg-black z-10">
+        <div ref={playerRef} className="mt-4 rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-black">
+          {/* Player Controls Bar */}
+          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-900">
             {/* Prev */}
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); goToPrev(); }}
-              className="flex items-center gap-2 text-white/60 hover:text-white transition-all group shrink-0 cursor-pointer"
+              onClick={goToPrev}
+              className="flex items-center gap-1.5 text-white/60 hover:text-white transition-all group cursor-pointer"
             >
-              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
-                <FaChevronLeft size={14} />
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <FaChevronLeft size={12} />
               </div>
-              <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
+              <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
             </button>
 
             {/* Title + Badge + Counter */}
             <div className="flex-1 min-w-0 text-center">
-              <h2 className="text-xs md:text-base font-bold text-white truncate">
+              <h2 className="text-xs sm:text-sm font-bold text-white truncate">
                 {selectedVideo.title || 'Untitled Video'}
               </h2>
-              <div className="hidden md:flex items-center justify-center gap-3 mt-1">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2.5 py-0.5 rounded-full">
+              <div className="flex items-center justify-center gap-2 mt-0.5">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full">
                   {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
                 </span>
                 <span className="text-[9px] font-medium text-white/30">
-                  {selectedVideoIndex + 1}/{filteredVideos.length}
+                  {selectedVideoIndex + 1} / {filteredVideos.length}
                 </span>
               </div>
             </div>
 
             {/* Close + Next */}
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={closeModal}
-                className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all cursor-pointer"
-              >
-                <FaTimes size={14} />
-              </button>
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                className="flex items-center gap-2 text-white/60 hover:text-white transition-all group cursor-pointer"
+                className="flex items-center gap-1.5 text-white/60 hover:text-white transition-all group cursor-pointer"
               >
-                <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Next</span>
-                <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
-                  <FaChevronRight size={14} />
+                <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/70 transition-colors">Next</span>
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                  <FaChevronRight size={12} />
                 </div>
+              </button>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-500/70 text-white/60 hover:text-white transition-all cursor-pointer"
+                title="Close player"
+              >
+                <FaTimes size={12} />
               </button>
             </div>
           </div>
 
-          {/* Video — fills all remaining space on mobile */}
-          <div className="flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
-            <div className="w-full h-full md:px-6 md:py-2">
-              <div className="w-full h-full md:max-w-6xl md:mx-auto md:rounded-lg overflow-hidden md:shadow-2xl md:border md:border-white/10">
-                {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
-                  <video
-                    src={selectedVideo.video_file_url}
-                    controls
-                    autoPlay
-                    className="w-full h-full"
-                  />
-                ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
-                  <iframe
-                    src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title={selectedVideo.title || 'Video'}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-black flex items-center justify-center">
-                    <a
-                      href={selectedVideo.video_url || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
-                    >
-                      <FaExternalLinkAlt size={16} />
-                      <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+          {/* Video — 16:9 aspect ratio, full width, no letterboxing */}
+          <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+            <div className="absolute inset-0">
+              {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
+                <video
+                  src={selectedVideo.video_file_url}
+                  controls
+                  autoPlay
+                  style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', background: '#000' }}
+                />
+              ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
+                <iframe
+                  src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
+                  style={{ width: '100%', height: '100%', display: 'block', border: 'none' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={selectedVideo.title || 'Video'}
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                  <a
+                    href={selectedVideo.video_url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
+                  >
+                    <FaExternalLinkAlt size={16} />
+                    <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Footer Bar — desktop only */}
-          <div className="hidden md:flex shrink-0 bg-black/80 backdrop-blur-xl border-t border-white/10 px-8 py-3 items-center justify-center gap-4">
-            <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/50">
-              {selectedVideo.video_type === 'upload' ? 'Uploaded Video' : getPlatformDetails(selectedVideo.platform).name}
-            </span>
-            {selectedVideo.description && (
-              <p className="text-xs text-white/40 text-center max-w-lg">{selectedVideo.description}</p>
-            )}
-          </div>
+          {/* Description footer (only if present) */}
+          {selectedVideo.description && (
+            <div className="px-4 py-2.5 bg-slate-900/90 border-t border-white/5">
+              <p className="text-xs text-white/50 text-center">{selectedVideo.description}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
