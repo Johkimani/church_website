@@ -545,12 +545,12 @@ const CommunityVideosTab: React.FC<Props> = ({
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
                 <video
-                  src={`${selectedVideo.video_file_url}#t=0.001`}
+                  src={selectedVideo.video_file_url}
                   controls
                   playsInline
                   className="w-full h-full"
-                  autoPlay
                   preload="auto"
+                  crossOrigin="anonymous"
                 />
               </div>
             ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
