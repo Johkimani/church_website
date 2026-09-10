@@ -543,11 +543,11 @@ const CommunityVideosTab: React.FC<Props> = ({
       {/* Video Modal — Immersive Player */}
       {selectedVideo && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex flex-col"
+          className="fixed inset-0 z-50 bg-black flex flex-col"
           onClick={closeModal}
         >
-          {/* Header Bar */}
-          <div className="shrink-0 flex items-center justify-between gap-2 md:gap-4 px-2 md:px-8 py-2 md:py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 z-10">
+          {/* Header Bar — mobile-compact */}
+          <div className="shrink-0 flex items-center justify-between gap-2 md:gap-4 px-2 md:px-8 py-2 md:py-3 bg-black z-10">
             {/* Prev */}
             <button
               type="button"
@@ -597,49 +597,49 @@ const CommunityVideosTab: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Video Canvas */}
-          <div className="flex-1 min-h-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          {/* Video — fills all remaining space on mobile */}
+          <div className="flex-1 min-h-0 bg-black" onClick={(e) => e.stopPropagation()}>
             <div className="w-full h-full md:px-6 md:py-2">
-              <div className="w-full h-full md:max-w-6xl md:mx-auto md:rounded-lg overflow-hidden shadow-2xl md:border md:border-white/10">
-              {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
-                <video
-                  src={selectedVideo.video_file_url}
-                  controls
-                  autoPlay
-                  className="w-full h-full"
-                />
-              ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
-                <iframe
-                  src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={selectedVideo.title || 'Video'}
-                />
-              ) : (
-                <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                  <a
-                    href={selectedVideo.video_url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
-                  >
-                    <FaExternalLinkAlt size={16} />
-                    <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
-                  </a>
-                </div>
-              )}
+              <div className="w-full h-full md:max-w-6xl md:mx-auto md:rounded-lg overflow-hidden md:shadow-2xl md:border md:border-white/10">
+                {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
+                  <video
+                    src={selectedVideo.video_file_url}
+                    controls
+                    autoPlay
+                    className="w-full h-full object-contain bg-black"
+                  />
+                ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
+                  <iframe
+                    src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={selectedVideo.title || 'Video'}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-black flex items-center justify-center">
+                    <a
+                      href={selectedVideo.video_url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
+                    >
+                      <FaExternalLinkAlt size={16} />
+                      <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Footer Bar */}
-          <div className="shrink-0 bg-white/5 backdrop-blur-xl border-t border-white/10 px-4 md:px-8 py-2 md:py-3 flex items-center justify-center gap-3 md:gap-4">
-            <span className="px-2 md:px-3 py-0.5 md:py-1 bg-white/10 rounded-full text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-white/50">
-              {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
+          {/* Footer Bar — desktop only */}
+          <div className="hidden md:flex shrink-0 bg-black/80 backdrop-blur-xl border-t border-white/10 px-8 py-3 items-center justify-center gap-4">
+            <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/50">
+              {selectedVideo.video_type === 'upload' ? 'Uploaded Video' : getPlatformDetails(selectedVideo.platform).name}
             </span>
             {selectedVideo.description && (
-              <p className="text-[10px] md:text-xs text-white/40 text-center max-w-lg hidden md:block">{selectedVideo.description}</p>
+              <p className="text-xs text-white/40 text-center max-w-lg">{selectedVideo.description}</p>
             )}
           </div>
         </div>
