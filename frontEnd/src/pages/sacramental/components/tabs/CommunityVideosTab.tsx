@@ -521,97 +521,78 @@ const CommunityVideosTab: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Video Modal */}
+      {/* Video Modal — Immersive Player */}
       {selectedVideo && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex flex-col"
           onClick={closeModal}
         >
-          <button
-            type="button"
-            onClick={closeModal}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all z-50 cursor-pointer"
-            aria-label="Close video"
-          >
-            <FaTimes size={18} />
-          </button>
+          {/* Header Bar */}
+          <div className="shrink-0 flex items-center justify-between gap-4 px-4 md:px-8 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 z-10">
+            <div className="flex-1 min-w-0 text-center">
+              <h2 className="text-sm md:text-base font-bold text-white truncate">
+                {selectedVideo.title || 'Untitled Video'}
+              </h2>
+              <div className="flex items-center justify-center gap-3 mt-1">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2.5 py-0.5 rounded-full">
+                  {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
+                </span>
+                <span className="text-[9px] font-medium text-white/30">
+                  {new Date(selectedVideo.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={closeModal}
+              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all shrink-0 cursor-pointer"
+            >
+              <FaTimes size={16} />
+            </button>
+          </div>
 
-          <div
-            className="w-full max-w-4xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Video Player or Link */}
-            {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
-              <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+          {/* Video Canvas */}
+          <div className="flex-1 min-h-0 flex items-center justify-center px-3 md:px-10 py-4" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full h-full max-w-5xl max-h-[75vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+              {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
                 <video
                   src={selectedVideo.video_file_url}
                   controls
+                  autoPlay
                   className="w-full h-full"
-                  preload="auto"
                 />
-              </div>
-            ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
-              <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+              ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
                 <iframe
                   src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
-                  className="absolute inset-0 w-full h-full"
+                  className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   title={selectedVideo.title || 'Video'}
                 />
-              </div>
-            ) : (
-              <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center">
-                {selectedVideo.thumbnail_url ? (
-                  <img
-                    src={selectedVideo.thumbnail_url}
-                    alt={selectedVideo.title || 'Video thumbnail'}
-                    className="w-full h-full object-cover opacity-60"
-                  />
-                ) : (
-                  <div className="text-center">
-                    <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
-                      {getPlatformDetails(selectedVideo.platform).icon}
-                    </div>
-                    <p className="text-white/60 text-sm mb-4">Video preview not available</p>
-                  </div>
-                )}
-                <a
-                  href={selectedVideo.video_url || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform">
+              ) : (
+                <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                  <a
+                    href={selectedVideo.video_url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
+                  >
                     <FaExternalLinkAlt size={16} />
                     <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
-                  </div>
-                </a>
-              </div>
-            )}
-
-            {/* Video Info */}
-            <div className="mt-4 text-center">
-              <h2 className="text-white font-bold text-lg mb-1">
-                {selectedVideo.title || 'Untitled Video'}
-              </h2>
-              {selectedVideo.description && (
-                <p className="text-white/60 text-sm mb-2">{selectedVideo.description}</p>
+                  </a>
+                </div>
               )}
-              <div className="flex items-center justify-center gap-4 text-white/40 text-xs">
-                <span className="flex items-center gap-1.5">
-                  {getPlatformDetails(selectedVideo.video_type === 'upload' ? 'upload' : selectedVideo.platform).icon}
-                  {getPlatformDetails(selectedVideo.video_type === 'upload' ? 'upload' : selectedVideo.platform).name}
-                </span>
-                <span>
-                  {new Date(selectedVideo.created_at).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-              </div>
             </div>
+          </div>
+
+          {/* Footer Bar */}
+          <div className="shrink-0 bg-white/5 backdrop-blur-xl border-t border-white/10 px-8 py-3 flex items-center justify-center gap-4">
+            <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/50">
+              {selectedVideo.video_type === 'upload' ? 'Uploaded Video' : getPlatformDetails(selectedVideo.platform).name}
+            </span>
+            {selectedVideo.description && (
+              <p className="text-xs text-white/40 text-center max-w-lg">{selectedVideo.description}</p>
+            )}
           </div>
         </div>
       )}
