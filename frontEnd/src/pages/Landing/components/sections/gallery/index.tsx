@@ -323,7 +323,6 @@ const GallerySection: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {videos.map(video => {
-                  const thumbnail = video.thumbnail_url || video.video_file_url;
                   const embedUrl = video.video_type === 'link' ? getEmbedUrl(video.platform, video.video_url || '') : null;
                   return (
                     <motion.div
@@ -341,11 +340,11 @@ const GallerySection: React.FC = () => {
                             className="w-full h-full object-cover transition-transform duration-[2500ms] group-hover:scale-105"
                           />
                         ) : video.video_type === 'upload' && video.video_file_url ? (
-                          <img
-                            src={thumbnail || ''}
-                            alt={video.title}
+                          <video
+                            src={video.video_file_url}
                             className="w-full h-full object-cover transition-transform duration-[2500ms] group-hover:scale-105"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            preload="metadata"
+                            muted
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-stone-100">
