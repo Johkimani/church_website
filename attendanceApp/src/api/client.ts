@@ -80,11 +80,13 @@ export interface NovenaWindow {
 export interface TallyContext {
   date: string;
   isTallyDay: boolean;
+  canSave: boolean;
   activityType: string;
   activityLabel: string;
   active_novenas?: NovenaWindow[];
   jumuiyas: TallyJumuiya[];
   years: TallyYear[];
+  semester?: { start_date: string; end_date: string } | null;
 }
 
 export interface TallyDayInfo {
