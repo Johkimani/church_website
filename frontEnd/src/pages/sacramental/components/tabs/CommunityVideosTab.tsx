@@ -10,6 +10,7 @@ import {
   FaUpload,
   FaVideo,
   FaCloudUploadAlt,
+  FaTrash,
 } from 'react-icons/fa';
 import { apiClient } from '../../../../api/axiosInstance';
 import type { CommunityModule } from '../../context/CommunityDataContext';
@@ -545,7 +546,11 @@ const CommunityVideosTab: React.FC<Props> = ({
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
                 <video
-                  src={selectedVideo.video_file_url.includes('/upload/q_auto') ? selectedVideo.video_file_url : selectedVideo.video_file_url.replace('/upload/', '/upload/q_auto,f_auto/')}
+                  src={(() => {
+                    const url = selectedVideo.video_file_url;
+                    if (url.includes('q_auto')) return url;
+                    return url.replace(/\/upload\/v(\d+)\//, '/upload/v$1/q_auto,f_auto/').replace(/\/upload\//, '/upload/q_auto,f_auto/');
+                  })()}
                   controls
                   className="w-full h-full"
                   preload="auto"
