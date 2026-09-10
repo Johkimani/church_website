@@ -544,11 +544,7 @@ const CommunityVideosTab: React.FC<Props> = ({
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
                 <video
-                  src={(() => {
-                    const url = selectedVideo.video_file_url;
-                    if (!url || !url.includes('/upload/')) return url;
-                    return url.replace('/upload/', '/upload/q_auto/');
-                  })()}
+                  src={selectedVideo.video_file_url}
                   controls
                   className="w-full h-full"
                   preload="auto"
