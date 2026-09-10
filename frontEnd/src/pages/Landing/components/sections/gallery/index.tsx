@@ -204,7 +204,7 @@ const GallerySection: React.FC = () => {
 
             {/* Category Chips */}
             <div className="flex flex-wrap justify-center gap-2">
-              {['All', 'general', 'choir', 'jumuiya'].map(cat => (
+              {['All', 'general', 'choir', 'dancers', 'charismatic', 'jumuiya', 'communities'].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setFilterCategory(cat)}
@@ -321,22 +321,17 @@ const GallerySection: React.FC = () => {
                 <p className="text-stone-400 text-sm font-semibold">No videos uploaded yet</p>
               </div>
             ) : (() => {
-              const videoCategories = ['All', ...Array.from(new Set(videos.map(v => v.category || 'general')))];
               const filteredVideos = filterCategory === 'All'
                 ? videos
                 : videos.filter(v => (v.category || 'general') === filterCategory);
               return (
-                <>
-                  <div className="flex flex-wrap justify-center gap-2 mb-8">
-                    {videoCategories.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => setFilterCategory(cat)}
-                        className={`px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
-                          filterCategory === cat
-                            ? 'bg-stone-900 text-white border-stone-900 shadow-md'
-                            : 'bg-white text-stone-400 border-stone-200/80 hover:border-stone-300 hover:text-stone-600'
-                        }`}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredVideos.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-12 text-stone-300">
+                      <Play size={40} strokeWidth={1} className="mb-3" />
+                      <p className="text-stone-400 text-sm font-semibold">No videos in this category</p>
+                    </div>
+                  ) : filteredVideos.map(video => {
                       >
                         {cat}
                       </button>
@@ -393,8 +388,7 @@ const GallerySection: React.FC = () => {
                     </motion.div>
                   );
                     })}
-                  </div>
-                </>
+                </div>
               );
             })()}
           </div>
