@@ -13,6 +13,7 @@ import {
   FaTrash,
   FaChevronLeft,
   FaChevronRight,
+  FaArrowLeft,
 } from 'react-icons/fa';
 import { apiClient } from '../../../../api/axiosInstance';
 
@@ -284,41 +285,296 @@ const CommunityVideosTab: React.FC<Props> = ({
       className="tab-system-content"
       style={{ '--jumuiya-color': color } as React.CSSProperties}
     >
-      <div className="tab-header-wrap">
-        <div className="header-text">
-          <h1 className="page-title">Videos</h1>
-          <p className="page-description">
-            Watch our latest performances and ministrations from TikTok and YouTube.
-          </p>
-        </div>
-      </div>
+      {selectedVideo ? (
+        /* Video Player View — The ONLY view shown when a video is open */
+        <div ref={playerRef} className="animate-fade-in space-y-4">
+          {/* Top Bar: Back button, prev/next navigation, counter, close */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs font-bold cursor-pointer"
+            >
+              <FaArrowLeft size={12} />
+              <span>Back to all videos</span>
+            </button>
 
-      {/* Upload Zone (drag-and-drop) */}
-      {isMember && !isAtMax && (
-        <div
-          className={`mb-5 p-6 border-2 border-dashed rounded-2xl text-center transition-all cursor-pointer ${
-            isDragging
-              ? 'border-purple-400 bg-purple-50'
-              : 'border-slate-300 hover:border-purple-300 hover:bg-slate-50'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <FaCloudUploadAlt className={`mx-auto mb-2 ${isDragging ? 'text-purple-500' : 'text-slate-400'}`} size={28} />
-          <p className="text-sm font-bold text-slate-600">
-            {isDragging ? 'Drop video here' : 'Drag & drop a video or click to upload'}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">MP4, WebM, MOV — Max 50 MB</p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={goToPrev}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs font-bold cursor-pointer"
+                title="Previous video"
+              >
+                <FaChevronLeft size={12} />
+                <span className="hidden sm:inline">Prev</span>
+              </button>
+
+              <span className="text-xs font-bold text-slate-500 px-2">
+                {selectedVideoIndex + 1} / {filteredVideos.length}
+              </span>
+
+              <button
+                type="button"
+                onClick={goToNext}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs font-bold cursor-pointer"
+                title="Next video"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <FaChevronRight size={12} />
+              </button>
+
+              <button
+                type="button"
+                onClick={closeModal}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-red-500 hover:text-white text-slate-500 transition flex items-center justify-center cursor-pointer ml-1"
+                title="Close player"
+              >
+                <FaTimes size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* Inline Video Player — full width 16:9 box */}
+          <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-black">
+            {/* Video title bar */}
+            <div className="flex items-center justify-between gap-2 px-4 py-3 bg-slate-900 border-b border-white/10">
+              <h2 className="text-sm sm:text-base font-bold text-white truncate">
+                {selectedVideo.title || 'Untitled Video'}
+              </h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-full shrink-0">
+                {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
+              </span>
+            </div>
+
+            {/* Video — 16:9 aspect ratio, full width, no letterboxing */}
+            <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+              <div className="absolute inset-0">
+                {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
+                  <video
+                    src={selectedVideo.video_file_url}
+                    controls
+                    autoPlay
+                    style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', background: '#000' }}
+                  />
+                ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
+                  <iframe
+                    src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
+                    style={{ width: '100%', height: '100%', display: 'block', border: 'none' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={selectedVideo.title || 'Video'}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                    <a
+                      href={selectedVideo.video_url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
+                    >
+                      <FaExternalLinkAlt size={16} />
+                      <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description footer (only if present) */}
+            {selectedVideo.description && (
+              <div className="px-5 py-3.5 bg-slate-900/95 border-t border-white/5">
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{selectedVideo.description}</p>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        /* Video List & Grid View — shown when no video is playing */
+        <>
+          <div className="tab-header-wrap">
+            <div className="header-text">
+              <h1 className="page-title">Videos</h1>
+              <p className="page-description">
+                Watch our latest performances and ministrations from TikTok and YouTube.
+              </p>
+            </div>
+          </div>
+
+          {/* Upload Zone (drag-and-drop) */}
+          {isMember && !isAtMax && (
+            <div
+              className={`mb-5 p-6 border-2 border-dashed rounded-2xl text-center transition-all cursor-pointer ${
+                isDragging
+                  ? 'border-purple-400 bg-purple-50'
+                  : 'border-slate-300 hover:border-purple-300 hover:bg-slate-50'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <FaCloudUploadAlt className={`mx-auto mb-2 ${isDragging ? 'text-purple-500' : 'text-slate-400'}`} size={28} />
+              <p className="text-sm font-bold text-slate-600">
+                {isDragging ? 'Drop video here' : 'Drag & drop a video or click to upload'}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">MP4, WebM, MOV — Max 50 MB</p>
+            </div>
+          )}
+
+          {/* Platform Filter */}
+          {platforms.length > 2 && (
+            <div className="flex gap-2 mb-5 flex-wrap">
+              {platforms.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setFilter(p)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    filter === p
+                      ? 'text-white shadow-md'
+                      : 'text-slate-600 bg-white border border-slate-200 hover:border-slate-300'
+                  }`}
+                  style={filter === p ? { background: color } : {}}
+                >
+                  {p === 'all' ? 'All Videos' : getPlatformDetails(p).name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Videos Grid */}
+          {!isLoading && filteredVideos.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredVideos.map((video) => {
+                const info = getPlatformDetails(video.video_type === 'upload' ? 'upload' : video.platform);
+                const videoSrc = video.video_type === 'upload' ? video.video_file_url : null;
+                return (
+                  <div
+                    key={video.id}
+                    className="group rounded-2xl overflow-hidden bg-white border border-slate-100 hover:border-slate-200 transition-all duration-300 hover:shadow-lg cursor-pointer relative"
+                    onClick={() => setSelectedVideo(video)}
+                  >
+                    {/* Thumbnail / Preview */}
+                    <div className="relative aspect-video bg-slate-100 overflow-hidden">
+                      {videoSrc ? (
+                        // Use Cloudinary's thumbnail generation: replace /upload/ with /upload/so_0/
+                        // and swap the extension to .jpg for a still-frame poster image.
+                        // Falls back to a video icon if the URL can't be transformed.
+                        (() => {
+                          const poster = videoSrc
+                            .replace('/video/upload/', '/video/upload/so_0,w_640/')
+                            .replace(/\.(mp4|webm|mov|avi)$/i, '.jpg');
+                          return (
+                            <img
+                              src={poster}
+                              alt={video.title || 'Video thumbnail'}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              loading="lazy"
+                              onError={(e) => {
+                                // If poster generation fails, show the video icon placeholder
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          );
+                        })()
+                      ) : video.thumbnail_url ? (
+                        <img
+                          src={video.thumbnail_url}
+                          alt={video.title || 'Video thumbnail'}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full flex items-center justify-center"
+                          style={{ background: `${info.brandColor}10` }}
+                        >
+                          <div
+                            className="w-16 h-16 rounded-full flex items-center justify-center"
+                            style={{ background: `${info.brandColor}20`, color: info.brandColor }}
+                          >
+                            {info.icon}
+                          </div>
+                        </div>
+                      )}
+                      {/* Play button overlay */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                          <FaPlay className="text-slate-800 ml-1" size={20} />
+                        </div>
+                      </div>
+                      {/* Platform badge */}
+                      <div
+                        className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
+                        style={{ background: info.brandColor }}
+                      >
+                        {info.icon}
+                        <span>{info.name}</span>
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-4">
+                      <h3 className="font-bold text-sm text-slate-800 line-clamp-2 mb-1">
+                        {video.title || 'Untitled Video'}
+                      </h3>
+                      {video.description && (
+                        <p className="text-xs text-slate-500 line-clamp-2 mb-2">
+                          {video.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(video.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        {videoSrc ? (
+                          <FaVideo className="text-slate-300" size={12} />
+                        ) : (
+                          <FaExternalLinkAlt className="text-slate-300 group-hover:text-slate-500 transition-colors" size={12} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : !isLoading ? (
+            <div
+              className="text-center py-16 rounded-3xl"
+              style={{
+                background: `${color}06`,
+                border: `1px dashed ${color}25`,
+              }}
+            >
+              <div
+                className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4"
+                style={{ background: `${color}10` }}
+              >
+                <FaPlay style={{ color: `${color}60` }} size={28} />
+              </div>
+              <p className="font-bold text-slate-500 text-sm">No videos posted yet</p>
+              <p className="text-slate-400 text-xs mt-1">
+                Videos from TikTok, YouTube, or uploaded files will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+            </div>
+          )}
+        </>
       )}
 
       {/* Upload Form Modal */}
@@ -398,250 +654,6 @@ const CommunityVideosTab: React.FC<Props> = ({
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Platform Filter */}
-      {platforms.length > 2 && (
-        <div className="flex gap-2 mb-5 flex-wrap">
-          {platforms.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setFilter(p)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                filter === p
-                  ? 'text-white shadow-md'
-                  : 'text-slate-600 bg-white border border-slate-200 hover:border-slate-300'
-              }`}
-              style={filter === p ? { background: color } : {}}
-            >
-              {p === 'all' ? 'All Videos' : getPlatformDetails(p).name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Videos Grid */}
-      {!isLoading && filteredVideos.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredVideos.map((video) => {
-            const info = getPlatformDetails(video.video_type === 'upload' ? 'upload' : video.platform);
-            const videoSrc = video.video_type === 'upload' ? video.video_file_url : null;
-            return (
-              <div
-                key={video.id}
-                className="group rounded-2xl overflow-hidden bg-white border border-slate-100 hover:border-slate-200 transition-all duration-300 hover:shadow-lg cursor-pointer relative"
-                onClick={() => setSelectedVideo(video)}
-              >
-                {/* Thumbnail / Preview */}
-                <div className="relative aspect-video bg-slate-100 overflow-hidden">
-                  {videoSrc ? (
-                    // Use Cloudinary's thumbnail generation: replace /upload/ with /upload/so_0/
-                    // and swap the extension to .jpg for a still-frame poster image.
-                    // Falls back to a video icon if the URL can't be transformed.
-                    (() => {
-                      const poster = videoSrc
-                        .replace('/video/upload/', '/video/upload/so_0,w_640/')
-                        .replace(/\.(mp4|webm|mov|avi)$/i, '.jpg');
-                      return (
-                        <img
-                          src={poster}
-                          alt={video.title || 'Video thumbnail'}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
-                          onError={(e) => {
-                            // If poster generation fails, show the video icon placeholder
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      );
-                    })()
-                  ) : video.thumbnail_url ? (
-                    <img
-                      src={video.thumbnail_url}
-                      alt={video.title || 'Video thumbnail'}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center"
-                      style={{ background: `${info.brandColor}10` }}
-                    >
-                      <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center"
-                        style={{ background: `${info.brandColor}20`, color: info.brandColor }}
-                      >
-                        {info.icon}
-                      </div>
-                    </div>
-                  )}
-                  {/* Play button overlay */}
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                      <FaPlay className="text-slate-800 ml-1" size={20} />
-                    </div>
-                  </div>
-                  {/* Platform badge */}
-                  <div
-                    className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-white text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
-                    style={{ background: info.brandColor }}
-                  >
-                    {info.icon}
-                    <span>{info.name}</span>
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="p-4">
-                  <h3 className="font-bold text-sm text-slate-800 line-clamp-2 mb-1">
-                    {video.title || 'Untitled Video'}
-                  </h3>
-                  {video.description && (
-                    <p className="text-xs text-slate-500 line-clamp-2 mb-2">
-                      {video.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">
-                      {new Date(video.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </span>
-                    {videoSrc ? (
-                      <FaVideo className="text-slate-300" size={12} />
-                    ) : (
-                      <FaExternalLinkAlt className="text-slate-300 group-hover:text-slate-500 transition-colors" size={12} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : !isLoading ? (
-        <div
-          className="text-center py-16 rounded-3xl"
-          style={{
-            background: `${color}06`,
-            border: `1px dashed ${color}25`,
-          }}
-        >
-          <div
-            className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: `${color}10` }}
-          >
-            <FaPlay style={{ color: `${color}60` }} size={28} />
-          </div>
-          <p className="font-bold text-slate-500 text-sm">No videos posted yet</p>
-          <p className="text-slate-400 text-xs mt-1">
-            Videos from TikTok, YouTube, or uploaded files will appear here.
-          </p>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
-        </div>
-      )}
-
-      {/* Inline Video Player — expands in-page, no dark letterbox backgrounds */}
-      {selectedVideo && (
-        <div ref={playerRef} className="mt-4 rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-black">
-          {/* Player Controls Bar */}
-          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-900">
-            {/* Prev */}
-            <button
-              type="button"
-              onClick={goToPrev}
-              className="flex items-center gap-1.5 text-white/60 hover:text-white transition-all group cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
-                <FaChevronLeft size={12} />
-              </div>
-              <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
-            </button>
-
-            {/* Title + Badge + Counter */}
-            <div className="flex-1 min-w-0 text-center">
-              <h2 className="text-xs sm:text-sm font-bold text-white truncate">
-                {selectedVideo.title || 'Untitled Video'}
-              </h2>
-              <div className="flex items-center justify-center gap-2 mt-0.5">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full">
-                  {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
-                </span>
-                <span className="text-[9px] font-medium text-white/30">
-                  {selectedVideoIndex + 1} / {filteredVideos.length}
-                </span>
-              </div>
-            </div>
-
-            {/* Close + Next */}
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                className="flex items-center gap-1.5 text-white/60 hover:text-white transition-all group cursor-pointer"
-              >
-                <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/70 transition-colors">Next</span>
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
-                  <FaChevronRight size={12} />
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-500/70 text-white/60 hover:text-white transition-all cursor-pointer"
-                title="Close player"
-              >
-                <FaTimes size={12} />
-              </button>
-            </div>
-          </div>
-
-          {/* Video — 16:9 aspect ratio, full width, no letterboxing */}
-          <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-            <div className="absolute inset-0">
-              {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
-                <video
-                  src={selectedVideo.video_file_url}
-                  controls
-                  autoPlay
-                  style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', background: '#000' }}
-                />
-              ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
-                <iframe
-                  src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
-                  style={{ width: '100%', height: '100%', display: 'block', border: 'none' }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={selectedVideo.title || 'Video'}
-                />
-              ) : (
-                <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                  <a
-                    href={selectedVideo.video_url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
-                  >
-                    <FaExternalLinkAlt size={16} />
-                    <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Description footer (only if present) */}
-          {selectedVideo.description && (
-            <div className="px-4 py-2.5 bg-slate-900/90 border-t border-white/5">
-              <p className="text-xs text-white/50 text-center">{selectedVideo.description}</p>
-            </div>
-          )}
         </div>
       )}
     </div>
