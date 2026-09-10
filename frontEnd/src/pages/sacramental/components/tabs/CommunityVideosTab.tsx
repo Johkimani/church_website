@@ -12,6 +12,7 @@ import {
   FaCloudUploadAlt,
   FaTrash,
 } from 'react-icons/fa';
+import cloudinary from '../../../../Configs/cloudinaryConfigs';
 import { apiClient } from '../../../../api/axiosInstance';
 import type { CommunityModule } from '../../context/CommunityDataContext';
 import '../../../Jumuiya/components/TabsSystem.css';
@@ -548,8 +549,17 @@ const CommunityVideosTab: React.FC<Props> = ({
                 <video
                   src={(() => {
                     const url = selectedVideo.video_file_url;
-                    if (url.includes('q_auto')) return url;
-                    return url.replace(/\/upload\/v(\d+)\//, '/upload/v$1/q_auto,f_auto/').replace(/\/upload\//, '/upload/q_auto,f_auto/');
+                    const match = url.match(/\/upload\/(?:v\d+\/)?(.+)/);
+                    if (match) {
+                      const publicId = match[1].replace(/\.\w+$/, '');
+                      return cloudinary.url(publicId, {
+                        resource_type: 'video',
+                        type: 'upload',
+                        sign_url: false,
+                        transformation: [{ quality: 'auto:good' }, { fetch_format: 'auto' }],
+                      });
+                    }
+                    return url;
                   })()}
                   controls
                   className="w-full h-full"
