@@ -69,17 +69,17 @@ export const getUploadSignature = async (req, res) => {
 export const saveUploadedVideo = async (req, res) => {
   try {
     const { moduleId } = req.params;
-    const { title, description, video_file_url, cloudinary_public_id } = req.body;
+    const { title, description, video_file_url, cloudinary_public_id, category } = req.body;
 
     if (!video_file_url || !cloudinary_public_id) {
       return res.status(400).json({ success: false, error: "video_file_url and cloudinary_public_id are required" });
     }
 
     const result = await pool.query(
-      `INSERT INTO community_module_videos (module_id, platform, video_file_url, video_type, cloudinary_public_id, title, description, posted_by)
-       VALUES ($1, 'upload', $2, 'upload', $3, $4, $5, $6)
+      `INSERT INTO community_module_videos (module_id, platform, video_file_url, video_type, cloudinary_public_id, title, description, category, posted_by)
+       VALUES ($1, 'upload', $2, 'upload', $3, $4, $5, $6, $7)
        RETURNING *`,
-      [moduleId, video_file_url, cloudinary_public_id, title || '', description || '', req.user?.name || req.user?.email || 'Admin']
+      [moduleId, video_file_url, cloudinary_public_id, title || '', description || '', category || 'general', req.user?.name || req.user?.email || 'Admin']
     );
 
     res.json({ success: true, video: result.rows[0] });
@@ -200,7 +200,7 @@ export const getCommunityModuleVideos = async (req, res) => {
 export const addCommunityModuleVideo = async (req, res) => {
   try {
     const { moduleId } = req.params;
-    const { platform, video_url, title, description } = req.body;
+    const { platform, video_url, title, description, category } = req.body;
 
     if (!platform || !video_url) {
       return res.status(400).json({ success: false, error: "platform and video_url are required" });
@@ -214,14 +214,15 @@ export const addCommunityModuleVideo = async (req, res) => {
     const normalizedUrl = normalizeVideoUrl(normalizedPlatform, video_url);
 
     const result = await pool.query(
-      `INSERT INTO community_module_videos (module_id, platform, video_url, title, description, thumbnail_url, posted_by, video_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'link')
+      `INSERT INTO community_module_videos (module_id, platform, video_url, title, description, category, thumbnail_url, posted_by, video_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'link')
        ON CONFLICT (module_id, video_url) DO UPDATE SET
          title = EXCLUDED.title,
          description = EXCLUDED.description,
+         category = EXCLUDED.category,
          thumbnail_url = EXCLUDED.thumbnail_url
        RETURNING *`,
-      [moduleId, normalizedPlatform, normalizedUrl, title || '', description || '', getThumbnailUrl(normalizedPlatform, normalizedUrl), req.user?.name || req.user?.email || 'Admin']
+      [moduleId, normalizedPlatform, normalizedUrl, title || '', description || '', category || 'general', getThumbnailUrl(normalizedPlatform, normalizedUrl), req.user?.name || req.user?.email || 'Admin']
     );
 
     res.json({ success: true, video: result.rows[0] });

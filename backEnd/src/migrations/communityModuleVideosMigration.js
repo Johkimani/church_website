@@ -92,5 +92,13 @@ export default async function communityModuleVideosMigration() {
     logger.warn("[videos migration] platform NOT NULL drop skipped:", e.message);
   }
 
+  // 8. Add category column for gallery-level video classification
+  try {
+    await pool.query(`ALTER TABLE community_module_videos ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'general'`);
+    logger.info("[videos migration] category column added.");
+  } catch (e) {
+    logger.warn("[videos migration] category column skipped:", e.message);
+  }
+
   logger.info("Community module videos migration complete.");
 }

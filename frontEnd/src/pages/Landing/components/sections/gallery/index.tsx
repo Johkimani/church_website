@@ -320,11 +320,32 @@ const GallerySection: React.FC = () => {
                 <Play size={48} strokeWidth={1} className="mb-4" />
                 <p className="text-stone-400 text-sm font-semibold">No videos uploaded yet</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {videos.map(video => {
-                  const embedUrl = video.video_type === 'link' ? getEmbedUrl(video.platform, video.video_url || '') : null;
-                  return (
+            ) : (() => {
+              const videoCategories = ['All', ...Array.from(new Set(videos.map(v => v.category || 'general')))];
+              const filteredVideos = filterCategory === 'All'
+                ? videos
+                : videos.filter(v => (v.category || 'general') === filterCategory);
+              return (
+                <>
+                  <div className="flex flex-wrap justify-center gap-2 mb-8">
+                    {videoCategories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setFilterCategory(cat)}
+                        className={`px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                          filterCategory === cat
+                            ? 'bg-stone-900 text-white border-stone-900 shadow-md'
+                            : 'bg-white text-stone-400 border-stone-200/80 hover:border-stone-300 hover:text-stone-600'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredVideos.map(video => {
+                      const embedUrl = video.video_type === 'link' ? getEmbedUrl(video.platform, video.video_url || '') : null;
+                      return (
                     <motion.div
                       key={video.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -371,9 +392,11 @@ const GallerySection: React.FC = () => {
                       </div>
                     </motion.div>
                   );
-                })}
-              </div>
-            )}
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </div>

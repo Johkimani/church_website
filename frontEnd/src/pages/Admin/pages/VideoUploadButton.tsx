@@ -6,9 +6,10 @@ interface VideoUploadButtonProps {
   moduleId: string;
   onUploadComplete: () => void;
   saving: boolean;
+  category?: string;
 }
 
-const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ moduleId, onUploadComplete, saving }) => {
+const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ moduleId, onUploadComplete, saving, category }) => {
   const [showModal, setShowModal] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -86,6 +87,7 @@ const VideoUploadButton: React.FC<VideoUploadButtonProps> = ({ moduleId, onUploa
         description,
         video_file_url: cloudinaryResult.secure_url,
         cloudinary_public_id: cloudinaryResult.public_id,
+        category: category || 'general',
       });
 
       setShowModal(false);

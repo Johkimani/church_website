@@ -64,8 +64,10 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
   const [videos, setVideos] = useState<any[]>([]);
   const [videosLoading, setVideosLoading] = useState(false);
   const [showAddLink, setShowAddLink] = useState(false);
-  const [linkForm, setLinkForm] = useState({ title: '', description: '', platform: 'youtube', video_url: '' });
+  const [linkForm, setLinkForm] = useState({ title: '', description: '', platform: 'youtube', video_url: '', category: 'general' });
   const [linkSaving, setLinkSaving] = useState(false);
+  const [videoCategory, setVideoCategory] = useState('general');
+  const VIDEO_CATEGORIES = ['general', 'choir', 'dancers', 'charismatic', 'jumuiya'];
   const MAX_GALLERY_VIDEOS = 7;
   const csaMainModuleId = 'csa_main';
 
@@ -185,9 +187,10 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
         video_url: linkForm.video_url,
         title: linkForm.title,
         description: linkForm.description,
+        category: linkForm.category || 'general',
       });
       setShowAddLink(false);
-      setLinkForm({ title: '', description: '', platform: 'youtube', video_url: '' });
+      setLinkForm({ title: '', description: '', platform: 'youtube', video_url: '', category: 'general' });
       loadVideos();
     } catch (err: any) {
       alert(err?.response?.data?.error || 'Failed to add video');
@@ -852,17 +855,27 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
       /* Videos Tab */
       <div className="space-y-4">
         {/* Videos Action Bar */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
             {videos.length}/{MAX_GALLERY_VIDEOS} videos uploaded
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={videoCategory}
+              onChange={e => setVideoCategory(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              {VIDEO_CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+              ))}
+            </select>
             {videos.length < MAX_GALLERY_VIDEOS && (
               <>
                 <VideoUploadButton
                   moduleId={csaMainModuleId}
                   onUploadComplete={loadVideos}
                   saving={false}
+                  category={videoCategory}
                 />
                 <button
                   onClick={() => setShowAddLink(true)}
@@ -905,6 +918,11 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
                     <span className="px-2 py-1 bg-black/60 backdrop-blur-md rounded-md text-[10px] uppercase tracking-widest font-black text-white">
                       {video.video_type === 'upload' ? 'FILE' : video.platform}
                     </span>
+                    {video.category && video.category !== 'general' && (
+                      <span className="px-2 py-1 bg-blue-500/80 backdrop-blur-md rounded-md text-[10px] uppercase tracking-widest font-black text-white">
+                        {video.category}
+                      </span>
+                    )}
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <div className="absolute top-3 right-3">
@@ -981,6 +999,18 @@ export default function GalleryManager({ jumuiyaId, jumuiyaInfo }: Props = {}) {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     placeholder="Short description (optional)"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Category</label>
+                  <select
+                    value={linkForm.category}
+                    onChange={e => setLinkForm({ ...linkForm, category: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    {VIDEO_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
