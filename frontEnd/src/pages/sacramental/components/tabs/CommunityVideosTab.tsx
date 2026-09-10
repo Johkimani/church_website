@@ -545,7 +545,7 @@ const CommunityVideosTab: React.FC<Props> = ({
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
                 <video
-                  src={`${selectedVideo.video_file_url.replace('/upload/', '/upload/q_auto,f_auto/')}`}
+                  src={selectedVideo.video_file_url.includes('/upload/q_auto') ? selectedVideo.video_file_url : selectedVideo.video_file_url.replace('/upload/', '/upload/q_auto,f_auto/')}
                   controls
                   className="w-full h-full"
                   preload="auto"
