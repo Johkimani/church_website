@@ -144,13 +144,30 @@ const CommunityVideosTab: React.FC<Props> = ({
     setSelectedVideo(null);
   }, []);
 
+  const selectedVideoIndex = selectedVideo ? filteredVideos.findIndex(v => v.id === selectedVideo.id) : -1;
+
+  const goToNext = useCallback(() => {
+    if (selectedVideoIndex < 0 || filteredVideos.length === 0) return;
+    const nextIdx = (selectedVideoIndex + 1) % filteredVideos.length;
+    setSelectedVideo(filteredVideos[nextIdx]);
+  }, [selectedVideoIndex, filteredVideos]);
+
+  const goToPrev = useCallback(() => {
+    if (selectedVideoIndex < 0 || filteredVideos.length === 0) return;
+    const prevIdx = (selectedVideoIndex - 1 + filteredVideos.length) % filteredVideos.length;
+    setSelectedVideo(filteredVideos[prevIdx]);
+  }, [selectedVideoIndex, filteredVideos]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (selectedVideo && e.key === 'Escape') closeModal();
+      if (!selectedVideo) return;
+      if (e.key === 'Escape') closeModal();
+      if (e.key === 'ArrowRight') goToNext();
+      if (e.key === 'ArrowLeft') goToPrev();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedVideo, closeModal]);
+  }, [selectedVideo, closeModal, goToNext, goToPrev]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -529,6 +546,19 @@ const CommunityVideosTab: React.FC<Props> = ({
         >
           {/* Header Bar */}
           <div className="shrink-0 flex items-center justify-between gap-4 px-4 md:px-8 py-3 bg-white/5 backdrop-blur-xl border-b border-white/10 z-10">
+            {/* Prev */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+              className="flex items-center gap-2 text-white/60 hover:text-white transition-all group shrink-0 cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <FaTimes size={14} className="rotate-45" />
+              </div>
+              <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Prev</span>
+            </button>
+
+            {/* Title + Badge + Counter */}
             <div className="flex-1 min-w-0 text-center">
               <h2 className="text-sm md:text-base font-bold text-white truncate">
                 {selectedVideo.title || 'Untitled Video'}
@@ -538,17 +568,31 @@ const CommunityVideosTab: React.FC<Props> = ({
                   {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
                 </span>
                 <span className="text-[9px] font-medium text-white/30">
-                  {new Date(selectedVideo.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                  {selectedVideoIndex + 1}/{filteredVideos.length}
                 </span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={closeModal}
-              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all shrink-0 cursor-pointer"
-            >
-              <FaTimes size={16} />
-            </button>
+
+            {/* Close + Next */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white/60 hover:text-white transition-all cursor-pointer"
+              >
+                <FaTimes size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                className="flex items-center gap-2 text-white/60 hover:text-white transition-all group cursor-pointer"
+              >
+                <span className="hidden lg:inline text-[10px] font-black uppercase tracking-[0.4em] text-white/40 group-hover:text-white/70 transition-colors">Next</span>
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all">
+                  <FaTimes size={14} className="-rotate-45" />
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* Video Canvas */}
