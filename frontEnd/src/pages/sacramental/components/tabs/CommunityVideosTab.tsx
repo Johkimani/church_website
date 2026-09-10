@@ -12,11 +12,7 @@ import {
   FaCloudUploadAlt,
   FaTrash,
 } from 'react-icons/fa';
-import cloudinary from 'cloudinary';
 import { apiClient } from '../../../../api/axiosInstance';
-cloudinary.v2.config({
-  cloud_name: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dnelprtgz',
-});
 
 interface Props {
   moduleId: string;
@@ -550,17 +546,8 @@ const CommunityVideosTab: React.FC<Props> = ({
                 <video
                   src={(() => {
                     const url = selectedVideo.video_file_url;
-                    const match = url.match(/\/upload\/(?:v\d+\/)?(.+)/);
-                    if (match) {
-                      const publicId = match[1].replace(/\.\w+$/, '');
-                      return cloudinary.v2.url(publicId, {
-                        resource_type: 'video',
-                        type: 'upload',
-                        sign_url: false,
-                        transformation: [{ quality: 'auto:good' }, { fetch_format: 'auto' }],
-                      });
-                    }
-                    return url;
+                    if (!url || !url.includes('/upload/')) return url;
+                    return url.replace('/upload/', '/upload/q_auto,f_auto/');
                   })()}
                   controls
                   className="w-full h-full"
