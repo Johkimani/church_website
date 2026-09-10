@@ -547,7 +547,7 @@ const CommunityVideosTab: React.FC<Props> = ({
                   src={(() => {
                     const url = selectedVideo.video_file_url;
                     if (!url || !url.includes('/upload/')) return url;
-                    return url.replace('/upload/', '/upload/q_auto,f_auto/');
+                    return url.replace('/upload/', '/upload/q_auto/');
                   })()}
                   controls
                   className="w-full h-full"
