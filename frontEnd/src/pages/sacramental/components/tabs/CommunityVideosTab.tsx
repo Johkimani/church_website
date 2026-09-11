@@ -337,41 +337,37 @@ const CommunityVideosTab: React.FC<Props> = ({
           </div>
 
           {/* Video — fills all remaining space */}
-          <div className="flex-1 min-h-0 flex items-center justify-center bg-white">
-            <div className="w-full h-full flex items-center justify-center">
-              {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
-                <video
-                  key={selectedVideo.id}
-                  src={selectedVideo.video_file_url}
-                  controls
-                  autoPlay
-                  className="w-full h-full"
-                />
-              ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
-                <div className="w-full h-full">
-                  <iframe
-                    key={selectedVideo.id}
-                    src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    title={selectedVideo.title || 'Video'}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <a
-                    href={selectedVideo.video_url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-6 py-3 rounded-full bg-slate-800 text-white font-bold text-sm shadow-lg hover:scale-105 transition-transform"
-                  >
-                    <FaExternalLinkAlt size={16} />
-                    <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
-                  </a>
-                </div>
-              )}
-            </div>
+          <div className="flex-1 min-h-0 overflow-hidden bg-white">
+            {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
+              <video
+                key={selectedVideo.id}
+                src={selectedVideo.video_file_url}
+                controls
+                autoPlay
+                className="w-full h-full block"
+              />
+            ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
+              <iframe
+                key={selectedVideo.id}
+                src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
+                className="w-full h-full block"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allowFullScreen
+                title={selectedVideo.title || 'Video'}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-white">
+                <a
+                  href={selectedVideo.video_url || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-6 py-3 rounded-full bg-slate-800 text-white font-bold text-sm shadow-lg hover:scale-105 transition-transform"
+                >
+                  <FaExternalLinkAlt size={16} />
+                  <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
+                </a>
+              </div>
+            )}
           </div>
         </div>
       ) : (
