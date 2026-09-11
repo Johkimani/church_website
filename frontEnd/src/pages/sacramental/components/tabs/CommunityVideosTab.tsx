@@ -287,7 +287,7 @@ const CommunityVideosTab: React.FC<Props> = ({
     >
       {selectedVideo ? (
         /* Video Player Modal — Fullscreen overlay */
-        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--bg, #f8fafc)' }}>
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-50">
           {/* Controls bar */}
           <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 px-3 md:px-6 py-3 bg-white border-b border-slate-200">
             <button
@@ -337,14 +337,14 @@ const CommunityVideosTab: React.FC<Props> = ({
           </div>
 
           {/* Video — fills all remaining space */}
-          <div className="flex-1 min-h-0 overflow-hidden bg-white">
+          <div className="flex-1 overflow-hidden bg-slate-50">
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <video
                 key={selectedVideo.id}
                 src={selectedVideo.video_file_url}
                 controls
                 autoPlay
-                className="w-full h-full block"
+                className="w-full h-full block object-contain"
               />
             ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
               <iframe
