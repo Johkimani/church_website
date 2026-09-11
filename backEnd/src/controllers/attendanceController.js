@@ -210,7 +210,7 @@ export const getTallyContext = async (req, res) => {
     const date = normalizeDate(req.query.date) || todayStr();
     const ctx = await getActivityForDate(date);
 
-    const [sgResult, memberCounts, yearCounts, registerMap, activeNovenas] = await Promise.all([
+    const [sgResult, memberCounts, yearCounts, registerMap, activeNovenas, semester] = await Promise.all([
       pool.query(
         `SELECT group_id, name, slug, color FROM sub_groups
          WHERE slug <> ALL($1)
@@ -228,7 +228,14 @@ export const getTallyContext = async (req, res) => {
          ORDER BY start_date ASC
          LIMIT 20`
       ),
+      getCurrentSemester(),
     ]);
+
+    const inSemester = isDateInSemester(date, semester);
+    const hasExisting = ctx.isTallyDay ? await pool.query(
+      `SELECT 1 FROM attendance_tallies WHERE tally_date = $1 LIMIT 1`, [date]
+    ) : { rows: [] };
+    const canSave = ctx.isTallyDay && (inSemester || hasExisting.rows.length > 0);
 
     const jumuiyas = sgResult.rows.map((row) => {
       const counts = memberCounts[row.group_id] || { total_members: 0, active_members: 0 };
@@ -248,7 +255,11 @@ export const getTallyContext = async (req, res) => {
 
     res.json({
       success: true,
-      data: { date, ...ctx, active_novenas: activeNovenas.rows, jumuiyas, years },
+      data: {
+        date, ...ctx, active_novenas: activeNovenas.rows, jumuiyas, years,
+        canSave,
+        semester: semester ? { start_date: semester.start_date, end_date: semester.end_date } : null,
+      },
     });
   } catch (error) {
     console.error("getTallyContext error:", error.message);
