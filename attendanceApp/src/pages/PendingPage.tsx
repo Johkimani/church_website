@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RefreshCw, WifiOff, CheckCircle2, Clock, Trash2 } from "lucide-react";
-import { getAllSessions, syncPending } from "../sync/sync";
+import { getAllSessions, syncPending, pendingCount } from "../sync/sync";
 import { db, getSession } from "../db/db";
 import type { AttendanceSession } from "../db/db";
 
@@ -31,6 +31,16 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     setStatus(null);
     try {
       const t = (await getSession("token")) || token;
+      if (!t) {
+        const count = await pendingCount();
+        if (count > 0) {
+          setStatus({ ok: false, text: `You have ${count} unsynced record${count === 1 ? "" : "s"}. Log in online to sync them to the server.` });
+        } else {
+          setStatus({ ok: true, text: "Nothing to sync" });
+        }
+        load();
+        return;
+      }
       const errors: string[] = [];
       const res = await syncPending(t, (_s, msg) => {
         errors.push(`${_s.date}: ${msg}`);

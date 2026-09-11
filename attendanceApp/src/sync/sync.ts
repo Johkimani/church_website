@@ -1,4 +1,4 @@
-import { db, type AttendanceSession } from "../db/db";
+import { db, getSession, type AttendanceSession } from "../db/db";
 import { pushSession, getApiErrorMessage, type SessionPayload } from "../api/client";
 
 export interface SyncResult {
@@ -15,10 +15,16 @@ export async function syncPending(
   token: string,
   onError?: (session: AttendanceSession, message: string) => void
 ): Promise<SyncResult> {
-  if (!token) return { pushed: 0, failed: 0 };
-
   const pending = await db.sessions.filter((s) => !s.syncedAt).toArray();
   if (pending.length === 0) return { pushed: 0, failed: 0 };
+
+  // If the passed token is empty (offline mode), try to read a fresh one from
+  // IndexedDB — the coordinator may have re-authenticated online since.
+  let auth = token;
+  if (!auth) {
+    auth = (await getSession("token")) || "";
+  }
+  if (!auth) return { pushed: 0, failed: 0 };
 
   let pushed = 0;
   let failed = 0;
@@ -26,7 +32,7 @@ export async function syncPending(
   for (const s of pending) {
     try {
       const isYear = s.dimension === "year";
-      await pushSession(token, {
+      await pushSession(auth, {
         date: s.date,
         dimension: isYear ? "year" : "jumuiya",
         counts: s.counts.map((c) =>

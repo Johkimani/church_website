@@ -70,10 +70,10 @@ export default function App() {
 
   // Auto-sync the moment connectivity returns (and on first load when online).
   useEffect(() => {
-    if (!token || network !== "online") return;
+    if (network !== "online") return;
     let cancelled = false;
     const doSync = async () => {
-      const res = await syncPending(token);
+      const res = await syncPending(token || "");
       if (cancelled) return;
       if (res.pushed > 0) {
         setSyncMsg({
@@ -87,10 +87,19 @@ export default function App() {
           text: `${res.failed} record${res.failed === 1 ? "" : "s"} failed to sync. Open Saved tab to retry.`,
         });
         refreshPendingCount();
+      } else if (!token) {
+        const { pendingCount: pc } = await import("./sync/sync");
+        const count = await pc();
+        if (count > 0) {
+          setSyncMsg({
+            ok: false,
+            text: `${count} unsynced record${count === 1 ? "" : "s"}. Log in online to sync them.`,
+          });
+        }
       }
     };
     doSync();
-    const timers = window.setTimeout(() => setSyncMsg(null), 4000);
+    const timers = window.setTimeout(() => setSyncMsg(null), 6000);
     return () => {
       cancelled = true;
       clearTimeout(timers);

@@ -286,38 +286,39 @@ const CommunityVideosTab: React.FC<Props> = ({
       style={{ '--jumuiya-color': color } as React.CSSProperties}
     >
       {selectedVideo ? (
-        /* Video Player View — The ONLY view shown when a video is open */
-        <div ref={playerRef} className="animate-fade-in space-y-4">
-          {/* Top Bar: Back button, prev/next navigation, counter, close */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
+        /* Video Player Modal — Fullscreen overlay */
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--bg, #f8fafc)' }}>
+          {/* Controls bar */}
+          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 px-3 md:px-6 py-3 bg-white border-b border-slate-200">
             <button
               type="button"
               onClick={closeModal}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs font-bold cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm transition text-xs font-bold cursor-pointer"
             >
               <FaArrowLeft size={12} />
-              <span>Back to all videos</span>
+              <span className="hidden sm:inline">Back to videos</span>
+              <span className="sm:hidden">Back</span>
             </button>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={goToPrev}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs font-bold cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm transition text-xs font-bold cursor-pointer"
                 title="Previous video"
               >
                 <FaChevronLeft size={12} />
                 <span className="hidden sm:inline">Prev</span>
               </button>
 
-              <span className="text-xs font-bold text-slate-500 px-2">
+              <span className="text-xs font-bold text-slate-500 px-1">
                 {selectedVideoIndex + 1} / {filteredVideos.length}
               </span>
 
               <button
                 type="button"
                 onClick={goToNext}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-xs font-bold cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm transition text-xs font-bold cursor-pointer"
                 title="Next video"
               >
                 <span className="hidden sm:inline">Next</span>
@@ -327,7 +328,7 @@ const CommunityVideosTab: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={closeModal}
-                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-red-500 hover:text-white text-slate-500 transition flex items-center justify-center cursor-pointer ml-1"
+                className="w-9 h-9 rounded-xl bg-white border border-slate-200 hover:bg-red-500 hover:border-red-500 hover:text-white text-slate-500 shadow-sm transition flex items-center justify-center cursor-pointer"
                 title="Close player"
               >
                 <FaTimes size={13} />
@@ -335,58 +336,42 @@ const CommunityVideosTab: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Inline Video Player — full width 16:9 box */}
-          <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-black">
-            {/* Video title bar */}
-            <div className="flex items-center justify-between gap-2 px-4 py-3 bg-slate-900 border-b border-white/10">
-              <h2 className="text-sm sm:text-base font-bold text-white truncate">
-                {selectedVideo.title || 'Untitled Video'}
-              </h2>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-full shrink-0">
-                {selectedVideo.video_type === 'upload' ? 'Uploaded' : getPlatformDetails(selectedVideo.platform).name}
-              </span>
-            </div>
-
-            {/* Video — 16:9 aspect ratio, full width, no letterboxing */}
-            <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-              <div className="absolute inset-0">
-                {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
-                  <video
-                    src={selectedVideo.video_file_url}
-                    controls
-                    autoPlay
-                    style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', background: '#000' }}
-                  />
-                ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
+          {/* Video — fills all remaining space */}
+          <div className="flex-1 min-h-0 flex items-center justify-center bg-white">
+            <div className="w-full h-full flex items-center justify-center">
+              {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
+                <video
+                  key={selectedVideo.id}
+                  src={selectedVideo.video_file_url}
+                  controls
+                  autoPlay
+                  className="w-full h-full"
+                />
+              ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (
+                <div className="w-full h-full">
                   <iframe
+                    key={selectedVideo.id}
                     src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
-                    style={{ width: '100%', height: '100%', display: 'block', border: 'none' }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
                     title={selectedVideo.title || 'Video'}
                   />
-                ) : (
-                  <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                    <a
-                      href={selectedVideo.video_url || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-800 font-bold text-sm shadow-lg hover:scale-105 transition-transform"
-                    >
-                      <FaExternalLinkAlt size={16} />
-                      <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <a
+                    href={selectedVideo.video_url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-6 py-3 rounded-full bg-slate-800 text-white font-bold text-sm shadow-lg hover:scale-105 transition-transform"
+                  >
+                    <FaExternalLinkAlt size={16} />
+                    <span>Watch on {getPlatformDetails(selectedVideo.platform).name}</span>
+                  </a>
+                </div>
+              )}
             </div>
-
-            {/* Description footer (only if present) */}
-            {selectedVideo.description && (
-              <div className="px-5 py-3.5 bg-slate-900/95 border-t border-white/5">
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{selectedVideo.description}</p>
-              </div>
-            )}
           </div>
         </div>
       ) : (
