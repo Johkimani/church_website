@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import {
   FaTiktok,
   FaYoutube,
@@ -116,14 +117,7 @@ const CommunityVideosTab: React.FC<Props> = ({
   const [uploadStatus, setUploadStatus] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const playerRef = useRef<HTMLDivElement>(null);
   const [maxVideos, setMaxVideos] = useState(MAX_VIDEOS);
-
-  useEffect(() => {
-    if (selectedVideo && playerRef.current) {
-      playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [selectedVideo]);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -285,9 +279,9 @@ const CommunityVideosTab: React.FC<Props> = ({
       className="tab-system-content"
       style={{ '--jumuiya-color': color } as React.CSSProperties}
     >
-      {selectedVideo ? (
+      {selectedVideo ? ReactDOM.createPortal(
         /* Video Player Modal — Fullscreen overlay */
-        <div className="fixed inset-0 z-50 flex flex-col bg-slate-50">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-50">
           {/* Controls bar */}
           <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 px-3 md:px-6 py-3 bg-white border-b border-slate-200">
             <button
@@ -337,7 +331,7 @@ const CommunityVideosTab: React.FC<Props> = ({
           </div>
 
           {/* Video — fills all remaining space */}
-          <div className="flex-1 overflow-hidden bg-slate-50">
+          <div className="flex-1 min-h-0 overflow-hidden bg-slate-50">
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <video
                 key={selectedVideo.id}
@@ -350,7 +344,7 @@ const CommunityVideosTab: React.FC<Props> = ({
               <iframe
                 key={selectedVideo.id}
                 src={getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '')!}
-                className="w-full h-full block"
+                className="w-full h-full block border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowFullScreen
                 title={selectedVideo.title || 'Video'}
@@ -369,7 +363,8 @@ const CommunityVideosTab: React.FC<Props> = ({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.getElementById('modal-root')!
       ) : (
         /* Video List & Grid View — shown when no video is playing */
         <>
@@ -559,8 +554,8 @@ const CommunityVideosTab: React.FC<Props> = ({
       )}
 
       {/* Upload Form Modal */}
-      {showUploadForm && uploadFile && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => !isUploading && setShowUploadForm(false)}>
+      {showUploadForm && uploadFile && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4" onClick={() => !isUploading && setShowUploadForm(false)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-slate-800">Upload Video</h3>
@@ -635,7 +630,8 @@ const CommunityVideosTab: React.FC<Props> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.getElementById('modal-root')!
       )}
     </div>
   );
