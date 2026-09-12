@@ -7,37 +7,29 @@ import {
   Trash2,
   History,
   ClipboardCheck,
-  AlertTriangle,
-  Loader2,
 } from "lucide-react";
 import {
   getAllSessions,
   getSyncedSessions,
   syncPending,
   pendingCount,
-  recordedCount,
   deleteSession,
   getAuthToken,
 } from "../sync/sync";
 import { checkSessionExists } from "../api/client";
-import { db } from "../db/db";
 import type { AttendanceSession } from "../db/db";
 
 type SavedTab = "pending" | "recorded";
+
+const RECORDED_LIMIT = 3;
 
 interface Props {
   token: string;
   pending: number;
   onSynced: (n: number) => void;
-  onRecordedCountChange?: (n: number) => void;
 }
 
-export default function PendingPage({
-  token,
-  pending,
-  onSynced,
-  onRecordedCountChange,
-}: Props) {
+export default function PendingPage({ token, pending, onSynced }: Props) {
   const [tab, setTab] = useState<SavedTab>("pending");
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [synced, setSynced] = useState<AttendanceSession[]>([]);
@@ -55,7 +47,6 @@ export default function PendingPage({
     ]);
     setSessions(allSessions);
     setSynced(allSynced);
-    onRecordedCountChange?.(allSynced.length);
     setLoading(false);
   };
 
@@ -116,51 +107,41 @@ export default function PendingPage({
     }
   };
 
-  const removePending = async (id: string) => {
-    if (!confirm("Delete this saved date?")) return;
-    await db.sessions.delete(id);
-    load();
-  };
-
   const removeSynced = async (s: AttendanceSession) => {
-    // If online, verify the session actually exists on the server before deleting
     if (navigator.onLine) {
       const exists = await checkSessionExists(s.date);
       if (!exists) {
-        if (!confirm(
-          "This session was NOT found on the server. " +
-          "It may have failed to sync. Delete it from your device anyway?"
-        )) return;
+        if (
+          !confirm(
+            "This session was NOT found on the server. " +
+              "It may have failed to sync. Delete it from your device anyway?"
+          )
+        )
+          return;
       } else {
-        if (!confirm(
-          `Delete "${s.date}" from your device? ` +
-          "The server copy is safe — you're only removing the local record."
-        )) return;
+        if (
+          !confirm(
+            `Delete "${s.date}" from your device? ` +
+              "The server copy is safe — you're only removing the local record."
+          )
+        )
+          return;
       }
     } else {
-      if (!confirm(
-        `You're offline. Delete "${s.date}" from your device? ` +
-        "Make sure it has already synced."
-      )) return;
+      if (
+        !confirm(
+          `You're offline. Delete "${s.date}" from your device? ` +
+            "Make sure it has already synced."
+        )
+      )
+        return;
     }
     await deleteSession(s.sessionId);
     load();
   };
 
-  const clearAll = async () => {
-    const pendingSessions = sessions.filter((s) => !s.syncedAt);
-    if (pendingSessions.length === 0) {
-      setStatus({ ok: true, text: "No pending dates to clear" });
-      return;
-    }
-    if (!confirm(
-      `Delete all ${pendingSessions.length} unsynced date${pendingSessions.length === 1 ? "" : "s"}? ` +
-      "Synced records will be kept."
-    )) return;
-    await Promise.all(pendingSessions.map((s) => db.sessions.delete(s.sessionId)));
-    load();
-    onSynced(0);
-  };
+  const pendingSessions = sessions.filter((s) => !s.syncedAt);
+  const latestSynced = synced.slice(0, RECORDED_LIMIT);
 
   return (
     <div className="space-y-4">
@@ -188,15 +169,6 @@ export default function PendingPage({
           <RefreshCw size={18} className={syncing ? "spin" : ""} />
           {syncing ? "Syncing…" : "Sync now"}
         </button>
-        {sessions.length > 0 && (
-          <button
-            className="btn btn-ghost btn-block"
-            onClick={clearAll}
-            style={{ marginTop: 8 }}
-          >
-            <Trash2 size={16} /> Clear unsynced dates
-          </button>
-        )}
         {status && (
           <div
             className={`banner ${status.ok ? "online" : "error"}`}
@@ -208,10 +180,7 @@ export default function PendingPage({
       </div>
 
       {/* Sub-tabs */}
-      <div
-        className="recorded-by-toggle"
-        style={{ display: "flex", gap: 8 }}
-      >
+      <div className="recorded-by-toggle" style={{ display: "flex", gap: 8 }}>
         <button
           className={tab === "pending" ? "active" : ""}
           onClick={() => setTab("pending")}
@@ -279,8 +248,8 @@ export default function PendingPage({
           </p>
         </div>
       ) : tab === "pending" ? (
-        /* Pending tab — unsynced sessions */
-        sessions.length === 0 ? (
+        /* ── Pending tab — full tally details ── */
+        pendingSessions.length === 0 ? (
           <div className="card">
             <div
               style={{
@@ -293,55 +262,77 @@ export default function PendingPage({
                 size={28}
                 style={{ margin: "0 auto 8px", opacity: 0.5 }}
               />
-              <p style={{ margin: 0, fontSize: 14 }}>No saved dates yet.</p>
+              <p style={{ margin: 0, fontSize: 14 }}>
+                No unsynced dates — you're all up to date.
+              </p>
             </div>
           </div>
         ) : (
-          <div className="card">
-            <h2>History</h2>
-            <div>
-              {sessions.map((s) => (
-                <div key={s.sessionId} className="record-row">
-                  <div style={{ flex: 1 }}>
-                    <strong>
-                      {new Date(s.date + "T00:00:00").toLocaleDateString()}
-                    </strong>
-                    <div style={{ color: "var(--muted)", fontSize: 12 }}>
-                      {s.activityLabel} ·{" "}
-                      {s.counts.reduce((t, c) => t + c.count, 0)} attendees
-                      across {s.counts.length}{" "}
-                      {s.dimension === "year" ? "year group" : "jumuiya"}
-                      {s.counts.length > 1 ? "s" : ""}
-                    </div>
-                  </div>
-                  <span className={`chip ${s.syncedAt ? "synced" : "pending"}`}>
-                    {s.syncedAt ? (
-                      <CheckCircle2 size={12} />
-                    ) : (
-                      <Clock size={12} />
+          pendingSessions.map((s) => (
+            <div key={s.sessionId} className="card">
+              <div
+                className="flex"
+                style={{
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: 15 }}>
+                    {new Date(s.date + "T00:00:00").toLocaleDateString(
+                      undefined,
+                      { weekday: "short", month: "short", day: "numeric" }
                     )}
-                    {s.syncedAt ? "Synced" : "Pending"}
-                  </span>
-                  <button
-                    onClick={() => removePending(s.sessionId)}
-                    style={{
-                      border: 0,
-                      background: "transparent",
-                      color: "var(--red)",
-                      cursor: "pointer",
-                      padding: 4,
-                    }}
-                    aria-label="Delete"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  </strong>
+                  <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                    {s.activityLabel} · recorded by {s.recordedBy}
+                  </div>
                 </div>
-              ))}
+                <span className="chip pending">
+                  <Clock size={12} /> Pending
+                </span>
+              </div>
+              {/* Tally breakdown */}
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+                {s.counts.map((c, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "4px 0",
+                      fontSize: 13,
+                    }}
+                  >
+                    <span style={{ color: "var(--ink)" }}>
+                      {s.dimension === "year"
+                        ? `Year ${c.year}`
+                        : c.jumuiyaName || c.jumuiyaId || "Unknown"}
+                    </span>
+                    <strong>{c.count}</strong>
+                  </div>
+                ))}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "6px 0 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    borderTop: "1px solid var(--line)",
+                    marginTop: 4,
+                  }}
+                >
+                  <span>Total</span>
+                  <span>{s.counts.reduce((t, c) => t + c.count, 0)}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          ))
         )
-      ) : /* Recorded tab — synced sessions with delete */
-      synced.length === 0 ? (
+      ) : /* ── Recorded tab — last 3 synced ── */
+      latestSynced.length === 0 ? (
         <div className="card">
           <div
             style={{
@@ -358,32 +349,38 @@ export default function PendingPage({
               No recorded dates yet.
             </p>
             <p style={{ margin: "4px 0 0", fontSize: 12 }}>
-              Synced tallies will appear here for your records.
+              Synced tallies appear here for quick reference.
             </p>
           </div>
         </div>
       ) : (
         <div className="card">
-          <h2>Recorded Dates</h2>
+          <h2>Recently Synced</h2>
           <p className="sub">
-            Verified synced tallies. Delete once you've confirmed they match the
-            main site.
+            Last {latestSynced.length} tallies on the main site. Delete once
+            you've verified them.
           </p>
           <div>
-            {synced.map((s) => (
+            {latestSynced.map((s) => (
               <div key={s.sessionId} className="record-row">
                 <div style={{ flex: 1 }}>
                   <strong>
-                    {new Date(s.date + "T00:00:00").toLocaleDateString()}
+                    {new Date(s.date + "T00:00:00").toLocaleDateString(
+                      undefined,
+                      { weekday: "short", month: "short", day: "numeric" }
+                    )}
                   </strong>
                   <div style={{ color: "var(--muted)", fontSize: 12 }}>
                     {s.activityLabel} ·{" "}
-                    {s.counts.reduce((t, c) => t + c.count, 0)} attendees across{" "}
-                    {s.counts.length}{" "}
-                    {s.dimension === "year" ? "year group" : "jumuiya"}
-                    {s.counts.length > 1 ? "s" : ""}
+                    {s.counts.reduce((t, c) => t + c.count, 0)} total
                   </div>
-                  <div style={{ color: "var(--green)", fontSize: 11, marginTop: 2 }}>
+                  <div
+                    style={{
+                      color: "var(--green)",
+                      fontSize: 11,
+                      marginTop: 2,
+                    }}
+                  >
                     Synced{" "}
                     {s.syncedAt
                       ? new Date(s.syncedAt).toLocaleDateString()
@@ -391,8 +388,7 @@ export default function PendingPage({
                   </div>
                 </div>
                 <span className="chip synced">
-                  <CheckCircle2 size={12} />
-                  Recorded
+                  <CheckCircle2 size={12} /> Recorded
                 </span>
                 <button
                   onClick={() => removeSynced(s)}
@@ -410,6 +406,18 @@ export default function PendingPage({
               </div>
             ))}
           </div>
+          {synced.length > RECORDED_LIMIT && (
+            <p
+              style={{
+                color: "var(--muted)",
+                fontSize: 11,
+                textAlign: "center",
+                margin: "8px 0 0",
+              }}
+            >
+              + {synced.length - RECORDED_LIMIT} more on the main site
+            </p>
+          )}
         </div>
       )}
     </div>
