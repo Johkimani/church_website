@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import {
   FaTiktok,
@@ -8,10 +8,7 @@ import {
   FaTimes,
   FaPlay,
   FaExternalLinkAlt,
-  FaUpload,
   FaVideo,
-  FaCloudUploadAlt,
-  FaTrash,
   FaChevronLeft,
   FaChevronRight,
   FaArrowLeft,
@@ -96,7 +93,11 @@ const getEmbedUrl = (platform: string, url: string): string | null => {
   return null;
 };
 
-const MAX_VIDEOS = 7;
+/** Force H.264 MP4 encoding via Cloudinary delivery transformation */
+const forceH264 = (url: string): string => {
+  if (!url) return url;
+  return url.replace('/video/upload/', '/upload/video_codec_h264,format_mp4/');
+};
 
 const CommunityVideosTab: React.FC<Props> = ({
   moduleId,
@@ -108,16 +109,6 @@ const CommunityVideosTab: React.FC<Props> = ({
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
-  const [showUploadForm, setShowUploadForm] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadTitle, setUploadTitle] = useState('');
-  const [uploadDescription, setUploadDescription] = useState('');
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState('');
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [maxVideos, setMaxVideos] = useState(MAX_VIDEOS);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -125,7 +116,6 @@ const CommunityVideosTab: React.FC<Props> = ({
       try {
         const res = await apiClient.get(`/community-videos/${moduleId}/videos`);
         setVideos(res.data?.videos || []);
-        if (res.data?.maxVideos) setMaxVideos(res.data.maxVideos);
       } catch {
         setVideos([]);
       } finally {
@@ -141,8 +131,6 @@ const CommunityVideosTab: React.FC<Props> = ({
     if (filter === 'upload') return v.video_type === 'upload';
     return v.platform.toLowerCase() === filter;
   });
-
-  const isAtMax = videos.length >= maxVideos;
 
   const closeModal = useCallback(() => {
     setSelectedVideo(null);
@@ -173,104 +161,7 @@ const CommunityVideosTab: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', handler);
   }, [selectedVideo, closeModal, goToNext, goToPrev]);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('video/')) {
-      setUploadFile(file);
-      setShowUploadForm(true);
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadFile(file);
-      setShowUploadForm(true);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!uploadFile || isUploading) return;
-
-    setIsUploading(true);
-    setUploadProgress(0);
-    setUploadStatus('Requesting upload signature...');
-
-    try {
-      // Step 1: Get signed upload params from backend
-      const sigRes = await apiClient.get(`/community-videos/${moduleId}/videos/signature`);
-      const { signature, timestamp, folder, public_id, api_key, cloud_name, resource_type } = sigRes.data;
-
-      // Step 2: Upload directly to Cloudinary from browser
-      setUploadStatus('Uploading to Cloudinary...');
-      const formData = new FormData();
-      formData.append('file', uploadFile);
-      formData.append('api_key', api_key);
-      formData.append('timestamp', String(timestamp));
-      formData.append('signature', signature);
-      formData.append('folder', folder);
-      formData.append('public_id', public_id);
-      if (resource_type) formData.append('resource_type', resource_type);
-
-      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`;
-
-      const xhr = new XMLHttpRequest();
-      const cloudinaryResult = await new Promise<any>((resolve, reject) => {
-        xhr.open('POST', cloudinaryUrl);
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            setUploadProgress(percent);
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
-            let errMsg = `Cloudinary upload failed: ${xhr.statusText}`;
-            try { errMsg = JSON.parse(xhr.responseText)?.error?.message || errMsg; } catch {}
-            reject(new Error(errMsg));
-          }
-        };
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.send(formData);
-      });
-
-      // Step 3: Save metadata to backend
-      setUploadStatus('Saving video details...');
-      setUploadProgress(100);
-      await apiClient.post(`/community-videos/${moduleId}/videos/save-upload`, {
-        title: uploadTitle || uploadFile.name.replace(/\.[^/.]+$/, ''),
-        description: uploadDescription,
-        video_file_url: cloudinaryResult.secure_url,
-        cloudinary_public_id: cloudinaryResult.public_id,
-      });
-
-      const res = await apiClient.get(`/community-videos/${moduleId}/videos`);
-      setVideos(res.data?.videos || []);
-      setShowUploadForm(false);
-      setUploadFile(null);
-      setUploadTitle('');
-      setUploadDescription('');
-      setUploadProgress(0);
-      setUploadStatus('');
-    } catch (e: any) {
-      alert(e?.response?.data?.error || e?.message || 'Failed to upload video');
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  return (
 
 
 
@@ -335,7 +226,7 @@ const CommunityVideosTab: React.FC<Props> = ({
             {selectedVideo.video_type === 'upload' && selectedVideo.video_file_url ? (
               <video
                 key={selectedVideo.id}
-                src={selectedVideo.video_file_url}
+                src={forceH264(selectedVideo.video_file_url)}
                 controls
                 autoPlay
                 playsInline
@@ -380,35 +271,7 @@ const CommunityVideosTab: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Upload Zone (drag-and-drop) */}
-          {isMember && !isAtMax && (
-            <div
-              className={`mb-5 p-6 border-2 border-dashed rounded-2xl text-center transition-all cursor-pointer ${
-                isDragging
-                  ? 'border-purple-400 bg-purple-50'
-                  : 'border-slate-300 hover:border-purple-300 hover:bg-slate-50'
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <FaCloudUploadAlt className={`mx-auto mb-2 ${isDragging ? 'text-purple-500' : 'text-slate-400'}`} size={28} />
-              <p className="text-sm font-bold text-slate-600">
-                {isDragging ? 'Drop video here' : 'Drag & drop a video or click to upload'}
-              </p>
-              <p className="text-xs text-slate-400 mt-1">MP4, WebM, MOV — Max 50 MB</p>
-            </div>
-          )}
-
-          {/* Platform Filter */}
+           {/* Platform Filter */}
           {platforms.length > 2 && (
             <div className="flex gap-2 mb-5 flex-wrap">
               {platforms.map((p) => (
@@ -556,88 +419,8 @@ const CommunityVideosTab: React.FC<Props> = ({
         </>
       )}
 
-      {/* Upload Form Modal */}
-      {showUploadForm && uploadFile && ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4" onClick={() => !isUploading && setShowUploadForm(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-black text-slate-800">Upload Video</h3>
-              {!isUploading && (
-                <button onClick={() => setShowUploadForm(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
-                  <FaTimes size={16} />
-                </button>
-              )}
-            </div>
-
-            <div className="mb-4 p-3 bg-slate-50 rounded-xl">
-              <p className="text-xs font-bold text-slate-700 truncate">{uploadFile.name}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{(uploadFile.size / (1024 * 1024)).toFixed(1)} MB</p>
-            </div>
-
-            <div className="space-y-3 mb-4">
-              <input
-                type="text"
-                value={uploadTitle}
-                onChange={(e) => setUploadTitle(e.target.value)}
-                placeholder="Video title (optional)"
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500"
-                disabled={isUploading}
-              />
-              <input
-                type="text"
-                value={uploadDescription}
-                onChange={(e) => setUploadDescription(e.target.value)}
-                placeholder="Short description (optional)"
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500"
-                disabled={isUploading}
-              />
-            </div>
-
-            {isUploading && (
-              <div className="mb-4">
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
-                </div>
-                <p className="text-[10px] text-slate-500 mt-1 text-center">
-                  {uploadStatus} {uploadProgress > 0 && `${uploadProgress}%`}
-                </p>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowUploadForm(false)}
-                disabled={isUploading}
-                className="px-4 py-2 text-slate-500 text-xs font-bold hover:text-slate-700 transition cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleUpload}
-                disabled={isUploading}
-                className="inline-flex items-center gap-1.5 px-5 py-2 bg-purple-500 text-white rounded-xl text-xs font-black hover:bg-purple-600 transition shadow-sm disabled:opacity-50 cursor-pointer"
-              >
-                {isUploading ? (
-                  <>
-                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <FaUpload size={12} />
-                    Upload
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.getElementById('modal-root')!
-      )}
-    </div>
-  );
-};
+     </div>
+   );
+ };
 
 export default CommunityVideosTab;

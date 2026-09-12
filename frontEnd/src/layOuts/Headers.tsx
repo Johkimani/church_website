@@ -89,7 +89,7 @@ const Headers = () => {
            scrolled
              ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
              : "bg-white/95 backdrop-blur-sm"
-         } px-4 lg:px-6 py-2 flex justify-between items-center min-h-16 lg:min-h-20`}
+          } px-4 lg:px-6 py-2 flex justify-between items-center min-h-16 lg:min-h-20 w-full max-w-full overflow-x-hidden`}
       >
         {/* Logo */}
         <div

@@ -58,6 +58,11 @@ function getEmbedUrl(platform: string, url: string): string | null {
   return null;
 }
 
+const forceH264 = (url: string): string => {
+  if (!url) return url;
+  return url.replace('/video/upload/', '/upload/video_codec_h264,format_mp4/');
+};
+
 const GallerySection: React.FC = () => {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -464,7 +469,7 @@ const GallerySection: React.FC = () => {
                       return <iframe src={embedUrl} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen />;
                     }
                     if (selectedVideo.video_type === 'upload' && selectedVideo.video_file_url) {
-                      return <video src={selectedVideo.video_file_url} controls autoPlay playsInline crossOrigin="anonymous" type="video/mp4" className="w-full h-full" />;
+                       return <video src={forceH264(selectedVideo.video_file_url)} controls autoPlay playsInline crossOrigin="anonymous" type="video/mp4" className="w-full h-full" />;
                     }
                     return <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">No video source available</div>;
                   })()}
