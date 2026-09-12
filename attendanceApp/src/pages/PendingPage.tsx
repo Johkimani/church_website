@@ -7,6 +7,8 @@ import {
   Trash2,
   History,
   ClipboardCheck,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import {
   getAllSessions,
@@ -17,6 +19,7 @@ import {
   deleteSession,
   getAuthToken,
 } from "../sync/sync";
+import { checkSessionExists } from "../api/client";
 import { db } from "../db/db";
 import type { AttendanceSession } from "../db/db";
 
@@ -119,15 +122,42 @@ export default function PendingPage({
     load();
   };
 
-  const removeSynced = async (id: string) => {
-    if (!confirm("Delete this recorded date?")) return;
-    await deleteSession(id);
+  const removeSynced = async (s: AttendanceSession) => {
+    // If online, verify the session actually exists on the server before deleting
+    if (navigator.onLine) {
+      const exists = await checkSessionExists(s.date);
+      if (!exists) {
+        if (!confirm(
+          "This session was NOT found on the server. " +
+          "It may have failed to sync. Delete it from your device anyway?"
+        )) return;
+      } else {
+        if (!confirm(
+          `Delete "${s.date}" from your device? ` +
+          "The server copy is safe — you're only removing the local record."
+        )) return;
+      }
+    } else {
+      if (!confirm(
+        `You're offline. Delete "${s.date}" from your device? ` +
+        "Make sure it has already synced."
+      )) return;
+    }
+    await deleteSession(s.sessionId);
     load();
   };
 
   const clearAll = async () => {
-    if (!confirm("Delete ALL saved dates from this device? This cannot be undone.")) return;
-    await db.sessions.clear();
+    const pendingSessions = sessions.filter((s) => !s.syncedAt);
+    if (pendingSessions.length === 0) {
+      setStatus({ ok: true, text: "No pending dates to clear" });
+      return;
+    }
+    if (!confirm(
+      `Delete all ${pendingSessions.length} unsynced date${pendingSessions.length === 1 ? "" : "s"}? ` +
+      "Synced records will be kept."
+    )) return;
+    await Promise.all(pendingSessions.map((s) => db.sessions.delete(s.sessionId)));
     load();
     onSynced(0);
   };
@@ -164,7 +194,7 @@ export default function PendingPage({
             onClick={clearAll}
             style={{ marginTop: 8 }}
           >
-            <Trash2 size={16} /> Clear all saved dates
+            <Trash2 size={16} /> Clear unsynced dates
           </button>
         )}
         {status && (
@@ -365,7 +395,7 @@ export default function PendingPage({
                   Recorded
                 </span>
                 <button
-                  onClick={() => removeSynced(s.sessionId)}
+                  onClick={() => removeSynced(s)}
                   style={{
                     border: 0,
                     background: "transparent",

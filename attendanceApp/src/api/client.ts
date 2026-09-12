@@ -152,6 +152,25 @@ export async function pushSession(
   return res.data as { success: boolean };
 }
 
+/**
+ * Checks whether a tally session for `date` exists on the server.
+ * Returns `true` if at least one tally row is found, `false` otherwise.
+ * Silently returns `false` on network errors so callers don't block on offline.
+ */
+export async function checkSessionExists(date: string): Promise<boolean> {
+  try {
+    const t = localStorage.getItem("csa_attendance_token");
+    const res = await apiClient.get("/attendance/sessions", {
+      params: { date },
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+    });
+    const rows = res.data?.data;
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export function getApiErrorMessage(err: unknown): string {
   const anyErr = err as { response?: { data?: { message?: string; error?: string } } };
   return (
