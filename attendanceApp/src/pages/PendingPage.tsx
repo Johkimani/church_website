@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { RefreshCw, WifiOff, CheckCircle2, Clock, Trash2 } from "lucide-react";
-import { getAllSessions, syncPending, pendingCount } from "../sync/sync";
-import { db, getSession } from "../db/db";
+import { getAllSessions, syncPending, pendingCount, getAuthToken } from "../sync/sync";
+import { db } from "../db/db";
 import type { AttendanceSession } from "../db/db";
 
 interface Props {
@@ -30,7 +30,7 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     setSyncing(true);
     setStatus(null);
     try {
-      const t = (await getSession("token")) || token;
+      const t = await getAuthToken();
       if (!t) {
         const count = await pendingCount();
         if (count > 0) {

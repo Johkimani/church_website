@@ -1,15 +1,60 @@
 import { db, getSession, type AttendanceSession } from "../db/db";
 import { pushSession, getApiErrorMessage, type SessionPayload } from "../api/client";
+import { BASE_URL } from "../api/client";
 
 export interface SyncResult {
   pushed: number;
   failed: number;
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
+/**
+ * Retrieves the best available auth token: localStorage first (used by apiClient),
+ * then falls back to IndexedDB.
+ */
+export async function getAuthToken(): Promise<string> {
+  const local = localStorage.getItem("csa_attendance_token");
+  if (local) return local;
+  const dbToken = await getSession("token");
+  return dbToken || "";
+}
+
+/**
+ * Checks whether the server is actually reachable, not just that the
+ * browser reports "online".
+ */
+async function isServerReachable(): Promise<boolean> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    await fetch(`${BASE_URL}/attendance/tally-context?date=test`, {
+      method: "HEAD",
+      cache: "no-store",
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Waits `ms` milliseconds.
+ */
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Flushes all unsynced attendance sessions to the backend.
  * Each saved date is one POST to /attendance/sessions — the backend replaces
  * that date's tallies atomically, so re-pushing an already-saved date is safe.
+ *
+ * Retries network errors up to 3 times with exponential backoff.
+ * On 401, dispatches `csa:auth-expired` to prompt re-login.
  */
 export async function syncPending(
   token: string,
@@ -18,35 +63,60 @@ export async function syncPending(
   const pending = await db.sessions.filter((s) => !s.syncedAt).toArray();
   if (pending.length === 0) return { pushed: 0, failed: 0 };
 
-  // If the passed token is empty (offline mode), try to read a fresh one from
-  // IndexedDB — the coordinator may have re-authenticated online since.
+  // Prefer localStorage token (used by apiClient interceptor), fall back to IndexedDB.
   let auth = token;
   if (!auth) {
-    auth = (await getSession("token")) || "";
+    auth = await getAuthToken();
   }
   if (!auth) return { pushed: 0, failed: 0 };
+
+  // Verify the server is actually reachable before attempting sync.
+  const reachable = await isServerReachable();
+  if (!reachable) return { pushed: 0, failed: 0 };
 
   let pushed = 0;
   let failed = 0;
 
   for (const s of pending) {
-    try {
-      const isYear = s.dimension === "year";
-      await pushSession(auth, {
-        date: s.date,
-        dimension: isYear ? "year" : "jumuiya",
-        counts: s.counts.map((c) =>
-          isYear
-            ? { year: String(c.year ?? 1), count: c.count }
-            : { jumuiya_id: c.jumuiyaId!, count: c.count }
-        ) as SessionPayload["counts"],
-        recordedBy: s.recordedBy || "coordinator",
-      });
-      await db.sessions.update(s.sessionId, { syncedAt: Date.now() });
-      pushed += 1;
-    } catch (err) {
-      failed += 1;
-      onError?.(s, getApiErrorMessage(err));
+    let attempt = 0;
+    let synced = false;
+
+    while (attempt < MAX_RETRIES && !synced) {
+      try {
+        const isYear = s.dimension === "year";
+        await pushSession(auth, {
+          date: s.date,
+          dimension: isYear ? "year" : "jumuiya",
+          counts: s.counts.map((c) =>
+            isYear
+              ? { year: String(c.year ?? 1), count: c.count }
+              : { jumuiya_id: c.jumuiyaId!, count: c.count }
+          ) as SessionPayload["counts"],
+          recordedBy: s.recordedBy || "coordinator",
+        });
+        await db.sessions.update(s.sessionId, { syncedAt: Date.now() });
+        pushed += 1;
+        synced = true;
+      } catch (err: unknown) {
+        const apiError = err as { response?: { status?: number } };
+        const status = apiError?.response?.status;
+
+        // If 401, dispatch auth-expired and stop syncing.
+        if (status === 401) {
+          window.dispatchEvent(new Event("csa:auth-expired"));
+          failed += 1;
+          onError?.(s, "Session expired. Please sign in again.");
+          break;
+        }
+
+        attempt++;
+        if (attempt >= MAX_RETRIES) {
+          failed += 1;
+          onError?.(s, getApiErrorMessage(err));
+        } else {
+          await wait(RETRY_DELAY_MS * attempt);
+        }
+      }
     }
   }
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PencilLine, History, Wifi, WifiOff } from "lucide-react";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { getSession } from "./db/db";
-import { syncPending } from "./sync/sync";
+import { syncPending, getAuthToken } from "./sync/sync";
 import LoginPage from "./pages/LoginPage";
 import RecordPage from "./pages/RecordPage";
 import PendingPage from "./pages/PendingPage";
@@ -73,7 +73,8 @@ export default function App() {
     if (network !== "online") return;
     let cancelled = false;
     const doSync = async () => {
-      const res = await syncPending(token || "");
+      const auth = await getAuthToken();
+      const res = await syncPending(auth);
       if (cancelled) return;
       if (res.pushed > 0) {
         setSyncMsg({
@@ -87,7 +88,7 @@ export default function App() {
           text: `${res.failed} record${res.failed === 1 ? "" : "s"} failed to sync. Open Saved tab to retry.`,
         });
         refreshPendingCount();
-      } else if (!token) {
+      } else if (!getAuthToken()) {
         const { pendingCount: pc } = await import("./sync/sync");
         const count = await pc();
         if (count > 0) {
@@ -104,7 +105,7 @@ export default function App() {
       cancelled = true;
       clearTimeout(timers);
     };
-  }, [token, network]);
+  }, [network]);
 
   return (
     <>
