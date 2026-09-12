@@ -127,6 +127,18 @@ export async function pendingCount(): Promise<number> {
   return db.sessions.filter((s) => !s.syncedAt).count();
 }
 
+export async function recordedCount(): Promise<number> {
+  return db.sessions.filter((s) => !!s.syncedAt).count();
+}
+
 export async function getAllSessions(): Promise<AttendanceSession[]> {
   return db.sessions.orderBy("recordedAt").reverse().toArray();
+}
+
+export async function getSyncedSessions(): Promise<AttendanceSession[]> {
+  return db.sessions.orderBy("recordedAt").reverse().filter((s) => !!s.syncedAt).toArray();
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  await db.sessions.delete(sessionId);
 }
