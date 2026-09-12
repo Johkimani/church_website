@@ -60,7 +60,7 @@ function getEmbedUrl(platform: string, url: string): string | null {
 
 const forceH264 = (url: string): string => {
   if (!url) return url;
-  return url.replace('/video/upload/', '/upload/video_codec_h264,format_mp4/');
+  return url.replace('/video/upload/', '/video/upload/video_codec_h264,format_mp4/');
 };
 
 const GallerySection: React.FC = () => {

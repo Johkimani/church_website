@@ -119,7 +119,7 @@ const Headers = () => {
                     href={link.path}
                     onMouseEnter={prefetchNav(link.path)}
                     onFocus={prefetchNav(link.path)}
-                    className={`relative px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`relative px-1 md:px-2 lg:px-3 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -135,7 +135,7 @@ const Headers = () => {
                     to={link.path}
                     onMouseEnter={prefetchNav(link.path)}
                     onFocus={prefetchNav(link.path)}
-                    className={`relative px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`relative px-1 md:px-2 lg:px-3 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
