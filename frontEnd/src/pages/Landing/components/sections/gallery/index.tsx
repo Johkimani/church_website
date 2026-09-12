@@ -464,7 +464,7 @@ const GallerySection: React.FC = () => {
                       return <iframe src={embedUrl} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen />;
                     }
                     if (selectedVideo.video_type === 'upload' && selectedVideo.video_file_url) {
-                      return <video src={selectedVideo.video_file_url} controls autoPlay className="w-full h-full" />;
+                      return <video src={selectedVideo.video_file_url} controls autoPlay playsInline crossOrigin="anonymous" type="video/mp4" className="w-full h-full" />;
                     }
                     return <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">No video source available</div>;
                   })()}

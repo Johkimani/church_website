@@ -338,6 +338,9 @@ const CommunityVideosTab: React.FC<Props> = ({
                 src={selectedVideo.video_file_url}
                 controls
                 autoPlay
+                playsInline
+                crossOrigin="anonymous"
+                type="video/mp4"
                 className="w-full h-full block object-contain"
               />
             ) : getEmbedUrl(selectedVideo.platform, selectedVideo.video_url || '') ? (

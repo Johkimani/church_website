@@ -219,8 +219,7 @@ const buildVideoStorage = (folder = "community_videos") => ({
         public_id: `${file.fieldname}-${uniqueSuffix}`,
         resource_type: "video",
         transformation: [
-          { quality: "auto:good" },
-          { fetch_format: "auto" },
+          { quality: "auto:good", video_codec: "h264", format: "mp4" },
         ],
       },
       (error, result) => {
