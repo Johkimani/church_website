@@ -162,10 +162,6 @@ const CommunityVideosTab: React.FC<Props> = ({
   }, [selectedVideo, closeModal, goToNext, goToPrev]);
 
   return (
-
-
-
-  return (
     <div
       className="tab-system-content"
       style={{ '--jumuiya-color': color } as React.CSSProperties}
