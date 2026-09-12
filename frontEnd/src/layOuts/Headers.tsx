@@ -109,7 +109,7 @@ const Headers = () => {
         </div>
 
         {/* Desktop Nav */}
-        <ul className="hidden md:flex items-center flex-1 justify-center gap-x-0.5 lg:gap-x-1 flex-nowrap overflow-visible">
+        <ul className="hidden md:flex items-center justify-center gap-x-0.5 lg:gap-x-1 flex-nowrap overflow-visible max-w-[65vw]">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
