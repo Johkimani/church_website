@@ -16,7 +16,11 @@ import {
   deleteSession,
   getAuthToken,
 } from "../sync/sync";
-import { checkSessionExists } from "../api/client";
+import {
+  checkSessionExists,
+  fetchRecentRecorded,
+  type ServerRecordedSession,
+} from "../api/client";
 import type { AttendanceSession } from "../db/db";
 
 type SavedTab = "pending" | "recorded";
@@ -38,15 +42,20 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(
     null
   );
+  const [serverRecorded, setServerRecorded] = useState<ServerRecordedSession[]>(
+    []
+  );
 
   const load = async () => {
     setLoading(true);
-    const [allSessions, allSynced] = await Promise.all([
+    const [allSessions, allSynced, serverData] = await Promise.all([
       getAllSessions(),
       getSyncedSessions(),
+      fetchRecentRecorded(RECORDED_LIMIT),
     ]);
     setSessions(allSessions);
     setSynced(allSynced);
+    setServerRecorded(serverData);
     setLoading(false);
   };
 
@@ -331,8 +340,8 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
             </div>
           ))
         )
-      ) : /* ── Recorded tab — last 3 synced ── */
-      latestSynced.length === 0 ? (
+      ) : /* ── Recorded tab — last 3 from server + local ── */
+      serverRecorded.length === 0 && latestSynced.length === 0 ? (
         <div className="card">
           <div
             style={{
@@ -357,12 +366,12 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
         <div className="card">
           <h2>Recently Synced</h2>
           <p className="sub">
-            Last {latestSynced.length} tallies on the main site. Delete once
-            you've verified them.
+            Latest tallies on the main site. Delete once verified.
           </p>
           <div>
-            {latestSynced.map((s) => (
-              <div key={s.sessionId} className="record-row">
+            {/* Server data (from main site) */}
+            {serverRecorded.map((s) => (
+              <div key={`srv-${s.date}`} className="record-row">
                 <div style={{ flex: 1 }}>
                   <strong>
                     {new Date(s.date + "T00:00:00").toLocaleDateString(
@@ -371,8 +380,7 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
                     )}
                   </strong>
                   <div style={{ color: "var(--muted)", fontSize: 12 }}>
-                    {s.activityLabel} ·{" "}
-                    {s.counts.reduce((t, c) => t + c.count, 0)} total
+                    {s.activityLabel} · {s.totalCount} total
                   </div>
                   <div
                     style={{
@@ -381,43 +389,62 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
                       marginTop: 2,
                     }}
                   >
-                    Synced{" "}
-                    {s.syncedAt
-                      ? new Date(s.syncedAt).toLocaleDateString()
-                      : ""}
+                    On main site
                   </div>
                 </div>
                 <span className="chip synced">
                   <CheckCircle2 size={12} /> Recorded
                 </span>
-                <button
-                  onClick={() => removeSynced(s)}
-                  style={{
-                    border: 0,
-                    background: "transparent",
-                    color: "var(--red)",
-                    cursor: "pointer",
-                    padding: 4,
-                  }}
-                  aria-label="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
               </div>
             ))}
+            {/* Local synced entries (only show if not already in server list) */}
+            {latestSynced
+              .filter((ls) => !serverRecorded.some((sr) => sr.date === ls.date))
+              .map((s) => (
+                <div key={s.sessionId} className="record-row">
+                  <div style={{ flex: 1 }}>
+                    <strong>
+                      {new Date(s.date + "T00:00:00").toLocaleDateString(
+                        undefined,
+                        { weekday: "short", month: "short", day: "numeric" }
+                      )}
+                    </strong>
+                    <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                      {s.activityLabel} ·{" "}
+                      {s.counts.reduce((t, c) => t + c.count, 0)} total
+                    </div>
+                    <div
+                      style={{
+                        color: "var(--green)",
+                        fontSize: 11,
+                        marginTop: 2,
+                      }}
+                    >
+                      Synced{" "}
+                      {s.syncedAt
+                        ? new Date(s.syncedAt).toLocaleDateString()
+                        : ""}
+                    </div>
+                  </div>
+                  <span className="chip synced">
+                    <CheckCircle2 size={12} /> Recorded
+                  </span>
+                  <button
+                    onClick={() => removeSynced(s)}
+                    style={{
+                      border: 0,
+                      background: "transparent",
+                      color: "var(--red)",
+                      cursor: "pointer",
+                      padding: 4,
+                    }}
+                    aria-label="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
           </div>
-          {synced.length > RECORDED_LIMIT && (
-            <p
-              style={{
-                color: "var(--muted)",
-                fontSize: 11,
-                textAlign: "center",
-                margin: "8px 0 0",
-              }}
-            >
-              + {synced.length - RECORDED_LIMIT} more on the main site
-            </p>
-          )}
         </div>
       )}
     </div>

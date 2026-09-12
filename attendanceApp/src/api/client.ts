@@ -171,6 +171,66 @@ export async function checkSessionExists(date: string): Promise<boolean> {
   }
 }
 
+/** Shape of a single tally row returned by GET /attendance/history */
+interface HistoryCount {
+  kind: "jumuiya" | "year";
+  jumuiya_name?: string;
+  jumuiya_color?: string;
+  year?: string;
+  label?: string;
+  count: number;
+  source: string;
+}
+
+export interface ServerRecordedSession {
+  date: string;
+  activityType: string;
+  activityLabel: string;
+  dimension: "jumuiya" | "year";
+  recordedBy: string;
+  totalCount: number;
+  counts: HistoryCount[];
+}
+
+/**
+ * Fetches the last `limit` recorded sessions from the server (main site).
+ * Returns them newest-first. Silently returns [] on network errors.
+ */
+export async function fetchRecentRecorded(
+  limit = 3
+): Promise<ServerRecordedSession[]> {
+  try {
+    const t = localStorage.getItem("csa_attendance_token");
+    const to = new Date().toISOString().slice(0, 10);
+    const fromObj = new Date();
+    fromObj.setDate(fromObj.getDate() - 30);
+    const from = fromObj.toISOString().slice(0, 10);
+
+    const res = await apiClient.get("/attendance/history", {
+      params: { from, to },
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+    });
+    const rows = res.data?.data;
+    if (!Array.isArray(rows)) return [];
+
+    // getHistory already groups by date, newest first
+    return rows.slice(0, limit).map((r: any) => ({
+      date: r.date,
+      activityType: r.activity_type,
+      activityLabel: r.activity_label,
+      dimension: r.dimension,
+      recordedBy: r.recorded_by_name || r.recorded_role || "",
+      totalCount: (r.counts || []).reduce(
+        (sum: number, c: any) => sum + (c.count || 0),
+        0
+      ),
+      counts: r.counts || [],
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export function getApiErrorMessage(err: unknown): string {
   const anyErr = err as { response?: { data?: { message?: string; error?: string } } };
   return (
