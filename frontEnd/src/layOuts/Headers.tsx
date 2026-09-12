@@ -109,7 +109,7 @@ const Headers = () => {
         </div>
 
         {/* Desktop Nav */}
-        <ul className="hidden md:flex items-center flex-1 justify-center gap-x-0.5 lg:gap-x-1 overflow-x-auto scrollbar-hide flex-nowrap">
+        <ul className="hidden md:flex items-center flex-1 justify-center gap-x-0.5 lg:gap-x-1 flex-nowrap overflow-visible">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
@@ -119,7 +119,7 @@ const Headers = () => {
                     href={link.path}
                     onMouseEnter={prefetchNav(link.path)}
                     onFocus={prefetchNav(link.path)}
-                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`relative px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -135,7 +135,7 @@ const Headers = () => {
                     to={link.path}
                     onMouseEnter={prefetchNav(link.path)}
                     onFocus={prefetchNav(link.path)}
-                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`relative px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
