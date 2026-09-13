@@ -173,6 +173,10 @@ export default function RecordPage({ token, onSaved }: Props) {
   );
 
   const saveAll = async () => {
+    if (date > todayISO()) {
+      setMessage({ ok: false, text: "Cannot record attendance for a future date." });
+      return;
+    }
     if (!canSave) {
       setMessage({
         ok: false,
@@ -276,7 +280,15 @@ export default function RecordPage({ token, onSaved }: Props) {
             className="input"
             value={date}
             max={todayISO()}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val && val > todayISO()) {
+                setMessage({ ok: false, text: "Cannot record attendance for a future date. Select today or a past date." });
+                return;
+              }
+              setMessage(null);
+              setDate(val);
+            }}
             style={{ width: 190, padding: "8px 10px", fontSize: 14 }}
           />
         </div>
