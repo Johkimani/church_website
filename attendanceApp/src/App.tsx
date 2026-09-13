@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PencilLine, History, Wifi, WifiOff } from "lucide-react";
+import { PencilLine, History, Wifi, WifiOff, Download } from "lucide-react";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { getSession } from "./db/db";
 import { syncPending, getAuthToken } from "./sync/sync";
@@ -21,6 +21,7 @@ export default function App() {
   const [pending, setPending] = useState(0);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [splash, setSplash] = useState<Splash>("show");
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
     const t1 = window.setTimeout(() => setSplash("fade"), 1200);
@@ -62,6 +63,12 @@ export default function App() {
     };
     window.addEventListener("csa:auth-expired", onAuthExpired);
     return () => window.removeEventListener("csa:auth-expired", onAuthExpired);
+  }, []);
+
+  useEffect(() => {
+    const onUpdate = () => setUpdateAvailable(true);
+    window.addEventListener("csa:update-available", onUpdate);
+    return () => window.removeEventListener("csa:update-available", onUpdate);
   }, []);
 
   useEffect(() => {
@@ -148,6 +155,16 @@ export default function App() {
         </div>
         {syncMsg && (
           <div className={`banner ${syncMsg.ok ? "online" : "error"}`}>{syncMsg.text}</div>
+        )}
+        {updateAvailable && (
+          <div
+            className="banner"
+            style={{ background: "#eff6ff", color: "#2563eb", cursor: "pointer" }}
+            onClick={() => window.location.reload()}
+          >
+            <Download size={16} />
+            New version available — tap to refresh
+          </div>
         )}
 
         <InstallButton />
