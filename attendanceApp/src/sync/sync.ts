@@ -63,11 +63,11 @@ export async function syncPending(
   const pending = await db.sessions.filter((s) => !s.syncedAt).toArray();
   if (pending.length === 0) return { pushed: 0, failed: 0 };
 
-  // Prefer localStorage token (used by apiClient interceptor), fall back to IndexedDB.
-  let auth = token;
-  if (!auth) {
-    auth = await getAuthToken();
-  }
+  // The apiClient interceptor reads the token from localStorage. If there's
+  // no localStorage token the user isn't properly authenticated for the
+  // server, so bail out early — don't waste retries on guaranteed 401/404s.
+  const localToken = localStorage.getItem("csa_attendance_token");
+  const auth = localToken || token || (await getAuthToken());
   if (!auth) return { pushed: 0, failed: 0 };
 
   // Verify the server is actually reachable before attempting sync.
@@ -84,7 +84,7 @@ export async function syncPending(
     while (attempt < MAX_RETRIES && !synced) {
       try {
         const isYear = s.dimension === "year";
-        await pushSession(auth, {
+        await pushSession({
           date: s.date,
           dimension: isYear ? "year" : "jumuiya",
           counts: s.counts.map((c) =>
@@ -98,7 +98,7 @@ export async function syncPending(
         pushed += 1;
         synced = true;
       } catch (err: unknown) {
-        const apiError = err as { response?: { status?: number } };
+        const apiError = err as { response?: { status?: number; data?: { message?: string } } };
         const status = apiError?.response?.status;
 
         // If 401, dispatch auth-expired and stop syncing.
@@ -106,6 +106,14 @@ export async function syncPending(
           window.dispatchEvent(new Event("csa:auth-expired"));
           failed += 1;
           onError?.(s, "Session expired. Please sign in again.");
+          break;
+        }
+
+        // 404 from requireRole means the token's role doesn't match.
+        // Treat like an auth issue — don't retry, it won't help.
+        if (status === 404) {
+          failed += 1;
+          onError?.(s, "Access denied — your session may have expired. Please sign in again.");
           break;
         }
 

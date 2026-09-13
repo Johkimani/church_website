@@ -142,13 +142,15 @@ export async function fetchRecentStatus(token: string, days = 14): Promise<Recen
   return res.data.data as RecentStatus;
 }
 
+/**
+ * Pushes a single attendance session to the server. Uses the apiClient
+ * interceptor for auth (reads from localStorage). Do NOT pass a manual
+ * Authorization header — the interceptor handles it.
+ */
 export async function pushSession(
-  token: string,
   session: SessionPayload
 ): Promise<{ success: boolean }> {
-  const res = await apiClient.post("/attendance/sessions", session, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await apiClient.post("/attendance/sessions", session);
   return res.data as { success: boolean };
 }
 
@@ -159,10 +161,8 @@ export async function pushSession(
  */
 export async function checkSessionExists(date: string): Promise<boolean> {
   try {
-    const t = localStorage.getItem("csa_attendance_token");
     const res = await apiClient.get("/attendance/sessions", {
       params: { date },
-      headers: t ? { Authorization: `Bearer ${t}` } : {},
     });
     const rows = res.data?.data;
     return Array.isArray(rows) && rows.length > 0;
@@ -200,7 +200,6 @@ export async function fetchRecentRecorded(
   limit = 3
 ): Promise<ServerRecordedSession[]> {
   try {
-    const t = localStorage.getItem("csa_attendance_token");
     const to = new Date().toISOString().slice(0, 10);
     const fromObj = new Date();
     fromObj.setDate(fromObj.getDate() - 30);
@@ -208,12 +207,10 @@ export async function fetchRecentRecorded(
 
     const res = await apiClient.get("/attendance/history", {
       params: { from, to },
-      headers: t ? { Authorization: `Bearer ${t}` } : {},
     });
     const rows = res.data?.data;
     if (!Array.isArray(rows)) return [];
 
-    // getHistory already groups by date, newest first
     return rows.slice(0, limit).map((r: any) => ({
       date: r.date,
       activityType: r.activity_type,

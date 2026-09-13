@@ -440,36 +440,34 @@ export const saveSession = async (req, res) => {
 
   try {
     const ctx = await getActivityForDate(normalizedDate);
-    // TEMPORARILY DISABLED — allow recording on any day for verification
-    // if (!ctx.isTallyDay) {
-    //   console.warn(`saveSession REJECTED: ${normalizedDate} is not a tally day (user: ${req.user?.id})`);
-    //   return res.status(400).json({
-    //     success: false,
-    //     error: `${normalizedDate} is not a tally day. Tally days are Monday (Rosary), Wednesday (Bible Study), Thursday (Rosary), or any day of an active novena.`,
-    //   });
-    // }
+    if (!ctx.isTallyDay) {
+      console.warn(`saveSession REJECTED: ${normalizedDate} is not a tally day (user: ${req.user?.id})`);
+      return res.status(400).json({
+        success: false,
+        error: `${normalizedDate} is not a tally day. Tally days are Monday (Rosary), Wednesday (Bible Study), Thursday (Rosary), or any day of an active novena.`,
+      });
+    }
 
     // Tallies may only be recorded within the current semester window.
     // A tally already recorded for this date (during the semester) may still be
     // edited during the break — only brand-new tallies are blocked.
-    // TEMPORARILY DISABLED for verification
-    // const semester = await getCurrentSemester();
-    // if (!isDateInSemester(normalizedDate, semester)) {
-    //   const existing = await pool.query(
-    //     `SELECT 1 FROM attendance_tallies WHERE tally_date = $1 LIMIT 1`,
-    //     [normalizedDate]
-    //   );
-    //   if (existing.rows.length === 0) {
-    //     const window = semester
-    //       ? ` (${semester.start_date} → ${semester.end_date})`
-    //       : " (no semester configured)";
-    //     console.warn(`saveSession REJECTED: ${normalizedDate} outside semester${window} (user: ${req.user?.id})`);
-    //     return res.status(400).json({
-    //       success: false,
-    //       error: `Attendance tallies are closed for the semester break. New tallies can only be recorded within the current semester${window}.`,
-    //     });
-    //   }
-    // }
+    const semester = await getCurrentSemester();
+    if (!isDateInSemester(normalizedDate, semester)) {
+      const existing = await pool.query(
+        `SELECT 1 FROM attendance_tallies WHERE tally_date = $1 LIMIT 1`,
+        [normalizedDate]
+      );
+      if (existing.rows.length === 0) {
+        const window = semester
+          ? ` (${semester.start_date} → ${semester.end_date})`
+          : " (no semester configured)";
+        console.warn(`saveSession REJECTED: ${normalizedDate} outside semester${window} (user: ${req.user?.id})`);
+        return res.status(400).json({
+          success: false,
+          error: `Attendance tallies are closed for the semester break. New tallies can only be recorded within the current semester${window}.`,
+        });
+      }
+    }
 
     const recordedBy = req.user?.id || req.user?.member_id || "";
     const recordedByName =
