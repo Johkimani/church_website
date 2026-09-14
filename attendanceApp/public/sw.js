@@ -1,5 +1,5 @@
 /* CSA Attendance — offline-first service worker with auto-update. */
-const CACHE = "csa-attendance-v7";
+const CACHE = "csa-attendance-v8";
 const SHELL = [
   "/",
   "/index.html",
@@ -61,16 +61,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigations: network-first, fall back to cached shell.
+  // Navigations: always network-first. Never serve stale index.html.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches
-            .open(CACHE)
-            .then((c) => c.put("/index.html", copy))
-            .catch(() => {});
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches
+              .open(CACHE)
+              .then((c) => c.put("/index.html", copy))
+              .catch(() => {});
+          }
           return res;
         })
         .catch(() => caches.match("/index.html"))

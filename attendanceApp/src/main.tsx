@@ -35,7 +35,9 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
 
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
+      const reg = await navigator.serviceWorker.register("/sw.js", {
+        updateViaCache: "none",
+      });
       // Check for updates every 30 seconds (faster propagation).
       setInterval(checkForUpdate, 30_000);
       // Also check once right after registration.
