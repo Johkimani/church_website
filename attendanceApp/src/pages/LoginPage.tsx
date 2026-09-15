@@ -100,7 +100,6 @@ export default function LoginPage({ onLogin }: Props) {
         <img src="/icons/app-icon-512.png" alt="CSA Attendance" className="login-logo-img" />
       </div>
       <h1 className="login-title">CSA Attendance</h1>
-      <p className="login-sub">Sign in once while online to activate offline sign-in on this device.</p>
 
       {offlineUnlocked && (
         <div className="banner online" style={{ marginBottom: 14 }}>
@@ -136,11 +135,6 @@ export default function LoginPage({ onLogin }: Props) {
         {loading ? <Loader2 size={18} className="spin" /> : <LogIn size={18} />}
         {loading ? "Signing in…" : "Sign in"}
       </button>
-
-      <p style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", marginTop: 16 }}>
-        Records are saved on this device and sync when internet returns. After your first
-        online sign-in, this device can also verify your password offline.
-      </p>
     </form>
   );
 }
