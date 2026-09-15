@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useState, useEffect } from "react";
 
-const OVERLAY = "linear-gradient(to top, rgba(28, 25, 23, 0.85), rgba(28, 25, 23, 0.35))";
 const HERO_IMAGE = "/images/eucharist.jpg";
 
 const QUOTES = [
@@ -21,7 +20,6 @@ const CARDS = [
     description: "The Liturgy of the Word and Gospel for today's celebration.",
     cta: "Open Readings",
     image: "/images/biblestudy.webp",
-    icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15z",
   },
   {
     to: "readings",
@@ -30,7 +28,6 @@ const CARDS = [
     description: "Essential prayers of the Catholic tradition, from the Our Father to the Memorare.",
     cta: "Browse Prayers",
     image: "/images/rosary-praying-avatar.png",
-    icon: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
   },
   {
     to: "prayer-module",
@@ -39,7 +36,6 @@ const CARDS = [
     description: "Nine-day devotions and litanies of petition, praise, and intercession.",
     cta: "Begin Novena",
     image: "/images/rosary_prayers.jpg",
-    icon: "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z",
   },
   {
     to: "bible",
@@ -48,7 +44,6 @@ const CARDS = [
     description: "Read and reflect on the Word of God with daily inspiration.",
     cta: "Open Bible",
     image: "/images/read-you-bible.png",
-    icon: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
   },
   {
     to: "progress",
@@ -57,7 +52,6 @@ const CARDS = [
     description: "Track your prayers, rosaries, and devotion journey in one place.",
     cta: "View Progress",
     image: "/images/christ.jpg",
-    icon: "M22 7l-8.5 8.5-5-5L2 17M16 7h6v6",
   },
 ];
 
@@ -90,9 +84,7 @@ function getLiturgicalInfo() {
   const christmas = new Date(y, 11, 25);
   const baptismOfLord = new Date(y, 0, 12);
   const adventStart = new Date(y, 10, 27);
-
   const inRange = (s: Date, e: Date) => now >= s && now < e;
-
   if (inRange(christmas, baptismOfLord)) return { season: "Christmas", color: "#F1F5F9", message: "The Word became flesh and dwelt among us." };
   if (inRange(adventStart, christmas)) return { season: "Advent", color: "#8B5CF6", message: "Prepare the way of the Lord." };
   if (inRange(ashWednesday, easter)) return { season: "Lent", color: "#8B5CF6", message: "Repent, and believe in the Gospel." };
@@ -102,8 +94,7 @@ function getLiturgicalInfo() {
 
 function getTodaysMystery() {
   const day = new Date().getDay();
-  const mysteries = ["Glorious", "Joyful", "Sorrowful", "Glorious", "Luminous", "Joyful", "Sorrowful"];
-  return mysteries[day];
+  return ["Glorious", "Joyful", "Sorrowful", "Glorious", "Luminous", "Joyful", "Sorrowful"][day];
 }
 
 export default function Dashboard() {
@@ -117,8 +108,6 @@ export default function Dashboard() {
     return "Good Evening";
   });
   const [quote, setQuote] = useState(0);
-
-  // "My Progress" is personal — hide it for logged-out visitors.
   const cards = CARDS.filter((card) => card.to !== "progress" || !!user);
 
   useEffect(() => {
@@ -130,195 +119,88 @@ export default function Dashboard() {
   const dateLabel = today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
   const stats = [
-    {
-      to: "rosary",
-      label: "Today's Mystery",
-      value: `${mystery} Mysteries`,
-      accent: "#FBBF24",
-      icon: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 2a8 8 0 1 1-8 8 8 8 0 0 1 8-8z",
-    },
-    {
-      to: "daily-liturgy",
-      label: "Liturgical Season",
-      value: liturgy.season,
-      accent: liturgy.color,
-      icon: "M12 2v20M4.9 4.9l14.2 14.2M2 12h20",
-    },
-    {
-      to: "daily-liturgy",
-      label: "Today",
-      value: dateLabel,
-      accent: "#94A3B8",
-      icon: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
-    },
+    { to: "rosary", label: "Mystery", value: `${mystery} Mysteries`, accent: "#FBBF24", icon: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 2a8 8 0 1 1-8 8 8 8 0 0 1 8-8z" },
+    { to: "daily-liturgy", label: "Season", value: liturgy.season, accent: liturgy.color, icon: "M12 2v20M4.9 4.9l14.2 14.2M2 12h20" },
+    { to: "daily-liturgy", label: "Today", value: dateLabel, accent: "#94A3B8", icon: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" },
   ];
 
   return (
-    <div
-      className="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 min-h-screen"
-      style={{
-        background: "linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%)",
-      }}
-    >
+    <div className="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 md:pb-8 min-h-screen" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%)" }}>
 
+      {/* Hero Card */}
       <Link to="daily-liturgy" className="block group">
-        <div
-          className="rounded-3xl relative overflow-hidden transition-all duration-300"
-          style={{ height: "380px", transform: "translateY(0)" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 24px 60px rgba(0,0,0,0.5)"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.3)"; }}
-        >
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-            style={{ backgroundImage: `url(${HERO_IMAGE})` }}
-          />
-          <div className="absolute inset-0" style={{ background: OVERLAY }} />
-          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
-            background: "linear-gradient(90deg, transparent, #D97706, transparent)",
-          }} />
-          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full" style={{
-            background: "radial-gradient(circle, rgba(217, 119, 6, 0.28), transparent 70%)",
-          }} />
-          <div className="relative z-10 h-full flex flex-col justify-center p-8 sm:p-10">
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
-                style={{ background: "rgba(217, 119, 6, 0.12)", border: "1px solid rgba(217, 119, 6, 0.25)" }}
-              >
+        <div className="rounded-2xl sm:rounded-3xl relative overflow-hidden transition-shadow duration-300 hover:shadow-2xl" style={{ height: "clamp(200px, 40vw, 380px)" }}>
+          <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${HERO_IMAGE})` }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(28,25,23,0.85), rgba(28,25,23,0.35))" }} />
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
+          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.28), transparent 70%)" }} />
+          <div className="relative z-10 h-full flex flex-col justify-end p-5 sm:p-8 md:p-10">
+            <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.25)" }}>
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[11px] font-bold tracking-[0.15em] text-amber-400 uppercase">Today's Readings</span>
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.15em] text-amber-400 uppercase">Today's Readings</span>
               </span>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
-                style={{ background: `${liturgy.color}14`, border: `1px solid ${liturgy.color}45`, color: liturgy.color }}
-              >
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: `${liturgy.color}14`, border: `1px solid ${liturgy.color}45`, color: liturgy.color }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: liturgy.color }} />
-                <span className="text-[11px] font-bold tracking-[0.15em] uppercase">{liturgy.season}</span>
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.15em] uppercase">{liturgy.season}</span>
               </span>
             </div>
-
-            <h1
-              className="text-3xl sm:text-5xl font-bold text-white mb-4"
-              style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}
-            >
+            <h1 className="text-xl sm:text-3xl md:text-5xl font-bold text-white mb-2 sm:mb-4 leading-tight" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
               {greeting}, {user?.name || "Beloved"}
             </h1>
-
-            <div className="max-w-xl min-h-[74px]" key={quote} style={{ animation: "dashFade 0.5s ease" }}>
-              <p className="text-base sm:text-lg text-slate-200 italic leading-relaxed">
-                "{QUOTES[quote].text}"
-              </p>
-              <p className="text-xs text-amber-400/70 mt-1.5 not-italic font-semibold tracking-wide">— {QUOTES[quote].ref}</p>
+            <div className="max-w-xl min-h-[48px] sm:min-h-[74px]" key={quote} style={{ animation: "dashFade 0.5s ease" }}>
+              <p className="text-sm sm:text-lg text-slate-200 italic leading-relaxed">"{QUOTES[quote].text}"</p>
+              <p className="text-[10px] sm:text-xs text-amber-400/70 mt-1 not-italic font-semibold tracking-wide">— {QUOTES[quote].ref}</p>
             </div>
-
-            <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
-              <span className="inline-flex items-center gap-2 text-amber-400 font-semibold text-sm group-hover:text-amber-300 transition-colors w-fit">
+            <div className="mt-3 sm:mt-6 flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 text-amber-400 font-semibold text-xs sm:text-sm group-hover:text-amber-300 transition-colors">
                 Open Readings
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
               </span>
-              <span className="text-[11px] text-slate-400 tracking-[0.2em] uppercase">{dateLabel}</span>
+              <span className="text-[10px] sm:text-[11px] text-slate-400 tracking-[0.15em] sm:tracking-[0.2em] uppercase hidden sm:inline">{dateLabel}</span>
             </div>
           </div>
         </div>
       </Link>
 
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4 sm:mt-6 mb-6 sm:mb-8">
         {stats.map((s) => (
-          <Link
-            key={s.label}
-            to={s.to}
-            className="group rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 bg-white"
-            style={{
-              border: "1px solid rgba(28, 25, 23, 0.08)",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,0.12)"; e.currentTarget.style.borderColor = `${s.accent}66`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(28,25,23,0.08)"; }}
-          >
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${s.accent}1a`, color: s.accent }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d={s.icon} />
-              </svg>
+          <Link key={s.label} to={s.to} className="group rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-4 transition-all duration-300 hover:shadow-lg bg-white border border-stone-100 hover:border-stone-200">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${s.accent}1a`, color: s.accent }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={s.icon} /></svg>
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] text-stone-500 font-bold tracking-[0.2em] uppercase mb-1">{s.label}</p>
-              <p className="text-sm font-bold text-stone-900 truncate">{s.value}</p>
+              <p className="text-[9px] sm:text-[10px] text-stone-500 font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-0.5 sm:mb-1">{s.label}</p>
+              <p className="text-xs sm:text-sm font-bold text-stone-900 truncate">{s.value}</p>
             </div>
           </Link>
         ))}
       </div>
 
-
-      <div
-        className="rounded-3xl relative overflow-hidden mb-8"
-        style={{
-          background: "linear-gradient(135deg, rgba(217,119,6,0.08), rgba(217,119,6,0.02))",
-          border: "1px solid rgba(217,119,6,0.2)",
-        }}
-      >
-        <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
-          background: "linear-gradient(90deg, transparent, #D97706, transparent)",
-        }} />
+      {/* Marian Devotion */}
+      <div className="rounded-2xl sm:rounded-3xl relative overflow-hidden mb-6 sm:mb-8" style={{ background: "linear-gradient(135deg, rgba(217,119,6,0.08), rgba(217,119,6,0.02))", border: "1px solid rgba(217,119,6,0.2)" }}>
+        <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
         <div className="grid md:grid-cols-5 gap-0">
-          {/* Mary image */}
-          <div className="md:col-span-2 relative h-64 md:h-full overflow-hidden">
-            <img
-              src="/images/mary-immaculate.jpg"
-              alt="The Immaculate Conception — the Blessed Virgin Mary"
-              loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 md:hidden" style={{
-              background: "linear-gradient(to top, rgba(28,25,23,0.55), transparent 60%)",
-            }} />
-            <div className="absolute inset-0 hidden md:block" style={{
-              background: "linear-gradient(to right, transparent 75%, rgba(250,248,245,1))",
-            }} />
+          <div className="md:col-span-2 relative h-48 sm:h-56 md:h-64 md:min-h-full overflow-hidden">
+            <img src="/images/mary-immaculate.jpg" alt="The Immaculate Conception" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 md:hidden" style={{ background: "linear-gradient(to top, rgba(28,25,23,0.55), transparent 60%)" }} />
+            <div className="absolute inset-0 hidden md:block" style={{ background: "linear-gradient(to right, transparent 75%, rgba(250,248,245,1))" }} />
           </div>
-
-          {/* Reflection */}
-          <div className="md:col-span-3 p-6 sm:p-8 md:p-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
-              style={{ background: "rgba(217, 119, 6, 0.12)", border: "1px solid rgba(217, 119, 6, 0.25)" }}
-            >
+          <div className="md:col-span-3 p-5 sm:p-8 md:p-10">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full mb-3 sm:mb-5" style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.25)" }}>
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-[11px] font-bold tracking-[0.15em] text-amber-700 uppercase">Marian Devotion</span>
+              <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.15em] text-amber-700 uppercase">Marian Devotion</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-4"
-              style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}
-            >
-              Our Blessed Mother
-            </h2>
-            <p className="text-sm sm:text-base text-stone-600 leading-relaxed mb-6 max-w-2xl">
-              "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women,
-              and blessed is the fruit of thy womb, Jesus." Entrust your day to Mary —
-              she leads every soul who prays with her to her Son.
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-stone-900 mb-3 sm:mb-4" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>Our Blessed Mother</h2>
+            <p className="text-sm sm:text-base text-stone-600 leading-relaxed mb-4 sm:mb-6 max-w-2xl">
+              "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus." Entrust your day to Mary — she leads every soul who prays with her to her Son.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="rosary"
-                className="text-sm font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105"
-                style={{
-                  background: "linear-gradient(135deg, #D97706, #B45309)",
-                  color: "#fff",
-                  boxShadow: "0 8px 24px rgba(217, 119, 6, 0.35)",
-                }}
-              >
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <Link to="rosary" className="text-xs sm:text-sm font-bold px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all duration-200 hover:scale-105" style={{ background: "linear-gradient(135deg, #D97706, #B45309)", color: "#fff", boxShadow: "0 8px 24px rgba(217,119,6,0.35)" }}>
                 Pray the Rosary →
               </Link>
-              <Link
-                to="prayer-module"
-                className="text-sm font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105"
-                style={{
-                  background: "#FFFFFF",
-                  color: "#B45309",
-                  border: "1px solid rgba(217, 119, 6, 0.35)",
-                  boxShadow: "0 4px 16px rgba(217, 119, 6, 0.12)",
-                }}
-              >
+              <Link to="prayer-module" className="text-xs sm:text-sm font-bold px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all duration-200 hover:scale-105" style={{ background: "#FFFFFF", color: "#B45309", border: "1px solid rgba(217,119,6,0.35)", boxShadow: "0 4px 16px rgba(217,119,6,0.12)" }}>
                 Marian Novenas
               </Link>
             </div>
@@ -326,101 +208,49 @@ export default function Dashboard() {
         </div>
       </div>
 
-
-      <div className="flex items-center gap-3 mb-5 px-1">
-        <div className="w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
-        <h2
-          className="text-[13px] font-bold tracking-[0.25em] uppercase"
-          style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", color: "#57534E" }}
-        >
-          Continue Your Journey
-        </h2>
+      {/* Section Title */}
+      <div className="flex items-center gap-3 mb-4 sm:mb-5 px-1">
+        <div className="w-5 sm:w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
+        <h2 className="text-[11px] sm:text-[13px] font-bold tracking-[0.2em] sm:tracking-[0.25em] uppercase" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", color: "#57534E" }}>Continue Your Journey</h2>
         <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
       </div>
 
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+      {/* Journey Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-6 sm:mb-8">
         {cards.map((card) => (
           <Link key={card.to} to={card.to} className="block group">
-            <div
-              className="rounded-2xl relative overflow-hidden transition-all duration-300"
-              style={{ height: "240px", transform: "translateY(0)" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 20px 40px rgba(0,0,0,0.45)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)"; }}
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                style={{ backgroundImage: `url(${card.image})` }}
-              />
-              <div className="absolute inset-0" style={{ background: OVERLAY }} />
-              <div className="absolute top-0 left-0 right-0 h-[2px] opacity-40 group-hover:opacity-100 transition-opacity" style={{
-                background: "linear-gradient(90deg, transparent, #D97706, transparent)",
-              }} />
-
-              <div className="relative z-10 h-full flex flex-col justify-end p-6">
-                <div className="inline-flex self-start items-center gap-1.5 px-3 py-1 rounded-full mb-3"
-                  style={{ background: "rgba(217, 119, 6, 0.15)", border: "1px solid rgba(217, 119, 6, 0.25)" }}
-                >
+            <div className="rounded-2xl relative overflow-hidden transition-shadow duration-300 hover:shadow-2xl" style={{ height: "200px" }}>
+              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${card.image})` }} />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(28,25,23,0.85), rgba(28,25,23,0.35))" }} />
+              <div className="absolute top-0 left-0 right-0 h-[2px] opacity-40 group-hover:opacity-100 transition-opacity" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
+              <div className="relative z-10 h-full flex flex-col justify-end p-5">
+                <div className="inline-flex self-start items-center gap-1.5 px-3 py-1 rounded-full mb-2" style={{ background: "rgba(217,119,6,0.15)", border: "1px solid rgba(217,119,6,0.25)" }}>
                   <span className="text-[10px] font-bold tracking-wider text-amber-400 uppercase">{card.badge}</span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
-                  {card.title}
-                </h3>
-                <p className="text-sm text-slate-300 leading-relaxed mb-4 line-clamp-2">
-                  {card.description}
-                </p>
-                <span className="text-xs font-semibold text-amber-400 group-hover:text-amber-300 transition-colors">
-                  {card.cta} →
-                </span>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1.5" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>{card.title}</h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-3 line-clamp-2">{card.description}</p>
+                <span className="text-[11px] sm:text-xs font-semibold text-amber-400 group-hover:text-amber-300 transition-colors">{card.cta} →</span>
               </div>
             </div>
           </Link>
         ))}
       </div>
 
-
-      <div
-        className="rounded-3xl p-6 sm:p-7 relative overflow-hidden bg-white"
-        style={{
-          border: "1px solid rgba(217, 119, 6, 0.25)",
-        }}
-      >
-        <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
-          background: "linear-gradient(90deg, transparent, #D97706, transparent)",
-        }} />
-        <div className="flex items-center justify-between gap-6 flex-wrap">
-          <div className="flex items-center gap-4">
-            <div
-              className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0"
-              style={{
-                border: "2px solid rgba(217, 119, 6, 0.35)",
-                boxShadow: "0 6px 18px rgba(217, 119, 6, 0.25)",
-              }}
-            >
-              <img
-                src="/images/virgin-mary.jpg"
-                alt="The Blessed Virgin Mary, Mother of Jesus"
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
+      {/* Rosary CTA */}
+      <div className="rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-7 relative overflow-hidden bg-white" style={{ border: "1px solid rgba(217,119,6,0.25)" }}>
+        <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2px solid rgba(217,119,6,0.35)", boxShadow: "0 6px 18px rgba(217,119,6,0.25)" }}>
+              <img src="/images/virgin-mary.jpg" alt="The Blessed Virgin Mary" loading="lazy" className="w-full h-full object-cover" />
             </div>
             <div>
-              <p className="text-[10px] text-amber-700/70 font-bold tracking-[0.25em] uppercase mb-1">Today's Rosary</p>
-              <p className="text-lg font-bold text-stone-900" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
-                {mystery} Mysteries
-              </p>
-              <p className="text-xs text-stone-500 mt-0.5">{liturgy.message}</p>
+              <p className="text-[9px] sm:text-[10px] text-amber-700/70 font-bold tracking-[0.2em] sm:tracking-[0.25em] uppercase mb-0.5 sm:mb-1">Today's Rosary</p>
+              <p className="text-base sm:text-lg font-bold text-stone-900" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>{mystery} Mysteries</p>
+              <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5">{liturgy.message}</p>
             </div>
           </div>
-          <Link
-            to="rosary"
-            className="text-sm font-bold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105"
-            style={{
-              background: "linear-gradient(135deg, #D97706, #B45309)",
-              color: "#fff",
-              boxShadow: "0 8px 24px rgba(217, 119, 6, 0.35)",
-            }}
-          >
+          <Link to="rosary" className="text-xs sm:text-sm font-bold px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all duration-200 hover:scale-105 w-full sm:w-auto text-center" style={{ background: "linear-gradient(135deg, #D97706, #B45309)", color: "#fff", boxShadow: "0 8px 24px rgba(217,119,6,0.35)" }}>
             Pray the Rosary →
           </Link>
         </div>
