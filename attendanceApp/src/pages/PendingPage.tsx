@@ -123,6 +123,14 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     onSynced(0);
   };
 
+  const clearAllLocalData = async () => {
+    if (sessions.length === 0) return;
+    if (!confirm(`Delete ALL ${sessions.length} local records (pending AND synced)? This cannot be undone.`)) return;
+    await db.sessions.clear();
+    load();
+    onSynced(0);
+  };
+
   const removeSynced = async (s: AttendanceSession) => {
     if (navigator.onLine) {
       const exists = await checkSessionExists(s.date);
@@ -243,6 +251,15 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
             style={{ marginTop: 8 }}
           >
             <Trash2 size={16} /> Clear all pending
+          </button>
+        )}
+        {sessions.length > 0 && (
+          <button
+            className="btn btn-ghost btn-block"
+            onClick={clearAllLocalData}
+            style={{ marginTop: 8, color: "var(--red)" }}
+          >
+            <Trash2 size={16} /> Clear ALL local data
           </button>
         )}
         {status && (
