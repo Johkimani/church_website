@@ -43,7 +43,7 @@ import {
 
 const router = express.Router();
 
-const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 const JUMUIYA_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", "jumuiya_os", ...CSA_ROLES];
 const REGISTER_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", ...CSA_ROLES];
 const TREASURY_ROLES = ["treasurer", ...CSA_ROLES];

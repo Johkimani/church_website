@@ -16,7 +16,7 @@ import {
 
 const router = express.Router();
 
-const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 const JUMUIYA_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", "jumuiya_os", ...CSA_ROLES];
 const REGISTER_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", ...CSA_ROLES];
 
@@ -62,19 +62,19 @@ router.delete(
 router.get(
   '/meeting-config',
   verifyToken,
-  requireRole('jumuiya_coordinator'),
+  requireRole('jumuiya_coordinator', 'assistant_jumuiya_coordinator'),
   getMeetingConfigs
 );
 router.put(
   '/meeting-config/:jumuiya_id',
   verifyToken,
-  requireRole('jumuiya_coordinator'),
+  requireRole('jumuiya_coordinator', 'assistant_jumuiya_coordinator'),
   updateMeetingConfig
 );
 router.delete(
   '/meeting-config/:jumuiya_id',
   verifyToken,
-  requireRole('jumuiya_coordinator'),
+  requireRole('jumuiya_coordinator', 'assistant_jumuiya_coordinator'),
   deleteMeetingConfig
 );
 

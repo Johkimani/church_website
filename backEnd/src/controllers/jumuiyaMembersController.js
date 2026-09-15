@@ -1398,7 +1398,7 @@ export const cancelPendingPayment = async (req, res) => {
   try {
     const { id } = req.params;
     const roles = Array.isArray(req.user?.role) ? req.user.role : req.user?.role ? [req.user.role] : [];
-    const isGlobal = roles.some(r => ["csa_secretary", "csa_chair", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim()));
+    const isGlobal = roles.some(r => ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"].includes(String(r).toLowerCase().trim()));
     const existing = await pool.query(
       `SELECT id, jumuiya_id FROM pending_payments WHERE id = $1 AND status = 'pending'`,
       [id]

@@ -58,7 +58,7 @@ const COMMUNITY_ROLE_SCOPES = {
   mentorship_chair: 'mentorship',
 };
 
-const GLOBAL_SUGGESTION_ROLES = ['admin', 'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator'];
+const GLOBAL_SUGGESTION_ROLES = ['admin', 'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator'];
 
 const COMMUNITY_OFFICIAL_ROLES = Object.keys(COMMUNITY_ROLE_SCOPES);
 
@@ -193,7 +193,7 @@ export const softDelete = async (req, res) => {
         return res.status(403).json({ error: "Only the CSA Vice Chairperson can delete CSA suggestions" });
       }
     } else if (target.scope === 'jumuiya') {
-      if (!isJumuiyaViceChair && !isDevOrAdmin && !roles.includes('jumuiya_coordinator')) {
+      if (!isJumuiyaViceChair && !isDevOrAdmin && !roles.includes('jumuiya_coordinator') && !roles.includes('assistant_jumuiya_coordinator')) {
         return res.status(403).json({ error: "Only the Jumuiya Vice Chairperson can delete this suggestion" });
       }
     }

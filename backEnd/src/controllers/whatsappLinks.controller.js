@@ -30,7 +30,7 @@ const JUMUIYA_NAMES = {
   "st-monica": "St. Monica of Hippo",
 };
 
-const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 
 const getUserRoles = (req) => {
   if (!req.user) return [];

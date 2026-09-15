@@ -73,7 +73,7 @@ router.get("/", async (req, res) => {
 
   try {
     const isAdmin = (Array.isArray(role) ? role : [role]).some((r) =>
-      ["csa_chair", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim()),
+      ["csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"].includes(String(r).toLowerCase().trim()),
     );
 
     const { rows } = isAdmin

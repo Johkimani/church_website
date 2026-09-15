@@ -8,6 +8,7 @@ export const CHAIR_ROLE = "CSA_CHAIR";
 const KNOWN_ADMIN_ROLES = new Set([
   CHAIR_ROLE,
   "JUMUIYA_COORDINATOR",
+  "ASSISTANT_JUMUIYA_COORDINATOR",
   "OS",
   "JUMUIYA_OS",
   "PROJECT_MANAGER",
@@ -114,6 +115,7 @@ const COMMUNITY_MODULES_BY_ROLE: Record<string, string[]> = {
   MENTORSHIP_CHAIR: ["mentorship", "youth"], // mentorship community historically lives under both ids
   MENTORSHIP_VICE_CHAIR: ["mentorship", "youth"],
   JUMUIYA_COORDINATOR: ["our-jumuiyas"],
+  ASSISTANT_JUMUIYA_COORDINATOR: ["our-jumuiyas"],
   JUMUIYA_CHAIRPERSON: ["our-jumuiyas"],
   JUMUIYA_VICE_CHAIRPERSON: ["our-jumuiyas"],
   JUMUIYA_OS: ["our-jumuiyas"],
@@ -139,6 +141,7 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
   roles.forEach((role) => {
     switch (role) {
       case "JUMUIYA_COORDINATOR":
+      case "ASSISTANT_JUMUIYA_COORDINATOR":
         prefixes.add("/admin/officials");
         prefixes.add("/admin/jumuiya-members");
         prefixes.add("/admin/attendance-tally");

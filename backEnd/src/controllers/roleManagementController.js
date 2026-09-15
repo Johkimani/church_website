@@ -3,7 +3,7 @@ import logger from "../logger/winston.js";
 import { getRoleNameForPosition, getGroupRoleName, checkExecutiveExclusivity } from "../utils/positionToRole.js";
 import { syncDancerToGroups, syncDancerToCsa } from "../utils/danceSync.js";
 
-const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator"];
+const ADMIN_ROLES = ["csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 
 const rejectIfNotAdmin = (req, res) => {
   const userRoles = req.user?.role;
@@ -313,7 +313,7 @@ export const listAssignments = async (req, res) => {
              COALESCE(r.role_name, 'unknown') as role_name, 
              COALESCE(r.description, 'Role assignment') as role_description,
              CASE
-               WHEN r.role_name IN ('csa_chair', 'jumuiya_coordinator', 'csa_vice_chair', 'csa_secretary', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist')
+               WHEN r.role_name IN ('csa_chair', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'csa_vice_chair', 'csa_secretary', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist')
                  THEN COALESCE(o.position, go.position, jo.position)
                WHEN r.role_name LIKE 'jumuiya_%'
                  THEN COALESCE(jo.position, o.position, go.position)
@@ -328,7 +328,7 @@ export const listAssignments = async (req, res) => {
                WHEN r.role_name LIKE 'charismatic_%' THEN 'Charismatic'
                WHEN r.role_name LIKE 'st_francis_%' THEN 'St. Francis'
                WHEN r.role_name LIKE 'mentorship_%' THEN 'Mentorship'
-               WHEN r.role_name IN ('csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist')
+               WHEN r.role_name IN ('csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist')
                  THEN 'CSA Executive'
                ELSE COALESCE(sg.name, msg.name, jo.category, go.category, o.category)
              END as jumuiya_name,

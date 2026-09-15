@@ -40,12 +40,12 @@ router.get(
 // All other routes require auth + jumuiya official role
 router.use(verifyToken, requireRole(
   "jumuiya_os", "jumuiya_chairperson", "jumuiya_secretary",
-  "csa_chair", "csa_secretary", "jumuiya_coordinator"
+  "csa_chair", "csa_secretary", "jumuiya_coordinator", "assistant_jumuiya_coordinator"
 ));
 
 const JUMUIYA_ROLES = [
   "jumuiya_os", "jumuiya_chairperson", "jumuiya_secretary",
-  "csa_chair", "csa_secretary", "jumuiya_coordinator"
+  "csa_chair", "csa_secretary", "jumuiya_coordinator", "assistant_jumuiya_coordinator"
 ];
 
 // ── Weekly Activities (jumuiya-scoped) ──────

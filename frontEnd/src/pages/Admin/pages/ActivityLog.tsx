@@ -119,7 +119,7 @@ export default function ActivityLog() {
 
   const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
   const canClearLogs = userRoles.some((r: any) =>
-    ["csa_chair", "jumuiya_coordinator", "admin", "developer"].includes(String(r).toLowerCase().trim())
+    ["csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator", "admin", "developer"].includes(String(r).toLowerCase().trim())
   );
 
   const hasFilters = search || actionFilter || jumuiyaFilter || roleFilter || dateFrom || dateTo;

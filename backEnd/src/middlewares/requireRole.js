@@ -1,6 +1,6 @@
 import { db } from "../Configs/dbConfig.js";
 
-const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 
 // Any approved official may manage the member/role directory, orders, payments
 // and other admin surfaces. Shared across routers that gate admin endpoints.
@@ -10,7 +10,7 @@ const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
 const OFFICIAL_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
   "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
-  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
+  "jumuiya_coordinator", "assistant_jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
   "choir_secretary", "choir_vice_secretary", "choir_treasurer", "choir_project_coordinator",
   "choir_male_representative", "choir_female_representative", "choir_vice_chair",
   "dance_chair", "dance_vice_chair",

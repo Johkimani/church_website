@@ -19,9 +19,9 @@ import {
 
 const router = Router();
 
-// Attendance tally & analytics is managed by the Jumuiya Coordinator role only.
+// Attendance tally & analytics is managed by the Jumuiya Coordinator and Assistant Jumuiya Coordinator.
 router.use(verifyToken);
-router.use(requireRole("jumuiya_coordinator"));
+router.use(requireRole("jumuiya_coordinator", "assistant_jumuiya_coordinator"));
 
 router.get("/tally-context", getTallyContext);
 router.get("/recent-status", getRecentStatus);

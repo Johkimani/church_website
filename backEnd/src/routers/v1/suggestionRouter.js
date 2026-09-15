@@ -22,7 +22,7 @@ const router = Router();
 // deliberately excluded from the generic OFFICIAL_ROLES set (global PII reads)
 // but is still an allowed manager here.
 const SUGGESTION_ADMIN_ROLES = [
-  "csa_chair", "csa_vice_chair", "csa_secretary", "jumuiya_coordinator",
+  "csa_chair", "csa_vice_chair", "csa_secretary", "jumuiya_coordinator", "assistant_jumuiya_coordinator",
   "jumuiya_chairperson", "jumuiya_vice_chairperson",
 ];
 const suggestionAdminGate = requireRole(...SUGGESTION_ADMIN_ROLES);
