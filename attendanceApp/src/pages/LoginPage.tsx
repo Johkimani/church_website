@@ -7,7 +7,7 @@ import {
   verifyOfflineCredential,
 } from "../api/offlineAuth";
 
-const ALLOWED_ROLES = ["jumuiya_coordinator", "jumuiya_vice_chairperson"];
+const ALLOWED_ROLES = ["jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 
 function hasAllowedRole(roles: string[] | undefined): boolean {
   if (!roles || roles.length === 0) return false;
@@ -16,8 +16,8 @@ function hasAllowedRole(roles: string[] | undefined): boolean {
 
 function deriveRecordedBy(roles: string[] | undefined): "coordinator" | "assistant" {
   if (!roles) return "coordinator";
-  if (roles.includes("jumuiya_coordinator")) return "coordinator";
-  return "assistant";
+  if (roles.includes("assistant_jumuiya_coordinator")) return "assistant";
+  return "coordinator";
 }
 
 interface Props {
