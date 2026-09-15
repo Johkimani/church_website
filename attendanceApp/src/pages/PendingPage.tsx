@@ -68,6 +68,14 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
 
   useEffect(() => {
     load();
+  }, [load, pending]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [load]);
 
   const sync = async () => {
