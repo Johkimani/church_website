@@ -269,6 +269,10 @@ export default function RecordPage({ token, onSaved }: Props) {
         </div>
       )}
 
+      <div style={{ textAlign: "center", fontSize: 10, color: "var(--muted)", padding: "4px 0 0" }}>
+        v9 · Total row indicator
+      </div>
+
       <div className="card">
         <h2>Record Attendance</h2>
         <p className="sub">Pick the date, then enter the number of attendees.</p>
@@ -334,6 +338,13 @@ export default function RecordPage({ token, onSaved }: Props) {
             ))}
           </div>
 
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", marginTop: 4, borderTop: "1px solid var(--line)", fontSize: 14, fontWeight: 700 }}>
+            <span>Total</span>
+            <span>
+              {years.reduce((sum, yr) => sum + (Number(counts[yearKey(yr.year)]) || 0), 0)}
+            </span>
+          </div>
+
           {recordedByControls}
 
           <button className="btn btn-primary" disabled={saving || !canSave} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!canSave ? (activity?.isTallyDay ? "Semester break — new tallies closed" : "Not a tally day") : undefined}>
@@ -367,6 +378,13 @@ export default function RecordPage({ token, onSaved }: Props) {
                 />
               </div>
             ))}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", marginTop: 4, borderTop: "1px solid var(--line)", fontSize: 14, fontWeight: 700 }}>
+            <span>Total</span>
+            <span>
+              {jumuiyas.reduce((sum, j) => sum + (Number(counts[j.group_id]) || 0), 0)}
+            </span>
           </div>
 
           {recordedByControls}
