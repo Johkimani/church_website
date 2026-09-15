@@ -270,7 +270,7 @@ export default function RecordPage({ token, onSaved }: Props) {
       )}
 
       <div style={{ textAlign: "center", fontSize: 10, color: "var(--muted)", padding: "4px 0 0" }}>
-        v9 · Total row indicator
+        v10 · Total row indicator
       </div>
 
       <div className="card">
