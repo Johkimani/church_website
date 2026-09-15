@@ -7,6 +7,19 @@ import {
   verifyOfflineCredential,
 } from "../api/offlineAuth";
 
+const ALLOWED_ROLES = ["jumuiya_coordinator", "jumuiya_vice_chairperson"];
+
+function hasAllowedRole(roles: string[] | undefined): boolean {
+  if (!roles || roles.length === 0) return false;
+  return roles.some((r) => ALLOWED_ROLES.includes(r));
+}
+
+function deriveRecordedBy(roles: string[] | undefined): "coordinator" | "assistant" {
+  if (!roles) return "coordinator";
+  if (roles.includes("jumuiya_coordinator")) return "coordinator";
+  return "assistant";
+}
+
 interface Props {
   onLogin: (token: string | null) => void;
 }
@@ -26,11 +39,16 @@ export default function LoginPage({ onLogin }: Props) {
 
     try {
       const res = await login(regNorm, password);
+      if (!hasAllowedRole(res.role)) {
+        setError("Access denied. Only jumuiya coordinators can use the attendance app.");
+        setLoading(false);
+        return;
+      }
       localStorage.setItem("csa_attendance_token", res.accessToken);
       await setSession("token", res.accessToken);
       await setSession("name", res.name || "");
       await setSession("mode", "online");
-      // Store a local verifier so this device can unlock without internet later
+      await setSession("recordedBy", deriveRecordedBy(res.role));
       try {
         await saveOfflineCredential(regNorm, password, {
           member_id: res.member_id,
@@ -51,9 +69,15 @@ export default function LoginPage({ onLogin }: Props) {
         const matched = await verifyOfflineCredential(regNorm, password);
         if (matched) {
           const cred = await getOfflineCredential();
+          if (!hasAllowedRole(cred?.profile?.role)) {
+            setError("Access denied. Only jumuiya coordinators can use the attendance app.");
+            setLoading(false);
+            return;
+          }
           await setSession("token", "");
           await setSession("name", cred?.profile?.name || regNorm);
           await setSession("mode", "offline");
+          await setSession("recordedBy", deriveRecordedBy(cred?.profile?.role));
           setOfflineUnlocked(true);
           setTimeout(() => onLogin(null), 600);
         } else {

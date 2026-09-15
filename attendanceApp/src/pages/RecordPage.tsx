@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Save, Zap, AlertTriangle } from "lucide-react";
-import { db, getMeta, setMeta, type AttendanceSession, type TallyJumuiya } from "../db/db";
+import { db, getMeta, setMeta, getSession, type AttendanceSession, type TallyJumuiya } from "../db/db";
 import { fetchTallyContext, getApiErrorMessage, type NovenaWindow, type TallyYear } from "../api/client";
 import { syncPending } from "../sync/sync";
 
@@ -52,6 +52,12 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState<"jumuiya" | "year">("jumuiya");
   const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
+
+  useEffect(() => {
+    getSession("recordedBy").then((v) => {
+      if (v === "coordinator" || v === "assistant") setRecordedBy(v);
+    });
+  }, []);
 
   const loadFromCache = useCallback((d: string) => {
     return Promise.all([getMeta<TallyJumuiya[]>("jumuiyas"), getMeta<NovenaWindow[]>("active_novenas")]).then(
