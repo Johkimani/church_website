@@ -84,7 +84,9 @@ export default function App() {
     if (ready) refreshPendingCount();
   }, [ready]);
 
-  // Auto-sync the moment connectivity returns (and on first load when online).
+  // Auto-sync TEMPORARILY DISABLED for offline verification testing
+  // Uncomment below to re-enable auto-sync
+  /*
   useEffect(() => {
     if (network !== "online") return;
     let cancelled = false;
@@ -122,6 +124,7 @@ export default function App() {
       clearTimeout(timers);
     };
   }, [network]);
+  */
 
   return (
     <>
