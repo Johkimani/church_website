@@ -10,8 +10,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import {
-  getAllSessions,
-  getSyncedSessions,
   syncPending,
   pendingCount,
   deleteSession,
@@ -45,13 +43,19 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [allSessions, allSynced] = await Promise.all([
-        getAllSessions(),
-        getSyncedSessions(),
-      ]);
+      const allSessions = await db.sessions.orderBy("recordedAt").reverse().toArray();
       setSessions(allSessions);
-      setSynced(allSynced);
-    } catch { /* IndexedDB error */ }
+      setSynced(allSessions.filter((s) => !!s.syncedAt));
+    } catch (e) {
+      console.error("PendingPage load error:", e);
+      try {
+        const fallback = await db.sessions.toArray();
+        setSessions(fallback);
+        setSynced(fallback.filter((s) => !!s.syncedAt));
+      } catch (e2) {
+        console.error("PendingPage fallback load error:", e2);
+      }
+    }
     setLoading(false);
 
     fetchAndCacheRecorded(RECORDED_LIMIT)
