@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { PencilLine, History, Wifi, WifiOff } from "lucide-react";
+import { PencilLine, History, Wifi, WifiOff, Download, LogOut } from "lucide-react";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
-import { getSession } from "./db/db";
-import { syncPending } from "./sync/sync";
+import { getSession, clearSession } from "./db/db";
+import { syncPending, getAuthToken } from "./sync/sync";
 import LoginPage from "./pages/LoginPage";
 import RecordPage from "./pages/RecordPage";
 import PendingPage from "./pages/PendingPage";
@@ -21,6 +21,7 @@ export default function App() {
   const [pending, setPending] = useState(0);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [splash, setSplash] = useState<Splash>("show");
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
     const t1 = window.setTimeout(() => setSplash("fade"), 1200);
@@ -47,6 +48,15 @@ export default function App() {
     setPending(await pendingCount());
   };
 
+  const handleLogout = async () => {
+    if (!confirm("Sign out? Pending records will stay on this device.")) return;
+    localStorage.removeItem("csa_attendance_token");
+    await clearSession();
+    setToken(null);
+    setOfflineMode(false);
+    setTab("record");
+  };
+
   useEffect(() => {
     loadAuth();
   }, []);
@@ -65,15 +75,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const onUpdate = () => setUpdateAvailable(true);
+    window.addEventListener("csa:update-available", onUpdate);
+    return () => window.removeEventListener("csa:update-available", onUpdate);
+  }, []);
+
+  useEffect(() => {
     if (ready) refreshPendingCount();
   }, [ready]);
 
   // Auto-sync the moment connectivity returns (and on first load when online).
   useEffect(() => {
-    if (!token || network !== "online") return;
+    if (network !== "online") return;
     let cancelled = false;
     const doSync = async () => {
-      const res = await syncPending(token);
+      const auth = await getAuthToken();
+      const res = await syncPending(auth);
       if (cancelled) return;
       if (res.pushed > 0) {
         setSyncMsg({
@@ -81,15 +98,30 @@ export default function App() {
           text: `Synced ${res.pushed} record${res.pushed === 1 ? "" : "s"} to the server`,
         });
         refreshPendingCount();
+      } else if (res.failed > 0) {
+        setSyncMsg({
+          ok: false,
+          text: `${res.failed} record${res.failed === 1 ? "" : "s"} failed to sync. Open Saved tab to retry.`,
+        });
+        refreshPendingCount();
+      } else if (!getAuthToken()) {
+        const { pendingCount: pc } = await import("./sync/sync");
+        const count = await pc();
+        if (count > 0) {
+          setSyncMsg({
+            ok: false,
+            text: `${count} unsynced record${count === 1 ? "" : "s"}. Log in online to sync them.`,
+          });
+        }
       }
     };
     doSync();
-    const timers = window.setTimeout(() => setSyncMsg(null), 4000);
+    const timers = window.setTimeout(() => setSyncMsg(null), 6000);
     return () => {
       cancelled = true;
       clearTimeout(timers);
     };
-  }, [token, network]);
+  }, [network]);
 
   return (
     <>
@@ -133,6 +165,16 @@ export default function App() {
         {syncMsg && (
           <div className={`banner ${syncMsg.ok ? "online" : "error"}`}>{syncMsg.text}</div>
         )}
+        {updateAvailable && (
+          <div
+            className="banner"
+            style={{ background: "#eff6ff", color: "#2563eb", cursor: "pointer" }}
+            onClick={() => window.location.reload()}
+          >
+            <Download size={16} />
+            New version available — tap to refresh
+          </div>
+        )}
 
         <InstallButton />
 
@@ -159,6 +201,10 @@ export default function App() {
           <History size={20} />
           Saved
           {pending > 0 && <span className="badge">{pending > 99 ? "99+" : pending}</span>}
+        </button>
+        <button onClick={handleLogout}>
+          <LogOut size={20} />
+          Sign out
         </button>
       </nav>
         </div>

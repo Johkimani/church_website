@@ -113,8 +113,8 @@ export const getHeroSlides = async (req, res) => {
 
         const hoursUntil = (nextDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-        // Only include if within 7 days
-        if (hoursUntil > 168) return null;
+        // Only include if within 72 hours (3 days) — smarter than 168 (7 days)
+        if (hoursUntil > 72) return null;
 
         return {
           id: `activity-weekly-${r.id}`,

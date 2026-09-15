@@ -44,6 +44,8 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [years, setYears] = useState<TallyYear[]>(FALLBACK_YEARS);
   const [activeNovenas, setActiveNovenas] = useState<NovenaWindow[]>([]);
   const [activity, setActivity] = useState<{ isTallyDay: boolean; type: string; label: string } | null>(null);
+  const [canSave, setCanSave] = useState(false);
+  const [semester, setSemester] = useState<{ start_date: string; end_date: string } | null>(null);
   const [, setLoadingContext] = useState(false);
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -58,11 +60,13 @@ export default function RecordPage({ token, onSaved }: Props) {
         setActiveNovenas(nov || []);
         const offline = dayActivity(d);
         const inNovena = isWithinNovena(d, nov || []);
+        const offlineTallyDay = !!(offline || inNovena);
         setActivity(
-          offline || inNovena
+          offlineTallyDay
             ? { isTallyDay: true, type: offline?.type || "novena", label: offline?.label || "Novena day" }
             : { isTallyDay: false, type: "", label: "" }
         );
+        setCanSave(offlineTallyDay);
         return j;
       }
     );
@@ -81,9 +85,13 @@ export default function RecordPage({ token, onSaved }: Props) {
           type: ctx.activityType,
           label: ctx.activityLabel,
         });
+        setCanSave(ctx.canSave);
+        setSemester(ctx.semester || null);
         await setMeta("jumuiyas", ctx.jumuiyas);
         await setMeta("active_novenas", ctx.active_novenas || []);
-        if (ctx.isTallyDay) {
+        if (ctx.isTallyDay && !ctx.canSave) {
+          setMessage({ ok: false, text: `Semester break — tallies for new dates are closed. Existing tallies can still be edited.` });
+        } else if (ctx.isTallyDay) {
           setMessage({ ok: true, text: `Tally day: ${ctx.activityLabel} — enter counts below.` });
         }
       } catch {
@@ -165,10 +173,16 @@ export default function RecordPage({ token, onSaved }: Props) {
   );
 
   const saveAll = async () => {
-    if (!isTallyDay) {
+    if (date > todayISO()) {
+      setMessage({ ok: false, text: "Cannot record attendance for a future date." });
+      return;
+    }
+    if (!canSave) {
       setMessage({
         ok: false,
-        text: `${date} is not a tally day (Mon/Wed/Thu or a scheduled novena), so no tally was saved.`,
+        text: activity?.isTallyDay
+          ? `Semester break — tallies for new dates are closed. Existing tallies can still be edited.`
+          : `${date} is not a tally day (Mon/Wed/Thu or a scheduled novena), so no tally was saved.`,
       });
       return;
     }
@@ -227,8 +241,8 @@ export default function RecordPage({ token, onSaved }: Props) {
           setMessage({ ok: true, text: `Saved ${mode === "year" ? "year tallies" : "tallies"} for ${date} and synced to the server.` });
         } else if (res.failed > 0) {
           setMessage({
-            ok: true,
-            text: `Saved ${date} locally, but the server rejected it: ${lastError}. It will retry later.`,
+            ok: false,
+            text: `Server rejected the tally for ${date}: ${lastError}. The data is saved on your device — it will retry when you reopen the app.`,
           });
         }
       } else {
@@ -265,7 +279,16 @@ export default function RecordPage({ token, onSaved }: Props) {
             type="date"
             className="input"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            max={todayISO()}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val && val > todayISO()) {
+                setMessage({ ok: false, text: "Cannot record attendance for a future date. Select today or a past date." });
+                return;
+              }
+              setMessage(null);
+              setDate(val);
+            }}
             style={{ width: 190, padding: "8px 10px", fontSize: 14 }}
           />
         </div>
@@ -277,6 +300,12 @@ export default function RecordPage({ token, onSaved }: Props) {
         ) : (
           <p className="sub" style={{ marginTop: -6 }}>
             {dateLabel} is not a tally day (Mon/Wed/Thu or a scheduled novena), so no tally can be saved.
+          </p>
+        )}
+
+        {semester && (
+          <p className="sub" style={{ marginTop: -8, fontSize: 11 }}>
+            Semester: {semester.start_date} → {semester.end_date}
           </p>
         )}
 
@@ -307,9 +336,9 @@ export default function RecordPage({ token, onSaved }: Props) {
 
           {recordedByControls}
 
-          <button className="btn btn-primary" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
+          <button className="btn btn-primary" disabled={saving || !canSave} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!canSave ? (activity?.isTallyDay ? "Semester break — new tallies closed" : "Not a tally day") : undefined}>
             <Save size={18} />
-            {saving ? "Saving…" : !isTallyDay ? "Not a tally day" : `Save${enteredCount ? ` ${enteredCount} Year${enteredCount > 1 ? "s" : ""}` : ""}`}
+            {saving ? "Saving…" : !canSave ? (activity?.isTallyDay ? "Semester break" : "Not a tally day") : `Save${enteredCount ? ` ${enteredCount} Year${enteredCount > 1 ? "s" : ""}` : ""}`}
           </button>
         </div>
       ) : jumuiyas.length === 0 ? (
@@ -342,9 +371,9 @@ export default function RecordPage({ token, onSaved }: Props) {
 
           {recordedByControls}
 
-          <button className="btn btn-primary" disabled={saving || !isTallyDay} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!isTallyDay ? "Not a tally day (Mon/Wed/Thu or a scheduled novena)" : undefined}>
+          <button className="btn btn-primary" disabled={saving || !canSave} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!canSave ? (activity?.isTallyDay ? "Semester break — new tallies closed" : "Not a tally day") : undefined}>
             <Save size={18} />
-            {saving ? "Saving…" : !isTallyDay ? "Not a tally day" : `Save${enteredCount ? ` ${enteredCount} Jumuiya${enteredCount > 1 ? "s" : ""}` : ""}`}
+            {saving ? "Saving…" : !canSave ? (activity?.isTallyDay ? "Semester break" : "Not a tally day") : `Save${enteredCount ? ` ${enteredCount} Jumuiya${enteredCount > 1 ? "s" : ""}` : ""}`}
           </button>
         </div>
       )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaTrash } from 'react-icons/fa';
 import apiService from '../../../services/api';
 
 export interface SliderImg {
@@ -30,6 +30,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
+    const [loadedImages, setLoadedImages] = useState<Record<string | number, boolean>>({});
     const len = images.length;
     const timeoutRef = useRef<number | null>(null);
     const progressRef = useRef<number | null>(null);
@@ -104,7 +105,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
     return (
         <div
-            className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl"
+            className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 group"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
             onTouchStart={onTouchStart}
@@ -123,26 +124,24 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             {/* Slides */}
             {images.map((img, i) => {
                 const isActive = i === idx;
+                const isLoaded = loadedImages[img.id || i];
                 return (
                     <div
                         key={i}
-                        className="absolute inset-0 will-change-opacity"
-                        style={{
-                            opacity: isActive ? 1 : 0,
-                            zIndex: isActive ? 10 : 0,
-                            transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)',
-                        }}
+                        className={`absolute inset-0 ${isActive && isLoaded ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
+                        style={{ transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     >
                         <img
                             src={img.url}
                             alt={img.title || img.message || 'slide'}
-                            className="w-full h-full object-cover"
-                            style={{
-                                transform: isActive ? 'scale(1)' : 'scale(1.05)',
-                                transition: 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)',
-                            }}
+                            className={`w-full h-full object-cover ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            style={{ transform: 'scale(1)', transition: 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)' }}
                             loading={i === 0 ? 'eager' : 'lazy'}
+                            onLoad={() => setLoadedImages(prev => ({ ...prev, [img.id || i]: true }))}
                         />
+                        {!isLoaded && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse" />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 
                         <div
@@ -185,22 +184,38 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             })}
 
             {/* Arrows */}
-            {len > 1 && (
-                <>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); prev(); }}
-                        className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-13 sm:h-13 flex items-center justify-center bg-black/25 hover:bg-black/45 backdrop-blur-md text-white rounded-full shadow-xl transition-all duration-300 hover:scale-110 active:scale-95 border border-white/10 hover:border-white/25 group"
-                        aria-label="Previous slide"
-                    >
-                        <FaChevronLeft size={18} className="group-hover:-translate-x-0.5 transition-transform duration-200" />
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); next(); }}
-                        className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-13 sm:h-13 flex items-center justify-center bg-black/25 hover:bg-black/45 backdrop-blur-md text-white rounded-full shadow-xl transition-all duration-300 hover:scale-110 active:scale-95 border border-white/10 hover:border-white/25 group"
-                        aria-label="Next slide"
-                    >
-                        <FaChevronRight size={18} className="group-hover:translate-x-0.5 transition-transform duration-200" />
-                    </button>
+                {len > 1 && (
+                    <>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); prev(); }}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-center justify-center gap-1
+                                h-20 md:h-24 w-10 md:w-12
+                                bg-white/10 hover:bg-white/20 text-white
+                                backdrop-blur-md border-r-0 border border-white/15
+                                rounded-r-none rounded-l-none rounded-tr-3xl rounded-br-3xl
+                                transition-all duration-300 ease-out
+                                opacity-0 group-hover:opacity-100 -translate-x-full group-hover:translate-x-0
+                                z-40 active:scale-95 cursor-pointer shadow-[4px_0_20px_rgba(0,0,0,0.2)]"
+                            aria-label="Previous slide"
+                        >
+                            <FaArrowLeft className="text-sm md:text-base" />
+                            <span className="text-[8px] font-bold tracking-[0.2em] uppercase opacity-70">Prev</span>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); next(); }}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-center justify-center gap-1
+                                h-20 md:h-24 w-10 md:w-12
+                                bg-white/10 hover:bg-white/20 text-white
+                                backdrop-blur-md border-l-0 border border-white/15
+                                rounded-l-none rounded-r-none rounded-tl-3xl rounded-bl-3xl
+                                transition-all duration-300 ease-out
+                                opacity-0 group-hover:opacity-100 translate-x-full group-hover:translate-x-0
+                                z-40 active:scale-95 cursor-pointer shadow-[-4px_0_20px_rgba(0,0,0,0.2)]"
+                            aria-label="Next slide"
+                        >
+                            <FaArrowRight className="text-sm md:text-base" />
+                            <span className="text-[8px] font-bold tracking-[0.2em] uppercase opacity-70">Next</span>
+                        </button>
 
                     {/* Dots + counter */}
                     <div className="absolute bottom-3 sm:bottom-5 right-4 sm:right-8 z-20 flex items-center gap-3">

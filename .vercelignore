@@ -1,5 +1,4 @@
 /backEnd
-/attendanceApp
 /logs
 /src
 /.github
@@ -7,6 +6,7 @@
 *.md
 *.json
 !vercel.json
+!package.json
 !frontEnd/*.json
 frontEnd/node_modules
 frontEnd/dist

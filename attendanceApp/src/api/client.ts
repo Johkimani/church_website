@@ -80,11 +80,13 @@ export interface NovenaWindow {
 export interface TallyContext {
   date: string;
   isTallyDay: boolean;
+  canSave: boolean;
   activityType: string;
   activityLabel: string;
   active_novenas?: NovenaWindow[];
   jumuiyas: TallyJumuiya[];
   years: TallyYear[];
+  semester?: { start_date: string; end_date: string } | null;
 }
 
 export interface TallyDayInfo {
@@ -140,14 +142,90 @@ export async function fetchRecentStatus(token: string, days = 14): Promise<Recen
   return res.data.data as RecentStatus;
 }
 
+/**
+ * Pushes a single attendance session to the server. Uses the apiClient
+ * interceptor for auth (reads from localStorage). Do NOT pass a manual
+ * Authorization header — the interceptor handles it.
+ */
 export async function pushSession(
-  token: string,
   session: SessionPayload
 ): Promise<{ success: boolean }> {
-  const res = await apiClient.post("/attendance/sessions", session, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await apiClient.post("/attendance/sessions", session);
   return res.data as { success: boolean };
+}
+
+/**
+ * Checks whether a tally session for `date` exists on the server.
+ * Returns `true` if at least one tally row is found, `false` otherwise.
+ * Silently returns `false` on network errors so callers don't block on offline.
+ */
+export async function checkSessionExists(date: string): Promise<boolean> {
+  try {
+    const res = await apiClient.get("/attendance/sessions", {
+      params: { date },
+    });
+    const rows = res.data?.data;
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Shape of a single tally row returned by GET /attendance/history */
+interface HistoryCount {
+  kind: "jumuiya" | "year";
+  jumuiya_name?: string;
+  jumuiya_color?: string;
+  year?: string;
+  label?: string;
+  count: number;
+  source: string;
+}
+
+export interface ServerRecordedSession {
+  date: string;
+  activityType: string;
+  activityLabel: string;
+  dimension: "jumuiya" | "year";
+  recordedBy: string;
+  totalCount: number;
+  counts: HistoryCount[];
+}
+
+/**
+ * Fetches the last `limit` recorded sessions from the server (main site).
+ * Returns them newest-first. Silently returns [] on network errors.
+ */
+export async function fetchRecentRecorded(
+  limit = 3
+): Promise<ServerRecordedSession[]> {
+  try {
+    const to = new Date().toISOString().slice(0, 10);
+    const fromObj = new Date();
+    fromObj.setDate(fromObj.getDate() - 30);
+    const from = fromObj.toISOString().slice(0, 10);
+
+    const res = await apiClient.get("/attendance/history", {
+      params: { from, to },
+    });
+    const rows = res.data?.data;
+    if (!Array.isArray(rows)) return [];
+
+    return rows.slice(0, limit).map((r: any) => ({
+      date: r.date,
+      activityType: r.activity_type,
+      activityLabel: r.activity_label,
+      dimension: r.dimension,
+      recordedBy: r.recorded_by_name || r.recorded_role || "",
+      totalCount: (r.counts || []).reduce(
+        (sum: number, c: any) => sum + (c.count || 0),
+        0
+      ),
+      counts: r.counts || [],
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export function getApiErrorMessage(err: unknown): string {

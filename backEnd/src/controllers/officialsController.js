@@ -20,10 +20,10 @@ export const CATEGORY_LIMITS = {
   'Executive': 6,
   'Jumuiya Coordinators': 2,
   'Bible Coordinators': 2,
-  'Rosary': 2,
+  'Rosary Coordinators': 2,
   'Pamphlet Managers': 2,
   'Project Managers': 2,
-  'Liturgist': 2,
+  'Liturgists': 2,
   'Choir Officials': 2,
   'Instrument Managers': 2,
   'Liturgical Dancers': 2,
@@ -37,9 +37,11 @@ export const CSA_SORT_SQL = `
     WHEN 'Executive' THEN 1
     WHEN 'Jumuiya Coordinators' THEN 2
     WHEN 'Bible Coordinators' THEN 3
+    WHEN 'Rosary Coordinators' THEN 4
     WHEN 'Rosary' THEN 4
     WHEN 'Pamphlet Managers' THEN 5
     WHEN 'Project Managers' THEN 6
+    WHEN 'Liturgists' THEN 7
     WHEN 'Liturgist' THEN 7
     WHEN 'Instrument Managers' THEN 8
     WHEN 'Choir Officials' THEN 9
@@ -1429,5 +1431,43 @@ export const handoverOfficials = async (req, res) => {
     res.status(500).json({ success: false, message: `Handover failed: ${error.message}` });
   } finally {
     client.release();
+  }
+};
+
+// =============================================================================
+// PUBLIC — Jumuiya Coordinator contact info
+// GET /officials/coordinator
+// Returns the name + phone of the current active Jumuiya Coordinator so the
+// frontend can build a dynamic wa.me link without hardcoding any contact.
+// No authentication required — this is intentionally public.
+// =============================================================================
+export const getJumuiyaCoordinatorContact = async (req, res) => {
+  try {
+    // Look for an active official in the "Jumuiya Coordinators" category whose
+    // position is the main coordinator (not the assistant / vice coordinator).
+    const result = await pool.query(
+      `SELECT name, contact
+       FROM officials
+       WHERE category = 'Jumuiya Coordinators'
+         AND (status = 'active' OR status IS NULL)
+         AND LOWER(position) LIKE '%coordinator%'
+         AND LOWER(position) NOT LIKE '%assistant%'
+         AND LOWER(position) NOT LIKE '%vice%'
+         AND LOWER(position) NOT LIKE '%ass%'
+         AND contact IS NOT NULL
+         AND TRIM(contact) <> ''
+       ORDER BY created_at DESC
+       LIMIT 1`
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ coordinator: null });
+    }
+
+    const { name, contact } = result.rows[0];
+    res.json({ coordinator: { name: name || null, phone: (contact || '').trim() } });
+  } catch (error) {
+    logger.error('Error fetching Jumuiya Coordinator contact: ' + error.message);
+    res.status(500).json({ error: 'Failed to load coordinator contact' });
   }
 };

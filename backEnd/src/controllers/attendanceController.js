@@ -210,7 +210,7 @@ export const getTallyContext = async (req, res) => {
     const date = normalizeDate(req.query.date) || todayStr();
     const ctx = await getActivityForDate(date);
 
-    const [sgResult, memberCounts, yearCounts, registerMap, activeNovenas] = await Promise.all([
+    const [sgResult, memberCounts, yearCounts, registerMap, activeNovenas, semester] = await Promise.all([
       pool.query(
         `SELECT group_id, name, slug, color FROM sub_groups
          WHERE slug <> ALL($1)
@@ -228,7 +228,14 @@ export const getTallyContext = async (req, res) => {
          ORDER BY start_date ASC
          LIMIT 20`
       ),
+      getCurrentSemester(),
     ]);
+
+    const inSemester = isDateInSemester(date, semester);
+    const hasExisting = ctx.isTallyDay ? await pool.query(
+      `SELECT 1 FROM attendance_tallies WHERE tally_date = $1 LIMIT 1`, [date]
+    ) : { rows: [] };
+    const canSave = ctx.isTallyDay && (inSemester || hasExisting.rows.length > 0);
 
     const jumuiyas = sgResult.rows.map((row) => {
       const counts = memberCounts[row.group_id] || { total_members: 0, active_members: 0 };
@@ -248,7 +255,11 @@ export const getTallyContext = async (req, res) => {
 
     res.json({
       success: true,
-      data: { date, ...ctx, active_novenas: activeNovenas.rows, jumuiyas, years },
+      data: {
+        date, ...ctx, active_novenas: activeNovenas.rows, jumuiyas, years,
+        canSave,
+        semester: semester ? { start_date: semester.start_date, end_date: semester.end_date } : null,
+      },
     });
   } catch (error) {
     console.error("getTallyContext error:", error.message);
@@ -430,6 +441,7 @@ export const saveSession = async (req, res) => {
   try {
     const ctx = await getActivityForDate(normalizedDate);
     if (!ctx.isTallyDay) {
+      console.warn(`saveSession REJECTED: ${normalizedDate} is not a tally day (user: ${req.user?.id})`);
       return res.status(400).json({
         success: false,
         error: `${normalizedDate} is not a tally day. Tally days are Monday (Rosary), Wednesday (Bible Study), Thursday (Rosary), or any day of an active novena.`,
@@ -448,7 +460,8 @@ export const saveSession = async (req, res) => {
       if (existing.rows.length === 0) {
         const window = semester
           ? ` (${semester.start_date} → ${semester.end_date})`
-          : "";
+          : " (no semester configured)";
+        console.warn(`saveSession REJECTED: ${normalizedDate} outside semester${window} (user: ${req.user?.id})`);
         return res.status(400).json({
           success: false,
           error: `Attendance tallies are closed for the semester break. New tallies can only be recorded within the current semester${window}.`,

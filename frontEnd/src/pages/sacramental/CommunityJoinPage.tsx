@@ -391,7 +391,7 @@ const CommunityJoinPage: React.FC = () => {
                   onClick={() => navigate('/community')}
                   className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
                 >
-                  All Ministries
+                  All Communities
                 </button>
               </div>
             </motion.div>
@@ -431,7 +431,7 @@ const CommunityJoinPage: React.FC = () => {
                   onClick={() => navigate('/community')}
                   className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
                 >
-                  All Ministries
+                  All Communities
                 </button>
               </div>
             </motion.div>

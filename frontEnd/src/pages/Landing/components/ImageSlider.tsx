@@ -53,7 +53,7 @@ function ImageSlider() {
   useEffect(() => {
     let cancelled = false
     const cacheKey = 'csa_hero_slides_cache'
-    const cacheTTL = 5 * 60 * 1000 // 5 minutes
+    const cacheTTL = 24 * 60 * 60 * 1000 // 24 hours
 
     const loadFromCache = () => {
       try {
@@ -215,13 +215,7 @@ function ImageSlider() {
                 Happening Soon
               </div>
             )}
-            {/* Price badge for products */}
-            {slide.slide_type === 'product' && slide.price && (
-              <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-emerald-500 text-white text-sm font-bold rounded-full flex items-center gap-1">
-                <FaShoppingBag size={12} />
-                KES {Number(slide.price).toLocaleString()}
-              </div>
-            )}
+            
           </div>
         )
       })}

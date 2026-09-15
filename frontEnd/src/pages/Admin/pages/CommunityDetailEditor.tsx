@@ -57,8 +57,9 @@ import {
 import { FaStar } from 'react-icons/fa';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import AssociatesTable from './AssociatesTable';
+import VideoUploadButton from './VideoUploadButton';
 
-type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'approved-members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions' | 'channels';
+type TabType = 'about' | 'songs' | 'activities' | 'announcements' | 'schedules' | 'members' | 'approved-members' | 'music-class' | 'gallery' | 'tshirts' | 'suggestions' | 'channels' | 'videos';
 
 interface GalleryItem {
   id: number;
@@ -184,6 +185,12 @@ export default function CommunityDetailEditor() {
   const [channelSaving, setChannelSaving] = useState(false);
   const [channelEditing, setChannelEditing] = useState<string | null>(null);
   const [isAddingChannel, setIsAddingChannel] = useState(false);
+
+  // Community-specific Videos state
+  const [videos, setVideos] = useState<{ id: number; platform: string; video_url: string; title: string; description: string; thumbnail_url: string | null; created_at: string }[]>([]);
+  const [videoForm, setVideoForm] = useState({ platform: 'tiktok', video_url: '', title: '', description: '' });
+  const [videoSaving, setVideoSaving] = useState(false);
+  const [isAddingVideo, setIsAddingVideo] = useState(false);
 
   // Choir music-class opt-ins (name + phone only)
   const [musicSignups, setMusicSignups] = useState<{ full_name: string; phone: string }[]>([]);
@@ -399,6 +406,18 @@ setSongsList(res.data?.data || []);
         } catch (e) {
           console.error('Failed to load channels for community', e);
           setChannels([]);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (activeTab === 'videos') {
+        try {
+          const res = await apiClient.get(`/community-videos/${categoryId}/videos`);
+          setVideos(res.data?.videos || []);
+        } catch (e) {
+          console.error('Failed to load videos for community', e);
+          setVideos([]);
         }
         setLoading(false);
         return;
@@ -1400,6 +1419,7 @@ setSongsList(res.data?.data || []);
         },
         { id: 'suggestions', label: 'Suggestion Box', icon: MessageSquare },
         { id: 'channels', label: 'Social Channels', icon: MessageSquare },
+        { id: 'videos', label: 'Videos', icon: ImageIcon },
       ];
 
   if (loading && !moduleMeta) {
@@ -2928,6 +2948,317 @@ setSongsList(res.data?.data || []);
                     )}
                   </ul>
                 </div>
+              </div>
+            );
+          })()}
+
+          {/* VIDEOS — Individual Video Links */}
+          {activeTab === 'videos' && (() => {
+            const isVideoCommunity = categoryId === 'choir' || categoryId === 'dancers';
+            const MAX_VIDEOS = 7;
+            const uploadedCount = videos.filter(v => v.video_type === 'upload').length;
+            const isAtMax = uploadedCount >= MAX_VIDEOS;
+            const availableVideoPlatforms = [
+              { id: 'tiktok', label: 'TikTok', placeholder: 'https://www.tiktok.com/@user/video/...' },
+              { id: 'youtube', label: 'YouTube', placeholder: 'https://www.youtube.com/watch?v=...' },
+              { id: 'facebook', label: 'Facebook', placeholder: 'https://www.facebook.com/watch/?v=...' },
+            ];
+
+            const selectedVideoPlatform = availableVideoPlatforms.find(p => p.id === videoForm.platform) || availableVideoPlatforms[0];
+
+            const handleSaveVideo = async () => {
+              const trimmed = (videoForm.video_url || '').trim();
+              if (!trimmed) {
+                alert('Please provide a valid video URL');
+                return;
+              }
+
+              setVideoSaving(true);
+              try {
+                await apiClient.post(`/community-videos/${categoryId}/videos`, {
+                  platform: videoForm.platform,
+                  video_url: trimmed,
+                  title: videoForm.title,
+                  description: videoForm.description,
+                });
+                const res = await apiClient.get(`/community-videos/${categoryId}/videos`);
+                setVideos(res.data?.videos || []);
+                setIsAddingVideo(false);
+                setVideoForm({ platform: 'tiktok', video_url: '', title: '', description: '' });
+                showToast('Video added successfully');
+              } catch (e: any) {
+                alert(e?.response?.data?.error || 'Failed to add video');
+              } finally {
+                setVideoSaving(false);
+              }
+            };
+
+            const handleDeleteVideo = async (videoId: number) => {
+              if (!confirm('Are you sure you want to remove this video?')) return;
+              setVideoSaving(true);
+              try {
+                await apiClient.delete(`/community-videos/${categoryId}/videos/${videoId}`);
+                setVideos(videos.filter(v => v.id !== videoId));
+                showToast('Video removed');
+              } catch (e) {
+                alert('Failed to remove video');
+              } finally {
+                setVideoSaving(false);
+              }
+            };
+
+            return (
+              <div className="space-y-6">
+                {/* Header info */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                  <div>
+                    <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                      <ImageIcon size={18} className="text-purple-500" />
+                      Videos
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Post individual TikTok, YouTube, Facebook videos or upload short clips for {moduleMeta?.title || categoryId}.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Video counter */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-500">{uploadedCount}/{MAX_VIDEOS} uploaded</span>
+                      <div className="flex gap-1">
+                        {Array.from({ length: MAX_VIDEOS }).map((_, i) => (
+                          <div key={i} className="w-2 h-2 rounded-full" style={{ background: i < uploadedCount ? '#7c3aed' : '#e2e8f0' }} />
+                        ))}
+                      </div>
+                    </div>
+                    {!isAddingVideo && !isAtMax && (
+                      <>
+                        <VideoUploadButton moduleId={categoryId || ''} onUploadComplete={async () => { const res = await apiClient.get(`/community-videos/${categoryId}/videos`); setVideos(res.data?.videos || []); }} saving={videoSaving} />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVideoForm({ platform: 'tiktok', video_url: '', title: '', description: '' });
+                            setIsAddingVideo(true);
+                          }}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-500 text-white rounded-xl text-xs font-black hover:bg-purple-600 transition shadow-sm cursor-pointer shrink-0"
+                        >
+                          <Plus size={15} /> Add Link
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress bar when saving */}
+                {videoSaving && (
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full animate-pulse w-full" />
+                  </div>
+                )}
+
+                {/* Add Video Link Card */}
+                {isAddingVideo && (
+                  <div className="p-5 bg-purple-50/70 border-2 border-purple-200 rounded-2xl animate-fade space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                        <Plus size={16} className="text-purple-600" /> Add Video Link
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingVideo(false)}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white/60 transition cursor-pointer"
+                        title="Cancel"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1">
+                          Platform
+                        </label>
+                        <select
+                          value={videoForm.platform}
+                          onChange={(e) => setVideoForm({ ...videoForm, platform: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-purple-500 shadow-sm"
+                        >
+                          {availableVideoPlatforms.map((p) => (
+                            <option key={p.id} value={p.id}>{p.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1">
+                          Video URL
+                        </label>
+                        <input
+                          type="url"
+                          value={videoForm.video_url}
+                          onChange={(e) => setVideoForm({ ...videoForm, video_url: e.target.value })}
+                          placeholder={selectedVideoPlatform.placeholder}
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500 shadow-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1">
+                          Title (optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={videoForm.title}
+                          onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
+                          placeholder="e.g., Easter Performance 2025"
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500 shadow-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1">
+                          Description (optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={videoForm.description}
+                          onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+                          placeholder="Short description of the video"
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500 shadow-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingVideo(false)}
+                        className="px-4 py-2 text-slate-500 text-xs font-bold hover:text-slate-700 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveVideo}
+                        disabled={videoSaving || !videoForm.video_url.trim()}
+                        className="inline-flex items-center gap-1.5 px-5 py-2 bg-purple-500 text-white rounded-xl text-xs font-black hover:bg-purple-600 transition shadow-sm disabled:opacity-50 cursor-pointer"
+                      >
+                        {videoSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                        Add Video
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Videos List */}
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">
+                    Posted Videos ({videos.length})
+                  </h4>
+                  {videos.length === 0 ? (
+                    <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                      <ImageIcon size={28} className="text-slate-400 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-slate-600">No videos posted yet</p>
+                      <p className="text-xs text-slate-400 mt-1">Click "Add Link" for TikTok/YouTube or "Upload" for short clips.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {videos.map((video) => {
+                        const isUploaded = video.video_type === 'upload';
+                        const info = isUploaded
+                          ? { id: 'upload', label: 'Uploaded' }
+                          : availableVideoPlatforms.find(p => p.id === video.platform) || { id: video.platform, label: video.platform };
+                        return (
+                          <div
+                            key={video.id}
+                            className="flex items-start gap-3 p-4 bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition group"
+                          >
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                              isUploaded ? 'bg-purple-100 text-purple-600' :
+                              video.platform === 'tiktok' ? 'bg-slate-100 text-slate-800' :
+                              video.platform === 'youtube' ? 'bg-red-100 text-red-600' :
+                              video.platform === 'facebook' ? 'bg-blue-100 text-blue-600' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {isUploaded ? <Upload size={18} /> :
+                               video.platform === 'tiktok' ? <Globe size={18} /> :
+                               video.platform === 'youtube' ? <ExternalLink size={18} /> :
+                               <Globe size={18} />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-slate-800 truncate">{video.title || 'Untitled Video'}</p>
+                                {isUploaded && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-700 shrink-0">FILE</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 truncate">{isUploaded ? (video.video_file_url || '').substring(0, 50) + '...' : video.video_url}</p>
+                              {video.description && (
+                                <p className="text-xs text-slate-400 mt-1 line-clamp-1">{video.description}</p>
+                              )}
+                              <p className="text-[10px] text-slate-400 mt-1">
+                                {new Date(video.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 ml-2">
+                              {isUploaded && video.video_file_url ? (
+                                <a
+                                  href={video.video_file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+                                  title="Open video"
+                                >
+                                  <ExternalLink size={15} />
+                                </a>
+                              ) : video.video_url ? (
+                                <a
+                                  href={video.video_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+                                  title="Open video"
+                                >
+                                  <ExternalLink size={15} />
+                                </a>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteVideo(video.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
+                                title="Delete video"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Guidance Banner */}
+                {!isVideoCommunity && (
+                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-700 flex items-start gap-2">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Videos are currently available for Choir and Dancers communities.</strong> Other community types can manage video links through the Channels tab.
+                    </span>
+                  </div>
+                )}
+
+                {isVideoCommunity && (
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
+                    <p className="font-black text-slate-700">Video Guidelines:</p>
+                    <ul className="list-disc list-inside space-y-1 text-slate-500 text-[11px]">
+                      <li>Maximum <strong className="text-slate-700">7 videos</strong> per community. Delete an existing video before adding a new one when at max.</li>
+                      <li><strong className="text-slate-700">Uploaded files:</strong> Short clips only — MP4, WebM, or MOV, max 50 MB each.</li>
+                      <li><strong className="text-slate-700">Video links:</strong> For full performances, paste a TikTok or YouTube URL.</li>
+                    </ul>
+                  </div>
+                )}
               </div>
             );
           })()}

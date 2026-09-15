@@ -84,16 +84,16 @@ const Headers = () => {
     <>
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
 
-      <nav
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
-            : "bg-white/95 backdrop-blur-sm"
-        } px-[6%] lg:px-[8%] py-2 flex justify-between items-center min-h-16 lg:min-h-20`}
+<nav
+         className={`sticky top-0 z-50 transition-all duration-300 ${
+           scrolled
+             ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
+             : "bg-white/95 backdrop-blur-sm"
+          } px-4 lg:px-6 py-2 flex justify-between items-center min-h-16 lg:min-h-20 w-full max-w-full overflow-x-hidden`}
       >
         {/* Logo */}
         <div
-          className="flex items-center gap-1.5 cursor-pointer group mr-auto shrink-0"
+          className="flex items-center gap-1.5 cursor-pointer group shrink-0"
           onClick={() => navigate("/")}
         >
           <img
@@ -109,7 +109,7 @@ const Headers = () => {
         </div>
 
         {/* Desktop Nav */}
-        <ul className="hidden md:flex items-center ml-auto gap-x-0.5 lg:gap-x-1 overflow-x-auto scrollbar-hide flex-nowrap">
+        <ul className="hidden md:flex items-center justify-center gap-x-0.5 lg:gap-x-1 flex-nowrap overflow-visible max-w-[65vw]">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
@@ -119,7 +119,7 @@ const Headers = () => {
                     href={link.path}
                     onMouseEnter={prefetchNav(link.path)}
                     onFocus={prefetchNav(link.path)}
-                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`relative px-1 md:px-2 lg:px-3 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -135,7 +135,7 @@ const Headers = () => {
                     to={link.path}
                     onMouseEnter={prefetchNav(link.path)}
                     onFocus={prefetchNav(link.path)}
-                    className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                    className={`relative px-1 md:px-2 lg:px-3 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                       active
                         ? "text-blue-700 bg-blue-50"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -153,8 +153,24 @@ const Headers = () => {
         </ul>
 
         {/* Right side */}
-        <div className="flex items-center gap-2 lg:gap-3">
+        <div className="flex items-center gap-2 lg:gap-3 ml-auto">
 
+
+          {/* Notifications Bell */}
+          <Link
+            to="/Notification"
+            className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+            title="Updates"
+          >
+            <FaBell className="text-lg" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-white min-w-[18px] h-[18px] flex items-center justify-center"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
 
           {/* Cart */}
           <button

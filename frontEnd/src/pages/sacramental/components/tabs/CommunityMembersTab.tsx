@@ -110,9 +110,15 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
   const getYearRaw = (m: any): string => {
     const val = m.year_of_study || m.academic_year || m.year || '';
     if (val) return String(val).toLowerCase();
-    const reg = m.reg_number || m.regNumber || m.member_id || m.memberId || '';
+    const reg = m.resolved_reg_no || m.reg_number || m.regNumber || m.member_id || m.memberId || '';
     const deduced = deduceYearFromReg(reg);
     if (deduced) return deduced;
+    // Try to extract year from any string property
+    const allStrings = Object.values(m).filter(v => typeof v === 'string');
+    for (const s of allStrings) {
+      const d = deduceYearFromReg(s);
+      if (d) return d;
+    }
     return '';
   };
 
@@ -226,10 +232,10 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
     if (yearFilter !== 'all') {
       result = result.filter((m) => {
         const y = getYearRaw(m);
-        if (yearFilter === '1') return y.includes('1');
-        if (yearFilter === '2') return y.includes('2');
-        if (yearFilter === '3') return y.includes('3');
-        if (yearFilter === '4') return y.includes('4');
+        if (yearFilter === '1') return y === '1' || y === 'year 1' || y === 'year1';
+        if (yearFilter === '2') return y === '2' || y === 'year 2' || y === 'year2';
+        if (yearFilter === '3') return y === '3' || y === 'year 3' || y === 'year3';
+        if (yearFilter === '4') return y === '4' || y === 'year 4' || y === 'year4';
         if (yearFilter === 'alumni') return y.includes('alumni') || y.includes('post') || y.includes('grad');
         return true;
       });

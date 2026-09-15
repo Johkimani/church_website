@@ -85,7 +85,7 @@ const CommunitySection: React.FC = () => {
     {
       title: 'Jumuiya',
       label: 'Fellowship',
-      description: 'Local parish small groups that meet in faith, prayer, and friendship.',
+      description: 'KYU Catholic Students small groups that meet in faith, prayer, and friendship.',
       icon: <Grid size={22} />,
       accent: '#2563eb',
       link: '/jumuiya',
@@ -112,7 +112,7 @@ const CommunitySection: React.FC = () => {
     {
       title: 'Officials',
       label: 'Leadership',
-      description: 'The dedicated leaders who guide and serve the parish family.',
+      description: 'The dedicated leaders who guide and serve the CSA Family.',
       icon: <Users size={22} />,
       accent: '#7c3aed',
       link: '/officials',

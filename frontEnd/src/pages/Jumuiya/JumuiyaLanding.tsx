@@ -1,11 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from './context/DataContext';
+import { useCoordinatorContact } from '../../api/useCoordinatorContact';
 import './JumuiyaLanding.css';
 
 const JumuiyaLanding: React.FC = () => {
     const navigate = useNavigate();
     const { jumuiyaList } = useData();
+    const coordinator = useCoordinatorContact();
 
     const handleCardClick = (jumuiyaId: string) => {
         navigate(`/jumuiya/${jumuiyaId}`);
@@ -59,12 +61,22 @@ const JumuiyaLanding: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Footer Info */}
-                <div className="landing-footer">
-                    <p>
-                        Don't have a Jumuiya? Contact the Jumuiya Coordinator at <a href="mailto:info@jumuiya.co.ke">info@jumuiya.co.ke</a>
-                    </p>
-                </div>
+                {/* Footer Info — only rendered when an active coordinator with a phone exists */}
+                {coordinator !== undefined && coordinator !== null && (
+                    <div className="landing-footer">
+                        <p>
+                            Don't have a Jumuiya? Contact the Jumuiya Coordinator on WhatsApp:{' '}
+                            <a
+                                href={coordinator.waLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Chat with ${coordinator.name ?? 'the Jumuiya Coordinator'} on WhatsApp`}
+                            >
+                                {coordinator.name ?? 'Chat on WhatsApp'}
+                            </a>
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );
