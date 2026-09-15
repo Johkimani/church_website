@@ -21,7 +21,7 @@ function deriveRecordedBy(roles: string[] | undefined): "coordinator" | "assista
 }
 
 interface Props {
-  onLogin: (token: string | null) => void;
+  onLogin: (token: string | null, role?: string[]) => void;
 }
 
 export default function LoginPage({ onLogin }: Props) {
@@ -59,7 +59,7 @@ export default function LoginPage({ onLogin }: Props) {
       } catch {
         /* non-fatal — offline sign-in just won't be available */
       }
-      onLogin(res.accessToken);
+      onLogin(res.accessToken, res.role);
     } catch (err) {
       if (!isNetworkError(err)) {
         // Server answered — genuine credentials/validation problem
@@ -79,7 +79,7 @@ export default function LoginPage({ onLogin }: Props) {
           await setSession("mode", "offline");
           await setSession("recordedBy", deriveRecordedBy(cred?.profile?.role));
           setOfflineUnlocked(true);
-          setTimeout(() => onLogin(null), 600);
+          setTimeout(() => onLogin(null, cred?.profile?.role), 600);
         } else {
           const cred = await getOfflineCredential();
           setError(

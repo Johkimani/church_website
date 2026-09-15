@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Save, Zap, AlertTriangle } from "lucide-react";
-import { db, getMeta, setMeta, getSession, type AttendanceSession, type TallyJumuiya } from "../db/db";
+import { db, getMeta, setMeta, type AttendanceSession, type TallyJumuiya } from "../db/db";
 import { fetchTallyContext, getApiErrorMessage, type NovenaWindow, type TallyYear } from "../api/client";
 import { syncPending } from "../sync/sync";
 
 interface Props {
   token: string;
   onSaved: () => void;
+  recordedBy: "coordinator" | "assistant";
 }
 
 const todayISO = () => {
@@ -38,7 +39,7 @@ const yearKey = (y: string) => `y:${y}`;
 const isWithinNovena = (d: string, windows: NovenaWindow[]) =>
   windows.some((n) => d >= n.start_date && d <= n.end_date);
 
-export default function RecordPage({ token, onSaved }: Props) {
+export default function RecordPage({ token, onSaved, recordedBy: initialRecordedBy }: Props) {
   const [date, setDate] = useState(todayISO());
   const [jumuiyas, setJumuiyas] = useState<TallyJumuiya[]>([]);
   const [years, setYears] = useState<TallyYear[]>(FALLBACK_YEARS);
@@ -51,13 +52,11 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState<"jumuiya" | "year">("jumuiya");
-  const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
+  const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">(initialRecordedBy);
 
   useEffect(() => {
-    getSession("recordedBy").then((v) => {
-      if (v === "coordinator" || v === "assistant") setRecordedBy(v);
-    });
-  }, []);
+    setRecordedBy(initialRecordedBy);
+  }, [initialRecordedBy]);
 
   const loadFromCache = useCallback((d: string) => {
     return Promise.all([getMeta<TallyJumuiya[]>("jumuiyas"), getMeta<NovenaWindow[]>("active_novenas")]).then(

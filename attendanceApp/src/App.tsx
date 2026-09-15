@@ -9,7 +9,6 @@ import PendingPage from "./pages/PendingPage";
 import InstallButton from "./components/InstallButton";
 
 type Tab = "record" | "pending";
-
 type Splash = "show" | "fade" | "gone";
 
 export default function App() {
@@ -22,6 +21,7 @@ export default function App() {
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [splash, setSplash] = useState<Splash>("show");
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
 
   useEffect(() => {
     const t1 = window.setTimeout(() => setSplash("fade"), 1200);
@@ -36,10 +36,11 @@ export default function App() {
     const t = await getSession("token");
     setToken(t);
     if (!t) {
-      // Offline-unlocked session from a previous local sign-in
       const mode = await getSession("mode");
       if (mode === "offline") setOfflineMode(true);
     }
+    const rb = await getSession("recordedBy");
+    if (rb === "coordinator" || rb === "assistant") setRecordedBy(rb);
     setReady(true);
   };
 
@@ -140,12 +141,18 @@ export default function App() {
         </div>
       ) : !token && !offlineMode ? (
         <LoginPage
-          onLogin={(newToken) => {
+          onLogin={(newToken, role) => {
             if (newToken) {
               setToken(newToken);
               setOfflineMode(false);
             } else {
               setOfflineMode(true);
+            }
+            const roles = role || [];
+            if (roles.includes("assistant_jumuiya_coordinator")) {
+              setRecordedBy("assistant");
+            } else {
+              setRecordedBy("coordinator");
             }
             setTab("record");
             refreshPendingCount();
@@ -179,7 +186,7 @@ export default function App() {
         <InstallButton />
 
         {tab === "record" ? (
-          <RecordPage token={token || ""} onSaved={refreshPendingCount} />
+          <RecordPage token={token || ""} onSaved={refreshPendingCount} recordedBy={recordedBy} />
         ) : (
           <PendingPage
             token={token || ""}
