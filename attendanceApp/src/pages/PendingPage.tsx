@@ -126,22 +126,7 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     onSynced(0);
   };
 
-  const clearAllPending = async () => {
-    const pendingSessions = sessions.filter((s) => !s.syncedAt);
-    if (pendingSessions.length === 0) return;
-    if (!confirm(`Delete all ${pendingSessions.length} unsynced record${pendingSessions.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
-    await Promise.all(pendingSessions.map((s) => db.sessions.delete(s.sessionId)));
-    load();
-    onSynced(0);
-  };
 
-  const clearAllLocalData = async () => {
-    if (sessions.length === 0) return;
-    if (!confirm(`Delete ALL ${sessions.length} local records (pending AND synced)? This cannot be undone.`)) return;
-    await db.sessions.clear();
-    load();
-    onSynced(0);
-  };
 
   const removeSynced = async (s: AttendanceSession) => {
     if (navigator.onLine) {
@@ -256,24 +241,6 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
           <RefreshCw size={18} className={syncing ? "spin" : ""} />
           {syncing ? "Syncing…" : "Sync now"}
         </button>
-        {pendingSessions.length > 0 && (
-          <button
-            className="btn btn-ghost btn-block"
-            onClick={clearAllPending}
-            style={{ marginTop: 8 }}
-          >
-            <Trash2 size={16} /> Clear all pending
-          </button>
-        )}
-        {sessions.length > 0 && (
-          <button
-            className="btn btn-ghost btn-block"
-            onClick={clearAllLocalData}
-            style={{ marginTop: 8, color: "var(--red)" }}
-          >
-            <Trash2 size={16} /> Clear ALL local data
-          </button>
-        )}
         {status && (
           <div
             className={`banner ${status.ok ? "online" : "error"}`}

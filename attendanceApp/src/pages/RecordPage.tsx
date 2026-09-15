@@ -269,10 +269,6 @@ export default function RecordPage({ token, onSaved }: Props) {
         </div>
       )}
 
-      <div style={{ textAlign: "center", fontSize: 10, color: "var(--muted)", padding: "4px 0 0" }}>
-        v12 · Total row indicator
-      </div>
-
       <div className="card">
         <h2>Record Attendance</h2>
         <p className="sub">Pick the date, then enter the number of attendees.</p>
