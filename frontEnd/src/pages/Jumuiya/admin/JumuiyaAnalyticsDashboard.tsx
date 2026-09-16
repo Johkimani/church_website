@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { semesterServices } from "../../../api/semesterServices";
 import { semNumFromConfig, semColForYearSem, yearSemLabel } from "../../../utils/semester";
-import { isMale, isFemale } from "../../../utils/memberYear";
+import { isMale, isFemale, normalizeYearOfStudy } from "../../../utils/memberYear";
 
 interface Props {
   jumuiyaId: string;
@@ -17,9 +17,6 @@ interface Props {
   jumuiyaColor: string;
   members: any[];
   stats: any;
-  csaAllocations: any[];
-  user?: { id?: string; name?: string; [key: string]: any };
-  onRegister?: () => void;
 }
 
 const JUMUIYA_COLORS: Record<string, string> = {
@@ -38,12 +35,12 @@ const PIE_COLORS = ["#6366f1", "#ec4899", "#14b8a6", "#f59e0b", "#8b5cf6", "#ef4
 const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
 
 function isRegisteredForCurrentSem(m: any, semNum: 1 | 2): boolean {
-  const col = semColForYearSem(m.year_of_study, semNum);
+  const col = semColForYearSem(normalizeYearOfStudy(m.year_of_study), semNum);
   if (!col) return false;
   return m[col] === true || m[col] === 1 || m[col] === "1" || m[col] === "true";
 }
 
-const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, members, csaAllocations }) => {
+const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, members }) => {
   const resolvedColor = resolveColor(jumuiyaName, resolveColor(jumuiyaId, jumuiyaColor));
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "yearly">("overview");
   const [genderModal, setGenderModal] = useState<"male" | "female" | null>(null);
@@ -69,11 +66,11 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   const yearBreakdown = useMemo(() => {
     const years: Record<string, number> = {};
     members.forEach((m: any) => {
-      const y = m.year_of_study || "Unknown";
+      const y = normalizeYearOfStudy(m.year_of_study);
+      if (y === "Unknown") return;
       years[y] = (years[y] || 0) + 1;
     });
     return Object.entries(years)
-      .filter(([k]) => k !== "Unknown")
       .sort(([a], [b]) => parseInt(a) - parseInt(b))
       .map(([year, count]) => ({ name: `Year ${year}`, count }));
   }, [members]);
@@ -156,12 +153,19 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
     const femaleRegistered = femaleMembers.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
 
     const byYear: { label: string; total: number; registered: number }[] = [];
-    const years = [...new Set(members.map((m: any) => m.year_of_study).filter(Boolean))].sort();
-    years.forEach((y) => {
-      const yMembers = members.filter((m: any) => m.year_of_study === y);
-      const regd = yMembers.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
-      byYear.push({ label: `Year ${y}`, total: yMembers.length, registered: regd });
+    const byYearRaw: Record<string, any[]> = {};
+    members.forEach((m: any) => {
+      const y = normalizeYearOfStudy(m.year_of_study);
+      if (y === "Unknown") return;
+      (byYearRaw[y] = byYearRaw[y] || []).push(m);
     });
+    Object.keys(byYearRaw)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .forEach((y) => {
+        const yMembers = byYearRaw[y];
+        const regd = yMembers.filter((m: any) => isRegisteredForCurrentSem(m, semNum)).length;
+        byYear.push({ label: `Year ${y}`, total: yMembers.length, registered: regd });
+      });
 
     const currentSemRange = ["1", "2", "3", "4"].map(y => yearSemLabel(y, semNum)).join(" / ");
 
@@ -248,10 +252,6 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-pink-400 ml-1">— click to view</span>
               </p>
             </button>
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-3xl font-bold text-amber-600">{csaAllocations.length}</p>
-              <p className="text-xs text-slate-400 font-medium mt-1">CSA Allocations</p>
-            </div>
           </div>
 
           {/* Registration by Year */}

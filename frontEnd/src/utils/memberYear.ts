@@ -40,6 +40,37 @@ export function getYearOfStudy(reg: string): number {
   return year > 4 ? 4 : year;
 }
 
+/**
+ * Normalize the raw year_of_study value from the DB into a numeric year
+ * level (1–4).
+ *
+ * Handles "1","2","3","4" (pass-through), "2025-2026" (academic year range
+ * → computed from the current August-based academic year), and anything
+ * already normalizable. Returns "Unknown" when it can't be determined.
+ *
+ * "2025-2026" → "2" (in academic year 2026-27).
+ */
+export function normalizeYearOfStudy(yos: string | null | undefined): string {
+  const trimmed = (yos || "").trim();
+  if (!trimmed) return "Unknown";
+  if (/^[1-4]$/.test(trimmed)) return trimmed;
+  const match = trimmed.match(/^(\d{4})-\d{4}$/);
+  if (match) {
+    const startYear = parseInt(match[1], 10);
+    const yearLevel = academicStartYear() - startYear + 1;
+    if (yearLevel >= 1 && yearLevel <= 4) return String(yearLevel);
+  }
+  return "Unknown";
+}
+
+/**
+ * Display label for a raw year_of_study value — "Year 2", "Year 3", etc.
+ */
+export function yearOfStudyLabel(yos: string | null | undefined): string {
+  const normalized = normalizeYearOfStudy(yos);
+  return normalized === "Unknown" ? "Unknown" : `Year ${normalized}`;
+}
+
 export function isGraduated(reg: string): boolean {
   const admissionYear = extractAdmissionYear(reg);
   if (!admissionYear) return false;

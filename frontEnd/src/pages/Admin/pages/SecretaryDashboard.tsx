@@ -138,10 +138,8 @@ export default function SecretaryDashboard() {
     setLoadingMembers(true);
     try {
       const data = await memberService.getMembers(jumuiyaId);
-      // For secretaries, only show members from their jumuiya (source = 'jum'), filter out CSA members
       const raw = data?.data || data || [];
-      const jumuiyaOnly = raw.filter((m: any) => m.source === 'jum');
-      setMembers(jumuiyaOnly);
+      setMembers(raw);
     } catch (err) {
       // Fallback: try export members endpoint
       try {
@@ -422,9 +420,6 @@ export default function SecretaryDashboard() {
           jumuiyaColor={jumuiyaInfo.color}
           members={members}
           stats={stats}
-          csaAllocations={csaAllocations}
-          user={user ?? undefined}
-          onRegister={refreshAll}
         />
       )}
 
