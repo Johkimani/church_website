@@ -6,23 +6,21 @@ import { MessageSquare, Trash2, Search, Calendar, User, Mail, RefreshCcw, Loader
 import { toast } from 'react-hot-toast';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
-const STATUSES = ['all', 'pending', 'replied', 'approved', 'rejected', 'unmask_requested'] as const;
+const STATUSES = ['all', 'pending', 'replied', 'approved', 'rejected'] as const;
 
 const STATUS_META: Record<string, { icon: any; active: string; inactive: string }> = {
   all:                { icon: Filter,      active: 'bg-slate-800 text-white border-slate-800 shadow-md',          inactive: 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50' },
   pending:            { icon: Clock,       active: 'bg-amber-600 text-white border-amber-600 shadow-md',          inactive: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50' },
   replied:            { icon: Reply,       active: 'bg-blue-600 text-white border-blue-600 shadow-md',            inactive: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50' },
   approved:           { icon: CheckCircle, active: 'bg-emerald-600 text-white border-emerald-600 shadow-md',      inactive: 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50' },
-  rejected:           { icon: XCircle,     active: 'bg-rose-600 text-white border-rose-600 shadow-md',            inactive: 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50' },
-  unmask_requested:   { icon: Shield,      active: 'bg-purple-600 text-white border-purple-600 shadow-md',        inactive: 'bg-white text-purple-700 border-purple-200 hover:bg-purple-50' },
+rejected:           { icon: XCircle,     active: 'bg-rose-600 text-white border-rose-600 shadow-md',            inactive: 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50' },
 };
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
   replied: 'bg-blue-50 text-blue-700 border-blue-200',
   approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  rejected: 'bg-rose-50 text-rose-700 border-rose-200',
-  unmask_requested: 'bg-purple-50 text-purple-700 border-purple-200',
+rejected: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 const CATEGORIES = ['general', 'worship', 'progress', 'feedback', 'other', 'officials', 'jumuiya', 'members', 'ideas', 'requests', 'events'] as const;
@@ -99,7 +97,6 @@ export default function AdminSuggestions() {
   const [replyingId, setReplyingId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
-  const [unmaskLoading, setUnmaskLoading] = useState<number | null>(null);
 
   const loadSuggestions = async () => {
     setLoading(true);
@@ -165,20 +162,6 @@ export default function AdminSuggestions() {
       loadSuggestions();
     } catch (err: any) {
       toast.error('Failed to update category: ' + err.message);
-    }
-  };
-
-  const handleRequestUnmask = async (id: number) => {
-    if (!window.confirm('Request to unmask this anonymous suggestion? Both designated co-approvers must approve.')) return;
-    setUnmaskLoading(id);
-    try {
-      const res = await apiClient.post(`/suggestions/${id}/request-unmask`);
-      toast.success(res.data?.message || 'Unmask request sent to Chair and Liturgist');
-      loadSuggestions();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to request unmask');
-    } finally {
-      setUnmaskLoading(null);
     }
   };
 
@@ -423,22 +406,6 @@ export default function AdminSuggestions() {
                             <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
                           ))}
                         </select>
-                      )}
-                      {isVC && !item.name && !item.email && item.status !== 'unmask_requested' && (
-                        <button
-                          onClick={() => handleRequestUnmask(item.id)}
-                          disabled={unmaskLoading === item.id}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-white border border-purple-200 text-purple-600 rounded-xl text-xs font-bold hover:bg-purple-50 transition-all disabled:opacity-50"
-                        >
-                          {unmaskLoading === item.id ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
-                          Request Unmask
-                        </button>
-                      )}
-                      {item.status === 'unmask_requested' && (
-                        <span className="flex items-center gap-1.5 px-4 py-2 bg-purple-50 text-purple-600 rounded-xl text-xs font-bold">
-                          <Check size={14} />
-                          Unmask pending
-                        </span>
                       )}
                     </>
                   )}

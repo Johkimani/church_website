@@ -7,9 +7,6 @@ import {
   restoreFromBin,
   permanentDelete,
   clearBin,
-  requestUnmask,
-  getRoleUnmaskRequest,
-  respondRoleUnmask,
   replyToSuggestion,
   updateSuggestionCategory,
 } from "../../controllers/suggestionController.js";
@@ -37,12 +34,8 @@ router.patch("/bin/:id/restore", verifyToken, suggestionBinViewGate, restoreFrom
 router.delete("/bin/clear", verifyToken, suggestionBinDeleteGate, clearBin);
 router.delete("/bin/:id", verifyToken, suggestionBinDeleteGate, permanentDelete);
 
-router.get("/unmask/:role/:token", getRoleUnmaskRequest);
-router.post("/unmask/:role/:token/respond", respondRoleUnmask);
-
 router.post("/:id/reply", verifyToken, suggestionAdminGate, replyToSuggestion);
 router.patch("/:id/category", verifyToken, suggestionAdminGate, updateSuggestionCategory);
-router.post("/:id/request-unmask", verifyToken, suggestionAdminGate, requestUnmask);
 router.delete("/:id", verifyToken, suggestionAdminGate, softDelete);
 
 export default router;

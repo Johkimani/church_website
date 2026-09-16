@@ -156,7 +156,7 @@ router.use("/", statsPublishRoutes);
 // Weekly challenge (member current + liturgist build/review/publish)
 router.use("/weekly-challenge", verifyToken, weeklyChallengeRoutes);
 
-// Suggestion-specific routes (bin, unmask, soft-delete)
+// Suggestion-specific routes (bin, soft-delete)
 router.use("/suggestions", suggestionRouter);
 
 // Daily readings (USCCB proxy)

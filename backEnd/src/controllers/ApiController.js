@@ -23,29 +23,6 @@ const TABLE_PRIMARY_KEYS = {
   jumuiya: "group_id",
 };
 
-// Unmask tokens on suggestions are single-use secrets that must never be
-// returned to any client through the generic API.
-const SUGGESTION_TOKEN_COLUMNS = [
-  "chair_unmask_token",
-  "liturgist_unmask_token",
-  "jumuiya_chair_token",
-  "jumuiya_secretary_token",
-];
-
-const sanitizeSuggestionRows = (rows) =>
-  rows.map((row) => {
-    const safe = { ...row };
-    for (const col of SUGGESTION_TOKEN_COLUMNS) delete safe[col];
-    return safe;
-  });
-
-const maybeSanitize = (tableName, rows) =>
-  tableName === 'suggestions' ? sanitizeSuggestionRows(rows) : rows;
-
-// Sensitive columns can NEVER be set through the generic create/update API,
-// regardless of table. These are only ever written by dedicated controllers
-// (auth, password policy, role management), so blocking them here cannot
-// break legitimate generic-write features.
 const BLOCKED_WRITE_COLUMNS = new Set([
   "password",
   "password_hash",
@@ -56,11 +33,7 @@ const BLOCKED_WRITE_COLUMNS = new Set([
   "email_verification_token",
   "email_verification_expires",
   "refresh_token",
-  "refresh_tokens",
-  "chair_unmask_token",
-  "liturgist_unmask_token",
-  "jumuiya_chair_token",
-  "jumuiya_secretary_token",
+"refresh_tokens",
 ]);
 
 // Tables whose rows contain identity / payment / credential data. Generic
@@ -87,7 +60,7 @@ const WRITE_COLUMN_ALLOWLISTS = {
   products: ["name", "description", "price", "category", "image", "stock", "status", "is_featured"],
   categories: ["name", "description", "order", "status"],
   testimonials: ["name", "message", "rating", "status"],
-  suggestions: ["suggestion", "category", "scope", "jumuiya_id", "name", "email", "user_id", "status", "reply", "replied_at", "replied_by", "approved", "is_approved", "requested_unmask", "unmask_response"],
+  suggestions: ["suggestion", "category", "scope", "jumuiya_id", "name", "email", "user_id", "status", "reply", "replied_at", "replied_by", "approved", "is_approved"],
   finance_ledger: ["entry_type", "title", "amount", "category", "payment_method", "receipt_url", "notes", "entry_date", "recorded_by"],
   finance_budgets: ["event_name", "target_amount", "collected_amount", "spent_amount", "status", "notes"],
 };
@@ -151,7 +124,7 @@ export const getTableData = async (tableName, queryParams = {}) => {
     }
 
     const result = await pool.query(query, values);
-    const rows = maybeSanitize(tableName, result.rows);
+    const rows = result.rows;
 
     if (isPaginated) {
       return {
@@ -172,7 +145,7 @@ export const getTableData = async (tableName, queryParams = {}) => {
       logger.warn(`Falling back to unordered SELECT for "${dbTableName}" - column "${sortCol}" not found`);
       try {
         const fallback = await pool.query(`SELECT * FROM "${dbTableName}"`);
-        const rows = maybeSanitize(tableName, fallback.rows);
+        const rows = fallback.rows;
         if (isPaginated) {
           return {
             data: rows,
@@ -237,7 +210,7 @@ export const createRecord = async (tableName, data) => {
     `;
     
     const result = await pool.query(query, values);
-    return maybeSanitize(tableName, result.rows)[0];
+    return result.rows[0];
   } catch (error) {
     logger.error(`Error creating record in ${dbTableName}: ${error.message}`);
     console.error(`Error creating record in ${dbTableName}:`, error.message);
@@ -268,7 +241,7 @@ export const deleteRecord = async (tableName, id) => {
 
     const query = `DELETE FROM "${dbTableName}" WHERE "${pkName}" = $1 RETURNING *`;
     const result = await pool.query(query, [id]);
-    return maybeSanitize(tableName, result.rows)[0];
+    return result.rows[0];
   } catch (error) {
     console.error(`Error deleting record from ${dbTableName}:`, error.message);
     throw error;
@@ -323,7 +296,7 @@ export const updateRecord = async (tableName, id, data) => {
         result = await pool.query(query, [...values, altId]);
       }
     }
-    return maybeSanitize(tableName, result.rows)[0];
+    return result.rows[0];
   } catch (error) {
     console.error(`Error updating record in ${dbTableName}:`, error.message);
     throw error;
