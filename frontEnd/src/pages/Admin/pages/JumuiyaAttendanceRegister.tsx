@@ -378,6 +378,9 @@ export default function JumuiyaAttendanceRegister({
                 <span className="text-xs text-slate-400">
                   {presentCount} / {roster.length} present
                 </span>
+                <span className="text-[11px] text-slate-400 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5">
+                  No. column shaded green = present
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -403,14 +406,22 @@ export default function JumuiyaAttendanceRegister({
               <div className="p-12 text-center text-slate-400 text-sm">No active members in this jumuiya's roster.</div>
             ) : (
               <div className="divide-y divide-slate-50">
-                {roster.map((m) => {
+                {roster.map((m, idx) => {
                   const present = presentMap[m.member_id] === true;
+                  const no = idx + 1;
                   return (
                     <div
                       key={m.member_id}
-                      className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors"
                     >
-                      <div className="min-w-0">
+                      <span
+                        className={`w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-xs font-black ${
+                          present ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {no}
+                      </span>
+                      <div className="min-w-0 flex-1">
                         <p className="font-semibold text-slate-800 text-sm truncate">{m.name}</p>
                         <p className="text-[11px] text-slate-400 font-mono truncate">{m.member_id}</p>
                       </div>
@@ -524,7 +535,8 @@ export default function JumuiyaAttendanceRegister({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50">
-                    <th className="px-5 py-3">Member</th>
+                    <th className="px-5 py-3">No.</th>
+                    <th className="px-3 py-3">Member</th>
                     <th className="px-3 py-3 text-center">Attended</th>
                     <th className="px-3 py-3 text-center">Sessions</th>
                     <th className="px-3 py-3 text-center">Rate</th>
@@ -532,11 +544,12 @@ export default function JumuiyaAttendanceRegister({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {summary?.members.map((m) => {
+                  {summary?.members.map((m, idx) => {
                     const ratePct = m.rate == null ? 0 : m.rate * 100;
                     return (
                       <tr key={m.member_id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="px-5 py-3">
+                        <td className="px-5 py-3 text-slate-500 font-bold">{idx + 1}</td>
+                        <td className="px-3 py-3">
                           <p className="font-semibold text-slate-800">{m.name}</p>
                           <p className="text-[11px] text-slate-400 font-mono">{m.member_id}</p>
                         </td>
