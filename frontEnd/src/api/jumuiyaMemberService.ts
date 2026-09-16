@@ -186,6 +186,12 @@ export const memberService = {
   batchSettlePendingPayments: (data: { jumuiya_id: string; settled_by?: string }) =>
     apiClient.post(`/jumuiya-members/pending-payments/batch-settle`, data).then(r => r.data),
 
+  deletePendingPayment: (id: number) =>
+    apiClient.delete(`/jumuiya-members/pending-payments/${id}`).then(r => r.data),
+
+  batchDeletePendingPayments: (params: { jumuiya_id: string }) =>
+    apiClient.delete(`/jumuiya-members/pending-payments`, { params }).then(r => r.data),
+
   getAllMembersAcrossJumuiyas: () =>
     apiClient.get(`/jumuiya-members/all`).then(r => r.data),
 

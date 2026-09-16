@@ -1424,6 +1424,60 @@ export const cancelPendingPayment = async (req, res) => {
 };
 
 /**
+ * DELETE /api/jumuiya-members/pending-payments/:id
+ * CSA Chairperson deletes a pending payment record entirely.
+ */
+export const deletePendingPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const roles = Array.isArray(req.user?.role) ? req.user.role : req.user?.role ? [req.user.role] : [];
+    const isCSAChair = roles.some(r => ["csa_chair"].includes(String(r).toLowerCase().trim()));
+    if (!isCSAChair) {
+      return res.status(403).json({ success: false, message: "Only CSA Chairperson can delete pending payment records" });
+    }
+    const existing = await pool.query(
+      `SELECT id, jumuiya_id FROM pending_payments WHERE id = $1`,
+      [id]
+    );
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Pending payment not found" });
+    }
+    await pool.query(`DELETE FROM pending_payments WHERE id = $1`, [id]);
+    res.status(200).json({ success: true, message: "Pending payment record deleted" });
+  } catch (error) {
+    logger.error("Error in deletePendingPayment: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to delete pending payment" });
+  }
+};
+
+/**
+ * DELETE /api/jumuiya-members/pending-payments
+ * CSA Chairperson deletes pending payment records for a specific jumuiya.
+ * Query: ?jumuiya_id=xxx
+ */
+export const batchDeletePendingPayments = async (req, res) => {
+  try {
+    const { jumuiya_id } = req.query;
+    const roles = Array.isArray(req.user?.role) ? req.user.role : req.user?.role ? [req.user.role] : [];
+    const isCSAChair = roles.some(r => ["csa_chair"].includes(String(r).toLowerCase().trim()));
+    if (!isCSAChair) {
+      return res.status(403).json({ success: false, message: "Only CSA Chairperson can delete pending payment records" });
+    }
+    if (!jumuiya_id) {
+      return res.status(400).json({ success: false, message: "jumuiya_id is required" });
+    }
+    const result = await pool.query(
+      `DELETE FROM pending_payments WHERE jumuiya_id = $1 RETURNING *`,
+      [jumuiya_id]
+    );
+    res.status(200).json({ success: true, message: `${result.rowCount} pending payment records deleted`, data: { deleted_count: result.rowCount } });
+  } catch (error) {
+    logger.error("Error in batchDeletePendingPayments: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to delete pending payments" });
+  }
+};
+
+/**
  * DELETE /api/jumuiya-members/unregister/:id
  * Remove member from a Jumuiya registration but keep them in the database.
  */

@@ -3,7 +3,8 @@ import { memberService } from "../../../api/jumuiyaMemberService";
 import { semesterServices } from "../../../api/semesterServices";
 import { serialConfigService, SerialConfig } from "../../../api/serialConfigService";
 import { semNumFromConfig, semColForYearSem } from "../../../utils/semester";
-import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X, Check, UserPlus, Loader2, BarChart3, List, Clock, DollarSign, Hash, Settings2, History } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
+import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X, Check, UserPlus, BarChart3, List, Clock, DollarSign, Hash, Settings2, History, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import AnalyticsDashboard from "./AnalyticsDashboard";
@@ -53,6 +54,11 @@ function getYearSemLabel(m: any): string {
 }
 
 export default function CsaSecretaryDashboard() {
+  const { user } = useAuth();
+  const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+  const normalizedRoles = userRoles.map(r => String(r).toUpperCase().trim());
+  const isCSAChair = normalizedRoles.includes("CSA_CHAIR");
+
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -629,6 +635,24 @@ export default function CsaSecretaryDashboard() {
                           Settle All
                         </button>
                       )}
+                      {isCSAChair && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete ALL payment records for ${jumuiyaName}? This cannot be undone.`)) return;
+                            try {
+                              await memberService.batchDeletePendingPayments({ jumuiya_id: payments[0].jumuiya_id });
+                              toast.success(`All payment records for ${jumuiyaName} deleted`);
+                              fetchPendingPayments();
+                            } catch (err: any) {
+                              toast.error(err?.response?.data?.message || "Delete failed");
+                            }
+                          }}
+                          className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg hover:bg-red-100 transition-colors"
+                          title="Delete all payment records for this jumuiya"
+                        >
+                          <Trash2 size={12} /> Delete All
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="overflow-x-auto">
@@ -679,6 +703,24 @@ export default function CsaSecretaryDashboard() {
                                 </button>
                               ) : (
                                 <span className="text-xs text-slate-300">—</span>
+                              )}
+                              {isCSAChair && (
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm(`Delete payment record for ${p.member_name}? This cannot be undone.`)) return;
+                                    try {
+                                      await memberService.deletePendingPayment(p.id);
+                                      toast.success(`${p.member_name} payment record deleted`);
+                                      fetchPendingPayments();
+                                    } catch (err: any) {
+                                      toast.error(err?.response?.data?.message || "Delete failed");
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg hover:bg-red-100 transition-colors ml-1"
+                                  title="Delete this payment record"
+                                >
+                                  <Trash2 size={12} /> Delete
+                                </button>
                               )}
                             </td>
                           </tr>
