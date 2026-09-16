@@ -18,6 +18,7 @@ import {
   getMyJumuiyaPendingPayments,
   settlePendingPayment,
   cancelPendingPayment,
+  batchSettlePendingPayments,
   deletePendingPayment,
   batchDeletePendingPayments,
   unregisterJumuiyaMember,
