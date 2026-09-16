@@ -396,9 +396,13 @@ export default function RecordPage({ token, onSaved, recordedBy: initialRecorded
           </button>
         </div>
       )}
+      <div style={{ textAlign: "center", fontSize: 10, color: "var(--muted)", padding: "8px 0 0" }}>
+        v13 · CSA Attendance
+      </div>
     </div>
   );
 }
+
 
 function initials(name: string): string {
   return name

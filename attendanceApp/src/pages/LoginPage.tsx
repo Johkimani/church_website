@@ -100,6 +100,7 @@ export default function LoginPage({ onLogin }: Props) {
         <img src="/icons/app-icon-512.png" alt="CSA Attendance" className="login-logo-img" />
       </div>
       <h1 className="login-title">CSA Attendance</h1>
+      <p style={{ fontSize: 10, color: "var(--muted)", marginTop: -4 }}>v13</p>
 
       {offlineUnlocked && (
         <div className="banner online" style={{ marginBottom: 14 }}>

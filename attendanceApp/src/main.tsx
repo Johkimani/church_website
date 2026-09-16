@@ -38,13 +38,15 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
       const reg = await navigator.serviceWorker.register("/sw.js", {
         updateViaCache: "none",
       });
-      // Check for updates every 30 seconds (faster propagation).
-      setInterval(checkForUpdate, 30_000);
+      // Force-check for updates immediately on load
+      reg.update();
+      // Check for updates every 15 seconds (faster propagation)
+      setInterval(() => reg.update(), 15_000);
       // Also check once right after registration.
       checkForUpdate();
       // Re-check every time the user returns to the tab.
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") checkForUpdate();
+        if (document.visibilityState === "visible") reg.update();
       });
       // Listen for new SW taking control.
       reg.addEventListener("updatefound", () => {
