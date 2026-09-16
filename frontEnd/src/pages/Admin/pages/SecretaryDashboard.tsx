@@ -5,12 +5,13 @@ import { getYearOfStudy, genderCode, isMale, isFemale } from "../../../utils/mem
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, GitMerge, CheckCircle,
-  ArrowLeftRight, UserCheck, Image, CalendarCheck
+  ArrowLeftRight, UserCheck, Image, CalendarCheck, BookOpen
 } from "lucide-react";
 import toast from "react-hot-toast";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import GalleryManager from "./GalleryManager";
 import JumuiyaAnalyticsDashboard from "../../Jumuiya/admin/JumuiyaAnalyticsDashboard";
+import JumuiyaAboutEditor from "../../Jumuiya/admin/JumuiyaAboutEditor";
 import JumuiyaRegistrationDashboard from "../../Jumuiya/admin/JumuiyaRegistrationDashboard";
 import JumuiyaAttendanceRegister from "./JumuiyaAttendanceRegister";
 import JumuiyaAnnouncementsRegister from "./JumuiyaAnnouncementsRegister";
@@ -18,13 +19,14 @@ import { Megaphone } from "lucide-react";
 import { SkeletonSummaryBar } from "../../../components/Skeleton";
 
 
-type DashboardTab = "overview" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements" | "registration";
+type DashboardTab = "overview" | "about" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements" | "registration";
 
 const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }[]> = {
   chair: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
     { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "registration", label: "Registration", icon: UserCheck },
+    { id: "about", label: "About", icon: BookOpen },
     { id: "allocations", label: "Allocations", icon: UserCheck },
     { id: "analytics", label: "Reports", icon: TrendingUp },
   ],
@@ -419,6 +421,10 @@ export default function SecretaryDashboard() {
           members={members}
           stats={stats}
         />
+      )}
+
+      {activeTab === "about" && (
+        <JumuiyaAboutEditor jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} />
       )}
 
       {activeTab === "attendance" && (
