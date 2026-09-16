@@ -8,7 +8,6 @@ import {
   ArrowLeftRight, UserCheck, Image, CalendarCheck
 } from "lucide-react";
 import toast from "react-hot-toast";
-import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import GalleryManager from "./GalleryManager";
 import JumuiyaAnalyticsDashboard from "../../Jumuiya/admin/JumuiyaAnalyticsDashboard";
@@ -19,14 +18,13 @@ import { Megaphone } from "lucide-react";
 import { SkeletonSummaryBar } from "../../../components/Skeleton";
 
 
-type DashboardTab = "overview" | "organize" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements" | "registration";
+type DashboardTab = "overview" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements" | "registration";
 
 const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }[]> = {
   chair: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
     { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "registration", label: "Registration", icon: UserCheck },
-    { id: "organize", label: "Organize", icon: GitMerge },
     { id: "allocations", label: "Allocations", icon: UserCheck },
     { id: "analytics", label: "Reports", icon: TrendingUp },
   ],
@@ -439,10 +437,6 @@ export default function SecretaryDashboard() {
           user={user ?? undefined}
           onRegister={refreshAll}
         />
-      )}
-
-      {activeTab === "organize" && (
-        <OrganizationPanel jumuiyaId={jumuiyaId} />
       )}
 
       {activeTab === "allocations" && (
