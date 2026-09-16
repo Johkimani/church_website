@@ -384,6 +384,7 @@ export default function SecretaryDashboard() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-slate-100">
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">No.</th>
                           <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">Name</th>
                           <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">Reg #</th>
                           <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">Gender</th>
@@ -393,6 +394,7 @@ export default function SecretaryDashboard() {
                       <tbody>
                         {csaAllocations.slice(0, 10).map((m: any, i: number) => (
                           <tr key={m.id || i} className="border-b border-slate-50 hover:bg-slate-50">
+                            <td className="py-2 px-3 text-slate-500 font-bold">{i + 1}</td>
                             <td className="py-2 px-3 font-medium text-slate-700">{m.name}</td>
                             <td className="py-2 px-3 text-slate-500 font-mono text-xs">{m.reg_number || "—"}</td>
                             <td className="py-2 px-3">
