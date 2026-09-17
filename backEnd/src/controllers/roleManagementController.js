@@ -329,7 +329,7 @@ export const listAssignments = async (req, res) => {
                WHEN r.role_name LIKE 'st_francis_%' THEN 'St. Francis'
                WHEN r.role_name LIKE 'mentorship_%' THEN 'Mentorship'
                WHEN r.role_name IN ('csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist')
-                 THEN 'CSA Executive'
+                 THEN COALESCE(msg.name, sg.name, 'CSA Executive')
                ELSE COALESCE(sg.name, msg.name, jo.category, go.category, o.category)
              END as jumuiya_name,
              ab.first_name as assigned_by_first, ab.last_name as assigned_by_last,

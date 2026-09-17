@@ -846,18 +846,20 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
         <table className="w-full min-w-[980px] text-left border-collapse table-fixed">
           <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-            <th className="px-3 py-3 w-[18%]">Member</th>
+            <th className="px-3 py-3 w-[6%]">NO</th>
+            <th className="px-3 py-3 w-[14%]">Member</th>
             <th className="pl-1 pr-2 py-3 w-[12%]">Role</th>
             <th className="px-3 py-3 w-[14%]">Jumuiya</th>
             <th className="px-3 py-3 w-[20%]">Pages Access</th>
             <th className="px-3 py-3 w-[12%]">Approved By</th>
             <th className="px-3 py-3 w-[8%]">Approved At</th>
-            <th className="px-3 py-3 w-[16%] text-right">Actions</th>
+            <th className="px-3 py-3 w-[14%] text-right">Actions</th>
           </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-          {filtered.map((a) => (
+          {filtered.map((a, idx) => (
             <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+              <td className="px-3 py-3 text-xs font-semibold text-slate-400">{idx + 1}</td>
               <td className="px-3 py-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
