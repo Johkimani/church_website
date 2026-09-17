@@ -1728,14 +1728,9 @@ export const csaSubmitForApproval = async (req, res) => {
 export const csaGetApprovals = async (req, res) => {
   try {
     const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const jumuiyaName = resolved.name;
 
     const result = await pool.query(
       `SELECT aa.id, aa.status, aa.rejection_reason, aa.reviewed_at,
@@ -1831,14 +1826,9 @@ export const csaBatchReviewApprovals = async (req, res) => {
       return res.status(400).json({ error: "status must be 'approved' or 'rejected'" });
     }
 
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const jumuiyaName = resolved.name;
 
     const result = await pool.query(
       `UPDATE allocation_approvals aa
