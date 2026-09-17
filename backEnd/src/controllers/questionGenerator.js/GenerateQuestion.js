@@ -16,7 +16,7 @@ export const GenerateQuestion = async (req, res) => {
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama-3.1-8b-instant",
+        model: "openai/gpt-oss-120b",
         messages: [
           {
             role: "system",
