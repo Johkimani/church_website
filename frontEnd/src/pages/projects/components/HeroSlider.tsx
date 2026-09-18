@@ -17,6 +17,7 @@ interface HeroSliderProps {
     fallbackImages?: SliderImg[];
     shopAnchor?: string;
     buttonLabel?: string;
+    static?: boolean;
 }
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({
@@ -25,6 +26,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     onDelete,
     shopAnchor = '#products',
     buttonLabel = 'Shop Now',
+    static: isStatic = false,
 }) => {
     const [idx, setIdx] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -50,15 +52,15 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
     // Auto-play timer
     useEffect(() => {
-        if (len <= 1 || isPaused) return;
+        if (isStatic || len <= 1 || isPaused) return;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = window.setTimeout(next, 5500);
         return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-    }, [len, next, idx, isPaused]);
+    }, [len, next, idx, isPaused, isStatic]);
 
     // Progress bar animation
     useEffect(() => {
-        if (len <= 1 || isPaused) { setProgress(0); return; }
+        if (isStatic || len <= 1 || isPaused) { setProgress(0); return; }
         setProgress(0);
         const start = Date.now();
         const duration = 5500;
@@ -70,7 +72,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         };
         progressRef.current = window.requestAnimationFrame(tick);
         return () => { if (progressRef.current) cancelAnimationFrame(progressRef.current); };
-    }, [idx, len, isPaused]);
+    }, [idx, len, isPaused, isStatic]);
 
     // Touch/swipe handlers
     const onTouchStart = (e: React.TouchEvent) => {
@@ -108,11 +110,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 group"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
+            {...(isStatic ? {} : { onTouchStart, onTouchEnd })}
         >
             {/* Progress bar */}
-            {len > 1 && (
+            {!isStatic && len > 1 && (
                 <div className="absolute top-0 left-0 right-0 z-30 h-[3px] bg-white/10">
                     <div
                         className="h-full bg-white/70 transition-none"
@@ -123,12 +124,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
             {/* Slides */}
             {images.map((img, i) => {
-                const isActive = i === idx;
+                if (isStatic && i !== 0) return null;
+                const isActive = isStatic || i === idx;
                 const isLoaded = loadedImages[img.id || i];
+                const show = isStatic || (isActive && isLoaded);
                 return (
                     <div
                         key={i}
-                        className={`absolute inset-0 ${isActive && isLoaded ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
+                        className={`absolute inset-0 ${show ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
                         style={{ transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     >
                         <img
@@ -184,7 +187,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             })}
 
             {/* Arrows */}
-                {len > 1 && (
+                {!isStatic && len > 1 && (
                     <>
                         <button
                             onClick={(e) => { e.stopPropagation(); prev(); }}

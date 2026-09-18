@@ -71,6 +71,7 @@ export const Tshirts = () => {
                             onDelete={deleteSlide}
                             shopAnchor="#tshirts"
                             buttonLabel="Shop Now"
+                            static
                         />
                     )}
                 </div>

@@ -146,6 +146,7 @@ export const Chairs = () => {
                             onDelete={deleteSlide}
                             shopAnchor="#chairs"
                             buttonLabel="View Available"
+                            static
                         />
                     )}
                 </div>

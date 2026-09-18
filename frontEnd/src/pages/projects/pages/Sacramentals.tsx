@@ -332,6 +332,7 @@ export const Sacramentals = () => {
                             onDelete={handleDeleteSliderImage}
                             shopAnchor="#sacramentals"
                             buttonLabel="Shop Now"
+                            static
                         />
                     )}
                 </div>
