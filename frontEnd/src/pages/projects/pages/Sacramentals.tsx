@@ -17,6 +17,38 @@ const SACRAMENTAL_SUBCATS = new Set([
     'rosaries', 'bibles', 'chains', 'crucifixes', 'statues', 'candles', 'sacramentals'
 ]);
 
+const SPECIFIC_SUBCATS = new Set([
+    'rosaries', 'bibles', 'chains', 'crucifixes', 'statues', 'candles'
+]);
+
+// Products in the DB only carry a top-level category (e.g. 'sacramentals'), so the
+// shop infers the subcategory from explicit tags, the category, or name/description
+// keywords so the filter bars actually group the items.
+const SUBCATEGORY_KEYWORDS: [RegExp, string][] = [
+    [/\brosar(y|ies)\b|\bholy beads\b/, 'rosaries'],
+    [/\bbibles?\b|\bnew testament\b|\bold testament\b|\bgospel(s)?\b|\bmissal(ette)?s?\b|\bprayer book(s)?\b|\bnovena(?: booklets?|s)?\b/, 'bibles'],
+    [/\bchains?\b|\bmedals?\b|\bpendants?\b|\bscapulars?\b/, 'chains'],
+    [/\bcrucifix(es)?\b/, 'crucifixes'],
+    [/\bstatues?\b|\bfigurines?\b/, 'statues'],
+    [/\bcandles?\b|\bvotives?\b/, 'candles'],
+];
+
+const inferSacramentalSubcategory = (name: string, desc: string): string | null => {
+    const text = `${name} ${desc || ''}`.toLowerCase();
+    for (const [re, id] of SUBCATEGORY_KEYWORDS) {
+        if (re.test(text)) return id;
+    }
+    return null;
+};
+
+const resolveSubcategory = (p: Product): string => {
+    const explicit = (p.subcategory || '').toLowerCase();
+    if (SACRAMENTAL_SUBCATS.has(explicit)) return explicit;
+    const category = (p.category || '').toLowerCase();
+    if (SPECIFIC_SUBCATS.has(category)) return category;
+    return inferSacramentalSubcategory(p.name, p.description || p.desc || '') || 'sacramentals';
+};
+
 const CategoryFilterBar: React.FC<{
     selected: SacramentalCategory;
     onChange: (c: SacramentalCategory) => void;
@@ -234,7 +266,7 @@ export const Sacramentals = () => {
                 price: Number(p.price) || 0,
                 description: p.description || p.desc || '',
                 image_url: p.image_url || p.img || '',
-                subcategory: (p.subcategory || p.category || 'sacramentals').toLowerCase(),
+                subcategory: resolveSubcategory(p),
                 category: (p.category || 'sacramentals').toLowerCase(),
                 stock: p.stock ?? 50,
             }));
