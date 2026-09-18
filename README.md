@@ -161,13 +161,10 @@ The repo has three deploy surfaces. Each watches `main` (github `origin` and
 Firebase Hosting is also configured (`frontEnd/firebase.json`, `npm run deploy`)
 if the site ever moves off Vercel.
 
-## Notes
+### Notes
 
 - The CSPs in `vercel.json` currently reference one backend origin
   (`https://church-website-q8z9.onrender.com`). If the Render service gets a new
   URL, update every `connect-src`/`img-src` entry and `VITE_SERVER_URI`.
 - Render's egress firewall blocks SMTP ports — use the Resend HTTPS API
   (`emailConfig.js`), not nodemailer.
-- Don't delete files without grepping for importers first (dead-code sweep was
-  done, keep it that way): `npx tsc --noEmit -p frontEnd/tsconfig.json` and
-  `cd backEnd && node --check <file>` are the safety nets.
