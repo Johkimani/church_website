@@ -64,14 +64,6 @@ export function normalizeYearOfStudy(yos: string | number | null | undefined): s
   return "Unknown";
 }
 
-/**
- * Display label for a raw year_of_study value — "Year 2", "Year 3", etc.
- */
-export function yearOfStudyLabel(yos: string | number | null | undefined): string {
-  const normalized = normalizeYearOfStudy(yos);
-  return normalized === "Unknown" ? "Unknown" : `Year ${normalized}`;
-}
-
 export function isGraduated(reg: string): boolean {
   const admissionYear = extractAdmissionYear(reg);
   if (!admissionYear) return false;

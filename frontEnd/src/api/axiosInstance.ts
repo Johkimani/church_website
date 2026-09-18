@@ -10,32 +10,11 @@ const normalizeFiles = (files: File[] | File | null | undefined): File[] => {
 
 const API_BASE_URL = BASE_URL;
 
-const getApiErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError(error)) {
-    if (error.response) {
-      return (
-        error.response.data?.error ||
-        error.response.data?.message ||
-        `Server responded with status ${error.response.status}`
-      );
-
-      
-    }
-    if (error.request) {
-      return "Unable to reach the backend. Please ensure the server is running and the URL is correct.";
-    }
-    return error.message;
-  }
-  return typeof error === "string" ? error : "An unexpected error occurred.";
-};
-
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 120000,
 });
-
-export const getApiErrorMessageFromError = getApiErrorMessage;
 
 // Request interceptor
 apiClient.interceptors.request.use(
@@ -139,9 +118,6 @@ export const createManualQuestion = (data: {
   topic?: string;
 }) => apiClient.post("/questions/manual", data);
 
-export const fetchDailyQuestions = (limit: number = 10) =>
-  apiClient.get(`/questions/?limit=${limit}`);
-
 export const fetchManageQuestions = (params?: { page?: number; limit?: number; search?: string; topic?: string }) =>
   apiClient.get("/questions/manage", { params });
 
@@ -204,8 +180,6 @@ export const postAssistantChat = (data: {
   };
 }) => apiClient.post("/assistant/chat", data);
 
-export const fetchJumuiyaComparisonData = () => apiClient.get("/csa/jumuiya-comparison");
-
 // Published stats (admin-controlled snapshots)
 export const publishStats = () => apiClient.post("/publish-stats");
 export const fetchPublishedComparison = (params?: { week?: string; from?: string; to?: string }) =>
@@ -221,8 +195,6 @@ export const fetchSystemSettings = () => apiClient.get("/settings");
 
 export const updateSystemSettings = (settings: Record<string, string>) =>
   apiClient.put("/settings", settings);
-
-export const memberProgressData = () => apiClient.get("/member/progress");
 
 export const memberSummaryData = () => apiClient.get("/member/summary");
 
@@ -269,13 +241,6 @@ export const uploadFile = async (
       ? (e) => { if (e.total) options.onProgress!(Math.round((e.loaded / e.total) * 100)); }
       : undefined,
   });
-};
-
-export const fetchAllUploadedFiles = () => apiClient.post("/files");
-
-export const deleteOneOrMoreFiles = (publicIds: string | string[]) => {
-  const ids = Array.isArray(publicIds) ? publicIds : [publicIds];
-  return apiClient.delete("/files", { data: { publicIds: ids } });
 };
 
 export const fetchTable = (table: string, params: Record<string, any> = {}) => {
