@@ -27,6 +27,37 @@ frontEnd ───────┘                 │
 The website and the attendance app write to the **same** tables — offline attendance
 recorded in the PWA syncs straight into the live tally system (`attendance_tallies`).
 
+## Features
+
+Highlights by area (the single sign-in covers all of them):
+
+- **Jumuiya module** — per-community pages with about, officials, members,
+  activities, channels, registration, t-shirts, stamp cards and settings. Role
+  scoping keeps the CSA (universal) layer separate from each jumuiya (sub-community).
+- **Prayer Partners** — liturgists build pair/trio groups for their jumuiya with
+  instant local pairing (columns fill and move automatically, one bulk upload on
+  Post). Contacts open straight to WhatsApp (`wa.me`). The posted list is
+  **member-only**: only members of that jumuiya can view it, and your own group is
+  pinned as the first card.
+- **Devotions** — weekly and semester activity schedules with images, a public
+  activities page, and a CSA-wide dashboard. The CSA OS manages the **universal**
+  schedule (same as the chairperson); jumuiya officials manage their own scoped
+  schedule.
+- **Officials & roles** — officials directories, term tracking, and CSA-level role
+  assignments (`os`, `csa_chair`, `csa_secretary`, `jumuiya_os`, etc.). Global roles
+  administer the CSA; jumuiya roles are scoped to their community.
+- **Attendance** — tally system plus per-member registers, novena schedules, and the
+  offline attendance PWA that syncs back into the same tables.
+- **Membership** — member collection/import (with reg-number validation), CSA vs
+  jumuiya comparisons, seasons/groups, rejection handling, and self-registration.
+- **Community / sacramental** — community views, choir songs, and a sacramental
+  module for wider parish life.
+- **Treasury & payments** — M-Pesa STK push (Daraja), payments ledger, treasury OCR,
+  and booking/payment records for paid activities.
+- **AI assistant** — GROQ-powered questions, weekly challenge, and chat assistant.
+- **Admin tooling** — announcements, gallery, settings, suggestions, activity logs,
+  notifications, WhatsApp links, and generic table management.
+
 ## Repo layout
 
 ```
