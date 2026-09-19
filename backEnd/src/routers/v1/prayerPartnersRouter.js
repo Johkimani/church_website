@@ -71,14 +71,13 @@ const ensureJumuiyaOfficial = async (req, res, next) => {
 };
 
 /**
- * Any authenticated member of the target jumuiya may read the POSTED pair
- * list. Global/cross-jumuiya officials bypass. 404 keeps roles hidden.
+ * ONLY an authenticated member of the target jumuiya may read the POSTED
+ * pair list — global/cross-jumuiya officials are NOT exempt here. 404 keeps
+ * the list hidden from non-members and casual probes.
  */
 const ensureJumuiyaMember = async (req, res, next) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, message: "Authentication required" });
-    const roles = Array.isArray(req.user.role) ? req.user.role : req.user.role ? [req.user.role] : [];
-    if (roles.some((r) => GLOBAL_ROLES.includes(String(r).toLowerCase().trim()))) return next();
 
     const groupId = await resolveGroupId(req.params.jumuiyaId);
     if (!groupId) return res.status(404).json({ success: false, message: "Resource not found" });

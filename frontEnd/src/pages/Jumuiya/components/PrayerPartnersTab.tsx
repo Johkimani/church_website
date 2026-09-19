@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FaPrayingHands, FaEyeSlash, FaUserFriends, FaWhatsapp } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
 import { toWaPhone } from '../../../api/useCoordinatorContact';
@@ -10,9 +10,10 @@ interface Props {
     jumuiyaId: string;
     jumuiyaName: string;
     jumuiyaColor: string;
+    currentMemberId?: string;
 }
 
-export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor }: Props) {
+export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor, currentMemberId }: Props) {
     const [pairs, setPairs] = useState<PrayerPartnerUnit[]>([]);
     const [isPublished, setIsPublished] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +34,17 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
         const err = e as { response?: { data?: { message?: string } }; message?: string };
         return err?.response?.data?.message || err?.message || fallback;
     };
+
+    // The logged-in member's own group is pulled to the front so it is the
+    // first card on the first row.
+    const isInPair = (p: PrayerPartnerUnit) =>
+        !!currentMemberId && p.members.some((m) => m.member_id === currentMemberId);
+    const orderedPairs = useMemo(() => {
+        const mine = pairs.find(isInPair);
+        if (!mine) return pairs;
+        return [mine, ...pairs.filter((p) => p !== mine)];
+    }, [pairs, currentMemberId]);
+    const myPairId = orderedPairs[0] && isInPair(orderedPairs[0]) ? orderedPairs[0].id : null;
 
     useEffect(() => {
         let active = true;
@@ -131,13 +143,13 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
                             gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
                             gap: 14,
                         }}>
-                            {pairs.map((p, idx) => (
+                            {orderedPairs.map((p, idx) => (
                                 <div key={p.id} style={{
-                                    border: `1px solid var(--border-light)`,
+                                    border: `1px solid ${myPairId === p.id ? jumuiyaColor : 'var(--border-light)'}`,
                                     borderRadius: 'var(--rs)',
                                     background: '#ffffff',
                                     overflow: 'hidden',
-                                    boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+                                    boxShadow: myPairId === p.id ? `0 4px 16px ${_c('30')}` : '0 1px 2px rgba(15,23,42,0.04)',
                                 }}>
                                     <div style={{
                                         padding: '10px 14px',
@@ -151,7 +163,9 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
                                     }}>
-                                        <span>Group No. {idx + 1}</span>
+                                        <span>
+                                            {myPairId === p.id ? '★ Your Group' : `Group No. ${idx + 1}`}
+                                        </span>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, textTransform: 'none', letterSpacing: 0 }}>
                                             <FaUserFriends /> {p.members.length} {p.members.length === 1 ? 'member' : 'members'}
                                         </span>

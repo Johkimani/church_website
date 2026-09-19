@@ -229,8 +229,8 @@ const JumuiyaDetail: React.FC = () => {
                 return <SettingsTab jumuiyaColor={detailColor} />;
             case 'stampcard':
                 return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} saintImage={jumuiya.saintImage} />;
-            case 'prayerpartners':
-                return <PrayerPartnersTab jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />;
+case 'prayerpartners':
+            return <PrayerPartnersTab jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} currentMemberId={user?.member_id} />;
             default:
                 return null;
         }
