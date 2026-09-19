@@ -191,7 +191,9 @@ export default function SemesterActivitiesAdmin() {
         date_time: new Date(form.date_time).toISOString(),
       };
       if (id) {
-        await activitiesService.updateJumuiyaSemester(id, payload);
+        await (isScoped
+          ? activitiesService.updateJumuiyaSemester(id, payload)
+          : activitiesService.updateSemester(id, payload));
       } else {
         const created = isScoped
           ? await activitiesService.createJumuiyaSemester(jumuiyaId, payload)
@@ -235,7 +237,9 @@ export default function SemesterActivitiesAdmin() {
     if (!confirm("Delete this event?")) return;
     setError(null);
     try {
-      await activitiesService.deleteJumuiyaSemester(id);
+      await (isScoped
+        ? activitiesService.deleteJumuiyaSemester(id)
+        : activitiesService.deleteSemester(id));
       load();
       toast.success("Event deleted");
     } catch (err: any) {

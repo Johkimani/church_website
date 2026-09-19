@@ -153,7 +153,9 @@ export default function WeeklyActivitiesAdmin() {
     let id = editingId;
     try {
       if (id) {
-        await activitiesService.updateJumuiyaWeekly(id, form);
+        await (isScoped
+          ? activitiesService.updateJumuiyaWeekly(id, form)
+          : activitiesService.updateWeekly(id, form));
       } else {
         const created = isScoped
           ? await activitiesService.createJumuiyaWeekly(jumuiyaId, form)
@@ -190,7 +192,9 @@ export default function WeeklyActivitiesAdmin() {
     if (!confirm("Delete this activity?")) return;
     setError(null);
     try {
-      await activitiesService.deleteJumuiyaWeekly(id);
+      await (isScoped
+        ? activitiesService.deleteJumuiyaWeekly(id)
+        : activitiesService.deleteWeekly(id));
       load();
       toast.success("Activity deleted");
     } catch (err: any) {
