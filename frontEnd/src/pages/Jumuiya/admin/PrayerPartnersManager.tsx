@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FaUsers, FaUserFriends, FaBan, FaPrayingHands, FaPaperPlane, FaUndo, FaWhatsapp } from 'react-icons/fa';
+import { FaUsers, FaUserFriends, FaBan, FaPrayingHands, FaPaperPlane, FaUndo, FaWhatsapp, FaChevronDown, FaChevronLeft } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerMember, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
 import { toWaPhone } from '../../../api/useCoordinatorContact';
 import { normalizeYearOfStudy, getYearOfStudy, genderCode, isFemale } from '../../../utils/memberYear';
@@ -28,6 +28,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [collapsedYears, setCollapsedYears] = useState<Set<string>>(new Set());
 
     const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
@@ -106,6 +107,19 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     }, [normalized, pairedIds]);
 
     const availableTotal = columns.reduce((sum, c) => sum + c.rows.length, 0);
+    const hiddenTotal = columns.reduce(
+        (sum, c) => sum + (collapsedYears.has(c.value) ? c.rows.length : 0),
+        0
+    );
+
+    const toggleCollapseYear = (value: string) => {
+        setCollapsedYears((prev) => {
+            const next = new Set(prev);
+            if (next.has(value)) next.delete(value);
+            else next.add(value);
+            return next;
+        });
+    };
 
     const toggleSelect = (memberId: string) => {
         if (pairedIds.has(memberId)) {
@@ -314,13 +328,74 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                     </div>
                 ) : (
                     <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: `repeat(${columns.length + 1}, minmax(0, 1fr))`,
+                        display: 'flex',
                         gap: 12,
                         minHeight: 320,
+                        alignItems: 'stretch',
                     }} className="animate-fade">
                         {columns.map((col) => (
-                            <div key={col.value} style={{ ...cellStyle('y'), maxHeight: 480 }}>
+                            collapsedYears.has(col.value) ? (
+                                <div
+                                    key={col.value}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => toggleCollapseYear(col.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCollapseYear(col.value); } }}
+                                    title={`Expand ${col.label}`}
+                                    style={{
+                                        flex: '0 0 40px',
+                                        border: '1px solid var(--border-light)',
+                                        borderRadius: 'var(--rs)',
+                                        background: '#ffffff',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'stretch',
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <div style={{
+                                        padding: '12px 0',
+                                        background: jumuiyaColor,
+                                        color: '#fff',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 700,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.08em',
+                                        textAlign: 'center',
+                                    }}>
+                                        <FaChevronLeft style={{ marginBottom: 8 }} />
+                                    </div>
+                                    <div style={{
+                                        flex: '1 1 auto',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        writingMode: 'vertical-rl',
+                                        transform: 'rotate(180deg)',
+                                        color: 'var(--text-muted)',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.08em',
+                                        gap: 8,
+                                        padding: '8px 0',
+                                        minHeight: 0,
+                                    }}>
+                                        <span>{col.label}</span>
+                                        <span style={{
+                                            color: jumuiyaColor,
+                                            background: _c('14'),
+                                            borderRadius: 999,
+                                            padding: '2px 6px',
+                                            fontSize: '0.65rem',
+                                        }}>
+                                            {col.rows.length}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                            <div key={col.value} style={{ ...cellStyle('y'), maxHeight: 480, flex: '1 1 0px' }}>
                                 <div style={{
                                     padding: '10px 12px',
                                     background: jumuiyaColor,
@@ -334,7 +409,37 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                     position: 'sticky',
                                     top: 0,
                                     zIndex: 2,
-                                }}>{col.label}</div>
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                }}>
+                                    <span>
+                                        {col.label}
+                                        {col.rows.length > 0 && (
+                                            <span style={{ marginLeft: 8, fontWeight: 600, fontSize: '0.78rem', opacity: 0.9 }}>({col.rows.length})</span>
+                                        )}
+                                    </span>
+                                    <button
+                                        onClick={() => toggleCollapseYear(col.value)}
+                                        title={`Collapse ${col.label}`}
+                                        style={{
+                                            border: 'none',
+                                            background: 'rgba(255,255,255,0.22)',
+                                            color: '#fff',
+                                            borderRadius: 'var(--rs)',
+                                            width: 22,
+                                            height: 22,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <FaChevronDown size={11} />
+                                    </button>
+                                </div>
                                 <div style={{ padding: '6px 8px 10px', flex: '1 1 auto' }}>
                                     {col.rows.length === 0 ? (
                                         <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '14px 4px', textAlign: 'center' }}>
@@ -394,7 +499,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                             </div>
                         ))}
 
-                        <div style={{ ...cellStyle('y'), maxHeight: 480, background: '#f8fafc' }}>
+                        <div style={{ ...cellStyle('y'), maxHeight: 480, background: '#f8fafc', flex: '1 1 0px' }}>
                             <div style={{
                                 padding: '10px 12px',
                                 background: '#0f172a',
@@ -480,7 +585,8 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                 )}
 
                 <p style={{ marginTop: 14, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Every member of {jumuiyaName} (except associates) is eligible. {availableTotal} free members shown.
+                    Every member of {jumuiyaName} (except associates) is eligible. {availableTotal} free members shown
+                    {hiddenTotal > 0 ? ` — ${hiddenTotal} hidden inside collapsed columns (expand to pair them)` : ''}.
                 </p>
             </div>
         </div>
