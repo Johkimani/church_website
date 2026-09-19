@@ -69,6 +69,10 @@ const PrayerModule = lazy(() => import("./pages/Devotions/pages/PrayerModule"));
 const PrayerBook = lazy(() => import("./pages/Devotions/pages/PrayerBook"));
 const AllPrayers = lazy(() => import("./pages/Devotions/pages/AllPrayers"));
 const Bible = lazy(() => import("./pages/Devotions/pages/Bible"));
+const SevenSorrowsPage = lazy(() => import("./pages/Devotions/pages/SevenSorrowsPage"));
+const DivineMercyPage = lazy(() => import("./pages/Devotions/pages/DivineMercyPage"));
+const StMichaelPage = lazy(() => import("./pages/Devotions/pages/StMichaelPage"));
+const ReparationPage = lazy(() => import("./pages/Devotions/pages/ReparationPage"));
 
 // Officials
 const AdminPanel = lazy(() => import("./pages/officials/AdminPanel"));
@@ -268,6 +272,10 @@ const App: React.FC = () => {
               <Route path="prayer-module" element={<PrayerModule />} />
               <Route path="prayer-book" element={<PrayerBook />} />
               <Route path="bible" element={<Bible />} />
+              <Route path="seven-sorrows" element={<SevenSorrowsPage />} />
+              <Route path="divine-mercy" element={<DivineMercyPage />} />
+              <Route path="st-michael" element={<StMichaelPage />} />
+              <Route path="reparation" element={<ReparationPage />} />
             </Route>
 
             {/* Jumuiya (Public with persistent provider wrapper to optimize load speed) */}

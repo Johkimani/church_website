@@ -21,6 +21,10 @@ const PRAYER_SUBITEMS = [
   { to: "readings", label: "Prayer Book", icon: <FaBook size={14} /> },
   { to: "prayer-module", label: "Novenas & Litanies", icon: <FaBookOpen size={14} /> },
   { to: "rosary", label: "Holy Rosary", icon: <FaPrayingHands size={14} /> },
+  { to: "seven-sorrows", label: "Seven Sorrows", icon: <FaPrayingHands size={14} /> },
+  { to: "divine-mercy", label: "Divine Mercy", icon: <FaPrayingHands size={14} /> },
+  { to: "st-michael", label: "St. Michael Chaplet", icon: <FaPrayingHands size={14} /> },
+  { to: "reparation", label: "Rosary of Reparation", icon: <FaPrayingHands size={14} /> },
 ];
 
 const LITURGY_SUBITEMS = [

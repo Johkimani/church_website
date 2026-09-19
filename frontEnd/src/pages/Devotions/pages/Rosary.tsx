@@ -1,4 +1,5 @@
 import { useState, useRef, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
 import { marianMysteries } from "../data/mysteries/marian";
 import { sevenSorrows } from "../data/mysteries/sevenSorrows";
 import { reparationMysteries } from "../data/mysteries/reparation";
@@ -246,30 +247,34 @@ const HOW_TO_PRAY = [
   { title: "Close the Rosary", detail: "Repeat through the remaining four decades, then conclude with the Hail Holy Queen, the Concluding Prayer, and the Sign of the Cross." },
 ];
 
-const OTHER_DEVOTIONS: { title: string; description: string; color: string; data: Mystery[] }[] = [
+const OTHER_DEVOTIONS: { title: string; description: string; color: string; data: Mystery[]; link: string }[] = [
   {
     title: "The Seven Sorrows of Mary",
     description: "The Servite Rosary walks with the Mother of God through seven moments of her suffering, meditating on the sword that pierced her heart.",
     color: "#94A3B8",
     data: sevenSorrows,
+    link: "/devotions/seven-sorrows",
   },
   {
     title: "The Divine Mercy Chaplet",
     description: "Revealed to St. Faustina, offering the Eternal Father the Body, Blood, Soul and Divinity of his dearly beloved Son for the mercy of the whole world.",
     color: "#EF4444",
     data: divineMercyMysteries,
+    link: "/devotions/divine-mercy",
   },
   {
     title: "The Chaplet of St. Michael",
     description: "A nine-decade chaplet honoring St. Michael the Archangel and the nine choirs of angels, prayed in confidence of their protection.",
     color: "#B45309",
     data: archangelMichaelMysteries,
+    link: "/devotions/st-michael",
   },
   {
     title: "The Rosary of Reparation",
     description: "Prayers offered in reparation for sins, uniting our sacrifices to the all-sufficient offering of Christ.",
     color: "#8B5CF6",
     data: reparationMysteries,
+    link: "/devotions/reparation",
   },
 ];
 
@@ -690,7 +695,6 @@ export default function Rosary() {
   const [view, setView] = useState<View>("overview");
   const [mysterySet, setMysterySet] = useState<MarianKey>("joyful");
   const [mysteryOpen, setMysteryOpen] = useState<string | null>(null);
-  const [devotionOpen, setDevotionOpen] = useState<string | null>(null);
   const [lang, setLang] = useState<"english" | "kiswahili">("english");
 
   const activeSet = MYSTERY_SETS.find((s) => s.key === mysterySet)!;
@@ -787,11 +791,15 @@ export default function Rosary() {
             <SectionHeader title="More Rosary Devotions" />
             <div className="grid sm:grid-cols-2 gap-4">
               {OTHER_DEVOTIONS.map((d) => (
-                <div key={d.title} className="rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5" style={CARD_STYLE}>
-                  <span className="inline-block w-2 h-2 rounded-full mb-3" style={{ background: d.color }} />
-                  <h3 className="text-sm font-bold text-stone-900 mb-1">{d.title}</h3>
+                <Link key={d.title} to={d.link} className="rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg block group" style={CARD_STYLE}>
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="inline-block w-3 h-3 rounded-full" style={{ background: d.color }} />
+                    <span className="text-xs text-amber-600/70 group-hover:text-amber-600 transition-colors">→</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-stone-900 mb-1 group-hover:text-amber-700 transition-colors">{d.title}</h3>
                   <p className="text-xs text-stone-500 leading-relaxed">{d.description}</p>
-                </div>
+                  <span className="inline-block mt-3 text-[10px] font-bold tracking-wider uppercase px-3 py-1 rounded-full" style={{ background: `${d.color}12`, color: d.color }}>Open Prayers →</span>
+                </Link>
               ))}
             </div>
           </section>
@@ -912,39 +920,23 @@ export default function Rosary() {
           <section>
             <SectionHeader title="More Rosary Devotions" />
             <div className="space-y-3">
-              {OTHER_DEVOTIONS.map((d) => {
-                const open = devotionOpen === d.title;
-                return (
-                  <div key={d.title} className="rounded-2xl overflow-hidden" style={CARD_STYLE}>
-                    <button onClick={() => setDevotionOpen(open ? null : d.title)} className="w-full flex items-center justify-between gap-4 p-5 text-left">
-                      <div className="flex items-center gap-3">
-                        <span className="inline-block w-2 h-2 rounded-full" style={{ background: d.color }} />
-                        <div>
-                          <h3 className="text-sm font-bold text-stone-900">{d.title}</h3>
-                          <p className="text-xs text-stone-500 mt-0.5">{d.description}</p>
-                        </div>
-                      </div>
-                      <span className="text-amber-700 text-lg flex-shrink-0" style={{ transform: open ? "rotate(45deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>+</span>
-                    </button>
-                    {open && (
-                      <div className="px-5 pb-5">
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          {d.data.map((m, i) => (
-                            <div key={m.title} className="rounded-xl p-4" style={{ background: "#F5F5F4", border: "1px solid rgba(28,25,23,0.08)" }}>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] tracking-widest font-bold" style={{ color: d.color }}>{String(i + 1).padStart(2, "0")}</span>
-                                <h4 className="text-xs font-bold text-stone-900">{m.title}</h4>
-                              </div>
-                              {m.fruit && <p className="text-[10px] text-stone-500 mb-2">Fruit: {m.fruit}</p>}
-                              <p className="text-xs text-stone-600 leading-relaxed">{lang === "english" ? m.english : m.kiswahili}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+              {OTHER_DEVOTIONS.map((d) => (
+                <Link
+                  key={d.title}
+                  to={d.link}
+                  className="flex items-center justify-between gap-4 p-5 rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md group"
+                  style={CARD_STYLE}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-3 h-3 rounded-full" style={{ background: d.color }} />
+                    <div>
+                      <h3 className="text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors">{d.title}</h3>
+                      <p className="text-xs text-stone-500 mt-0.5">{d.description}</p>
+                    </div>
                   </div>
-                );
-              })}
+                  <span className="text-amber-600/70 group-hover:text-amber-600 transition-colors text-sm flex-shrink-0">→</span>
+                </Link>
+              ))}
             </div>
           </section>
         </div>
