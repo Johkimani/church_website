@@ -12,49 +12,6 @@ const QUOTES = [
   { text: "I have fought the good fight, I have finished the race, I have kept the faith.", ref: "2 Timothy 4:7" },
 ];
 
-const CARDS = [
-  {
-    to: "daily-liturgy",
-    badge: "Today's Readings",
-    title: "Daily Missal",
-    description: "The Liturgy of the Word and Gospel for today's celebration.",
-    cta: "Open Readings",
-    image: "/images/biblestudy.webp",
-  },
-  {
-    to: "readings",
-    badge: "Prayer Book",
-    title: "Catholic Prayers",
-    description: "Essential prayers of the Catholic tradition, from the Our Father to the Memorare.",
-    cta: "Browse Prayers",
-    image: "/images/rosary-praying-avatar.png",
-  },
-  {
-    to: "prayer-module",
-    badge: "Novena Prayers",
-    title: "Novenas & Litanies",
-    description: "Nine-day devotions and litanies of petition, praise, and intercession.",
-    cta: "Begin Novena",
-    image: "/images/rosary_prayers.jpg",
-  },
-  {
-    to: "bible",
-    badge: "Sacred Scripture",
-    title: "Holy Bible",
-    description: "Read and reflect on the Word of God with daily inspiration.",
-    cta: "Open Bible",
-    image: "/images/read-you-bible.png",
-  },
-  {
-    to: "progress",
-    badge: "Spiritual Growth",
-    title: "My Progress",
-    description: "Track your prayers, rosaries, and devotion journey in one place.",
-    cta: "View Progress",
-    image: "/images/christ.jpg",
-  },
-];
-
 function getEaster(year: number) {
   const a = year % 19;
   const b = Math.floor(year / 100);
@@ -97,6 +54,22 @@ function getTodaysMystery() {
   return ["Glorious", "Joyful", "Sorrowful", "Glorious", "Luminous", "Joyful", "Sorrowful"][day];
 }
 
+const ROSARY_DEVOTIONS = [
+  { to: "rosary", title: "The Holy Rosary", desc: "Meditate on the mysteries of Christ's life with Mary.", color: "#D97706", image: "/images/mary-rosary.jpg" },
+  { to: "seven-sorrows", title: "Seven Sorrows", desc: "Walk with Our Lady through her seven sorrows.", color: "#64748B", image: "/images/mary-immaculate.jpg" },
+  { to: "divine-mercy", title: "Divine Mercy", desc: "The chaplet revealed to St. Faustina for God's mercy.", color: "#EF4444", image: "/images/christ.jpg" },
+  { to: "st-michael", title: "St. Michael Chaplet", desc: "Nine decades honoring the nine choirs of angels.", color: "#B45309", image: "/images/christ.jpg" },
+  { to: "reparation", title: "Rosary of Reparation", desc: "Offer prayers in reparation for sins against the Sacred Heart.", color: "#8B5CF6", image: "/images/christ.jpg" },
+];
+
+const QUICK_LINKS = [
+  { to: "daily-liturgy", label: "Daily Missal", desc: "Today's readings & Gospel", icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15z" },
+  { to: "readings", label: "Prayer Book", desc: "Catholic prayers collection", icon: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" },
+  { to: "prayer-module", label: "Novenas", desc: "Nine-day prayer devotions", icon: "M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" },
+  { to: "bible", label: "Holy Bible", desc: "Read the Word of God", icon: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" },
+  { to: "liturgy", label: "Liturgy Guide", desc: "Understanding the Mass", icon: "M12 2v20M4.9 4.9l14.2 14.2M2 12h20" },
+];
+
 export default function Dashboard() {
   const { user } = useAuth();
   const mystery = getTodaysMystery();
@@ -108,7 +81,6 @@ export default function Dashboard() {
     return "Good Evening";
   });
   const [quote, setQuote] = useState(0);
-  const cards = CARDS.filter((card) => card.to !== "progress" || !!user);
 
   useEffect(() => {
     const t = setInterval(() => setQuote((q) => (q + 1) % QUOTES.length), 6000);
@@ -118,22 +90,16 @@ export default function Dashboard() {
   const today = new Date();
   const dateLabel = today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
-  const stats = [
-    { to: "rosary", label: "Mystery", value: `${mystery} Mysteries`, accent: "#FBBF24", icon: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 2a8 8 0 1 1-8 8 8 8 0 0 1 8-8z" },
-    { to: "daily-liturgy", label: "Season", value: liturgy.season, accent: liturgy.color, icon: "M12 2v20M4.9 4.9l14.2 14.2M2 12h20" },
-    { to: "daily-liturgy", label: "Today", value: dateLabel, accent: "#94A3B8", icon: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" },
-  ];
-
   return (
     <div className="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 md:pb-8 min-h-screen" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%)" }}>
 
-      {/* Hero Card */}
+      {/* ─── Hero ─── */}
       <Link to="daily-liturgy" className="block group">
-        <div className="rounded-2xl sm:rounded-3xl relative overflow-hidden transition-shadow duration-300 hover:shadow-2xl" style={{ height: "clamp(200px, 40vw, 380px)" }}>
+        <div className="rounded-2xl sm:rounded-3xl relative overflow-hidden transition-shadow duration-300 hover:shadow-2xl" style={{ height: "clamp(220px, 42vw, 400px)" }}>
           <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${HERO_IMAGE})` }} />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(28,25,23,0.85), rgba(28,25,23,0.35))" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(28,25,23,0.9), rgba(28,25,23,0.3))" }} />
           <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
-          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.28), transparent 70%)" }} />
+          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(217,119,6,0.25), transparent 70%)" }} />
           <div className="relative z-10 h-full flex flex-col justify-end p-5 sm:p-8 md:p-10">
             <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.25)" }}>
@@ -163,23 +129,58 @@ export default function Dashboard() {
         </div>
       </Link>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4 sm:mt-6 mb-6 sm:mb-8">
-        {stats.map((s) => (
-          <Link key={s.label} to={s.to} className="group rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-4 transition-all duration-300 hover:shadow-lg bg-white border border-stone-100 hover:border-stone-200">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${s.accent}1a`, color: s.accent }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={s.icon} /></svg>
+      {/* ─── Today at a Glance ─── */}
+      <div className="mt-5 sm:mt-6 mb-8 sm:mb-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-5 sm:w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
+          <h2 className="text-[11px] sm:text-[12px] font-bold tracking-[0.2em] uppercase" style={{ fontFamily: "'Cinzel', serif", color: "#57534E" }}>Today at a Glance</h2>
+          <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Link to="rosary" className="group rounded-2xl p-4 bg-white border border-stone-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "#FBBF2415", color: "#FBBF24" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /></svg>
             </div>
-            <div className="min-w-0">
-              <p className="text-[9px] sm:text-[10px] text-stone-500 font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-0.5 sm:mb-1">{s.label}</p>
-              <p className="text-xs sm:text-sm font-bold text-stone-900 truncate">{s.value}</p>
-            </div>
+            <p className="text-[9px] sm:text-[10px] text-stone-400 font-bold tracking-[0.15em] uppercase mb-0.5">Mystery</p>
+            <p className="text-xs sm:text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors">{mystery}</p>
           </Link>
-        ))}
+          <Link to="daily-liturgy" className="group rounded-2xl p-4 bg-white border border-stone-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${liturgy.color}15`, color: liturgy.color }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M4.9 4.9l14.2 14.2M2 12h20" /></svg>
+            </div>
+            <p className="text-[9px] sm:text-[10px] text-stone-400 font-bold tracking-[0.15em] uppercase mb-0.5">Season</p>
+            <p className="text-xs sm:text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors">{liturgy.season}</p>
+          </Link>
+          <Link to="daily-liturgy" className="group rounded-2xl p-4 bg-white border border-stone-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "#94A3B815", color: "#94A3B8" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+            </div>
+            <p className="text-[9px] sm:text-[10px] text-stone-400 font-bold tracking-[0.15em] uppercase mb-0.5">Date</p>
+            <p className="text-xs sm:text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors truncate">{today.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</p>
+          </Link>
+          {user && (
+            <Link to="progress" className="group rounded-2xl p-4 bg-white border border-stone-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "#10B98115", color: "#10B981" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 7l-8.5 8.5-5-5L2 17" /><path d="M16 7h6v6" /></svg>
+              </div>
+              <p className="text-[9px] sm:text-[10px] text-stone-400 font-bold tracking-[0.15em] uppercase mb-0.5">Progress</p>
+              <p className="text-xs sm:text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors">My Journey</p>
+            </Link>
+          )}
+          {!user && (
+            <Link to="rosary" className="group rounded-2xl p-4 bg-white border border-stone-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "#8B5CF615", color: "#8B5CF6" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>
+              </div>
+              <p className="text-[9px] sm:text-[10px] text-stone-400 font-bold tracking-[0.15em] uppercase mb-0.5">Quick</p>
+              <p className="text-xs sm:text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors">Pray Now</p>
+            </Link>
+          )}
+        </div>
       </div>
 
-      {/* Marian Devotion */}
-      <div className="rounded-2xl sm:rounded-3xl relative overflow-hidden mb-6 sm:mb-8" style={{ background: "linear-gradient(135deg, rgba(217,119,6,0.08), rgba(217,119,6,0.02))", border: "1px solid rgba(217,119,6,0.2)" }}>
+      {/* ─── Marian Devotion ─── */}
+      <div className="rounded-2xl sm:rounded-3xl relative overflow-hidden mb-8 sm:mb-10" style={{ background: "linear-gradient(135deg, rgba(217,119,6,0.08), rgba(217,119,6,0.02))", border: "1px solid rgba(217,119,6,0.2)" }}>
         <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
         <div className="grid md:grid-cols-5 gap-0">
           <div className="md:col-span-2 relative h-48 sm:h-56 md:h-64 md:min-h-full overflow-hidden">
@@ -208,35 +209,51 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Section Title */}
-      <div className="flex items-center gap-3 mb-4 sm:mb-5 px-1">
-        <div className="w-5 sm:w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
-        <h2 className="text-[11px] sm:text-[13px] font-bold tracking-[0.2em] sm:tracking-[0.25em] uppercase" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", color: "#57534E" }}>Continue Your Journey</h2>
-        <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
-      </div>
-
-      {/* Journey Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-6 sm:mb-8">
-        {cards.map((card) => (
-          <Link key={card.to} to={card.to} className="block group">
-            <div className="rounded-2xl relative overflow-hidden transition-shadow duration-300 hover:shadow-2xl" style={{ height: "200px" }}>
-              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${card.image})` }} />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(28,25,23,0.85), rgba(28,25,23,0.35))" }} />
-              <div className="absolute top-0 left-0 right-0 h-[2px] opacity-40 group-hover:opacity-100 transition-opacity" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
-              <div className="relative z-10 h-full flex flex-col justify-end p-5">
-                <div className="inline-flex self-start items-center gap-1.5 px-3 py-1 rounded-full mb-2" style={{ background: "rgba(217,119,6,0.15)", border: "1px solid rgba(217,119,6,0.25)" }}>
-                  <span className="text-[10px] font-bold tracking-wider text-amber-400 uppercase">{card.badge}</span>
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-1.5" style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>{card.title}</h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-3 line-clamp-2">{card.description}</p>
-                <span className="text-[11px] sm:text-xs font-semibold text-amber-400 group-hover:text-amber-300 transition-colors">{card.cta} →</span>
+      {/* ─── Rosary & Chaplets ─── */}
+      <div className="mb-8 sm:mb-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-5 sm:w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
+          <h2 className="text-[11px] sm:text-[12px] font-bold tracking-[0.2em] uppercase" style={{ fontFamily: "'Cinzel', serif", color: "#57534E" }}>Rosary & Chaplets</h2>
+          <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {ROSARY_DEVOTIONS.map((d) => (
+            <Link key={d.to} to={d.to} className="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-stone-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 relative" style={{ border: `2px solid ${d.color}25` }}>
+                <img src={d.image} alt={d.title} className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0" style={{ background: `${d.color}30` }} />
               </div>
-            </div>
-          </Link>
-        ))}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors">{d.title}</h3>
+                <p className="text-[11px] text-stone-500 mt-0.5 line-clamp-1">{d.desc}</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all flex-shrink-0"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </Link>
+          ))}
+        </div>
       </div>
 
-      {/* Rosary CTA */}
+      {/* ─── Quick Access ─── */}
+      <div className="mb-8 sm:mb-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-5 sm:w-6 h-[2px]" style={{ background: "linear-gradient(90deg, #D97706, transparent)" }} />
+          <h2 className="text-[11px] sm:text-[12px] font-bold tracking-[0.2em] uppercase" style={{ fontFamily: "'Cinzel', serif", color: "#57534E" }}>Quick Access</h2>
+          <div className="flex-1 h-[2px]" style={{ background: "linear-gradient(90deg, rgba(28,25,23,0.08), transparent)" }} />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {QUICK_LINKS.map((link) => (
+            <Link key={link.to} to={link.to} className="group rounded-2xl p-4 bg-white border border-stone-100 hover:border-amber-200 hover:shadow-lg transition-all duration-300 text-center">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 transition-all duration-300 group-hover:scale-110" style={{ background: "rgba(217,119,6,0.08)", color: "#B45309" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={link.icon} /></svg>
+              </div>
+              <p className="text-xs font-bold text-stone-900 group-hover:text-amber-700 transition-colors mb-0.5">{link.label}</p>
+              <p className="text-[10px] text-stone-400 leading-snug">{link.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Bottom Rosary CTA ─── */}
       <div className="rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-7 relative overflow-hidden bg-white" style={{ border: "1px solid rgba(217,119,6,0.25)" }}>
         <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
