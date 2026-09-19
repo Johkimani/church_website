@@ -7,6 +7,7 @@ import {
   getPublishedPrayerPartners,
   createPrayerPartners,
   cancelPrayerPartners,
+  replacePrayerPartners,
   postPrayerPartners,
   unpostPrayerPartners,
 } from "../../controllers/prayerPartnersController.js";
@@ -97,6 +98,7 @@ prayerPartnersRouter.get("/:jumuiyaId/published", verifyToken, ensureJumuiyaMemb
 prayerPartnersRouter.get("/:jumuiyaId", verifyToken, ensureJumuiyaOfficial, getPrayerPartners);
 prayerPartnersRouter.post("/:jumuiyaId", verifyToken, ensureJumuiyaOfficial, createPrayerPartners);
 prayerPartnersRouter.delete("/:jumuiyaId/groups/:groupId", verifyToken, ensureJumuiyaOfficial, cancelPrayerPartners);
+prayerPartnersRouter.post("/:jumuiyaId/replace", verifyToken, ensureJumuiyaOfficial, replacePrayerPartners);
 prayerPartnersRouter.post("/:jumuiyaId/post", verifyToken, ensureJumuiyaOfficial, postPrayerPartners);
 prayerPartnersRouter.post("/:jumuiyaId/unpost", verifyToken, ensureJumuiyaOfficial, unpostPrayerPartners);
 

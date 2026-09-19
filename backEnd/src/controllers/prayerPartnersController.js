@@ -15,11 +15,23 @@ async function resolveGroupId(target) {
 
 /**
  * Normalize a stored year_of_study value into a year level (1–4), mirroring
- * the frontend's memberYear util. Returns null when it can't be determined.
+ * the frontend's memberYear util. When the stored field is empty, fall back
+ * to the intake year encoded in the last two digits of the member id (same
+ * rule the All Members table uses). Returns null when it can't be determined.
  */
-function yearToLevel(yos) {
+function yearToLevel(yos, memberId) {
   const trimmed = String(yos ?? "").trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    const regMatch = String(memberId ?? "").trim().match(/(\d{2})\s*$/);
+    if (regMatch) {
+      const admissionYear = 2000 + parseInt(regMatch[1], 10);
+      const now = new Date();
+      const academicStartYear = now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+      const fromReg = academicStartYear - admissionYear + 1;
+      if (fromReg >= 1 && fromReg <= 4) return fromReg;
+    }
+    return null;
+  }
   if (/^[1-4]$/.test(trimmed)) return Number(trimmed);
   const match = trimmed.match(/^(\d{4})\s*[-/]\s*(\d{4})$/);
   if (match) {
@@ -41,7 +53,8 @@ const PAIRS_SQL_REAL = `
     pg.year_of_study,
     pg.gender,
     m.first_name,
-    m.last_name
+    m.last_name,
+    m.phone
   FROM prayer_partner_groups g
   JOIN prayer_partner_members pg ON g.id = pg.group_id
   LEFT JOIN members m ON m.member_id = pg.member_id
@@ -60,6 +73,7 @@ const buildPairs = (rows) => {
       year_of_study: r.year_of_study,
       gender: r.gender,
       name: [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id,
+      phone: r.phone || null,
     });
   }
   return Array.from(pairMap.values());
@@ -104,11 +118,10 @@ export const getPrayerPartners = async (req, res) => {
     const [pairsRes, membersRes] = await Promise.all([
       pool.query(PAIRS_SQL_REAL, [groupId]),
       pool.query(
-        `SELECT member_id, first_name, last_name, gender, year_of_study
+        `SELECT member_id, first_name, last_name, gender, year_of_study, phone
          FROM members
          WHERE jumuiya_id = $1
            AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
-           AND status = 'active'
          ORDER BY LOWER(COALESCE(first_name, '')), LOWER(COALESCE(last_name, ''))`,
         [groupId]
       ),
@@ -121,6 +134,7 @@ export const getPrayerPartners = async (req, res) => {
       name: [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id,
       gender: r.gender,
       year_of_study: r.year_of_study,
+      phone: r.phone || null,
     }));
 
     return res.json({
@@ -230,26 +244,15 @@ export const createPrayerPartners = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT member_id, first_name, last_name, gender, year_of_study
+      `SELECT member_id, first_name, last_name, gender, year_of_study, phone
        FROM members
        WHERE member_id = ANY($1)
          AND jumuiya_id = $2
-         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
-         AND status = 'active'`,
+         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`,
       [ids, groupId]
     );
     if (rows.length !== ids.length) {
-      return res.status(400).json({ success: false, message: "One or more selected members are not active members of this jumuiya" });
-    }
-
-    for (const r of rows) {
-      const displayName = [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id;
-      if (!r.gender || !String(r.gender).trim()) {
-        return res.status(400).json({ success: false, message: `${displayName} has no gender on file` });
-      }
-      if (!yearToLevel(r.year_of_study)) {
-        return res.status(400).json({ success: false, message: `${displayName} does not have a valid year of study (1-4)` });
-      }
+      return res.status(400).json({ success: false, message: "One or more selected members do not belong to this jumuiya" });
     }
 
     const paired = await pool.query(
@@ -276,7 +279,7 @@ export const createPrayerPartners = async (req, res) => {
         await client.query(
           `INSERT INTO prayer_partner_members (group_id, member_id, position_no, year_of_study, gender)
            VALUES ($1, $2, $3, $4, $5)`,
-          [newGroupId, r.member_id, i + 1, yearToLevel(r.year_of_study), r.gender]
+          [newGroupId, r.member_id, i + 1, yearToLevel(r.year_of_study, r.member_id), r.gender]
         );
       }
       await client.query("COMMIT");
@@ -315,5 +318,81 @@ export const cancelPrayerPartners = async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Failed to cancel prayer partner group" });
+  }
+};
+
+/**
+ * POST /prayer-partners/:jumuiyaId/replace — atomically replace the whole
+ * pair list in one call. Body: { groups: string[][] } where each inner array
+ * is the member_ids of one pair (2 or 3 members). Used by the manager to
+ * upload the complete list in a single request (local-first editing).
+ */
+export const replacePrayerPartners = async (req, res) => {
+  try {
+    const rawGroups = req.body?.groups;
+    if (!Array.isArray(rawGroups)) {
+      return res.status(400).json({ success: false, message: "groups is required" });
+    }
+    const groups = rawGroups
+      .map((g) => (Array.isArray(g) ? [...new Set(g.map((s) => String(s).trim()))].filter(Boolean) : []))
+      .filter((g) => g.length >= 2 && g.length <= 3);
+    if (groups.length !== rawGroups.length) {
+      return res.status(400).json({ success: false, message: "Each group must contain exactly 2 or 3 members" });
+    }
+    const allIds = groups.flat();
+    if (allIds.length !== new Set(allIds).size) {
+      return res.status(400).json({ success: false, message: "A member appears in more than one group" });
+    }
+
+    const groupId = await resolveGroupId(req.params.jumuiyaId);
+    if (!groupId) {
+      return res.status(404).json({ success: false, message: "Jumuiya not found" });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT member_id, first_name, last_name, gender, year_of_study, phone
+       FROM members
+       WHERE member_id = ANY($1)
+         AND jumuiya_id = $2
+         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`,
+      [allIds, groupId]
+    );
+    if (rows.length !== allIds.length) {
+      return res.status(400).json({ success: false, message: "One or more members do not belong to this jumuiya" });
+    }
+
+    const client = await pool.connect();
+    let count = 0;
+    try {
+      await client.query("BEGIN");
+      await client.query(`DELETE FROM prayer_partner_groups WHERE jumuiya_id = $1`, [groupId]);
+      const byId = new Map(rows.map((r) => [r.member_id, r]));
+      for (const ids of groups) {
+        const g = await client.query(
+          `INSERT INTO prayer_partner_groups (jumuiya_id, created_by) VALUES ($1, $2) RETURNING id`,
+          [groupId, req.user?.member_id || null]
+        );
+        const newGroupId = g.rows[0].id;
+        for (let i = 0; i < ids.length; i++) {
+          const r = byId.get(ids[i]);
+          await client.query(
+            `INSERT INTO prayer_partner_members (group_id, member_id, position_no, year_of_study, gender)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [newGroupId, ids[i], i + 1, yearToLevel(r.year_of_study, r.member_id), r.gender]
+          );
+        }
+        count++;
+      }
+      await client.query("COMMIT");
+      await unpublishForJumuiya(groupId);
+      return res.json({ success: true, count });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to save prayer partner list" });
   }
 };
