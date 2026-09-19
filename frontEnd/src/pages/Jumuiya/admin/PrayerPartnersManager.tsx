@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FaCheck, FaUsers, FaUserFriends, FaBan, FaPrayingHands, FaPaperPlane, FaUndo } from 'react-icons/fa';
+import { FaUsers, FaUserFriends, FaBan, FaPrayingHands, FaPaperPlane, FaUndo } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerMember, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
 import { normalizeYearOfStudy, getYearOfStudy, genderCode, isFemale } from '../../../utils/memberYear';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -25,8 +25,6 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [pairSize, setPairSize] = useState<2 | 3>(2);
     const [busy, setBusy] = useState(false);
-    const [busyGroupId, setBusyGroupId] = useState<number | null>(null);
-    const [busyPublish, setBusyPublish] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
 
@@ -126,73 +124,77 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
         });
     };
 
+    // When a group is full, move it to the final column instantly (local state
+    // only — nothing is sent to the server until Post). Chosen members are
+    // snapshotted from `normalized` so phone/gender/year render immediately.
+    useEffect(() => {
+        if (selected.size !== pairSize) return;
+        const chosen = normalized.filter((m) => selected.has(m.member_id));
+        if (chosen.length !== pairSize) return;
+        const draftId = -Date.now() - Math.round(Math.random() * 1000);
+        setPairs((prev) => [...prev, {
+            id: draftId,
+            members: chosen.map((m) => ({ member_id: m.member_id, name: m.name, gender: m.gender, year_of_study: m.year_of_study, phone: m.phone })),
+        }]);
+        setSelected(new Set());
+        markDraftChanged();
+    }, [selected, normalized, pairSize]);
+
+    // Any edit after a post takes the list back to draft. The server flag is
+    // turned off so members never see a stale list while the liturgist reworks it.
+    const markDraftChanged = () => {
+        if (isPublished) {
+            setIsPublished(false);
+            prayerPartnersService.unpost(jumuiyaId).catch(() => {});
+        }
+    };
+
     const switchSize = (size: 2 | 3) => {
         setPairSize(size);
         setSelected(new Set());
         setNotice('');
     };
 
-    const createGroup = async () => {
-        if (selected.size !== pairSize || busy) return;
+    const cancelGroup = (draftId: number) => {
+        setPairs((prev) => prev.filter((p) => p.id !== draftId));
+        setNotice('Group removed from the draft.');
+        markDraftChanged();
+    };
+
+    const togglePublish = async () => {
+        if (busy || pairs.length === 0) return;
+        if (!isPublished && !window.confirm('Upload and post this list? Members of the jumuiya will immediately be able to see these prayer partners on the public page.')) return;
         setBusy(true);
         setError('');
         setNotice('');
         try {
-            const res = await prayerPartnersService.createGroup(jumuiyaId, Array.from(selected));
-            if (res?.success) {
-                setSelected(new Set());
-                setNotice('Prayer partner group created. The posted list was set back to draft — post it again when ready.');
-                await loadData();
+            if (isPublished) {
+                const res = await prayerPartnersService.unpost(jumuiyaId);
+                if (res?.success) {
+                    setIsPublished(false);
+                    setNotice('List withdrawn — members can no longer see it.');
+                } else {
+                    setError(res?.message || 'Could not withdraw the list.');
+                }
             } else {
-                setError(res?.message || 'Could not create the group.');
+                const groups = pairs.map((p) => p.members.map((m) => m.member_id));
+                const saved = await prayerPartnersService.replaceAll(jumuiyaId, groups);
+                if (!saved?.success) {
+                    setError(saved?.message || 'Could not upload the list.');
+                    return;
+                }
+                const res = await prayerPartnersService.post(jumuiyaId);
+                if (res?.success) {
+                    setIsPublished(true);
+                    setNotice('List uploaded & posted! Members can now see it under Prayer Partners.');
+                } else {
+                    setError(res?.message || 'Could not post the list.');
+                }
             }
         } catch (e) {
-            setError(errMsg(e, 'Could not create the group.'));
+            setError(errMsg(e, isPublished ? 'Could not withdraw the list.' : 'Could not upload the list.'));
         } finally {
             setBusy(false);
-        }
-    };
-
-    const cancelGroup = async (groupId: number) => {
-        if (busyGroupId !== null) return;
-        if (!window.confirm('Cancel this prayer partner group? Its members will reappear in the year columns and any posted list will revert to draft.')) return;
-        setBusyGroupId(groupId);
-        setError('');
-        try {
-            const res = await prayerPartnersService.cancelGroup(jumuiyaId, groupId);
-            if (res?.success) {
-                setNotice('Prayer partner group cancelled. The posted list was set back to draft.');
-                await loadData();
-            } else {
-                setError(res?.message || 'Could not cancel the group.');
-            }
-        } catch (e) {
-            setError(errMsg(e, 'Could not cancel the group.'));
-        } finally {
-            setBusyGroupId(null);
-        }
-    };
-
-    const togglePublish = async () => {
-        if (busyPublish || pairs.length === 0) return;
-        if (!isPublished && !window.confirm('Post this list? All members of the jumuiya will be able to see these prayer partners on the public jumuiya page.')) return;
-        setBusyPublish(true);
-        setError('');
-        setNotice('');
-        try {
-            const res = isPublished
-                ? await prayerPartnersService.unpost(jumuiyaId)
-                : await prayerPartnersService.post(jumuiyaId);
-            if (res?.success) {
-                setIsPublished(!isPublished);
-                setNotice(isPublished ? 'List withdrawn — members can no longer see it.' : 'List posted! Members can now see it under Prayer Partners.');
-            } else {
-                setError(res?.message || (isPublished ? 'Could not withdraw the list.' : 'Could not post the list.'));
-            }
-        } catch (e) {
-            setError(errMsg(e, isPublished ? 'Could not withdraw the list.' : 'Could not post the list.'));
-        } finally {
-            setBusyPublish(false);
         }
     };
 
@@ -217,8 +219,9 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                             Prayer Partners Management
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">
-                            Pair members of {jumuiyaName} into groups of two or three, then post the final list. Members see
-                            only the posted outcome on the public page.
+                            Check members of {jumuiyaName} — the moment a group of {pairSize} fills, it moves to the
+                            Prayer Partners column instantly. Pairing is local; the whole list is uploaded in one go when
+                            you press Post.
                         </p>
                     </div>
                     <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold ${
@@ -232,12 +235,12 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                 <div className="flex items-center gap-3 mt-4 flex-wrap">
                     <button
                         onClick={togglePublish}
-                        disabled={busyPublish || pairs.length === 0}
+                        disabled={busy || pairs.length === 0}
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition disabled:cursor-not-allowed"
                         style={{ background: pairs.length === 0 ? '#cbd5e1' : isPublished ? '#dc2626' : jumuiyaColor }}
-                        title={pairs.length === 0 ? 'Add at least one group before posting.' : (isPublished ? 'Withdraw the list' : 'Post the list')}
+                        title={pairs.length === 0 ? 'Build at least one group before posting.' : (isPublished ? 'Withdraw the list' : 'Upload & post the list')}
                     >
-                        {isPublished ? <><FaUndo /> Unpost List</> : <><FaPaperPlane /> Post List</>}
+                        {isPublished ? <><FaUndo /> Unpost List</> : <><FaPaperPlane /> {busy ? 'Uploading…' : 'Post List'}</>}
                     </button>
                     <span className="text-xs text-slate-400">
                         {pairs.length} group{pairs.length === 1 ? '' : 's'} ready {isPublished ? '· posted' : '· draft'}
@@ -288,14 +291,13 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                 <FaUsers /> Pairs of 3
                             </button>
                         </div>
-                        <button
-                            onClick={createGroup}
-                            disabled={selected.size !== pairSize || busy || availableTotal === 0}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition disabled:cursor-not-allowed"
-                            style={{ background: selected.size === pairSize && !busy ? jumuiyaColor : '#cbd5e1' }}
+                        <span className={`text-xs font-semibold ${selected.size === pairSize ? 'text-emerald-600' : 'text-slate-500'}`}
+                            style={selected.size === pairSize ? { background: 'rgba(16,185,129,0.12)', padding: '6px 10px', borderRadius: 'var(--rs)' } : undefined}
                         >
-                            <FaCheck /> Create ({selected.size}/{pairSize})
-                        </button>
+                            {selected.size === pairSize
+                                ? '✓ Group complete — moving to Prayer Partners…'
+                                : `${selected.size}/${pairSize} selected — keeps filling automatically`}
+                        </span>
                     </div>
                 </div>
 
@@ -421,7 +423,6 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                 </span>
                                                 <button
                                                     onClick={() => cancelGroup(p.id)}
-                                                    disabled={busyGroupId !== null}
                                                     style={{
                                                         marginLeft: 'auto',
                                                         border: 'none',
@@ -431,13 +432,13 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                         padding: '4px 8px',
                                                         fontSize: '0.68rem',
                                                         fontWeight: 700,
-                                                        cursor: busyGroupId !== null ? 'not-allowed' : 'pointer',
+                                                        cursor: 'pointer',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         gap: 4,
                                                     }}
                                                 >
-                                                    {busyGroupId === p.id ? (<><FaBan /> Cancelling…</>) : (<><FaBan /> Cancel</>)}
+                                                    <FaBan /> Cancel
                                                 </button>
                                             </div>
                                             {p.members.map((m) => (

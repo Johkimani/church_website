@@ -49,6 +49,9 @@ export const prayerPartnersService = {
   cancelGroup: (jumuiyaId: string, groupId: number): Promise<{ success: boolean; message?: string }> =>
     apiClient.delete(`${BASE(jumuiyaId)}/groups/${groupId}`).then((r) => r.data),
 
+  replaceAll: (jumuiyaId: string, groups: string[][]): Promise<{ success: boolean; count?: number; message?: string }> =>
+    apiClient.post(`${BASE(jumuiyaId)}/replace`, { groups }).then((r) => r.data),
+
   post: (jumuiyaId: string): Promise<{ success: boolean; message?: string }> =>
     apiClient.post(`${BASE(jumuiyaId)}/post`).then((r) => r.data),
 

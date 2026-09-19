@@ -320,3 +320,79 @@ export const cancelPrayerPartners = async (req, res) => {
     return res.status(500).json({ success: false, message: "Failed to cancel prayer partner group" });
   }
 };
+
+/**
+ * POST /prayer-partners/:jumuiyaId/replace — atomically replace the whole
+ * pair list in one call. Body: { groups: string[][] } where each inner array
+ * is the member_ids of one pair (2 or 3 members). Used by the manager to
+ * upload the complete list in a single request (local-first editing).
+ */
+export const replacePrayerPartners = async (req, res) => {
+  try {
+    const rawGroups = req.body?.groups;
+    if (!Array.isArray(rawGroups)) {
+      return res.status(400).json({ success: false, message: "groups is required" });
+    }
+    const groups = rawGroups
+      .map((g) => (Array.isArray(g) ? [...new Set(g.map((s) => String(s).trim()))].filter(Boolean) : []))
+      .filter((g) => g.length >= 2 && g.length <= 3);
+    if (groups.length !== rawGroups.length) {
+      return res.status(400).json({ success: false, message: "Each group must contain exactly 2 or 3 members" });
+    }
+    const allIds = groups.flat();
+    if (allIds.length !== new Set(allIds).size) {
+      return res.status(400).json({ success: false, message: "A member appears in more than one group" });
+    }
+
+    const groupId = await resolveGroupId(req.params.jumuiyaId);
+    if (!groupId) {
+      return res.status(404).json({ success: false, message: "Jumuiya not found" });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT member_id, first_name, last_name, gender, year_of_study, phone
+       FROM members
+       WHERE member_id = ANY($1)
+         AND jumuiya_id = $2
+         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`,
+      [allIds, groupId]
+    );
+    if (rows.length !== allIds.length) {
+      return res.status(400).json({ success: false, message: "One or more members do not belong to this jumuiya" });
+    }
+
+    const client = await pool.connect();
+    let count = 0;
+    try {
+      await client.query("BEGIN");
+      await client.query(`DELETE FROM prayer_partner_groups WHERE jumuiya_id = $1`, [groupId]);
+      const byId = new Map(rows.map((r) => [r.member_id, r]));
+      for (const ids of groups) {
+        const g = await client.query(
+          `INSERT INTO prayer_partner_groups (jumuiya_id, created_by) VALUES ($1, $2) RETURNING id`,
+          [groupId, req.user?.member_id || null]
+        );
+        const newGroupId = g.rows[0].id;
+        for (let i = 0; i < ids.length; i++) {
+          const r = byId.get(ids[i]);
+          await client.query(
+            `INSERT INTO prayer_partner_members (group_id, member_id, position_no, year_of_study, gender)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [newGroupId, ids[i], i + 1, yearToLevel(r.year_of_study, r.member_id), r.gender]
+          );
+        }
+        count++;
+      }
+      await client.query("COMMIT");
+      await unpublishForJumuiya(groupId);
+      return res.json({ success: true, count });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to save prayer partner list" });
+  }
+};
