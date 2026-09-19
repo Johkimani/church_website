@@ -98,18 +98,12 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     }, [members]);
 
     const columns = useMemo(() => {
-        const yearCols = YEAR_KEYS.map((y) => ({
+        return YEAR_KEYS.map((y) => ({
             ...y,
             rows: normalized
                 .filter((m) => m.yearLevel === y.value && !pairedIds.has(m.member_id))
                 .sort((a, b) => (Number(b.female) - Number(a.female)) || a.name.localeCompare(b.name)),
         }));
-        // Members with no recognized year (1-4) still count — show them in a fallback column.
-        const others = normalized
-            .filter((m) => m.yearLevel === 'Unknown' && !pairedIds.has(m.member_id))
-            .sort((a, b) => (Number(b.female) - Number(a.female)) || a.name.localeCompare(b.name));
-        if (others.length > 0) yearCols.push({ value: 'X', label: 'Other Members', rows: others });
-        return yearCols;
     }, [normalized, pairedIds]);
 
     const availableTotal = columns.reduce((sum, c) => sum + c.rows.length, 0);

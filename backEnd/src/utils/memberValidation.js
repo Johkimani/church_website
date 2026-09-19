@@ -3,6 +3,14 @@ const VALID_JUMUIYAS = [
   "St. Dominic", "St. Elizabeth", "St. Maria Goretti", "St. Monica"
 ];
 
+// Academic year rolls over in August (new intake arrives end of August), so
+// the current intake year is the current calendar year from Aug onwards.
+// Mirrors frontEnd/src/utils/memberYear.ts.
+export const academicStartYear = () => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
 // Known flexible pattern: e.g. CS01/A/2024/01, PA106/G/12345/23, ED101/G/98765/26
 const REG_NUM_PATTERN = /^[A-Za-z]+\d+\/[A-Za-z]+\/\d+\/\d{2}$/;
 // Very loose — any alphanumeric with at least one slash, so admins can enter custom formats
@@ -32,6 +40,21 @@ export const standardizeName = (name) => {
 export const standardizeRegNumber = (regNumber) => {
   if (!regNumber || typeof regNumber !== "string") return { cleaned: null, errors: ["Registration number is required"], warnings: [] };
   let cleaned = regNumber.trim().toUpperCase();
+
+  // The last two digits encode the intake year. A year after the current
+  // academic start year (e.g. "/27" while intake is "/26") is either a typo
+  // or a future student — reject it outright.
+  const intakeMatch = cleaned.match(/(\d{2})\s*$/);
+  if (intakeMatch) {
+    const admissionYear = 2000 + parseInt(intakeMatch[1], 10);
+    if (admissionYear > academicStartYear()) {
+      return {
+        cleaned: null,
+        errors: [`Registration number "${cleaned}" has a future intake year (/${intakeMatch[1]}) — expected /${String(academicStartYear()).slice(-2)} or earlier`],
+        warnings: [],
+      };
+    }
+  }
 
   // 1. Known format → clean pass
   if (REG_NUM_PATTERN.test(cleaned)) return { cleaned, errors: [], warnings: [] };
