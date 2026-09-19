@@ -5,6 +5,7 @@ export interface PrayerPartnerMember {
   name: string;
   gender?: string | null;
   year_of_study?: string | null;
+  phone?: string | null;
 }
 
 export interface PrayerPartnerUnit {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPrayingHands, FaEyeSlash, FaUserFriends } from 'react-icons/fa';
+import { FaPrayingHands, FaEyeSlash, FaUserFriends, FaPhone } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
 import { normalizeYearOfStudy, genderCode } from '../../../utils/memberYear';
 import PageLoader from '../../../assets/Layouts/PageLoader';
@@ -170,8 +170,31 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
                                                 }}>
                                                     {mi + 1}
                                                 </span>
-                                                <span style={{ flex: '1 1 auto', color: '#1e293b', fontWeight: 500, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {m.name}
+                                                <span style={{ flex: '1 1 auto', minWidth: 0 }}>
+                                                    <span style={{ display: 'block', color: '#1e293b', fontWeight: 500, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {m.name}
+                                                    </span>
+                                                    {m.phone ? (
+                                                        <a
+                                                            href={`tel:${m.phone.replace(/[^+\d]/g, '')}`}
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: 4,
+                                                                color: jumuiyaColor,
+                                                                fontSize: '0.72rem',
+                                                                fontWeight: 600,
+                                                                textDecoration: 'none',
+                                                                marginTop: 1,
+                                                            }}
+                                                        >
+                                                            <FaPhone size={10} /> {m.phone}
+                                                        </a>
+                                                    ) : (
+                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 500 }}>
+                                                            No contact on file
+                                                        </span>
+                                                    )}
                                                 </span>
                                                 <span style={{
                                                     fontSize: '0.68rem',

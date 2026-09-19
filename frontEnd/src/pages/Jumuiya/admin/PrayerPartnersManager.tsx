@@ -70,23 +70,27 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     }, [pairs]);
 
     const normalized = useMemo(() => {
-        return members
-            .map((m) => ({
-                ...m,
-                yearLevel: normalizeYearOfStudy(m.year_of_study),
-                female: isFemale(m.gender),
-                genderBadge: genderCode(m.gender),
-            }))
-            .filter((m) => m.yearLevel !== 'Unknown' && m.genderBadge !== '—');
+        return members.map((m) => ({
+            ...m,
+            yearLevel: normalizeYearOfStudy(m.year_of_study),
+            female: isFemale(m.gender),
+            genderBadge: genderCode(m.gender),
+        }));
     }, [members]);
 
     const columns = useMemo(() => {
-        return YEAR_KEYS.map((y) => ({
+        const yearCols = YEAR_KEYS.map((y) => ({
             ...y,
             rows: normalized
                 .filter((m) => m.yearLevel === y.value && !pairedIds.has(m.member_id))
                 .sort((a, b) => (Number(b.female) - Number(a.female)) || a.name.localeCompare(b.name)),
         }));
+        // Members with no recognized year (1-4) still count — show them in a fallback column.
+        const others = normalized
+            .filter((m) => m.yearLevel === 'Unknown' && !pairedIds.has(m.member_id))
+            .sort((a, b) => (Number(b.female) - Number(a.female)) || a.name.localeCompare(b.name));
+        if (others.length > 0) yearCols.push({ value: 'X', label: 'Other Members', rows: others });
+        return yearCols;
     }, [normalized, pairedIds]);
 
     const availableTotal = columns.reduce((sum, c) => sum + c.rows.length, 0);
@@ -289,7 +293,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                 ) : (
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+                        gridTemplateColumns: `repeat(${columns.length + 1}, minmax(0, 1fr))`,
                         gap: 12,
                         minHeight: 320,
                     }} className="animate-fade">
@@ -424,9 +428,17 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                 </button>
                                             </div>
                                             {p.members.map((m) => (
-                                                <div key={m.member_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#1e293b', padding: '2px 0' }}>
+                                                <div key={m.member_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#1e293b', padding: '2px 0', gap: 8 }}>
                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
-                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', flexShrink: 0 }}>
+                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        {m.phone ? (
+                                                            <a href={`tel:${m.phone.replace(/[^+\d]/g, '')}`} style={{ color: jumuiyaColor, fontWeight: 600, textDecoration: 'none' }}>
+                                                                {m.phone}
+                                                            </a>
+                                                        ) : (
+                                                            <span style={{ color: '#cbd5e1' }}>no contact</span>
+                                                        )}
+                                                        <span>·</span>
                                                         Yr {normalizeYearOfStudy(m.year_of_study)} · {genderCode(m.gender)}
                                                     </span>
                                                 </div>
@@ -440,7 +452,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                 )}
 
                 <p style={{ marginTop: 14, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Only active members with a known year of study (1–4) and gender are listed. {availableTotal} free, eligible members shown.
+                    Every member of {jumuiyaName} (except associates) is eligible. {availableTotal} free members shown.
                 </p>
             </div>
         </div>

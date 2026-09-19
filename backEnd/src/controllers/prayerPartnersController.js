@@ -41,7 +41,8 @@ const PAIRS_SQL_REAL = `
     pg.year_of_study,
     pg.gender,
     m.first_name,
-    m.last_name
+    m.last_name,
+    m.phone
   FROM prayer_partner_groups g
   JOIN prayer_partner_members pg ON g.id = pg.group_id
   LEFT JOIN members m ON m.member_id = pg.member_id
@@ -60,6 +61,7 @@ const buildPairs = (rows) => {
       year_of_study: r.year_of_study,
       gender: r.gender,
       name: [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id,
+      phone: r.phone || null,
     });
   }
   return Array.from(pairMap.values());
@@ -104,11 +106,10 @@ export const getPrayerPartners = async (req, res) => {
     const [pairsRes, membersRes] = await Promise.all([
       pool.query(PAIRS_SQL_REAL, [groupId]),
       pool.query(
-        `SELECT member_id, first_name, last_name, gender, year_of_study
+        `SELECT member_id, first_name, last_name, gender, year_of_study, phone
          FROM members
          WHERE jumuiya_id = $1
            AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
-           AND status = 'active'
          ORDER BY LOWER(COALESCE(first_name, '')), LOWER(COALESCE(last_name, ''))`,
         [groupId]
       ),
@@ -121,6 +122,7 @@ export const getPrayerPartners = async (req, res) => {
       name: [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id,
       gender: r.gender,
       year_of_study: r.year_of_study,
+      phone: r.phone || null,
     }));
 
     return res.json({
@@ -230,26 +232,15 @@ export const createPrayerPartners = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT member_id, first_name, last_name, gender, year_of_study
+      `SELECT member_id, first_name, last_name, gender, year_of_study, phone
        FROM members
        WHERE member_id = ANY($1)
          AND jumuiya_id = $2
-         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
-         AND status = 'active'`,
+         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`,
       [ids, groupId]
     );
     if (rows.length !== ids.length) {
-      return res.status(400).json({ success: false, message: "One or more selected members are not active members of this jumuiya" });
-    }
-
-    for (const r of rows) {
-      const displayName = [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id;
-      if (!r.gender || !String(r.gender).trim()) {
-        return res.status(400).json({ success: false, message: `${displayName} has no gender on file` });
-      }
-      if (!yearToLevel(r.year_of_study)) {
-        return res.status(400).json({ success: false, message: `${displayName} does not have a valid year of study (1-4)` });
-      }
+      return res.status(400).json({ success: false, message: "One or more selected members do not belong to this jumuiya" });
     }
 
     const paired = await pool.query(
