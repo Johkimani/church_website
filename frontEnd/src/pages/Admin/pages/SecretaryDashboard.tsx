@@ -5,7 +5,8 @@ import { getYearOfStudy, genderCode, isMale, isFemale } from "../../../utils/mem
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, GitMerge, CheckCircle,
-  ArrowLeftRight, UserCheck, Image, CalendarCheck, BookOpen
+  ArrowLeftRight, UserCheck, Image, CalendarCheck, BookOpen,
+  Handshake
 } from "lucide-react";
 import toast from "react-hot-toast";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
@@ -15,11 +16,14 @@ import JumuiyaAboutEditor from "../../Jumuiya/admin/JumuiyaAboutEditor";
 import JumuiyaRegistrationDashboard from "../../Jumuiya/admin/JumuiyaRegistrationDashboard";
 import JumuiyaAttendanceRegister from "./JumuiyaAttendanceRegister";
 import JumuiyaAnnouncementsRegister from "./JumuiyaAnnouncementsRegister";
+import PrayerPartnersManager from "../../Jumuiya/admin/PrayerPartnersManager";
 import { Megaphone } from "lucide-react";
 import { SkeletonSummaryBar } from "../../../components/Skeleton";
 
 
-type DashboardTab = "overview" | "about" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements" | "registration";
+type DashboardTab = "overview" | "about" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements" | "registration" | "prayerpartners";
+
+const PRAYER_PARTNERS_TAB = { id: "prayerpartners" as DashboardTab, label: "Prayer Partners", icon: Handshake };
 
 const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }[]> = {
   chair: [
@@ -41,6 +45,9 @@ const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }
     { id: "overview", label: "Dashboard", icon: BarChart3 },
     { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "gallery", label: "Gallery", icon: Image },
+  ],
+  liturgist: [
+    PRAYER_PARTNERS_TAB,
   ],
 };
 
@@ -94,11 +101,16 @@ export default function SecretaryDashboard() {
   const normalizedRoles = userRoles.map(r => String(r).toUpperCase().trim());
   const isChair = normalizedRoles.includes("JUMUIYA_CHAIRPERSON");
   const isSecretary = normalizedRoles.includes("JUMUIYA_SECRETARY");
+  const isOs = normalizedRoles.includes("JUMUIYA_OS");
   const roleKey = isChair ? "chair" : isSecretary ? "secretary" : "os";
-  const tabs = TAB_CONFIGS[roleKey];
-  const roleLabel = isChair ? "Chairperson Dashboard" : isSecretary ? "Secretary Dashboard" : "Jumuiya Dashboard";
+  // A liturgist who holds no management role gets only the Prayer Partners tab.
+  const isPureLiturgist = normalizedRoles.includes("LITURGIST") && !isChair && !isSecretary && !isOs;
+  const tabs = isPureLiturgist ? TAB_CONFIGS.liturgist : [...TAB_CONFIGS[roleKey], PRAYER_PARTNERS_TAB];
+  const roleLabel = isPureLiturgist
+    ? "Liturgist · Prayer Partners"
+    : isChair ? "Chairperson Dashboard" : isSecretary ? "Secretary Dashboard" : "Jumuiya Dashboard";
 
-  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+  const [activeTab, setActiveTab] = useState<DashboardTab>(isPureLiturgist ? "prayerpartners" : "overview");
 
   const [stats, setStats] = useState<any>(null);
   const [csaAllocations, setCsaAllocations] = useState<any[]>([]);
@@ -459,6 +471,14 @@ export default function SecretaryDashboard() {
 
       {activeTab === "gallery" && (
         <GalleryManager jumuiyaId={jumuiyaId} jumuiyaInfo={{ ...jumuiyaInfo, saintImage: stats?.saintImage || '' }} />
+      )}
+
+      {activeTab === "prayerpartners" && (
+        <PrayerPartnersManager
+          jumuiyaId={jumuiyaId}
+          jumuiyaName={jumuiyaInfo.name}
+          jumuiyaColor={jumuiyaInfo.color}
+        />
       )}
     </div>
   );

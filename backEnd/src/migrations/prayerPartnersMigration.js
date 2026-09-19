@@ -37,7 +37,20 @@ const setupPrayerPartners = async () => {
       ON prayer_partner_groups(jumuiya_id);
     `);
 
-    logger.info("setupPrayerPartners completed: tables prayer_partner_groups + prayer_partner_members ensured.");
+    // Per-jumuiya publish state: the liturgist posts the finished pair list
+    // and it becomes visible on the public jumuiya page. Any create/cancel
+    // after posting resets is_published back to false so drafts never leak.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prayer_partner_publish (
+        jumuiya_id UUID PRIMARY KEY REFERENCES sub_groups(group_id) ON DELETE CASCADE,
+        is_published BOOLEAN NOT NULL DEFAULT FALSE,
+        published_at TIMESTAMPTZ,
+        published_by VARCHAR(50),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    logger.info("setupPrayerPartners completed: tables prayer_partner_groups + prayer_partner_members + prayer_partner_publish ensured.");
   } catch (err) {
     logger.error("setupPrayerPartners failed: " + err.message);
   }
