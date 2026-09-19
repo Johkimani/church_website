@@ -32,7 +32,66 @@ function yearToLevel(yos) {
   return null;
 }
 
-/** GET /prayer-partners/:jumuiyaId — pairs + eligible members for the columns. */
+const PAIRS_SQL_REAL = `
+  SELECT
+    g.id AS group_id,
+    g.created_at,
+    pg.member_id,
+    pg.position_no,
+    pg.year_of_study,
+    pg.gender,
+    m.first_name,
+    m.last_name
+  FROM prayer_partner_groups g
+  JOIN prayer_partner_members pg ON g.id = pg.group_id
+  LEFT JOIN members m ON m.member_id = pg.member_id
+  WHERE g.jumuiya_id = $1
+  ORDER BY g.id ASC, pg.position_no ASC`;
+
+const buildPairs = (rows) => {
+  const pairMap = new Map();
+  for (const r of rows) {
+    if (!pairMap.has(r.group_id)) {
+      pairMap.set(r.group_id, { id: r.group_id, created_at: r.created_at, members: [] });
+    }
+    pairMap.get(r.group_id).members.push({
+      member_id: r.member_id,
+      position_no: r.position_no,
+      year_of_study: r.year_of_study,
+      gender: r.gender,
+      name: [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id,
+    });
+  }
+  return Array.from(pairMap.values());
+};
+
+/** Ensure a publish-state row exists for the jumuiya. */
+async function ensurePublishRow(groupId) {
+  await pool.query(
+    `INSERT INTO prayer_partner_publish (jumuiya_id) VALUES ($1) ON CONFLICT (jumuiya_id) DO NOTHING`,
+    [groupId]
+  );
+}
+
+async function getPublishRow(groupId) {
+  await ensurePublishRow(groupId);
+  const { rows } = await pool.query(
+    `SELECT is_published, published_at, published_by FROM prayer_partner_publish WHERE jumuiya_id = $1`,
+    [groupId]
+  );
+  return rows[0] || null;
+}
+
+/** Any change to the pair list after posting resets the public list to draft. */
+async function unpublishForJumuiya(groupId) {
+  await ensurePublishRow(groupId);
+  await pool.query(
+    `UPDATE prayer_partner_publish SET is_published = false, updated_at = NOW() WHERE jumuiya_id = $1`,
+    [groupId]
+  );
+}
+
+/** GET /prayer-partners/:jumuiyaId — pairs + eligible members (admin view). */
 export const getPrayerPartners = async (req, res) => {
   try {
     const groupId = await resolveGroupId(req.params.jumuiyaId);
@@ -40,24 +99,10 @@ export const getPrayerPartners = async (req, res) => {
       return res.status(404).json({ success: false, message: "Jumuiya not found" });
     }
 
+    const publishState = await getPublishRow(groupId);
+
     const [pairsRes, membersRes] = await Promise.all([
-      pool.query(
-        `SELECT
-           g.id AS group_id,
-           g.created_at,
-           pg.member_id,
-           pg.position_no,
-           pg.year_of_study,
-           pg.gender,
-           m.first_name,
-           m.last_name
-         FROM prayer_partner_groups g
-         JOIN prayer_partner_members pg ON g.id = pg.group_id
-         LEFT JOIN members m ON m.member_id = pg.member_id
-         WHERE g.jumuiya_id = $1
-         ORDER BY g.id ASC, pg.position_no ASC`,
-        [groupId]
-      ),
+      pool.query(PAIRS_SQL_REAL, [groupId]),
       pool.query(
         `SELECT member_id, first_name, last_name, gender, year_of_study
          FROM members
@@ -69,20 +114,6 @@ export const getPrayerPartners = async (req, res) => {
       ),
     ]);
 
-    const pairMap = new Map();
-    for (const r of pairsRes.rows) {
-      if (!pairMap.has(r.group_id)) {
-        pairMap.set(r.group_id, { id: r.group_id, created_at: r.created_at, members: [] });
-      }
-      pairMap.get(r.group_id).members.push({
-        member_id: r.member_id,
-        position_no: r.position_no,
-        year_of_study: r.year_of_study,
-        gender: r.gender,
-        name: [r.first_name, r.last_name].filter(Boolean).join(" ").trim() || r.member_id,
-      });
-    }
-
     const members = membersRes.rows.map((r) => ({
       member_id: r.member_id,
       first_name: r.first_name,
@@ -92,9 +123,89 @@ export const getPrayerPartners = async (req, res) => {
       year_of_study: r.year_of_study,
     }));
 
-    return res.json({ success: true, pairs: Array.from(pairMap.values()), members });
+    return res.json({
+      success: true,
+      pairs: buildPairs(pairsRes.rows),
+      members,
+      published: {
+        is_published: !!publishState?.is_published,
+        published_at: publishState?.published_at || null,
+        published_by: publishState?.published_by || null,
+      },
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Failed to load prayer partners" });
+  }
+};
+
+/**
+ * GET /prayer-partners/:jumuiyaId/published — read-only posted pair list.
+ * Visible to any member of the jumuiya (and global officials). Returns the
+ * empty list while the liturgist hasn't posted it.
+ */
+export const getPublishedPrayerPartners = async (req, res) => {
+  try {
+    const groupId = await resolveGroupId(req.params.jumuiyaId);
+    if (!groupId) {
+      return res.status(404).json({ success: false, message: "Jumuiya not found" });
+    }
+
+    const publishState = await getPublishRow(groupId);
+    if (!publishState?.is_published) {
+      return res.json({ success: true, published: false, pairs: [] });
+    }
+
+    const pairsRes = await pool.query(PAIRS_SQL_REAL, [groupId]);
+    return res.json({
+      success: true,
+      published: true,
+      pairs: buildPairs(pairsRes.rows),
+      published_at: publishState.published_at,
+      published_by: publishState.published_by,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to load prayer partners" });
+  }
+};
+
+/** POST /prayer-partners/:jumuiyaId/post — publish the final pair list. */
+export const postPrayerPartners = async (req, res) => {
+  try {
+    const groupId = await resolveGroupId(req.params.jumuiyaId);
+    if (!groupId) {
+      return res.status(404).json({ success: false, message: "Jumuiya not found" });
+    }
+    const count = await pool.query(
+      `SELECT COUNT(*)::int AS c FROM prayer_partner_groups WHERE jumuiya_id = $1`,
+      [groupId]
+    );
+    if (!count.rows[0]?.c) {
+      return res.status(400).json({ success: false, message: "Add at least one prayer partner group before posting." });
+    }
+    await pool.query(
+      `INSERT INTO prayer_partner_publish (jumuiya_id, is_published, published_at, published_by)
+       VALUES ($1, true, NOW(), $2)
+       ON CONFLICT (jumuiya_id)
+       DO UPDATE SET is_published = true, published_at = NOW(), published_by = EXCLUDED.published_by, updated_at = NOW()`,
+      [groupId, req.user?.member_id || null]
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to post prayer partners" });
+  }
+};
+
+/** POST /prayer-partners/:jumuiyaId/unpost — withdraw the posted list. */
+export const unpostPrayerPartners = async (req, res) => {
+  try {
+    const groupId = await resolveGroupId(req.params.jumuiyaId);
+    if (!groupId) {
+      return res.status(404).json({ success: false, message: "Jumuiya not found" });
+    }
+    await unpublishForJumuiya(groupId);
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Failed to unpost prayer partners" });
   }
 };
 
@@ -169,6 +280,7 @@ export const createPrayerPartners = async (req, res) => {
         );
       }
       await client.query("COMMIT");
+      await unpublishForJumuiya(groupId);
       return res.json({ success: true, groupId: newGroupId });
     } catch (err) {
       await client.query("ROLLBACK");
@@ -199,6 +311,7 @@ export const cancelPrayerPartners = async (req, res) => {
     if (del.rowCount === 0) {
       return res.status(404).json({ success: false, message: "Prayer partner group not found" });
     }
+    await unpublishForJumuiya(groupId);
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Failed to cancel prayer partner group" });
