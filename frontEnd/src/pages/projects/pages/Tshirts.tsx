@@ -20,7 +20,7 @@ export const Tshirts = () => {
     const [selectedSize, setSelectedSize] = React.useState<string>('');
     const [sizeError, setSizeError] = React.useState('');
     const [adding, setAdding] = React.useState(false);
-    const { sliderImgs, sliderLoading, isAdmin: sliderIsAdmin, deleteSlide } = useSliderImages('tshirts');
+    const { sliderImgs, isAdmin: sliderIsAdmin, deleteSlide } = useSliderImages('tshirts');
 
     const product = React.useMemo(() => {
         const dbProduct = products.find(p => p.category?.toLowerCase() === 'tshirts');
@@ -62,18 +62,14 @@ export const Tshirts = () => {
 
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    {sliderLoading ? (
-                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                    ) : (
-                        <HeroSlider
-                            images={sliderImgs}
-                            isAdmin={sliderIsAdmin}
-                            onDelete={deleteSlide}
-                            shopAnchor="#tshirts"
-                            buttonLabel="Shop Now"
-                            static
-                        />
-                    )}
+                    <HeroSlider
+                        images={sliderImgs}
+                        isAdmin={sliderIsAdmin}
+                        onDelete={deleteSlide}
+                        shopAnchor="#tshirts"
+                        buttonLabel="Shop Now"
+                        static
+                    />
                 </div>
 
                 <ProjectPageHeader

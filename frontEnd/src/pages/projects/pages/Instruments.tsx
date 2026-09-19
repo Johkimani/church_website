@@ -123,7 +123,7 @@ const InstrumentCard: React.FC<{
 
 export const Instruments = () => {
     const { products, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
-    const { sliderImgs, sliderLoading, isAdmin, deleteSlide } = useSliderImages('instruments');
+    const { sliderImgs, isAdmin, deleteSlide } = useSliderImages('instruments');
 
     const instruments = React.useMemo(() => {
         return products.filter(p => p.category?.toLowerCase() === 'instruments');
@@ -136,18 +136,14 @@ export const Instruments = () => {
 
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    {sliderLoading ? (
-                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                    ) : (
-                        <HeroSlider
-                            images={sliderImgs}
-                            isAdmin={isAdmin}
-                            onDelete={deleteSlide}
-                            shopAnchor="#instruments"
-                            buttonLabel="View Available"
-                            static
-                        />
-                    )}
+                    <HeroSlider
+                        images={sliderImgs}
+                        isAdmin={isAdmin}
+                        onDelete={deleteSlide}
+                        shopAnchor="#instruments"
+                        buttonLabel="View Available"
+                        static
+                    />
                 </div>
 
                 <ProjectPageHeader

@@ -90,6 +90,20 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     };
 
     if (!len) {
+        if (isStatic) {
+            return (
+                <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+                    {isAdmin && (
+                        <div className="relative z-10 px-6">
+                            <a href="/admin/projects" className="px-6 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl shadow-lg hover:bg-blue-700 transition-colors">
+                                Manage Slider Images
+                            </a>
+                        </div>
+                    )}
+                </div>
+            );
+        }
         return (
             <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br from-slate-100 to-blue-50 border border-slate-200 flex items-center justify-center">
                 <div className="text-center px-6">
@@ -138,12 +152,20 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
                             src={img.url}
                             alt={img.title || img.message || 'slide'}
                             className={`w-full h-full object-cover ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                            style={{ transform: 'scale(1)', transition: 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                            style={{
+                                transform: 'scale(1)',
+                                transition: isStatic
+                                    ? 'opacity 0.8s ease-in-out, transform 6s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    : 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)',
+                            }}
                             loading={i === 0 ? 'eager' : 'lazy'}
                             onLoad={() => setLoadedImages(prev => ({ ...prev, [img.id || i]: true }))}
                         />
                         {!isLoaded && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse" />
+                            <div className={`absolute inset-0 ${isStatic
+                                ? 'bg-gradient-to-br from-slate-800 to-slate-900'
+                                : 'bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse'}`}
+                            />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 

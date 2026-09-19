@@ -247,7 +247,7 @@ export const Sacramentals = () => {
         }
     }, [debouncedSearch, sacCategory, sortBy]);
 
-    const { sliderImgs, sliderLoading, deleteSlide } = useSliderImages('sacramentals');
+    const { sliderImgs, deleteSlide } = useSliderImages('sacramentals');
 
     const handleDeleteSliderImage = async (id: number | string) => {
         if (!window.confirm('Delete this slide image?')) return;
@@ -323,18 +323,14 @@ export const Sacramentals = () => {
 
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    {sliderLoading ? (
-                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                    ) : (
-                        <HeroSlider
-                            images={sliderImgs}
-                            isAdmin={isAdmin}
-                            onDelete={handleDeleteSliderImage}
-                            shopAnchor="#sacramentals"
-                            buttonLabel="Shop Now"
-                            static
-                        />
-                    )}
+                    <HeroSlider
+                        images={sliderImgs}
+                        isAdmin={isAdmin}
+                        onDelete={handleDeleteSliderImage}
+                        shopAnchor="#sacramentals"
+                        buttonLabel="Shop Now"
+                        static
+                    />
                 </div>
 
                 <ProjectPageHeader
