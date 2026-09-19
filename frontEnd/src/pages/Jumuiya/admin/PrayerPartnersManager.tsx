@@ -497,7 +497,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                     )}
                                 </div>
                             </div>
-                        ))}
+                        )))}
 
                         <div style={{ ...cellStyle('y'), maxHeight: 480, background: '#f8fafc', flex: '1 1 0px' }}>
                             <div style={{
