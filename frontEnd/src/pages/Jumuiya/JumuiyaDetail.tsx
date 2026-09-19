@@ -40,7 +40,14 @@ const JumuiyaDetail: React.FC = () => {
     const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
     const isJumuiyaOfficial = isMemberOfThisJumuiya && userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(r));
     const canManageActivities = isAdmin || isJumuiyaOfficial;
-    const isPrayerPartnersAllowed = isMemberOfThisJumuiya && (isAdmin || userRoles.length > 0);
+    // Liturgist role (covers assistant liturgist) sees only the membership +
+    // posted prayer partners on the public page unless they also hold a
+    // management role.
+    const isPureLiturgist = isMemberOfThisJumuiya &&
+        userRoles.some(r => String(r).toLowerCase() === 'liturgist') &&
+        !userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(String(r).toLowerCase()));
+    // Every member of the jumuiya can view the posted prayer partner list.
+    const isPrayerPartnersAllowed = isMemberOfThisJumuiya;
 
     const setTabWithUrl = (tab: TabType) => {
         setActiveTab(tab);
@@ -182,14 +189,16 @@ const JumuiyaDetail: React.FC = () => {
         { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
         ...(isMemberOfThisJumuiya ? [
           { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
-          { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
-          { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
+          ...(isPureLiturgist ? [] : [
+            { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
+            { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
+          ]),
         ] : []),
         ...(isPrayerPartnersAllowed ? [{ id: 'prayerpartners' as TabType, label: 'Prayer Partners', icon: <FaPrayingHands /> }] : []),
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
-        ...(isMemberOfThisJumuiya ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
+        ...(isMemberOfThisJumuiya && !isPureLiturgist ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
     ];
 
     const renderTabContent = () => {
@@ -230,10 +239,12 @@ const JumuiyaDetail: React.FC = () => {
     useEffect(() => {
       if (!isMemberOfThisJumuiya && (activeTab === 'members' || activeTab === 'registration' || activeTab === 'stampcard' || activeTab === 'settings')) {
         setActiveTab('about');
+      } else if (isPureLiturgist && (activeTab === 'registration' || activeTab === 'stampcard' || activeTab === 'settings')) {
+        setActiveTab('about');
       } else if (activeTab === 'prayerpartners' && !isPrayerPartnersAllowed) {
         setActiveTab('about');
       }
-    }, [isMemberOfThisJumuiya, isPrayerPartnersAllowed, activeTab]);
+    }, [isMemberOfThisJumuiya, isPrayerPartnersAllowed, isPureLiturgist, activeTab]);
 
     const detailColor = jumuiya.color || '#2c3e50';
 
