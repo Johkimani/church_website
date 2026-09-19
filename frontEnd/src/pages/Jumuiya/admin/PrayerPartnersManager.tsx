@@ -107,6 +107,10 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     const availableTotal = columns.reduce((sum, c) => sum + c.rows.length, 0);
 
     const toggleSelect = (memberId: string) => {
+        if (pairedIds.has(memberId)) {
+            setNotice('This member is already in a group.');
+            return;
+        }
         setSelected((prev) => {
             const next = new Set(prev);
             if (next.has(memberId)) {
@@ -127,9 +131,11 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     // When a group is full, move it to the final column instantly (local state
     // only — nothing is sent to the server until Post). Chosen members are
     // snapshotted from `normalized` so phone/gender/year render immediately.
+    // Only unpaired members can be selected, so a member can never land in two
+    // groups.
     useEffect(() => {
         if (selected.size !== pairSize) return;
-        const chosen = normalized.filter((m) => selected.has(m.member_id));
+        const chosen = normalized.filter((m) => selected.has(m.member_id) && !pairedIds.has(m.member_id));
         if (chosen.length !== pairSize) return;
         const draftId = -Date.now() - Math.round(Math.random() * 1000);
         setPairs((prev) => [...prev, {
@@ -138,7 +144,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
         }]);
         setSelected(new Set());
         markDraftChanged();
-    }, [selected, normalized, pairSize]);
+    }, [selected, normalized, pairSize, pairedIds]);
 
     // Any edit after a post takes the list back to draft. The server flag is
     // turned off so members never see a stale list while the liturgist reworks it.
@@ -335,9 +341,13 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                         </div>
                                     ) : (
                                         col.rows.map((m, idx) => (
-                                            <label
+                                            <div
                                                 key={m.member_id}
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => toggleSelect(m.member_id)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(m.member_id); } }}
+                                                aria-pressed={selected.has(m.member_id)}
                                                 style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -348,13 +358,16 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                     background: selected.has(m.member_id) ? _c('26') : 'transparent',
                                                     border: `1px solid ${selected.has(m.member_id) ? jumuiyaColor : 'transparent'}`,
                                                     marginBottom: 4,
+                                                    userSelect: 'none',
                                                 }}
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={selected.has(m.member_id)}
                                                     readOnly
-                                                    style={{ accentColor: jumuiyaColor, margin: 0, width: 15, height: 15, flexShrink: 0 }}
+                                                    tabIndex={-1}
+                                                    aria-hidden="true"
+                                                    style={{ accentColor: jumuiyaColor, margin: 0, width: 15, height: 15, flexShrink: 0, pointerEvents: 'none' }}
                                                 />
                                                 <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', minWidth: 16, fontWeight: 600 }}>
                                                     {idx + 1}.
@@ -373,7 +386,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                 }}>
                                                     {m.female ? 'W' : 'M'}
                                                 </span>
-                                            </label>
+                                            </div>
                                         ))
                                     )}
                                 </div>
