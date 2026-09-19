@@ -9,7 +9,7 @@ const COMMON_PASSWORDS = new Set([
   "passw0rd", "default", "csakyu", "csakirinyaga", "kirinyaga",
 ]);
 
-export interface PasswordRule {
+interface PasswordRule {
   key: string;
   label: string;
   test: (pw: string, memberId?: string) => boolean;
@@ -24,10 +24,6 @@ export const PASSWORD_RULES: PasswordRule[] = [
   { key: "not_common", label: "Not a common password",        test: (pw) => !COMMON_PASSWORDS.has(pw.toLowerCase()) },
   { key: "not_reg",    label: "Different from your reg number", test: (pw, mid) => !mid || pw.toUpperCase() !== mid.toUpperCase() },
 ];
-
-export function allPasswordRulesMet(password: string, memberId?: string): boolean {
-  return PASSWORD_RULES.every((r) => r.test(password, memberId));
-}
 
 /** Mirrors backEnd/src/utils/passwordPolicy.js. Returns an error string or "" */
 export function validatePassword(password: string, memberId?: string): string {

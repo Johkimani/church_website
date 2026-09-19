@@ -17,8 +17,10 @@ import {
   getPendingPayments,
   getMyJumuiyaPendingPayments,
   settlePendingPayment,
-  batchSettlePendingPayments,
   cancelPendingPayment,
+  batchSettlePendingPayments,
+  deletePendingPayment,
+  batchDeletePendingPayments,
   unregisterJumuiyaMember,
   registerWithPayment,
   bulkRegisterWithPayment,
@@ -43,7 +45,7 @@ import {
 
 const router = express.Router();
 
-const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 const JUMUIYA_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", "jumuiya_os", ...CSA_ROLES];
 const REGISTER_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", ...CSA_ROLES];
 const TREASURY_ROLES = ["treasurer", ...CSA_ROLES];
@@ -74,6 +76,8 @@ router.get('/pending-payments/my', verifyToken, requireRole(...JUMUIYA_ROLES), e
 router.patch('/pending-payments/:id/settle', verifyToken, requireRole(...TREASURY_ROLES), settlePendingPayment);
 router.patch('/pending-payments/:id/cancel', verifyToken, requireRole(...TREASURY_ROLES), cancelPendingPayment);
 router.post('/pending-payments/batch-settle', verifyToken, requireRole(...TREASURY_ROLES), batchSettlePendingPayments);
+router.delete('/pending-payments/:id', verifyToken, requireRole("csa_chair"), deletePendingPayment);
+router.delete('/pending-payments', verifyToken, requireRole("csa_chair"), batchDeletePendingPayments);
 
 // Member registration writes (officials, scoped to their own jumuiya)
 router.post('/', verifyToken, requireRole(...JUMUIYA_ROLES), enforceJumuiyaScope((req) => req.body?.jumuiya_id), createJumuiyaMember);

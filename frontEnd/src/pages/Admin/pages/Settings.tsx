@@ -53,6 +53,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   csa_chair: ['All pages (Super Admin)'],
   csa_vice_chair: ['Suggestion Box', 'T-Shirts'],
   jumuiya_coordinator: ['Officials Management', 'Members'],
+  assistant_jumuiya_coordinator: ['Officials Management', 'Members', 'Attendance'],
   project_manager: ['Sacramentals Banners', 'Products', 'Orders', 'Hire Requests', 'Project Management'],
   instrument_manager: ['Seats and Instruments'],
   os: ['Announcements Management', 'Weekly Activities', 'Semester Activities', 'Gallery Manager'],
@@ -83,7 +84,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   treasurer: ['Donation Monitor'],
 };
 
-const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist'];
+const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist'];
 const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary'];
 const SUBGROUP_ROLES = [
   'choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
@@ -112,6 +113,7 @@ const ROLE_LABEL_MAP: Record<string, string> = {
   csa_vice_chair: 'CSA Vice Chairperson',
   csa_secretary: 'CSA Secretary',
   jumuiya_coordinator: 'Jumuiya Coordinator',
+  assistant_jumuiya_coordinator: 'Assistant Jumuiya Coordinator',
   os: 'Organizing Secretary',
   project_manager: 'Project Manager',
   instrument_manager: 'Instrument Manager',
@@ -844,18 +846,20 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
         <table className="w-full min-w-[980px] text-left border-collapse table-fixed">
           <thead>
           <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-            <th className="px-3 py-3 w-[18%]">Member</th>
+            <th className="px-3 py-3 w-[6%]">NO</th>
+            <th className="px-3 py-3 w-[14%]">Member</th>
             <th className="pl-1 pr-2 py-3 w-[12%]">Role</th>
             <th className="px-3 py-3 w-[14%]">Jumuiya</th>
             <th className="px-3 py-3 w-[20%]">Pages Access</th>
             <th className="px-3 py-3 w-[12%]">Approved By</th>
             <th className="px-3 py-3 w-[8%]">Approved At</th>
-            <th className="px-3 py-3 w-[16%] text-right">Actions</th>
+            <th className="px-3 py-3 w-[14%] text-right">Actions</th>
           </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-          {filtered.map((a) => (
+          {filtered.map((a, idx) => (
             <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+              <td className="px-3 py-3 text-xs font-semibold text-slate-400">{idx + 1}</td>
               <td className="px-3 py-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">

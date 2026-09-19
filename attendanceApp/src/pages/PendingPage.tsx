@@ -10,8 +10,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import {
-  getAllSessions,
-  getSyncedSessions,
   syncPending,
   pendingCount,
   deleteSession,
@@ -45,13 +43,19 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [allSessions, allSynced] = await Promise.all([
-        getAllSessions(),
-        getSyncedSessions(),
-      ]);
+      const allSessions = await db.sessions.orderBy("recordedAt").reverse().toArray();
       setSessions(allSessions);
-      setSynced(allSynced);
-    } catch { /* IndexedDB error */ }
+      setSynced(allSessions.filter((s) => !!s.syncedAt));
+    } catch (e) {
+      console.error("PendingPage load error:", e);
+      try {
+        const fallback = await db.sessions.toArray();
+        setSessions(fallback);
+        setSynced(fallback.filter((s) => !!s.syncedAt));
+      } catch (e2) {
+        console.error("PendingPage fallback load error:", e2);
+      }
+    }
     setLoading(false);
 
     fetchAndCacheRecorded(RECORDED_LIMIT)
@@ -64,6 +68,14 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
 
   useEffect(() => {
     load();
+  }, [load, pending]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [load]);
 
   const sync = async () => {
@@ -114,14 +126,7 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     onSynced(0);
   };
 
-  const clearAllPending = async () => {
-    const pendingSessions = sessions.filter((s) => !s.syncedAt);
-    if (pendingSessions.length === 0) return;
-    if (!confirm(`Delete all ${pendingSessions.length} unsynced record${pendingSessions.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
-    await Promise.all(pendingSessions.map((s) => db.sessions.delete(s.sessionId)));
-    load();
-    onSynced(0);
-  };
+
 
   const removeSynced = async (s: AttendanceSession) => {
     if (navigator.onLine) {
@@ -236,15 +241,6 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
           <RefreshCw size={18} className={syncing ? "spin" : ""} />
           {syncing ? "Syncing…" : "Sync now"}
         </button>
-        {pendingSessions.length > 0 && (
-          <button
-            className="btn btn-ghost btn-block"
-            onClick={clearAllPending}
-            style={{ marginTop: 8 }}
-          >
-            <Trash2 size={16} /> Clear all pending
-          </button>
-        )}
         {status && (
           <div
             className={`banner ${status.ok ? "online" : "error"}`}

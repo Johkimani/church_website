@@ -17,6 +17,38 @@ const SACRAMENTAL_SUBCATS = new Set([
     'rosaries', 'bibles', 'chains', 'crucifixes', 'statues', 'candles', 'sacramentals'
 ]);
 
+const SPECIFIC_SUBCATS = new Set([
+    'rosaries', 'bibles', 'chains', 'crucifixes', 'statues', 'candles'
+]);
+
+// Products in the DB only carry a top-level category (e.g. 'sacramentals'), so the
+// shop infers the subcategory from explicit tags, the category, or name/description
+// keywords so the filter bars actually group the items.
+const SUBCATEGORY_KEYWORDS: [RegExp, string][] = [
+    [/\brosar(y|ies)\b|\bholy beads\b/, 'rosaries'],
+    [/\bbibles?\b|\bnew testament\b|\bold testament\b|\bgospel(s)?\b|\bmissal(ette)?s?\b|\bprayer book(s)?\b|\bnovena(?: booklets?|s)?\b/, 'bibles'],
+    [/\bchains?\b|\bmedals?\b|\bpendants?\b|\bscapulars?\b/, 'chains'],
+    [/\bcrucifix(es)?\b/, 'crucifixes'],
+    [/\bstatues?\b|\bfigurines?\b/, 'statues'],
+    [/\bcandles?\b|\bvotives?\b/, 'candles'],
+];
+
+const inferSacramentalSubcategory = (name: string, desc: string): string | null => {
+    const text = `${name} ${desc || ''}`.toLowerCase();
+    for (const [re, id] of SUBCATEGORY_KEYWORDS) {
+        if (re.test(text)) return id;
+    }
+    return null;
+};
+
+const resolveSubcategory = (p: Product): string => {
+    const explicit = (p.subcategory || '').toLowerCase();
+    if (SACRAMENTAL_SUBCATS.has(explicit)) return explicit;
+    const category = (p.category || '').toLowerCase();
+    if (SPECIFIC_SUBCATS.has(category)) return category;
+    return inferSacramentalSubcategory(p.name, p.description || p.desc || '') || 'sacramentals';
+};
+
 const CategoryFilterBar: React.FC<{
     selected: SacramentalCategory;
     onChange: (c: SacramentalCategory) => void;
@@ -215,7 +247,7 @@ export const Sacramentals = () => {
         }
     }, [debouncedSearch, sacCategory, sortBy]);
 
-    const { sliderImgs, sliderLoading, deleteSlide } = useSliderImages('sacramentals');
+    const { sliderImgs, deleteSlide } = useSliderImages('sacramentals');
 
     const handleDeleteSliderImage = async (id: number | string) => {
         if (!window.confirm('Delete this slide image?')) return;
@@ -234,7 +266,7 @@ export const Sacramentals = () => {
                 price: Number(p.price) || 0,
                 description: p.description || p.desc || '',
                 image_url: p.image_url || p.img || '',
-                subcategory: (p.subcategory || p.category || 'sacramentals').toLowerCase(),
+                subcategory: resolveSubcategory(p),
                 category: (p.category || 'sacramentals').toLowerCase(),
                 stock: p.stock ?? 50,
             }));
@@ -291,17 +323,14 @@ export const Sacramentals = () => {
 
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    {sliderLoading ? (
-                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                    ) : (
-                        <HeroSlider
-                            images={sliderImgs}
-                            isAdmin={isAdmin}
-                            onDelete={handleDeleteSliderImage}
-                            shopAnchor="#sacramentals"
-                            buttonLabel="Shop Now"
-                        />
-                    )}
+                    <HeroSlider
+                        images={sliderImgs}
+                        isAdmin={isAdmin}
+                        onDelete={handleDeleteSliderImage}
+                        shopAnchor="#sacramentals"
+                        buttonLabel="Shop Now"
+                        static
+                    />
                 </div>
 
                 <ProjectPageHeader
@@ -313,7 +342,7 @@ export const Sacramentals = () => {
 
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 0 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
                     className="bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-slate-100 p-3 sm:p-4 space-y-3"

@@ -437,7 +437,9 @@ export default function AttendanceTallyAdmin() {
 
   const canEditConfig = useMemo(() => {
     const roles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
-    return roles.some((r) => String(r).toLowerCase().trim() === "jumuiya_coordinator");
+    return roles.some((r) =>
+      ["jumuiya_coordinator", "assistant_jumuiya_coordinator"].includes(String(r).toLowerCase().trim())
+    );
   }, [user]);
 
   const loadConfig = useCallback(async () => {

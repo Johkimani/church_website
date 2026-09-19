@@ -124,7 +124,7 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
 
       {/* Stat cards */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -155,17 +155,6 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
               <div>
                 <p className="text-2xl font-bold text-slate-800">{stats.csa?.total || 0}</p>
                 <p className="text-xs text-slate-500 font-medium">CSA Members</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                <Users size={20} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">{stats.groups?.length || 0}</p>
-                <p className="text-xs text-slate-500 font-medium">Groups</p>
               </div>
             </div>
           </div>

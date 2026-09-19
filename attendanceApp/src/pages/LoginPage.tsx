@@ -7,8 +7,21 @@ import {
   verifyOfflineCredential,
 } from "../api/offlineAuth";
 
+const ALLOWED_ROLES = ["jumuiya_coordinator", "assistant_jumuiya_coordinator"];
+
+function hasAllowedRole(roles: string[] | undefined): boolean {
+  if (!roles || roles.length === 0) return false;
+  return roles.some((r) => ALLOWED_ROLES.includes(r));
+}
+
+function deriveRecordedBy(roles: string[] | undefined): "coordinator" | "assistant" {
+  if (!roles) return "coordinator";
+  if (roles.includes("assistant_jumuiya_coordinator")) return "assistant";
+  return "coordinator";
+}
+
 interface Props {
-  onLogin: (token: string | null) => void;
+  onLogin: (token: string | null, role?: string[]) => void;
 }
 
 export default function LoginPage({ onLogin }: Props) {
@@ -26,11 +39,16 @@ export default function LoginPage({ onLogin }: Props) {
 
     try {
       const res = await login(regNorm, password);
+      if (!hasAllowedRole(res.role)) {
+        setError("Access denied. Only jumuiya coordinators can use the attendance app.");
+        setLoading(false);
+        return;
+      }
       localStorage.setItem("csa_attendance_token", res.accessToken);
       await setSession("token", res.accessToken);
       await setSession("name", res.name || "");
       await setSession("mode", "online");
-      // Store a local verifier so this device can unlock without internet later
+      await setSession("recordedBy", deriveRecordedBy(res.role));
       try {
         await saveOfflineCredential(regNorm, password, {
           member_id: res.member_id,
@@ -41,7 +59,7 @@ export default function LoginPage({ onLogin }: Props) {
       } catch {
         /* non-fatal — offline sign-in just won't be available */
       }
-      onLogin(res.accessToken);
+      onLogin(res.accessToken, res.role);
     } catch (err) {
       if (!isNetworkError(err)) {
         // Server answered — genuine credentials/validation problem
@@ -51,11 +69,17 @@ export default function LoginPage({ onLogin }: Props) {
         const matched = await verifyOfflineCredential(regNorm, password);
         if (matched) {
           const cred = await getOfflineCredential();
+          if (!hasAllowedRole(cred?.profile?.role)) {
+            setError("Access denied. Only jumuiya coordinators can use the attendance app.");
+            setLoading(false);
+            return;
+          }
           await setSession("token", "");
           await setSession("name", cred?.profile?.name || regNorm);
           await setSession("mode", "offline");
+          await setSession("recordedBy", deriveRecordedBy(cred?.profile?.role));
           setOfflineUnlocked(true);
-          setTimeout(() => onLogin(null), 600);
+          setTimeout(() => onLogin(null, cred?.profile?.role), 600);
         } else {
           const cred = await getOfflineCredential();
           setError(
@@ -76,7 +100,7 @@ export default function LoginPage({ onLogin }: Props) {
         <img src="/icons/app-icon-512.png" alt="CSA Attendance" className="login-logo-img" />
       </div>
       <h1 className="login-title">CSA Attendance</h1>
-      <p className="login-sub">Sign in once while online to activate offline sign-in on this device.</p>
+      <p style={{ fontSize: 10, color: "var(--muted)", marginTop: -4 }}>v13</p>
 
       {offlineUnlocked && (
         <div className="banner online" style={{ marginBottom: 14 }}>
@@ -112,11 +136,6 @@ export default function LoginPage({ onLogin }: Props) {
         {loading ? <Loader2 size={18} className="spin" /> : <LogIn size={18} />}
         {loading ? "Signing in…" : "Sign in"}
       </button>
-
-      <p style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", marginTop: 16 }}>
-        Records are saved on this device and sync when internet returns. After your first
-        online sign-in, this device can also verify your password offline.
-      </p>
     </form>
   );
 }

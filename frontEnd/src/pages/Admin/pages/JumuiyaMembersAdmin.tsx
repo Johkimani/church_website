@@ -412,7 +412,7 @@ export default function JumuiyaMembersAdmin() {
           </div>
         </div>
 
-        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} canImport={normalizedRoles.includes("CSA_CHAIR") || normalizedRoles.includes("JUMUIYA_COORDINATOR")} />
+        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} canImport={normalizedRoles.includes("CSA_CHAIR") || normalizedRoles.includes("JUMUIYA_COORDINATOR") || normalizedRoles.includes("ASSISTANT_JUMUIYA_COORDINATOR")} />
       </div>
     );
   }

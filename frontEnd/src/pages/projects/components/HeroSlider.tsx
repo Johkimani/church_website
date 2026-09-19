@@ -17,6 +17,7 @@ interface HeroSliderProps {
     fallbackImages?: SliderImg[];
     shopAnchor?: string;
     buttonLabel?: string;
+    static?: boolean;
 }
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({
@@ -25,6 +26,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     onDelete,
     shopAnchor = '#products',
     buttonLabel = 'Shop Now',
+    static: isStatic = false,
 }) => {
     const [idx, setIdx] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -50,15 +52,15 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
     // Auto-play timer
     useEffect(() => {
-        if (len <= 1 || isPaused) return;
+        if (isStatic || len <= 1 || isPaused) return;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = window.setTimeout(next, 5500);
         return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-    }, [len, next, idx, isPaused]);
+    }, [len, next, idx, isPaused, isStatic]);
 
     // Progress bar animation
     useEffect(() => {
-        if (len <= 1 || isPaused) { setProgress(0); return; }
+        if (isStatic || len <= 1 || isPaused) { setProgress(0); return; }
         setProgress(0);
         const start = Date.now();
         const duration = 5500;
@@ -70,7 +72,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         };
         progressRef.current = window.requestAnimationFrame(tick);
         return () => { if (progressRef.current) cancelAnimationFrame(progressRef.current); };
-    }, [idx, len, isPaused]);
+    }, [idx, len, isPaused, isStatic]);
 
     // Touch/swipe handlers
     const onTouchStart = (e: React.TouchEvent) => {
@@ -88,6 +90,20 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     };
 
     if (!len) {
+        if (isStatic) {
+            return (
+                <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+                    {isAdmin && (
+                        <div className="relative z-10 px-6">
+                            <a href="/admin/projects" className="px-6 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl shadow-lg hover:bg-blue-700 transition-colors">
+                                Manage Slider Images
+                            </a>
+                        </div>
+                    )}
+                </div>
+            );
+        }
         return (
             <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br from-slate-100 to-blue-50 border border-slate-200 flex items-center justify-center">
                 <div className="text-center px-6">
@@ -108,11 +124,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 group"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
+            {...(isStatic ? {} : { onTouchStart, onTouchEnd })}
         >
             {/* Progress bar */}
-            {len > 1 && (
+            {!isStatic && len > 1 && (
                 <div className="absolute top-0 left-0 right-0 z-30 h-[3px] bg-white/10">
                     <div
                         className="h-full bg-white/70 transition-none"
@@ -123,24 +138,34 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
             {/* Slides */}
             {images.map((img, i) => {
-                const isActive = i === idx;
+                if (isStatic && i !== 0) return null;
+                const isActive = isStatic || i === idx;
                 const isLoaded = loadedImages[img.id || i];
+                const show = isStatic || (isActive && isLoaded);
                 return (
                     <div
                         key={i}
-                        className={`absolute inset-0 ${isActive && isLoaded ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
+                        className={`absolute inset-0 ${show ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
                         style={{ transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     >
                         <img
                             src={img.url}
                             alt={img.title || img.message || 'slide'}
                             className={`w-full h-full object-cover ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                            style={{ transform: 'scale(1)', transition: 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                            style={{
+                                transform: 'scale(1)',
+                                transition: isStatic
+                                    ? 'opacity 0.8s ease-in-out, transform 6s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    : 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)',
+                            }}
                             loading={i === 0 ? 'eager' : 'lazy'}
                             onLoad={() => setLoadedImages(prev => ({ ...prev, [img.id || i]: true }))}
                         />
                         {!isLoaded && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse" />
+                            <div className={`absolute inset-0 ${isStatic
+                                ? 'bg-gradient-to-br from-slate-800 to-slate-900'
+                                : 'bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse'}`}
+                            />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 
@@ -184,7 +209,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             })}
 
             {/* Arrows */}
-                {len > 1 && (
+                {!isStatic && len > 1 && (
                     <>
                         <button
                             onClick={(e) => { e.stopPropagation(); prev(); }}

@@ -7,6 +7,7 @@ import { syncPending } from "../sync/sync";
 interface Props {
   token: string;
   onSaved: () => void;
+  recordedBy: "coordinator" | "assistant";
 }
 
 const todayISO = () => {
@@ -38,7 +39,7 @@ const yearKey = (y: string) => `y:${y}`;
 const isWithinNovena = (d: string, windows: NovenaWindow[]) =>
   windows.some((n) => d >= n.start_date && d <= n.end_date);
 
-export default function RecordPage({ token, onSaved }: Props) {
+export default function RecordPage({ token, onSaved, recordedBy: initialRecordedBy }: Props) {
   const [date, setDate] = useState(todayISO());
   const [jumuiyas, setJumuiyas] = useState<TallyJumuiya[]>([]);
   const [years, setYears] = useState<TallyYear[]>(FALLBACK_YEARS);
@@ -51,7 +52,11 @@ export default function RecordPage({ token, onSaved }: Props) {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState<"jumuiya" | "year">("jumuiya");
-  const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">("coordinator");
+  const [recordedBy, setRecordedBy] = useState<"coordinator" | "assistant">(initialRecordedBy);
+
+  useEffect(() => {
+    setRecordedBy(initialRecordedBy);
+  }, [initialRecordedBy]);
 
   const loadFromCache = useCallback((d: string) => {
     return Promise.all([getMeta<TallyJumuiya[]>("jumuiyas"), getMeta<NovenaWindow[]>("active_novenas")]).then(
@@ -334,6 +339,13 @@ export default function RecordPage({ token, onSaved }: Props) {
             ))}
           </div>
 
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", marginTop: 4, borderTop: "1px solid var(--line)", fontSize: 14, fontWeight: 700 }}>
+            <span>Total</span>
+            <span>
+              {years.reduce((sum, yr) => sum + (Number(counts[yearKey(yr.year)]) || 0), 0)}
+            </span>
+          </div>
+
           {recordedByControls}
 
           <button className="btn btn-primary" disabled={saving || !canSave} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!canSave ? (activity?.isTallyDay ? "Semester break — new tallies closed" : "Not a tally day") : undefined}>
@@ -369,6 +381,13 @@ export default function RecordPage({ token, onSaved }: Props) {
             ))}
           </div>
 
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", marginTop: 4, borderTop: "1px solid var(--line)", fontSize: 14, fontWeight: 700 }}>
+            <span>Total</span>
+            <span>
+              {jumuiyas.reduce((sum, j) => sum + (Number(counts[j.group_id]) || 0), 0)}
+            </span>
+          </div>
+
           {recordedByControls}
 
           <button className="btn btn-primary" disabled={saving || !canSave} onClick={saveAll} style={{ marginTop: 16, display: "flex", width: "fit-content", marginLeft: "auto", marginRight: "auto", padding: "10px 28px", fontSize: 14 }} title={!canSave ? (activity?.isTallyDay ? "Semester break — new tallies closed" : "Not a tally day") : undefined}>
@@ -377,9 +396,13 @@ export default function RecordPage({ token, onSaved }: Props) {
           </button>
         </div>
       )}
+      <div style={{ textAlign: "center", fontSize: 10, color: "var(--muted)", padding: "8px 0 0" }}>
+        v13 · CSA Attendance
+      </div>
     </div>
   );
 }
+
 
 function initials(name: string): string {
   return name

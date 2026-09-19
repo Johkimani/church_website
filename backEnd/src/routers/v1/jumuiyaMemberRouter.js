@@ -20,7 +20,7 @@ import requireRole, { enforceJumuiyaScope, OFFICIAL_ROLES } from "../../middlewa
 
 const router = Router();
 
-const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator"];
+const CSA_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assistant_jumuiya_coordinator"];
 const JUMUIYA_ROLES = ["jumuiya_secretary", "jumuiya_chairperson", "jumuiya_os", ...CSA_ROLES];
 
 // The My Jumuiya Dashboard (and the per-jumuiya management reads that feed it)

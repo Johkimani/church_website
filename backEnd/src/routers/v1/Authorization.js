@@ -38,7 +38,7 @@ const EXECUTIVE_ROLES = ["csa_chair", "csa_vice_chair", "csa_secretary"];
 const OFFICIAL_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
   "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
-  "jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
+  "jumuiya_coordinator", "assistant_jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
 ];
 
 // authRoutes

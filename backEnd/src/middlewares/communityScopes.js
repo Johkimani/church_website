@@ -19,6 +19,7 @@ const GLOBAL_COMMUNITY_ADMIN_ROLES = [
   "csa_vice_chair",
   "csa_secretary",
   "jumuiya_coordinator",
+  "assistant_jumuiya_coordinator",
   "liturgist",
 ];
 

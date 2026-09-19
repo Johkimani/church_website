@@ -5,26 +5,28 @@ import { getYearOfStudy, genderCode, isMale, isFemale } from "../../../utils/mem
 import {
   Users, Church, Calendar, RefreshCw,
   BarChart3, TrendingUp, GitMerge, CheckCircle,
-  ArrowLeftRight, UserCheck, Image, CalendarCheck
+  ArrowLeftRight, UserCheck, Image, CalendarCheck, BookOpen
 } from "lucide-react";
 import toast from "react-hot-toast";
-import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import GalleryManager from "./GalleryManager";
 import JumuiyaAnalyticsDashboard from "../../Jumuiya/admin/JumuiyaAnalyticsDashboard";
+import JumuiyaAboutEditor from "../../Jumuiya/admin/JumuiyaAboutEditor";
+import JumuiyaRegistrationDashboard from "../../Jumuiya/admin/JumuiyaRegistrationDashboard";
 import JumuiyaAttendanceRegister from "./JumuiyaAttendanceRegister";
 import JumuiyaAnnouncementsRegister from "./JumuiyaAnnouncementsRegister";
 import { Megaphone } from "lucide-react";
 import { SkeletonSummaryBar } from "../../../components/Skeleton";
 
 
-type DashboardTab = "overview" | "organize" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements";
+type DashboardTab = "overview" | "about" | "allocations" | "analytics" | "gallery" | "attendance" | "announcements" | "registration";
 
 const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }[]> = {
   chair: [
     { id: "overview", label: "Dashboard", icon: BarChart3 },
     { id: "announcements", label: "Announcements", icon: Megaphone },
-    { id: "organize", label: "Organize", icon: GitMerge },
+    { id: "registration", label: "Registration", icon: UserCheck },
+    { id: "about", label: "About", icon: BookOpen },
     { id: "allocations", label: "Allocations", icon: UserCheck },
     { id: "analytics", label: "Reports", icon: TrendingUp },
   ],
@@ -32,6 +34,7 @@ const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }
     { id: "overview", label: "Dashboard", icon: BarChart3 },
     { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "attendance", label: "Attendance", icon: CalendarCheck },
+    { id: "registration", label: "Registration", icon: UserCheck },
     { id: "analytics", label: "Reports", icon: TrendingUp },
   ],
   os: [
@@ -135,10 +138,8 @@ export default function SecretaryDashboard() {
     setLoadingMembers(true);
     try {
       const data = await memberService.getMembers(jumuiyaId);
-      // For secretaries, only show members from their jumuiya (source = 'jum'), filter out CSA members
       const raw = data?.data || data || [];
-      const jumuiyaOnly = raw.filter((m: any) => m.source === 'jum');
-      setMembers(jumuiyaOnly);
+      setMembers(raw);
     } catch (err) {
       // Fallback: try export members endpoint
       try {
@@ -381,6 +382,7 @@ export default function SecretaryDashboard() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-slate-100">
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">No.</th>
                           <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">Name</th>
                           <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">Reg #</th>
                           <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase">Gender</th>
@@ -390,6 +392,7 @@ export default function SecretaryDashboard() {
                       <tbody>
                         {csaAllocations.slice(0, 10).map((m: any, i: number) => (
                           <tr key={m.id || i} className="border-b border-slate-50 hover:bg-slate-50">
+                            <td className="py-2 px-3 text-slate-500 font-bold">{i + 1}</td>
                             <td className="py-2 px-3 font-medium text-slate-700">{m.name}</td>
                             <td className="py-2 px-3 text-slate-500 font-mono text-xs">{m.reg_number || "—"}</td>
                             <td className="py-2 px-3">
@@ -417,10 +420,11 @@ export default function SecretaryDashboard() {
           jumuiyaColor={jumuiyaInfo.color}
           members={members}
           stats={stats}
-          csaAllocations={csaAllocations}
-          user={user ?? undefined}
-          onRegister={refreshAll}
         />
+      )}
+
+      {activeTab === "about" && (
+        <JumuiyaAboutEditor jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaInfo.name} />
       )}
 
       {activeTab === "attendance" && (
@@ -431,8 +435,14 @@ export default function SecretaryDashboard() {
         />
       )}
 
-      {activeTab === "organize" && (
-        <OrganizationPanel jumuiyaId={jumuiyaId} />
+      {activeTab === "registration" && (
+        <JumuiyaRegistrationDashboard
+          jumuiyaId={jumuiyaId}
+          jumuiyaName={jumuiyaInfo.name}
+          jumuiyaColor={jumuiyaInfo.color}
+          user={user ?? undefined}
+          onRegister={refreshAll}
+        />
       )}
 
       {activeTab === "allocations" && (

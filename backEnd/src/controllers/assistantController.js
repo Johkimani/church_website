@@ -2,7 +2,7 @@ import axios from "axios";
 import logger from "../logger/winston.js";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.1-8b-instant";
+const MODEL = "openai/gpt-oss-120b";
 
 const SITE_KNOWLEDGE = `
 SITE OVERVIEW:

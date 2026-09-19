@@ -96,7 +96,7 @@ export const CSA_POSITION_TO_ROLE = {
   'Secretary': 'csa_secretary',
   'Assistant Secretary': 'csa_secretary',
   'Jumuiya Coordinator': 'jumuiya_coordinator',
-  'Assistant Jumuiya Coordinator': 'jumuiya_coordinator',
+  'Assistant Jumuiya Coordinator': 'assistant_jumuiya_coordinator',
   'Organizing Secretary': 'os',
   'Project Manager': 'project_manager',
   'Assistant Project Manager': 'project_manager',
@@ -148,6 +148,7 @@ const OTHER_ADMIN_ROLES = [
   'instrument_manager',
   'liturgist',
   'jumuiya_coordinator',
+  'assistant_jumuiya_coordinator',
 ];
 
 export const EXCLUSIVITY_ROLE_SET = [
@@ -223,7 +224,9 @@ export const getRoleNameForPosition = (position, isJumuiya) => {
   if (lower.includes('danc')) {
     return (lower.includes('vice') || lower.includes('ass') || lower.includes('deputy')) ? 'dance_vice_chair' : 'dance_chair';
   }
-  if (lower.includes('jumuiya') && lower.includes('coord')) return 'jumuiya_coordinator';
+  if (lower.includes('jumuiya') && lower.includes('coord')) {
+    return (lower.includes('vice') || lower.includes('ass') || lower.includes('deputy')) ? 'assistant_jumuiya_coordinator' : 'jumuiya_coordinator';
+  }
   if (lower.includes('chair') && (lower.includes('vice') || lower.includes('ass') || lower.includes('vc') || lower.includes('deputy'))) {
     return 'csa_vice_chair';
   }

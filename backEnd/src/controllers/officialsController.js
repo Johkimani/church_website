@@ -1241,7 +1241,7 @@ export const lookupMember = async (req, res) => {
 
 const HANDOVER_REVOCABLE_ROLES = [
   // CSA executive + coordinator
-  'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator',
+  'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator',
   'project_manager', 'instrument_manager', 'os', 'treasurer', 'liturgist',
   // Jumuiya
   'jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary',

@@ -104,7 +104,6 @@ const AnnouncementsAdmin = lazy(() =>
 const CommunityDetailEditor = lazy(() => import("./pages/Admin/pages/CommunityDetailEditor"));
 const AdminSuggestions = lazy(() => import("./pages/Admin/pages/AdminSuggestions"));
 const SuggestionBin = lazy(() => import("./pages/Admin/pages/SuggestionBin"));
-const UnmaskApproval = lazy(() => import("./pages/Admin/pages/UnmaskApproval"));
 const DeletionApproval = lazy(() => import("./pages/Admin/pages/DeletionApproval"));
 const GalleryManager = lazy(() => import("./pages/Admin/pages/GalleryManager"));
 const SacramentalsBannerManager = lazy(() => import("./pages/Admin/pages/SacramentalsBannerManager"));
@@ -210,7 +209,6 @@ const App: React.FC = () => {
         {/* Order Confirmation (no layout) */}
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
         <Route path="/hire-status" element={<HireStatus />} />
-        <Route path="/suggestions/unmask/:role/:token" element={<UnmaskApproval />} />
         <Route path="/officials/deletion-approval/:token" element={<DeletionApproval />} />
 
         {/* Dynamic Jumuiya WhatsApp Self-Registration (Mobile-first, public) */}

@@ -17,9 +17,8 @@ interface MySuggestion {
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   pending: { label: 'Pending', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
   replied: { label: 'Replied', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-  approved: { label: 'Identity Approved', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-  unmask_requested: { label: 'Reviewing Identity', cls: 'bg-slate-100 text-slate-500 border-slate-200' },
-  rejected: { label: 'Closed', cls: 'bg-slate-100 text-slate-400 border-slate-200' },
+approved: { label: 'Identity Approved', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+   rejected: { label: 'Closed', cls: 'bg-slate-100 text-slate-400 border-slate-200' },
 };
 
 const SuggestionBox: React.FC = () => {

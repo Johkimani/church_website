@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FaCheck, FaUsers, FaGraduationCap } from "react-icons/fa";
 import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
+import { normalizeYearOfStudy } from '../../../utils/memberYear';
 import type { Official } from '../data/jumuiyaData';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
@@ -89,13 +90,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
         if (officialNames.has(member.name?.toLowerCase().trim())) {
             return { label: 'OFFICIAL', color: '#8b5cf6', bg: '#f5f3ff' };
         }
-        if (activeSubTab === 'associates' || member.is_associate) {
-            return { label: 'ASSOCIATE', color: '#059669', bg: '#ecfdf5' };
-        }
-        if (member.is_registered) {
-            return { label: 'MEMBER', color: jumuiyaColor, bg: jumuiyaColor };
-        }
-        return { label: 'PENDING', color: '#9ca3af', bg: '#9ca3af' };
+        return null;
     };
 
     return (
@@ -169,7 +164,10 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                 </tr>
                             ) : displayedMembers.map(member => {
                                 const tag = getMemberTag(member);
+                                const avatarColor = tag ? tag.color : jumuiyaColor;
                                 const gradYear = activeSubTab === 'associates' ? getGraduationYear(member) : null;
+                                const normalizedYear = normalizeYearOfStudy(member.year);
+                                const shownYear = normalizedYear === 'Unknown' ? (member.year || 'N/A') : normalizedYear;
 
                                 return (
                                     <tr key={member.id || member.member_id}>
@@ -180,7 +178,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                                         width: '36px',
                                                         height: '36px',
                                                         borderRadius: '50%',
-                                                        background: tag.color,
+                                                        background: avatarColor,
                                                         color: 'white',
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -194,6 +192,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                         <span style={{ fontWeight: 600 }}>{member.name}</span>
+                                                        {tag && (
                                                         <span style={{
                                                             fontSize: '0.65rem',
                                                             background: tag.bg,
@@ -205,6 +204,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                                         }}>
                                                             {tag.label}
                                                         </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -228,7 +228,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ jumuiyaId, jumuiyaName, jumuiya
                                                     {gradYear ? `Class of ${gradYear}` : (member.year || 'Class of N/A')}
                                                 </span>
                                             ) : (
-                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{member.year || 'N/A'}</span>
+                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{shownYear}</span>
                                             )}
                                         </td>
                                         <td>

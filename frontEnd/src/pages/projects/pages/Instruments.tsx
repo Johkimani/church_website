@@ -123,7 +123,7 @@ const InstrumentCard: React.FC<{
 
 export const Instruments = () => {
     const { products, addToHire, isHireModalOpen, setHireModalOpen } = useApp();
-    const { sliderImgs, sliderLoading, isAdmin, deleteSlide } = useSliderImages('instruments');
+    const { sliderImgs, isAdmin, deleteSlide } = useSliderImages('instruments');
 
     const instruments = React.useMemo(() => {
         return products.filter(p => p.category?.toLowerCase() === 'instruments');
@@ -136,17 +136,14 @@ export const Instruments = () => {
 
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    {sliderLoading ? (
-                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-200 animate-pulse" />
-                    ) : (
-                        <HeroSlider
-                            images={sliderImgs}
-                            isAdmin={isAdmin}
-                            onDelete={deleteSlide}
-                            shopAnchor="#instruments"
-                            buttonLabel="View Available"
-                        />
-                    )}
+                    <HeroSlider
+                        images={sliderImgs}
+                        isAdmin={isAdmin}
+                        onDelete={deleteSlide}
+                        shopAnchor="#instruments"
+                        buttonLabel="View Available"
+                        static
+                    />
                 </div>
 
                 <ProjectPageHeader
@@ -158,7 +155,7 @@ export const Instruments = () => {
 
             <motion.section
                 id="instruments"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 0 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20 pb-10 sm:pb-16"
