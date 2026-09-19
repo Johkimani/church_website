@@ -58,6 +58,7 @@ import treasuryRouter from "./treasuryRoutes.js";
 import productReviewsRouter from "./productReviewsRoutes.js";
 import choirSongsRouter from "./choirSongsRouter.js";
 import { getHeroSlides } from "../../controllers/heroSlidesController.js";
+import prayerPartnersRouter from "./prayerPartnersRouter.js";
 
 // Audit trail: records every authenticated admin mutation (who/what/when).
 // Mounted first so it wraps every request in this router; it only writes on
@@ -187,6 +188,9 @@ router.use("/jumuiya-tshirts", jumuiyaTshirtsRouter);
 router.use("/choir-songs", choirSongsRouter);
 router.use("/choir_songs", choirSongsRouter);
 router.get("/hero-slides", getHeroSlides);
+
+// Prayer partners (jumuiya liturgist / any jumuiya official)
+router.use("/prayer-partners", prayerPartnersRouter);
 
 // Product reviews
 router.use("/", productReviewsRouter);

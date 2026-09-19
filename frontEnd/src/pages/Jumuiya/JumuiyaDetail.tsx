@@ -11,14 +11,15 @@ import ChannelsTab from './components/ChannelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
 import SettingsTab from './components/SettingsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaStamp } from "react-icons/fa";
+import PrayerPartnersTab from './components/PrayerPartnersTab';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaStamp, FaPrayingHands } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
 import './JumuiyaDetail.css';
 import { FaTimes } from 'react-icons/fa';
 
-type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'settings' | 'stampcard';
+type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'settings' | 'stampcard' | 'prayerpartners';
 
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -39,6 +40,7 @@ const JumuiyaDetail: React.FC = () => {
     const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
     const isJumuiyaOfficial = isMemberOfThisJumuiya && userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(r));
     const canManageActivities = isAdmin || isJumuiyaOfficial;
+    const isPrayerPartnersAllowed = isMemberOfThisJumuiya && (isAdmin || userRoles.length > 0);
 
     const setTabWithUrl = (tab: TabType) => {
         setActiveTab(tab);
@@ -67,7 +69,8 @@ const JumuiyaDetail: React.FC = () => {
             'allocations',
             'admin',
             'settings',
-            'stampcard'
+            'stampcard',
+            'prayerpartners'
         ].includes(tabFromUrl);
 
         if (validTab) {
@@ -182,6 +185,7 @@ const JumuiyaDetail: React.FC = () => {
           { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
           { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
         ] : []),
+        ...(isPrayerPartnersAllowed ? [{ id: 'prayerpartners' as TabType, label: 'Prayer Partners', icon: <FaPrayingHands /> }] : []),
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
         { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
@@ -216,6 +220,8 @@ const JumuiyaDetail: React.FC = () => {
                 return <SettingsTab jumuiyaColor={detailColor} />;
             case 'stampcard':
                 return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} saintImage={jumuiya.saintImage} />;
+            case 'prayerpartners':
+                return <PrayerPartnersTab jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />;
             default:
                 return null;
         }
@@ -224,8 +230,10 @@ const JumuiyaDetail: React.FC = () => {
     useEffect(() => {
       if (!isMemberOfThisJumuiya && (activeTab === 'members' || activeTab === 'registration' || activeTab === 'stampcard' || activeTab === 'settings')) {
         setActiveTab('about');
+      } else if (activeTab === 'prayerpartners' && !isPrayerPartnersAllowed) {
+        setActiveTab('about');
       }
-    }, [isMemberOfThisJumuiya]);
+    }, [isMemberOfThisJumuiya, isPrayerPartnersAllowed, activeTab]);
 
     const detailColor = jumuiya.color || '#2c3e50';
 

@@ -60,6 +60,7 @@ import heroSliderDynamicMigration from "./migrations/heroSliderDynamicMigration.
 import communityModuleChannelsMigration from "./migrations/communityModuleChannelsMigration.js";
 import communityModuleVideosMigration from "./migrations/communityModuleVideosMigration.js";
 import normalizeCategoryNames from "./migrations/normalizeCategoryNames.js";
+import setupPrayerPartners from "./migrations/prayerPartnersMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -237,6 +238,7 @@ const initServer = async () => {
     await relaxEnrollmentClassId();
     await productReviewsMigration();
     await normalizeCategoryNames();
+    await setupPrayerPartners();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {

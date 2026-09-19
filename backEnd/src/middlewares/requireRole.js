@@ -81,5 +81,5 @@ const enforceJumuiyaScope = (getTargetJumuiyaId) => async (req, res, next) => {
   }
 };
 
-export { requireRole, enforceJumuiyaScope, isOfficial, OFFICIAL_ROLES };
+export { requireRole, enforceJumuiyaScope, isOfficial, OFFICIAL_ROLES, GLOBAL_ROLES };
 export default requireRole;
