@@ -88,7 +88,7 @@ function ActivityImage({ activity, onReplace, onRemove }: {
   );
 }
 
-const GLOBAL_ROLES = ['csa_chair', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'admin'];
+const GLOBAL_ROLES = ['csa_chair', 'os', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'admin'];
 
 export default function WeeklyActivitiesAdmin() {
   const { user } = useAuth();

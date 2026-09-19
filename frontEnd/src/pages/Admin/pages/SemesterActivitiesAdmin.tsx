@@ -83,7 +83,7 @@ function relativeChip(dt: Date) {
   return null;
 }
 
-const GLOBAL_ROLES = ['csa_chair', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'admin'];
+const GLOBAL_ROLES = ['csa_chair', 'os', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'admin'];
 
 export default function SemesterActivitiesAdmin() {
   const { user } = useAuth();
