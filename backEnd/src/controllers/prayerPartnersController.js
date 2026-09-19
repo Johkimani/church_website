@@ -15,11 +15,23 @@ async function resolveGroupId(target) {
 
 /**
  * Normalize a stored year_of_study value into a year level (1–4), mirroring
- * the frontend's memberYear util. Returns null when it can't be determined.
+ * the frontend's memberYear util. When the stored field is empty, fall back
+ * to the intake year encoded in the last two digits of the member id (same
+ * rule the All Members table uses). Returns null when it can't be determined.
  */
-function yearToLevel(yos) {
+function yearToLevel(yos, memberId) {
   const trimmed = String(yos ?? "").trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    const regMatch = String(memberId ?? "").trim().match(/(\d{2})\s*$/);
+    if (regMatch) {
+      const admissionYear = 2000 + parseInt(regMatch[1], 10);
+      const now = new Date();
+      const academicStartYear = now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+      const fromReg = academicStartYear - admissionYear + 1;
+      if (fromReg >= 1 && fromReg <= 4) return fromReg;
+    }
+    return null;
+  }
   if (/^[1-4]$/.test(trimmed)) return Number(trimmed);
   const match = trimmed.match(/^(\d{4})\s*[-/]\s*(\d{4})$/);
   if (match) {
@@ -267,7 +279,7 @@ export const createPrayerPartners = async (req, res) => {
         await client.query(
           `INSERT INTO prayer_partner_members (group_id, member_id, position_no, year_of_study, gender)
            VALUES ($1, $2, $3, $4, $5)`,
-          [newGroupId, r.member_id, i + 1, yearToLevel(r.year_of_study), r.gender]
+          [newGroupId, r.member_id, i + 1, yearToLevel(r.year_of_study, r.member_id), r.gender]
         );
       }
       await client.query("COMMIT");

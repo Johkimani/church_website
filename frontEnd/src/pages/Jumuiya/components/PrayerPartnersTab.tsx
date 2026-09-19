@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaPrayingHands, FaEyeSlash, FaUserFriends, FaPhone } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
-import { normalizeYearOfStudy, genderCode } from '../../../utils/memberYear';
+import { normalizeYearOfStudy, getYearOfStudy, genderCode } from '../../../utils/memberYear';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
 
@@ -16,6 +16,15 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
     const [isPublished, setIsPublished] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const yearLabel = (yearOfStudy: string | null | undefined, memberId: string) => {
+        let level = normalizeYearOfStudy(yearOfStudy);
+        if (level === 'Unknown') {
+            const fromReg = getYearOfStudy(memberId);
+            if (fromReg >= 1 && fromReg <= 4) level = String(fromReg);
+        }
+        return level;
+    };
 
     const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
@@ -205,7 +214,7 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
                                                     padding: '2px 8px',
                                                     flexShrink: 0,
                                                 }}>
-                                                    Yr {normalizeYearOfStudy(m.year_of_study)} · {genderCode(m.gender)}
+                                                    Yr {yearLabel(m.year_of_study, m.member_id)} · {genderCode(m.gender)}
                                                 </span>
                                             </div>
                                         ))}

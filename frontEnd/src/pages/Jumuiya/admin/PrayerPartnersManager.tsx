@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FaCheck, FaUsers, FaUserFriends, FaBan, FaPrayingHands, FaPaperPlane, FaUndo } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerMember, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
-import { normalizeYearOfStudy, genderCode, isFemale } from '../../../utils/memberYear';
+import { normalizeYearOfStudy, getYearOfStudy, genderCode, isFemale } from '../../../utils/memberYear';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
 const YEAR_KEYS = [
@@ -37,6 +37,15 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
         return err?.response?.data?.message || err?.message || fallback;
     };
 
+    const yearLabel = (yearOfStudy: string | null | undefined, memberId: string) => {
+        let level = normalizeYearOfStudy(yearOfStudy);
+        if (level === 'Unknown') {
+            const fromReg = getYearOfStudy(memberId);
+            if (fromReg >= 1 && fromReg <= 4) level = String(fromReg);
+        }
+        return level;
+    };
+
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setError('');
@@ -70,12 +79,22 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
     }, [pairs]);
 
     const normalized = useMemo(() => {
-        return members.map((m) => ({
-            ...m,
-            yearLevel: normalizeYearOfStudy(m.year_of_study),
-            female: isFemale(m.gender),
-            genderBadge: genderCode(m.gender),
-        }));
+        // Prefer the stored year_of_study field, but fall back to the year
+        // encoded in the last two digits of the reg/member id (same rule the
+        // All Members table uses) when the field is empty.
+        return members.map((m) => {
+            let yearLevel = normalizeYearOfStudy(m.year_of_study);
+            if (yearLevel === 'Unknown') {
+                const fromReg = getYearOfStudy(m.member_id);
+                if (fromReg >= 1 && fromReg <= 4) yearLevel = String(fromReg);
+            }
+            return {
+                ...m,
+                yearLevel,
+                female: isFemale(m.gender),
+                genderBadge: genderCode(m.gender),
+            };
+        });
     }, [members]);
 
     const columns = useMemo(() => {
@@ -439,7 +458,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                             <span style={{ color: '#cbd5e1' }}>no contact</span>
                                                         )}
                                                         <span>·</span>
-                                                        Yr {normalizeYearOfStudy(m.year_of_study)} · {genderCode(m.gender)}
+                                                        Yr {yearLabel(m.year_of_study, m.member_id)} · {genderCode(m.gender)}
                                                     </span>
                                                 </div>
                                             ))}
