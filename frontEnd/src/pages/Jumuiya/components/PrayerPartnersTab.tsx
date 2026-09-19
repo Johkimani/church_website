@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FaPrayingHands, FaEyeSlash, FaUserFriends, FaPhone } from 'react-icons/fa';
+import { FaPrayingHands, FaEyeSlash, FaUserFriends, FaWhatsapp } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
+import { toWaPhone } from '../../../api/useCoordinatorContact';
 import { normalizeYearOfStudy, getYearOfStudy, genderCode } from '../../../utils/memberYear';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import './TabsSystem.css';
@@ -185,7 +186,9 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
                                                     </span>
                                                     {m.phone ? (
                                                         <a
-                                                            href={`tel:${m.phone.replace(/[^+\d]/g, '')}`}
+                                                            href={`https://wa.me/${toWaPhone(m.phone)}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
                                                             style={{
                                                                 display: 'inline-flex',
                                                                 alignItems: 'center',
@@ -197,7 +200,7 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
                                                                 marginTop: 1,
                                                             }}
                                                         >
-                                                            <FaPhone size={10} /> {m.phone}
+                                                            <FaWhatsapp size={10} /> {m.phone}
                                                         </a>
                                                     ) : (
                                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 500 }}>

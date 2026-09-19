@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FaUsers, FaUserFriends, FaBan, FaPrayingHands, FaPaperPlane, FaUndo } from 'react-icons/fa';
+import { FaUsers, FaUserFriends, FaBan, FaPrayingHands, FaPaperPlane, FaUndo, FaWhatsapp } from 'react-icons/fa';
 import { prayerPartnersService, PrayerPartnerMember, PrayerPartnerUnit } from '../../../api/prayerPartnersService';
+import { toWaPhone } from '../../../api/useCoordinatorContact';
 import { normalizeYearOfStudy, getYearOfStudy, genderCode, isFemale } from '../../../utils/memberYear';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 
@@ -459,8 +460,8 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
                                                     <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                                                         {m.phone ? (
-                                                            <a href={`tel:${m.phone.replace(/[^+\d]/g, '')}`} style={{ color: jumuiyaColor, fontWeight: 600, textDecoration: 'none' }}>
-                                                                {m.phone}
+                                                            <a href={`https://wa.me/${toWaPhone(m.phone)}`} target="_blank" rel="noopener noreferrer" style={{ color: jumuiyaColor, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                                <FaWhatsapp size={10} /> {m.phone}
                                                             </a>
                                                         ) : (
                                                             <span style={{ color: '#cbd5e1' }}>no contact</span>
