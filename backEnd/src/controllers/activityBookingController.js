@@ -530,8 +530,10 @@ export const deleteBooking = async (req, res) => {
 
 export const getPaidActivities = async (req, res) => {
   try {
+    // weekly_activities has no `description` column (it has `activity`), so
+    // select day + activity separately for display.
     const weekly = await pool.query(
-      `SELECT id, 'weekly' AS activity_type, day AS name, time, venue, description, fare
+      `SELECT id, 'weekly' AS activity_type, day AS name, activity, time, venue, fare
        FROM weekly_activities WHERE is_active = true AND fare IS NOT NULL AND fare > 0
        ORDER BY sort_order ASC`
     );
