@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle } from "lucide-react";
+import { Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle, Eye } from "lucide-react";
 import * as XLSX from "xlsx";
 import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton";
 
@@ -54,7 +54,13 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [yearSel, setYearSel] = useState("");
   const [pendingGraduates, setPendingGraduates] = useState<string[]>([]);
   const [migrating, setMigrating] = useState(false);
+  const [showPendingGraduates, setShowPendingGraduates] = useState(false);
   const itemsPerPage = 25;
+
+  const pendingGraduateMembers = useMemo(
+    () => members.filter((m: any) => pendingGraduates.includes(m.member_id || m.id)),
+    [members, pendingGraduates]
+  );
 
   const intakeYears = useMemo(() => {
     const set = new Set<string>();
@@ -408,25 +414,73 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       )}
 
       {pendingGraduates.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <AlertTriangle size={18} className="text-amber-600 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-800">
-                {pendingGraduates.length} graduated member(s) pending migration
-              </p>
-              <p className="text-xs text-amber-600">
-                These members have completed their 4th year. Migrate them to the Associates table to keep active records clean.
-              </p>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  {pendingGraduates.length} graduated member(s) pending migration
+                </p>
+                <p className="text-xs text-amber-600">
+                  These members have completed their 4th year. Migrate them to the Associates table to keep active records clean.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPendingGraduates(v => !v)}
+                className="flex items-center gap-2 bg-white hover:bg-amber-100 border border-amber-300 text-amber-800 text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <Eye size={14} /> {showPendingGraduates ? "Hide" : "View"}
+              </button>
+              <button
+                onClick={handleMigrateGraduates}
+                disabled={migrating}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <GraduationCap size={14} /> {migrating ? "Migrating..." : `Migrate ${pendingGraduates.length} to Associates`}
+              </button>
             </div>
           </div>
-          <button
-            onClick={handleMigrateGraduates}
-            disabled={migrating}
-            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
-          >
-            <GraduationCap size={14} /> {migrating ? "Migrating..." : `Migrate ${pendingGraduates.length} to Associates`}
-          </button>
+
+          {showPendingGraduates && pendingGraduateMembers.length > 0 && (
+            <div className="border-t border-amber-200 bg-white px-5 py-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg #</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Jumuiya</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Course</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Gender</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingGraduateMembers.map((m, idx) => (
+                    <tr key={m.member_id || m.id} className="border-b border-slate-100">
+                      <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
+                      <td className="py-2 px-3 font-medium text-slate-800 text-xs">{m.member_id || m.id}</td>
+                      <td className="py-2 px-3 text-slate-700 text-xs">{m.name}</td>
+                      <td className="py-2 px-3 text-slate-600 text-xs">{m.jumuiya_name || formatJumuiyaName(m.jumuiya_id)}</td>
+                      <td className="py-2 px-3 text-slate-500 text-xs">{m.course || "—"}</td>
+                      <td className="py-2 px-3 text-slate-600 text-xs">{genderCode(m.gender)}</td>
+                      <td className="py-2 px-3">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
+                          m.source === "jum" ? "bg-indigo-50 text-indigo-700" :
+                          m.source === "csa" ? "bg-cyan-50 text-cyan-700" : "bg-slate-50 text-slate-700"
+                        }`}>
+                          {m.source === "csa" ? "CSA" : "Jum"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
