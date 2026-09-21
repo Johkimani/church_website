@@ -45,6 +45,10 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Payment period filters (academic year + semester window)
+  const [academicYear, setAcademicYear] = useState("");
+  const [semesterId, setSemesterId] = useState("");
+
   // Payment modal state
   const [showPayments, setShowPayments] = useState(false);
   const [paymentsFilter, setPaymentsFilter] = useState<string>("pending");
@@ -54,11 +58,13 @@ export default function AnalyticsDashboard() {
   const [demoMode, setDemoMode] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "cross" | "jumuiya" | "yearly">("overview");
 
+  const filterParams = { academic_year: academicYear || undefined, semester_id: semesterId || undefined };
+
   const fetchData = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await memberService.getAnalytics();
+      const res = await memberService.getAnalytics(filterParams);
       setData(res.data);
     } catch (err: any) {
       setError(err?.response?.data?.error || "Failed to load analytics");
@@ -67,7 +73,7 @@ export default function AnalyticsDashboard() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [academicYear, semesterId]);
 
   const MOCK_DATA = {
     overview: { totalRegistered: 647, totalMembers: 720, registrationRate: 90 },
@@ -122,7 +128,7 @@ export default function AnalyticsDashboard() {
     setShowPayments(true);
     setPaymentsLoading(true);
     try {
-      const res = await memberService.getPayments({ status });
+      const res = await memberService.getPayments({ status, ...filterParams });
       setPayments(res.data || []);
     } catch {
       setPayments([]);
@@ -164,7 +170,7 @@ export default function AnalyticsDashboard() {
 
   if (!displayData) return null;
 
-  const { overview, registrationTrends, jumuiyaComparison, semesterFillRates, coursesBreakdown, yearBreakdown, genderBreakdown, recentRegistrations, paymentSummary } = displayData;
+  const { overview, registrationTrends, jumuiyaComparison, semesterFillRates, coursesBreakdown, yearBreakdown, genderBreakdown, recentRegistrations, paymentSummary, paymentFilters } = displayData;
 
   const trendData = registrationTrends.map((t: any) => ({ month: formatMonth(t.month), count: t.count }));
   const jumuiyaData = jumuiyaComparison.map((j: any) => ({
@@ -262,6 +268,51 @@ export default function AnalyticsDashboard() {
         <YearlyContributionTab />
       ) : (
       <>
+      {/* Payment Period Filter */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 mr-1">
+            <Calendar size={17} className="text-indigo-500" />
+            <span className="text-xs font-bold text-slate-700 whitespace-nowrap">Payment Period</span>
+          </div>
+          <select
+            value={academicYear}
+            onChange={(e) => setAcademicYear(e.target.value)}
+            className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+          >
+            <option value="">All Academic Years</option>
+            {(paymentFilters?.academicYears || []).map((y: string) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <select
+            value={semesterId}
+            onChange={(e) => setSemesterId(e.target.value)}
+            className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+          >
+            <option value="">All Semesters</option>
+            {(paymentFilters?.semesters || []).map((s: any) => (
+              <option key={s.id} value={String(s.id)}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          {(academicYear || semesterId) && (
+            <button
+              onClick={() => { setAcademicYear(""); setSemesterId(""); }}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+            >
+              Clear
+            </button>
+          )}
+          <span className="text-[10px] sm:text-xs text-slate-400 ml-auto whitespace-nowrap">
+            {paymentFilters?.selected?.applied
+              ? `Filtered: ${paymentFilters.selected.from} → ${paymentFilters.selected.to}`
+              : "Showing all payments (all time)"}
+          </span>
+        </div>
+      </div>
+
       {/* Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white">
@@ -507,7 +558,7 @@ export default function AnalyticsDashboard() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold text-slate-800">Manage Payments</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Showing {paymentsFilter} payments — click a status to change it</p>
+                <p className="text-xs text-slate-400 mt-0.5">Showing {paymentsFilter} payments{academicYear || semesterId ? ` · ${academicYear || ""}${semesterId ? ` · ${paymentFilters?.semesters?.find((s: any) => String(s.id) === semesterId)?.label || "Semester"}` : ""}` : " · all time"} — click a status to change it</p>
               </div>
               <button onClick={() => setShowPayments(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={20} className="text-slate-400" /></button>
             </div>
@@ -519,7 +570,7 @@ export default function AnalyticsDashboard() {
                 return (
                   <button
                     key={s}
-                    onClick={() => { setPaymentsFilter(s); setPaymentsLoading(true); memberService.getPayments({ status: s }).then(r => { setPayments(r.data || []); setPaymentsLoading(false); }).catch(() => setPaymentsLoading(false)); }}
+                    onClick={() => { setPaymentsFilter(s); setPaymentsLoading(true); memberService.getPayments({ status: s, ...filterParams }).then(r => { setPayments(r.data || []); setPaymentsLoading(false); }).catch(() => setPaymentsLoading(false)); }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       paymentsFilter === s ? `${st.bg} ${st.text} ring-1 ring-offset-1 ${st.border}` : "text-slate-400 hover:bg-slate-50"
                     }`}

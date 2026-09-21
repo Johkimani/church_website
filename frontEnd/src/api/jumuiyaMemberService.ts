@@ -243,8 +243,8 @@ export const memberService = {
   getJumuiyaLookup: () =>
     apiClient.get(`/jumuiya-members/lookup`).then(r => r.data),
 
-  getAnalytics: () =>
-    apiClient.get(`/jumuiya-members/analytics`).then(r => r.data),
+  getAnalytics: (params?: { academic_year?: string; semester_id?: string }) =>
+    apiClient.get(`/jumuiya-members/analytics`, { params }).then(r => r.data),
 
   getCohortAnalytics: () =>
     apiClient.get(`/jumuiya-members/analytics/cohorts`).then(r => r.data),
@@ -255,7 +255,7 @@ export const memberService = {
   getYearlyContribution: (params?: { year?: number }) =>
     apiClient.get(`/jumuiya-members/analytics/yearly-contribution`, { params }).then(r => r.data),
 
-  getPayments: (params?: { status?: string }) =>
+  getPayments: (params?: { status?: string; academic_year?: string; semester_id?: string }) =>
     apiClient.get(`/jumuiya-members/payments`, { params }).then(r => r.data),
 
   updatePaymentStatus: (id: number, data: { status: string; mpesa_receipt?: string }) =>

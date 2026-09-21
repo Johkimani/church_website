@@ -1758,6 +1758,46 @@ export const sendStampCard = async (req, res) => {
   }
 };
 
+// Payments have no semester/year column — they are attributed to an academic
+// year / semester by their created_at date. Academic year runs Aug (start
+// year) → Jul (end year), matching the August intake rollover. A specific
+// semester filter uses the semester_configs window the CSA chair configured.
+const getPaymentWindow = async (query = {}) => {
+  const academicYear = String(query.academic_year || "").trim();
+  const semesterId = String(query.semester_id || "").trim();
+  let from = "";
+  let to = "";
+  if (semesterId) {
+    const row = await pool.query(
+      `SELECT to_char(start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(end_date, 'YYYY-MM-DD') AS end_date
+       FROM semester_configs WHERE id = $1`,
+      [semesterId]
+    );
+    const win = row.rows[0];
+    if (win) { from = win.start_date; to = win.end_date; }
+  }
+  if (academicYear) {
+    const ayMatch = academicYear.match(/^(\d{4})-(\d{4})$/);
+    if (ayMatch) {
+      const ayFrom = `${ayMatch[1]}-08-01`;
+      const ayTo = `${ayMatch[2]}-07-31`;
+      if (!from) { from = ayFrom; to = ayTo; }
+      else {
+        // intersect: keep the tighter bounds
+        if (ayFrom > from) from = ayFrom;
+        if (ayTo < to) to = ayTo;
+      }
+    }
+  }
+  if (!from || !to) return { paymentWindow: null, where: "" };
+  const paymentWindow = { from, to };
+  return {
+    paymentWindow,
+    where: ` WHERE p.created_at >= '${from}' AND p.created_at <= '${to}'`,
+  };
+};
+
 export const getAnalytics = async (req, res) => {
   try {
     const JUMUIYAS = [
@@ -1769,6 +1809,11 @@ export const getAnalytics = async (req, res) => {
       { id: "st-maria-goretti", name: "St. Maria Goretti" },
       { id: "st-monica", name: "St. Monica" },
     ];
+
+    // Optional payment window from ?academic_year=2026-2027 & semester_id=5.
+    const academicYear = String(req.query.academic_year || "").trim();
+    const semesterId = String(req.query.semester_id || "").trim();
+    const { paymentWindow, where: paymentWhere } = await getPaymentWindow(req.query);
 
     // Run queries in parallel
     const [
@@ -1782,6 +1827,8 @@ export const getAnalytics = async (req, res) => {
       genderBreakdown,
       recentRegistrations,
       paymentSummary,
+      paymentYears,
+      semesterRows,
     ] = await Promise.all([
       // 1. Total registered
       pool.query(`
@@ -1916,9 +1963,52 @@ export const getAnalytics = async (req, res) => {
           SUM(CASE WHEN status IN ('failed', 'cancelled') THEN 1 ELSE 0 END)::int as failed,
           COALESCE(SUM(amount) FILTER (WHERE (mpesa_receipt IS NULL OR mpesa_receipt != 'CASH') AND status IN ('success', 'paid')), 0)::numeric as mpesa_success_amount,
           COALESCE(SUM(amount) FILTER (WHERE mpesa_receipt = 'CASH' AND status IN ('success', 'paid')), 0)::numeric as manual_success_amount
+        FROM mpesa_request p${paymentWhere}
+      `),
+
+      // 11. Available academic years (derived from payment created_at, Aug→Jul rollover)
+      pool.query(`
+        SELECT DISTINCT
+          (CASE WHEN EXTRACT(MONTH FROM created_at) >= 8
+            THEN EXTRACT(YEAR FROM created_at)::int
+            ELSE EXTRACT(YEAR FROM created_at)::int - 1 END) as start_year
         FROM mpesa_request
+        ORDER BY start_year ASC
+      `),
+
+      // 12. Semester windows from semester_configs (label + dates)
+      pool.query(`
+        SELECT id, label, start_date, end_date, is_current
+        FROM semester_configs
+        ORDER BY start_date ASC
       `),
     ]);
+
+    const academicYears = (paymentYears.rows || []).map(
+      (r) => `${r.start_year}-${r.start_year + 1}`
+    );
+    // Dedupe semester_configs by label: prefer the is_current window, else the
+    // first; label includes dates so duplicates stay distinguishable.
+    const semConfigRows = semesterRows.rows || [];
+    const semMap = new Map();
+    for (const s of semConfigRows) {
+      const prev = semMap.get(s.label);
+      if (!prev || (s.is_current && !prev.is_current)) {
+        semMap.set(s.label, {
+          id: String(s.id),
+          label: s.label,
+          start_date: s.start_date,
+          end_date: s.end_date,
+          is_current: s.is_current,
+        });
+      }
+    }
+    const semesters = [...semMap.values()].map((s) => ({
+      ...s,
+      label: s.is_current
+        ? `${s.label} (current · ${s.start_date} → ${s.end_date})`
+        : `${s.label} (${s.start_date} → ${s.end_date})`,
+    }));
 
     res.json({
       success: true,
@@ -1938,6 +2028,17 @@ export const getAnalytics = async (req, res) => {
         genderBreakdown: genderBreakdown.rows,
         recentRegistrations: recentRegistrations.rows,
         paymentSummary: paymentSummary.rows[0] || {},
+        paymentFilters: {
+          academicYears,
+          semesters,
+          selected: {
+            academic_year: academicYear || "",
+            semester_id: semesterId || "",
+            from: paymentWindow?.from || "",
+            to: paymentWindow?.to || "",
+            applied: !!paymentWindow,
+          },
+        },
       },
     });
   } catch (error) {
@@ -1949,6 +2050,7 @@ export const getAnalytics = async (req, res) => {
 export const getPayments = async (req, res) => {
   try {
     const { status } = req.query;
+    const { paymentWindow } = await getPaymentWindow(req.query);
     let query = `
       SELECT
         p.checkout_id as id, p.phone_number as phone, p.amount, p.status, p.mpesa_receipt, p.user_id, p.payment_source,
@@ -1960,13 +2062,21 @@ export const getPayments = async (req, res) => {
       LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
     `;
     const params = [];
+    const conds = [];
+    if (paymentWindow) {
+      conds.push(`p.created_at >= '${paymentWindow.from}'`);
+      conds.push(`p.created_at <= '${paymentWindow.to}'`);
+    }
     if (status) {
       if (status === 'success') {
-        query += ` WHERE p.status IN ('success', 'paid')`;
+        conds.push(`p.status IN ('success', 'paid')`);
       } else {
-        query += ` WHERE p.status = $1`;
+        conds.push(`p.status = $1`);
         params.push(status);
       }
+    }
+    if (conds.length) {
+      query += ` WHERE ${conds.join(' AND ')}`;
     }
     query += ` ORDER BY p.created_at DESC LIMIT 100`;
 
