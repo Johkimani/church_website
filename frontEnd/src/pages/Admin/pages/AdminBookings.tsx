@@ -79,7 +79,6 @@ export default function AdminBookings() {
   const [submittingDelete, setSubmittingDelete] = useState(false);
 
   // Activity filter: paid activities offered in the search-bar dropdown
-  const [paidActivities, setPaidActivities] = useState<any[]>([]);
   const [showActivityList, setShowActivityList] = useState(false);
   const [activityFilter, setActivityFilter] = useState<string>("");
 

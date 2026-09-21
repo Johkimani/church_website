@@ -49,6 +49,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   });
   const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Male: true, Female: true });
   const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({});
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [genderSel, setGenderSel] = useState("");
+  const [yearSel, setYearSel] = useState("");
   const [pendingGraduates, setPendingGraduates] = useState<string[]>([]);
   const [migrating, setMigrating] = useState(false);
   const itemsPerPage = 25;
@@ -275,6 +278,17 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           (m.member_id || "").toLowerCase().includes(debouncedSearch.toLowerCase())
         )
       : [...members];
+
+    if (sourceFilter) {
+      result = result.filter(m => m.source === sourceFilter);
+    }
+    if (genderSel) {
+      result = result.filter(m => (genderSel === "male" ? isMale(m.gender) : isFemale(m.gender)));
+    }
+    if (yearSel) {
+      result = result.filter(m => getIntakeYearLabel(m.member_id || m.id || "") === yearSel);
+    }
+
     result.sort((a, b) => {
       const aJ = jumuiyaOrder[a.jumuiya_name || a.jumuiya_id] ?? 99;
       const bJ = jumuiyaOrder[b.jumuiya_name || b.jumuiya_id] ?? 99;
@@ -294,7 +308,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       return 0;
     });
     return result;
-  }, [members, debouncedSearch, sortBy, sortAsc]);
+  }, [members, debouncedSearch, sourceFilter, genderSel, yearSel, sortBy, sortAsc]);
+
+  const filtersActive = !!(sourceFilter || genderSel || yearSel);
 
   const { paginatedMembers, totalPages } = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -304,6 +320,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       totalPages: Math.ceil(filtered.length / itemsPerPage)
     };
   }, [filtered, currentPage]);
+
+  const displayMembers = filtersActive ? filtered : paginatedMembers;
 
   const totalJum = members.filter(m => m.source === "jum").length;
   const totalCSA = members.filter(m => m.source === "csa").length;
@@ -342,9 +360,29 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           <p className="text-xs text-slate-500">
             {members.length} total member(s)
             {debouncedSearch && <span> • {filtered.length} matching</span>}
+            {filtersActive && <span> • <span className="font-semibold text-indigo-600">{filtered.length}</span> in view</span>}
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Sources</option>
+            <option value="csa">CSA</option>
+            <option value="jum">Jumuiya</option>
+          </select>
+          <select value={genderSel} onChange={e => { setGenderSel(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Genders</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+          <select value={yearSel} onChange={e => { setYearSel(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Years</option>
+            {intakeYears.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={(e) => setSearch(e.target.value)}
@@ -428,10 +466,10 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                 </tr>
               </thead>
               <tbody>
-                {paginatedMembers.map((m, idx) => {
+                {displayMembers.map((m, idx) => {
                   const memberId = m.member_id || m.id;
                   const isEditing = editingId === memberId;
-                  const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
+                  const rowNumber = filtersActive ? idx + 1 : (currentPage - 1) * itemsPerPage + idx + 1;
                   return (
                     <tr key={memberId} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       <td className="py-2.5 px-3 text-slate-400 text-xs">{rowNumber}</td>
@@ -547,7 +585,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
             </table>
           </div>
 
-          {totalPages > 1 && (
+          {!filtersActive && totalPages > 1 && (
             <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 p-4">
               <p className="text-xs text-slate-500 font-medium">
                 Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length}
