@@ -13,6 +13,7 @@ interface Booking {
   jumuiya_name: string | null;
   phone: string;
   activity_type: string;
+  activity_id: number;
   activity_name: string;
   activity_day: string | null;
   activity_time: string | null;
@@ -73,11 +74,31 @@ export default function AdminBookings() {
   const [submittingPay, setSubmittingPay] = useState(false);
   const [cancelForId, setCancelForId] = useState<number | null>(null);
   const [submittingCancel, setSubmittingCancel] = useState(false);
+  // Hard delete (permanent removal)
+  const [deleteForId, setDeleteForId] = useState<number | null>(null);
+  const [submittingDelete, setSubmittingDelete] = useState(false);
+
+  // Activity filter: paid activities offered in the search-bar dropdown
+  const [paidActivities, setPaidActivities] = useState<any[]>([]);
+  const [showActivityList, setShowActivityList] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<string>("");
 
   useEffect(() => { load(); }, [page]);
 
+  // Load paid activities once, for the search-bar dropdown filter
+  useEffect(() => {
+    (async () => {
+      try {
+        const acts = await bookingService.getPaidActivities();
+        setPaidActivities(acts || []);
+      } catch {
+        // dropdown just stays empty
+      }
+    })();
+  }, []);
+
   // Reset to the first page when the filters change
-  useEffect(() => { setPage(1); }, [search, typeFilter, payFilter]);
+  useEffect(() => { setPage(1); }, [search, typeFilter, payFilter, activityFilter]);
 
   // Debounced member search inside the modal
   useEffect(() => {
@@ -192,6 +213,21 @@ export default function AdminBookings() {
     }
   }
 
+  async function handleDeleteBooking() {
+    if (deleteForId == null) return;
+    setSubmittingDelete(true);
+    try {
+      await bookingService.deleteBooking(deleteForId);
+      toast.success("Booking permanently deleted");
+      setDeleteForId(null);
+      await load();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "Failed to delete booking");
+    } finally {
+      setSubmittingDelete(false);
+    }
+  }
+
   async function load() {
     setLoading(true);
     setError(null);
@@ -235,6 +271,7 @@ export default function AdminBookings() {
   };
 
   const filtered = bookings.filter((b) => {
+    if (activityFilter && `${b.activity_type}:${b.activity_id}` !== activityFilter) return false;
     if (!search) {
       const termOk = true;
       if (!termOk) return false;
@@ -391,10 +428,57 @@ export default function AdminBookings() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setShowActivityList(true)}
+            onBlur={() => setTimeout(() => setShowActivityList(false), 150)}
             placeholder="Search by name or activity..."
             className="w-full max-w-xs border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
           />
+          {showActivityList && paidActivities.length > 0 && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-full max-w-xs rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+              <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                Paid activities (filter)
+              </p>
+              <div className="max-h-56 overflow-y-auto">
+                <button
+                  type="button"
+                  onMouseDown={() => { setActivityFilter(""); setShowActivityList(false); }}
+                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${activityFilter === "" ? "font-semibold text-indigo-600 bg-indigo-50/60" : "text-slate-600"}`}
+                >
+                  <span>All activities</span>
+                  {activityFilter === "" && <span className="text-indigo-500">✓</span>}
+                </button>
+                {paidActivities.map((a) => {
+                  const key = `${a.activity_type}:${a.id}`;
+                  const active = activityFilter === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onMouseDown={() => { setActivityFilter(key); setShowActivityList(false); }}
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${active ? "font-semibold text-indigo-600 bg-indigo-50/60" : "text-slate-600"}`}
+                    >
+                      <span className="truncate">{a.name}</span>
+                      <span className="shrink-0 text-xs text-slate-400">KES {Number(a.fare).toLocaleString()}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
+
+        {activityFilter && (() => {
+          const match = paidActivities.find((a) => `${a.activity_type}:${a.id}` === activityFilter);
+          return (
+            <button
+              onClick={() => setActivityFilter("")}
+              title="Clear activity filter"
+              className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors"
+            >
+              <X size={13} /> {match?.name || "Activity"} · <span className="normal-case">Clear filter</span>
+            </button>
+          );
+        })()}
 
         <select
           value={typeFilter}
@@ -500,7 +584,14 @@ export default function AdminBookings() {
                                 onClick={() => setCancelForId(booking.id)}
                                 disabled={booking.status === "cancelled"}
                                 title={booking.status === "cancelled" ? "Already cancelled" : "Cancel booking"}
-                                className="p-1.5 rounded-lg text-rose-500 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="p-1.5 rounded-lg text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Ban size={14} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteForId(booking.id)}
+                                title="Permanently delete booking"
+                                className="p-1.5 rounded-lg text-rose-500 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -821,6 +912,46 @@ export default function AdminBookings() {
                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Ban size={15} /> {submittingCancel ? "Cancelling…" : "Yes, Cancel"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Permanent delete confirmation modal */}
+      {deleteForId != null && (() => {
+        const b = bookings.find((x) => x.id === deleteForId);
+        if (!b) return null;
+        const paid = Number(b.paid_amount || 0);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteForId(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-800">Delete Booking</h3>
+                <button onClick={() => setDeleteForId(null)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-slate-600">
+                  Permanently delete the booking for <span className="font-semibold text-slate-800">{b.member_name}</span> on{" "}
+                  <span className="font-semibold text-slate-800">{b.activity_name}</span>? This removes the row from the record — it cannot be undone.
+                </p>
+                {paid > 0 && (
+                  <p className="mt-2 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                    KES {paid.toLocaleString()} recorded for this booking will also be deleted.
+                  </p>
+                )}
+                <div className="flex items-center justify-end gap-3 mt-5 pt-4 border-t border-slate-100">
+                  <button onClick={() => setDeleteForId(null)} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">Keep</button>
+                  <button
+                    onClick={handleDeleteBooking}
+                    disabled={submittingDelete}
+                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 size={15} /> {submittingDelete ? "Deleting…" : "Yes, Delete"}
                   </button>
                 </div>
               </div>

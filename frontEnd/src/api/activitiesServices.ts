@@ -239,6 +239,10 @@ export const bookingService = {
     const res = await apiClient.patch(`/admin/activities/bookings/${bookingId}/cancel`);
     return res.data.data;
   },
+  deleteBooking: async (bookingId: number) => {
+    const res = await apiClient.delete(`/admin/activities/bookings/${bookingId}`);
+    return res.data.data;
+  },
   lookupMemberByRegNumber: async (search: string) => {
     const res = await apiClient.get(`/jumuiya-members/lookup/reg-number`, { params: { search } });
     return res.data.data || [];

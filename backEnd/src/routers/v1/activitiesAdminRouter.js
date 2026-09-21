@@ -47,6 +47,7 @@ import {
   createBookingForMember,
   recordCashPayment,
   cancelBooking,
+  deleteBooking,
 } from "../../controllers/activityBookingController.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 
@@ -220,6 +221,9 @@ router.post("/bookings", verifyToken, requireRole("os", "csa_chair"), createBook
 router.patch("/bookings/:id/payment", verifyToken, requireRole("os", "csa_chair"), recordCashPayment);
 // OS (or chair) cancels a booking because the person couldn't make the event.
 router.patch("/bookings/:id/cancel", verifyToken, requireRole("os", "csa_chair"), cancelBooking);
+// OS (or chair) permanently removes a booking (and its payments) from the
+// record. Distinct from cancel, which keeps a soft-cancelled row.
+router.delete("/bookings/:id", verifyToken, requireRole("os", "csa_chair"), deleteBooking);
 
 export default router;
 

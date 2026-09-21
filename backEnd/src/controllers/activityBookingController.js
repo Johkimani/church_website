@@ -508,6 +508,26 @@ export const cancelBooking = async (req, res) => {
   }
 };
 
+// Permanently remove a booking (and its payment records via ON DELETE CASCADE).
+// The OS/chair's "cancel" is still the right tool for a booking that should be
+// kept on record; this is a hard delete for test data / mistaken rows.
+export const deleteBooking = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `DELETE FROM activity_bookings WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    logger.error("deleteBooking error:", err.message);
+    res.status(500).json({ error: "Failed to delete booking" });
+  }
+};
+
 export const getPaidActivities = async (req, res) => {
   try {
     const weekly = await pool.query(
