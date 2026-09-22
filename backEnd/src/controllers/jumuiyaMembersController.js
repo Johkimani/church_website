@@ -2005,9 +2005,7 @@ export const getAnalytics = async (req, res) => {
     }
     const semesters = [...semMap.values()].map((s) => ({
       ...s,
-      label: s.is_current
-        ? `${s.label} (current · ${s.start_date} → ${s.end_date})`
-        : `${s.label} (${s.start_date} → ${s.end_date})`,
+      label: s.is_current ? `${s.label} (current)` : s.label,
     }));
 
     res.json({
