@@ -1,6 +1,6 @@
 .detail-page {
     display: flex;
-    min-height: auto;
+    min-height: 100vh;
     background: var(--bg-soft);
 }
 
@@ -11,6 +11,7 @@
     border-right: 1px solid color-mix(in srgb, var(--jumuiya-color), transparent 70%);
     display: flex;
     flex-direction: column;
+    position: -webkit-sticky;
     position: sticky;
     top: 72px;
     /* Clears the sticky header */
