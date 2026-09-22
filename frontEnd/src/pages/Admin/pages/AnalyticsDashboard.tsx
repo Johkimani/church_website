@@ -191,10 +191,15 @@ export default function AnalyticsDashboard() {
     })
     .filter((y: any) => y.name !== "Year NaN")
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
-  const genderData = genderBreakdown.map((g: any) => ({
-    name: g.gender?.charAt(0).toUpperCase() + g.gender?.slice(1).toLowerCase() || "Unknown",
-    value: g.count,
-  }));
+  const genderData = genderBreakdown.map((g: any) => {
+    const raw = (g.gender || "").toLowerCase().trim();
+    const name = raw.includes("gent") || raw === "male" || raw === "m" || raw === "man" || raw === "boy"
+      ? "Gents"
+      : raw.includes("lady") || raw === "female" || raw === "f" || raw === "woman" || raw === "girl"
+        ? "Ladies"
+        : g.gender?.charAt(0).toUpperCase() + g.gender?.slice(1).toLowerCase() || "Unknown";
+    return { name, value: g.count };
+  });
 
   const paymentCards = [
     { key: "success", label: "Successful", count: paymentSummary.successful || 0, color: "emerald", icon: CheckCircle2 },
