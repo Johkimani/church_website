@@ -57,9 +57,9 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
   const genderBreakdown = useMemo(() => {
     const male = members.filter((m: any) => isMale(m.gender)).length;
     const female = members.filter((m: any) => isFemale(m.gender)).length;
-    return [
-{ name: "Gent", value: male },
-       { name: "Lady", value: female },
+return [
+      { name: "Gents", value: male },
+      { name: "Ladies", value: female },
     ];
   }, [members]);
 
@@ -423,7 +423,7 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-800">
-                {genderModal === "gent" ? "Gent" : "Lady"} Members — {jumuiyaName}
+                {genderModal === "gent" ? "Gents" : "Ladies"} Members — {jumuiyaName}
               </h3>
               <button onClick={() => setGenderModal(null)} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
                 <X size={20} className="text-slate-400" />

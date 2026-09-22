@@ -235,7 +235,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
                         ) : (
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                             genderCode(m.gender) === "M" ? "bg-blue-50 text-blue-700" :
-                            genderCode(m.gender) === "W" ? "bg-pink-50 text-pink-700" :
+                            genderCode(m.gender) === "L" ? "bg-pink-50 text-pink-700" :
                             "bg-slate-50 text-slate-500"
                           }`}>
                             {genderCode(m.gender)}

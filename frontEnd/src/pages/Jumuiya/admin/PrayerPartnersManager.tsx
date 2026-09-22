@@ -490,7 +490,7 @@ export default function PrayerPartnersManager({ jumuiyaId, jumuiyaName, jumuiyaC
                                                     padding: '2px 7px',
                                                     flexShrink: 0,
                                                 }}>
-                                                    {m.female ? 'W' : 'M'}
+                                                    {m.female ? 'L' : 'M'}
                                                 </span>
                                             </div>
                                         ))

@@ -226,7 +226,7 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
                       <input type="checkbox" checked={v}
                         onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                         className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                      <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gent" : "Lady"}</span>
+                      <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gents" : "Ladies"}</span>
                     </label>
                   ))}
                 </div>
@@ -258,7 +258,7 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
                     <td className="py-2.5 px-3 font-medium text-slate-800 text-xs">{a.member_id}</td>
                     <td className="py-2.5 px-3 text-slate-700 font-medium text-xs">{a.name}</td>
                     <td className="py-2.5 px-3">
-                      <span className={`text-xs font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                      <span className={`text-xs font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
                         {genderCode(a.gender)}
                       </span>
                     </td>
@@ -308,7 +308,7 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
                     <input type="checkbox" checked={v}
                       onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                       className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gent" : "Lady"}</span>
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gents" : "Ladies"}</span>
                   </label>
                 ))}
               </div>

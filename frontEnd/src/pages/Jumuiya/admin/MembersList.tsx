@@ -28,7 +28,7 @@ const MemberRow = memo(({ m, rowNumber }: { m: any; rowNumber: number }) => (
     <td className="py-3 px-4">
       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
         genderCode(m.gender) === "M" ? "bg-blue-50 text-blue-700" :
-        genderCode(m.gender) === "W" ? "bg-pink-50 text-pink-700" :
+        genderCode(m.gender) === "L" ? "bg-pink-50 text-pink-700" :
         "bg-slate-50 text-slate-500"
       }`}>
         {genderCode(m.gender)}
@@ -99,7 +99,7 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     }
 
     if (genderFilter) {
-      result = result.filter(m => (genderFilter === "gent" ? genderCode(m.gender) === "M" : genderCode(m.gender) === "W"));
+      result = result.filter(m => (genderFilter === "gent" ? genderCode(m.gender) === "M" : genderCode(m.gender) === "L"));
     }
 
     if (yearFilter) {
@@ -132,7 +132,7 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     const rows = filtered.map((m: any) => [
       m.member_id, `${m.first_name} ${m.last_name}`,
       m.source === "csa" ? "CSA" : "Jum",
-      genderCode(m.gender) === "M" ? "M" : genderCode(m.gender) === "W" ? "F" : "",
+      genderCode(m.gender) === "M" ? "M" : genderCode(m.gender) === "L" ? "L" : "",
       m.email, m.phone, m.year_of_study, m.join_date?.slice(0, 10)
     ]);
     const csv = [headers.join(","), ...rows.map((r: any) => r.map((v: any) => `"${String(v || "").replace(/"/g, '""')}"`).join(","))].join("\n");
@@ -177,8 +177,8 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
           <select value={genderFilter} onChange={e => { setGenderFilter(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Genders</option>
-            <option value="gent">Gent</option>
-            <option value="lady">Lady</option>
+            <option value="gent">Gents</option>
+            <option value="lady">Ladies</option>
           </select>
           <select value={yearFilter} onChange={e => { setYearFilter(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">

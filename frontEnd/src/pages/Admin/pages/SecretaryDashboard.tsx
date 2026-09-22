@@ -308,7 +308,7 @@ export default function SecretaryDashboard() {
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Gent</span>
+                        <span>Gents</span>
                         <span className="font-bold text-blue-600">{genderCounts.male}</span>
                       </div>
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -320,7 +320,7 @@ export default function SecretaryDashboard() {
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Lady</span>
+                        <span>Ladies</span>
                         <span className="font-bold text-pink-600">{genderCounts.female}</span>
                       </div>
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -408,7 +408,7 @@ export default function SecretaryDashboard() {
                             <td className="py-2 px-3 font-medium text-slate-700">{m.name}</td>
                             <td className="py-2 px-3 text-slate-500 font-mono text-xs">{m.reg_number || "—"}</td>
                             <td className="py-2 px-3">
-                              <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                              <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
                                 {genderCode(m.gender)}
                               </span>
                             </td>

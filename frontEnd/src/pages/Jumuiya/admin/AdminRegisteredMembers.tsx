@@ -156,12 +156,12 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
         <div style={{ background: "#eff6ff", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: "#3b82f6", fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "#3b82f6" }}>{stats.male}</p>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Gent</p>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Gents</p>
         </div>
         <div style={{ background: "#fdf2f8", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: "#ec4899", fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "#ec4899" }}>{stats.female}</p>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Lady</p>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Ladies</p>
         </div>
         <div style={{ background: "#f0fdf4", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaCheckCircle style={{ color: "#10b981", fontSize: "1.2rem", marginBottom: "6px" }} />
@@ -216,8 +216,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
           style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid var(--border-color)", fontSize: "0.875rem", background: "white" }}
         >
           <option value="all">All Genders</option>
-<option value="gent">Gent</option>
-                        <option value="lady">Lady</option>
+<option value="gent">Gents</option>
+                        <option value="lady">Ladies</option>
         </select>
 
         <select
@@ -305,8 +305,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{
                       padding: "3px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600,
-                      background: genderCode(m.gender) === "M" ? "#eff6ff" : genderCode(m.gender) === "W" ? "#fdf2f8" : "#f1f5f9",
-                      color: genderCode(m.gender) === "M" ? "#3b82f6" : genderCode(m.gender) === "W" ? "#ec4899" : "#64748b"
+                      background: genderCode(m.gender) === "M" ? "#eff6ff" : genderCode(m.gender) === "L" ? "#fdf2f8" : "#f1f5f9",
+                      color: genderCode(m.gender) === "M" ? "#3b82f6" : genderCode(m.gender) === "L" ? "#ec4899" : "#64748b"
                     }}>
                       {genderCode(m.gender)}
                     </span>

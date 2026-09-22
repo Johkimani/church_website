@@ -595,7 +595,7 @@ export default function JumuiyaMembersAdmin() {
                                  <option value="lady">Lady</option>
                               </select>
                             ) : (
-                              <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                              <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
                                 {genderCode(m.gender)}
                               </span>
                             )}

@@ -381,8 +381,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           <select value={genderSel} onChange={e => { setGenderSel(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Genders</option>
-            <option value="gent">Gent</option>
-            <option value="lady">Lady</option>
+            <option value="gent">Gents</option>
+            <option value="lady">Ladies</option>
           </select>
           <select value={yearSel} onChange={e => { setYearSel(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
@@ -580,7 +580,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                             <option value="lady">Lady</option>
                           </select>
                         ) : (
-                          <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                          <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
                             {genderCode(m.gender)}
                           </span>
                         )}
@@ -707,7 +707,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                       className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gent" : "Lady"}</span>
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gents" : "Ladies"}</span>
                   </label>
                 ))}
               </div>

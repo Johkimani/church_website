@@ -109,7 +109,7 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                   <td>${i + 1}</td>
                   <td>${m.name || m.member_name || ""}</td>
                   <td>${m.reg_number || ""}</td>
-                  <td class="${genderCode(m.gender) === "M" ? "gent" : genderCode(m.gender) === "W" ? "lady" : ""}">${m.gender}
+                  <td class="${genderCode(m.gender) === "M" ? "gent" : genderCode(m.gender) === "L" ? "lady" : ""}">${m.gender}
                   <td>${m.phone || ""}</td>
                   <td>${m.academic_year || ""}</td>
                 </tr>
@@ -272,7 +272,7 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                 <p className="font-semibold text-slate-800 text-sm">{a.name}</p>
                 <div className="flex gap-3 text-xs text-slate-500 mt-0.5">
                   <span>{a.reg_number || "—"}</span>
-                  <span className={`font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
+                  <span className={`font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
                     {genderCode(a.gender)}
                   </span>
                   {a.phone && <span>{a.phone}</span>}

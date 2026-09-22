@@ -183,10 +183,10 @@ const RegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiy
                 <div
                   key={g.gender}
                   className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                    gc === "M" ? "bg-blue-50 text-blue-700 border border-blue-100" : gc === "W" ? "bg-pink-50 text-pink-700 border border-pink-100" : "bg-slate-50 text-slate-700 border border-slate-100"
+                    gc === "M" ? "bg-blue-50 text-blue-700 border border-blue-100" : gc === "L" ? "bg-pink-50 text-pink-700 border border-pink-100" : "bg-slate-50 text-slate-700 border border-slate-100"
                   }`}
                 >
-                  {gc === "M" ? "Gent" : gc === "W" ? "Lady" : (g.gender || "").trim() || "Unknown"}: <strong>{g.count}</strong>
+                  {gc === "M" ? "Gents" : gc === "L" ? "Ladies" : (g.gender || "").trim() || "Unknown"}: <strong>{g.count}</strong>
                 </div>
               );
             })}
