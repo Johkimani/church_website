@@ -1418,7 +1418,7 @@ setSongsList(res.data?.data || []);
           icon: ShoppingBag
         },
         { id: 'suggestions', label: 'Suggestion Box', icon: MessageSquare },
-        { id: 'channels', label: 'Social Channels', icon: MessageSquare },
+        { id: 'channels', label: 'Channels &amp; Gallery', icon: MessageSquare },
         { id: 'videos', label: 'Videos', icon: ImageIcon },
       ];
 

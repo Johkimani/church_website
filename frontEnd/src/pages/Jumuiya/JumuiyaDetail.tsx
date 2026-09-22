@@ -196,7 +196,7 @@ const JumuiyaDetail: React.FC = () => {
         ] : []),
         ...(isPrayerPartnersAllowed ? [{ id: 'prayerpartners' as TabType, label: 'Prayer Partners', icon: <FaPrayingHands /> }] : []),
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
-        { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
+        { id: 'channels' as TabType, label: 'Channels &amp; Gallery', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
         ...(isMemberOfThisJumuiya && !isPureLiturgist ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
     ];
