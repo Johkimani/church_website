@@ -750,8 +750,8 @@ export default function CSADistributionCenter() {
                     <div className="text-right shrink-0 leading-tight">
                       <div className="text-sm font-bold text-slate-800">{j.total}</div>
                       <div className="flex gap-1.5 justify-end">
-                        <span className="text-[11px] bg-blue-50 text-blue-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">M {j.male_count}</span>
-                        <span className="text-[11px] bg-pink-50 text-pink-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">W {j.female_count}</span>
+                        <span className="text-[11px] bg-blue-50 text-blue-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">M {j.gent_count}</span>
+                        <span className="text-[11px] bg-pink-50 text-pink-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">L {j.lady_count}</span>
                       </div>
                     </div>
                   </div>
