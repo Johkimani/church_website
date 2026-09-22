@@ -82,7 +82,7 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
           <span className="text-slate-300">|</span>
           <span className="text-pink-600">♀ {totalFemale}</span>
         </p>
-        <p className="text-xs text-slate-500 font-medium">Men / Women</p>
+        <p className="text-xs text-slate-500 font-medium">Gents / Ladies</p>
       </div>
     </div>
   );
@@ -591,8 +591,8 @@ export default function JumuiyaMembersAdmin() {
                               <select value={editForm.gender} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
                                 className="text-xs border border-slate-200 rounded px-1.5 py-1">
                                 <option value="">—</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
+<option value="gent">Gent</option>
+                                 <option value="lady">Lady</option>
                               </select>
                             ) : (
                               <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>

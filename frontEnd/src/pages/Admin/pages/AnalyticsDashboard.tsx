@@ -107,7 +107,7 @@ export default function AnalyticsDashboard() {
       { year: "3", count: 142 }, { year: "4", count: 110 },
     ],
     genderBreakdown: [
-      { gender: "male", count: 356 }, { gender: "female", count: 291 },
+      { gender: "gent", count: 356 }, { gender: "lady", count: 291 },
     ],
     recentRegistrations: [
       { first_name: "Faith", last_name: "Wanjiku", jumuiya_name: "St. Maria Goretti", registration_date: "2026-06-28", serial_no: 99 },

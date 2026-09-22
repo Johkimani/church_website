@@ -55,7 +55,7 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
   const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [voiceFilter, setVoiceFilter] = useState<'all' | 'soprano' | 'alto' | 'tenor' | 'bass'>('all');
-  const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const [genderFilter, setGenderFilter] = useState<'all' | 'gent' | 'lady'>('all');
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'year' | 'voice'>('name-asc');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(18);
@@ -250,8 +250,8 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
     if (isChoir && genderFilter !== 'all') {
       result = result.filter((m) => {
         const v = getVoiceType(m);
-        if (genderFilter === 'male') return v === 'Tenor' || v === 'Bass';
-        if (genderFilter === 'female') return v === 'Soprano' || v === 'Alto';
+        if (genderFilter === 'gent') return v === 'Tenor' || v === 'Bass';
+        if (genderFilter === 'lady') return v === 'Soprano' || v === 'Alto';
         return true;
       });
     }
@@ -455,29 +455,29 @@ const CommunityMembersTab: React.FC<Props> = ({ moduleId, moduleName, color, isA
           <button
             type="button"
             onClick={() => {
-              setGenderFilter((prev) => (prev === 'male' ? 'all' : 'male'));
-              setVoiceFilter('all');
-              setCurrentPage(1);
-            }}
-            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
-              genderFilter === 'male'
-                ? 'ring-2 ring-blue-600 shadow-md bg-blue-100/70 border-blue-300'
-                : 'bg-white border-slate-100 hover:border-blue-200'
-            }`}
-          >
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 block mb-0.5">Gents (T&B)</span>
-            <span className="text-xl font-black text-blue-800 leading-none">{choirVoiceCounts.gents}</span>
-          </button>
+setGenderFilter((prev) => (prev === 'gent' ? 'all' : 'gent'));
+               setVoiceFilter('all');
+               setCurrentPage(1);
+             }}
+             className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+               genderFilter === 'gent'
+                 ? 'ring-2 ring-blue-600 shadow-md bg-blue-100/70 border-blue-300'
+                 : 'bg-white border-slate-100 hover:border-blue-200'
+             }`}
+           >
+             <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 block mb-0.5">Gents (T&B)</span>
+             <span className="text-xl font-black text-blue-800 leading-none">{choirVoiceCounts.gents}</span>
+           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setGenderFilter((prev) => (prev === 'female' ? 'all' : 'female'));
-              setVoiceFilter('all');
-              setCurrentPage(1);
-            }}
-            className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
-              genderFilter === 'female'
+           <button
+             type="button"
+             onClick={() => {
+               setGenderFilter((prev) => (prev === 'lady' ? 'all' : 'lady'));
+               setVoiceFilter('all');
+               setCurrentPage(1);
+             }}
+             className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+               genderFilter === 'lady'
                 ? 'ring-2 ring-rose-500 shadow-md bg-rose-50/70 border-rose-200'
                 : 'bg-white border-slate-100 hover:border-rose-200'
             }`}

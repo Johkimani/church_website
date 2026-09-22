@@ -584,30 +584,30 @@ export default function JumuiyaSelfRegister() {
                 <button
                   type="button"
                   onClick={() => {
-                    setFormData((prev) => ({ ...prev, gender: "Male" }));
+                    setFormData((prev) => ({ ...prev, gender: "Gent" }));
                     setFieldErrors((prev) => ({ ...prev, gender: "" }));
                   }}
                   className={`py-3 px-4 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
-                    formData.gender === "Male"
+                    formData.gender === "Gent"
                       ? "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-100 shadow-sm"
                       : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
                 >
-                  <span className="text-base">♂</span> Male
+                  <span className="text-base">♂</span> Gent
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setFormData((prev) => ({ ...prev, gender: "Female" }));
+                    setFormData((prev) => ({ ...prev, gender: "Lady" }));
                     setFieldErrors((prev) => ({ ...prev, gender: "" }));
                   }}
                   className={`py-3 px-4 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
-                    formData.gender === "Female"
+                    formData.gender === "Lady"
                       ? "bg-pink-50 border-pink-500 text-pink-700 ring-2 ring-pink-100 shadow-sm"
                       : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
                 >
-                  <span className="text-base">♀</span> Female
+                  <span className="text-base">♀</span> Lady
                 </button>
               </div>
               {fieldErrors.gender && <p className="text-[11px] text-red-500 mt-1">{fieldErrors.gender}</p>}

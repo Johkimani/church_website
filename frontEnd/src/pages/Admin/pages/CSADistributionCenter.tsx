@@ -571,8 +571,8 @@ export default function CSADistributionCenter() {
           <select value={filterGender} onChange={(e) => handleFilterChange(filterYear, e.target.value)}
             className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Members</option>
-            <option value="Male">Gents</option>
-            <option value="Female">Ladies</option>
+            <option value="Gent">Gents</option>
+            <option value="Lady">Ladies</option>
           </select>
           {(filterYear || filterGender) && (
             <button onClick={() => handleFilterChange("", "")} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium whitespace-nowrap">
@@ -627,7 +627,7 @@ export default function CSADistributionCenter() {
                     <td className="py-1.5 px-3">
                       <select value={m.gender} onChange={(e) => { handleMemberChange(i, "gender", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }}
                         className={`w-24 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${hasErr ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"}`}>
-                        <option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option>
+                        <option value="">Select</option><option value="Gent">Gent</option><option value="Lady">Lady</option>
                       </select>
                     </td>
                     <td className="py-1.5 px-3">
@@ -711,8 +711,8 @@ export default function CSADistributionCenter() {
                 </div>
               </div>
               <div className="flex gap-3 text-sm mb-4">
-                <span className="text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♂ {pendingMale} <span className="font-normal text-blue-400">Men</span></span>
-                <span className="text-pink-600 bg-pink-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♀ {pendingFemale} <span className="font-normal text-pink-400">Women</span></span>
+                <span className="text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♂ {pendingMale} <span className="font-normal text-blue-400">Gents</span></span>
+                <span className="text-pink-600 bg-pink-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♀ {pendingFemale} <span className="font-normal text-pink-400">Ladies</span></span>
               </div>
               {pendingMembers.length > 0 && (
                 <button onClick={handlePreview}
@@ -977,8 +977,8 @@ export default function CSADistributionCenter() {
                           <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
+                            <option value="Gent">Gent</option>
+                            <option value="Lady">Lady</option>
                           </select>
                         ) : (
                           <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>

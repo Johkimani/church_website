@@ -17,7 +17,7 @@ const CHOIR_POSITION_RANK = (() => {
   const order = [
     'Choir Chairperson', 'Choir Vice Chairperson',
     'Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager',
-    'Male Representative', 'Female Representative', 'Choir Master', 'Choir Mistress',
+    'Gent Representative', 'Lady Representative', 'Male Representative', 'Female Representative', 'Choir Master', 'Choir Mistress',
   ];
   const map = {};
   order.forEach((pos, i) => { map[pos.toLowerCase()] = i; });

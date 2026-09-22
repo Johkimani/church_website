@@ -32,7 +32,7 @@ const VOICE_TYPES = ['Soprano', 'Alto', 'Tenor', 'Bass', 'None'];
 const MUSIC_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'None'];
 const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 const COURSE_OPTIONS = ['Computer Science', 'Engineering', 'Business', 'Education', 'Medicine', 'Arts', 'Science', 'Law', 'Nursing', 'Agriculture', 'Other'];
-const GENDER_OPTIONS = ['Male', 'Female'];
+const GENDER_OPTIONS = ['Gent', 'Lady'];
 
 const CommunityRequestTab: React.FC<Props> = ({ moduleId, moduleName, color, module }) => {
   const queryClient = useQueryClient();

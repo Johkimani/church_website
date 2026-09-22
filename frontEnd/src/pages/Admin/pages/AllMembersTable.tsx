@@ -47,7 +47,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     RegNo: true, Name: true, Gender: true, Course: true,
     Phone: true, Year: true, Jumuiya: true, Source: true,
   });
-  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Male: true, Female: true });
+  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Gent: true, Lady: true });
   const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({});
   const [sourceFilter, setSourceFilter] = useState("");
   const [genderSel, setGenderSel] = useState("");
@@ -95,8 +95,10 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       const activeYears = Object.entries(yearFilter).filter(([, v]) => v).map(([k]) => k);
       const filteredByGender = members.filter((row: any) => {
         const g = (row.gender || "").toLowerCase();
-        if (!((g === "male" && activeGenders.includes("Male")) ||
-              (g === "female" && activeGenders.includes("Female")) ||
+        const isGent = g === "male" || g === "gent";
+        const isLady = g === "female" || g === "lady";
+        if (!((isGent && activeGenders.includes("Gent")) ||
+              (isLady && activeGenders.includes("Lady")) ||
               (!g && activeGenders.length > 0))) return false;
         const label = getIntakeYearLabel(row.member_id || row.id || "");
         return label ? activeYears.includes(label) : activeYears.length > 0;
@@ -107,7 +109,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
         selected.forEach(k => {
           if (k === "RegNo") out.RegNo = row.member_id || row.id || "";
           else if (k === "Name") out.Name = row.name || "";
-          else if (k === "Gender") out.Gender = isMale(row.gender) ? "Male" : isFemale(row.gender) ? "Female" : (row.gender || "").trim() || "";
+          else if (k === "Gender") out.Gender = isMale(row.gender) ? "Gent" : isFemale(row.gender) ? "Lady" : (row.gender || "").trim() || "";
           else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
           else if (k === "Year") out.Year = getYearOfStudy(row.member_id || row.id || "") || "";
@@ -289,7 +291,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       result = result.filter(m => m.source === sourceFilter);
     }
     if (genderSel) {
-      result = result.filter(m => (genderSel === "male" ? isMale(m.gender) : isFemale(m.gender)));
+      result = result.filter(m => (genderSel === "gent" ? isMale(m.gender) : isFemale(m.gender)));
     }
     if (yearSel) {
       result = result.filter(m => getIntakeYearLabel(m.member_id || m.id || "") === yearSel);
@@ -300,8 +302,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       const bJ = jumuiyaOrder[b.jumuiya_name || b.jumuiya_id] ?? 99;
       const aGen = (a.gender || "").toLowerCase();
       const bGen = (b.gender || "").toLowerCase();
-      const aG = aGen === "female" ? 0 : aGen === "male" ? 1 : 2;
-      const bG = bGen === "female" ? 0 : bGen === "male" ? 1 : 2;
+      const aG = (aGen === "female" || aGen === "lady") ? 0 : (aGen === "male" || aGen === "gent") ? 1 : 2;
+      const bG = (bGen === "female" || bGen === "lady") ? 0 : (bGen === "male" || bGen === "gent") ? 1 : 2;
 
       if (sortBy === "gender") {
         if (aG !== bG) return sortAsc ? aG - bG : bG - aG;
@@ -379,8 +381,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           <select value={genderSel} onChange={e => { setGenderSel(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Genders</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
+            <option value="gent">Gent</option>
+            <option value="lady">Lady</option>
           </select>
           <select value={yearSel} onChange={e => { setYearSel(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
@@ -574,8 +576,8 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                           <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                            <option value="gent">Gent</option>
+                            <option value="lady">Lady</option>
                           </select>
                         ) : (
                           <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "W" ? "text-pink-600" : "text-slate-400"}`}>
@@ -705,7 +707,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                       className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Male" ? "Male" : "Female"}</span>
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gent" : "Lady"}</span>
                   </label>
                 ))}
               </div>

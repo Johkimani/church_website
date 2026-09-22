@@ -99,7 +99,7 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     }
 
     if (genderFilter) {
-      result = result.filter(m => (genderFilter === "male" ? genderCode(m.gender) === "M" : genderCode(m.gender) === "W"));
+      result = result.filter(m => (genderFilter === "gent" ? genderCode(m.gender) === "M" : genderCode(m.gender) === "W"));
     }
 
     if (yearFilter) {
@@ -177,8 +177,8 @@ const MembersList: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
           <select value={genderFilter} onChange={e => { setGenderFilter(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Genders</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
+            <option value="gent">Gent</option>
+            <option value="lady">Lady</option>
           </select>
           <select value={yearFilter} onChange={e => { setYearFilter(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">

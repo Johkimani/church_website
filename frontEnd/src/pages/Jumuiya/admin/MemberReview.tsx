@@ -229,8 +229,8 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
                           <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                            <option value="gent">Gent</option>
+                            <option value="lady">Lady</option>
                           </select>
                         ) : (
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${

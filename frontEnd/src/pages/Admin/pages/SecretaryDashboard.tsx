@@ -308,7 +308,7 @@ export default function SecretaryDashboard() {
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Male</span>
+                        <span>Gent</span>
                         <span className="font-bold text-blue-600">{genderCounts.male}</span>
                       </div>
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -320,7 +320,7 @@ export default function SecretaryDashboard() {
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>Female</span>
+                        <span>Lady</span>
                         <span className="font-bold text-pink-600">{genderCounts.female}</span>
                       </div>
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">

@@ -20,7 +20,7 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
     Phone: true, Jumuiya: true, AdmissionYear: true,
     GraduationYear: true, Source: true, MigratedAt: true,
   });
-  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Male: true, Female: true });
+  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Gent: true, Lady: true });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -70,8 +70,8 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
       }
       if (activeYears.length > 0 && !activeYears.includes(a.graduation_year)) return false;
       const g = (a.gender || "").toLowerCase();
-      if (!((g === "male" || g === "Male") && activeGenders.includes("Male")) &&
-          !((g === "female" || g === "Female") && activeGenders.includes("Female")) &&
+      if (!((g === "male" || g === "gent") && activeGenders.includes("Gent")) &&
+          !((g === "female" || g === "lady") && activeGenders.includes("Lady")) &&
           !(!g && activeGenders.length > 0)) return false;
       return true;
     });
@@ -84,8 +84,8 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
       const activeYears = Object.entries(graduationFilter).filter(([, v]) => v).map(([k]) => parseInt(k));
       const rows = associates.filter(a => {
         const g = (a.gender || "").toLowerCase();
-        if (!((g === "male" || g === "Male") && activeGenders.includes("Male")) &&
-            !((g === "female" || g === "Female") && activeGenders.includes("Female")) &&
+        if (!((g === "male" || g === "gent") && activeGenders.includes("Gent")) &&
+            !((g === "female" || g === "lady") && activeGenders.includes("Lady")) &&
             !(!g && activeGenders.length > 0)) return false;
         if (activeYears.length > 0 && !activeYears.includes(a.graduation_year)) return false;
         return true;
@@ -226,7 +226,7 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
                       <input type="checkbox" checked={v}
                         onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                         className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                      <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Male" ? "Male" : "Female"}</span>
+                      <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gent" : "Lady"}</span>
                     </label>
                   ))}
                 </div>
@@ -308,7 +308,7 @@ export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }:
                     <input type="checkbox" checked={v}
                       onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                       className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Male" ? "Male" : "Female"}</span>
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gent" : "Lady"}</span>
                   </label>
                 ))}
               </div>

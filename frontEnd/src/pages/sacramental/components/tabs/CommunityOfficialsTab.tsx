@@ -49,7 +49,7 @@ const MODULE_TO_CSA_CATEGORY: Record<string, string> = {
   dancers: 'Liturgical Dancers',
 };
 
-// Order past officials within a term by superiority (chair first … female
+// Order past officials within a term by superiority (chair first … lady/gent
 // representative last). Positions not listed fall back to the end so other
 // communities keep their existing order.
 const OFFICIAL_SUPERIORITY_RANK: Record<string, number> = {
@@ -67,7 +67,9 @@ const OFFICIAL_SUPERIORITY_RANK: Record<string, number> = {
   'vice secretary': 6,
   'treasurer': 7,
   'project manager': 8,
-  'male representative': 9,
+  'gent representative': 9,
+  'lady representative': 9,
+  'male representative': 10,
   'female representative': 10,
 };
 

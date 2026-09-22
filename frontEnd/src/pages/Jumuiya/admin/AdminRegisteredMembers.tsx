@@ -97,7 +97,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
     }
 
     if (genderFilter !== "all") {
-      result = result.filter(m => genderFilter === "male" ? isMale(m.gender) : isFemale(m.gender));
+      result = result.filter(m => genderFilter === "gent" ? isMale(m.gender) : isFemale(m.gender));
     }
 
     if (semesterFilter !== "all") {
@@ -156,12 +156,12 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
         <div style={{ background: "#eff6ff", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: "#3b82f6", fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "#3b82f6" }}>{stats.male}</p>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Male</p>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Gent</p>
         </div>
         <div style={{ background: "#fdf2f8", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: "#ec4899", fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "#ec4899" }}>{stats.female}</p>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Female</p>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Lady</p>
         </div>
         <div style={{ background: "#f0fdf4", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaCheckCircle style={{ color: "#10b981", fontSize: "1.2rem", marginBottom: "6px" }} />
@@ -216,8 +216,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
           style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid var(--border-color)", fontSize: "0.875rem", background: "white" }}
         >
           <option value="all">All Genders</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
+<option value="gent">Gent</option>
+                        <option value="lady">Lady</option>
         </select>
 
         <select

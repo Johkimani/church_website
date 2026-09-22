@@ -43,7 +43,7 @@ function isRegisteredForCurrentSem(m: any, semNum: 1 | 2): boolean {
 const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, members }) => {
   const resolvedColor = resolveColor(jumuiyaName, resolveColor(jumuiyaId, jumuiyaColor));
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "yearly">("overview");
-  const [genderModal, setGenderModal] = useState<"male" | "female" | null>(null);
+  const [genderModal, setGenderModal] = useState<"gent" | "lady" | null>(null);
 
   const [semester, setSemester] = useState<any>(null);
   useEffect(() => {
@@ -58,8 +58,8 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
     const male = members.filter((m: any) => isMale(m.gender)).length;
     const female = members.filter((m: any) => isFemale(m.gender)).length;
     return [
-      { name: "Male", value: male },
-      { name: "Female", value: female },
+{ name: "Gent", value: male },
+       { name: "Lady", value: female },
     ];
   }, [members]);
 
@@ -224,7 +224,7 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
               </div>
               <p className="text-xs text-slate-400 font-medium mt-1">Current Registration</p>
             </div>
-            <button onClick={() => setGenderModal("male")}
+            <button onClick={() => setGenderModal("gent")}
               className="bg-white rounded-xl border border-slate-200 p-4 text-left hover:ring-2 hover:ring-offset-1 hover:ring-blue-300 transition-all group">
               <p className="text-3xl font-bold text-blue-600">{registrationStats.maleTotal}</p>
               <div className="flex items-center gap-1 mt-1">
@@ -238,7 +238,7 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-blue-400 ml-1">— click to view</span>
               </p>
             </button>
-            <button onClick={() => setGenderModal("female")}
+            <button onClick={() => setGenderModal("lady")}
               className="bg-white rounded-xl border border-slate-200 p-4 text-left hover:ring-2 hover:ring-offset-1 hover:ring-pink-300 transition-all group">
               <p className="text-3xl font-bold text-pink-600">{registrationStats.femaleTotal}</p>
               <div className="flex items-center gap-1 mt-1">
@@ -423,7 +423,7 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-800">
-                {genderModal === "male" ? "Male" : "Female"} Members — {jumuiyaName}
+                {genderModal === "gent" ? "Gent" : "Lady"} Members — {jumuiyaName}
               </h3>
               <button onClick={() => setGenderModal(null)} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
                 <X size={20} className="text-slate-400" />
@@ -442,12 +442,12 @@ const JumuiyaAnalyticsDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, ju
                   </tr>
                 </thead>
                 <tbody>
-                  {members.filter((m: any) => genderModal === "male" ? isMale(m.gender) : isFemale(m.gender)).length === 0 ? (
+                  {members.filter((m: any) => genderModal === "gent" ? isMale(m.gender) : isFemale(m.gender)).length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-slate-400">No members found.</td>
                     </tr>
                   ) : (
-                    members.filter((m: any) => genderModal === "male" ? isMale(m.gender) : isFemale(m.gender)).map((m: any, i: number) => (
+                    members.filter((m: any) => genderModal === "gent" ? isMale(m.gender) : isFemale(m.gender)).map((m: any, i: number) => (
                       <tr key={m.member_id || i} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="py-2 px-3 font-medium text-slate-700">{m.first_name} {m.last_name}</td>
                         <td className="py-2 px-3 text-slate-500 font-mono text-xs">{m.member_id || "—"}</td>

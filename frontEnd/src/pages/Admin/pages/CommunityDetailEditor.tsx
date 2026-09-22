@@ -3304,8 +3304,8 @@ setSongsList(res.data?.data || []);
                             className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
                           >
                             <option value="all">All Members (Gents & Ladies)</option>
-                            <option value="male">Gents (Male)</option>
-                            <option value="female">Ladies (Female)</option>
+                            <option value="male">Gents</option>
+                            <option value="female">Ladies</option>
                           </select>
                         </div>
                       )}
@@ -3461,8 +3461,8 @@ setSongsList(res.data?.data || []);
                                 </select>
                                 <select value={choirGenderFilter} onChange={(e: any) => setChoirGenderFilter(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs">
                                   <option value="all">All Genders</option>
-                                  <option value="male">Male</option>
-                                  <option value="female">Female</option>
+                                  <option value="male">Gents</option>
+                                  <option value="female">Ladies</option>
                                 </select>
                               </>
                             )}
@@ -3527,12 +3527,12 @@ setSongsList(res.data?.data || []);
                                         {isEditing ? (
                                           <select value={memberEditForm.gender || ''} onChange={e => setMemberEditForm((p: any) => ({ ...p, gender: e.target.value }))} className="text-xs border border-slate-200 rounded px-1.5 py-1">
                                             <option value="">—</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
+                                            <option value="male">Gent</option>
+                                            <option value="female">Lady</option>
                                           </select>
                                         ) : (
-                                          <span className={`text-xs font-semibold ${(member.gender || '').toLowerCase() === 'male' ? 'text-blue-600' : (member.gender || '').toLowerCase() === 'female' ? 'text-pink-600' : 'text-slate-400'}`}>
-                                            {(member.gender || '').toLowerCase() === 'male' ? 'M' : (member.gender || '').toLowerCase() === 'female' ? 'F' : '—'}
+                                          <span className={`text-xs font-semibold ${/^(male|gent|m)$/i.test((member.gender || '').trim()) ? 'text-blue-600' : /^(female|lady|f)$/i.test((member.gender || '').trim()) ? 'text-pink-600' : 'text-slate-400'}`}>
+                                            {/^(male|gent|m)$/i.test((member.gender || '').trim()) ? 'M' : /^(female|lady|f)$/i.test((member.gender || '').trim()) ? 'F' : '—'}
                                           </span>
                                         )}
                                       </td>
@@ -3757,18 +3757,18 @@ setSongsList(res.data?.data || []);
                           <label className="text-xs font-bold text-slate-700">Voice Section (SATB)</label>
                           <select value={formValues.voice_type || ''} onChange={(e) => setFormValues(v => ({ ...v, voice_type: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
                             <option value="">Select Voice...</option>
-                            <option value="Soprano">Soprano (High Female)</option>
-                            <option value="Alto">Alto (Low Female)</option>
-                            <option value="Tenor">Tenor (High Male)</option>
-                            <option value="Bass">Bass (Deep Male)</option>
+                            <option value="Soprano">Soprano (High Lady)</option>
+                            <option value="Alto">Alto (Low Lady)</option>
+                            <option value="Tenor">Tenor (High Gent)</option>
+                            <option value="Bass">Bass (Deep Gent)</option>
                           </select>
                         </div>
                         <div>
                           <label className="text-xs font-bold text-slate-700">Gender (Gent / Lady)</label>
                           <select value={formValues.gender || ''} onChange={(e) => setFormValues(v => ({ ...v, gender: e.target.value }))} className="w-full border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 rounded-xl mt-1 text-xs font-bold focus:outline-none focus:border-blue-500">
                             <option value="">Select Gender...</option>
-                            <option value="Male">Gent (Male)</option>
-                            <option value="Female">Lady (Female)</option>
+                            <option value="Gent">Gent</option>
+                            <option value="Lady">Lady</option>
                           </select>
                         </div>
                       </div>

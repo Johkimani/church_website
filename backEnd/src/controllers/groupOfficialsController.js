@@ -30,8 +30,8 @@ export const POSITIONS_BY_GROUP = {
     'Vice Secretary',
     'Treasurer',
     'Project Manager',
-    'Male Representative',
-    'Female Representative',
+    'Gent Representative',
+    'Lady Representative',
     'Choir Master',
     'Choir Mistress'
   ],
@@ -72,8 +72,8 @@ ORDER BY
     WHEN o.position = 'Vice Secretary' THEN 4
     WHEN o.position = 'Treasurer' THEN 5
     WHEN o.position = 'Project Manager' THEN 6
-    WHEN o.position = 'Male Representative' THEN 7
-    WHEN o.position = 'Female Representative' THEN 8
+    WHEN o.position = 'Gent Representative' THEN 7
+    WHEN o.position = 'Lady Representative' THEN 8
     WHEN o.position = 'Choir Master' THEN 9
     WHEN o.position = 'Choir Mistress' THEN 10
     WHEN o.position = 'Choreographer' THEN 11

@@ -92,8 +92,8 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
           table { width: 100%; border-collapse: collapse; }
           th { background: #f1f5f9; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
           td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-          .male { color: #2563eb; }
-          .female { color: #db2777; }
+          .gent { color: #2563eb; }
+          .lady { color: #db2777; }
           .footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }
           @media print { body { padding: 20px; } }
         </style>
@@ -109,7 +109,7 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                   <td>${i + 1}</td>
                   <td>${m.name || m.member_name || ""}</td>
                   <td>${m.reg_number || ""}</td>
-                  <td class="${genderCode(m.gender) === "M" ? "male" : genderCode(m.gender) === "W" ? "female" : ""}">${m.gender}
+                  <td class="${genderCode(m.gender) === "M" ? "gent" : genderCode(m.gender) === "W" ? "lady" : ""}">${m.gender}
                   <td>${m.phone || ""}</td>
                   <td>${m.academic_year || ""}</td>
                 </tr>

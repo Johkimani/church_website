@@ -74,23 +74,23 @@ export function isGraduated(reg: string): boolean {
  * Normalize a gender value from the DB into "M" | "W" | "—".
  *
  * The members table stores gender inconsistently (e.g. ' male ', 'female',
- * 'M', 'Male', 'F', … — often lowercase with surrounding whitespace). This
+ * 'M', 'Gent', 'F', 'Lady', … — often lowercase with surrounding whitespace). This
  * trims and case-folds before classifying so badges render correctly.
  */
 export function genderCode(value: string | null | undefined): "M" | "W" | "—" {
   const v = (value || "").trim().toLowerCase();
   if (!v) return "—";
-  if (v === "m" || v === "male" || v === "man" || v === "boy") return "M";
-  if (v === "f" || v === "female" || v === "woman" || v === "girl") return "W";
+  if (v === "m" || v === "male" || v === "man" || v === "boy" || v === "gent") return "M";
+  if (v === "f" || v === "female" || v === "woman" || v === "girl" || v === "lady") return "W";
   return "—";
 }
 
-/** True when a raw gender value (e.g. ' male ', 'Male', 'M') means male. */
+/** True when a raw gender value (e.g. ' gent ', 'Gent', 'M') means male. */
 export function isMale(value: string | null | undefined): boolean {
   return genderCode(value) === "M";
 }
 
-/** True when a raw gender value (e.g. ' female ', 'Female', 'F') means female. */
+/** True when a raw gender value (e.g. ' lady ', 'Lady', 'F') means female. */
 export function isFemale(value: string | null | undefined): boolean {
   return genderCode(value) === "W";
 }

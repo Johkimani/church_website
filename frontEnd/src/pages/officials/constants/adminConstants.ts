@@ -82,7 +82,7 @@ export const GROUP_OPTIONS = [
 ];
 
 export const POSITIONS_BY_GROUP: Record<string, string[]> = {
-  'Choir': ['Choir Master', 'Choir Mistress', 'Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager', 'Male Representative', 'Female Representative'],
+  'Choir': ['Choir Master', 'Choir Mistress', 'Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager', 'Gent Representative', 'Lady Representative'],
   'Dancers': ['Dance Chairperson', 'Dance Vice Chairperson'],
   'Charismatic': ['Chairperson', 'Vice Chairperson'],
   'St. Francis': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer'],

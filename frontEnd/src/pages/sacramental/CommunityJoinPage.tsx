@@ -26,7 +26,7 @@ const INITIAL_FORM: FormState = {
 const VOICE_TYPES = ['Soprano', 'Alto', 'Tenor', 'Bass', 'None'];
 const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 const COURSE_OPTIONS = ['Computer Science', 'Engineering', 'Business', 'Education', 'Medicine', 'Arts', 'Science', 'Law', 'Nursing', 'Agriculture', 'Other'];
-const GENDER_OPTIONS = ['Male', 'Female'];
+const GENDER_OPTIONS = ['Gent', 'Lady'];
 
 const MINISTRY_COLORS: Record<string, string> = {
   choir: '#1e40af',
@@ -582,10 +582,10 @@ const CommunityJoinPage: React.FC = () => {
                         <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Choir Voice Section *</label>
                         <div className="grid grid-cols-2 gap-2.5">
                           {[
-                            { key: 'Soprano', label: 'Soprano', sub: 'High Female Voice' },
-                            { key: 'Alto', label: 'Alto', sub: 'Low Female Voice' },
-                            { key: 'Tenor', label: 'Tenor', sub: 'High Male Voice' },
-                            { key: 'Bass', label: 'Bass', sub: 'Deep Male Voice' },
+                            { key: 'Soprano', label: 'Soprano', sub: 'High Lady Voice' },
+                            { key: 'Alto', label: 'Alto', sub: 'Low Lady Voice' },
+                            { key: 'Tenor', label: 'Tenor', sub: 'High Gent Voice' },
+                            { key: 'Bass', label: 'Bass', sub: 'Deep Gent Voice' },
                             { key: 'Not sure yet', label: 'Not sure yet', sub: "We'll help you find it" },
                           ].map((v) => (
                             <button

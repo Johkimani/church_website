@@ -837,24 +837,24 @@ export const getStatistics = async (req, res) => {
       jumuiyaUUID
         ? pool.query(
             `SELECT COUNT(*)::int as total,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'gent' THEN 1 ELSE 0 END), 0)::int as gent_count,
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'lady' THEN 1 ELSE 0 END), 0)::int as lady_count
              FROM members WHERE jumuiya_id = $1 AND source = 'jum'
                AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
           )
-        : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+        : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
       jumuiyaUUID
         ? pool.query(
             `SELECT COUNT(*)::int as total,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'gent' THEN 1 ELSE 0 END), 0)::int as gent_count,
+                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'lady' THEN 1 ELSE 0 END), 0)::int as lady_count
              FROM members WHERE jumuiya_id = $1 AND source = 'csa'
                AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
           )
-        : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+        : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
       jumuiyaUUID
         ? pool.query(
@@ -903,8 +903,8 @@ export const getStatistics = async (req, res) => {
         : Promise.resolve({ rows: [] }),
     ]);
 
-    const jumRow = jumMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-    const csaRow = csaMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+    const jumRow = jumMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+    const csaRow = csaMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
     const totalRow = totalMembersRow.rows[0] || { total: 0 };
 
     res.json({
@@ -946,21 +946,21 @@ export const getBatchStatistics = async (req, res) => {
       const [jumMembers, csaMembers, groupStats, activeSeason] = await Promise.all([
         uuid
           ? pool.query(`SELECT COUNT(*)::int as total,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
+COALESCE(SUM(CASE WHEN LOWER(gender)='gent' THEN 1 ELSE 0 END),0)::int as gent_count,
+                                COALESCE(SUM(CASE WHEN LOWER(gender)='lady' THEN 1 ELSE 0 END),0)::int as lady_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'jum'
                         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
                         AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
-          : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+          : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
         uuid
           ? pool.query(`SELECT COUNT(*)::int as total,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
+COALESCE(SUM(CASE WHEN LOWER(gender)='gent' THEN 1 ELSE 0 END),0)::int as gent_count,
+                                COALESCE(SUM(CASE WHEN LOWER(gender)='lady' THEN 1 ELSE 0 END),0)::int as lady_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'csa'
                         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
                         AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
-          : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+          : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
         pool.query(`SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
                            COUNT(ga.id)::int as assigned_count
@@ -970,8 +970,8 @@ export const getBatchStatistics = async (req, res) => {
         pool.query(`SELECT * FROM registration_seasons WHERE jumuiya_id=$1 AND status='active' LIMIT 1`, [slug]),
       ]);
 
-      const j = jumMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      const c = csaMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+      const j = jumMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+      const c = csaMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
       const totalMembers = (j.total || 0) + (c.total || 0);
 
       return {
@@ -982,8 +982,8 @@ export const getBatchStatistics = async (req, res) => {
           groups: groupStats.rows,
           activeSeason: activeSeason.rows[0] || null,
           genderBreakdown: [
-            ...((j.male_count || c.male_count) ? [{ gender: "Male", count: (j.male_count || 0) + (c.male_count || 0) }] : []),
-            ...((j.female_count || c.female_count) ? [{ gender: "Female", count: (j.female_count || 0) + (c.female_count || 0) }] : []),
+            ...((j.gent_count || c.gent_count) ? [{ gender: "Gent", count: (j.gent_count || 0) + (c.gent_count || 0) }] : []),
+            ...((j.lady_count || c.lady_count) ? [{ gender: "Lady", count: (j.lady_count || 0) + (c.lady_count || 0) }] : []),
           ],
         },
       };
@@ -1311,8 +1311,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
 
       const totalResult = await pool.query(
         `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
+                SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
+                SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          WHERE m.jumuiya_id = sg.group_id
@@ -1322,8 +1322,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
 
       const csaResult = await pool.query(
         `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
+                SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
+                SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
@@ -1332,34 +1332,34 @@ export const csaGetJumuiyaStats = async (req, res) => {
         [name]
       );
 
-      const tRow = totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      const cRow = csaResult.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      jumuiyaStats.push({
-        slug,
-        name,
-        total: tRow.total,
-        male_count: tRow.male_count,
-        female_count: tRow.female_count,
-        csa: cRow,
-      });
-    }
+       const tRow = totalResult.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+       const cRow = csaResult.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+       jumuiyaStats.push({
+         slug,
+         name,
+         total: tRow.total,
+         gent_count: tRow.gent_count,
+         lady_count: tRow.lady_count,
+         csa: cRow,
+       });
+     }
 
-    const pendingResult = await pool.query(
+     const pendingResult = await pool.query(
       `SELECT COUNT(*)::int as total,
-              SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-              SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-       FROM members m
-       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
-       WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}`
-    );
+               SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
+               SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
+        FROM members m
+        LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+        WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}`
+     );
 
-    res.json({
-      status: "success",
-      data: {
-        jumuiyas: jumuiyaStats,
-        pending: pendingResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-      },
-    });
+     res.json({
+       status: "success",
+       data: {
+         jumuiyas: jumuiyaStats,
+         pending: pendingResult.rows[0] || { total: 0, gent_count: 0, lady_count: 0 },
+       },
+     });
   } catch (error) {
     logger.error("csaGetJumuiyaStats error:", error.message);
     res.status(500).json({ error: error.message });
@@ -1429,25 +1429,25 @@ const fetchDistributionBaselines = async (strategy, yearFilter) => {
   for (const name of JUMUIYA_NAMES) {
     const totalResult = await pool.query(
       `SELECT COUNT(*)::int as total,
-              SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-              SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-       FROM members m
-       LEFT JOIN sub_groups sg ON sg.name = $1
-       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
-       WHERE m.jumuiya_id = sg.group_id
-         AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
-         ${cohortWhere}
-         ${cohortYearFilter}`,
-      [name]
-    );
-    rows.push({
-      slug: JUMUIYA_SLUG_MAP[name],
-      name,
-      existing: {
-        total: totalResult.rows[0]?.total || 0,
-        male_count: totalResult.rows[0]?.male_count || 0,
-        female_count: totalResult.rows[0]?.female_count || 0,
-      },
+               SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
+               SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
+        FROM members m
+        LEFT JOIN sub_groups sg ON sg.name = $1
+        LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+        WHERE m.jumuiya_id = sg.group_id
+          AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+          ${cohortWhere}
+          ${cohortYearFilter}`,
+       [name]
+     );
+     rows.push({
+       slug: JUMUIYA_SLUG_MAP[name],
+       name,
+       existing: {
+         total: totalResult.rows[0]?.total || 0,
+         gent_count: totalResult.rows[0]?.gent_count || 0,
+         lady_count: totalResult.rows[0]?.lady_count || 0,
+       },
       imported: { total: 0 },
     });
   }
@@ -1456,29 +1456,29 @@ const fetchDistributionBaselines = async (strategy, yearFilter) => {
 
 /**
  * Gender-balanced distribution: distributes each gender independently
- * in two passes. Males are placed first (round-robin by lowest total,
- * tiebreak by lowest male count), then females are placed the same way.
- * This prevents the "all males first, then females" skew that causes
+ * in two passes. Gents are placed first (round-robin by lowest total,
+ * tiebreak by lowest gent count), then ladies are placed the same way.
+ * This prevents the "all gents first, then ladies" skew that causes
  * unequal gender distribution across jumuiyas.
  */
 const distributeGenderBalanced = (members, jumuiyaSlots) => {
-  const males = members.filter(m => m.gender === "Male");
-  const females = members.filter(m => m.gender !== "Male");
+  const gentMembers = members.filter(m => m.gender === "Gent");
+  const ladyMembers = members.filter(m => m.gender === "Lady");
   const assignments = [];
 
-  const placeGroup = (group, isMale) => {
+  const placeGroup = (group, isGent) => {
     for (const member of group) {
       const target = jumuiyaSlots
         .sort((a, b) => {
           const aScore = a.currentTotal + a.newCount;
           const bScore = b.currentTotal + b.newCount;
           if (aScore !== bScore) return aScore - bScore;
-          const aGender = isMale ? a.maleCount : a.femaleCount;
-          const bGender = isMale ? b.maleCount : b.femaleCount;
+          const aGender = isGent ? a.maleCount : a.femaleCount;
+          const bGender = isGent ? b.maleCount : b.femaleCount;
           return aGender - bGender;
         })[0];
 
-      if (isMale) target.maleCount++;
+      if (isGent) target.maleCount++;
       else target.femaleCount++;
       target.newCount++;
 
@@ -1492,8 +1492,8 @@ const distributeGenderBalanced = (members, jumuiyaSlots) => {
     }
   };
 
-  placeGroup(males, true);
-  placeGroup(females, false);
+  placeGroup(gentMembers, true);
+  placeGroup(ladyMembers, false);
 
   return assignments;
 };
@@ -1523,21 +1523,21 @@ export const csaDistributePreview = async (req, res) => {
 
     const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
-    const members = pendingResult.rows;
-    const jumuiyaSlots = jumuiyaRows.map(j => ({
-      ...j,
-      currentTotal: j.existing.total,
-      maleCount: j.existing.male_count,
-      femaleCount: j.existing.female_count,
-      newCount: 0,
-    }));
+const members = pendingResult.rows;
+     const jumuiyaSlots = jumuiyaRows.map(j => ({
+       ...j,
+       currentTotal: j.existing.total,
+       gent_count: j.existing.gent_count,
+       lady_count: j.existing.lady_count,
+       newCount: 0,
+     }));
 
-    const assignments = distributeGenderBalanced(members, jumuiyaSlots);
+     const assignments = distributeGenderBalanced(members, jumuiyaSlots);
 
-    const summary = {
-      totalMembers: members.length,
-      maleCount: members.filter(m => m.gender === "Male").length,
-      femaleCount: members.filter(m => m.gender === "Female").length,
+     const summary = {
+       totalMembers: members.length,
+       gentCount: members.filter(m => m.gender === "Gent").length,
+       ladyCount: members.filter(m => m.gender === "Lady").length,
       perJumuiya: jumuiyaSlots.map(j => ({
         slug: j.slug,
         name: j.name,
@@ -1579,35 +1579,35 @@ export const csaDistributeMembers = async (req, res) => {
 
     const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
-    const members = pendingResult.rows;
-    const jumuiyaSlots = jumuiyaRows.map(j => ({
-      slug: j.slug,
-      name: j.name,
-      currentTotal: j.existing?.total || 0,
-      maleCount: j.existing?.male_count || 0,
-      femaleCount: j.existing?.female_count || 0,
-      newCount: 0,
-    }));
+const members = pendingResult.rows;
+     const jumuiyaSlots = jumuiyaRows.map(j => ({
+       slug: j.slug,
+       name: j.name,
+       currentTotal: j.existing?.total || 0,
+       gent_count: j.existing?.gent_count || 0,
+       lady_count: j.existing?.lady_count || 0,
+       newCount: 0,
+     }));
 
-    const assignments = distributeGenderBalanced(members, jumuiyaSlots);
+     const assignments = distributeGenderBalanced(members, jumuiyaSlots);
 
-    for (const a of assignments) {
-      await pool.query(
-        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
-        [a.target_name, a.member_id]
-      );
-      await pool.query(
-        `UPDATE members SET jumuiya_id = sg.group_id
-         FROM sub_groups sg
-         WHERE members.member_id = $1 AND sg.name = $2`,
-        [a.member_id, a.target_name]
-      );
-    }
+     for (const a of assignments) {
+       await pool.query(
+         `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
+         [a.target_name, a.member_id]
+       );
+       await pool.query(
+         `UPDATE members SET jumuiya_id = sg.group_id
+          FROM sub_groups sg
+          WHERE members.member_id = $1 AND sg.name = $2`,
+         [a.member_id, a.target_name]
+       );
+     }
 
-    const summary = {
-      totalMembers: members.length,
-      maleCount: members.filter(m => m.gender === "Male").length,
-      femaleCount: members.filter(m => m.gender === "Female").length,
+     const summary = {
+       totalMembers: members.length,
+       gentCount: members.filter(m => m.gender === "Gent").length,
+       ladyCount: members.filter(m => m.gender === "Lady").length,
       perJumuiya: jumuiyaSlots.map(j => ({
         slug: j.slug,
         name: j.name,
@@ -1658,14 +1658,14 @@ const computeDistributionPlan = async (academicYear, strategy) => {
 
   const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
-  const members = pendingResult.rows;
-  const slots = jumuiyaRows.map(j => ({
-    slug: j.slug, name: j.name,
-    currentTotal: j.existing?.total || 0,
-    maleCount: j.existing?.male_count || 0,
-    femaleCount: j.existing?.female_count || 0,
-    newCount: 0,
-  }));
+const members = pendingResult.rows;
+   const slots = jumuiyaRows.map(j => ({
+     slug: j.slug, name: j.name,
+     currentTotal: j.existing?.total || 0,
+     gent_count: j.existing?.gent_count || 0,
+     lady_count: j.existing?.lady_count || 0,
+     newCount: 0,
+   }));
 
   const assignments = distributeGenderBalanced(members, slots);
 
@@ -1704,10 +1704,10 @@ export const csaSubmitForApproval = async (req, res) => {
       );
     }
 
-    const summary = {
-      totalMembers: plan.members.length,
-      maleCount: plan.members.filter(m => m.gender === "Male").length,
-      femaleCount: plan.members.filter(m => m.gender === "Female").length,
+const summary = {
+       totalMembers: plan.members.length,
+       gentCount: plan.members.filter(m => m.gender === "Gent").length,
+       ladyCount: plan.members.filter(m => m.gender === "Lady").length,
       perJumuiya: plan.perJumuiya,
     };
 

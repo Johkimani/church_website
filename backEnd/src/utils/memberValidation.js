@@ -77,8 +77,8 @@ export const standardizeGender = (gender) => {
   if (!gender || typeof gender !== "string" || !gender.trim()) return { cleaned: null, errors: [], warnings: ["Gender not specified"] };
   const warnings = [];
   const g = gender.trim().toLowerCase();
-  if (["m", "male", "man", "boy"].includes(g)) return { cleaned: "Male", warnings };
-  if (["f", "female", "woman", "girl"].includes(g)) return { cleaned: "Female", warnings };
+    if (["m", "male", "man", "boy", "gent"].includes(g)) return { cleaned: "Gent", warnings };
+    if (["f", "female", "woman", "girl", "lady"].includes(g)) return { cleaned: "Lady", warnings };
   warnings.push(`Unrecognized gender "${gender}" — set to null for review`);
   return { cleaned: null, warnings };
 };
