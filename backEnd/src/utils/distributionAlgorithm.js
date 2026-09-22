@@ -1,3 +1,6 @@
+const isGentMember = (g) => ["gent", "male", "man", "boy", "m"].includes(String(g || "").trim().toLowerCase());
+const isLadyMember = (g) => ["lady", "female", "woman", "girl", "f"].includes(String(g || "").trim().toLowerCase());
+
 export const distributeMembers = ({
   members,
   groups,
@@ -7,9 +10,9 @@ export const distributeMembers = ({
     return { assignments: [], stats: null };
   }
 
-  const gentMembers = members.filter(m => m.gender === "Gent");
-  const ladyMembers = members.filter(m => m.gender === "Lady");
-  const otherMembers = members.filter(m => m.gender !== "Gent" && m.gender !== "Lady");
+  const gentMembers = members.filter(m => isGentMember(m.gender));
+  const ladyMembers = members.filter(m => isLadyMember(m.gender));
+  const otherMembers = members.filter(m => !isGentMember(m.gender) && !isLadyMember(m.gender));
 
   let assignments = [];
 
@@ -72,9 +75,9 @@ const assignToGroupsBalanced = (members, groups) => {
   }));
 
   const shuffled = [...members].sort(() => Math.random() - 0.5);
-  const gentMembers = shuffled.filter(m => m.gender === "Gent");
-  const ladyMembers = shuffled.filter(m => m.gender === "Lady");
-  const others = shuffled.filter(m => m.gender !== "Gent" && m.gender !== "Lady");
+  const gentMembers = shuffled.filter(m => isGentMember(m.gender));
+  const ladyMembers = shuffled.filter(m => isLadyMember(m.gender));
+  const others = shuffled.filter(m => !isGentMember(m.gender) && !isLadyMember(m.gender));
 
   const distributeGender = (pool, isGent) => {
     pool.forEach((member) => {

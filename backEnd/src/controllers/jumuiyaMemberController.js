@@ -837,8 +837,8 @@ export const getStatistics = async (req, res) => {
       jumuiyaUUID
         ? pool.query(
             `SELECT COUNT(*)::int as total,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'gent' THEN 1 ELSE 0 END), 0)::int as gent_count,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'lady' THEN 1 ELSE 0 END), 0)::int as lady_count
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END), 0)::int as gent_count,
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END), 0)::int as lady_count
              FROM members WHERE jumuiya_id = $1 AND source = 'jum'
                AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
@@ -848,8 +848,8 @@ export const getStatistics = async (req, res) => {
       jumuiyaUUID
         ? pool.query(
             `SELECT COUNT(*)::int as total,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'gent' THEN 1 ELSE 0 END), 0)::int as gent_count,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'lady' THEN 1 ELSE 0 END), 0)::int as lady_count
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END), 0)::int as gent_count,
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END), 0)::int as lady_count
              FROM members WHERE jumuiya_id = $1 AND source = 'csa'
                AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
@@ -946,8 +946,8 @@ export const getBatchStatistics = async (req, res) => {
       const [jumMembers, csaMembers, groupStats, activeSeason] = await Promise.all([
         uuid
           ? pool.query(`SELECT COUNT(*)::int as total,
-COALESCE(SUM(CASE WHEN LOWER(gender)='gent' THEN 1 ELSE 0 END),0)::int as gent_count,
-                                COALESCE(SUM(CASE WHEN LOWER(gender)='lady' THEN 1 ELSE 0 END),0)::int as lady_count
+COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END),0)::int as gent_count,
+                                COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END),0)::int as lady_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'jum'
                         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
                         AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
@@ -955,8 +955,8 @@ COALESCE(SUM(CASE WHEN LOWER(gender)='gent' THEN 1 ELSE 0 END),0)::int as gent_c
 
         uuid
           ? pool.query(`SELECT COUNT(*)::int as total,
-COALESCE(SUM(CASE WHEN LOWER(gender)='gent' THEN 1 ELSE 0 END),0)::int as gent_count,
-                                COALESCE(SUM(CASE WHEN LOWER(gender)='lady' THEN 1 ELSE 0 END),0)::int as lady_count
+COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END),0)::int as gent_count,
+                                COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END),0)::int as lady_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'csa'
                         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
                         AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
@@ -1270,8 +1270,10 @@ export const csaGetPendingMembers = async (req, res) => {
       conditions.push(`mi.academic_year = $${params.length}`);
     }
     if (gender) {
-      params.push(gender);
-      conditions.push(`LOWER(m.gender) = LOWER($${params.length})`);
+      params.push(gender.toLowerCase().trim());
+      conditions.push(
+        `CASE WHEN LOWER(TRIM($${params.length})) IN ('gent','male','man','boy','m') THEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') ELSE LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') END`
+      );
     }
 
     const result = await pool.query(
@@ -1311,8 +1313,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
 
       const totalResult = await pool.query(
         `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          WHERE m.jumuiya_id = sg.group_id
@@ -1322,8 +1324,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
 
       const csaResult = await pool.query(
         `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
@@ -1346,8 +1348,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
 
      const pendingResult = await pool.query(
       `SELECT COUNT(*)::int as total,
-               SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
-               SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
         FROM members m
         LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
         WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}`
@@ -1429,8 +1431,8 @@ const fetchDistributionBaselines = async (strategy, yearFilter) => {
   for (const name of JUMUIYA_NAMES) {
     const totalResult = await pool.query(
       `SELECT COUNT(*)::int as total,
-               SUM(CASE WHEN LOWER(m.gender) = 'gent' THEN 1 ELSE 0 END)::int as gent_count,
-               SUM(CASE WHEN LOWER(m.gender) = 'lady' THEN 1 ELSE 0 END)::int as lady_count
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
         FROM members m
         LEFT JOIN sub_groups sg ON sg.name = $1
         LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
@@ -1461,9 +1463,12 @@ const fetchDistributionBaselines = async (strategy, yearFilter) => {
  * This prevents the "all gents first, then ladies" skew that causes
  * unequal gender distribution across jumuiyas.
  */
+const isGentMember = (g) => ["gent", "male", "man", "boy", "m"].includes(String(g || "").trim().toLowerCase());
+const isLadyMember = (g) => ["lady", "female", "woman", "girl", "f"].includes(String(g || "").trim().toLowerCase());
+
 const distributeGenderBalanced = (members, jumuiyaSlots) => {
-  const gentMembers = members.filter(m => m.gender === "Gent");
-  const ladyMembers = members.filter(m => m.gender === "Lady");
+  const gentMembers = members.filter(m => isGentMember(m.gender));
+  const ladyMembers = members.filter(m => isLadyMember(m.gender));
   const assignments = [];
 
   const placeGroup = (group, isGent) => {
@@ -1534,10 +1539,12 @@ const members = pendingResult.rows;
 
      const assignments = distributeGenderBalanced(members, jumuiyaSlots);
 
-     const summary = {
+const summary = {
        totalMembers: members.length,
-       gentCount: members.filter(m => m.gender === "Gent").length,
-       ladyCount: members.filter(m => m.gender === "Lady").length,
+       gentCount: members.filter(m => isGentMember(m.gender)).length,
+        ladyCount: members.filter(m => isLadyMember(m.gender)).length,
+       maleCount: members.filter(m => isGentMember(m.gender)).length,
+       femaleCount: members.filter(m => isLadyMember(m.gender)).length,
       perJumuiya: jumuiyaSlots.map(j => ({
         slug: j.slug,
         name: j.name,
@@ -1606,8 +1613,8 @@ const members = pendingResult.rows;
 
      const summary = {
        totalMembers: members.length,
-       gentCount: members.filter(m => m.gender === "Gent").length,
-       ladyCount: members.filter(m => m.gender === "Lady").length,
+gentCount: members.filter(m => isGentMember(m.gender)).length,
+        ladyCount: members.filter(m => isLadyMember(m.gender)).length,
       perJumuiya: jumuiyaSlots.map(j => ({
         slug: j.slug,
         name: j.name,
@@ -1706,8 +1713,8 @@ export const csaSubmitForApproval = async (req, res) => {
 
 const summary = {
        totalMembers: plan.members.length,
-       gentCount: plan.members.filter(m => m.gender === "Gent").length,
-       ladyCount: plan.members.filter(m => m.gender === "Lady").length,
+       gentCount: plan.members.filter(m => isGentMember(m.gender)).length,
+       ladyCount: plan.members.filter(m => isLadyMember(m.gender)).length,
       perJumuiya: plan.perJumuiya,
     };
 

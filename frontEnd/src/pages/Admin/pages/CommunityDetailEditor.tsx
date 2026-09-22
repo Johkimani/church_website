@@ -3532,7 +3532,7 @@ setSongsList(res.data?.data || []);
                                           </select>
                                         ) : (
                                           <span className={`text-xs font-semibold ${/^(male|gent|m)$/i.test((member.gender || '').trim()) ? 'text-blue-600' : /^(female|lady|f)$/i.test((member.gender || '').trim()) ? 'text-pink-600' : 'text-slate-400'}`}>
-                                            {/^(male|gent|m)$/i.test((member.gender || '').trim()) ? 'M' : /^(female|lady|f)$/i.test((member.gender || '').trim()) ? 'F' : '—'}
+                                            {/^(male|gent|m)$/i.test((member.gender || '').trim()) ? 'M' : /^(female|lady|f)$/i.test((member.gender || '').trim()) ? 'L' : '—'}
                                           </span>
                                         )}
                                       </td>

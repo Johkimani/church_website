@@ -771,7 +771,7 @@ export default function CSADistributionCenter() {
             <div>
               <h4 className="font-semibold text-slate-800">Distribution Preview</h4>
               <p className="text-xs text-slate-400">
-                {preview.summary.totalMembers} members (M {preview.summary.maleCount}, W {preview.summary.femaleCount}) to be distributed
+                {preview.summary.totalMembers} members (M {preview.summary.maleCount}, L {preview.summary.femaleCount}) to be distributed
                 <span className={`ml-2 px-1.5 py-0.5 rounded font-semibold ${preview.data?.strategy === "equal-split" ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-500"}`}>
                   {preview.data?.strategy === "equal-split" ? "Equal Split (new members only)" : "Full Membership balance"}
                 </span>

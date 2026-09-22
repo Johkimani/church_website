@@ -12,6 +12,20 @@ const consolidateMemberData = async () => {
       ALTER TABLE members DROP CONSTRAINT IF EXISTS gender_check
     `).catch(() => {});
 
+    // 1. Normalize existing gender values to the canonical 'Gent'/'Lady' labels.
+    // Legacy rows still store 'male'/'female'/'M'/'F' etc., which breaks the
+    // strict LOWER(gender)='gent'/'lady' count queries and the JS
+    // gender === "Gent" filters. Idempotent — runs on every boot.
+    await pool.query(`
+      UPDATE members
+      SET gender = CASE
+        WHEN LOWER(TRIM(gender)) IN ('m','male','man','boy','gent') THEN 'Gent'
+        WHEN LOWER(TRIM(gender)) IN ('f','female','woman','girl','lady') THEN 'Lady'
+        ELSE TRIM(gender)
+      END
+      WHERE gender IS NOT NULL AND TRIM(gender) <> ''
+    `);
+
     // 1. Add columns if they don't exist and relax email constraint
     await pool.query(`
       ALTER TABLE members
