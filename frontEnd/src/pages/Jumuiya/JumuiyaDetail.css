@@ -1,6 +1,7 @@
 .detail-page {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     background: var(--bg-soft);
 }
 
@@ -114,7 +115,8 @@
     flex: 1;
     padding: var(--space-2xl);
     min-width: 0;
-    /* Prevents flex overflow */
+    overflow-y: auto;
+    /* Prevents flex overflow; enables internal scrolling */
 }
 
 .content-wrapper {
