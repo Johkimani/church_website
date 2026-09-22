@@ -97,7 +97,7 @@ const menuSections: NavSection[] = [
       { id: 'attendance-tally', name: 'Attendance Tally', icon: CalendarCheck, path: '/admin/attendance-tally' },
       { id: 'registered-members', name: 'Registered Members', icon: ClipboardList, path: '/admin/registered-members' },
       { id: 'jumuiya-tshirts', name: 'Jumuiya T-Shirts', icon: Shirt, path: '/admin/jumuiya-tshirts' },
-      { id: 'jumuiya-channels', name: 'Channels & Gallery', icon: Share2, path: '/admin/jumuiya-channels' },
+      { id: 'jumuiya-channels', name: 'Channels', icon: Share2, path: '/admin/jumuiya-channels' },
     ],
   },
   {

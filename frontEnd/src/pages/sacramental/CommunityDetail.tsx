@@ -65,7 +65,7 @@ const TAB_LABELS: Record<TabType, string> = {
   officials: 'Officials',
   activities: 'Activities',
   members: 'Members',
-  channels: 'Channels &amp; Gallery',
+  channels: 'Channels & Gallery',
   videos: 'Videos',
   tshirts: 'T-Shirts',
   suggestions: 'Suggestions',

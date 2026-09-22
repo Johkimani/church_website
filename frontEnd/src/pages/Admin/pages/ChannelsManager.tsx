@@ -111,7 +111,7 @@ export default function ChannelsManager() {
       await apiClient.patch(`/jumuiya-data/${encodeURIComponent(j.id)}/channels`, {
         channels: buildPayload(j),
       });
-      toast.success(`${j.name} channels &amp; gallery saved`);
+      toast.success(`${j.name} channels saved`);
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to save channels");
     } finally {
@@ -133,9 +133,9 @@ export default function ChannelsManager() {
             <Share2 size={22} />
           </div>
           <div>
-<h2 className="text-xl font-bold text-slate-800">Channels &amp; Gallery</h2>
+<h2 className="text-xl font-bold text-slate-800">Jumuiya Channels</h2>
              <p className="text-xs text-slate-500 font-medium">
-               Manage the WhatsApp, Facebook &amp; TikTok accounts and gallery shown on your jumuiya's page
+               Manage the WhatsApp, Facebook &amp; TikTok accounts shown on your jumuiya's page
              </p>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function ChannelsManager() {
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 text-blue-700 px-5 py-4 rounded-2xl">
         <Link2 size={18} className="shrink-0 mt-0.5" />
         <p className="text-sm font-medium">
-          Leave a field empty to hide that channel. Channels and galleries with a URL are shown on the public
+          Leave a field empty to hide that channel. Channels with a URL are shown on the public
           jumuiya page — admins can paste their official WhatsApp, Facebook and TikTok links.
         </p>
       </div>
