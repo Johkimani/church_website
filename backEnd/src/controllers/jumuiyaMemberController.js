@@ -1318,7 +1318,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          WHERE m.jumuiya_id = sg.group_id
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+           AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)`,
         [name]
       );
 
@@ -1330,7 +1331,8 @@ export const csaGetJumuiyaStats = async (req, res) => {
          LEFT JOIN sub_groups sg ON sg.name = $1
          LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
          WHERE m.jumuiya_id = sg.group_id AND m.source = 'csa' ${yearFilter}
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+           AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)`,
         [name]
       );
 
