@@ -6,6 +6,12 @@ const consolidateMemberData = async () => {
   try {
     logger.info("Starting member data consolidation...");
 
+    // 0. Relax the legacy gender_check constraint (only allowed 'male'/'female')
+    // so cleaned 'gent'/'lady' values can be stored. Added ad-hoc in prod DB.
+    await pool.query(`
+      ALTER TABLE members DROP CONSTRAINT IF EXISTS gender_check
+    `).catch(() => {});
+
     // 1. Add columns if they don't exist and relax email constraint
     await pool.query(`
       ALTER TABLE members
