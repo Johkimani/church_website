@@ -2125,8 +2125,12 @@ const SEMESTER_LABELS = ['1.1','1.2','2.1','2.2','3.1','3.2','4.1','4.2'];
 export const getCohortAnalytics = async (req, res) => {
   try {
     const currentYear = new Date().getFullYear();
+    const acaStart = academicStartYear();
 
-    // Normalize year_of_study: "2024-2025" → computed year level, "4" → pass-through
+    // Normalize year_of_study: "2024-2025" → computed year level, "4" → pass-through.
+    // When the stored value is missing/unmatched, fall back to deriving the level
+    // from the admission cohort in the reg number (last two digits), e.g. /26 →
+    // Year 1 for academic year 2026-27. Mirrors backfillYearOfStudy.js.
     const yearNorm = `
       CASE
         WHEN m.year_of_study ~ '^[1-4]$' THEN m.year_of_study
@@ -2134,22 +2138,28 @@ export const getCohortAnalytics = async (req, res) => {
           THEN GREATEST(1, LEAST(4,
             $1::int - CAST(SPLIT_PART(m.year_of_study, '-', 1) AS integer) + 1
           ))::text
+        WHEN RIGHT(m.member_id, 2) ~ '^[0-9]{2}$'
+          THEN GREATEST(1, LEAST(4,
+            $1::int - 1999 - CAST(RIGHT(m.member_id, 2) AS integer)
+          ))::text
       END
     `;
 
     // Per-cohort semester registration counts from members table directly
     const cohortResult = await pool.query(`
       SELECT
-        ${yearNorm} AS year_of_study,
+        yos AS year_of_study,
         COUNT(*)::int as total_members,
         ${SEMESTER_COLS.map((col, i) => `SUM(CASE WHEN m.${col} = true THEN 1 ELSE 0 END)::int as ${col}`).join(',\n        ')}
-      FROM members m
-      WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
-        AND m.year_of_study IS NOT NULL
-        AND (m.year_of_study ~ '^[1-4]$' OR m.year_of_study ~ '^[0-9]{4}-[0-9]{4}$')
-      GROUP BY year_of_study
-      ORDER BY year_of_study ASC
-    `, [academicStartYear()]);
+      FROM (
+        SELECT m.*, ${yearNorm} AS yos
+        FROM members m
+        WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+      ) m
+      WHERE yos IS NOT NULL
+      GROUP BY yos
+      ORDER BY yos ASC
+    `, [acaStart]);
 
     // All members breakdown by year_of_study (for pie chart — raw values as-is)
     const yearCounts = await pool.query(`
