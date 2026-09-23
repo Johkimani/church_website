@@ -2210,24 +2210,48 @@ export const getCohortAnalytics = async (req, res) => {
 export const getJumuiyaProgression = async (req, res) => {
   try {
     const currentYear = new Date().getFullYear();
+    const acaStart = academicStartYear();
     const fromYear = parseInt(req.query.from) || (currentYear - 3);
     const toYear = parseInt(req.query.to) || currentYear;
 
-    // Compute admission year from year_of_study: currentYear - year_of_study + 1
-    const admissionYearExpr = `(${currentYear} - CAST(m.year_of_study AS integer) + 1)`;
+    // Normalize year_of_study: "2024-2025" → computed year level, "4" → pass-through.
+    // When the stored value is missing/unmatched, fall back to deriving the level
+    // from the admission cohort in the reg number (last two digits), e.g. /26 →
+    // Year 1 for academic year 2026-27. Mirrors backfillYearOfStudy.js and the
+    // cohort analytics query.
+    const yearNorm = `
+      CASE
+        WHEN m.year_of_study ~ '^[1-4]$' THEN m.year_of_study
+        WHEN m.year_of_study ~ '^[0-9]{4}-[0-9]{4}$'
+          THEN GREATEST(1, LEAST(4,
+            ${acaStart} - CAST(SPLIT_PART(m.year_of_study, '-', 1) AS integer) + 1
+          ))::text
+        WHEN RIGHT(m.member_id, 2) ~ '^[0-9]{2}$'
+          THEN GREATEST(1, LEAST(4,
+            ${acaStart} - 1999 - CAST(RIGHT(m.member_id, 2) AS integer)
+          ))::text
+      END
+    `;
 
     const result = await pool.query(`
       SELECT
-        sg.name AS jumuiya_name,
-        LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) AS jumuiya_slug,
-        sg.color AS jumuiya_color,
+        y.jumuiya_name,
+        y.jumuiya_slug,
+        y.jumuiya_color,
         COUNT(DISTINCT m.member_id)::int AS total_members,
+        COUNT(DISTINCT CASE WHEN reg.id IS NOT NULL THEN m.member_id END)::int AS registered_members,
         ${SEMESTER_COLS.map((col, i) => `COUNT(DISTINCT CASE WHEN m.${col} = true THEN m.member_id END)::int AS ${col}`).join(',\n        ')}
-      FROM members m
+      FROM (
+        SELECT m.*, ${yearNorm} AS yos
+        FROM members m
+        WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+      ) m
       JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
-      WHERE (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
-        AND m.year_of_study ~ '^[1-4]$'
-        AND ${admissionYearExpr} BETWEEN $1 AND $2
+      LEFT JOIN registered reg ON reg.member_id = m.member_id
+        AND reg.jumuiya_id = sg.group_id
+        AND reg.status = 'active'
+      WHERE yos IS NOT NULL
+        AND (${currentYear} - CAST(yos AS integer) + 1) BETWEEN $1 AND $2
       GROUP BY sg.name, sg.slug, sg.color
       ORDER BY sg.name ASC
     `, [fromYear, toYear]);
@@ -2239,11 +2263,14 @@ export const getJumuiyaProgression = async (req, res) => {
         pct: row.total_members > 0 ? Math.round(((row[col] || 0) / row.total_members) * 100) : 0,
       }));
 
+      const label = `${row.jumuiya_name.replace("St. ", "")}`;
       return {
         jumuiyaName: row.jumuiya_name,
         jumuiyaSlug: row.jumuiya_slug,
         jumuiyaColor: row.jumuiya_color || "#6b7280",
         total: row.total_members,
+        registered: row.registered_members,
+        _label: label,
         semesters,
       };
     });

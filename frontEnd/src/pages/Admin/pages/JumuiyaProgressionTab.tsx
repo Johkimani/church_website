@@ -116,6 +116,8 @@ export default function JumuiyaProgressionTab() {
               <span className="text-xs text-slate-500 font-medium">{getJumuiyaLabel(j)}</span>
             </div>
             <p className="text-lg font-bold text-slate-800">{j.total}</p>
+            <p className="text-xs text-slate-400">total members</p>
+            <p className="text-base font-bold text-emerald-600 mt-1">{j.registered || 0}</p>
             <p className="text-xs text-slate-400">registered members</p>
           </div>
         ))}
@@ -176,6 +178,7 @@ export default function JumuiyaProgressionTab() {
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Jumuiya</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Total</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Registered</th>
                 {SEMESTERS.map(s => (
                   <th key={s} className="px-3 py-2.5 text-center text-xs font-semibold text-slate-500 uppercase">{s}</th>
                 ))}
@@ -191,6 +194,7 @@ export default function JumuiyaProgressionTab() {
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-slate-500 font-medium">{j.total}</td>
+                  <td className="px-3 py-2.5 text-emerald-600 font-medium">{j.registered || 0}</td>
                   {SEMESTERS.map((sem) => {
                     const semData = j.semesters.find((s: any) => s.sem === sem);
                     const count = semData?.count || 0;
