@@ -150,6 +150,20 @@ const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName,
     setRegSubmitting(false);
   };
 
+  const histFiltered = useMemo(() => {
+    let result = historyMembers;
+    if (histSearch.trim()) {
+      const q = histSearch.toLowerCase();
+      result = result.filter(m =>
+        `${m.first_name || ""} ${m.last_name || ""}`.toLowerCase().includes(q) ||
+        String(m.serial_no ?? "").toLowerCase().includes(q) ||
+        (m.course || "").toLowerCase().includes(q) ||
+        (m.reg_number || m.id || "").toLowerCase().includes(q)
+      );
+    }
+    return [...result].sort((a, b) => (a.row_no || 0) - (b.row_no || 0) || String(a.serial_no ?? "").localeCompare(String(b.serial_no ?? "")));
+  }, [historyMembers, histSearch]);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between gap-4 flex-wrap bg-white rounded-xl border border-slate-200 p-5">
@@ -407,21 +421,7 @@ const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName,
                 <div className="grid grid-cols-4 gap-2 mb-4">
                   {SEMESTERS.map(s => {
                     const isExisting = selectedMember?.[s.dbCol] === true;
-const histFiltered = useMemo(() => {
-    let result = historyMembers;
-    if (histSearch.trim()) {
-      const q = histSearch.toLowerCase();
-      result = result.filter(m =>
-        `${m.first_name || ""} ${m.last_name || ""}`.toLowerCase().includes(q) ||
-        String(m.serial_no ?? "").toLowerCase().includes(q) ||
-        (m.course || "").toLowerCase().includes(q) ||
-        (m.reg_number || m.id || "").toLowerCase().includes(q)
-      );
-    }
-    return [...result].sort((a, b) => (a.row_no || 0) - (b.row_no || 0) || String(a.serial_no ?? "").localeCompare(String(b.serial_no ?? "")));
-  }, [historyMembers, histSearch]);
-
-  return (
+                    return (
                       <label
                         key={s.label}
                         className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm transition-colors ${
