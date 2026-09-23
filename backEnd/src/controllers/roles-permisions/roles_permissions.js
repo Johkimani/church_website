@@ -4,11 +4,23 @@ import logger from "../../logger/winston.js";
 
 
 
-//route to register a user with roles and permissions, this is for testing purposes only, in production we will have an admin interface to manage users, roles and permissions
+export const getPublicJumuiyaList = async (req, res) => {
+  try {
+    const result = await testDb.query(
+      'SELECT group_id, name, full_name, category FROM sub_groups ORDER BY name ASC'
+    );
+    res.status(200).json({ status: "success", data: result.rows });
+  } catch (err) {
+    logger.error(`Error fetching Jumuiya list: ${err.message}`);
+    res.status(500).json({ error: "Failed to fetch Jumuiya list" });
+  }
+};
+
+// Route to register a user with default roles
 export const registerUser = async (req, res) => {
   let {
-    registration_number,   // e.g. "PA106/G/20000/23"
-    jumuiya_name,          // human-readable name
+    registration_number,   // e.g. "PA106/G/20000/23" or "KE/CSA/2024/001"
+    jumuiya_name,          // human-readable name or group_id
     first_name,
     last_name,
     gender,
@@ -17,44 +29,43 @@ export const registerUser = async (req, res) => {
     year_of_study,
     course,
     password,
-    role_names             // array of roles, e.g. ["Member", "Secretary"]
+    role_names             // array of roles, e.g. ["Member"]
   } = req.body;
 
   // Ensure all required fields are present
   if (!registration_number || !jumuiya_name || !first_name || !last_name || !gender || !email || !phone || !year_of_study || !course || !password) {
-    return res.status(403).json({ error: "All fields are required" });
+    return res.status(400).json({ error: "All fields are required for registration." });
   }
 
   try {
     // 1. Normalize registration number to uppercase
-    registration_number = registration_number.toUpperCase();
+    registration_number = registration_number.trim().toUpperCase();
 
-    // 2. Validate registration number format (strict uppercase)
-    const regPattern = /^[A-Z]{2,3}[0-9]{2,3}\/[A-Z]{1,2}\/[0-9]{4,5}\/[0-9]{2}$/;
-    if (!regPattern.test(registration_number)) {
-      return res.status(400).json({ error: `Invalid registration number format: ${registration_number}` });
+    // 2. Validate registration number format
+    if (registration_number.length < 3) {
+      return res.status(400).json({ error: "Registration number must be at least 3 characters long." });
     }
 
     // 3. Check if member already exists (case-insensitive)
     const existingMember = await testDb.query(
       'SELECT member_id FROM members WHERE LOWER(member_id) = LOWER($1) OR LOWER(email) = LOWER($2)',
-      [registration_number, email]
+      [registration_number, email.trim()]
     );
     if (existingMember.rows.length > 0) {
-      return res.status(409).json({ error: 'Member with email or registration number already registered' });
+      return res.status(409).json({ error: 'A member with this registration number or email is already registered.' });
     }
 
     // 4. Hash password
-    const saltRounds = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const saltRounds = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password.trim(), saltRounds);
 
-    // 5. Resolve jumuiya_name → group_id
+    // 5. Resolve jumuiya_name / group_id → group_id
     const subgroupResult = await testDb.query(
-      'SELECT group_id FROM sub_groups WHERE name = $1',
-      [jumuiya_name]
+      'SELECT group_id FROM sub_groups WHERE name = $1 OR group_id = $1 OR full_name = $1 LIMIT 1',
+      [jumuiya_name.trim()]
     );
     if (subgroupResult.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid jumuiya_name' });
+      return res.status(400).json({ error: 'Invalid Jumuiya selection.' });
     }
     const jumuiya_id = subgroupResult.rows[0].group_id;
 
@@ -70,13 +81,13 @@ export const registerUser = async (req, res) => {
     const memberValues = [
       registration_number,
       jumuiya_id,
-      first_name,
-      last_name,
-      gender,
-      email.toLowerCase(),
-      phone,
-      year_of_study,
-      course,
+      first_name.trim(),
+      last_name.trim(),
+      gender.trim(),
+      email.trim().toLowerCase(),
+      phone.trim(),
+      year_of_study.trim(),
+      course.trim(),
       hashedPassword,
     ];
     const memberResult = await testDb.query(insertMemberQuery, memberValues);
@@ -93,7 +104,7 @@ export const registerUser = async (req, res) => {
       );
       if (roleResult.rows.length === 0) {
         console.warn(`Role not found: ${roleName}`);
-        continue; // skip invalid roles
+        continue;
       }
       const roleId = roleResult.rows[0].role_id;
 
@@ -105,15 +116,18 @@ export const registerUser = async (req, res) => {
 
     // 8. Success response
     res.status(201).json({
-      message: 'Member registered successfully with roles',
+      status: "success",
+      message: 'Member registered successfully',
       member_id: newMemberId,
       roles: uniqueRoles,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Registration failed' });
+    logger.error("Registration error: " + err.message);
+    console.error("Registration Error Details:", err);
+    res.status(500).json({ error: 'Registration failed. Please try again later.' });
   }
 };
+
 
 //this function creates a role example of current roles we do have in the church
 //'Chairperson',

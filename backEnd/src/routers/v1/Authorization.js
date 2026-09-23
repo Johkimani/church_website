@@ -14,6 +14,7 @@ import {
   deleteAllMembers,
   getPermissionsByRole,
   getRolesAndPermissions,
+  getPublicJumuiyaList,
   getUserRolesAndPermissions,
   listAllMembers,
   listAllUsersRolesPermissions,
@@ -35,6 +36,8 @@ import { payAndWait } from "../../controllers/stkPush/stkHelper.js";
 const route = Router();
 
 route.post("/login", Login);
+route.post("/register", registerUser);
+route.get("/jumuiya-list", getPublicJumuiyaList);
 route.post("/first-login-setup", firstLoginSetup);
 route.post("/verify-email", verifyEmail);
 route.post("/reset", Reset);
@@ -50,7 +53,6 @@ route.post("/mpesa/callback", callback);
 route.get("/mpesa/callback", callback);
 
 // Admin-only: role & permission management (require auth)
-route.post("/register", verifyToken, registerUser);
 route.post("/roles", verifyToken, registerRoleValidator, validate, registerRoles);
 route.post(
   "/permissions",

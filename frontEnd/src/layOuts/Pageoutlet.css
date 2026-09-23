@@ -1,0 +1,11 @@
+/* Mobile Bottom Navigation Spacer */
+.mobile-bottom-nav-spacer {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav-spacer {
+    display: block;
+    height: 4rem;
+  }
+}
