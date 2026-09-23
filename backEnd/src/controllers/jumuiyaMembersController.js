@@ -896,14 +896,21 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
     let query = `
       SELECT 
         r.id as registration_id,
+        r.row_no,
+        r.serial_no,
         r.registration_date,
         m.member_id as id,
+        m.member_id as reg_number,
         m.first_name,
         m.last_name,
+        m.email,
         m.course,
         m.year_of_study as year,
         m.jumuiya_id,
         sg.name as jumuiya_name,
+        LOWER(REPLACE(REPLACE(sg.name, '.', ''), ' ', '-')) as jumuiya_slug,
+        m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg,
+        m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg,
         true as is_registered,
         m.source,
         m.status as import_status
@@ -943,6 +950,9 @@ export const getRegisteredJumuiyaMembers = async (req, res) => {
     const formatted = result.rows.map(row => ({
       ...row,
       name: `${row.first_name} ${row.last_name || ""}`.trim(),
+      semester_count: [row.sem_1_reg, row.sem_2_reg, row.sem_3_reg, row.sem_4_reg,
+                       row.sem_5_reg, row.sem_6_reg, row.sem_7_reg, row.sem_8_reg]
+                       .filter(Boolean).length,
       is_current_jumuiya: true,
       jumuiya_id: jumuiya_id || row.jumuiya_id,
     }));

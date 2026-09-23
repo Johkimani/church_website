@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Search, X, UserPlus, Loader2, Check, Clock, RefreshCw
+  Search, X, UserPlus, Loader2, Check, Clock, RefreshCw, History, GraduationCap
 } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import toast from "react-hot-toast";
@@ -31,6 +31,17 @@ function formatDate(d: string | null | undefined): string {
   } catch { return d; }
 }
 
+function getYearSemLabel(m: any): string {
+  for (let i = 8; i >= 1; i--) {
+    const col = `sem_${i}_reg`;
+    if (m[col] === true || m[col] === "true" || m[col] === 1 || m[col] === "1") {
+      const sem = SEMESTERS[i - 1];
+      return sem ? sem.label : "—";
+    }
+  }
+  return "—";
+}
+
 const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, user, onRegister }) => {
   const [showManualReg, setShowManualReg] = useState(false);
   const [regSearch, setRegSearch] = useState("");
@@ -45,6 +56,10 @@ const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName,
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<"pending" | "all">("pending");
+
+  const [historyMembers, setHistoryMembers] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [histSearch, setHistSearch] = useState("");
 
   const searchMember = async (q: string) => {
     setRegSearch(q);
@@ -87,6 +102,20 @@ const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName,
     if (jumuiyaId) fetchPendingPayments();
   }, [jumuiyaId, fetchPendingPayments, paymentFilter]);
 
+  const fetchHistory = useCallback(async () => {
+    if (!jumuiyaId) return;
+    setLoadingHistory(true);
+    try {
+      const res = await memberService.getJumuiyaRegistered(jumuiyaId);
+      setHistoryMembers(res.data || []);
+    } catch { setHistoryMembers([]); }
+    setLoadingHistory(false);
+  }, [jumuiyaId]);
+
+  useEffect(() => {
+    if (jumuiyaId) fetchHistory();
+  }, [jumuiyaId, fetchHistory]);
+
   useEffect(() => {
     const uniqCount = selectedMember
       ? regSemesters.filter(s => !selectedMember[s]).length
@@ -113,6 +142,7 @@ const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName,
       setShowManualReg(false);
       resetRegisterForm();
       fetchPendingPayments();
+      fetchHistory();
       onRegister?.();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Registration failed");
@@ -224,6 +254,100 @@ const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName,
         )}
       </div>
 
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <History size={15} className="text-indigo-500" /> Registration History
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {historyMembers.length} registered member(s) in {jumuiyaName}
+              {histSearch.trim() && <span> • {histFiltered.length} matching</span>}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={histSearch}
+                onChange={(e) => setHistSearch(e.target.value)}
+                placeholder="Search history..."
+                className="pl-8 pr-8 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 w-44"
+              />
+              {histSearch && (
+                <button onClick={() => setHistSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <button onClick={() => fetchHistory()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+              <RefreshCw size={13} /> Refresh
+            </button>
+          </div>
+        </div>
+        {loadingHistory ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-6 h-6 border-3 border-blue-100 border-t-blue-500 rounded-full animate-spin" />
+          </div>
+        ) : histFiltered.length === 0 ? (
+          <div className="text-center py-14">
+            <History size={32} className="text-slate-200 mx-auto mb-2" />
+            <p className="text-slate-400 text-sm">{historyMembers.length === 0 ? "No registrations yet." : "No members matching your search."}</p>
+            <p className="text-slate-300 text-xs mt-1">{historyMembers.length === 0 ? "Registered members will appear here once you register them." : "Try a different name, serial no, or course."}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase w-12">No</th>
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Serial No</th>
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Course</th>
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Year.Sem</th>
+                  <th className="text-left py-2.5 px-3 font-semibold text-slate-500 text-xs uppercase">Registered</th>
+                  {SEMESTERS.map(s => (
+                    <th key={s.dbCol} className="py-2.5 px-1.5 font-semibold text-slate-400 text-[10px] uppercase text-center" title={s.label}>{s.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {histFiltered.map((m, i) => (
+                  <tr key={m.registration_id || m.id || `h${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td className="px-3 py-2.5 text-xs font-mono text-slate-400">{i + 1}</td>
+                    <td className="px-3 py-2.5 text-xs font-mono text-slate-500">{m.serial_no ?? "—"}</td>
+                    <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">{`${m.first_name || ""} ${m.last_name || ""}`.trim() || m.name || "—"}</td>
+                    <td className="px-3 py-2.5 text-slate-500">{m.course || "—"}</td>
+                    <td className="px-3 py-2.5">
+                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">{getYearSemLabel(m)}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">{formatDate(m.registration_date)}</td>
+                    {SEMESTERS.map(s => {
+                      const regd = m[s.dbCol] === true || m[s.dbCol] === "true" || m[s.dbCol] === 1 || m[s.dbCol] === "1";
+                      return (
+                        <td key={s.dbCol} className="px-1.5 py-2.5 text-center">
+                          {regd ? (
+                            <span className="inline-flex w-6 h-6 rounded-md bg-emerald-50 border border-emerald-200 items-center justify-center" title={`Registered ${s.label}`}>
+                              <Check size={14} className="text-emerald-600" strokeWidth={3} />
+                            </span>
+                          ) : (
+                            <span className="inline-block w-6 h-6 rounded-md bg-slate-50 border border-slate-100"></span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="pt-3 text-[11px] text-slate-400">
+              <GraduationCap size={12} className="inline mr-1 text-slate-300" />
+              {histFiltered.length} record(s) shown — sorted by serial number.
+            </div>
+          </div>
+        )}
+      </div>
+
       {showManualReg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowManualReg(false); resetRegisterForm(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -283,7 +407,21 @@ const JumuiyaRegistrationDashboard: React.FC<Props> = ({ jumuiyaId, jumuiyaName,
                 <div className="grid grid-cols-4 gap-2 mb-4">
                   {SEMESTERS.map(s => {
                     const isExisting = selectedMember?.[s.dbCol] === true;
-                    return (
+const histFiltered = useMemo(() => {
+    let result = historyMembers;
+    if (histSearch.trim()) {
+      const q = histSearch.toLowerCase();
+      result = result.filter(m =>
+        `${m.first_name || ""} ${m.last_name || ""}`.toLowerCase().includes(q) ||
+        String(m.serial_no ?? "").toLowerCase().includes(q) ||
+        (m.course || "").toLowerCase().includes(q) ||
+        (m.reg_number || m.id || "").toLowerCase().includes(q)
+      );
+    }
+    return [...result].sort((a, b) => (a.row_no || 0) - (b.row_no || 0) || String(a.serial_no ?? "").localeCompare(String(b.serial_no ?? "")));
+  }, [historyMembers, histSearch]);
+
+  return (
                       <label
                         key={s.label}
                         className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm transition-colors ${
