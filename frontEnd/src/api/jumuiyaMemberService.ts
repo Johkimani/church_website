@@ -255,11 +255,17 @@ export const memberService = {
   getYearlyContribution: (params?: { year?: number }) =>
     apiClient.get(`/jumuiya-members/analytics/yearly-contribution`, { params }).then(r => r.data),
 
-  getPayments: (params?: { status?: string; academic_year?: string; semester_id?: string }) =>
+  getPayments: (params?: { status?: string; academic_year?: string; semester_id?: string; from?: string; to?: string }) =>
     apiClient.get(`/jumuiya-members/payments`, { params }).then(r => r.data),
 
-  updatePaymentStatus: (id: number, data: { status: string; mpesa_receipt?: string }) =>
+  updatePaymentStatus: (id: string, data: { status: string; mpesa_receipt?: string }) =>
     apiClient.patch(`/jumuiya-members/payments/${id}/status`, data).then(r => r.data),
+
+  deletePayment: (id: string) =>
+    apiClient.delete(`/jumuiya-members/payments/${id}`).then(r => r.data),
+
+  batchDeletePayments: (params: { from?: string; to?: string; status?: string }) =>
+    apiClient.delete(`/jumuiya-members/payments`, { params }).then(r => r.data),
 
   // ── WhatsApp Dynamic Self-Registration ──
   selfRegister: (data: {

@@ -2065,12 +2065,23 @@ export const getPayments = async (req, res) => {
       conds.push(`p.created_at >= '${paymentWindow.from}'`);
       conds.push(`p.created_at <= '${paymentWindow.to}'`);
     }
+    // Direct date-range filter (e.g. from/to for the payments modal)
+    const fromDate = String(req.query.from || "").trim();
+    const toDate = String(req.query.to || "").trim();
+    if (fromDate) {
+      params.push(fromDate);
+      conds.push(`p.created_at >= $${params.length}::timestamptz`);
+    }
+    if (toDate) {
+      params.push(toDate);
+      conds.push(`p.created_at <= $${params.length}::timestamptz`);
+    }
     if (status) {
       if (status === 'success') {
         conds.push(`p.status IN ('success', 'paid')`);
       } else {
-        conds.push(`p.status = $1`);
         params.push(status);
+        conds.push(`p.status = $${params.length}`);
       }
     }
     if (conds.length) {
@@ -2116,6 +2127,78 @@ export const updatePaymentStatus = async (req, res) => {
   } catch (error) {
     logger.error("Error updating payment status: " + error.message);
     res.status(500).json({ success: false, error: "Failed to update payment status" });
+  }
+};
+
+/**
+ * DELETE /api/jumuiya-members/payments/:id
+ * CSA chair/secretary permanently deletes a single payment record (e.g. test
+ * transactions with KES 1 amounts that will never be settled).
+ */
+export const deletePayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `DELETE FROM mpesa_request WHERE checkout_id = $1
+       RETURNING checkout_id, amount, status, created_at`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Payment not found" });
+    }
+    logger.info(`Payment #${id} (KES ${result.rows[0].amount}, ${result.rows[0].status}) deleted`);
+    res.json({ success: true, deleted: result.rows[0] });
+  } catch (error) {
+    logger.error("Error deleting payment: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to delete payment" });
+  }
+};
+
+/**
+ * DELETE /api/jumuiya-members/payments
+ * CSA chair/secretary bulk-deletes payments filtered by status and/or a date
+ * range (?from=YYYY-MM-DD&to=YYYY-MM-DD&status=success). Both status and at
+ * least one date bound are required to avoid accidentally wiping everything.
+ */
+export const batchDeletePayments = async (req, res) => {
+  try {
+    const { from, to, status } = req.query;
+    const validStatuses = ['pending', 'success', 'paid', 'failed', 'cancelled'];
+    if (!from && !to) {
+      return res.status(400).json({ success: false, error: "Date range (from/to) is required" });
+    }
+    const conds = [];
+    const params = [];
+    if (from) {
+      params.push(from);
+      conds.push(`created_at >= $${params.length}::timestamptz`);
+    }
+    if (to) {
+      params.push(to);
+      conds.push(`created_at <= $${params.length}::timestamptz`);
+    }
+    if (status) {
+      if (status === 'success') {
+        conds.push(`status IN ('success', 'paid')`);
+      } else if (validStatuses.includes(status)) {
+        params.push(status);
+        conds.push(`status = $${params.length}`);
+      } else {
+        return res.status(400).json({ success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+      }
+    }
+    if (conds.length === 0) {
+      return res.status(400).json({ success: false, error: "At least one filter (date range or status) is required" });
+    }
+    const result = await pool.query(
+      `DELETE FROM mpesa_request WHERE ${conds.join(' AND ')} RETURNING checkout_id`,
+      params
+    );
+    logger.info(`Batch delete: ${result.rowCount} payment(s) removed (from=${from} to=${to} status=${status || 'any'})`);
+    res.json({ success: true, deleted_count: result.rowCount });
+  } catch (error) {
+    logger.error("Error in batchDeletePayments: " + error.message);
+    res.status(500).json({ success: false, error: "Failed to delete payments" });
   }
 };
 

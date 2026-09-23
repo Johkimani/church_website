@@ -29,6 +29,8 @@ import {
   getAnalytics,
   getPayments,
   updatePaymentStatus,
+  deletePayment,
+  batchDeletePayments,
   getCohortAnalytics,
   getJumuiyaProgression,
   getYearlyContribution,
@@ -67,6 +69,8 @@ router.get('/analytics/jumuiya-progression', verifyToken, requireRole(...CSA_ROL
 router.get('/analytics/yearly-contribution', verifyToken, requireRole(...CSA_ROLES), getYearlyContribution);
 router.get('/payments', verifyToken, requireRole(...CSA_ROLES), getPayments);
 router.patch('/payments/:id/status', verifyToken, requireRole(...CSA_ROLES), updatePaymentStatus);
+router.delete('/payments/:id', verifyToken, requireRole("csa_chair", "csa_secretary"), deletePayment);
+router.delete('/payments', verifyToken, requireRole("csa_chair", "csa_secretary"), batchDeletePayments);
 
 // Jumuiya/registration writes (officials, scoped to their own jumuiya)
 router.post('/registered/manual', verifyToken, requireRole(...CSA_ROLES), manualRegisterMember);

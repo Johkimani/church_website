@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { useAuth } from "../../../context/AuthContext";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -7,7 +8,7 @@ import {
 import {
   TrendingUp, Users, Church, GraduationCap, CreditCard, Smartphone, Wallet,
   RefreshCw, Calendar, ArrowUpRight, CheckCircle2, Clock, XCircle,
-  X, Loader2, ExternalLink,
+  X, Loader2, ExternalLink, Trash2,
   Layers, GitCompare, Activity, Trophy
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -55,7 +56,15 @@ export default function AnalyticsDashboard() {
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingBatch, setDeletingBatch] = useState(false);
+  const [paymentsFrom, setPaymentsFrom] = useState("");
+  const [paymentsTo, setPaymentsTo] = useState("");
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "cross" | "jumuiya" | "yearly">("overview");
+
+  const { user } = useAuth();
+  const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+  const canDeletePayments = userRoles.some((r: any) => ["csa_chair", "csa_secretary"].includes(String(r).toLowerCase().trim()));
 
   const filterParams = { academic_year: academicYear || undefined, semester_id: semesterId || undefined };
 
@@ -74,12 +83,10 @@ export default function AnalyticsDashboard() {
 
   useEffect(() => { fetchData(); }, [academicYear, semesterId]);
 
-  const openPayments = async (status: string) => {
-    setPaymentsFilter(status);
-    setShowPayments(true);
+  const loadPayments = async (status: string, from?: string, to?: string) => {
     setPaymentsLoading(true);
     try {
-      const res = await memberService.getPayments({ status, ...filterParams });
+      const res = await memberService.getPayments({ status, ...filterParams, from: from || undefined, to: to || undefined });
       setPayments(res.data || []);
     } catch {
       setPayments([]);
@@ -87,10 +94,18 @@ export default function AnalyticsDashboard() {
     setPaymentsLoading(false);
   };
 
-  const updatePaymentStatus = async (paymentId: number, newStatus: string) => {
+  const openPayments = async (status: string) => {
+    setPaymentsFilter(status);
+    setShowPayments(true);
+    setPaymentsFrom("");
+    setPaymentsTo("");
+    await loadPayments(status);
+  };
+
+  const updatePaymentStatus = async (paymentId: string | number, newStatus: string) => {
     setUpdatingId(paymentId);
     try {
-      await memberService.updatePaymentStatus(paymentId, { status: newStatus });
+      await memberService.updatePaymentStatus(String(paymentId), { status: newStatus });
       toast.success(`Payment #${paymentId} updated to ${newStatus}`);
       setPayments(prev => prev.filter(p => p.id !== paymentId));
       fetchData();
@@ -98,6 +113,38 @@ export default function AnalyticsDashboard() {
       toast.error(err?.response?.data?.error || "Failed to update");
     }
     setUpdatingId(null);
+  };
+
+  const deletePayment = async (paymentId: string) => {
+    if (!window.confirm("Permanently delete this payment record? This cannot be undone.")) return;
+    setDeletingId(paymentId);
+    try {
+      await memberService.deletePayment(paymentId);
+      toast.success("Payment deleted");
+      setPayments(prev => prev.filter(p => String(p.id) !== paymentId));
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Failed to delete payment");
+    }
+    setDeletingId(null);
+  };
+
+  const batchDeletePayments = async () => {
+    if (!paymentsFrom && !paymentsTo) {
+      toast.error("Set a date range to delete");
+      return;
+    }
+    if (!window.confirm(`Delete ALL ${paymentsFilter} payments from ${paymentsFrom || "the beginning"} to ${paymentsTo || "now"}? This cannot be undone.`)) return;
+    setDeletingBatch(true);
+    try {
+      const res = await memberService.batchDeletePayments({ from: paymentsFrom || undefined, to: paymentsTo || undefined, status: paymentsFilter === "success" ? "success" : paymentsFilter });
+      toast.success(`${res?.deleted_count || 0} payment(s) deleted`);
+      setPayments([]);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Failed to delete payments");
+    }
+    setDeletingBatch(false);
   };
 
   if (loading) {
@@ -513,7 +560,7 @@ export default function AnalyticsDashboard() {
                 return (
                   <button
                     key={s}
-                    onClick={() => { setPaymentsFilter(s); setPaymentsLoading(true); memberService.getPayments({ status: s, ...filterParams }).then(r => { setPayments(r.data || []); setPaymentsLoading(false); }).catch(() => setPaymentsLoading(false)); }}
+                    onClick={() => { setPaymentsFilter(s); loadPayments(s, paymentsFrom, paymentsTo); }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       paymentsFilter === s ? `${st.bg} ${st.text} ring-1 ring-offset-1 ${st.border}` : "text-slate-400 hover:bg-slate-50"
                     }`}
@@ -523,6 +570,44 @@ export default function AnalyticsDashboard() {
                 );
               })}
             </div>
+
+            {/* Date-range filter (gives admins a way to scale down & delete old data) */}
+            {canDeletePayments && (
+              <div className="flex items-end gap-2 px-5 pb-2 flex-wrap">
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1">From</label>
+                  <input
+                    type="date"
+                    value={paymentsFrom}
+                    onChange={e => setPaymentsFrom(e.target.value)}
+                    className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1">To</label>
+                  <input
+                    type="date"
+                    value={paymentsTo}
+                    onChange={e => setPaymentsTo(e.target.value)}
+                    className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <button
+                  onClick={() => loadPayments(paymentsFilter, paymentsFrom, paymentsTo)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                >
+                  Filter
+                </button>
+                <button
+                  onClick={batchDeletePayments}
+                  disabled={deletingBatch}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {deletingBatch ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                  Delete {paymentsFilter}s in range
+                </button>
+              </div>
+            )}
 
             {/* Payments List */}
             <div className="flex-1 overflow-y-auto px-5 pb-4">
@@ -557,6 +642,17 @@ export default function AnalyticsDashboard() {
                         <p className="text-[10px] text-slate-400">{formatDate(p.created_at)}</p>
                       </div>
                         <div className="flex flex-col gap-1">
+                          {canDeletePayments && (
+                            <button
+                              disabled={deletingId === p.id}
+                              onClick={() => deletePayment(p.id)}
+                              title="Permanently delete this payment"
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 justify-center"
+                            >
+                              {deletingId === p.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                              Delete
+                            </button>
+                          )}
                           {targetStatuses.map(ts => {
                             const tsStyle = STATUS_STYLES[ts];
                             return (
