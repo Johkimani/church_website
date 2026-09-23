@@ -226,7 +226,7 @@ export default function CsaSecretaryDashboard() {
 
   const doExport = useCallback(() => {
     const colMeta = EXPORT_COLUMNS.filter(c => selectedCols.includes(c.key));
-    const data = filtered.map(m => {
+    const data = filtered.map((m, i) => {
       const fullName = `${m.first_name || ""} ${m.last_name || ""}`.trim();
       const row: Record<string, any> = {};
       colMeta.forEach(c => {
@@ -243,7 +243,7 @@ export default function CsaSecretaryDashboard() {
         } else if (c.key === "serial_no") {
           row[c.label] = m.serial_no ?? "—";
         } else if (c.key === "row_no") {
-          row[c.label] = m.row_no ?? "—";
+          row[c.label] = i + 1;
         } else {
           row[c.label] = m[c.key] ?? "—";
         }
@@ -340,7 +340,7 @@ export default function CsaSecretaryDashboard() {
 
   const renderHistRow = (m: any, i: number) => (
     <tr key={m.registration_id || `h${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-      <td className="px-3 py-2.5 text-xs font-mono text-slate-400">{m.row_no ?? "—"}</td>
+      <td className="px-3 py-2.5 text-xs font-mono text-slate-400">{i + 1}</td>
       <td className="px-3 py-2.5 text-xs font-mono text-slate-500">{m.serial_no ?? "—"}</td>
       <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">{`${m.first_name || ""} ${m.last_name || ""}`.trim()}</td>
       <td className="px-3 py-2.5">
@@ -400,7 +400,7 @@ export default function CsaSecretaryDashboard() {
 
   const renderRow = (m: any, i: number) => (
     <tr key={m.registration_id || `r${i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-      <td className="px-4 py-3 text-xs font-mono text-slate-400">{m.row_no ?? "—"}</td>
+      <td className="px-4 py-3 text-xs font-mono text-slate-400">{i + 1}</td>
       <td className="px-4 py-3 text-xs font-mono text-slate-500">{m.serial_no ?? "—"}</td>
       <td className="px-4 py-3 font-medium text-slate-800">{`${m.first_name || ""} ${m.last_name || ""}`.trim()}</td>
       <td className="px-4 py-3">
@@ -917,21 +917,29 @@ export default function CsaSecretaryDashboard() {
                   </td>
                 </tr>
               ) : shouldGroup ? (
-                groupedData.map(group => (
-                  <Fragment key={group.yearLevel}>
-                    <tr className="bg-indigo-50/60 border-b border-indigo-100">
-                      <td colSpan={6} className="px-4 py-2.5">
-                        <span className="inline-flex items-center gap-2">
-                          <GraduationCap size={15} className="text-indigo-500" />
-                          <span className="font-semibold text-sm text-slate-700">Year {group.yearLevel}</span>
-                          <span className="text-xs text-slate-400">(admitted {group.admissionYear})</span>
-                          <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">{group.members.length}</span>
-                        </span>
-                      </td>
-                    </tr>
-                    {group.members.map((m, i) => renderRow(m, i))}
-                  </Fragment>
-                ))
+                (() => {
+                  let rowOffset = 0;
+                  return groupedData.map(group => {
+                    const startIdx = rowOffset;
+                    const frag = (
+                      <Fragment key={group.yearLevel}>
+                        <tr className="bg-indigo-50/60 border-b border-indigo-100">
+                          <td colSpan={6} className="px-4 py-2.5">
+                            <span className="inline-flex items-center gap-2">
+                              <GraduationCap size={15} className="text-indigo-500" />
+                              <span className="font-semibold text-sm text-slate-700">Year {group.yearLevel}</span>
+                              <span className="text-xs text-slate-400">(admitted {group.admissionYear})</span>
+                              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">{group.members.length}</span>
+                            </span>
+                          </td>
+                        </tr>
+                        {group.members.map((m, i) => renderRow(m, startIdx + i))}
+                      </Fragment>
+                    );
+                    rowOffset += group.members.length;
+                    return frag;
+                  });
+                })()
               ) : (
                 filtered.map((m, i) => renderRow(m, i))
               )}
