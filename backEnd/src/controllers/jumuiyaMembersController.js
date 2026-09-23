@@ -2235,9 +2235,9 @@ export const getJumuiyaProgression = async (req, res) => {
 
     const result = await pool.query(`
       SELECT
-        y.jumuiya_name,
-        y.jumuiya_slug,
-        y.jumuiya_color,
+        sg.name AS jumuiya_name,
+        sg.slug AS jumuiya_slug,
+        sg.color AS jumuiya_color,
         COUNT(DISTINCT m.member_id)::int AS total_members,
         COUNT(DISTINCT CASE WHEN reg.id IS NOT NULL THEN m.member_id END)::int AS registered_members,
         ${SEMESTER_COLS.map((col, i) => `COUNT(DISTINCT CASE WHEN m.${col} = true THEN m.member_id END)::int AS ${col}`).join(',\n        ')}
