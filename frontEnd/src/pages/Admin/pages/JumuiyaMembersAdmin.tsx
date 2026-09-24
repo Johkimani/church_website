@@ -238,10 +238,20 @@ export default function JumuiyaMembersAdmin() {
   const userJumuiyaId = user?.jumuiya_id || "";
   const [userJumuiyaSlug, setUserJumuiyaSlug] = useState("");
   const backTab = (location.state as any)?.tab as Tab | undefined;
-  const [globalTab, setGlobalTab] = useState<Tab>(isJumuiyaOfficial ? "jumuiyas" : (backTab || "admissions"));
+  const initialTab: Tab = isJumuiyaOfficial ? "jumuiyas" : (backTab || "admissions");
+  const [globalTab, setGlobalTab] = useState<Tab>(initialTab);
+  const [visitedTabs, setVisitedTabs] = useState<Tab[]>([initialTab]);
+
+  const openTab = (tab: Tab) => {
+    setGlobalTab(tab);
+    setVisitedTabs(prev => prev.includes(tab) ? prev : [...prev, tab]);
+  };
 
   useEffect(() => {
-    if (user && isJumuiyaOfficial) setGlobalTab("jumuiyas");
+    if (user && isJumuiyaOfficial) {
+      setGlobalTab("jumuiyas");
+      setVisitedTabs(prev => prev.includes("jumuiyas") ? prev : [...prev, "jumuiyas"]);
+    }
   }, [user, isJumuiyaOfficial]);
 
   // Resolve UUID jumuiya_id → slug for matching against JUMUIYAS array
@@ -435,7 +445,7 @@ export default function JumuiyaMembersAdmin() {
       <div className="flex gap-1 border-b border-slate-200 mb-6">
         {!isJumuiyaOfficial && (
           <button
-            onClick={() => { setGlobalTab("admissions"); setRefreshKey(k => k + 1); }}
+            onClick={() => openTab("admissions")}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
               globalTab === "admissions"
                 ? "border-indigo-500 text-indigo-600"
@@ -447,7 +457,7 @@ export default function JumuiyaMembersAdmin() {
         )}
         {!isJumuiyaOfficial && (
           <button
-            onClick={() => { setGlobalTab("all-members"); setRefreshKey(k => k + 1); }}
+            onClick={() => openTab("all-members")}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
               globalTab === "all-members"
                 ? "border-indigo-500 text-indigo-600"
@@ -459,7 +469,7 @@ export default function JumuiyaMembersAdmin() {
         )}
         {!isJumuiyaOfficial && (
           <button
-            onClick={() => { setGlobalTab("associates"); setRefreshKey(k => k + 1); }}
+            onClick={() => openTab("associates")}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
               globalTab === "associates"
                 ? "border-indigo-500 text-indigo-600"
@@ -470,7 +480,7 @@ export default function JumuiyaMembersAdmin() {
           </button>
         )}
         <button
-          onClick={() => { setGlobalTab("jumuiyas"); setRefreshKey(k => k + 1); }}
+          onClick={() => openTab("jumuiyas")}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
             globalTab === "jumuiyas"
               ? "border-indigo-500 text-indigo-600"
@@ -481,14 +491,27 @@ export default function JumuiyaMembersAdmin() {
         </button>
       </div>
 
-      {!isJumuiyaOfficial && globalTab === "admissions" && <CSADistributionCenter />}
+      {!isJumuiyaOfficial && visitedTabs.includes("admissions") && (
+        <div className={globalTab === "admissions" ? "" : "hidden"}>
+          <CSADistributionCenter />
+        </div>
+      )}
 
-      {!isJumuiyaOfficial && globalTab === "all-members" && <AllMembersTable key={refreshKey} refreshKey={refreshKey} />}
+      {!isJumuiyaOfficial && visitedTabs.includes("all-members") && (
+        <div className={globalTab === "all-members" ? "" : "hidden"}>
+          <AllMembersTable key={refreshKey} refreshKey={refreshKey} />
+        </div>
+      )}
 
-      {!isJumuiyaOfficial && globalTab === "associates" && <AssociatesTable key={refreshKey} refreshKey={refreshKey} />}
+      {!isJumuiyaOfficial && visitedTabs.includes("associates") && (
+        <div className={globalTab === "associates" ? "" : "hidden"}>
+          <AssociatesTable key={refreshKey} refreshKey={refreshKey} />
+        </div>
+      )}
 
-      {globalTab === "jumuiyas" && (
-        <div>
+      {visitedTabs.includes("jumuiyas") && (
+        <div className={globalTab === "jumuiyas" ? "" : "hidden"}>
+          <div>
           {loading ? (
             <>
               <SkeletonSummaryBar count={4} />
@@ -651,6 +674,7 @@ export default function JumuiyaMembersAdmin() {
               </div>
             </div>
           )}
+          </div>
         </div>
       )}
     </div>
