@@ -149,9 +149,9 @@ export async function fetchRecentStatus(token: string, days = 14): Promise<Recen
  */
 export async function pushSession(
   session: SessionPayload
-): Promise<{ success: boolean }> {
+): Promise<{ success: boolean; data?: { saved?: number; date?: string } }> {
   const res = await apiClient.post("/attendance/sessions", session);
-  return res.data as { success: boolean };
+  return res.data as { success: boolean; data?: { saved?: number; date?: string } };
 }
 
 /**
@@ -197,7 +197,7 @@ export interface ServerRecordedSession {
  * Returns them newest-first. Silently returns [] on network errors.
  */
 export async function fetchRecentRecorded(
-  limit = 3
+  limit = 30
 ): Promise<ServerRecordedSession[]> {
   try {
     const to = new Date().toISOString().slice(0, 10);

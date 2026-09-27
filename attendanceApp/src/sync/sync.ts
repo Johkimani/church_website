@@ -90,7 +90,7 @@ export async function syncPending(
     while (attempt < MAX_RETRIES && !synced) {
       try {
         const isYear = s.dimension === "year";
-        await pushSession({
+        const res = await pushSession({
           date: s.date,
           dimension: isYear ? "year" : "jumuiya",
           counts: s.counts.map((c) =>
@@ -100,6 +100,13 @@ export async function syncPending(
           ) as SessionPayload["counts"],
           recordedBy: s.recordedBy || "coordinator",
         });
+        // The backend reports how many counts it actually stored. If it saved
+        // zero rows (e.g. the date is no longer a tally day), treat the push
+        // as failed so the record stays pending instead of being hidden.
+        const saved = res.data?.saved;
+        if (s.counts.length > 0 && (!res.success || saved === 0)) {
+          throw new Error("Server reported 0 tallies saved");
+        }
         await db.sessions.update(s.sessionId, { syncedAt: Date.now() });
         pushed += 1;
         synced = true;
@@ -186,7 +193,7 @@ export async function getCachedRecordedSessions(): Promise<
  * Returns null if both fetch and cache fail.
  */
 export async function fetchAndCacheRecorded(
-  limit = 3
+  limit = 30
 ): Promise<{ data: ServerRecordedSession[]; fromCache: boolean }> {
   // If offline, skip the network call entirely — serve from cache.
   if (!navigator.onLine) {

@@ -25,7 +25,7 @@ import type { AttendanceSession } from "../db/db";
 
 type SavedTab = "pending" | "recorded" | "device";
 
-const RECORDED_LIMIT = 3;
+const RECORDED_LIMIT = 30;
 
 interface Props {
   token: string;
@@ -124,7 +124,12 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
   };
 
   const removePending = async (s: AttendanceSession) => {
-    if (!confirm(`Delete "${s.date}" from your device?`)) return;
+    if (
+      !confirm(
+        `Delete "${s.date}" from this device?\n\nIt has NOT been synced to the server. Deleting it now will permanently lose this tally.`
+      )
+    )
+      return;
     await deleteSession(s.sessionId);
     load();
     onSynced(0);
