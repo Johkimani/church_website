@@ -2259,6 +2259,8 @@ export const lookupMemberByRegNumber = async (req, res) => {
     }
 
     const s = search.trim();
+    // Collapse runs of whitespace so "Grace  Njoki" tokenises like "Grace Njoki".
+    const tokens = s.replace(/\s+/g, " ");
     const result = await pool.query(
       `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.phone, m.email,
               m.year_of_study, m.course,
@@ -2272,9 +2274,26 @@ export const lookupMemberByRegNumber = async (req, res) => {
           OR m.member_id ILIKE $2
           OR m.first_name ILIKE $2
           OR m.last_name ILIKE $2
-       ORDER BY m.member_id
+          OR NOT EXISTS (
+               -- Full-name search. Every word typed must appear in the first
+               -- OR last name, so "Grace Njoki" finds a row stored as
+               -- first_name='Grace', last_name='Njoki' -- which the
+               -- single-column ILIKE checks above can never match.
+               -- NOT EXISTS => no typed word is missing, i.e. all of them hit.
+               SELECT 1
+               FROM unnest(string_to_array(lower($3), ' ')) AS t(word)
+               WHERE t.word <> ''
+                 AND lower(COALESCE(m.first_name, '')) NOT LIKE '%' || t.word || '%'
+                 AND lower(COALESCE(m.last_name,  '')) NOT LIKE '%' || t.word || '%'
+             )
+       -- Exact full-name hits first, then alphabetical so the "many members
+       -- sharing a first name" chooser reads naturally instead of by reg no.
+       ORDER BY
+         CASE WHEN lower(trim(concat_ws(' ', m.first_name, m.last_name))) = lower($1)
+              THEN 0 ELSE 1 END,
+         m.first_name, m.last_name, m.member_id
        LIMIT 10`,
-      [s, `%${s}%`]
+      [s, `%${s}%`, tokens]
     );
 
     res.json({ success: true, data: result.rows });

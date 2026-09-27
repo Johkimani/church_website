@@ -308,8 +308,8 @@ import { memberService } from '../../../api/jumuiyaMemberService';
  const isInvalid = !name || !category || !position || !!contactError || isSubmitting || !!termMismatch;
 
  return (
- <div className="mb-12 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transition-colors">
- <div className={`p-6 text-white text-center transition-colors ${isHistorical ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-blue-600 to-blue-700'}`}>
+ <div className="mb-12 bg-white rounded-xl shadow-lg border border-gray-100 transition-colors">
+ <div className={`rounded-t-xl overflow-hidden p-6 text-white text-center transition-colors ${isHistorical ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-blue-600 to-blue-700'}`}>
  <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
  {isHistorical ? <Clock className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
  {isHistorical ? 'Add Past Official' : 'Add New Official'}
@@ -360,28 +360,28 @@ import { memberService } from '../../../api/jumuiyaMemberService';
                           <UserCheck className="w-4 h-4" />
                         </div>
                       )}
+                      {showLookupDropdown && lookupResults.length > 1 && (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overscroll-contain overflow-y-auto">
+                          {lookupResults.map((m: any, i: number) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => selectLookupResult(m)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                            >
+                              <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
+                              <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
+                              {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     {lookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{lookupError}</div>}
                     {memberFound && (
                       <div className="text-green-600 text-xs font-medium flex items-center gap-1">
                         <Check className="w-3 h-3" />Member found — name & phone auto-filled
                         <button type="button" onClick={clearMemberLink} className="ml-2 text-red-500 hover:text-red-700 underline text-[10px]">Clear</button>
-                      </div>
-                    )}
-                    {showLookupDropdown && lookupResults.length > 1 && (
-                      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                        {lookupResults.map((m: any, i: number) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => selectLookupResult(m)}
-                            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
-                          >
-                            <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
-                            <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
-                            {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
-                          </button>
-                        ))}
                       </div>
                     )}
                   </div>
@@ -404,36 +404,36 @@ import { memberService } from '../../../api/jumuiyaMemberService';
                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                          </div>
                        )}
-                       {nameMemberFound && (
-                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
-                           <UserCheck className="w-4 h-4" />
-                         </div>
-                       )}
-                     </div>
+                        {nameMemberFound && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                            <UserCheck className="w-4 h-4" />
+                          </div>
+                        )}
+                        {showNameLookupDropdown && nameLookupResults.length > 1 && (
+                          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overscroll-contain overflow-y-auto">
+                            {nameLookupResults.map((m: any, i: number) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => selectNameLookupResult(m)}
+                                className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                              >
+                                <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
+                                <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
+                                {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                      {nameLookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{nameLookupError}</div>}
                      {nameMemberFound && (
                        <div className="text-green-600 text-xs font-medium flex items-center gap-1">
                          <Check className="w-3 h-3" />Member found — reg & phone auto-filled
                          <button type="button" onClick={clearNameLink} className="ml-2 text-red-500 hover:text-red-700 underline text-[10px]">Clear</button>
                        </div>
-                     )}
-                     {showNameLookupDropdown && nameLookupResults.length > 1 && (
-                       <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                         {nameLookupResults.map((m: any, i: number) => (
-                           <button
-                             key={i}
-                             type="button"
-                             onClick={() => selectNameLookupResult(m)}
-                             className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
-                           >
-                             <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
-                             <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
-                             {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
-                           </button>
-                         ))}
-                       </div>
-                     )}
-                   </div>
+                      )}
+                    </div>
 
  <div className="space-y-2">
  <div className="flex justify-between items-center mb-1">
