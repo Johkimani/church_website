@@ -1,4 +1,5 @@
 import axios from "axios";
+import { setSession } from "../db/db";
 
 const rawBase = (import.meta.env.VITE_SERVER_URI as string) || "http://localhost:3001/api/v1";
 export const BASE_URL = rawBase.replace(/\/$/, "");
@@ -16,17 +17,77 @@ apiClient.interceptors.request.use((config) => {
 });
 
 /**
- * Session-expiry guard. The access token is short-lived (15 min) and the app
- * has no refresh flow, so when the API says 401 the session is stale: clear
- * the local token and bounce back to the login screen. The IndexedDB session
- * (profile + offline credential) is deliberately preserved so the user can
- * unlock again without internet via the local verifier.
+ * Silent token renewal.
+ *
+ * Access tokens are deliberately short-lived (15 minutes), but the server
+ * also issues a 20-hour refresh token into an httpOnly cookie. When an API
+ * call comes back 401 we mint a new access token from that cookie and replay
+ * the request, so a coordinator signs in roughly once a day instead of every
+ * 15 minutes — which is what allows pending records to upload unattended.
+ */
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function requestNewAccessToken(): Promise<string | null> {
+  try {
+    const res = await axios.post(
+      `${BASE_URL}/authentication/refresh`,
+      // Only used by the server to confirm this refresh belongs to the same
+      // member (tab-session binding); the cookie is the real credential.
+      { accessToken: localStorage.getItem("csa_attendance_token") || "" },
+      { withCredentials: true, timeout: 20000 }
+    );
+    const token = res.data?.accessToken;
+    if (typeof token !== "string" || !token) return null;
+    localStorage.setItem("csa_attendance_token", token);
+    // Keep the IndexedDB copy in step — the service worker reads it from there.
+    await setSession("token", token);
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = requestNewAccessToken().finally(() => {
+      // Release on the next tick so parallel 401s share a single refresh call.
+      setTimeout(() => {
+        refreshInFlight = null;
+      }, 0);
+    });
+  }
+  return refreshInFlight;
+}
+
+/**
+ * Session-expiry guard. If renewal also fails the 20-hour session is genuinely
+ * over, so clear the local token and bounce back to the login screen. The
+ * IndexedDB session (profile + offline credential) is deliberately preserved
+ * so the user can unlock again without internet via the local verifier.
  */
 apiClient.interceptors.response.use(
   (res) => res,
   async (err) => {
     const status = err?.response?.status;
-    if (status === 401 && localStorage.getItem("csa_attendance_token")) {
+    const original = err?.config;
+    const isAuthCall = String(original?.url || "").includes("/authentication/");
+
+    // Renew and replay instead of logging the coordinator out. `_retried`
+    // stops a failing refresh from looping.
+    if (status === 401 && original && !original._retried && !isAuthCall) {
+      original._retried = true;
+      const fresh = await refreshAccessToken();
+      if (fresh) {
+        if (typeof original.headers?.set === "function") {
+          original.headers.set("Authorization", `Bearer ${fresh}`);
+        } else if (original.headers) {
+          original.headers.Authorization = `Bearer ${fresh}`;
+        }
+        return apiClient(original);
+      }
+    }
+
+    if (status === 401 && !isAuthCall && localStorage.getItem("csa_attendance_token")) {
       localStorage.removeItem("csa_attendance_token");
       window.dispatchEvent(new Event("csa:auth-expired"));
     }

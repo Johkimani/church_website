@@ -126,6 +126,61 @@ function markSynced(db, session) {
   });
 }
 
+function writeOne(db, storeName, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).put(value);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+/**
+ * Mints a fresh 15-minute access token from the 20-hour refresh cookie.
+ * The service worker cannot read that httpOnly cookie, but `fetch` sends it
+ * automatically with credentials: "include". Without this the worker could
+ * only ever push inside the access token's short life.
+ */
+async function renewAccessToken(base, staleToken) {
+  try {
+    const res = await fetch(`${base}/authentication/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      // Echoed so the server can bind the refresh to the same member.
+      body: JSON.stringify({ accessToken: staleToken || "" }),
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    const token = body && body.accessToken;
+    return typeof token === "string" && token ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+function pushSessionToServer(base, token, s) {
+  const isYear = s.dimension === "year";
+  return fetch(`${base}/attendance/sessions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      date: s.date,
+      dimension: isYear ? "year" : "jumuiya",
+      counts: s.counts.map((c) =>
+        isYear
+          ? { year: String(c.year || 1), count: c.count }
+          : { jumuiya_id: c.jumuiyaId, count: c.count }
+      ),
+      recordedBy: s.recordedBy || "coordinator",
+    }),
+  });
+}
+
 /**
  * Pushes every unsynced session to the server. Safe to run repeatedly:
  * the backend replaces each date's tallies atomically, so re-pushing a
@@ -141,35 +196,43 @@ async function flushPending() {
 
     const tokenRow = await readOne(db, "session", "token");
     if (!tokenRow || !tokenRow.value) return 0; // signed out — nothing to do
+    let token = tokenRow.value;
 
     const pending = await readAllPending(db);
     let pushed = 0;
 
     for (const s of pending) {
-      const isYear = s.dimension === "year";
-      const res = await fetch(`${base}/attendance/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${tokenRow.value}`,
-        },
-        body: JSON.stringify({
-          date: s.date,
-          dimension: isYear ? "year" : "jumuiya",
-          counts: s.counts.map((c) =>
-            isYear
-              ? { year: String(c.year || 1), count: c.count }
-              : { jumuiya_id: c.jumuiyaId, count: c.count }
-          ),
-          recordedBy: s.recordedBy || "coordinator",
-        }),
-      });
+      let res;
+      try {
+        res = await pushSessionToServer(base, token, s);
+      } catch {
+        // Went offline again mid-flush — leave the rest queued.
+        break;
+      }
 
-      // Expired session — retrying will never succeed, so stop quietly
-      // and let the next app open ask the coordinator to sign in again.
-      if (res.status === 401 || res.status === 404) return pushed;
+      if (res.status === 401) {
+        // Access token expired. Renew it from the refresh cookie and retry
+        // this same date once; the new token is reused for the rest.
+        const fresh = await renewAccessToken(base, token);
+        if (!fresh) return pushed; // session genuinely over — needs a sign-in
+        token = fresh;
+        try {
+          await writeOne(db, "session", { key: "token", value: token });
+        } catch {
+          /* best effort — the page will refresh its own copy on next open */
+        }
+        try {
+          res = await pushSessionToServer(base, token, s);
+        } catch {
+          break;
+        }
+        if (res.status === 401) return pushed; // refresh cookie rejected too
+      }
 
-      // Transient server/network error: retrying may help, so keep going.
+      // Role no longer permits this endpoint — retrying will never help.
+      if (res.status === 404) return pushed;
+
+      // Transient server error: retrying may help, so keep going.
       if (!res.ok) continue;
 
       const body = await res.json().catch(() => null);

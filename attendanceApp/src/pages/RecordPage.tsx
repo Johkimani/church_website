@@ -401,7 +401,7 @@ export default function RecordPage({ token, onSaved, recordedBy: initialRecorded
         </div>
       )}
       <div style={{ textAlign: "center", fontSize: 10, color: "var(--muted)", padding: "8px 0 0" }}>
-        v16 · CSA Attendance
+        v17 · CSA Attendance
       </div>
     </div>
   );
