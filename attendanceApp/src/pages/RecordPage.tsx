@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Save, Zap, AlertTriangle } from "lucide-react";
 import { db, getMeta, setMeta, type AttendanceSession, type TallyJumuiya } from "../db/db";
 import { fetchTallyContext, getApiErrorMessage, type NovenaWindow, type TallyYear } from "../api/client";
-import { syncPending } from "../sync/sync";
+import { syncPending, registerBackgroundSync } from "../sync/sync";
 
 interface Props {
   token: string;
@@ -236,6 +236,10 @@ export default function RecordPage({ token, onSaved, recordedBy: initialRecorded
       };
       await db.sessions.put(session);
 
+      // Arm a one-shot background sync so the service worker uploads this
+      // record the moment the network returns, even if the app stays closed.
+      registerBackgroundSync();
+
       const online = navigator.onLine;
       if (online && token) {
         let lastError = "";
@@ -397,7 +401,7 @@ export default function RecordPage({ token, onSaved, recordedBy: initialRecorded
         </div>
       )}
       <div style={{ textAlign: "center", fontSize: 10, color: "var(--muted)", padding: "8px 0 0" }}>
-        v15 · CSA Attendance
+        v16 · CSA Attendance
       </div>
     </div>
   );

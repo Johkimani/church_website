@@ -7,10 +7,6 @@ import {
   Trash2,
   History,
   ClipboardCheck,
-  AlertTriangle,
-  Smartphone,
-  Copy,
-  FileDown,
 } from "lucide-react";
 import {
   syncPending,
@@ -23,9 +19,9 @@ import { checkSessionExists, type ServerRecordedSession } from "../api/client";
 import { db } from "../db/db";
 import type { AttendanceSession } from "../db/db";
 
-type SavedTab = "pending" | "recorded" | "device";
+type SavedTab = "pending" | "recorded";
 
-const RECORDED_LIMIT = 30;
+const RECORDED_LIMIT = 5;
 
 interface Props {
   token: string;
@@ -42,7 +38,6 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   const [serverRecorded, setServerRecorded] = useState<ServerRecordedSession[]>([]);
   const [recordedFromCache, setRecordedFromCache] = useState(false);
-  const [exportMsg, setExportMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -150,43 +145,6 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
     }
     await deleteSession(s.sessionId);
     load();
-  };
-
-  const allData = () =>
-    sessions.map((s) => ({
-      sessionId: s.sessionId,
-      date: s.date,
-      activityType: s.activityType,
-      activityLabel: s.activityLabel,
-      dimension: s.dimension,
-      recordedBy: s.recordedBy,
-      syncedAt: s.syncedAt ?? null,
-      recordedAt: s.recordedAt,
-      counts: s.counts,
-    }));
-
-  const copyAllData = async () => {
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(allData(), null, 2));
-      setExportMsg({ ok: true, text: "Copied all device data to clipboard." });
-    } catch {
-      setExportMsg({ ok: false, text: "Clipboard unavailable on this device." });
-    }
-    setTimeout(() => setExportMsg(null), 4000);
-  };
-
-  const downloadAllData = () => {
-    const blob = new Blob([JSON.stringify(allData(), null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `csa-attendance-device-data-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setExportMsg({ ok: true, text: "Downloaded JSON file with all device data." });
-    setTimeout(() => setExportMsg(null), 4000);
   };
 
   const pendingSessions = sessions.filter((s) => !s.syncedAt);
@@ -353,33 +311,6 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
             </span>
           )}
         </button>
-        <button
-          className={tab === "device" ? "active" : ""}
-          onClick={() => setTab("device")}
-          style={{ flex: 1 }}
-        >
-          <Smartphone size={14} style={{ verticalAlign: -2, marginRight: 4 }} />
-          Device
-          {sessions.length > 0 && (
-            <span
-              style={{
-                background: "var(--brand)",
-                color: "#fff",
-                borderRadius: 999,
-                fontSize: 10,
-                minWidth: 16,
-                height: 16,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "0 4px",
-                marginLeft: 4,
-              }}
-            >
-              {sessions.length}
-            </span>
-          )}
-        </button>
       </div>
 
       {/* Tab content */}
@@ -425,77 +356,6 @@ export default function PendingPage({ token, pending, onSynced }: Props) {
               {renderTallyBreakdown(s)}
             </div>
           ))
-        )
-      ) : tab === "device" ? (
-        /* ── Device tab (recovery view) ── */
-        sessions.length === 0 ? (
-          <div className="card">
-            <div style={{ textAlign: "center", color: "var(--muted)", padding: "8px 0" }}>
-              <Smartphone size={28} style={{ margin: "0 auto 8px", opacity: 0.5 }} />
-              <p style={{ margin: 0, fontSize: 14 }}>No data stored on this device.</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="card">
-              <h2>Everything on this device</h2>
-              <p className="sub">
-                Full readout of all {sessions.length} saved date{sessions.length === 1 ? "" : "s"} in this
-                app's local storage — including ones already marked as synced. Use this to verify a
-                record survived before it reached the server.
-              </p>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  className="btn btn-primary"
-                  onClick={copyAllData}
-                  style={{ flex: 1, display: "flex", justifyContent: "center" }}
-                >
-                  <Copy size={16} /> Copy JSON
-                </button>
-                <button
-                  className="btn"
-                  onClick={downloadAllData}
-                  style={{ flex: 1, display: "flex", justifyContent: "center" }}
-                >
-                  <FileDown size={16} /> Download file
-                </button>
-              </div>
-              {exportMsg && (
-                <div className={`banner ${exportMsg.ok ? "online" : "error"}`} style={{ margin: "12px 0 0" }}>
-                  {exportMsg.text}
-                </div>
-              )}
-            </div>
-            {sessions.map((s) => (
-              <div key={s.sessionId} className="card">
-                <div
-                  className="flex"
-                  style={{
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: 0,
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong style={{ fontSize: 15 }}>
-                      {formatDate(s.date)}
-                    </strong>
-                    <div style={{ color: "var(--muted)", fontSize: 12 }}>
-                      {s.activityLabel} · {s.dimension} · recorded by {s.recordedBy}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                    <span className={`chip ${s.syncedAt ? "synced" : "pending"}`}>
-                      {s.syncedAt ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                      {s.syncedAt ? "Synced" : "Pending"}
-                    </span>
-{renderDeleteButton(s.syncedAt ? () => removeSynced(s) : () => removePending(s))}
-                  </div>
-                </div>
-                {renderTallyBreakdown(s)}
-              </div>
-            ))}
-          </div>
         )
       ) : /* ── Recorded tab ── */
       serverRecorded.length === 0 && latestSynced.length === 0 ? (

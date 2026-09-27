@@ -197,7 +197,7 @@ export interface ServerRecordedSession {
  * Returns them newest-first. Silently returns [] on network errors.
  */
 export async function fetchRecentRecorded(
-  limit = 30
+  limit = 5
 ): Promise<ServerRecordedSession[]> {
   try {
     const to = new Date().toISOString().slice(0, 10);

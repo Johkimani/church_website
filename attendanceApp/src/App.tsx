@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PencilLine, History, Wifi, WifiOff, Download, LogOut } from "lucide-react";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { getSession, clearSession } from "./db/db";
-import { syncPending, getAuthToken } from "./sync/sync";
+import { syncPending, getAuthToken, registerBackgroundSync, requestSwFlush } from "./sync/sync";
 import LoginPage from "./pages/LoginPage";
 import RecordPage from "./pages/RecordPage";
 import PendingPage from "./pages/PendingPage";
@@ -45,8 +45,12 @@ export default function App() {
   };
 
   const refreshPendingCount = async () => {
-    const { pendingCount } = await import("./sync/sync");
-    setPending(await pendingCount());
+    const { pendingCount, registerBackgroundSync } = await import("./sync/sync");
+    const count = await pendingCount();
+    setPending(count);
+    // Keep a background sync armed while records are still waiting, so they
+    // upload on the next network connection even if the app is never reopened.
+    if (count > 0) registerBackgroundSync();
   };
 
   const handleLogout = async () => {
@@ -60,6 +64,26 @@ export default function App() {
 
   useEffect(() => {
     loadAuth();
+  }, []);
+
+  // The service worker can upload records in the background (app closed).
+  // When it reports a push, refresh the badge and show a confirmation.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data || {};
+      if (data.type !== "csa:background-sync") return;
+      const n = Number(data.pushed) || 0;
+      if (n > 0) {
+        setSyncMsg({
+          ok: true,
+          text: `Synced ${n} record${n === 1 ? "" : "s"} to the server in the background`,
+        });
+      }
+      refreshPendingCount();
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
   }, []);
 
   useEffect(() => {
@@ -90,6 +114,10 @@ export default function App() {
     if (network !== "online") return;
     let cancelled = false;
     const doSync = async () => {
+      // Ask the service worker to flush too — this is the path that also
+      // covers the app being closed, and it is safe to run alongside the
+      // in-app sync because each date is upserted on the server.
+      requestSwFlush();
       const auth = await getAuthToken();
       const res = await syncPending(auth);
       if (cancelled) return;
@@ -122,6 +150,32 @@ export default function App() {
       cancelled = true;
       clearTimeout(timers);
     };
+  }, [network]);
+
+  // Also attempt to sync when the app becomes visible while online (e.g.
+  // coordinator switches back to the app after it was backgrounded offline).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible" || network !== "online") return;
+      (async () => {
+        const auth = await getAuthToken();
+        const res = await syncPending(auth);
+        if (res.pushed > 0) {
+          setSyncMsg({
+            ok: true,
+            text: `Synced ${res.pushed} record${res.pushed === 1 ? "" : "s"} to the server`,
+          });
+        } else if (res.failed > 0) {
+          setSyncMsg({
+            ok: false,
+            text: `${res.failed} record${res.failed === 1 ? "" : "s"} failed to sync. Open Saved tab to retry.`,
+          });
+        }
+        refreshPendingCount();
+      })();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [network]);
 
   return (

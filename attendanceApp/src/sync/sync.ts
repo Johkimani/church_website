@@ -148,6 +148,45 @@ export async function pendingCount(): Promise<number> {
   return db.sessions.filter((s) => !s.syncedAt).count();
 }
 
+/**
+ * Registers a one-shot Background Sync so the service worker can upload
+ * pending records as soon as the network returns — even if the coordinator
+ * never reopens the app. No-op where the API isn't supported (iOS Safari);
+ * there the in-app auto-sync on open/foreground covers it.
+ */
+export async function registerBackgroundSync(): Promise<void> {
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    // The service worker cannot read localStorage, so mirror the API base
+    // URL into IndexedDB where it can reach it.
+    await setMeta("base_url", BASE_URL);
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return;
+    const sync = (reg as unknown as { sync?: { register(t: string): Promise<void> } }).sync;
+    if (typeof sync?.register === "function") {
+      await sync.register("csa-attendance-sync");
+    }
+  } catch {
+    // Background Sync unsupported or registration failed — ignore.
+  }
+}
+
+/**
+ * Asks the service worker to flush pending records right now. Used as an
+ * immediate attempt on connectivity return in browsers that support the SW
+ * but not the Background Sync API.
+ */
+export async function requestSwFlush(): Promise<void> {
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    await setMeta("base_url", BASE_URL);
+    const reg = await navigator.serviceWorker.getRegistration();
+    reg?.active?.postMessage({ type: "FLUSH_PENDING" });
+  } catch {
+    // ignore
+  }
+}
+
 export async function recordedCount(): Promise<number> {
   return db.sessions.filter((s) => !!s.syncedAt).count();
 }
@@ -193,7 +232,7 @@ export async function getCachedRecordedSessions(): Promise<
  * Returns null if both fetch and cache fail.
  */
 export async function fetchAndCacheRecorded(
-  limit = 30
+  limit = 5
 ): Promise<{ data: ServerRecordedSession[]; fromCache: boolean }> {
   // If offline, skip the network call entirely — serve from cache.
   if (!navigator.onLine) {
