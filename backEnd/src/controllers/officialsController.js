@@ -32,6 +32,54 @@ export const CATEGORY_LIMITS = {
 
 export const VALID_CATEGORIES = Object.keys(CATEGORY_LIMITS);
 
+/**
+ * Single source of truth for turning an official's typed registration number
+ * into a real `members.member_id`.
+ *
+ * Both create and update go through here so the two screens cannot disagree:
+ * the same input either resolves the same member everywhere, or is rejected
+ * everywhere. Matching is case-insensitive and tolerates surrounding
+ * whitespace, because reg numbers get copied out of the member list in caps
+ * and re-typed in lower case. LIMIT 2 is deliberate — it lets us detect that
+ * a partial number matches more than one member and refuse, instead of
+ * silently binding the official to an arbitrary row.
+ *
+ * @returns {Promise<{memberId: string}|{error: string, reason: 'missing'|'not_found'|'ambiguous'}>}
+ */
+const resolveMemberForRegNumber = async (regNumber) => {
+  const search = regNumber?.trim();
+  if (!search) {
+    return {
+      error: 'Registration number is required — the official must be a registered member',
+      reason: 'missing',
+    };
+  }
+
+  const result = await pool.query(
+    `SELECT member_id FROM members
+      WHERE member_id = $1
+         OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+         OR member_id ILIKE '%/' || $1 || '/%'
+         OR member_id ILIKE $2
+      LIMIT 2`,
+    [search, `%${search}%`]
+  );
+
+  if (result.rows.length === 0) {
+    return {
+      error: `No member found with registration number matching "${search}". The official must be a registered member.`,
+      reason: 'not_found',
+    };
+  }
+  if (result.rows.length > 1) {
+    return {
+      error: 'Registration number matches multiple members. Please use the exact member ID.',
+      reason: 'ambiguous',
+    };
+  }
+  return { memberId: result.rows[0].member_id };
+};
+
 export const CSA_SORT_SQL = `
   CASE o.category
     WHEN 'Executive' THEN 1
@@ -609,18 +657,15 @@ export const createOfficial = async (req, res) => {
     if (isHistorical) {
       // Historical mode: reg_number optional, skip all active-official checks
       if (reg_number && reg_number.trim()) {
-        const memberResult = await pool.query(
-          `SELECT member_id FROM members WHERE member_id = $1 OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
-           OR member_id LIKE '%/' || $2 || '/%' OR member_id ILIKE $3
-           LIMIT 2`,
-          [reg_number.trim(), reg_number.trim(), `%${reg_number.trim()}%`]
-        );
-        if (memberResult.rows.length === 1) {
-          validatedRegNumber = memberResult.rows[0].member_id;
-        } else if (memberResult.rows.length > 1) {
-          return res.status(400).json({ success: false, message: 'Registration number matches multiple members. Please use the exact member ID.' });
+        const memberLookup = await resolveMemberForRegNumber(reg_number);
+        if (memberLookup.reason === 'ambiguous') {
+          return res.status(400).json({ success: false, message: memberLookup.error });
         }
-        // If 0 results, just skip — historical mode allows no reg_number
+        // Not found is tolerated here (historical mode allows no reg_number);
+        // anything else means we resolved a real member.
+        if (memberLookup.memberId) {
+          validatedRegNumber = memberLookup.memberId;
+        }
       }
 
       // Resolve or create election_term for this historical term_of_service
@@ -658,24 +703,12 @@ export const createOfficial = async (req, res) => {
 
     // ── Normal (non-historical) path ──
 
-    if (!reg_number || !reg_number.trim()) {
-        return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
+    // Validate reg_number exists in members table (same rules as the edit path)
+    const memberLookup = await resolveMemberForRegNumber(reg_number);
+    if (memberLookup.error) {
+      return res.status(400).json({ success: false, message: memberLookup.error });
     }
-
-    // Validate reg_number exists in members table
-    const memberResult = await pool.query(
-      `SELECT member_id FROM members WHERE member_id = $1 OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
-       OR member_id LIKE '%/' || $2 || '/%' OR member_id ILIKE $3
-       LIMIT 2`,
-      [reg_number.trim(), reg_number.trim(), `%${reg_number.trim()}%`]
-    );
-    if (memberResult.rows.length === 0) {
-      return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}". The official must be a registered member.` });
-    }
-    if (memberResult.rows.length > 1) {
-      return res.status(400).json({ success: false, message: 'Registration number matches multiple members. Please use the exact member ID.' });
-    }
-    validatedRegNumber = memberResult.rows[0].member_id;
+    validatedRegNumber = memberLookup.memberId;
 
     // Build checking promises to run in parallel
     const promises = [
@@ -788,18 +821,17 @@ export const updateOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid phone number' });
     }
 
-    // Validate reg_number if provided (must run before contact dup check below)
+    // Validate reg_number if provided. Uses the same resolver as create, so an
+    // ambiguous number is refused here too instead of binding to an arbitrary
+    // member, and a lower-case reg number no longer 400s on edit while working
+    // on add.
     let validatedRegNumber = existing.rows[0].reg_number;
     if (reg_number && reg_number.trim()) {
-      const memberResult = await pool.query(
-        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
-         LIMIT 1`,
-        [reg_number.trim(), reg_number.trim().toUpperCase()]
-      );
-      if (memberResult.rows.length === 0) {
-        return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}"` });
+      const memberLookup = await resolveMemberForRegNumber(reg_number);
+      if (memberLookup.error) {
+        return res.status(400).json({ success: false, message: memberLookup.error });
       }
-      validatedRegNumber = memberResult.rows[0].member_id;
+      validatedRegNumber = memberLookup.memberId;
     }
 
     if (normalizedContact) {

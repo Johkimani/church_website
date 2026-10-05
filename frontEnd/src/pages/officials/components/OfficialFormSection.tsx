@@ -2,7 +2,7 @@
 import PhoneInput from 'react-phone-number-input/input';
 import { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
-import { Upload, X, Check, BarChart2, Search, UserCheck, Clock } from 'lucide-react';
+import { Upload, X, Check, BarChart2, Search, UserCheck, Clock, AlertTriangle } from 'lucide-react';
 import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
 import { resizeImage } from '../../../utils/imageOptimization';
 import { memberService } from '../../../api/jumuiyaMemberService';
@@ -32,8 +32,11 @@ import { memberService } from '../../../api/jumuiyaMemberService';
   const [lookupError, setLookupError] = useState('');
   const [showLookupDropdown, setShowLookupDropdown] = useState(false);
   const [memberFound, setMemberFound] = useState(false);
-  const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+ const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ // Incremented per lookup so a slow response belonging to a previous keystroke
+ // (or to a form that has since been cleared) cannot repopulate the chooser.
+ const lookupSeqRef = useRef(0);
+ const dropdownRef = useRef<HTMLDivElement>(null);
   const nameDropdownRef = useRef<HTMLDivElement>(null);
 
   // Name lookup state
@@ -43,6 +46,7 @@ import { memberService } from '../../../api/jumuiyaMemberService';
   const [showNameLookupDropdown, setShowNameLookupDropdown] = useState(false);
   const [nameMemberFound, setNameMemberFound] = useState(false);
   const nameLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ const nameLookupSeqRef = useRef(0);
 
   // Historical mode state
   const [isHistorical, setIsHistorical] = useState(false);
@@ -77,19 +81,51 @@ import { memberService } from '../../../api/jumuiyaMemberService';
  }
  }, [displayTerm, isHistorical]);
 
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowLookupDropdown(false);
-      }
-      if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
-        setShowNameLookupDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+ // Close dropdowns on outside click
+ useEffect(() => {
+   const handleClick = (e: MouseEvent) => {
+     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+       setShowLookupDropdown(false);
+     }
+     if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
+       setShowNameLookupDropdown(false);
+     }
+   };
+   document.addEventListener('mousedown', handleClick);
+   return () => document.removeEventListener('mousedown', handleClick);
+ }, []);
+
+ // Debounce timers must not fire after the component goes away, and any lookup
+ // already in flight must be treated as stale.
+ useEffect(() => {
+   return () => {
+     if (lookupTimerRef.current) clearTimeout(lookupTimerRef.current);
+     if (nameLookupTimerRef.current) clearTimeout(nameLookupTimerRef.current);
+     lookupSeqRef.current += 1;
+     nameLookupSeqRef.current += 1;
+   };
+ }, []);
+
+ /**
+  * Clears both member-lookup widgets completely: pending debounce, in-flight
+  * request, results, errors and the open chooser. Bumping the sequence numbers
+  * is what stops a response that is already on the wire from re-populating the
+  * chooser over a form the admin can no longer see the contents of.
+  */
+ const resetLookups = () => {
+   if (lookupTimerRef.current) { clearTimeout(lookupTimerRef.current); lookupTimerRef.current = null; }
+   if (nameLookupTimerRef.current) { clearTimeout(nameLookupTimerRef.current); nameLookupTimerRef.current = null; }
+   lookupSeqRef.current += 1;
+   nameLookupSeqRef.current += 1;
+   setLookupResults([]);
+   setLookupError('');
+   setMemberFound(false);
+   setShowLookupDropdown(false);
+   setNameLookupResults([]);
+   setNameLookupError('');
+   setNameMemberFound(false);
+   setShowNameLookupDropdown(false);
+ };
 
  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
  const file = e.target.files?.[0] || null;
@@ -111,10 +147,13 @@ import { memberService } from '../../../api/jumuiyaMemberService';
      setShowLookupDropdown(false);
      return;
    }
+   const seq = ++lookupSeqRef.current;
    setLookupLoading(true);
    setLookupError('');
    try {
      const res = await memberService.lookupMemberByRegNumber(value.trim());
+     // A newer keystroke (or a reset) happened while this was in flight.
+     if (seq !== lookupSeqRef.current) return;
      const data = res.data || [];
      setLookupResults(data);
      if (data.length === 1) {
@@ -135,12 +174,15 @@ import { memberService } from '../../../api/jumuiyaMemberService';
        setMemberFound(false);
        setShowLookupDropdown(false);
      }
-   } catch {
-     setLookupError('Lookup failed');
-   } finally {
-     setLookupLoading(false);
-   }
- }, [mode]);
+    } catch {
+      if (seq !== lookupSeqRef.current) return;
+      setLookupError('Lookup failed');
+    } finally {
+      // Only the newest request may clear the spinner, otherwise a stale
+      // response switches it off while a newer lookup is still running.
+      if (seq === lookupSeqRef.current) setLookupLoading(false);
+    }
+  }, [mode]);
 
  const handleRegNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
    const val = e.target.value;
@@ -178,11 +220,15 @@ import { memberService } from '../../../api/jumuiyaMemberService';
      setShowNameLookupDropdown(false);
      return;
    }
-   setNameLookupLoading(true);
-   setNameLookupError('');
-   try {
-     const res = await memberService.lookupMemberByRegNumber(value.trim());
-     const data = res.data || [];
+    setNameLookupLoading(true);
+    setNameLookupError('');
+    const seq = ++nameLookupSeqRef.current;
+    try {
+      const res = await memberService.lookupMemberByRegNumber(value.trim());
+      // Discard a response the user has already typed past, or that lands
+      // after the form was reset — otherwise the chooser reopens by itself.
+      if (seq !== nameLookupSeqRef.current) return;
+      const data = res.data || [];
      setNameLookupResults(data);
       if (data.length === 1) {
         const m = data[0];
@@ -204,12 +250,13 @@ import { memberService } from '../../../api/jumuiyaMemberService';
        setNameMemberFound(false);
        setShowNameLookupDropdown(false);
      }
-   } catch {
-     setNameLookupError('Lookup failed');
-   } finally {
-     setNameLookupLoading(false);
-   }
- }, [mode]);
+    } catch {
+      if (seq !== nameLookupSeqRef.current) return;
+      setNameLookupError('Lookup failed');
+    } finally {
+      if (seq === nameLookupSeqRef.current) setNameLookupLoading(false);
+    }
+  }, [mode]);
 
  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
    const val = e.target.value;
@@ -267,9 +314,8 @@ import { memberService } from '../../../api/jumuiyaMemberService';
   }, [mode, category, allOfficials, isHistorical]);
 
  const handleSubmit = async (e: React.FormEvent) => {
- e.preventDefault();
- try {
- const fd = new FormData();
+  e.preventDefault();
+  const fd = new FormData();
  fd.append('name', name);
  fd.append('category', category);
  fd.append('position', position);
@@ -278,34 +324,41 @@ import { memberService } from '../../../api/jumuiyaMemberService';
  if (regNumber.trim()) fd.append('reg_number', regNumber.trim());
  if (isHistorical) fd.append('historical', 'true');
 
- if (photo) {
- const optimizedPhotoBlob = await resizeImage(photo);
- fd.append('photo', optimizedPhotoBlob, 'photo.jpg');
- }
+  if (photo) {
+  const optimizedPhotoBlob = await resizeImage(photo);
+  fd.append('photo', optimizedPhotoBlob, 'photo.jpg');
+  }
 
- onSubmit(fd);
- 
- // Reset form
- setName('');
- setCategory('');
- setPosition('');
- setContact('');
- setPhoto(null);
- setPreview(null);
- setRegNumber('');
- setMemberFound(false);
- setLookupResults([]);
- setLookupError('');
- setNameMemberFound(false);
- setNameLookupResults([]);
- setNameLookupError('');
- } catch (err) {
- console.error('Submission error:', err);
- }
- };
+  // Must be awaited. The parent mutations use mutateAsync, so a rejected
+  // request throws here; clearing first would throw away a name, category,
+  // position, contact and photo the admin would then have to retype.
+  try {
+  await onSubmit(fd);
+  } catch (err) {
+  // The mutation already raised a toast and rolled back its optimistic row.
+  // Keep everything the admin typed so they can correct and retry.
+  console.error('Official submission failed:', err);
+  return;
+  }
 
- const termMismatch = !isHistorical && officialsExist && termOfService && termOfService !== displayTerm;
- const isInvalid = !name || !category || !position || !!contactError || isSubmitting || !!termMismatch;
+  // Only clear once the server has confirmed.
+  resetLookups();
+  setName('');
+  setCategory('');
+  setPosition('');
+  setContact('');
+  setContactError('');
+  setPhoto(null);
+  setPreview(null);
+  setRegNumber('');
+  };
+
+  const termMismatch = !isHistorical && officialsExist && termOfService && termOfService !== displayTerm;
+  // The server rejects a missing reg_number on the normal (non-historical)
+  // path, so catch it here rather than letting the admin fill in the whole
+  // form only to be told it was incomplete.
+  const regNumberMissing = !isHistorical && !regNumber.trim();
+  const isInvalid = !name || !category || !position || !!contactError || isSubmitting || !!termMismatch || regNumberMissing;
 
  return (
  <div className="mb-12 bg-white rounded-xl shadow-lg border border-gray-100 transition-colors">
@@ -341,7 +394,7 @@ import { memberService } from '../../../api/jumuiyaMemberService';
                   <div className="space-y-2" ref={dropdownRef}>
                     <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Search className="w-3.5 h-3.5 text-gray-400" />
-                      Registration Number <span className="text-xs font-normal text-gray-400">(type middle digits to auto-fill)</span>
+                      Registration Number {!isHistorical && <span className="text-red-500">*</span>} <span className="text-xs font-normal text-gray-400">(type middle digits to auto-fill)</span>
                     </label>
                     <div className="relative">
                       <input
@@ -378,6 +431,11 @@ import { memberService } from '../../../api/jumuiyaMemberService';
                       )}
                     </div>
                     {lookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{lookupError}</div>}
+                    {regNumberMissing && (
+                      <div className="text-amber-600 text-xs font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />Required — search above to link this official to a registered member
+                      </div>
+                    )}
                     {memberFound && (
                       <div className="text-green-600 text-xs font-medium flex items-center gap-1">
                         <Check className="w-3 h-3" />Member found — name & phone auto-filled
